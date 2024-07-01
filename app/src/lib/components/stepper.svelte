@@ -35,15 +35,18 @@ const cancel = () => {
         step.status === "PENDING" ? "bg-white" :
         step.status === "IN_PROGRESS" ? "bg-white" :
         step.status === "COMPLETED" ? "bg-accent" :
-        step.status === "ERROR" ? "bg-black" : ""
+        step.status === "ERROR" ? "bg-black" :
+        step.status === "WARNING" ? "bg-yellow-300" : ""
       )}>
         <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  rounded-full bg-black transition-all duration-300",
           step.status === "COMPLETED" ? "w-1 h-7 rotate-45 translate-x-[2px]" :
-          step.status === "ERROR" ? "w-1 h-8 rotate-45 bg-white" : "w-2 h-2"
+          step.status === "ERROR" ? "w-1 h-8 rotate-45 bg-white" :
+          step.status === "WARNING" ? "w-1 h-4 -translate-y-[12px]" : "w-2 h-2"
           )}></div>
         <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black transition-all duration-300",
           step.status === "COMPLETED" ? "w-1 h-4 -rotate-45 -translate-x-3 -translate-y-[2px]" :
-          step.status === "ERROR" ? "w-1 h-8 -rotate-45 bg-white" : "w-2 h-2"
+          step.status === "ERROR" ? "w-1 h-8 -rotate-45 bg-white" :
+          step.status === "WARNING" ? "w-1 h-1 translate-y-[8px]" : "w-2 h-2"
           )}></div>
         {#if step.status === "IN_PROGRESS"}
           <SpinnerSvg className="absolute text-accent w-8 h-8 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"/>
