@@ -309,7 +309,11 @@ const transfer = async () => {
 
     if ($transferState.kind === "SWITCHING_TO_CHAIN") {
 
-      if ($transferState.warning) transferState.set({ kind: "APPROVING_ASSET" })
+      if ($transferState.warning) {
+        transferState.set({ kind: "APPROVING_ASSET" })
+        transfer();
+        return;
+      }
       // ^ the user is continuing continuing after having seen the warning
 
       try {
@@ -380,7 +384,15 @@ const transfer = async () => {
         ]
       } as const; 
 
-      if ($transferState.warning !== undefined) transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
+      if ($transferState.warning !== undefined) 
+
+      if ($transferState.warning) {
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
+        transfer();
+        return;
+      }
+
+      
       // ^ the user is continuing continuing after having seen the warning
 
       console.log("confirming transfers test");
