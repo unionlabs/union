@@ -41,6 +41,22 @@ const unionClient = createCosmosSdkClient({
   }
 })
 
+const gasCostResponse = await unionClient.simulateTransaction({
+  amount: 1n,
+  network: "evm",
+  sourceChannel: "channel-69",
+  path: ["11155111", "union-testnet-8"],
+  recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+  denomAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  relayContractAddress: "0x3C148Ec863404e48d88757E88e456963A14238ef"
+})
+
+if(!gasCostResponse.success) {
+  throw new Error("Failed to simulate transaction")
+}
+
+console.info("Gas cost", gasCostResponse.data)
+
 const transfer = await unionClient.transferAsset({
   amount: 1n,
   network: "evm",
@@ -51,7 +67,5 @@ const transfer = await unionClient.transferAsset({
   relayContractAddress: "0x3C148Ec863404e48d88757E88e456963A14238ef"
 })
 ```
-
-You can also fetch contracts, channels, etc. from Hubble by using [`offchainQuery.<chains|chain>`](https://github.com/unionlabs/union/blob/d8228c1bed450850401b84e5885411346b7d5484/typescript-sdk/src/query/off-chain.ts#L25).
 
 See [`./playground/berachain-to-union.ts`](./playground/berachain-to-union.ts) and [`./playground`](./playground) in general for more examples.
