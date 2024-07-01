@@ -34,7 +34,7 @@ let sheetOpen = false
 $: if ($navigating) sheetOpen = false
 </script>
 
-<Sheet.Root bind:open={sheetOpen}>
+<Sheet.Root open={true}>
   <Sheet.Trigger asChild class="w-full" let:builder>
     <Button
       builders={[builder]}
@@ -78,18 +78,6 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    <!-- {#if !gotMetamask && $sepoliaStore.connectionStatus === "disconnected"}
-      <Button
-        variant="outline"
-        on:click={() => window.alert('Please install metamask')}
-        class={cn('px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start h-[48px]')}
-      >
-        <MetamaskIcon/>
-        <span class="w-full text-left font-mono pl-3 sm:text-[15.5px]" >
-          Install Metamask
-        </span>
-      </Button>
-    {/if} -->
     <Separator class={cn('px-0 bg-border my-4')}/>
     <Connection
       address={$cosmosStore.address}

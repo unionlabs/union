@@ -39,7 +39,8 @@ export default {
     /** @note `$` is a svelte path alias convention */
     alias: {
       $: path.resolve("./src/"),
-      $styles: path.resolve("./src/styles")
+      $styles: path.resolve("./src/styles"),
+      "~static": path.resolve("./static/")
     }
   }
 }
