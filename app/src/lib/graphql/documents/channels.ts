@@ -1,7 +1,9 @@
 import { graphql } from "gql.tada"
 
 export const channelsQuery = graphql(/* GraphQL */ `query ChannelsQuery($limit: Int = 500) @cached(ttl: 30) {
-  v0_channel_map(order_by: [
+  v0_channel_map(
+    where: {source: {enabled: {_eq: true}}, destination: {enabled: {_eq: true}}},
+    order_by: [
     {status: asc}, 
     {from_chain_id: asc}, 
     {from_connection_id: asc},
