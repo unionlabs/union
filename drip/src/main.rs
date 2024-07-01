@@ -274,7 +274,7 @@ impl CosmosSdkChainRpcs for Chain {
 }
 
 impl DripClient {
-    /// `MultiSend` to the specified addresses. Will return `None` if there are no signers available.
+    /// `MultiSend` to the specified addresses. Will panic if there are no signers available.
     async fn send(&self, to_send: Vec<(String, u64)>) -> Result<H256, BroadcastTxCommitError> {
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
             // this is required to be one element
