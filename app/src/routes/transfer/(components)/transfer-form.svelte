@@ -501,6 +501,7 @@ const stateToStatus = <K extends TransferState["kind"]>(
   pendingTitle: string,
   completedTitle: string,
   errorFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown,
+  warningFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown,
   progressFormatter: (ts: Extract<TransferState, { kind: K }>) => unknown
 ) =>
   stepBefore(state, kind)
@@ -508,9 +509,12 @@ const stateToStatus = <K extends TransferState["kind"]>(
     : stepAfter(state, kind)
       ? { status: "COMPLETED", title: completedTitle }
       : // @ts-ignore
-        state.error !== undefined
-        ? errorFormatter(state as Extract<TransferState, { kind: K }>)
-        : progressFormatter(state as Extract<TransferState, { kind: K }>)
+        state.warning !== undefined 
+        ? warningFormatter(state as Extract<TransferState, { kind: K}>)
+        : // @ts-ignore
+          state.error !== undefined
+          ? errorFormatter(state as Extract<TransferState, { kind: K }>)
+          : progressFormatter(state as Extract<TransferState, { kind: K }>)
 
 let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
   if ($transferState.kind === "PRE_TRANSFER") return [] // don't generate steps before transfer is ready
@@ -545,6 +549,11 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.error}`
         }),
         () => ({
+          status: "WARNING",
+          title: `Could not automatically switch chain.`,
+          description: `Please make sure your wallet is connected to  ${$fromChain.display_name}`
+        }),
+        () => ({
           status: "IN_PROGRESS",
           title: `Switching to ${$fromChain.display_name}`,
           description: `Click 'Approve' in wallet.`
@@ -560,6 +569,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: `Error approving ERC20`,
           description: `${ts.error}`
         }),
+        () => {},
         () => ({
           status: "IN_PROGRESS",
           title: "Approving ERC20",
@@ -576,6 +586,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: `Error waiting for approval receipt`,
           description: `${ts.error}`
         }),
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Awaiting approval receipt",
@@ -593,6 +604,11 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           description: `${ts.error}`
         }),
         () => ({
+          status: "WARNING",
+          title: `Failed to simulate transfer`,
+          description: `You can still attempt to make this transfer in your wallet`
+        }),
+        () => ({
           status: "IN_PROGRESS",
           title: "Simulating transfer",
           description: `Waiting on ${$fromChain.display_name}`
@@ -608,6 +624,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: "Error confirming transfer",
           description: `${ts.error}`
         }),
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Confirming your transfer",
@@ -624,6 +641,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: "Error while waiting on transfer receipt",
           description: `tx hash: ${ts.transferHash}, error: ${ts.error}`
         }),
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Awaiting transfer receipt",
@@ -635,6 +653,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         "TRANSFERRING",
         "Transfer assets",
         "Transferred assets",
+        () => ({}),
         () => ({}),
         () => ({
           status: "IN_PROGRESS",
@@ -656,6 +675,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: "Error confirming transfer",
           description: `${ts.error}`
         }),
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Confirming your transfer",
@@ -667,6 +687,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         "TRANSFERRING",
         "Transfer assets",
         "Transferred assets",
+        () => ({}),
         () => ({}),
         () => ({
           status: "IN_PROGRESS",

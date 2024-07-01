@@ -19,10 +19,10 @@ export type TransferState = DiscriminatedUnion<
     PRE_TRANSFER: {}
     FLIPPING: {}
     ADDING_CHAIN: { error?: Error }
-    SWITCHING_TO_CHAIN: { error?: Error }
+    SWITCHING_TO_CHAIN: { warning?: Error }
     APPROVING_ASSET: { error?: Error }
     AWAITING_APPROVAL_RECEIPT: { error?: Error; hash: `0x${string}` }
-    SIMULATING_TRANSFER: { error?: Error }
+    SIMULATING_TRANSFER: { warning?: Error }
     CONFIRMING_TRANSFER: { error?: Error; simulationResult: SimulateContractReturnType }
     AWAITING_TRANSFER_RECEIPT: { error?: Error; transferHash: `0x${string}` }
     TRANSFERRING: { transferHash: string }
