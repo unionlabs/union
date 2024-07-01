@@ -1,6 +1,6 @@
-<script generics="T extends object" lang="ts">
-import { derived, get } from "svelte/store"
-import { onDestroy, onMount } from "svelte"
+<script lang="ts">
+import { onDestroy } from "svelte"
+import { derived } from "svelte/store"
 import {
   flexRender,
   type ColumnDef,
@@ -10,26 +10,24 @@ import {
   getFilteredRowModel,
   getPaginationRowModel
 } from "@tanstack/svelte-table"
+import type { MaybePromise } from "valibot"
 import { writable, type Readable } from "svelte/store"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { createVirtualizer } from "@tanstack/svelte-virtual"
 import * as Card from "$lib/components/ui/card/index.ts"
-import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
 
-export let columns: Array<ColumnDef<any>>
-// https://github.com/TanStack/table/issues/4241
-// @ts-ignore
-export let dataStore: Readable<Array<any>>
-export let onClick: ((tr: unknown) => void) | undefined = undefined
+type DataRow = $$Generic
+
+export let columns: Array<ColumnDef<DataRow>>
+export let dataStore: Readable<Array<DataRow>>
+export let onClick: undefined | ((row: DataRow) => MaybePromise<void>) = undefined
 
 const options = writable<TableOptions<any>>({
   data: $dataStore,
   enableHiding: true,
   enableFilters: true,
-  // https://github.com/TanStack/table/issues/4241
-  // @ts-ignore
   columns,
   autoResetPageIndex: true,
   enableColumnFilters: true,
@@ -55,15 +53,11 @@ $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
 const unsubscribe = dataStore.subscribe(() => {
   if (!$dataStore) return
   $table.setPageSize($dataStore.length)
-  options.update(options => ({ ...options, data: $dataStore as unknown as Array<T> }))
+  options.update(options => ({ ...options, data: $dataStore }))
 })
 
 function hasInfoProperty(assets: Object) {
   return !!Object.values(assets)[0].info
-}
-
-function checkAndApply(rowData) {
-  return rowData ? hasInfoProperty(rowData) : false
 }
 
 onDestroy(unsubscribe)

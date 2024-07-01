@@ -3,6 +3,7 @@ import LoadingLogo from "$lib/components/loading-logo.svelte"
 import request from "graphql-request"
 import { derived } from "svelte/store"
 import { URLS } from "$lib/constants"
+import type { UnwrapReadable } from "$lib/types"
 import Table from "../(components)/table.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import CellStatus from "../(components)/cell-status.svelte"
@@ -23,9 +24,11 @@ let indexStatus = createQuery({
   }
 })
 
-let indexStatusData = derived(indexStatus, $indexStatus => $indexStatus.data ?? [])
+let indexStatusDataStore = derived(indexStatus, $indexStatus => $indexStatus.data ?? [])
 
-const columns: Array<ColumnDef<{ chain_id: string }>> = [
+type DataRow = UnwrapReadable<typeof indexStatusDataStore>[number]
+
+const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "chain",
     header: () => "Chain",
@@ -52,9 +55,9 @@ const columns: Array<ColumnDef<{ chain_id: string }>> = [
 
 
 {#if $indexStatus.data }
-  <Table bind:dataStore={indexStatusData} {columns} />
+  <Table bind:dataStore={indexStatusDataStore} {columns} />
 {:else if $indexStatus.isLoading}
-  <LoadingLogo class="size-16"/>
+  <LoadingLogo class="size-16" />
 {:else if $indexStatus.isError}
   Error fetching index status...
 {/if}

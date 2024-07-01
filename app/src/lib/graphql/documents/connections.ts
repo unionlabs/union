@@ -15,8 +15,16 @@ query ConnectionsQuery($limit: Int = 100) @cached(ttl: 30) {
     to_chain_id
     from_client_id
     from_connection_id
+    source_chain {
+      enabled
+      display_name
+    }
     to_client_id
     to_connection_id
+    destination_chain {
+      enabled
+      display_name
+    }
     status
   }
 }
