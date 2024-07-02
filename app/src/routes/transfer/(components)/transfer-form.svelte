@@ -722,9 +722,9 @@ const resetInput = () => {
 <div class="cube-scene" id="scene">
 
   <div class={cn("cube ",
-  $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "notransition")}>
+  $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "no-transition")}>
     <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
-    <Card.Root class={cn($transferState.kind === "PRE_TRANSFER" ? "notransition" : "cube-front")}>
+    <Card.Root class={cn($transferState.kind === "PRE_TRANSFER" ? "no-transition" : "cube-front")}>
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
@@ -985,7 +985,7 @@ const resetInput = () => {
         transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
     }
 
-    .notransition {
+    .no-transition {
         @apply overflow-y-auto overflow-x-hidden;
         width: var(--width);
         height: var(--height);
