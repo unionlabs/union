@@ -103,7 +103,8 @@ contract RelayTests is Test {
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.prank(address(ibcHandler));
         relay.onChanOpenTry(
@@ -116,7 +117,8 @@ contract RelayTests is Test {
                 channel_id: sourceChannel
             }),
             RelayLib.VERSION,
-            RelayLib.VERSION
+            RelayLib.VERSION,
+            relayer
         );
     }
 
@@ -277,7 +279,8 @@ contract RelayTests is Test {
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanOpenInit(
@@ -289,7 +292,8 @@ contract RelayTests is Test {
                 port_id: sourcePort,
                 channel_id: sourceChannel
             }),
-            RelayLib.VERSION
+            RelayLib.VERSION,
+            relayer
         );
     }
 
@@ -297,7 +301,8 @@ contract RelayTests is Test {
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(RelayLib.ErrInvalidProtocolVersion.selector);
         vm.prank(address(ibcHandler));
@@ -310,7 +315,8 @@ contract RelayTests is Test {
                 port_id: sourcePort,
                 channel_id: sourceChannel
             }),
-            "blabla"
+            "blabla",
+            relayer
         );
     }
 
@@ -318,7 +324,8 @@ contract RelayTests is Test {
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(RelayLib.ErrInvalidProtocolOrdering.selector);
         vm.prank(address(ibcHandler));
@@ -331,7 +338,8 @@ contract RelayTests is Test {
                 port_id: sourcePort,
                 channel_id: sourceChannel
             }),
-            RelayLib.VERSION
+            RelayLib.VERSION,
+            relayer
         );
     }
 
@@ -339,7 +347,8 @@ contract RelayTests is Test {
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanOpenTry(
@@ -352,7 +361,8 @@ contract RelayTests is Test {
                 channel_id: sourceChannel
             }),
             RelayLib.VERSION,
-            RelayLib.VERSION
+            RelayLib.VERSION,
+            relayer
         );
     }
 
@@ -360,7 +370,8 @@ contract RelayTests is Test {
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(RelayLib.ErrInvalidProtocolVersion.selector);
         vm.prank(address(ibcHandler));
@@ -374,7 +385,8 @@ contract RelayTests is Test {
                 channel_id: sourceChannel
             }),
             "0xDEADC0DE",
-            RelayLib.VERSION
+            RelayLib.VERSION,
+            relayer
         );
     }
 
@@ -382,7 +394,8 @@ contract RelayTests is Test {
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(RelayLib.ErrInvalidProtocolOrdering.selector);
         vm.prank(address(ibcHandler));
@@ -396,7 +409,8 @@ contract RelayTests is Test {
                 channel_id: sourceChannel
             }),
             RelayLib.VERSION,
-            RelayLib.VERSION
+            RelayLib.VERSION,
+            relayer
         );
     }
 
@@ -404,7 +418,8 @@ contract RelayTests is Test {
         string memory sourcePort,
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector);
         vm.prank(address(ibcHandler));
@@ -418,81 +433,98 @@ contract RelayTests is Test {
                 channel_id: sourceChannel
             }),
             RelayLib.VERSION,
-            "ok"
+            "ok",
+            relayer
         );
     }
 
     function test_openAck_onlyIBC(
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         relay.onChanOpenAck(
-            destinationPort, destinationChannel, sourceChannel, RelayLib.VERSION
+            destinationPort,
+            destinationChannel,
+            sourceChannel,
+            RelayLib.VERSION,
+            relayer
         );
     }
 
     function test_openAck_wrongVersion(
         string memory sourceChannel,
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(RelayLib.ErrInvalidCounterpartyProtocolVersion.selector);
         vm.prank(address(ibcHandler));
         relay.onChanOpenAck(
-            destinationPort, destinationChannel, sourceChannel, "ucs01version"
+            destinationPort,
+            destinationChannel,
+            sourceChannel,
+            "ucs01version",
+            relayer
         );
     }
 
     function test_openConfirm_onlyIBC(
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        relay.onChanOpenConfirm(destinationPort, destinationChannel);
+        relay.onChanOpenConfirm(destinationPort, destinationChannel, relayer);
     }
 
     function test_openConfirm(
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.prank(address(ibcHandler));
-        relay.onChanOpenConfirm(destinationPort, destinationChannel);
+        relay.onChanOpenConfirm(destinationPort, destinationChannel, relayer);
     }
 
     function test_closeInit_onlyIBC(
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        relay.onChanCloseInit(destinationPort, destinationChannel);
+        relay.onChanCloseInit(destinationPort, destinationChannel, relayer);
     }
 
     function test_closeInit_impossible(
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(RelayLib.ErrUnstoppable.selector);
         vm.prank(address(ibcHandler));
-        relay.onChanCloseInit(destinationPort, destinationChannel);
+        relay.onChanCloseInit(destinationPort, destinationChannel, relayer);
     }
 
     function test_closeConfirm_onlyIBC(
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
-        relay.onChanCloseConfirm(destinationPort, destinationChannel);
+        relay.onChanCloseConfirm(destinationPort, destinationChannel, relayer);
     }
 
     function test_closeConfirm_impossible(
         string memory destinationPort,
-        string memory destinationChannel
+        string memory destinationChannel,
+        address relayer
     ) public {
         vm.expectRevert(RelayLib.ErrUnstoppable.selector);
         vm.prank(address(ibcHandler));
-        relay.onChanCloseConfirm(destinationPort, destinationChannel);
+        relay.onChanCloseConfirm(destinationPort, destinationChannel, relayer);
     }
 
     function test_onRecvPacketProcessing_onlySelf(
@@ -642,7 +674,8 @@ contract RelayTests is Test {
             args.sourcePort,
             args.sourceChannel,
             args.destinationPort,
-            args.destinationChannel
+            args.destinationChannel,
+            args.relayer
         );
 
         address denomAddress = address(new ERC20Denom(args.denomName));
@@ -751,7 +784,8 @@ contract RelayTests is Test {
             args.sourcePort,
             args.sourceChannel,
             args.destinationPort,
-            args.destinationChannel
+            args.destinationChannel,
+            args.relayer
         );
 
         receiveRemoteToken(
@@ -781,13 +815,18 @@ contract RelayTests is Test {
         bytes memory receiver,
         string memory denomName,
         uint128 amount,
-        string memory extension
+        string memory extension,
+        address relayer
     ) public {
         vm.assume(sender != address(0));
         vm.assume(amount > 0);
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            destinationChannel,
+            relayer
         );
 
         address denomAddress = address(new ERC20Denom(denomName));
@@ -843,7 +882,11 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            destinationChannel,
+            relayer
         );
 
         receiveRemoteToken(
@@ -927,8 +970,12 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         // Open two different local channels with the same counterparty
-        initChannel(sourcePort, sourceChannel, destinationPort, "channel-1");
-        initChannel(sourcePort, sourceChannel, destinationPort, "channel-2");
+        initChannel(
+            sourcePort, sourceChannel, destinationPort, "channel-1", relayer
+        );
+        initChannel(
+            sourcePort, sourceChannel, destinationPort, "channel-2", relayer
+        );
 
         receiveRemoteToken(
             sequence,
@@ -1037,13 +1084,15 @@ contract RelayTests is Test {
             args.sourcePort,
             args.sourceChannel,
             args.destinationPort,
-            "channel-1"
+            "channel-1",
+            args.relayer
         );
         initChannel(
             args.sourcePort,
             args.sourceChannel,
             args.destinationPort,
-            "channel-2"
+            "channel-2",
+            args.relayer
         );
 
         receiveRemoteToken(
@@ -1098,7 +1147,11 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            destinationChannel,
+            relayer
         );
 
         sendLocalToken(
@@ -1134,7 +1187,11 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            destinationChannel,
+            relayer
         );
 
         address denomAddress = sendLocalToken(
@@ -1199,7 +1256,8 @@ contract RelayTests is Test {
             args.sourcePort,
             args.sourceChannel,
             args.destinationPort,
-            args.destinationChannel
+            args.destinationChannel,
+            args.relayer
         );
 
         receiveRemoteToken(
@@ -1282,7 +1340,11 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            destinationChannel,
+            relayer
         );
 
         address denomAddress = sendLocalToken(
@@ -1349,7 +1411,8 @@ contract RelayTests is Test {
             args.sourcePort,
             args.sourceChannel,
             args.destinationPort,
-            args.destinationChannel
+            args.destinationChannel,
+            args.relayer
         );
 
         receiveRemoteToken(
@@ -1434,7 +1497,11 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            destinationChannel,
+            relayer
         );
 
         sendLocalToken(
@@ -1481,7 +1548,11 @@ contract RelayTests is Test {
         vm.assume(amount > 0);
 
         initChannel(
-            sourcePort, sourceChannel, destinationPort, destinationChannel
+            sourcePort,
+            sourceChannel,
+            destinationPort,
+            destinationChannel,
+            relayer
         );
 
         receiveRemoteToken(
@@ -1554,7 +1625,8 @@ contract RelayTests is Test {
             args.sourcePort,
             args.sourceChannel,
             args.destinationPort,
-            args.destinationChannel
+            args.destinationChannel,
+            args.relayer
         );
 
         receiveRemoteToken(
@@ -1614,7 +1686,8 @@ contract RelayTests is Test {
             args.sourcePort,
             args.sourceChannel,
             args.destinationPort,
-            args.destinationChannel
+            args.destinationChannel,
+            args.relayer
         );
 
         receiveRemoteToken(

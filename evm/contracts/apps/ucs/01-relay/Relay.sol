@@ -509,7 +509,8 @@ contract UCS01Relay is
         string calldata,
         string calldata,
         IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata version
+        string calldata version,
+        address relayer
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
@@ -526,7 +527,8 @@ contract UCS01Relay is
         string calldata,
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata version,
-        string calldata counterpartyVersion
+        string calldata counterpartyVersion,
+        address relayer
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
@@ -543,7 +545,8 @@ contract UCS01Relay is
         string calldata,
         string calldata,
         string calldata,
-        string calldata counterpartyVersion
+        string calldata counterpartyVersion,
+        address relayer
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();
@@ -552,19 +555,22 @@ contract UCS01Relay is
 
     function onChanOpenConfirm(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external override(IBCAppBase, IIBCModule) onlyIBC {}
 
     function onChanCloseInit(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }

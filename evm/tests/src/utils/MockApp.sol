@@ -50,7 +50,8 @@ contract MockApp is IIBCModule {
         string calldata portId,
         string calldata channelId,
         ChannelCounterparty.Data calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override {
         emit MockChannelOpenInit(portId, channelId);
     }
@@ -62,7 +63,8 @@ contract MockApp is IIBCModule {
         string calldata,
         ChannelCounterparty.Data calldata,
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override {
         emit MockChannelOpenTry();
     }
@@ -71,28 +73,32 @@ contract MockApp is IIBCModule {
         string calldata,
         string calldata,
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override {
         emit MockChannelOpenAck();
     }
 
     function onChanOpenConfirm(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override {
         emit MockChannelOpenConfirm();
     }
 
     function onChanCloseInit(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override {
         emit MockChannelCloseInit();
     }
 
     function onChanCloseConfirm(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override {
         emit MockChannelCloseConfirm();
     }

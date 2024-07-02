@@ -43,7 +43,8 @@ abstract contract IBCAppBase is IIBCModule {
         string calldata portId,
         string calldata channelId,
         IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
-        string calldata version
+        string calldata version,
+        address relayer
     ) external virtual override onlyIBC {}
 
     /**
@@ -58,7 +59,8 @@ abstract contract IBCAppBase is IIBCModule {
         string calldata channelId,
         IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
         string calldata version,
-        string calldata counterpartyVersion
+        string calldata counterpartyVersion,
+        address relayer
     ) external virtual override onlyIBC {}
 
     /**
@@ -70,7 +72,8 @@ abstract contract IBCAppBase is IIBCModule {
         string calldata portId,
         string calldata channelId,
         string calldata counterpartyChannelId,
-        string calldata counterpartyVersion
+        string calldata counterpartyVersion,
+        address relayer
     ) external virtual override onlyIBC {}
 
     /**
@@ -80,7 +83,8 @@ abstract contract IBCAppBase is IIBCModule {
      */
     function onChanOpenConfirm(
         string calldata portId,
-        string calldata channelId
+        string calldata channelId,
+        address relayer
     ) external virtual override onlyIBC {}
 
     /**
@@ -90,7 +94,8 @@ abstract contract IBCAppBase is IIBCModule {
      */
     function onChanCloseInit(
         string calldata portId,
-        string calldata channelId
+        string calldata channelId,
+        address relayer
     ) external virtual override onlyIBC {}
 
     /**
@@ -100,7 +105,8 @@ abstract contract IBCAppBase is IIBCModule {
      */
     function onChanCloseConfirm(
         string calldata portId,
-        string calldata channelId
+        string calldata channelId,
+        address relayer
     ) external virtual override onlyIBC {}
 
     /**

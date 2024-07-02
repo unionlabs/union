@@ -533,7 +533,8 @@ contract UCS02NFT is
         string calldata,
         string calldata,
         IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata version
+        string calldata version,
+        address
     ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(version)) {
             revert NFTLib.ErrInvalidProtocolVersion();
@@ -550,7 +551,8 @@ contract UCS02NFT is
         string calldata,
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata version,
-        string calldata counterpartyVersion
+        string calldata counterpartyVersion,
+        address
     ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(version)) {
             revert NFTLib.ErrInvalidProtocolVersion();
@@ -567,7 +569,8 @@ contract UCS02NFT is
         string calldata,
         string calldata,
         string calldata,
-        string calldata counterpartyVersion
+        string calldata counterpartyVersion,
+        address
     ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(counterpartyVersion)) {
             revert NFTLib.ErrInvalidCounterpartyProtocolVersion();
@@ -576,19 +579,22 @@ contract UCS02NFT is
 
     function onChanOpenConfirm(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external override onlyIBC {}
 
     function onChanCloseInit(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external view override onlyIBC {
         revert NFTLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external view override onlyIBC {
         revert NFTLib.ErrUnstoppable();
     }

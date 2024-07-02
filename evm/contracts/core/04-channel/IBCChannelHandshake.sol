@@ -138,7 +138,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             msg_.portId,
             channelId,
             msg_.channel.counterparty,
-            msg_.channel.version
+            msg_.channel.version,
+            msg_.relayer
         );
 
         emit IBCChannelLib.ChannelOpenInit(
@@ -233,7 +234,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             channelId,
             msg_.channel.counterparty,
             msg_.channel.version,
-            msg_.counterpartyVersion
+            msg_.counterpartyVersion,
+            msg_.relayer
         );
 
         return channelId;
@@ -300,7 +302,8 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
             msg_.portId,
             msg_.channelId,
             msg_.counterpartyChannelId,
-            msg_.counterpartyVersion
+            msg_.counterpartyVersion,
+            msg_.relayer
         );
     }
 
@@ -359,7 +362,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         updateChannelCommitment(msg_.portId, msg_.channelId);
 
         lookupModuleByPort(msg_.portId).onChanOpenConfirm(
-            msg_.portId, msg_.channelId
+            msg_.portId, msg_.channelId, msg_.relayer
         );
     }
 
@@ -382,7 +385,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         updateChannelCommitment(msg_.portId, msg_.channelId);
 
         lookupModuleByPort(msg_.portId).onChanCloseInit(
-            msg_.portId, msg_.channelId
+            msg_.portId, msg_.channelId, msg_.relayer
         );
 
         emit IBCChannelLib.ChannelCloseInit(msg_.channelId, msg_.portId);
@@ -436,7 +439,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         updateChannelCommitment(msg_.portId, msg_.channelId);
 
         lookupModuleByPort(msg_.portId).onChanCloseConfirm(
-            msg_.portId, msg_.channelId
+            msg_.portId, msg_.channelId, msg_.relayer
         );
 
         emit IBCChannelLib.ChannelCloseConfirm(msg_.channelId, msg_.portId);
