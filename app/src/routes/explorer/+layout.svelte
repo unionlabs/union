@@ -5,6 +5,7 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import type { LayoutData } from "./$types.ts"
 import Menu from "./(components)/menu.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
+import StatsBar from "$lib/components/stats-bar.svelte";
 
 export let data: LayoutData
 
@@ -43,14 +44,17 @@ onNavigate(navigation => {
       <span class="uppercase">{$page.route.id?.split('/').at(-2)}</span>
     </a>
 
-    <div class="p-2 pt-0 sm:p-6 flex flex-col flex-1 size-full">
-      <div class={cn($page.route.id?.split('/').length === 3 ? "" : "hidden")}>
-        <h2 class="text-4xl font-extrabold font-expanded sm:!font-extra-expanded uppercase font-supermolot">
-          {explorerRoute?.replaceAll('-', ' ')}
-        </h2>
-        <p class="pb-4 -mt-1 text-muted-foreground">{'>'} {explorerPageDescription}</p>
+    <div class="flex flex-col flex-1 size-full">
+      <StatsBar/>
+      <div class="p-2 pt-0 sm:p-6 ">
+        <div class={cn($page.route.id?.split('/').length === 3 ? "" : "hidden")}>
+          <h2 class="text-4xl font-extrabold font-expanded sm:!font-extra-expanded uppercase font-supermolot">
+            {explorerRoute?.replaceAll('-', ' ')}
+          </h2>
+          <p class="pb-4 -mt-1 text-muted-foreground">{'>'} {explorerPageDescription}</p>
+        </div>
+        <slot />
       </div>
-      <slot />
     </div>
   </main>
 </div>
