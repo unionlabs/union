@@ -13,10 +13,11 @@ import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
 import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
 import request from "graphql-request"
-import { writable, type Writable } from "svelte/store"
 import { URLS } from "$lib/constants/index.ts"
-import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
+import { noThrow } from "$lib/utilities/index.ts"
+import { writable, type Writable } from "svelte/store"
 import Truncate from "$lib/components/truncate.svelte"
+import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 
 type FaucetState = DiscriminatedUnion<
@@ -64,7 +65,8 @@ const fetchFromFaucet = async () => {
       }
 
       if (result.faucet2.send.startsWith("ERROR")) {
-        faucetState.set({ kind: "RESULT_ERR", error: `Error from faucet: ${result.faucet2.send}` })
+        console.error(result.faucet2.send)
+        faucetState.set({ kind: "RESULT_ERR", error: `Error from faucet` })
         return
       }
 
@@ -161,7 +163,7 @@ const fetchFromFaucet = async () => {
               type="submit"
               on:click={event => {
                 event.preventDefault()
-                fetchFromFaucet()
+                noThrow(fetchFromFaucet())
                }}
               disabled={$faucetState.kind !== "IDLE" || isValidCosmosAddress(address, ['union']) === false}
               class={cn('min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50')}

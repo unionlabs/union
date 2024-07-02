@@ -12,8 +12,8 @@ import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
 import { goto } from "$app/navigation"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { toDisplayName } from "$lib/utilities/chains.ts"
-import { raise } from "$lib/utilities"
-import type { Chain, UnwrapReadable } from "$lib/types"
+import type { Chain } from "$lib/types"
+import type { UnwrapReadable } from "$lib/utilities/types"
 
 export let chains: Array<Chain>
 
@@ -22,7 +22,7 @@ let transfers = createQuery({
   refetchInterval: 5_000,
   queryFn: async () => request(URLS.GRAPHQL, allTransfersQueryDocument, {}),
   select: data => {
-    if (!data.v0_transfers) raise("error fetching transfers")
+    if (!data.v0_transfers) return []
 
     return data.v0_transfers.map(tx => {
       let destinationChainId = tx.destination_chain_id
