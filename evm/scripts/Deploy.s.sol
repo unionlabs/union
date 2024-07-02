@@ -80,7 +80,7 @@ library Protocols {
 }
 
 abstract contract UnionBase is Script {
-    function deployDeployer(VmSafe.Wallet memory) internal returns (Deployer) {
+    function deployDeployer() internal returns (Deployer) {
         bytes memory bytecode = DEPLOYER_BYTECODE_SOLIDITY_8_23_f704f362;
         Deployer deployer;
         assembly {
@@ -170,11 +170,15 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
-    function deployIBC(address owner) internal {
+    function deployIBC(address owner)
+        internal
+        returns (IBCHandler, CometblsClient, UCS01Relay, UCS02NFT)
+    {
         IBCHandler handler = deployIBCHandler(owner);
-        deployCometbls(handler, owner);
-        deployUCS01(handler, owner);
-        deployUCS02(handler, owner);
+        CometblsClient client = deployCometbls(handler, owner);
+        UCS01Relay relay = deployUCS01(handler, owner);
+        UCS02NFT nft = deployUCS02(handler, owner);
+        return (handler, client, relay, nft);
     }
 }
 
@@ -182,7 +186,8 @@ contract DeployDeployer is UnionBase {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
-        deployDeployer(vm.createWallet(privateKey));
+        deployDeployer();
+
         vm.stopBroadcast();
     }
 }
@@ -200,11 +205,15 @@ contract DeployIBC is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        VmSafe.Wallet memory wallet = vm.createWallet(privateKey);
-
         vm.startBroadcast(privateKey);
 
-        deployIBC(wallet.addr);
+        (
+            IBCHandler handler,
+            CometblsClient client,
+            UCS01Relay relay,
+            UCS02NFT nft
+        ) = deployIBC(vm.addr(privateKey));
+        handler.registerClient(LightClients.COMETBLS, client);
 
         vm.stopBroadcast();
     }
@@ -220,12 +229,17 @@ contract DeployDeployerAndIBC is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        VmSafe.Wallet memory wallet = vm.createWallet(privateKey);
-
         vm.startBroadcast(privateKey);
 
-        deployer = deployDeployer(wallet);
-        deployIBC(wallet.addr);
+        deployer = deployDeployer();
+
+        (
+            IBCHandler handler,
+            CometblsClient client,
+            UCS01Relay relay,
+            UCS02NFT nft
+        ) = deployIBC(vm.addr(privateKey));
+        handler.registerClient(LightClients.COMETBLS, client);
 
         vm.stopBroadcast();
     }
