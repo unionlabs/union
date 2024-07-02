@@ -77,7 +77,7 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         self.key_to_address.iter().map(|(a, b)| (a.as_str(), b))
     }
 
-    pub async fn with<'a, F: FnOnce(&'a S) -> Fut + 'a, Fut: Future<Output: 'static> + 'a>(
+    pub async fn with<'a, F: FnOnce(&'a S) -> Fut + 'a, Fut: Future<Output: 'a> + 'a>(
         &'a self,
         f: F,
     ) -> Option<Fut::Output> {
