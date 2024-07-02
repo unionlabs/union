@@ -1,0 +1,42 @@
+<script lang="ts">
+import * as Tooltip from "$lib/components/ui/tooltip"
+
+export let data: Array<{ value: number; date: Date }>
+
+const minValue = Math.min(...data.map(d => d.value))
+const maxValue = Math.max(...data.map(d => d.value))
+
+function normalize(
+  value: number,
+  min: number,
+  max: number,
+  newMin: number,
+  newMax: number
+): number {
+  return ((value - min) / (max - min)) * (newMax - newMin) + newMin
+}
+
+const normalizedData = data.map(d => ({
+  ...d,
+  normalizedValue: Math.floor(normalize(d.value, minValue, maxValue, 0, 9))
+}))
+</script>
+
+<div class="flex items-end gap-[2.5px] p-5">
+  {#each normalizedData as data}
+    <Tooltip.Root>
+      <Tooltip.Trigger>
+        <div class="bar flex flex-col-reverse gap-[1px] group cursor-crosshair">
+          <div class="half-square bg-primary group-hover:bg-primary/50 h-[2.5px] w-[5px]"></div>
+          {#each Array(data.normalizedValue) as _}
+            <div class="square bg-primary group-hover:bg-primary/50 h-[5px] w-[5px]"></div>
+          {/each}
+        </div>
+      </Tooltip.Trigger>
+      <Tooltip.Content>
+        {data.normalizedValue}
+      </Tooltip.Content>
+    </Tooltip.Root>
+  {/each}
+</div>
+
