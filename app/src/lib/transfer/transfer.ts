@@ -7,8 +7,7 @@ import {
   http,
   defineChain,
   type Chain as ViemChain,
-  type CustomTransport,
-  type SimulateContractReturnType
+  type CustomTransport
 } from "viem"
 import { berachainTestnetbArtio, sepolia } from "viem/chains"
 import type { DiscriminatedUnion } from "$lib/types"

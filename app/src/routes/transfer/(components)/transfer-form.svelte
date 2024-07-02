@@ -564,7 +564,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           title: `Error approving ERC20`,
           description: `${ts.error}`
         }),
-        () => {},
+        () => ({}),
         () => ({
           status: "IN_PROGRESS",
           title: "Approving ERC20",
