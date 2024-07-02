@@ -24,7 +24,7 @@
 
 </script>
 
-<div class="flex items-end gap-[2.5px] p-5">
+<div class="flex items-end gap-[2.5px]">
   {#each normalizedData as data}
     <Tooltip.Root>
       <Tooltip.Trigger>
