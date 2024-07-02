@@ -5,7 +5,7 @@ import { cn } from "$lib/utilities/shadcn.ts"
 import type { LayoutData } from "./$types.ts"
 import Menu from "./(components)/menu.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
-import StatsBar from "$lib/components/stats-bar.svelte";
+import StatsBar from "./(components)/stats-bar.svelte";
 
 export let data: LayoutData
 
