@@ -11,7 +11,10 @@ use crate::{errors::InvalidLength, hash::H256};
 //         ethers_contract_derive::EthAbiCodec
 //     )
 // )]
-#[model(proto(raw(protos::ibc::core::commitment::v1::MerkleRoot), into, from))]
+#[model(
+    borsh,
+    proto(raw(protos::ibc::core::commitment::v1::MerkleRoot), into, from)
+)]
 pub struct MerkleRoot {
     pub hash: H256,
 }

@@ -655,6 +655,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
         proto,
         ethabi,
         no_serde,
+        borsh,
     } = syn::parse_macro_input!(meta as Model);
 
     let output = match &item {
@@ -697,6 +698,12 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                 }
             });
 
+            let borsh = borsh.then(|| {
+                quote! {
+                    #[derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize)]
+                }
+            });
+
             quote! {
                 #[derive(
                     #debug_derive_crate::Debug,
@@ -705,6 +712,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                 )]
                 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
                 #serde
+                #borsh
             }
         }
         Item::Struct(ItemStruct { fields, attrs, .. }) => {
@@ -726,6 +734,12 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                 }
             });
 
+            let borsh = borsh.then(|| {
+                quote! {
+                    #[derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize)]
+                }
+            });
+
             quote! {
                 #[derive(
                     #debug_derive_crate::Debug,
@@ -734,6 +748,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                 )]
                 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
                 #serde
+                #borsh
             }
         }
         _ => panic!(),
@@ -752,18 +767,20 @@ struct Model {
     proto: Option<FromRawAttrs>,
     ethabi: Option<FromRawAttrs>,
     no_serde: bool,
+    borsh: bool,
 }
 
 impl Parse for Model {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         const INVALID_ATTR_MSG: &str =
-            "invalid attribute, valid attributes are `no_serde`, `proto(...)` and `ethabi(...)`";
+            "invalid attribute, valid attributes are `borsh`, `no_serde`, `proto(...)` and `ethabi(...)`";
 
         let meta = <Punctuated<Meta, Token![,]>>::parse_terminated(input)?;
 
         let mut proto = None;
         let mut ethabi = None;
         let mut no_serde = false;
+        let mut borsh = false;
 
         for meta in meta {
             match meta {
@@ -805,6 +822,16 @@ impl Parse for Model {
                             no_serde = true;
                         }
                     }
+                    "borsh" => {
+                        if borsh {
+                            return Err(syn::Error::new_spanned(
+                                path,
+                                "duplicate `borsh` attribute",
+                            ));
+                        } else {
+                            borsh = true;
+                        }
+                    }
                     _ => return Err(syn::Error::new_spanned(path, INVALID_ATTR_MSG)),
                 },
                 _ => return Err(syn::Error::new_spanned(meta, INVALID_ATTR_MSG)),
@@ -815,6 +842,7 @@ impl Parse for Model {
             proto,
             ethabi,
             no_serde,
+            borsh,
         })
     }
 }

@@ -75,7 +75,7 @@ members = [
 
   "drip",
   "near/near-ibc-tests",
-  "light-clients/near/ics08-near", "lib/near-verifier",
+  "light-clients/near/ics08-near", "lib/near-verifier", "light-clients/cometbls/near",
 ]
 
 [workspace.package]

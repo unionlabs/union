@@ -8,8 +8,8 @@ use macros::model;
 use serde::{Deserialize, Serialize};
 use ssz::Ssz;
 
-#[derive(Ssz, Default, Copy)]
-#[model(proto(raw(protos::ibc::core::client::v1::Height), into, from))]
+#[derive(Ssz, Default, Copy, Ord, Eq)]
+#[model(borsh, proto(raw(protos::ibc::core::client::v1::Height), into, from))]
 #[debug("Height({self})")]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub struct Height {

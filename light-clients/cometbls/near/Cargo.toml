@@ -1,0 +1,21 @@
+[package]
+name = "cometbls-near"
+version = "0.1.0"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[dependencies]
+near-sdk                = { workspace = true, features = ["wee_alloc"] }
+near-sdk-contract-tools = { workspace = true }
+ibc-vm-rs               = { workspace = true }
+unionlabs               = { workspace = true }
+near-contract-standards = { workspace = true }
+near-primitives-core    = { version = "0.21" }
+borsh = { workspace = true, features = [ "derive"] }
+thiserror = { workspace = true }
+ics23              = { workspace = true }
+cometbls-groth16-verifier = { workspace = true }
+
+[lints]
+workspace = true
