@@ -12,10 +12,9 @@
   $: console.log($transferCountData)
 </script>
 
-<div class="bg-muted border-b flex divide-x">
+<div class="bg-muted border-b flex">
   <StatsBarStat label={"Total Messages"} value={155_300_677}/>
   <StatsBarStat label="Total Packets" value={123_325_332} />
-
   <StatsBarStat label="Metrics" value={$userTime}>
     {#if $transfersPerDayData.data}
       <div class="ml-5 flex items-end">
