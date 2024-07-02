@@ -12,8 +12,23 @@ jobs:
       access-tokens: github.com=${{ secrets.GH_NIX_TOKEN }}
       org_token: ${{ secrets.GH_NIX_TOKEN }}
     with:
-      filter_builds: '(.top_attr == "packages") and (.system == "x86_64-linux" or .system == "aarch64-linux") and (.attr == "uniond-release" or .attr == "galoisd" or .attr == "uniond-release-image" or .attr == "galoisd-image" or .attr == "bundle-testnet-8-image")' # ensure to append this list if you want to release more artifacts
-
+      # ensure to append this list if you want to release more artifacts
+      filter_builds: |
+        (.top_attr == "packages")
+        and (
+          .system == "x86_64-linux"
+          or .system == "aarch64-linux"
+        ) and (
+          .attr == "uniond-release"
+          or .attr == "galoisd"
+          or .attr == "uniond-release-image"
+          or .attr == "galoisd-image"
+          or .attr == "bundle-testnet-8-image"
+          or .attr == "bundle-testnet-8"
+          or .attr == "ucs01-relay"
+          or .attr == "cometbls-light-client"
+          or .attr == "voyager"
+        )
   dl-images:
     runs-on: ubuntu-latest
     needs: [build]
@@ -45,7 +60,7 @@ jobs:
     strategy:
       matrix:
         system: [aarch64-linux, x86_64-linux]
-        package: [uniond-release, galoisd]
+        package: [uniond-release, galoisd, ucs01-relay, bundle-testnet-8, cometbls-light-client, voyager]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -59,29 +74,68 @@ jobs:
           echo "Getting OUTPUT and NARINFO_NAME"
           OUTPUT=`cat result.json | jq -r '.packages."${{ matrix.system }}"."${{ matrix.package }}".outputs.out'`
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
-
           echo "Copying artifacts from nixbuild.net"
           nix copy --to file://`pwd`/${{ matrix.system }} --from ssh-ng://eu.nixbuild.net $OUTPUT --extra-experimental-features nix-command
-
           echo "Get the NAR_URL"
           nar_url_line=$(cat ./${{ matrix.system }}/${NARINFO_NAME}.narinfo | grep "URL:")
           NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
-
           echo "Restore the package from the NAR_URL archive"
           cat ${{ matrix.system }}/${NAR_URL} | xz -dc | nix-store --restore ${{ matrix.system }}.${{ matrix.package }}
-
           if [[ ${{ matrix.package }} =~ uniond-release ]]
           then
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/uniond ${{ matrix.package }}-${{ matrix.system }}
+          elif [[ ${{ matrix.package}} =~ bundle-testnet-8 || ${{ matrix.package }} =~ cometbls-light-client || ${{ matrix.package }} =~ ucs01-relay ]]
+          then
+            ls -la
+            tar -zcf ${{ matrix.package }}-${{ matrix.system }} ${{ matrix.system }}.${{ matrix.package }}
           else
             mv ${{ matrix.system }}.${{ matrix.package }}/bin/${{ matrix.package }} ${{ matrix.package }}-${{ matrix.system }}
           fi
-
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}-${{ matrix.system }}
           path: ${{ matrix.package }}-${{ matrix.system }}
 
+  public-release:
+    needs: [dl-bins]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+      - run: |
+          echo "# sha256 Checksums" >> release.md
+          for artifact in \
+            bundle-testnet-8-aarch64-linux \
+            bundle-testnet-8-x86_64-linux \
+            cometbls-light-client-x86_64-linux \
+            ucs01-relay-x86_64-linux
+          do
+            echo "- $(cd $artifact && mv $artifact $artifact.tar.gz && sha256sum $artifact.tar.gz)" >> release.md
+          done
+          for artifact in \
+            uniond-release-aarch64-linux \
+            uniond-release-x86_64-linux \
+            voyager-aarch64-linux \
+            voyager-x86_64-linux
+          do
+            echo "- $(cd $artifact && sha256sum $artifact)" >> release.md
+          done
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release.md
+          prerelease: false
+          repository: unionlabs/union-releases
+          token: ${{ secrets.UNION_RELEASES_PAT }}
+          tag_name: ${{github.ref_name}}
+          fail_on_unmatched_files: true
+          files: |
+            **/bundle-testnet-8-aarch64-linux.tar.gz
+            **/bundle-testnet-8-x86_64-linux.tar.gz
+            **/cometbls-light-client-x86_64-linux.tar.gz
+            **/ucs01-relay-x86_64-linux.tar.gz
+            **/uniond-release-aarch64-linux
+            **/uniond-release-x86_64-linux
+            **/voyager-aarch64-linux
+            **/voyager-x86_64-linux
   docker-manifest:
     runs-on: ubuntu-latest
     needs: [dl-images]
@@ -119,22 +173,15 @@ jobs:
             echo "Tagging ${{matrix.package}} for $arch"
             dockerstring=$(docker load < $arch.${{ matrix.package }}-image)
             dockerstring=$(echo ${dockerstring##*':'})
-
             echo "Getting image ID for $dockerstring"
             imageid=$(docker images --format "{{.ID}}:{{.Tag}}" | grep $dockerstring)
             imageid=$(echo ${imageid%%':'*})
-
             echo "Tagging image"
             docker tag $imageid localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}-$arch
-
-
             echo "${{ matrix.package }} for $arch is tagged"
-
             docker push localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}-$arch
-
             echo "localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}-$arch is pushed"
           done
-
       - name: Create Manifest
         run: |
           docker pull localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}-aarch64-linux
@@ -153,12 +200,9 @@ jobs:
         run: |
           curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 >regctl
           chmod 755 regctl && sudo cp ./regctl /usr/bin
-
           echo "downloaded & installed regctl"
-
           regctl registry set --tls disabled localhost:5000
           regctl image mod localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }} --to-oci --create ${{ github.ref_name }} --annotation org.opencontainers.image.description="$(cat $GITHUB_WORKSPACE/.github/container-descriptions/${{ matrix.package }}.txt)"
-
       - uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -169,9 +213,7 @@ jobs:
         run: |
           wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
           chmod +x ./skopeo && sudo cp ./skopeo /usr/bin
-
           echo "Downloaded & installed skopeo"
-
           skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}" "docker://ghcr.io/unionlabs/${{ matrix.package }}:${{ github.ref_name }}"
 
           echo "Copied ${{ matrix.package }}:${{ github.ref_name }} multi-arch to GHCR"
@@ -191,8 +233,6 @@ jobs:
           if [[ "uniond-release" == ${{ matrix.package }} ]]; then
             skopeo copy --multi-arch=all --insecure-policy --src-tls-verify=false "docker://localhost:5000/unionlabs/${{ matrix.package }}:${{ github.ref_name }}" "docker://europe-docker.pkg.dev/model-envelope-401614/union-testnet/${{ matrix.package }}:${{ github.ref_name }}"
           fi
-
-
   release:
     runs-on: ubuntu-latest
     needs: [docker-manifest, dl-bins]
@@ -204,19 +244,14 @@ jobs:
           fetch-depth: 0
       - run: |
           semantic_version_tags=$(git tag --sort v:refname | grep -E 'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$')
-
           current_semantic_version="${{github.ref_name}}"
-
           # Sort the list of tags in ascending order
           sorted_tags=($(printf "%s\n" "${semantic_version_tags[@]}" | sort -V))
-
           previous_semantic_version="${sorted_tags[-2]}"
-
           # Download & Install clog-tool/clog-cli
           wget https://github.com/clog-tool/clog-cli/releases/download/v0.9.3/clog-v0.9.3-x86_64-unknown-linux-gnu.tar.gz
           tar -xzf clog-v0.9.3-x86_64-unknown-linux-gnu.tar.gz
           chmod +x clog && sudo cp ./clog /usr/bin
-
           clog -s ${{github.ref_name}} --from $previous_semantic_version --to ${{github.ref_name}} > ${{github.ref_name}}-CHANGELOG.md
       - uses: actions/download-artifact@v4
       # NOTE: please ensure that the following two steps remain in sync, other than the
