@@ -1,8 +1,9 @@
 use backon::Retryable;
 use color_eyre::eyre::{bail, eyre, Report};
 use futures::{stream, stream::TryStreamExt, TryFutureExt};
+use itertools::Itertools;
 use sqlx::{Acquire, Postgres};
-use tendermint::block::Height;
+use tendermint::block::{Header, Height};
 use tendermint_rpc::{
     endpoint::block_results::Response as BlockResponse,
     error::ErrorDetail,
@@ -11,7 +12,7 @@ use tendermint_rpc::{
     Client, Error, HttpClient, Order,
 };
 use time::OffsetDateTime;
-use tokio::time::{sleep, Duration};
+use tokio::{task::JoinSet, time::{sleep, Duration}};
 use tracing::{debug, info, info_span, warn, Instrument};
 use url::Url;
 
@@ -20,7 +21,7 @@ use crate::postgres::{self, ChainId};
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub label: String,
-    pub url: Url,
+    pub urls: Vec<Url>,
     /// The GRPC endpoint of this chain. required for `--fetch-client-chain-ids`.
     pub grpc_url: Option<String>,
 
@@ -58,8 +59,11 @@ impl Config {
         for<'a> &'a DB:
             sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
     {
-        let client = HttpClient::new(self.url.as_str()).unwrap();
+        let clients = self.clients();
+
         let mode = self.mode;
+        let client_pool = clients.unwrap();
+        let client = client_pool[0].clone();
         let (chain_id, height) = if self.harden {
             (|| fetch_meta(&client, &pool).inspect_err(|e| debug!(?e, "error fetching meta")))
                 .retry(&crate::expo_backoff())
@@ -93,7 +97,7 @@ impl Config {
                         "fast syncing for batch: {}..{}", height, batch_end
                     );
                     let mut tx = pool.begin().await?;
-                    let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height, mode).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
+                    let next_height = fetch_and_insert_blocks(client_pool.clone(), &mut tx, chain_id, Self::BATCH_SIZE, height, mode).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
                     tx.commit().await?;
                     info!(
                         "indexed blocks {}..{}",
@@ -111,7 +115,7 @@ impl Config {
                 // Regular sync protocol. This fetches blocks one-by-one.
                 retry_count += 1;
                 let mut tx = pool.begin().await?;
-                match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height, mode).await? {
+                match fetch_and_insert_blocks(client_pool.clone(), &mut tx, chain_id, 1, height, mode).await? {
                     Some(h) => {
                         info!("indexed block {}", &height);
                         height = h;
@@ -132,6 +136,35 @@ impl Config {
                 }
             }
         }.instrument(indexing_span).await
+    }
+
+    pub fn clients(&self) -> Result<Vec<HttpClient>, Report> {
+        let client_results: Vec<Result<HttpClient, Error>> = self
+            .urls
+            .clone()
+            .into_iter()
+            .map(|url| HttpClient::new(url.as_str()))
+            .collect_vec();
+        let (oks, errs): (Vec<_>, Vec<_>) = client_results.into_iter().partition(Result::is_ok);
+
+        if !errs.is_empty() {
+            // Combine all error messages into one
+            let combined_error = errs
+                .into_iter()
+                .map(Result::unwrap_err)
+                .map(|e| e.to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            warn!("some clients could not be created: {combined_error}");
+        }
+        if oks.is_empty() {
+            bail!("none of the configured clients could be created");
+            // todo: crash here?
+        }
+        let clients = oks.into_iter().map(Result::unwrap).collect_vec();
+
+        Ok(clients)
     }
 }
 
@@ -220,7 +253,7 @@ async fn should_fast_sync_up_to(
 ///
 /// Will return None if the node had no new blocks and no inserts were made, otherwise it will returns the last height inserted.
 async fn fetch_and_insert_blocks(
-    client: &HttpClient,
+    client_pool: Vec<HttpClient>,
     tx: &mut sqlx::Transaction<'_, Postgres>,
     chain_id: ChainId,
     batch_size: u32,
@@ -229,6 +262,7 @@ async fn fetch_and_insert_blocks(
 ) -> Result<Option<Height>, Report> {
     use itertools::Either;
 
+    let first_client = client_pool[0].clone();
     let min = from.value() as u32;
     let max = min + batch_size - 1_u32;
     debug!("fetching batch of headers from {} to {}", min, max);
@@ -236,7 +270,7 @@ async fn fetch_and_insert_blocks(
     let headers = if batch_size > 1 {
         Either::Left(
             (|| {
-                client
+                first_client
                     .blockchain(min, max)
                     .inspect_err(|e| debug!(?e, min, max, "error fetching blocks"))
             })
@@ -244,22 +278,18 @@ async fn fetch_and_insert_blocks(
             .await?
             .block_metas
             .into_iter()
-            .map(|meta| meta.header),
+            .map(|meta| (first_client.clone(), meta.header)),
         )
     } else {
         // We do need this arm, because client.blockchain will error if max > latest block (instead of just returning min..latest).
-        match client.commit(min).await {
+        match get_header_at_height(client_pool, min).await {
             Err(err) => {
-                debug!("encountered height-exceeded error");
-                if is_height_exceeded_error(&err) {
-                    return Ok(None);
-                } else {
-                    return Err(err.into());
-                }
+                return Err(err);
             }
-            Ok(val) if val.canonical => Either::Right(std::iter::once(val.signed_header.header)),
-            _ => {
-                debug!("encountered non-canonical header");
+            Ok(Some((client, header))) => {
+                Either::Right(std::iter::once((client, header)))
+            }
+            Ok(None) => {
                 return Ok(None);
             }
         }
@@ -267,7 +297,7 @@ async fn fetch_and_insert_blocks(
 
     let submit_blocks = postgres::insert_batch_blocks(
         tx,
-        headers.clone().into_iter().map(|header| PgBlock {
+        headers.clone().into_iter().map(|(_, header)| PgBlock {
             chain_id,
             hash: header.hash().to_string(),
             height: header.height.value() as i32,
@@ -280,7 +310,7 @@ async fn fetch_and_insert_blocks(
     );
 
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
-        .and_then(|header| async {
+        .and_then(|(client, header)| async move {
             debug!("fetching block results for height {}", header.height);
             let block = (|| {
                 client
@@ -294,7 +324,7 @@ async fn fetch_and_insert_blocks(
                     "retrying fetching transactions for block for height {}",
                     header.height
                 );
-                fetch_transactions_for_block(client, header.height, None).inspect_err(
+                fetch_transactions_for_block(&client, header.height, None).inspect_err(
                     |e| debug!(?e, ?client, ?header.height, "error fetching transactions for block"),
                 )
             })
@@ -367,6 +397,60 @@ async fn fetch_and_insert_blocks(
     postgres::insert_batch_transactions(tx, transactions, mode).await?;
     postgres::insert_batch_events(tx, events, mode).await?;
     Ok(Some((from.value() as u32 + headers.len() as u32).into()))
+}
+
+async fn get_header_at_height(client_pool: Vec<HttpClient>, height: u32) -> Result<Option<(HttpClient, Header)>, Report> {
+    let mut set = JoinSet::new();
+    let client_count = client_pool.len();
+
+    client_pool.into_iter().for_each(|client| {
+        set.spawn(async move {
+            match client.commit(height).await {
+                Err(err) => {
+                    debug!("encountered height-exceeded error");
+                    if is_height_exceeded_error(&err) {
+                        Ok(None)
+                    } else {
+                        Err(err)
+                    }
+                }
+                Ok(val) if val.canonical => Ok(Some((client.clone(), val.signed_header.header))),
+                _ => {
+                    debug!("encountered non-canonical header");
+                    Ok(None)
+                }
+            }
+        });
+    });
+
+    let mut errs = vec![];
+
+    while let Some(Ok(result)) = set.join_next().await {
+        match result {
+            Ok(Some((client, header))) => {
+                // found a header => return it
+                return Ok(Some((client, header)))
+            }
+            Err(err) => {
+                // save all errors, so we're able to report if all clients fail
+                errs.push(err)
+            }
+            _ => {}
+        };
+    }
+
+    if errs.len() == client_count {
+        // all clients returned an error => report error
+        let mut combined_message = String::from("None of the configured clients returned a valid result: ");
+        for (i, err) in errs.iter().enumerate() {
+            combined_message.push_str(&format!("Error {}: {}\n", i + 1, err));
+        }
+
+        Err(eyre!(combined_message))
+    } else {
+        // all clients returned no header => return no header
+        Ok(None)
+    }
 }
 
 async fn fetch_transactions_for_block(

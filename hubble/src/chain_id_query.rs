@@ -32,7 +32,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
             IndexerConfig::Beacon(_) => {}
             IndexerConfig::Bera(_) => {}
             IndexerConfig::Tm(tm_config) => {
-                let client = HttpClient::new(tm_config.url.as_str()).unwrap();
+                let client = HttpClient::new(tm_config.urls[0].as_str()).unwrap();
 
                 let grpc_url = tm_config.grpc_url.clone().unwrap();
 
