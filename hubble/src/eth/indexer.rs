@@ -25,7 +25,7 @@ use crate::{
 pub struct Config {
     pub label: String,
 
-    pub url: Url,
+    pub urls: Vec<Url>,
 
     /// The height from which we start indexing
     pub start_height: Option<i32>,
@@ -66,7 +66,7 @@ pub struct Indexer {
 
 impl Config {
     pub async fn indexer(self, pool: PgPool) -> Result<Indexer, Report> {
-        let provider = Provider::<Http>::try_from(self.url.clone().as_str()).unwrap();
+        let provider = Provider::<Http>::try_from(self.urls[0].clone().as_str()).unwrap();
 
         info!("fetching chain-id from node");
         let chain_id = (|| {

@@ -33,7 +33,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
             IndexerConfig::Bera(_) => {}
             IndexerConfig::EthFork(_) => {}
             IndexerConfig::Tm(tm_config) => {
-                let client = HttpClient::new(tm_config.url.as_str()).unwrap();
+                let client = HttpClient::new(tm_config.urls[0].as_str()).unwrap();
 
                 let grpc_url = tm_config.grpc_url.clone().unwrap();
 
@@ -178,7 +178,8 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                 }
             }
             IndexerConfig::Eth(eth_config) => {
-                let provider = Provider::<Http>::try_from(eth_config.url.clone().as_str()).unwrap();
+                let provider =
+                    Provider::<Http>::try_from(eth_config.urls[0].clone().as_str()).unwrap();
 
                 let chain_id = provider.get_chainid().await.unwrap().as_u64().to_string();
                 dbg!("hi");

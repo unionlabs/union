@@ -40,33 +40,23 @@
           type = types.package;
           default = self.packages.${pkgs.system}.hubble;
         };
-        url = mkOption {
-          type = types.str;
-          default = "https://graphql.union.build";
-        };
         metrics-addr = mkOption {
           type = types.str;
           default = "0.0.0.0:9090";
         };
         api-key-file = mkOption {
           description = lib.mdDoc ''
-            Path to a file containing the datastore secret to allow for inserts.
+            Path to a file containing the database secret to allow for inserts.
           '';
           example = "/run/keys/hubble.key";
           type = types.path;
           default = "";
         };
-        datastore-method = mkOption {
-          description = lib.mdDoc ''
-            The method for connecting to the datastore. Must match the format in api-key-file.
-          '';
-          type = types.enum [ "hasura" "timescale" ];
-        };
         indexers = mkOption {
           type = types.listOf (
             types.submodule {
               options.label = mkOption { type = types.str; example = "something-custom"; };
-              options.url = mkOption { type = types.str; example = "https://rpc.example.com"; };
+              options.urls = mkOption { type = types.listOf types.str; example = [ "https://rpc.example.com" ]; };
               options.chain_id = mkOption { type = types.nullOr types.str; example = "union-testnet-8"; default = null; };
               options.grpc_url = mkOption { type = types.nullOr types.str; example = "https://grpc.example.com"; default = null; };
               options.type = mkOption { type = types.enum [ "tendermint" "ethereum" "beacon" "bera" "ethereum-fork" ]; };
