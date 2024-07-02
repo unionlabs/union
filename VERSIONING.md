@@ -26,20 +26,20 @@ If a version update is `required`, validators who fail to update will face slash
 
 The Union testnet will track the most recent release candidate. Release candidates will be marked by post-fixed version information in the form of `-rc{A}` where `{A}` is the incremented release candidate version, starting at `1`. The full release candidate version will be in the form of `v{X}.{Y}.{Z}-rc{A}`.
 
-## Release Branch Hygiene (deprecated)
+## Release Hygiene
 
-When the time comes for a new major/minor release version, a new branch of the form `release-v{X}.{Y}.{Z}` will be created. Then the first release candidate tag will be pushed: `v{X}.{Y}.{Z}-rc1`. The release candidate tag will trigger a new pre-release workflow which will bundle the release.
+The Union mono-repo is made up of many different components that are maintained and updated at different rates. We've opted to release components individually rather than in all encompassing versions. To do this, version tags are to now be made in the form of `<component>/v{X}.{Y}.{Z}` (`voyager-v0.2.1`). This will enable us to quickly update and distribute various components without creating monolithic releases.
 
-In case of regressions in testnet, bug fixes are cherry-picked from main to the candidate, and a new candidate is tagged. Once a release candidate passes testnet, a release tag is pushed in the form `v{X}.{Y}.{Z}`. This release tag will trigger the release workflow which will bundle a full release.
-
-Once a release tag has been pushed, the current `release-v{X}.{Y}.{Z}` branch is frozen. Future work should then be assembled in a new release branch.
+To create a release:
+- Checkout a new branch from main (or desired commit) with a name in the form of `release/<component>/v{X}.{Y}.{Z}`.
+- On this branch, create the first release candidate tag in the form `<component>/v{X}.{Y}.{Z}-rc1`.
+- Continue iterating release candidate tags until a viable release is generated
+- Once a viable release candidate is generated, push a tag in the form `<component>/v{X}.{Y}.{Z}`
 
 Commits should always flow from `dev-branch`→`main`→`release-v{X}.{Y}.{Z}`. In other words, commits should never be made directly to `main` or release branches.
 
-## Release Hygiene
+Once a release tag has been pushed, the current `release-v{X}.{Y}.{Z}` branch is frozen. Future work should then be on a new release branch.
 
-The Union mono-repo is made up of many different components that are maintained and updated at different rates. We've opted to release components individually rather than in all encompassing versions. To do this, version tags are to now be made in the form of `<component>-<semantic_version>` (`voyager-v0.2.1`). This will enable us to quickly update and distribute various components without creating monolithic releases.
-
-Once a tag in the form of `<component>-<semantic_version>` is pushed to the repo, the component in question will have a release triggered for it from the "Release Component" workflow.
+Once a tag in the form of `<component>/v{X}.{Y}.{Z}` is pushed to the repo, the component in question will have a release triggered for it from the "Release Component" workflow.
 
 **NOTE**: The Release Component workflow needs to be updated to introduce new components. See the workflow file in `.github/workflows/release-component.yml` for more details.
