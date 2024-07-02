@@ -714,28 +714,6 @@ const resetInput = () => {
   userInput = false
   address = $recipient ?? ""
 }
-
-// onMount(() => {
-//   disableDivScroll()
-// })
-//
-// function disableDivScroll() {
-//   const element = document.getElementById("scene");
-//   const scrollTop = element.scrollTop;
-//   const scrollLeft = element.scrollLeft;
-//
-//   element.style.overflow = 'hidden';
-//
-//   element.dataset.scrollTop = scrollTop;
-//   element.dataset.scrollLeft = scrollLeft;
-// }
-//
-// function enableDivScroll(elementId) {
-//   const element = document.getElementById("scene");
-//   element.style.overflow = ''; // Restore scrolling
-//   element.scrollTop = element.dataset.scrollTop || 0;
-//   element.scrollLeft = element.dataset.scrollLeft || 0;
-// }
 </script>
 
 
@@ -746,6 +724,7 @@ const resetInput = () => {
 
   <div class={cn("cube ",
   $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "notransition")}>
+    <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
     <Card.Root class={cn($transferState.kind === "PRE_TRANSFER" ? "notransition" : "cube-front")}>
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
@@ -890,7 +869,7 @@ const resetInput = () => {
 
     {#if $transferState.kind !== "PRE_TRANSFER"}
       <Card.Root
-        class={cn("cube-back")}>
+        class={cn("cube-back p-6")}>
         {#if $fromChain}
           <Stepper steps={stepperSteps}
                    on:cancel={() => transferState.set({kind: "PRE_TRANSFER"})}
@@ -905,8 +884,8 @@ const resetInput = () => {
       }}/>
         {/if}
       </Card.Root>
+      <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
     {/if}
-    <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
   </div>
 </div>
 
@@ -988,6 +967,15 @@ const resetInput = () => {
         top: calc((var(--height) / 2) - (var(--depth) / 2));
         right: calc((var(--width) / 2) - (var(--height) / 2));
         transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
+    }
+
+    .cube-right {
+        @apply absolute bg-card border;
+        width: var(--height);
+        height: var(--depth);
+        top: calc((var(--height) / 2) - (var(--depth) / 2));
+        left: calc((var(--width) / 2) - (var(--height) / 2));
+        transform: rotateZ(-90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
     }
 
     .cube-front {
