@@ -8,6 +8,7 @@ import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/access/Ownable.sol";
 
 import "../contracts/Glue.sol";
+import "../contracts/Multicall.sol";
 import "../contracts/core/02-client/IBCClient.sol";
 import "../contracts/core/03-connection/IBCConnection.sol";
 import "../contracts/core/04-channel/IBCChannelHandshake.sol";
@@ -45,6 +46,10 @@ interface Deployer {
         bytes calldata creationCode,
         uint256 value
     ) external returns (address);
+}
+
+library LIB {
+    string constant MULTICALL = "multicall";
 }
 
 library IBC {
@@ -99,6 +104,14 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (address) {
         return getDeployer().deploy(
             salt, abi.encodePacked(type(ERC1967Proxy).creationCode, args), 0
+        );
+    }
+
+    function deployMulticall() internal returns (Multicall) {
+        return Multicall(
+            getDeployer().deploy(
+                LIB.MULTICALL, abi.encodePacked(type(Multicall).creationCode), 0
+            )
         );
     }
 
@@ -172,13 +185,14 @@ abstract contract UnionScript is UnionBase {
 
     function deployIBC(address owner)
         internal
-        returns (IBCHandler, CometblsClient, UCS01Relay, UCS02NFT)
+        returns (IBCHandler, CometblsClient, UCS01Relay, UCS02NFT, Multicall)
     {
         IBCHandler handler = deployIBCHandler(owner);
         CometblsClient client = deployCometbls(handler, owner);
         UCS01Relay relay = deployUCS01(handler, owner);
         UCS02NFT nft = deployUCS02(handler, owner);
-        return (handler, client, relay, nft);
+        Multicall multicall = deployMulticall();
+        return (handler, client, relay, nft, multicall);
     }
 }
 
@@ -211,7 +225,8 @@ contract DeployIBC is UnionScript {
             IBCHandler handler,
             CometblsClient client,
             UCS01Relay relay,
-            UCS02NFT nft
+            UCS02NFT nft,
+            Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, client);
 
@@ -237,7 +252,8 @@ contract DeployDeployerAndIBC is UnionScript {
             IBCHandler handler,
             CometblsClient client,
             UCS01Relay relay,
-            UCS02NFT nft
+            UCS02NFT nft,
+            Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, client);
 
