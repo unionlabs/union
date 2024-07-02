@@ -384,7 +384,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center">
+  <Card.Root class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4">
     <Card.Header class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center">
       TRANSFER <Truncate value={transfer.source_transaction_hash} type="hash"/>
     </Card.Header>
