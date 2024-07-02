@@ -55,7 +55,7 @@ members = [
 
   "light-clients/arbitrum-light-client",
   "light-clients/berachain-light-client",
-  "light-clients/cometbls-light-client",
+  "light-clients/cometbls/ics08",
   "light-clients/ethereum-light-client",
   "light-clients/scroll-light-client",
   "light-clients/tendermint-light-client",

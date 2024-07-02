@@ -2,7 +2,7 @@
 authors = ["Union Labs"]
 edition = "2021"
 license = "BSL-1.1"
-name    = "cometbls-light-client"
+name    = "cometbls-ics08"
 publish = false
 version = "0.1.0"
 
@@ -10,7 +10,7 @@ version = "0.1.0"
 workspace = true
 
 [package.metadata.crane]
-test-include = ["light-clients/cometbls-light-client/src/test"]
+test-include = ["light-clients/cometbls/ics08/src/test"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
