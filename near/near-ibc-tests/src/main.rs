@@ -19,7 +19,9 @@ use unionlabs::{
             client::height::Height,
             commitment::merkle_prefix::MerklePrefix,
         },
-        lightclients::near::header::Header,
+        lightclients::near::{
+            client_state::ClientState, consensus_state::ConsensusState, header::Header,
+        },
     },
     validated::ValidateT,
 };
@@ -27,9 +29,9 @@ use utils::convert_block_producers;
 
 use crate::{
     msgs::{
-        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ClientState,
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        ConsensusState, CreateClient, RegisterClient, UpdateClient,
+        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ConnectionOpenAck,
+        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, RegisterClient,
+        UpdateClient,
     },
     utils::{
         chunk_proof, convert_block_header_inner, convert_light_client_block_view, state_proof,
@@ -660,10 +662,11 @@ async fn create_client(
             // TODO(aeryz): this is only valid in this sandboxed environment where the validator set is not changing. For a real environment,
             // the relayer must read the block producers using another endpoint.
             initial_block_producers: lc_block.next_bps.map(convert_block_producers),
+            frozen_height: 0,
         })
         .unwrap(),
         consensus_state: borsh::to_vec(&ConsensusState {
-            state: convert_block_header_inner(lc_block.inner_lite),
+            state: convert_block_header_inner(lc_block.inner_lite.clone()),
             chunk_prev_state_root: CryptoHash(
                 sandbox
                     .view_block()
@@ -674,6 +677,7 @@ async fn create_client(
                     .prev_state_root
                     .0,
             ),
+            timestamp: lc_block.inner_lite.timestamp_nanosec,
         })
         .unwrap(),
     };

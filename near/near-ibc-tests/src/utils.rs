@@ -8,7 +8,10 @@ use near_primitives::{
 use near_primitives_core::hash::CryptoHash;
 use near_sdk::AccountId;
 use near_workspaces::{network::Sandbox, Worker};
-use unionlabs::near::types::{self, MerklePathItem};
+use unionlabs::{
+    ibc::lightclients::near,
+    near::types::{self, MerklePathItem},
+};
 
 pub async fn state_proof(
     sandbox: &Worker<Sandbox>,
@@ -76,17 +79,21 @@ pub async fn chunk_proof(
     (prev_state_root, prev_state_root_proof)
 }
 
-pub fn convert_block_producers(bps: Vec<ValidatorStakeView>) -> Vec<types::ValidatorStakeView> {
+pub fn convert_block_producers(
+    bps: Vec<ValidatorStakeView>,
+) -> Vec<near::validator_stake::ValidatorStakeView> {
     bps.into_iter()
         .map(|stake| {
             let ValidatorStakeView::V1(stake) = stake;
-            let stake = types::ValidatorStakeView::V1(types::ValidatorStakeViewV1 {
-                account_id: stake.account_id,
-                public_key: types::PublicKey::Ed25519(
-                    stake.public_key.key_data().try_into().unwrap(),
-                ),
-                stake: stake.stake,
-            });
+            let stake = near::validator_stake::ValidatorStakeView::V1(
+                near::validator_stake::ValidatorStakeViewV1 {
+                    account_id: stake.account_id,
+                    public_key: types::PublicKey::Ed25519(
+                        stake.public_key.key_data().try_into().unwrap(),
+                    ),
+                    stake: stake.stake,
+                },
+            );
             stake
         })
         .collect()
@@ -94,8 +101,8 @@ pub fn convert_block_producers(bps: Vec<ValidatorStakeView>) -> Vec<types::Valid
 
 pub fn convert_block_header_inner(
     block_view: BlockHeaderInnerLiteView,
-) -> types::BlockHeaderInnerLiteView {
-    types::BlockHeaderInnerLiteView {
+) -> near::block_header_inner::BlockHeaderInnerLiteView {
+    near::block_header_inner::BlockHeaderInnerLiteView {
         height: block_view.height,
         epoch_id: CryptoHash(block_view.epoch_id.0),
         next_epoch_id: CryptoHash(block_view.next_epoch_id.0),
@@ -110,8 +117,8 @@ pub fn convert_block_header_inner(
 
 pub fn convert_light_client_block_view(
     light_client_block: LightClientBlockView,
-) -> types::LightClientBlockView {
-    types::LightClientBlockView {
+) -> near::light_client_block::LightClientBlockView {
+    near::light_client_block::LightClientBlockView {
         inner_lite: convert_block_header_inner(light_client_block.inner_lite),
         prev_block_hash: near_primitives_core::hash::CryptoHash(
             light_client_block.prev_block_hash.0,
@@ -126,13 +133,15 @@ pub fn convert_light_client_block_view(
             bps.into_iter()
                 .map(|stake| {
                     let ValidatorStakeView::V1(stake) = stake;
-                    types::ValidatorStakeView::V1(types::ValidatorStakeViewV1 {
-                        account_id: stake.account_id,
-                        public_key: types::PublicKey::Ed25519(
-                            stake.public_key.key_data().try_into().unwrap(),
-                        ),
-                        stake: stake.stake,
-                    })
+                    near::validator_stake::ValidatorStakeView::V1(
+                        near::validator_stake::ValidatorStakeViewV1 {
+                            account_id: stake.account_id,
+                            public_key: types::PublicKey::Ed25519(
+                                stake.public_key.key_data().try_into().unwrap(),
+                            ),
+                            stake: stake.stake,
+                        },
+                    )
                 })
                 .collect()
         }),
