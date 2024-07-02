@@ -48,3 +48,11 @@ html[data-theme='light'], body[data-theme='light'] {
   color: #0d0d0d;
   background-color: #a0ecfd;
 }
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0; 
+}

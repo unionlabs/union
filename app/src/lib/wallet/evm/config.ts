@@ -128,10 +128,12 @@ export function createSepoliaStore(
     },
     disconnect: async () => {
       console.log("[evm] disconnect")
-      await Promise.all([
-        await evmDisconnect(),
-        ...config.connectors.map(connector => connector.disconnect())
-      ])
+      await noThrow(
+        Promise.all([
+          await evmDisconnect(),
+          ...config.connectors.map(connector => connector.disconnect())
+        ])
+      )
       await sleep(1_000)
     }
   }
@@ -171,7 +173,7 @@ watchAccount(config, {
       connectedWallet: account.connector?.id
     })
 })
-reconnect(config)
+noThrow(reconnect(config))
 
 export async function evmConnect(
   evmWalletId: EvmWalletId,
