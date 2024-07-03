@@ -33,6 +33,7 @@ The following table maps salt to contracts:
 | "lightclients/cometbls" | CometblsClient |
 | "protocols/ucs01"       | UCS01          |
 | "protocols/ucs02"       | UCS02          |
+| "multicall"             | Multicall      |
 
 The combination `(deployer_source, deployer_source_nonce, deployer, sender, salt)` fully determines the final addresses (no bytecode hash of any of the above contract involved).
 
@@ -44,6 +45,7 @@ This links are working if you run a local devnet on a x86 machine only (Blocksco
 - CometblsClient: [0xc4f27a952faba4174ce0ee6d9d0c6f4c41524d49](http://localhost/address/0xc4f27a952faba4174ce0ee6d9d0c6f4c41524d49)
 - UCS01: [0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46](http://localhost/address/0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46)
 - UCS02: [0x524d4d28fc90dc5a257162abe37081f52681c7d6](http://localhost/address/0x524d4d28fc90dc5a257162abe37081f52681c7d6)
+- Multicall: [0x72459D25D5e30ec16b9Ac91cfB7e5a7969347E58](http://localhost/address/0x72459D25D5e30ec16b9Ac91cfB7e5a7969347E58?tab=contract)
 
 ## Testnet 8
 
@@ -51,16 +53,22 @@ Note that the addresses are different because we often redeploy without upgradin
 Production contracts will get solely upgraded through the proxy.
 
 ### Sepolia
+- Deployer: [0x12cffF5aAd6Fc340BBE6F1fe674C5Aa78f0d1E0F](https://sepolia.etherscan.io/address/0x12cffF5aAd6Fc340BBE6F1fe674C5Aa78f0d1E0F)
+- Sender: [0x2c077908e1173ff1a6097ca9e2af547c1e5130c4](https://sepolia.etherscan.io/address/0x2c077908e1173ff1a6097ca9e2af547c1e5130c4)
 - IBCHandler: [0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb](https://sepolia.etherscan.io/address/0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb)
 - CometblsClient: [0x96979ed96ae00d724109b5ad859568e1239c0837](https://sepolia.etherscan.io/address/0x96979ed96ae00d724109b5ad859568e1239c0837)
 - UCS01: [0xd0081080ae8493cf7340458eaf4412030df5feeb](https://sepolia.etherscan.io/address/0xd0081080ae8493cf7340458eaf4412030df5feeb)
 - UCS02: [0x9153952f174a1bcd7a9b3818ff21ecf918d4dca9](https://sepolia.etherscan.io/address/0x9153952f174a1bcd7a9b3818ff21ecf918d4dca9)
+- Multicall: [0x70BEDecc56C7104e410c1e4c25FcA0bcd29A0bA9](https://sepolia.etherscan.io/address/0x70bedecc56c7104e410c1e4c25fca0bcd29a0ba9)
 
 ### Berachain
-- IBCHandler: [0x4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc](https://bartio.beratrail.io/address/0x4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc)
-- CometblsClient: [0x3b089e62ed1f9257f7c66e79dde1463f063d6a35](https://bartio.beratrail.io/address/0x3b089e62ed1f9257f7c66e79dde1463f063d6a35)
-- UCS01: [0x0e7aee8a4109b1c1916281d25f43b937f103a409](https://bartio.beratrail.io//address/0x0e7aee8a4109b1c1916281d25f43b937f103a409)
-- UCS02: [0x275ff682294a96b88de06d5ced0bfaf4724ff2d8](https://bartio.beratrail.io/address/0x275ff682294a96b88de06d5ced0bfaf4724ff2d8)
+- Deployer:  [0x1d95c54b436A73A43bC879E1C6A4b282fB88E784](https://bartio.beratrail.io/address/0x1d95c54b436A73A43bC879E1C6A4b282fB88E784)
+- Sender:  [0x2c077908e1173ff1A6097ca9E2aF547c1E5130C4](https://bartio.beratrail.io/address/0x2c077908e1173ff1A6097ca9E2aF547c1E5130C4)
+- IBCHandler:  [0x663955E2eebf9b398CD9D32cA72359fdA17F2482](https://bartio.beratrail.io/address/0x663955E2eebf9b398CD9D32cA72359fdA17F2482)
+- CometblsClient:  [0xf9C6120Ef88E27937304622ccfc8Dcdb92C88b56](https://bartio.beratrail.io/address/0xf9C6120Ef88E27937304622ccfc8Dcdb92C88b56)
+- UCS01:  [0x7f8e0965ffdAFa1c5621B14C51bDc631165fc788](https://bartio.beratrail.io/address/0x7f8e0965ffdAFa1c5621B14C51bDc631165fc788)
+- UCS02:  [0x749937900103DF548625C47D3de5d928b61b8409](https://bartio.beratrail.io/address/0x749937900103DF548625C47D3de5d928b61b8409)
+- Multicall:  [0x248717213d7f79Ac37Fb0C01bA4f370be5c2Ab18](https://bartio.beratrail.io/address/0x248717213d7f79Ac37Fb0C01bA4f370be5c2Ab18)
 
 ## Other networks
 

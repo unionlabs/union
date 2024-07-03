@@ -49,7 +49,12 @@ interface Deployer {
 }
 
 library LIB {
+    string constant NAMESPACE = "lib";
     string constant MULTICALL = "multicall";
+
+    function make(string memory lib) internal pure returns (string memory) {
+        return string(abi.encodePacked(NAMESPACE, "/", lib));
+    }
 }
 
 library IBC {
@@ -110,7 +115,9 @@ abstract contract UnionScript is UnionBase {
     function deployMulticall() internal returns (Multicall) {
         return Multicall(
             getDeployer().deploy(
-                LIB.MULTICALL, abi.encodePacked(type(Multicall).creationCode), 0
+                LIB.make(LIB.MULTICALL),
+                abi.encodePacked(type(Multicall).creationCode),
+                0
             )
         );
     }
@@ -200,7 +207,29 @@ contract DeployDeployer is UnionBase {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
+
         deployDeployer();
+
+        vm.stopBroadcast();
+    }
+}
+
+contract DeployMulticall is UnionScript {
+    Deployer immutable deployer;
+
+    constructor() {
+        deployer = Deployer(vm.envAddress("DEPLOYER"));
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return deployer;
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+
+        deployMulticall();
 
         vm.stopBroadcast();
     }
@@ -258,6 +287,14 @@ contract DeployDeployerAndIBC is UnionScript {
         handler.registerClient(LightClients.COMETBLS, client);
 
         vm.stopBroadcast();
+
+        console.log("Deployer: ", address(deployer));
+        console.log("Sender: ", vm.addr(privateKey));
+        console.log("IBCHandler: ", address(handler));
+        console.log("CometblsClient: ", address(client));
+        console.log("UCS01: ", address(relay));
+        console.log("UCS02: ", address(nft));
+        console.log("Multicall: ", address(multicall));
     }
 }
 
