@@ -30,6 +30,6 @@ $: console.log($transferCountData)
         {/if}
       </StatsBarStat>
       <Separator orientation="vertical"/>
-      <SpinningOutlineLogo/>
+      <!--<SpinningOutlineLogo/>!-->
     </div>
   </div>
