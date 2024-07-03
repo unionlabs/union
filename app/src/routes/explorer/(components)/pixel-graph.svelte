@@ -1,27 +1,25 @@
 <script lang="ts">
-  import * as Tooltip from "$lib/components/ui/tooltip"
+import * as Tooltip from "$lib/components/ui/tooltip"
 
-  export let data: Array<{ count: number; day: Date }>
+export let data: Array<{ count: number; day: Date }>
 
-  const minValue = Math.min(...data.map(d => d.count))
-  const maxValue = Math.max(...data.map(d => d.count))
+const minValue = Math.min(...data.map(d => d.count))
+const maxValue = Math.max(...data.map(d => d.count))
 
-  function normalize(
-    value: number,
-    min: number,
-    max: number,
-    newMin: number,
-    newMax: number
-  ): number {
-    return ((value - min) / (max - min)) * (newMax - newMin) + newMin
-  }
+function normalize(
+  value: number,
+  min: number,
+  max: number,
+  newMin: number,
+  newMax: number
+): number {
+  return ((value - min) / (max - min)) * (newMax - newMin) + newMin
+}
 
-  const normalizedData = data.map(d => ({
-    ...d,
-    normalizedValue: Math.floor(normalize(d.count, minValue, maxValue, 0, 9))
-  }))
-
-
+const normalizedData = data.map(d => ({
+  ...d,
+  normalizedValue: Math.floor(normalize(d.count, minValue, maxValue, 0, 9))
+}))
 </script>
 
 <div class="flex flex-row-reverse items-end gap-[2.5px]">

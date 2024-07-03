@@ -1,8 +1,8 @@
 <script lang="ts">
-  export let size: number;
-  export let x: number;
-  export let y: number;
-  export let strokeWidth: number;
+export let size: number
+export let x: number
+export let y: number
+export let strokeWidth: number
 </script>
 
 

@@ -1,25 +1,25 @@
 <script lang="ts">
-  import { page } from "$app/stores"
-  import { onNavigate } from "$app/navigation"
-  import { cn } from "$lib/utilities/shadcn.ts"
-  import type { LayoutData } from "./$types.ts"
-  import Menu from "./(components)/menu.svelte"
-  import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
-  import StatsBar from "./(components)/stats-bar.svelte";
-  import StatsBarMobile from "./(components)/stats-bar-mobile.svelte";
-  import { deviceWidth } from "$lib/utilities/device.ts";
+import { page } from "$app/stores"
+import { onNavigate } from "$app/navigation"
+import { cn } from "$lib/utilities/shadcn.ts"
+import type { LayoutData } from "./$types.ts"
+import Menu from "./(components)/menu.svelte"
+import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
+import StatsBar from "./(components)/stats-bar.svelte"
+import StatsBarMobile from "./(components)/stats-bar-mobile.svelte"
+import { deviceWidth } from "$lib/utilities/device.ts"
 
-  export let data: LayoutData
+export let data: LayoutData
 
-  let explorerRoute = $page.route.id?.split("/").at(2) ?? null
-  $: explorerPageDescription =
-    data.tables.filter(t => t.route === explorerRoute).at(0)?.description ?? null
+let explorerRoute = $page.route.id?.split("/").at(2) ?? null
+$: explorerPageDescription =
+  data.tables.filter(t => t.route === explorerRoute).at(0)?.description ?? null
 
-  onNavigate(navigation => {
-    if (navigation.to?.route.id?.split("/").at(1) === "explorer") {
-      explorerRoute = navigation.to?.route.id?.split("/").at(2) ?? null
-    }
-  })
+onNavigate(navigation => {
+  if (navigation.to?.route.id?.split("/").at(1) === "explorer") {
+    explorerRoute = navigation.to?.route.id?.split("/").at(2) ?? null
+  }
+})
 </script>
 
 <svelte:head>

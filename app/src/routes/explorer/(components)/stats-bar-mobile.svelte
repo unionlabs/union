@@ -1,31 +1,30 @@
 <script lang="ts">
-  import StatsBarStat from "$lib/components/stats-bar-stat.svelte";
-  import { packetCountQuery, transferCountQuery, transfersPerDayQuery } from "$lib/queries/stats.ts";
-  import PixelGraph from "../(components)/pixel-graph.svelte"
-  import { userTime } from "$lib/utilities/user-time.ts";
-  import SpinningOutlineLogo from '$lib/components/spinning-outline-logo.svelte';
-  import { onMount } from "svelte";
-  import { fade } from "svelte/transition";
-  import { Separator } from "$lib/components/ui/separator";
+import StatsBarStat from "$lib/components/stats-bar-stat.svelte"
+import { packetCountQuery, transferCountQuery, transfersPerDayQuery } from "$lib/queries/stats.ts"
+import PixelGraph from "../(components)/pixel-graph.svelte"
+import { userTime } from "$lib/utilities/user-time.ts"
+import SpinningOutlineLogo from "$lib/components/spinning-outline-logo.svelte"
+import { onMount } from "svelte"
+import { fade } from "svelte/transition"
+import { Separator } from "$lib/components/ui/separator"
 
-  // 30 days
-  $: transfersPerDayData = transfersPerDayQuery(30)
+// 30 days
+$: transfersPerDayData = transfersPerDayQuery(30)
 
-  $: packetCountData = packetCountQuery()
-  $: transferCountData = transferCountQuery()
+$: packetCountData = packetCountQuery()
+$: transferCountData = transferCountQuery()
 
-  let show: number = 1;
-  let interval: any;
+let show = 1
+let interval: any
 
-  onMount(() => {
-    interval = setInterval(() => {
-      show = show === 1 ? 2 : 1;
-    }, 5000);
-    return () => {
-      clearInterval(interval);
-    };
-  });
-
+onMount(() => {
+  interval = setInterval(() => {
+    show = show === 1 ? 2 : 1
+  }, 5000)
+  return () => {
+    clearInterval(interval)
+  }
+})
 </script>
 
 <div class="bg-muted border-b flex">
