@@ -109,13 +109,21 @@ where
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Self, Tr>)>,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<Op<RelayMessage>, Self::MsgError> {
-        do_msg(self.chain_id(), &self.keyring, msg, false).await
+        do_msg(
+            self.chain_id(),
+            self.multicall_address,
+            &self.keyring,
+            msg,
+            false,
+        )
+        .await
     }
 }
 
 // TODO: Refactor this to use `Hc: ChainKeyring`
 pub async fn do_msg<Hc, Tr>(
     chain_id: ChainIdOf<Hc>,
+    multicall_address: H160,
     ibc_handlers: &EthereumKeyring,
     msg: Effect<Hc, Tr>,
     legacy: bool,
@@ -140,7 +148,7 @@ where
             move |ibc_handler: &IBCHandler<_>| -> _ {
                 async move {
                     // TODO: thread multicall address here
-                    let multicall = Multicall::new(ethers::types::H160(hex::decode("72459D25D5e30ec16b9Ac91cfB7e5a7969347E58").unwrap().try_into().unwrap()), ibc_handler.client());
+                    let multicall = Multicall::new(multicall_address, ibc_handler.client());
 
                     let msgs = process_msgs(
                         msg,
@@ -203,7 +211,7 @@ where
                                                 tx_hash = %H256::from(tx_rcp.transaction_hash),
                                                 "evm message successful"
                                             );
-                                        } else if let Ok(known_revert) = IbcHandlerErrors::decode(result.return_data.clone()) {
+                                        } else if let Ok(known_revert) = IbcHandlerErrors::decode(&*result.return_data.clone()) {
                                             error!(
                                                 msg = msg_names[idx],
                                                 tx_hash = %H256::from(tx_rcp.transaction_hash),
