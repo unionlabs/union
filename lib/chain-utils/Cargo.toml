@@ -29,6 +29,7 @@ ics23                    = { workspace = true }
 num-rational             = "0.4.2"
 num_enum                 = "0.7.0"
 prost                    = { workspace = true }
+rand                     = "0.8.5"
 reqwest                  = { workspace = true }
 scroll-api               = { workspace = true }
 scroll-rpc               = { workspace = true }

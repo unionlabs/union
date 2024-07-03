@@ -1463,6 +1463,7 @@ dependencies = [
  "num_enum",
  "prost 0.12.6",
  "protos",
+ "rand 0.8.5",
  "reqwest 0.11.27",
  "scroll-api",
  "scroll-rpc",
