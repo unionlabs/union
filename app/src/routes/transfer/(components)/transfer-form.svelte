@@ -107,7 +107,7 @@ $: asset = derived(
     if (!balance) {
       return null
     }
-    if(prevAsset !== balance.address) amount = ''
+    if (prevAsset !== balance.address) amount = ""
     prevAsset = balance.address
     return balance
   }
