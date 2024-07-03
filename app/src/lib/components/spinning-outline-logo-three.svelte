@@ -38,7 +38,8 @@
 			return tube;
 		};
 
-		const edges = [];
+		const edgesGroup = new THREE.Group(); // Create a group to hold all edges
+
 		for (let i = 0; i < edgesGeometry.attributes.position.count; i += 2) {
 			const start = new THREE.Vector3(
 				edgesGeometry.attributes.position.getX(i),
@@ -50,10 +51,11 @@
 				edgesGeometry.attributes.position.getY(i + 1),
 				edgesGeometry.attributes.position.getZ(i + 1)
 			);
-			const line = createTubeLine([start, end], strokeWidth); // Adjust thickness to match desired size
-			edges.push(line);
-			scene.add(line);
+			const line = createTubeLine([start, end], strokeWidth);
+			edgesGroup.add(line); // Add each edge to the group
 		}
+
+		scene.add(edgesGroup); // Add the group to the scene
 
 		const light1 = new THREE.PointLight(0xff80C0, 2, 0);
 		light1.position.set(200, 100, 300);
@@ -76,10 +78,8 @@
 
 			resizeCanvasToDisplaySize();
 
-			edges.forEach((edge) => {
-				edge.rotation.x = time * 0.5;
-				edge.rotation.y = time * 1;
-			});
+			edgesGroup.rotation.x = time * 0.5;
+			edgesGroup.rotation.y = time * 1;
 
 			renderer.render(scene, camera);
 			requestAnimationFrame(animate);
