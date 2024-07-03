@@ -29,12 +29,14 @@
     const  camera = new THREE.PerspectiveCamera(70, 2, 1, 1000);
     camera.position.z = 400;
 
-    const geometry = new THREE.BoxGeometry(200, 200, 200);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x555555,
+    const boxGeometry = new THREE.BoxGeometry(200, 200, 200);
+    const edgesGemoetry = new THREE.EdgesGeometry(boxGeometry);
+    const material = new THREE.LineBasicMaterial({
+      color: 0x000000,
     });
+    const mesh = new THREE.LineSegments(edgesGemoetry, material);
 
-    const mesh = new THREE.Mesh(geometry, material);
+    // const mesh = new THREE.Mesh(edgesGemoetry, material);
     scene.add(mesh);
 
 
@@ -57,7 +59,7 @@
       }
     }
 
-    function animate(time) {
+    function animate(time: number) {
       time *= 0.001;  // seconds
 
       resizeCanvasToDisplaySize();
