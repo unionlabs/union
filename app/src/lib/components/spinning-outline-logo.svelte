@@ -22,9 +22,14 @@
 </div>
 
 <style lang="postcss">
+
 @keyframes spinning-logo {
-  from {transform: rotateY(0deg);}
-  to {transform: rotateY(360deg);}
+  0% {transform: rotateY(0deg) translateX(0);}
+  10% {transform: rotateY(90deg) translateX(0);}
+  20% {transform: rotateY(90deg) translateX(-1000px);}
+  30% {transform: rotateY(90deg) translateX(0);}
+  80% {transform: rotateY(360deg);}
+  100% {transform: rotateY(0deg);}
 }
 
 
