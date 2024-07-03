@@ -5,7 +5,7 @@
 	let logoWidth= cubeWidth * 4 + gap * 3;
 	let cubesY = cubeWidth * 2 + gap;
 	$: cubeDelta = (20 - cubeWidth) / 2;
-	let strokeWidth = 16;
+	let strokeWidth = 8;
 </script>
 
 
