@@ -11,7 +11,7 @@ use contracts::{
         ConnectionOpenInitCall, ConnectionOpenTryCall, CreateClientCall, IBCHandler,
         RecvPacketCall, TimeoutPacketCall, UpdateClientCall,
     },
-    multicall_3::{Call3, Call3Value, Multicall3},
+    multicall::{Call3, Multicall, MulticallResultFilter},
 };
 use ethereum_verifier::utils::validate_signature_supermajority;
 use ethers::{
@@ -139,17 +139,22 @@ where
 
             move |ibc_handler: &IBCHandler<_>| -> _ {
                 async move {
-                    // TODO: thread multicall3 address here
-                    let mc3 = Multicall3::new(H160::default(), ibc_handler.client());
+                    // TODO: thread multicall address here
+                    let multicall = Multicall::new(ethers::types::H160(hex::decode("72459D25D5e30ec16b9Ac91cfB7e5a7969347E58").unwrap().try_into().unwrap()), ibc_handler.client());
 
-                    let msgs = process_msgs(msg, ibc_handler, chain_id);
+                    let msgs = process_msgs(
+                        msg,
+                        ibc_handler,
+                        chain_id,
+                        ibc_handler.client().address().into(),
+                    );
 
                     let msg_names = msgs
                         .iter()
                         .map(|x| x.function.name.clone())
                         .collect::<Vec<_>>();
 
-                    let call = mc3.aggregate_3(
+                    let call = multicall.multicall(
                         msgs.into_iter()
                             .map(|x: FunctionCall<_, _, _>| Call3 {
                                 target: ibc_handler.address(),
@@ -173,12 +178,8 @@ where
                             );
 
                             // TODO: config
-                            let call = call.gas(estimated_gas + (estimated_gas / 10));
-
-                            match call.send().await {
+                            match call.gas(estimated_gas + (estimated_gas / 10)).send().await {
                                 Ok(ok) => {
-                                    let _: () = ok;
-
                                     info!(
                                         tx_hash = %H256::from(ok.tx_hash()),
                                         "evm tx"
@@ -187,36 +188,59 @@ where
                                     let tx_rcp: TransactionReceipt =
                                         ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
 
-                                    info!(
-                                        tx_hash = %H256::from(tx_rcp.transaction_hash),
-                                        "evm transaction submitted"
-                                    );
+                                    let result = <MulticallResultFilter as ethers::contract::EthLogDecode>::decode_log(
+                                        &ethers::abi::RawLog::from(tx_rcp
+                                            .logs
+                                            .last()
+                                            .expect("multicall event should be last log").clone()),
+                                    )
+                                    .expect("unable to decode multicall result log");
 
-                                    for msg in msg_names {
-                                        info!(
-                                            tx_hash = %H256::from(tx_rcp.transaction_hash),
-                                            %msg,
-                                            "evm tx"
-                                        );
+                                    for (idx, result) in result.0.into_iter().enumerate() {
+                                        if result.success {
+                                            info!(
+                                                msg = msg_names[idx],
+                                                tx_hash = %H256::from(tx_rcp.transaction_hash),
+                                                "evm message successful"
+                                            );
+                                        } else if let Ok(known_revert) = IbcHandlerErrors::decode(result.return_data.clone()) {
+                                            error!(
+                                                msg = msg_names[idx],
+                                                tx_hash = %H256::from(tx_rcp.transaction_hash),
+                                                revert = ?known_revert,
+                                                well_known = true,
+                                                "evm message failed"
+                                            );
+                                        } else {
+                                            error!(
+                                                msg = msg_names[idx],
+                                                tx_hash = %H256::from(tx_rcp.transaction_hash),
+                                                revert = %serde_utils::to_hex(result.return_data),
+                                                well_known = false,
+                                                "evm message failed"
+                                            );
+                                        }
                                     }
 
-                                    Ok(())
-                                }
-                                Err(ContractError::Revert(revert)) => {
-                                    error!(?revert, "evm transaction failed");
-                                    let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(
-                                        revert.clone(),
-                                    )
-                                    .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
-                                    error!(
-                                        msg = %msg_name,
-                                        ?revert,
-                                        ?err,
-                                        "evm transaction failed"
-                                    );
+                                    info!(batch.size = msg_names.len(), "ethereum messages batched");
 
                                     Ok(())
                                 }
+                                // Err(ContractError::Revert(revert)) => {
+                                //     error!(?revert, "evm transaction failed");
+                                //     let err = <IbcHandlerErrors as ethers::abi::AbiDecode>::decode(
+                                //         revert.clone(),
+                                //     )
+                                //     .map_err(|_| TxSubmitError::InvalidRevert(revert.clone()))?;
+                                //     error!(
+                                //         msg = %msg_name,
+                                //         ?revert,
+                                //         ?err,
+                                //         "evm transaction failed"
+                                //     );
+
+                                //     Ok(())
+                                // }
                                 _ => {
                                     panic!("evm transaction non-recoverable failure");
                                 }
@@ -279,6 +303,7 @@ fn process_msgs<Hc, Tr, M>(
     msg: Effect<Hc, Tr>,
     ibc_handler: &IBCHandler<M>,
     chain_id: ChainIdOf<Hc>,
+    relayer: H160,
 ) -> Vec<FunctionCall<Arc<M>, M, ()>>
 where
     Hc: ChainExt<Config = EthereumConfig, SelfClientState: Encode<Tr::IbcStateEncoding>>,
@@ -299,6 +324,7 @@ where
                 version: data.version.into(),
                 counterparty: data.counterparty.into(),
                 delay_period: data.delay_period,
+                relayer: relayer.into(),
             }),
         )],
         Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => vec![mk_function_call(
@@ -320,6 +346,7 @@ where
                 proof_consensus: data.proof_consensus.encode().into(),
                 proof_height: data.proof_height.into_height().into(),
                 consensus_height: data.consensus_height.into_height().into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => vec![mk_function_call(
@@ -336,6 +363,7 @@ where
                 proof_client: data.proof_client.encode().into(),
                 proof_consensus: data.proof_consensus.encode().into(),
                 consensus_height: data.consensus_height.into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::ConnectionOpenConfirm(data) => vec![mk_function_call(
@@ -344,6 +372,7 @@ where
                 connection_id: data.msg.connection_id.to_string(),
                 proof_ack: data.msg.proof_ack.encode().into(),
                 proof_height: data.msg.proof_height.into_height().into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::ChannelOpenInit(data) => vec![mk_function_call(
@@ -351,6 +380,7 @@ where
             ChannelOpenInitCall(contracts::ibc_handler::MsgChannelOpenInit {
                 port_id: data.msg.port_id.to_string(),
                 channel: data.msg.channel.into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::ChannelOpenTry(data) => vec![mk_function_call(
@@ -361,6 +391,7 @@ where
                 counterparty_version: data.msg.counterparty_version,
                 proof_init: data.msg.proof_init.encode().into(),
                 proof_height: data.msg.proof_height.into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::ChannelOpenAck(data) => vec![mk_function_call(
@@ -372,6 +403,7 @@ where
                 counterparty_channel_id: data.msg.counterparty_channel_id.to_string(),
                 proof_try: data.msg.proof_try.encode().into(),
                 proof_height: data.msg.proof_height.into_height().into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::ChannelOpenConfirm(data) => vec![mk_function_call(
@@ -381,6 +413,7 @@ where
                 channel_id: data.msg.channel_id.to_string(),
                 proof_ack: data.msg.proof_ack.encode().into(),
                 proof_height: data.msg.proof_height.into_height().into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::RecvPacket(data) => vec![mk_function_call(
@@ -389,6 +422,7 @@ where
                 packet: data.msg.packet.into(),
                 proof: data.msg.proof_commitment.encode().into(),
                 proof_height: data.msg.proof_height.into_height().into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::AckPacket(data) => vec![mk_function_call(
@@ -398,6 +432,7 @@ where
                 acknowledgement: data.msg.acknowledgement.into(),
                 proof: data.msg.proof_acked.encode().into(),
                 proof_height: data.msg.proof_height.into_height().into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::TimeoutPacket(data) => vec![mk_function_call(
@@ -407,6 +442,7 @@ where
                 proof: data.msg.proof_unreceived.encode().into(),
                 proof_height: data.msg.proof_height.into_height().into(),
                 next_sequence_recv: data.msg.next_sequence_recv.get(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::CreateClient(data) => {
@@ -416,6 +452,7 @@ where
                     client_type: data.config.client_type,
                     client_state_bytes: data.msg.client_state.encode_as::<EthAbi>().into(),
                     consensus_state_bytes: data.msg.consensus_state.encode_as::<EthAbi>().into(),
+                    relayer: relayer.into(),
                 }),
             )]
         }
@@ -424,11 +461,12 @@ where
             UpdateClientCall(ibc_handler::MsgUpdateClient {
                 client_id: data.client_id.to_string(),
                 client_message: data.client_message.clone().encode_as::<EthAbi>().into(),
+                relayer: relayer.into(),
             }),
         )],
         Effect::Batch(BatchMsg(msgs)) => msgs
             .into_iter()
-            .flat_map(|msg| process_msgs(msg, ibc_handler, chain_id.clone()))
+            .flat_map(|msg| process_msgs(msg, ibc_handler, chain_id.clone(), relayer))
             .collect(),
     }
 }

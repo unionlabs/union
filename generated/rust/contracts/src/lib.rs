@@ -12,6 +12,6 @@ pub mod ibc_client;
 pub mod ibc_connection;
 pub mod ibc_handler;
 pub mod ibc_packet;
-pub mod multicall_3;
+pub mod multicall;
 pub mod shared_types;
 pub mod ucs01_relay;

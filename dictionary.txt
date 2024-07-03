@@ -724,6 +724,7 @@ mosmo
 msgservice
 msvc
 muldefs
+multicall
 multisend
 multisigs
 multistep
