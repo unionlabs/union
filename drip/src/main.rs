@@ -45,6 +45,8 @@ async fn main() {
 
     let secret = config.secret.map(CaptchaSecret);
 
+    let bypass_secret = config.bypass_secret.map(CaptchaBypassSecret);
+
     let pool = PoolBuilder::new()
         .path("db.sqlite3")
         .journal_mode(JournalMode::Wal)
@@ -80,6 +82,7 @@ async fn main() {
         .data(MaxRequestPolls(config.max_request_polls))
         .data(Bech32Prefix(drip.cosmos.bech32_prefix.clone()))
         .data(secret)
+        .data(bypass_secret)
         .finish();
 
     info!("spawning worker");
@@ -220,6 +223,8 @@ pub struct Config {
     pub log_format: LogFormat,
     #[serde(default)]
     pub secret: Option<String>,
+    #[serde(default)]
+    pub bypass_secret: Option<String>,
     pub amount: u64,
     pub max_request_polls: u32,
     pub memo: String,
@@ -293,6 +298,9 @@ struct Mutation;
 
 pub struct CaptchaSecret(pub String);
 
+#[derive(PartialEq, Eq)]
+pub struct CaptchaBypassSecret(pub String);
+
 #[Object]
 impl Mutation {
     async fn send<'ctx>(
@@ -302,13 +310,20 @@ impl Mutation {
         to_address: String,
     ) -> Result<String> {
         let secret = ctx.data::<Option<CaptchaSecret>>().unwrap();
+        let bypass_secret = ctx.data::<Option<CaptchaBypassSecret>>().unwrap();
         let max_request_polls = ctx.data::<MaxRequestPolls>().unwrap();
         let bech32_prefix = ctx.data::<Bech32Prefix>().unwrap();
 
+        let allow_bypass = bypass_secret
+            .as_ref()
+            .is_some_and(|CaptchaBypassSecret(secret)| secret == &captcha_token);
+
         if let Some(secret) = secret {
-            recaptcha_verify::verify(&secret.0, &captcha_token, None)
-                .await
-                .map_err(|err| format!("failed to verify captcha: {:?}", err))?;
+            if !allow_bypass {
+                recaptcha_verify::verify(&secret.0, &captcha_token, None)
+                    .await
+                    .map_err(|err| format!("failed to verify captcha: {:?}", err))?;
+            }
         }
 
         match subtle_encoding::bech32::Bech32::lower_case().decode(&to_address) {
