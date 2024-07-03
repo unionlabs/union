@@ -13,10 +13,17 @@
   $: packetCountData = packetCountQuery()
   $: transferCountData = transferCountQuery()
 
-  let show = 1
-  let interval
+  let show: number = 1;
+  let interval: any;
+
   onMount(() => {
-  })
+    interval = setInterval(() => {
+      show = show === 1 ? 2 : 1;
+    }, 5000);
+    return () => {
+      clearInterval(interval);
+    };
+  });
 
 </script>
 
