@@ -11,9 +11,6 @@ $: transfersPerDayData = transfersPerDayQuery(30)
 
 $: packetCountData = packetCountQuery()
 $: transferCountData = transferCountQuery()
-
-$: console.log($packetCountData)
-$: console.log($transferCountData)
 </script>
 
   <div class="bg-muted border-b flex">
