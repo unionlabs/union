@@ -15,7 +15,7 @@ func main() {
 	rootCmd.AddCommand(cmd.GenBn254())
 	rootCmd.AddCommand(cmd.ProofOfPossession())
 	rootCmd.AddCommand(cmd.GenStateProof())
-	if err := svrcmd.Execute(rootCmd, "dog", app.DefaultNodeHome); err != nil {
+	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		log.NewLogger(rootCmd.OutOrStderr()).Error("failure when running app", "err", err)
 		os.Exit(1)
 	}
