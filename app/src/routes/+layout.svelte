@@ -19,19 +19,19 @@ import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
-onMount(() => {
-  disablePinchToZoom()
-  const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
-  if (
-    lastConnectedWallet &&
-    window[lastConnectedWallet] &&
-    ["leap", "keplr"].includes(lastConnectedWallet)
-  )
-    return cosmosStore.connect(lastConnectedWallet)
-
-  if (window?.keplr) cosmosStore.connect("keplr")
-  else if (window?.leap) cosmosStore.connect("leap")
-})
+// onMount(() => {
+//   disablePinchToZoom()
+//   const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
+//   if (
+//     lastConnectedWallet &&
+//     window[lastConnectedWallet] &&
+//     ["leap", "keplr"].includes(lastConnectedWallet)
+//   )
+//     return cosmosStore.connect(lastConnectedWallet)
+//
+//   if (window?.keplr) cosmosStore.connect("keplr")
+//   else if (window?.leap) cosmosStore.connect("leap")
+// })
 </script>
 
 <svelte:head>

@@ -92,6 +92,7 @@ let fromChain = derived(
   $fromChainId => chains.find(chain => chain.chain_id === $fromChainId) ?? null
 )
 
+let prevAsset: string
 $: asset = derived(
   [assetSymbol, fromChain, userBalances],
   ([$assetSymbol, $fromChain, $userBalances]) => {
@@ -106,6 +107,8 @@ $: asset = derived(
     if (!balance) {
       return null
     }
+    if (prevAsset !== balance.address) amount = ""
+    prevAsset = balance.address
     return balance
   }
 )
@@ -769,9 +772,9 @@ const resetInput = () => {
           {/if}
           {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
             <div class="mt-4 text-xs text-muted-foreground">
-              <b>{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol, 12)}</b> balance on
+              <b>{truncate(supportedAsset ? supportedAsset?.display_symbol : $assetSymbol, 12)}</b> balance on
               <b>{$fromChain?.display_name}</b> is
-              {formatUnits(BigInt($asset.balance), supportedAsset.decimals ?? 0)}
+              {formatUnits(BigInt($asset.balance), supportedAsset?.decimals ?? 0)}
             </div>
           {/if}
         </section>
