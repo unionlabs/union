@@ -16,7 +16,9 @@
 	onMount(() => {
 
     const scene = new THREE.Scene();
-    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas, alpha: true});
+
+    renderer.setClearColor( 0x000000, 0 ); // the default
 
     // There's no reason to set the aspect here because we're going
     // to set it every frame anyway so we'll set it to 2 since 2
@@ -31,6 +33,7 @@
 
     const mesh = new THREE.Mesh(geometry, material);
     scene.add(mesh);
+
 
     const light1 = new THREE.PointLight(0xff80C0, 2, 0);
     light1.position.set(200, 100, 300);
