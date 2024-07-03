@@ -19,7 +19,7 @@ function formatValue(value: number | string): string {
       event.preventDefault();
     }}>
       <h3 class="text-sm pb-2">{label}</h3>
-      <div class="text-xl pt-2 font-bold bg-accent">{formatValue(value)}</div>
+      <div class="text-xl pt-2 font-bold">{formatValue(value)}</div>
     </div>
     <slot />
   </div>
