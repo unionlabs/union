@@ -1,9 +1,10 @@
 use core::fmt::Debug;
 use std::fmt;
 
+use futures::{Stream, TryStreamExt};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use sqlx::{Acquire, Postgres};
+use sqlx::{Acquire, PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::info;
 use valuable::Valuable;
@@ -91,6 +92,20 @@ impl<'a> ChainIdInner<'a> {
     }
 }
 
+pub fn get_last_n_logs<'a>(
+    db: &'a PgPool,
+    chain_id: ChainId,
+    n: i64,
+) -> sqlx::Result<impl Stream<Item = sqlx::Result<(String, i32)>> + 'a> {
+    Ok(sqlx::query!(
+        "SELECT block_hash, height from v0.logs where chain_id = $1 ORDER BY height DESC LIMIT $2",
+        chain_id.db,
+        n
+    )
+    .fetch(db)
+    .map_ok(|r| (r.block_hash, r.height)))
+}
+
 pub async fn insert_batch_logs<C: ChainType, T: Serialize>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     logs: impl IntoIterator<Item = Log<C, T>>,
@@ -141,33 +156,6 @@ where
     }
     Ok(())
 }
-
-// pub async fn upsert_log<C: ChainType, T: Serialize>(
-//     tx: &mut sqlx::Transaction<'_, Postgres>,
-//     log: Log<C, T>,
-// ) -> sqlx::Result<()>
-// where
-//     <C as ChainType>::BlockHeight: Into<i32>,
-//     <C as ChainType>::BlockHash: AsRef<str>,
-// {
-//     sqlx::query!(
-//         "
-//         INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
-//         VALUES ($1, $2, $3, $4, $5)
-//         ON CONFLICT (chain_id, block_hash)
-//         DO UPDATE
-//         SET chain_id = $1, block_hash = $2, data = $3, height = $4, time = $5
-//         ",
-//         log.chain_id.db,
-//         log.block_hash.as_ref(),
-//         serde_json::to_value(&log.data).unwrap(),
-//         log.height.into(),
-//         log.time
-//     )
-//     .execute(tx.as_mut())
-//     .await?;
-//     Ok(())
-// }
 
 #[derive(Copy, Clone, Debug, Default, Deserialize)]
 pub enum InsertMode {

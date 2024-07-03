@@ -1,8 +1,10 @@
+use core::fmt::Debug;
 use std::{ops::Range, time::Duration};
 
 use backon::{ConstantBuilder, Retryable};
 use color_eyre::Report;
 use ethers::{
+    core::types::BlockId,
     providers::{Http, Middleware, Provider},
     types::H256,
 };
@@ -12,7 +14,6 @@ use sqlx::{PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::{debug, info, info_span, Instrument};
 use url::Url;
-
 const DEFAULT_CHUNK_SIZE: usize = 200;
 
 use crate::{
@@ -376,12 +377,12 @@ pub struct InsertInfo {
 #[must_use]
 #[derive(Debug, Clone)]
 pub struct BlockInsert {
-    chain_id: ChainId,
-    hash: String,
-    header: ethers::types::Block<H256>,
-    height: i32,
-    time: OffsetDateTime,
-    transactions: Vec<TransactionInsert>,
+    pub chain_id: ChainId,
+    pub hash: String,
+    pub header: ethers::types::Block<H256>,
+    pub height: i32,
+    pub time: OffsetDateTime,
+    pub transactions: Vec<TransactionInsert>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -391,7 +392,7 @@ pub struct LogData {
 }
 
 #[derive(Debug, thiserror::Error)]
-enum FromProviderError {
+pub enum FromProviderError {
     #[error("block not found")]
     BlockNotFound,
     #[error("data belonging to block not found")]
@@ -412,16 +413,32 @@ impl From<Report> for FromProviderError {
     }
 }
 
+impl From<BlockInsert> for PgLog<LogData> {
+    fn from(block: BlockInsert) -> Self {
+        PgLog {
+            chain_id: block.chain_id,
+            block_hash: block.hash.clone(),
+            height: block.height,
+            time: block.time,
+            data: LogData {
+                header: block.header,
+                transactions: block.transactions,
+            },
+        }
+    }
+}
+
 impl BlockInsert {
-    async fn from_provider_retried(
+    pub async fn from_provider_retried<T: Into<BlockId> + Send + Sync + Debug + Clone>(
         chain_id: ChainId,
-        height: u64,
+        id: T,
         provider: Provider<Http>,
     ) -> Result<Self, FromProviderError> {
-        debug!(height, "fetching block from provider");
+        let id = id.into();
+        debug!(?id, "fetching block from provider");
         (move || {
-            Self::from_provider(chain_id, height, provider.clone())
-                .inspect_err(move |e| debug!(?e, height, "error fetching block from provider"))
+            Self::from_provider(chain_id, id, provider.clone())
+                .inspect_err(move |e| debug!(?e, ?id, "error fetching block from provider"))
         })
         .retry(&crate::expo_backoff())
         .when(|e| !matches!(e, FromProviderError::BlockNotFound))
@@ -429,17 +446,17 @@ impl BlockInsert {
         .map_err(Into::into)
     }
 
-    async fn from_provider(
+    async fn from_provider<T: Into<BlockId> + Send + Sync + Debug>(
         chain_id: ChainId,
-        height: u64,
+        id: T,
         provider: Provider<Http>,
     ) -> Result<Self, FromProviderError> {
         let block = provider
-            .get_block(height)
+            .get_block(id)
             .await?
             .ok_or(FromProviderError::BlockNotFound)?;
         let mut receipts = provider
-            .get_block_receipts(height)
+            .get_block_receipts(block.number.unwrap())
             .await
             .map_err(FromProviderError::DataNotFound)?;
 
@@ -504,22 +521,13 @@ impl BlockInsert {
             .map(|tx| tx.events.len() as i32)
             .sum();
 
-        let log = PgLog {
-            chain_id: self.chain_id,
-            block_hash: self.hash.clone(),
-            height: self.height,
-            time: self.time,
-            data: LogData {
-                header: self.header,
-                transactions: self.transactions,
-            },
-        };
+        let (height, hash) = (self.height, self.hash.clone());
 
-        postgres::insert_batch_logs(tx, std::iter::once(log), mode).await?;
+        postgres::insert_batch_logs(tx, std::iter::once(self.into()), mode).await?;
 
         Ok(InsertInfo {
-            height: self.height,
-            hash: self.hash,
+            height,
+            hash,
             num_tx,
             num_events,
         })
