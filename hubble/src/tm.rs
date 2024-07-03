@@ -12,7 +12,10 @@ use tendermint_rpc::{
     Client, Error, HttpClient, Order,
 };
 use time::OffsetDateTime;
-use tokio::{task::JoinSet, time::{sleep, Duration}};
+use tokio::{
+    task::JoinSet,
+    time::{sleep, Duration},
+};
 use tracing::{debug, info, info_span, warn, Instrument};
 use url::Url;
 
@@ -260,35 +263,28 @@ async fn fetch_and_insert_blocks(
     from: Height,
     mode: postgres::InsertMode,
 ) -> Result<Option<Height>, Report> {
-    use itertools::Either;
 
-    let first_client = client_pool[0].clone();
     let min = from.value() as u32;
     let max = min + batch_size - 1_u32;
     debug!("fetching batch of headers from {} to {}", min, max);
 
-    let headers = if batch_size > 1 {
-        Either::Left(
-            (|| {
-                first_client
-                    .blockchain(min, max)
-                    .inspect_err(|e| debug!(?e, min, max, "error fetching blocks"))
-            })
-            .retry(&crate::expo_backoff())
-            .await?
-            .block_metas
-            .into_iter()
-            .map(|meta| (first_client.clone(), meta.header)),
-        )
+    let (client, headers) = if batch_size > 1 {
+        match get_headers_at_height(client_pool, min, max).await {
+            Err(err) => {
+                return Err(err);
+            }
+            Ok(Some((client, headers))) => (client, headers),
+            Ok(None) => {
+                return Ok(None);
+            }
+        }
     } else {
         // We do need this arm, because client.blockchain will error if max > latest block (instead of just returning min..latest).
         match get_header_at_height(client_pool, min).await {
             Err(err) => {
                 return Err(err);
             }
-            Ok(Some((client, header))) => {
-                Either::Right(std::iter::once((client, header)))
-            }
+            Ok(Some((client, header))) => (client, vec!(header)),
             Ok(None) => {
                 return Ok(None);
             }
@@ -297,7 +293,7 @@ async fn fetch_and_insert_blocks(
 
     let submit_blocks = postgres::insert_batch_blocks(
         tx,
-        headers.clone().into_iter().map(|(_, header)| PgBlock {
+        headers.clone().into_iter().map(|header| PgBlock {
             chain_id,
             hash: header.hash().to_string(),
             height: header.height.value() as i32,
@@ -308,9 +304,11 @@ async fn fetch_and_insert_blocks(
         }),
         mode,
     );
-
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
-        .and_then(|(client, header)| async move {
+        .and_then(|header| {
+          let client = client.clone();
+
+          async move {
             debug!("fetching block results for height {}", header.height);
             let block = (|| {
                 client
@@ -331,7 +329,7 @@ async fn fetch_and_insert_blocks(
             .retry(&crate::expo_backoff())
             .await?;
             Ok((header, block, txs))
-        })
+          }})
         .try_collect();
 
     // let (submit_blocks, block_results) = join!(submit_blocks, block_results);
@@ -399,7 +397,71 @@ async fn fetch_and_insert_blocks(
     Ok(Some((from.value() as u32 + headers.len() as u32).into()))
 }
 
-async fn get_header_at_height(client_pool: Vec<HttpClient>, height: u32) -> Result<Option<(HttpClient, Header)>, Report> {
+async fn get_headers_at_height(
+    client_pool: Vec<HttpClient>,
+    min_height: u32,
+    max_height: u32,
+) -> Result<Option<(HttpClient, Vec<Header>)>, Report> {
+    let mut set = JoinSet::new();
+    let client_count = client_pool.len();
+
+    client_pool.into_iter().for_each(|client| {
+        set.spawn(async move {
+            match (|| {
+                client.blockchain(min_height, max_height).inspect_err(|e| {
+                    debug!(
+                        ?e,
+                        min_height, max_height, "error fetching blocks by client {:?}", client
+                    )
+                })
+            })
+            .retry(&crate::expo_backoff())
+            .await {
+               Err(err) => {
+                   debug!("error retrieving");
+                   Err(err)
+               }
+               Ok(val) => {
+                   Ok((client, val.block_metas.into_iter().map(|meta| meta.header).collect_vec()))
+               }
+            }
+        });
+    });
+
+    let mut errs = vec![];
+
+    while let Some(Ok(result)) = set.join_next().await {
+        match result {
+            Ok((client, headers)) => {
+                // found a header => return it
+                return Ok(Some((client, headers)));
+            }
+            Err(err) => {
+                // save all errors, so we're able to report if all clients fail
+                errs.push(err)
+            }
+        };
+    }
+
+    if errs.len() == client_count {
+        // all clients returned an error => report error
+        let mut combined_message =
+            String::from("None of the configured clients returned a valid result: ");
+        for (i, err) in errs.iter().enumerate() {
+            combined_message.push_str(&format!("Error {}: {}\n", i + 1, err));
+        }
+
+        Err(eyre!(combined_message))
+    } else {
+        // all clients returned no headers => return no headers
+        Ok(None)
+    }
+}
+
+async fn get_header_at_height(
+    client_pool: Vec<HttpClient>,
+    height: u32,
+) -> Result<Option<(HttpClient, Header)>, Report> {
     let mut set = JoinSet::new();
     let client_count = client_pool.len();
 
@@ -429,7 +491,7 @@ async fn get_header_at_height(client_pool: Vec<HttpClient>, height: u32) -> Resu
         match result {
             Ok(Some((client, header))) => {
                 // found a header => return it
-                return Ok(Some((client, header)))
+                return Ok(Some((client, header)));
             }
             Err(err) => {
                 // save all errors, so we're able to report if all clients fail
@@ -441,7 +503,8 @@ async fn get_header_at_height(client_pool: Vec<HttpClient>, height: u32) -> Resu
 
     if errs.len() == client_count {
         // all clients returned an error => report error
-        let mut combined_message = String::from("None of the configured clients returned a valid result: ");
+        let mut combined_message =
+            String::from("None of the configured clients returned a valid result: ");
         for (i, err) in errs.iter().enumerate() {
             combined_message.push_str(&format!("Error {}: {}\n", i + 1, err));
         }
