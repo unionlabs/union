@@ -6,6 +6,7 @@
   import SpinningOutlineLogo from '$lib/components/spinning-outline-logo.svelte';
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
+  import { Separator } from "$lib/components/ui/separator";
 
   // 30 days
   $: transfersPerDayData = transfersPerDayQuery(30)
@@ -30,8 +31,9 @@
 <div class="bg-muted border-b flex">
   <div class="w-full">
     {#if show === 1}
-      <div class="w-full flex" in:fade>
+      <div class="w-full flex h-full" in:fade>
         <StatsBarStat label={"Total Messages"} value={155_300_677}/>
+        <Separator orientation="vertical"/>
         <StatsBarStat label="Total Packets" value={123_325_332}/>
       </div>
     {:else if show === 2}

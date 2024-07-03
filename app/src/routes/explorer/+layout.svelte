@@ -46,7 +46,7 @@
       <ArrowLeftIcon/>
       <span class="uppercase">{$page.route.id?.split('/').at(-2)}</span>
     </a>
-    {#if $deviceWidth < 888}
+    {#if $deviceWidth <  888}
       <StatsBarMobile/>
     {/if}
 
