@@ -40,9 +40,15 @@
 
 
 <style lang="postcss">
+
+@keyframes rotating-cube {
+  0% {transform: rotateZ(0deg);}
+  100% {transform: rotateZ(360deg);}
+}
+
 .cube-container {
 	position: absolute;
 	transform-style: preserve-3d;
+  animation: rotating-cube 8s linear 0s infinite ;
 }
-
 </style>
