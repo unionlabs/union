@@ -24,6 +24,7 @@ pub struct ClientState {
 impl From<ClientState> for protos::union::ibc::lightclients::near::v1::ClientState {
     fn from(value: ClientState) -> Self {
         Self {
+            chain_id: value.chain_id,
             latest_height: value.latest_height,
             account_id: value.ibc_account_id.into(),
             iniitial_block_producers: value
@@ -51,6 +52,7 @@ impl TryFrom<protos::union::ibc::lightclients::near::v1::ClientState> for Client
         value: protos::union::ibc::lightclients::near::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
+            chain_id: value.chain_id,
             latest_height: value.latest_height,
             ibc_account_id: value
                 .account_id

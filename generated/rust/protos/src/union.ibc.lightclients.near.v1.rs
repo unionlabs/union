@@ -156,11 +156,13 @@ impl ::prost::Name for BlockHeaderInnerLiteView {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
-    #[prost(uint64, tag = "1")]
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "2")]
     pub latest_height: u64,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag = "3")]
     pub account_id: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
+    #[prost(message, repeated, tag = "4")]
     pub iniitial_block_producers: ::prost::alloc::vec::Vec<ValidatorStakeView>,
 }
 impl ::prost::Name for ClientState {
