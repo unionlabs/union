@@ -1,7 +1,7 @@
 <script lang="ts"> 
   import * as THREE from 'three'; 
   import Square from './spinning-logo/square.svelte';
-    import { onMount } from 'svelte';
+  import { onMount } from 'svelte';
 	let cubeWidth = 64;
 	let cubeCount = 12;
 	let gap = 64;
@@ -30,11 +30,11 @@
     camera.position.z = 400;
 
     const boxGeometry = new THREE.BoxGeometry(200, 200, 200);
-    const edgesGemoetry = new THREE.EdgesGeometry(boxGeometry);
+    const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
     const material = new THREE.LineBasicMaterial({
       color: 0x000000,
     });
-    const mesh = new THREE.LineSegments(edgesGemoetry, material);
+    const mesh = new THREE.LineSegments(edgesGeometry, material);
 
     // const mesh = new THREE.Mesh(edgesGemoetry, material);
     scene.add(mesh);
@@ -76,6 +76,8 @@
 	
 </script>
 
-<div class="flex-1" bind:this={threeContainer}>
-  <canvas class="size-full" bind:this={threeCanvas}></canvas>
+<div class="relative flex-1">
+  <div class="absolute size-full" bind:this={threeContainer}>
+    <canvas class="size-full" bind:this={threeCanvas}></canvas>
+  </div>
 </div>
