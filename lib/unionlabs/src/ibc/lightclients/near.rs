@@ -4,4 +4,4 @@ pub mod client_state;
 pub mod consensus_state;
 pub mod header;
 pub mod light_client_block;
-pub mod validator_stake;
+pub mod validator_stake_view;

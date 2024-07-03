@@ -12,7 +12,7 @@ use unionlabs::{
         approval::ApprovalInner,
         block_header_inner::{BlockHeaderInnerLite, BlockHeaderInnerLiteView},
         light_client_block::LightClientBlockView,
-        validator_stake::ValidatorStakeView,
+        validator_stake_view::ValidatorStakeView,
     },
     near::types::{Direction, MerklePath, PublicKey, Signature},
 };

@@ -3,7 +3,7 @@ use macros::model;
 use near_primitives_core::account::id::ParseAccountError;
 use near_sdk::AccountId;
 
-use super::validator_stake::{TryFromValidatorStakeView, ValidatorStakeView};
+use super::validator_stake_view::{TryFromValidatorStakeView, ValidatorStakeView};
 
 #[model(proto(
     raw(protos::union::ibc::lightclients::near::v1::ClientState),
@@ -12,9 +12,12 @@ use super::validator_stake::{TryFromValidatorStakeView, ValidatorStakeView};
 ))]
 #[derive(BorshSerialize, BorshDeserialize)]
 pub struct ClientState {
+    pub chain_id: String,
     pub latest_height: u64,
     pub ibc_account_id: AccountId,
+    // TODO: Remove this option
     pub initial_block_producers: Option<Vec<ValidatorStakeView>>,
+    // TODO: Make option
     pub frozen_height: u64,
 }
 

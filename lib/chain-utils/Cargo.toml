@@ -12,7 +12,7 @@ beacon-api  = { workspace = true }
 contracts   = { workspace = true, features = ["providers"] }
 protos      = { workspace = true, features = ["default", "client"] }
 serde-utils = { workspace = true }
-unionlabs   = { workspace = true, features = ["default"] }
+unionlabs   = { workspace = true, features = ["default", "near"] }
 
 arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 bip32                    = { workspace = true, features = ["secp256k1"] }
@@ -41,6 +41,9 @@ thiserror                = { workspace = true }
 tokio                    = { workspace = true }
 tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
+near-jsonrpc-client = "0.10.1"
+near-primitives = "0.23.0"
+near-primitives-core = "0.23.0"
 
 [features]
 arbitrary = ["dep:arbitrary"]

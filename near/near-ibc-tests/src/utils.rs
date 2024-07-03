@@ -81,12 +81,12 @@ pub async fn chunk_proof(
 
 pub fn convert_block_producers(
     bps: Vec<ValidatorStakeView>,
-) -> Vec<near::validator_stake::ValidatorStakeView> {
+) -> Vec<near::validator_stake_view::ValidatorStakeView> {
     bps.into_iter()
         .map(|stake| {
             let ValidatorStakeView::V1(stake) = stake;
-            let stake = near::validator_stake::ValidatorStakeView::V1(
-                near::validator_stake::ValidatorStakeViewV1 {
+            let stake = near::validator_stake_view::ValidatorStakeView::V1(
+                near::validator_stake_view::ValidatorStakeViewV1 {
                     account_id: stake.account_id,
                     public_key: types::PublicKey::Ed25519(
                         stake.public_key.key_data().try_into().unwrap(),
@@ -133,8 +133,8 @@ pub fn convert_light_client_block_view(
             bps.into_iter()
                 .map(|stake| {
                     let ValidatorStakeView::V1(stake) = stake;
-                    near::validator_stake::ValidatorStakeView::V1(
-                        near::validator_stake::ValidatorStakeViewV1 {
+                    near::validator_stake_view::ValidatorStakeView::V1(
+                        near::validator_stake_view::ValidatorStakeViewV1 {
                             account_id: stake.account_id,
                             public_key: types::PublicKey::Ed25519(
                                 stake.public_key.key_data().try_into().unwrap(),

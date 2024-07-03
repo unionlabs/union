@@ -14,7 +14,7 @@ use unionlabs::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::near::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
-            validator_stake::ValidatorStakeView,
+            validator_stake_view::ValidatorStakeView,
         },
     },
     id::ClientId,
@@ -197,7 +197,7 @@ impl NearVerifierCtx for Contract {
     fn get_epoch_block_producers(
         &self,
         epoch_id: CryptoHash,
-    ) -> Option<Vec<unionlabs::ibc::lightclients::near::validator_stake::ValidatorStakeView>> {
+    ) -> Option<Vec<unionlabs::ibc::lightclients::near::validator_stake_view::ValidatorStakeView>> {
         self.epoch_block_producers_map
             .get(&epoch_id)
             .map(|bps| bps.clone())

@@ -12,7 +12,7 @@ use unionlabs::{
         lightclients::{
             near::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
-                validator_stake::ValidatorStakeView,
+                validator_stake_view::ValidatorStakeView,
             },
             wasm,
         },

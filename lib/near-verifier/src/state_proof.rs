@@ -5,11 +5,6 @@ use near_primitives_core::{hash::CryptoHash, types::AccountId};
 
 use crate::nibble_slice::NibbleSlice;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct RawStateProof {
-    pub state_proof: Vec<Vec<u8>>,
-}
-
 impl RawStateProof {
     pub fn parse(self) -> StateProof {
         let state_proof_nodes = self

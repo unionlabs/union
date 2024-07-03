@@ -74,6 +74,7 @@ impl TryFrom<protos::union::ibc::lightclients::near::v1::ValidatorStakeView>
                 .try_into()
                 .map_err(TryFromValidatorStakeView::PublicKey)?,
             // TODO(aeryz): make this a u128
+            // this will need to be done through string (or two fields, low and high bits)
             stake: value.balance.try_into().unwrap(),
         }))
     }

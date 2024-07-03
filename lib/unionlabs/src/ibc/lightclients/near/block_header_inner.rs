@@ -1,3 +1,5 @@
+// TODO: Use h256 here for all hash types?
+
 use borsh::{BorshDeserialize, BorshSerialize};
 use macros::model;
 use near_primitives_core::{
@@ -21,6 +23,7 @@ pub struct BlockHeaderInnerLiteView {
     pub outcome_root: CryptoHash,
     // TODO(aeryz): put deprecated?
     /// Legacy json number. Should not be used.
+    // #[deprecated]
     pub timestamp: u64,
     // TODO(aeryz): #[serde(with = "dec_format")]
     pub timestamp_nanosec: u64,

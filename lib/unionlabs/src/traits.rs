@@ -14,9 +14,10 @@ use crate::{
     google::protobuf::any::Any,
     ibc::{
         core::client::height::{Height, IsHeight},
-        lightclients::{arbitrum, cometbls, ethereum, scroll, tendermint, wasm},
+        lightclients::{arbitrum, cometbls, ethereum, near, scroll, tendermint, wasm},
     },
     id::ClientId,
+    near::NEAR_REVISION_NUMBER,
     uint::U256,
     MaybeArbitrary, TypeUrl,
 };
@@ -151,6 +152,23 @@ pub trait ClientState {
 
     fn height(&self) -> Self::Height;
     fn chain_id(&self) -> Self::ChainId;
+}
+
+impl ClientState for near::client_state::ClientState {
+    type ChainId = String;
+
+    type Height = Height;
+
+    fn height(&self) -> Self::Height {
+        Height {
+            revision_number: NEAR_REVISION_NUMBER,
+            revision_height: self.latest_height,
+        }
+    }
+
+    fn chain_id(&self) -> Self::ChainId {
+        self.chain_id.clone()
+    }
 }
 
 impl ClientState for ethereum::client_state::ClientState {
@@ -301,6 +319,12 @@ impl Header for tendermint::header::Header {
 
 pub trait ConsensusState {
     fn timestamp(&self) -> u64;
+}
+
+impl ConsensusState for near::consensus_state::ConsensusState {
+    fn timestamp(&self) -> u64 {
+        self.timestamp
+    }
 }
 
 impl ConsensusState for ethereum::consensus_state::ConsensusState {

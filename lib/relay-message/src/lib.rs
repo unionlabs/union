@@ -250,6 +250,8 @@ pub enum AnyLightClientIdentified<T: AnyLightClient> {
 
     /// The 08-wasm client tracking the state of Cosmos.
     CosmosOnCosmos(lc!(Cosmos => Cosmos)),
+    // NearOnUnion(lc!(Near => Wasm<Union>)),
+    // UnionOnNear(lc!(Wasm<Union> => Near)),
 }
 
 impl<T: AnyLightClient> AnyLightClientIdentified<T> {
