@@ -40,8 +40,8 @@ impl Contract {
         client_state: Vec<u8>,
         consensus_state: Vec<u8>,
     ) -> Self {
-        let client_state: ClientState = borsh::from_slice(&client_state).unwrap();
-        let consensus_state: ConsensusState = borsh::from_slice(&consensus_state).unwrap();
+        let client_state = ClientState::decode_as::<Proto>(&client_state).unwrap();
+        let consensus_state = ConsensusState::decode_as::<Proto>(&consensus_state).unwrap();
 
         let mut consensus_states: LookupMap<Height, ConsensusState> = LookupMap::new(b"c");
         consensus_states.insert(client_state.latest_height, consensus_state);
