@@ -6,6 +6,8 @@ import type { LayoutData } from "./$types.ts"
 import Menu from "./(components)/menu.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
 import StatsBar from "./(components)/stats-bar.svelte";
+import StatsBarMobile from "./(components)/stats-bar-mobile.svelte";
+import { deviceWidth } from "$lib/utilities/device.ts";
 
 export let data: LayoutData
 
@@ -45,7 +47,11 @@ onNavigate(navigation => {
     </a>
 
     <div class="flex flex-col flex-1 size-full">
-      <StatsBar/>
+      {#if $deviceWidth >= 888}
+        <StatsBar/>
+      {:else }
+        <StatsBarMobile />
+      {/if}
       <div class="p-2 pt-0 sm:p-6 ">
         <div class={cn($page.route.id?.split('/').length === 3 ? "" : "hidden")}>
           <h2 class="text-4xl font-extrabold font-expanded sm:!font-extra-expanded uppercase font-supermolot">
