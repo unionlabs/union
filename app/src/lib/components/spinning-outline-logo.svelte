@@ -12,8 +12,7 @@
 
 <div class="overflow-hidden max-size-full flex-1">
   <div class="logo-scene max-size-full overflow-hidden size-full">
-  <!--<div class="logo-scene max-size-full overflow-hidden size-full" style={`width: ${logoWidth}px; height: ${cubeWidth}px`};}>!-->
-    <div class="logo" style={`left: calc(50% - (${logoWidth}px / 2)); top: calc(50% - (${cubeWidth}px / 2)); width: ${logoWidth}px; height: ${cubeWidth}px`};}>
+    <div class="logo absolute" style={`left: calc(50% - (${logoWidth}px / 2)); top: calc(50% - (${cubeWidth}px / 2)); width: ${logoWidth}px; height: ${cubeWidth}px`};}>
       {#each {length: cubeCount} as _, i}
         <Square {strokeWidth} size={cubeWidth} x={(cubeWidth + gap) * i} y={0}/>
       {/each}
