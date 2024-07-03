@@ -31,6 +31,12 @@
   100% {transform: rotateY(0deg);}
 }
 
+@keyframes sliding-logo {
+  0% {transform: translateX(800px);}
+  20% {transform: translateX(-800px);}
+  25% {transform: rotateY(-90deg) translateX(-800px); }
+}
+
 
 .logo-scene {
   perspective: 500px;
@@ -38,7 +44,7 @@
 }
 
 .logo {
-  animation: spinning-logo 8s linear 0s infinite ;
+  animation: sliding-logo 8s linear 0s infinite ;
   position: absolute;
   transform-style: preserve-3d;
 }
