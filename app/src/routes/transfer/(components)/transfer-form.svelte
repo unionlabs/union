@@ -92,6 +92,7 @@ let fromChain = derived(
   $fromChainId => chains.find(chain => chain.chain_id === $fromChainId) ?? null
 )
 
+let prevAsset: string
 $: asset = derived(
   [assetSymbol, fromChain, userBalances],
   ([$assetSymbol, $fromChain, $userBalances]) => {
@@ -106,6 +107,8 @@ $: asset = derived(
     if (!balance) {
       return null
     }
+    if(prevAsset !== balance.address) amount = ''
+    prevAsset = balance.address
     return balance
   }
 )
