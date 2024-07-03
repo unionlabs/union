@@ -230,7 +230,11 @@ where
                                         }
                                     }
 
-                                    info!(batch.size = msg_names.len(), "ethereum messages batched");
+                                    info!(
+                                        tx_hash = %H256::from(tx_rcp.transaction_hash),
+                                        batch.size = msg_names.len(),
+                                        "ethereum messages batched"
+                                    );
 
                                     Ok(())
                                 }
