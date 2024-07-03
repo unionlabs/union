@@ -2,10 +2,11 @@
   import * as THREE from 'three'; 
   import Square from './spinning-logo/square.svelte';
   import { onMount } from 'svelte';
+
 	let cubeWidth = 64;
 	let cubeCount = 12;
 	let gap = 64;
-	let logoWidth= cubeWidth * cubeCount + gap * (cubeCount - 1);
+	let logoWidth = cubeWidth * cubeCount + gap * (cubeCount - 1);
 	let cubesY = cubeWidth * 2 + gap;
 	$: cubeDelta = (20 - cubeWidth) / 2;
 	let strokeWidth = 4;
@@ -15,65 +16,77 @@
 
 	onMount(() => {
 
-    const scene = new THREE.Scene();
-    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas, alpha: true});
+		const scene = new THREE.Scene();
+		const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas, alpha: true });
 
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    renderer.setPixelRatio(devicePixelRatio);
+		const devicePixelRatio = window.devicePixelRatio || 1;
+		renderer.setPixelRatio(devicePixelRatio);
 
-    renderer.setClearColor( 0x000000, 0 ); // the default
+		renderer.setClearColor(0x000000, 0);
 
-    // There's no reason to set the aspect here because we're going
-    // to set it every frame anyway so we'll set it to 2 since 2
-    // is the the aspect for the canvas default size (300w/150h = 2)
-    const  camera = new THREE.PerspectiveCamera(70, 2, 1, 1000);
-    camera.position.z = 400;
+		const camera = new THREE.PerspectiveCamera(70, 2, 1, 1000);
+		camera.position.z = 400;
 
-    const boxGeometry = new THREE.BoxGeometry(200, 200, 200);
-    const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
-    const material = new THREE.LineBasicMaterial({
-      color: 0x000000,
-    });
-    const mesh = new THREE.LineSegments(edgesGeometry, material);
+		const boxGeometry = new THREE.BoxGeometry(200, 200, 200);
+		const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
 
-    // const mesh = new THREE.Mesh(edgesGemoetry, material);
-    scene.add(mesh);
+		const createTubeLine = (points, thickness) => {
+			const path = new THREE.CatmullRomCurve3(points);
+			const geometry = new THREE.TubeGeometry(path, 20, thickness, 8, false);
+			const material = new THREE.MeshBasicMaterial({ color: 0x000000 });
+			const tube = new THREE.Mesh(geometry, material);
+			return tube;
+		};
 
+		const edges = [];
+		for (let i = 0; i < edgesGeometry.attributes.position.count; i += 2) {
+			const start = new THREE.Vector3(
+				edgesGeometry.attributes.position.getX(i),
+				edgesGeometry.attributes.position.getY(i),
+				edgesGeometry.attributes.position.getZ(i)
+			);
+			const end = new THREE.Vector3(
+				edgesGeometry.attributes.position.getX(i + 1),
+				edgesGeometry.attributes.position.getY(i + 1),
+				edgesGeometry.attributes.position.getZ(i + 1)
+			);
+			const line = createTubeLine([start, end], strokeWidth); // Adjust thickness to match desired size
+			edges.push(line);
+			scene.add(line);
+		}
 
-    const light1 = new THREE.PointLight(0xff80C0, 2, 0);
-    light1.position.set(200, 100, 300);
-    scene.add(light1);
+		const light1 = new THREE.PointLight(0xff80C0, 2, 0);
+		light1.position.set(200, 100, 300);
+		scene.add(light1);
 
-    function resizeCanvasToDisplaySize() {
-      const canvas = renderer.domElement;
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
+		function resizeCanvasToDisplaySize() {
+			const canvas = renderer.domElement;
+			const width = canvas.clientWidth;
+			const height = canvas.clientHeight;
 
-      if (canvas.width !== width ||canvas.height !== height) {
-        // you must pass false here or three.js sadly fights the browser
-        renderer.setSize(width, height, false);
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
+			if (canvas.width !== width || canvas.height !== height) {
+				renderer.setSize(width, height, false);
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+			}
+		}
 
-        // set render target sizes here
-      }
-    }
+		function animate(time: number) {
+			time *= 0.001; // seconds
 
-    function animate(time: number) {
-      time *= 0.001;  // seconds
+			resizeCanvasToDisplaySize();
 
-      resizeCanvasToDisplaySize();
+			edges.forEach((edge) => {
+				edge.rotation.x = time * 0.5;
+				edge.rotation.y = time * 1;
+			});
 
-      mesh.rotation.x = time * 0.5;
-      mesh.rotation.y = time * 1;
+			renderer.render(scene, camera);
+			requestAnimationFrame(animate);
+		}
 
-      renderer.render(scene, camera);
-      requestAnimationFrame(animate);
-    }
-
-    requestAnimationFrame(animate);
+		requestAnimationFrame(animate);
 	});
-	
 </script>
 
 <div class="relative flex-1">
