@@ -15,6 +15,7 @@ import LoadingBar from "$lib/components/loading-bar.svelte"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
+import { deviceWidth } from "$lib/utilities/device.ts";
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
@@ -40,6 +41,7 @@ if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 </svelte:head>
 
 <svelte:window
+  bind:innerWidth={$deviceWidth}
   use:shortcut={{
     trigger: [
       // easily hide tanstack devtools with ctrl + h
