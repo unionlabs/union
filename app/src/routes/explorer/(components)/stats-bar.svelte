@@ -18,9 +18,9 @@ $: console.log($transferCountData)
 
   <div class="bg-muted border-b flex">
     <div class="w-full flex flex-1">
-      <StatsBarStat label={"Total Messages"} value={155_300_677}/>
+      <StatsBarStat label={"Total Transfers"} value={$transferCountData?.data?.aggregate?.count || 0}/>
       <Separator orientation="vertical"/>
-      <StatsBarStat label="Total Packets" value={123_325_332}/>
+      <StatsBarStat label="Total Packets" value={$packetCountData?.data?.aggregate?.count || 0}/>
       <Separator orientation="vertical"/>
       <StatsBarStat label="Metrics" value={$userTime}>
         {#if $transfersPerDayData.data}

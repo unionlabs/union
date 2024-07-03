@@ -31,9 +31,9 @@ onMount(() => {
   <div class="w-full">
     {#if show === 1}
       <div class="w-full flex h-full" in:fade>
-        <StatsBarStat label={"Total Messages"} value={155_300_677}/>
+        <StatsBarStat label={"Total Transfers"} value={$transferCountData?.data?.aggregate?.count || 0}/>
         <Separator orientation="vertical"/>
-        <StatsBarStat label="Total Packets" value={123_325_332}/>
+        <StatsBarStat label="Total Packets" value={$packetCountData?.data?.aggregate?.count || 0}/>
       </div>
     {:else if show === 2}
       <div class="w-full flex" in:fade>
