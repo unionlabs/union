@@ -37,7 +37,7 @@ onNavigate(navigation => {
   </nav>
   <main class={cn("overflow-auto flex flex-col flex-1 w-full", explorerRoute === null ? "hidden sm:block" : "")}>
     <a
-      class={cn(" bg-muted font-bold px-4 py-2 flex flex-row gap-2 items-center font-supermolot border-b",
+      class={cn("font-bold px-4 py-2 gap-2 items-center font-supermolot flex",
       
       ($page.route.id?.split('/').length ?? 0) > 3 ? "" : "sm:hidden"      
       )}
@@ -46,12 +46,12 @@ onNavigate(navigation => {
       <ArrowLeftIcon/>
       <span class="uppercase">{$page.route.id?.split('/').at(-2)}</span>
     </a>
-    {#if $deviceWidth <  888}
+    {#if $deviceWidth <  888 && $page.route.id?.split('/').length !== 4}
       <StatsBarMobile/>
     {/if}
 
     <div class="flex flex-col flex-1 size-full">
-      {#if $deviceWidth >= 888}
+      {#if $deviceWidth >= 888 && $page.route.id?.split('/').length !== 4}
         <StatsBar/>
       {/if   }
       <div class="p-2 pt-0 sm:p-6 ">
