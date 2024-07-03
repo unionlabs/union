@@ -333,6 +333,8 @@
 
           goPkgs = import inputs.nixpkgs-go { inherit system; };
           unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
+          packageOverrides = pkgs.callPackage ./python-packages.nix { };
+          python = pkgs.python3.override { inherit packageOverrides; };
         in
         {
           _module = {
@@ -525,13 +527,24 @@
               postgresql
               emmet-language-server
               nodePackages.graphqurl
+              nodePackages_latest.near-cli
               nodePackages_latest.nodejs
               nodePackages_latest.svelte-language-server
               nodePackages_latest."@astrojs/language-server"
               nodePackages_latest."@tailwindcss/language-server"
               nodePackages_latest.typescript-language-server
               nodePackages_latest.vscode-langservers-extracted
-            ])
+            ]) ++
+                (with pkgs; [
+                  go
+                  gopls
+                  go-tools
+                  gotools
+                ])
+                ++ [(python.withPackages (py-pkgs: [
+                  py-pkgs.nearup
+                ]))]
+
               ++ (with goPkgs; [
               go
               gopls

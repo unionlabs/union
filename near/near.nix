@@ -66,6 +66,33 @@
 
       craneLib = crane.lib.overrideToolchain rustToolchain;
 
+      nearcore = craneLib.buildPackage rec {
+        pname = "neard";
+        version = "326c6098c652c0fe3419067ad0ff839804658b7d";
+
+        buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ] ++ (
+          lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+        );
+
+        nativeBuildInputs = [
+          # pkgs.llvmPackages_14.libclang
+          # pkgs.llvmPackages_14.libcxxClang
+          pkgs.clang
+          # pkgs.stdenv.cc.libc
+        ];
+
+        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+
+        cargoExtraArgs = " --verbose --verbose -p neard";
+
+        src = pkgs.fetchFromGitHub {
+          owner = "near";
+          repo = "nearcore";
+          rev = version;
+          hash = "sha256-zGKyBwQrCfDYGlqd7sEf/JbTrKkMG5MEwbGvsJvOZVQ=";
+        };
+      };
+
       near-sandbox = craneLib.buildPackage rec {
         pname = "neard";
         version = "326c6098c652c0fe3419067ad0ff839804658b7d";
@@ -110,10 +137,17 @@
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });
+
+      near-localnet = pkgs.writeShellApplication {
+        name = "near-localnet";
+        text = ''
+          nearup run --override --binary-path ${nearcore}/bin localnet
+        '';
+      };
     in
     {
       packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // {
-        inherit near-ibc-tests near-sandbox cargo-near;
+        inherit near-ibc-tests near-sandbox cargo-near nearcore near-localnet;
       };
 
       checks = near-light-client.checks // near-ibc.checks;
