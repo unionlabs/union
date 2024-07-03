@@ -30,6 +30,8 @@ builds:
     - 'packages.*.gen-proto'
     - 'packages.*.go-vendor'
     - 'packages.*.voyager-dev'
+    - 'packages.*.cargo-near'
+    - 'packages.*.near-sandbox'
   include:
     - '*.x86_64-linux.*'
     - 'packages.aarch64-linux.*'
