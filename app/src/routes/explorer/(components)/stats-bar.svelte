@@ -3,6 +3,7 @@
   import { packetCountQuery, transferCountQuery, transfersPerDayQuery } from "$lib/queries/stats.ts";
   import PixelGraph from "../(components)/pixel-graph.svelte"
   import { userTime } from "$lib/utilities/user-time.ts";
+  import SpinningOutlineLogo from '$lib/components/spinning-outline-logo.svelte';
 
   // 30 days
   $: transfersPerDayData = transfersPerDayQuery(30)
@@ -15,7 +16,7 @@
 </script>
 
   <div class="bg-muted border-b flex">
-    <div class="w-full flex overflow-x-auto">
+    <div class="w-full flex flex-1">
       <StatsBarStat label={"Total Messages"} value={155_300_677}/>
       <StatsBarStat label="Total Packets" value={123_325_332}/>
       <StatsBarStat label="Metrics" value={$userTime}>
@@ -25,5 +26,6 @@
           </div>
         {/if}
       </StatsBarStat>
+      <SpinningOutlineLogo/>
     </div>
   </div>
