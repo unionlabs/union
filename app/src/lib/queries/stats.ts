@@ -8,10 +8,10 @@ import {
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
 
-export const transfersPerDayQuery = () =>
+export const transfersPerDayQuery = (limit) =>
   createQuery({
       queryKey: ["transfer-per-day"],
-      queryFn: async () => (await request(URLS.GRAPHQL, transfersPerDayQueryDocument, { limit: 24 })).v0_daily_transfers
+      queryFn: async () => (await request(URLS.GRAPHQL, transfersPerDayQueryDocument, { limit })).v0_daily_transfers
       ,
       enabled: true,
       refetchInterval: 6_000,

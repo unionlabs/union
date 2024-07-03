@@ -3,9 +3,10 @@
   import { packetCountQuery, transferCountQuery, transfersPerDayQuery } from "$lib/queries/stats.ts";
   import PixelGraph from "../(components)/pixel-graph.svelte"
   import { userTime } from "$lib/utilities/user-time.ts";
-  import { ScrollArea } from "$lib/components/ui/scroll-area";
 
-  $: transfersPerDayData = transfersPerDayQuery()
+  // 30 days
+  $: transfersPerDayData = transfersPerDayQuery(30)
+
   $: packetCountData = packetCountQuery()
   $: transferCountData = transferCountQuery()
 
