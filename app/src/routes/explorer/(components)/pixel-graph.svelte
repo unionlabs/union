@@ -24,14 +24,14 @@
 
 </script>
 
-<div class="flex items-end gap-[2.5px]">
+<div class="flex flex-row-reverse items-end gap-[2.5px]">
   {#each normalizedData as data}
     <Tooltip.Root>
       <Tooltip.Trigger>
         <div class="bar flex flex-col-reverse gap-[1px] group cursor-crosshair">
-          <div class="half-square bg-primary group-hover:bg-primary/50 h-[2.5px] w-[5px]"></div>
+          <div class="half-square bg-primary group-hover:bg-accent h-[2.5px] w-[5px] transition"></div>
           {#each Array(data.normalizedValue) as _}
-            <div class="square bg-primary group-hover:bg-primary/50 h-[5px] w-[5px]"></div>
+            <div class="square bg-primary group-hover:bg-accent h-[5px] w-[5px] transition"></div>
           {/each}
         </div>
       </Tooltip.Trigger>
