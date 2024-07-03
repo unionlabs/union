@@ -18,6 +18,9 @@
     const scene = new THREE.Scene();
     const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas, alpha: true});
 
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    renderer.setPixelRatio(devicePixelRatio);
+
     renderer.setClearColor( 0x000000, 0 ); // the default
 
     // There's no reason to set the aspect here because we're going
@@ -43,6 +46,7 @@
       const canvas = renderer.domElement;
       const width = canvas.clientWidth;
       const height = canvas.clientHeight;
+
       if (canvas.width !== width ||canvas.height !== height) {
         // you must pass false here or three.js sadly fights the browser
         renderer.setSize(width, height, false);
