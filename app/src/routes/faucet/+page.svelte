@@ -30,7 +30,7 @@ type FaucetState = DiscriminatedUnion<
   }
 >
 
-let address: string = $cosmosStore.address ?? ""
+$: address = $cosmosStore.address ?? ""
 
 const resetInput = () => {
   address = $cosmosStore.address ?? ""
