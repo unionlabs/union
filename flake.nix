@@ -122,11 +122,17 @@
       flake = false;
     };
     cometbls = {
-      url = "git+ssh://git@github.com/unionlabs/cometbls?rev=360766577f7daa89f958a4c28eee909340eb4b02";
+      type = "github";
+      owner = "unionlabs";
+      repo = "cometbls";
+      rev = "360766577f7daa89f958a4c28eee909340eb4b02";
       flake = false;
     };
     cosmossdk = {
-      url = "git+ssh://git@github.com/unionlabs/cosmos-sdk?rev=7d067955f7028f45b3ce205b5c35aab2e1946b19";
+      type = "github";
+      owner = "unionlabs";
+      repo = "cosmos-sdk";
+      rev = "7d067955f7028f45b3ce205b5c35aab2e1946b19";
       flake = false;
     };
 
