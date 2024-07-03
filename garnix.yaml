@@ -32,7 +32,7 @@ builds:
     - 'packages.*.voyager-dev'
   include:
     - '*.x86_64-linux.*'
-    - '*.aarch64-linux.*'
+    - 'packages.aarch64-linux.*'
     - 'devShell.x86_64-linux'
     - 'homeConfigurations.*'
     - 'nixosConfigurations.*'
