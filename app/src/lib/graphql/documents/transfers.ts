@@ -2,7 +2,7 @@ import { graphql } from "gql.tada"
 
 export const allTransfersQueryDocument = graphql(/* GraphQL */ `
     query AllTransfersQuery @cached(ttl: 5) {
-    v0_transfers(limit: 100, order_by: {source_timestamp: desc}) {
+    v0_transfers(limit: 25, order_by: {source_timestamp: desc}) {
       sender
       source_chain_id
       source_transaction_hash
