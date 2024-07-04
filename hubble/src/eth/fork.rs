@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use backon::Retryable;
 use color_eyre::Report;
 use ethers::{
@@ -18,12 +20,19 @@ use crate::{
 pub struct Config {
     pub label: String,
     pub url: Url,
+    #[serde(default = "default_interval")]
+    pub interval: Duration,
+}
+
+fn default_interval() -> Duration {
+    Duration::from_secs(12)
 }
 
 pub struct Indexer {
     chain_id: ChainId,
     pool: PgPool,
     provider: Provider<Http>,
+    interval: Duration,
 }
 
 impl Config {
@@ -49,6 +58,7 @@ impl Config {
                 chain_id,
                 pool,
                 provider,
+                interval: self.interval,
             })
         }
         .instrument(indexing_span)
@@ -104,6 +114,7 @@ impl Indexer {
                 )
                 .await?;
                 tx.commit().await?;
+                tokio::time::sleep(self.interval).await;
             }
         }
         .instrument(indexing_span)
