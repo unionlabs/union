@@ -14,7 +14,6 @@ import ExternalFaucets from "./(components)/external-faucets.svelte"
 import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
 import request from "graphql-request"
 import { URLS } from "$lib/constants/index.ts"
-import { noThrow } from "$lib/utilities/index.ts"
 import { writable, type Writable } from "svelte/store"
 import Truncate from "$lib/components/truncate.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
@@ -163,7 +162,7 @@ const fetchFromFaucet = async () => {
               type="submit"
               on:click={event => {
                 event.preventDefault()
-                noThrow(fetchFromFaucet())
+                fetchFromFaucet()
                }}
               disabled={$faucetState.kind !== "IDLE" || isValidCosmosAddress(address, ['union']) === false}
               class={cn('min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50')}

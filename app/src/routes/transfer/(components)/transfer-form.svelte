@@ -5,7 +5,7 @@ import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { noThrow, raise, sleep } from "$lib/utilities/index.ts"
+import { raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.js"
@@ -288,7 +288,7 @@ const transfer = async () => {
   } else if ($fromChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
     if (connectorClient?.chain?.id !== sepolia.id) {
-      await noThrow(windowEthereumSwitchChain())
+      await windowEthereumSwitchChain()
       await sleep(1_500)
     }
 
@@ -884,7 +884,7 @@ const resetInput = () => {
                 ts.error = undefined
                 return ts
               })
-              noThrow(transfer())
+              transfer()
             }}
           />
         {/if}

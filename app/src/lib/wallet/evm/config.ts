@@ -15,9 +15,9 @@ import {
   switchChain as _switchChain,
   createStorage as createWagmiStorage
 } from "@wagmi/core"
+import { sleep } from "$lib/utilities"
 import { writable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
-import { noThrow, sleep } from "$lib/utilities"
 import { APP_INFO } from "$lib/constants/app.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
@@ -124,16 +124,14 @@ export function createSepoliaStore(
     subscribe,
     connect: async (walletId: EvmWalletId) => {
       console.log("[evm] connect --", { walletId })
-      await noThrow(evmConnect(walletId, sepolia.id))
+      await evmConnect(walletId, sepolia.id)
     },
     disconnect: async () => {
       console.log("[evm] disconnect")
-      await noThrow(
-        Promise.all([
-          await evmDisconnect(),
-          ...config.connectors.map(connector => connector.disconnect())
-        ])
-      )
+      await Promise.all([
+        await evmDisconnect(),
+        ...config.connectors.map(connector => connector.disconnect())
+      ])
       await sleep(1_000)
     }
   }
@@ -173,7 +171,7 @@ watchAccount(config, {
       connectedWallet: account.connector?.id
     })
 })
-noThrow(reconnect(config))
+reconnect(config)
 
 export async function evmConnect(
   evmWalletId: EvmWalletId,
