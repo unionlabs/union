@@ -19,7 +19,6 @@ use unionlabs::{
     encoding::{EncodeAs, Proto},
     google::protobuf::any::Any,
     hash::H256,
-    ibc::core::client::height::IsHeight,
     id::ConnectionId,
     parse_wasm_client_type,
     signer::CosmosSigner,
@@ -64,18 +63,22 @@ impl GasConfig {
     }
 }
 
-pub trait CosmosSdkChainRpcs: Chain<Error = tendermint_rpc::Error> {
+pub trait CosmosSdkChainRpcs {
+    // not named `chain_id` so it doesn't cause ambiguities with `Chain::chain_id`
+    fn tm_chain_id(&self) -> String;
     fn grpc_url(&self) -> String;
     fn tm_client(&self) -> &WebSocketClient;
+    fn gas_config(&self) -> &GasConfig;
 }
 
-pub trait CosmosSdkChain: CosmosSdkChainRpcs {
-    fn gas_config(&self) -> &GasConfig;
+pub trait CosmosSdkChain {
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>>;
 }
 
 #[allow(async_fn_in_trait)]
-pub trait CosmosSdkChainExt: CosmosSdkChain {
+pub trait CosmosSdkChainIbcExt:
+    CosmosSdkChain + CosmosSdkChainRpcs + Chain<Error = tendermint_rpc::Error>
+{
     async fn client_type_of_checksum(&self, checksum: H256) -> Option<WasmClientType> {
         if let Some(ty) = self.checksum_cache().get(&checksum) {
             debug!(
@@ -175,27 +178,10 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         .parse()
         .unwrap()
     }
+}
 
-    async fn account_info(&self, account: &str) -> BaseAccount {
-        debug!(%account, "fetching account");
-        let Any(account) =
-            protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(self.grpc_url())
-                .await
-                .unwrap()
-                .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
-                    address: account.to_string(),
-                })
-                .await
-                .unwrap()
-                .into_inner()
-                .account
-                .unwrap()
-                .try_into()
-                .unwrap();
-
-        account
-    }
-
+#[allow(async_fn_in_trait)]
+pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
     /// - simulate tx
     /// - submit tx
     /// - wait for inclusion
@@ -242,7 +228,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 &SignDoc {
                     body_bytes: tx_body.clone().encode_as::<Proto>(),
                     auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.chain_id().to_string(),
+                    chain_id: self.tm_chain_id().to_string(),
                     account_number: account.account_number,
                 }
                 .encode_as::<Proto>(),
@@ -292,7 +278,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 &SignDoc {
                     body_bytes: tx_body.clone().encode_as::<Proto>(),
                     auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.chain_id().to_string(),
+                    chain_id: self.tm_chain_id().to_string(),
                     account_number: account.account_number,
                 }
                 .encode_as::<Proto>(),
@@ -352,19 +338,27 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
         };
 
         let mut target_height = self
-            .query_latest_height()
+            .tm_client()
+            .latest_block()
             .await
-            .map_err(BroadcastTxCommitError::QueryLatestHeight)?;
+            .map_err(BroadcastTxCommitError::QueryLatestHeight)?
+            .block
+            .header
+            .height;
 
         let mut i = 0;
         loop {
             let reached_height = 'l: loop {
                 let current_height = self
-                    .query_latest_height()
+                    .tm_client()
+                    .latest_block()
                     .await
-                    .map_err(BroadcastTxCommitError::QueryLatestHeight)?;
+                    .map_err(BroadcastTxCommitError::QueryLatestHeight)?
+                    .block
+                    .header
+                    .height;
 
-                if current_height.into_height() >= target_height.into_height() {
+                if current_height >= target_height {
                     break 'l current_height;
                 }
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -401,6 +395,26 @@ pub trait CosmosSdkChainExt: CosmosSdkChain {
                 }
             }
         }
+    }
+
+    async fn account_info(&self, account: &str) -> BaseAccount {
+        debug!(%account, "fetching account");
+        let Any(account) =
+            protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(self.grpc_url())
+                .await
+                .unwrap()
+                .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
+                    address: account.to_string(),
+                })
+                .await
+                .unwrap()
+                .into_inner()
+                .account
+                .unwrap()
+                .try_into()
+                .unwrap();
+
+        account
     }
 }
 
@@ -457,7 +471,12 @@ fn test_u64_mul_f64() {
     assert_eq!(val, 110);
 }
 
-impl<T: CosmosSdkChain> CosmosSdkChainExt for T {}
+impl<T: CosmosSdkChain + CosmosSdkChainRpcs + Chain<Error = tendermint_rpc::Error>>
+    CosmosSdkChainIbcExt for T
+{
+}
+
+impl<T: CosmosSdkChainRpcs> CosmosSdkChainExt for T {}
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum BroadcastTxCommitError {

@@ -1,10 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
 
-use chain_utils::{
-    cosmos::Cosmos,
-    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain},
-    wasm::Wraps,
-};
+use chain_utils::{cosmos::Cosmos, cosmos_sdk::BroadcastTxCommitError, wasm::Wraps};
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
 use queue_msg::{
@@ -174,20 +170,16 @@ pub enum CosmosFetch<Hc: ChainExt, Tr: ChainExt> {
 
 impl<Hc, Tr> DoFetch<Hc> for CosmosFetch<Hc, Tr>
 where
-    Hc: CosmosSdkChain
-        + ChainExt<
-            StateProof = MerkleProof,
-            Data<Tr> = CosmosDataMsg<Hc, Tr>,
-            Fetch<Tr> = CosmosFetch<Hc, Tr>,
-            StoredClientState<Tr>: Decode<
-                Proto,
-                Error: Debug + Clone + PartialEq + std::error::Error,
-            >,
-            StoredConsensusState<Tr>: Decode<
-                Proto,
-                Error: Debug + Clone + PartialEq + std::error::Error,
-            >,
+    Hc: CosmosSdkChainSealed<
+        StateProof = MerkleProof,
+        Data<Tr> = CosmosDataMsg<Hc, Tr>,
+        Fetch<Tr> = CosmosFetch<Hc, Tr>,
+        StoredClientState<Tr>: Decode<Proto, Error: Debug + Clone + PartialEq + std::error::Error>,
+        StoredConsensusState<Tr>: Decode<
+            Proto,
+            Error: Debug + Clone + PartialEq + std::error::Error,
         >,
+    >,
     Tr: ChainExt,
 
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,

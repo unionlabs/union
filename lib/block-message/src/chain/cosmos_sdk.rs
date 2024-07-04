@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, marker::PhantomData, num::NonZeroU32};
 
-use chain_utils::cosmos_sdk::{CosmosSdkChain, CosmosSdkChainExt};
+use chain_utils::cosmos_sdk::{CosmosSdkChainExt, CosmosSdkChainIbcExt};
 use frunk::{hlist_pat, HList};
 use futures::FutureExt;
 use queue_msg::{
@@ -32,7 +32,7 @@ use crate::{
     id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
-pub trait CosmosSdkChainSealed: CosmosSdkChain + ChainExt {}
+pub trait CosmosSdkChainSealed: ChainExt + CosmosSdkChainIbcExt + CosmosSdkChainExt {}
 
 impl<C: CosmosSdkChainSealed> ChainExt for C {
     type Data = CosmosSdkData<C>;
@@ -360,7 +360,7 @@ pub struct FetchBlocks<C: CosmosSdkChainSealed> {
 }
 
 #[queue_msg]
-pub struct FetchTransactions<C: CosmosSdkChain> {
+pub struct FetchTransactions<C: CosmosSdkChainSealed> {
     pub height: HeightOf<C>,
     pub page: NonZeroU32,
 }
@@ -371,18 +371,18 @@ pub struct ClientTypeFromConnectionId {
 }
 
 #[queue_msg]
-pub struct ClientTypeFromClientId<C: CosmosSdkChain> {
+pub struct ClientTypeFromClientId<C: CosmosSdkChainSealed> {
     pub client_id: C::ClientId,
 }
 
 #[queue_msg]
 #[derive(enumorph::Enumorph)]
-pub enum CosmosSdkAggregate<C: CosmosSdkChain> {
+pub enum CosmosSdkAggregate<C: CosmosSdkChainSealed> {
     AggregateEventWithClientType(AggregateEventWithClientType<C>),
 }
 
 #[queue_msg]
-pub struct AggregateEventWithClientType<C: CosmosSdkChain> {
+pub struct AggregateEventWithClientType<C: CosmosSdkChainSealed> {
     pub tx_hash: H256,
     pub height: C::Height,
     pub event: IbcEvent<C::ClientId, C::ClientType, String>,

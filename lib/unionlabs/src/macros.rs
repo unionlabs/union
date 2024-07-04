@@ -150,6 +150,12 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            impl From<$Struct> for ::generic_array::GenericArray<u8, ::typenum::U<$N>> {
+                fn from(arr: $Struct) -> Self {
+                    ::generic_array::GenericArray::<u8, ::typenum::U<$N>>::from_slice(&arr.0).to_owned()
+                }
+            }
+
             #[cfg(feature = "ethabi")]
             impl From<$Struct> for ::ethers_core::types::Bytes {
                 fn from(value: $Struct) -> Self {

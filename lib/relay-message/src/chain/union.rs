@@ -133,8 +133,7 @@ pub enum UnionFetch<Hc: ChainExt, Tr: ChainExt> {
 impl<Hc, Tr> DoFetch<Hc> for UnionFetch<Hc, Tr>
 where
     Hc: Wraps<Union>
-        + CosmosSdkChain
-        + ChainExt<
+        + CosmosSdkChainSealed<
             StateProof = unionlabs::union::ics23::merkle_proof::MerkleProof,
             StoredClientState<Tr>: Decode<
                 Proto,

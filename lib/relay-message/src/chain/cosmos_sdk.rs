@@ -1,7 +1,7 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::{
-    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt},
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt, CosmosSdkChainIbcExt},
     keyring::ChainKeyring,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
@@ -35,7 +35,7 @@ use crate::{
     RelayMessage,
 };
 
-pub trait CosmosSdkChainSealed: CosmosSdkChain + ChainExt {}
+pub trait CosmosSdkChainSealed: CosmosSdkChain + CosmosSdkChainIbcExt + ChainExt {}
 
 pub async fn do_msg<Hc, Tr>(
     hc: &Hc,
@@ -399,18 +399,14 @@ pub async fn fetch_abci_query<Hc, Tr>(
     ty: AbciQueryType,
 ) -> Result<Op<RelayMessage>, FetchAbciQueryError<Hc, Tr>>
 where
-    Hc: CosmosSdkChain
-        + ChainExt<
-            StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof, Error: Debug>,
-            StoredClientState<Tr>: Decode<
-                Proto,
-                Error: Debug + Clone + PartialEq + std::error::Error,
-            >,
-            StoredConsensusState<Tr>: Decode<
-                Proto,
-                Error: Debug + Clone + PartialEq + std::error::Error,
-            >,
+    Hc: CosmosSdkChainSealed<
+        StateProof: TryFrom<protos::ibc::core::commitment::v1::MerkleProof, Error: Debug>,
+        StoredClientState<Tr>: Decode<Proto, Error: Debug + Clone + PartialEq + std::error::Error>,
+        StoredConsensusState<Tr>: Decode<
+            Proto,
+            Error: Debug + Clone + PartialEq + std::error::Error,
         >,
+    >,
     Tr: ChainExt,
     AnyLightClientIdentified<AnyData>: From<identified!(Data<Hc, Tr>)>,
     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
