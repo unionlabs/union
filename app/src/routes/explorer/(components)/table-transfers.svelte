@@ -14,7 +14,7 @@ import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import type { Chain } from "$lib/types"
 import type { UnwrapReadable } from "$lib/utilities/types"
-import { raise } from '$lib/utilities'
+import { raise } from "$lib/utilities"
 
 export let chains: Array<Chain>
 
