@@ -20,7 +20,6 @@ export default (<Config>{
   },
   experimental: {
     matchVariant: true,
-    optimizeUniversalDefaults: true
   },
   safelist: ["dark", "light"],
   darkMode: "class",

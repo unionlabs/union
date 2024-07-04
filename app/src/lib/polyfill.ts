@@ -1,4 +1,4 @@
-import "viem/window"
+import "temporal-polyfill/global"
 import process from "process"
 import { Buffer } from "buffer"
 import EventEmitter from "events"
