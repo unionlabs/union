@@ -13,7 +13,7 @@ use url::Url;
 
 use crate::{
     eth::BlockInsert,
-    postgres::{self, ChainId, InsertMode},
+    postgres::{self, ChainId},
 };
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -107,12 +107,8 @@ impl Indexer {
                     .try_collect()
                     .await?;
                 let mut tx = self.pool.begin().await?;
-                crate::postgres::insert_batch_logs(
-                    &mut tx,
-                    blocks.into_iter().map(Into::into),
-                    InsertMode::Upsert,
-                )
-                .await?;
+                crate::postgres::update_batch_logs(&mut tx, blocks.into_iter().map(Into::into))
+                    .await?;
                 tx.commit().await?;
                 tokio::time::sleep(self.interval).await;
             }

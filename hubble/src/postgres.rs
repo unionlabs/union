@@ -106,6 +106,49 @@ pub fn get_last_n_logs<'a>(
     .map_ok(|r| (r.block_hash, r.height)))
 }
 
+pub async fn update_batch_logs<C: ChainType, T: Serialize>(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    logs: impl IntoIterator<Item = Log<C, T>>,
+) -> sqlx::Result<()>
+where
+    <C as ChainType>::BlockHeight: Into<i32>,
+    <C as ChainType>::BlockHash: Into<String> + Debug,
+{
+    let (chain_ids, hashes, data, height, time): (
+        Vec<i32>,
+        Vec<String>,
+        Vec<_>,
+        Vec<i32>,
+        Vec<OffsetDateTime>,
+    ) = logs
+        .into_iter()
+        .map(|l| {
+            (
+                l.chain_id.db,
+                l.block_hash.into(),
+                serde_json::to_value(&l.data).expect("data should be json serializable"),
+                l.height.into(),
+                l.time,
+            )
+        })
+        .multiunzip();
+
+    sqlx::query!("
+        UPDATE v0.logs
+        SET chain_id = batch.chain_id,
+            block_hash = batch.block_hash,
+            data = batch.data,
+            height = batch.height,
+            time = batch.time
+        FROM (
+            SELECT unnest($1::int[]) as chain_id, unnest($2::text[]) as block_hash, unnest($3::jsonb[]) as data, unnest($4::int[]) as height, unnest($5::timestamptz[]) as time
+        ) as batch
+        WHERE batch.height = v0.logs.height AND batch.chain_id = v0.logs.chain_id
+        ", &chain_ids, &hashes, &data, &height, &time)
+    .execute(tx.as_mut()).await?;
+    Ok(())
+}
+
 pub async fn insert_batch_logs<C: ChainType, T: Serialize>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     logs: impl IntoIterator<Item = Log<C, T>>,
