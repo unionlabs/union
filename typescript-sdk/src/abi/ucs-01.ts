@@ -705,6 +705,34 @@ export const ucs01RelayAbi = [
   },
   {
     type: "function",
+    name: "updateMetadata",
+    inputs: [
+      {
+        name: "denom",
+        type: "address",
+        internalType: "contract IERC20Denom"
+      },
+      {
+        name: "newName",
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "newSymbol",
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "newDecimals",
+        type: "uint8",
+        internalType: "uint8"
+      }
+    ],
+    outputs: [],
+    stateMutability: "nonpayable"
+  },
+  {
+    type: "function",
     name: "upgradeToAndCall",
     inputs: [
       {
@@ -1016,6 +1044,11 @@ export const ucs01RelayAbi = [
   {
     type: "error",
     name: "ErrInvalidAcknowledgement",
+    inputs: []
+  },
+  {
+    type: "error",
+    name: "ErrInvalidAmount",
     inputs: []
   },
   {

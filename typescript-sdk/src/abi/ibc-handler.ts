@@ -1,4 +1,4 @@
-export const ibcHandlerAbi = <const>[
+export const ibcHandlerAbi = [
   {
     type: "function",
     name: "COMMITMENT_PREFIX",
@@ -4103,6 +4103,34 @@ export const ibcHandlerAbi = <const>[
   },
   {
     type: "function",
+    name: "upgradeImpls",
+    inputs: [
+      {
+        name: "_ibcClient",
+        type: "address",
+        internalType: "address"
+      },
+      {
+        name: "_ibcConnection",
+        type: "address",
+        internalType: "address"
+      },
+      {
+        name: "_ibcChannel",
+        type: "address",
+        internalType: "address"
+      },
+      {
+        name: "_ibcPacket",
+        type: "address",
+        internalType: "address"
+      }
+    ],
+    outputs: [],
+    stateMutability: "nonpayable"
+  },
+  {
+    type: "function",
     name: "upgradeToAndCall",
     inputs: [
       {
@@ -5241,4 +5269,4 @@ export const ibcHandlerAbi = <const>[
     name: "ErrUnsupportedFeature",
     inputs: []
   }
-]
+] as const
