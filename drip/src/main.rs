@@ -8,20 +8,19 @@ use axum::{
     routing::get,
     Router,
 };
-use chain_utils::{
-    cosmos::{self},
-    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChainExt, CosmosSdkChainRpcs, GasConfig},
+use chain_utils::cosmos_sdk::{
+    BroadcastTxCommitError, CosmosSdkChainExt, CosmosSdkChainRpcs, GasConfig,
 };
 use clap::Parser;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
-use tendermint_rpc::{WebSocketClient, WebSocketClientUrl};
+use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use tokio::net::TcpListener;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
 use unionlabs::{hash::H256, signer::CosmosSigner, ErrorReporter};
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() {
     let args = AppArgs::parse();
 
@@ -44,9 +43,7 @@ async fn main() {
         }
     }
 
-    let secret = config.secret.map(CaptchaSecret);
-
-    let bypass_secret = config.bypass_secret.map(CaptchaBypassSecret);
+    let secret = config.secret.clone().map(CaptchaSecret);
 
     let pool = PoolBuilder::new()
         .path("db.sqlite3")
@@ -85,107 +82,130 @@ async fn main() {
         .data(MaxRequestPolls(config.max_request_polls))
         .data(Bech32Prefix(prefix))
         .data(secret)
-        .data(bypass_secret)
         .finish();
 
     info!("spawning worker");
+    let config = config.clone();
     tokio::spawn(async move {
         loop {
-            let handle = tokio::spawn({
-                let pool = pool.clone();
-                async move {
-                    loop {
-                        let (ids, addresses) = pool
-                            .conn(|conn| {
-                                let mut stmt = conn
-                                    .prepare_cached(
-                                        "SELECT id, address FROM requests WHERE tx_hash IS NULL",
-                                    )
-                                    .expect("???");
+            let config = config.clone();
+            let pool = pool.clone();
 
-                                let mut rows = stmt.query([]).expect("can't query rows");
+            info!("spawning worker thread");
+            let handle = tokio::spawn(async move {
+                // recreate each time so that if this task panics, the keyring gets rebuilt
+                // make sure to panic *here* so that the tokio task will catch the panic!
+                info!("creating drip client");
+                let drip = DripClient {
+                    chain: Chain::new(
+                        config.grpc_url,
+                        config.ws_url,
+                        config.gas_config,
+                        config.signer,
+                    )
+                    .await,
+                    faucet_denom: config.faucet_denom.clone(),
+                    memo: config.memo.clone(),
+                };
 
-                                let mut addresses = vec![];
-                                let mut ids = vec![];
-                                while let Some(row) = rows.next().expect("could not read row") {
-                                    let id: i64 = row.get(0).expect("could not read id");
-                                    let address: String =
-                                        row.get(1).expect("could not read address");
-
-                                    addresses.push(address);
-                                    ids.push(id);
-                                }
-
-                                Ok((ids, addresses))
-                            })
-                            .await
-                            .expect("pool error");
-
-                        if ids.is_empty() {
-                            tokio::time::sleep(Duration::from_millis(1000)).await;
-                            continue;
-                        }
-
-                        let mut i = 0;
-                        let result = loop {
-                            let send_res = drip
-                                .send(
-                                    addresses
-                                        .clone()
-                                        .into_iter()
-                                        .map(|a| (a, config.amount))
-                                        .collect(),
-                                )
-                                .await;
-
-                            match send_res {
-                                Err(err) => {
-                                    if i >= 5 {
-                                        break format!("ERROR: {}", ErrorReporter(err));
-                                    }
-                                    warn!(err = %ErrorReporter(err), attempt = i, "unable to submit transaction");
-                                    i += 1;
-                                }
-                                // this will be displayed to users, print the hash in the same way that cosmos sdk does
-                                Ok(tx_hash) => break tx_hash.to_string_unprefixed().to_uppercase(),
-                            };
-                        };
-
-                        pool.conn(move |conn| {
+                info!("entering worker poll loop");
+                loop {
+                    let (ids, addresses) = pool
+                        .conn(|conn| {
                             let mut stmt = conn
                                 .prepare_cached(
-                                    "UPDATE requests SET tx_hash = ?1 WHERE id >= ?2 AND id <= ?3",
+                                    "SELECT id, address FROM requests WHERE tx_hash IS NULL",
                                 )
                                 .expect("???");
 
-                            let rows_modified = stmt
-                                .execute(params![
-                                    &result,
-                                    &ids.first().unwrap(),
-                                    &ids.last().unwrap()
-                                ])
-                                .expect("can't query rows");
+                            let mut rows = stmt.query([]).expect("can't query rows");
 
-                            info!(rows_modified, "updated requests");
+                            let mut addresses = vec![];
+                            let mut ids = vec![];
+                            while let Some(row) = rows.next().expect("could not read row") {
+                                let id: i64 = row.get(0).expect("could not read id");
+                                let address: String = row.get(1).expect("could not read address");
 
-                            Ok(())
+                                addresses.push(address);
+                                ids.push(id);
+                            }
+
+                            Ok((ids, addresses))
                         })
                         .await
                         .expect("pool error");
+
+                    if ids.is_empty() {
+                        debug!("no requests in queue");
+                        tokio::time::sleep(Duration::from_millis(1000)).await;
+                        continue;
                     }
+
+                    let mut i = 0;
+                    let result = loop {
+                        let send_res = drip
+                            .send(
+                                addresses
+                                    .clone()
+                                    .into_iter()
+                                    .map(|a| (a, config.amount))
+                                    .collect(),
+                            )
+                            .await;
+
+                        match send_res {
+                            Err(err) => {
+                                if i >= 5 {
+                                    break format!("ERROR: {}", ErrorReporter(err));
+                                }
+                                warn!(
+                                    err = %ErrorReporter(err),
+                                    attempt = i,
+                                    "unable to submit transaction"
+                                );
+                                i += 1;
+                            }
+                            // this will be displayed to users, print the hash in the same way that cosmos sdk does
+                            Ok(tx_hash) => break tx_hash.to_string_unprefixed().to_uppercase(),
+                        };
+                    };
+
+                    pool.conn(move |conn| {
+                        let mut stmt = conn
+                            .prepare_cached(
+                                "UPDATE requests SET tx_hash = ?1 WHERE id >= ?2 AND id <= ?3",
+                            )
+                            .expect("???");
+
+                        let rows_modified = stmt
+                            .execute(params![
+                                &result,
+                                &ids.first().unwrap(),
+                                &ids.last().unwrap()
+                            ])
+                            .expect("can't query rows");
+
+                        info!(rows_modified, "updated requests");
+
+                        Ok(())
+                    })
+                    .await
+                    .expect("pool error");
                 }
-            }).await;
+            })
+            .await;
 
             match handle {
                 Ok(()) => {}
-                Err(err) => error!(err = %ErrorReporter(err), "handler panicked"),
+                Err(err) => {
+                    error!(err = %ErrorReporter(err), "handler panicked");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
             }
         }
     });
 
-    // Build the router
     let router = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
-    // .route("/graphql", get(graphql).post_service(GraphQL::new(schema)));
 
     info!("starting server");
     axum::serve(TcpListener::bind("0.0.0.0:8000").await.unwrap(), router)
@@ -217,7 +237,7 @@ impl fmt::Display for LogFormat {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub ws_url: WebSocketClientUrl,
     pub grpc_url: String,
@@ -229,8 +249,6 @@ pub struct Config {
     pub log_format: LogFormat,
     #[serde(default)]
     pub secret: Option<String>,
-    #[serde(default)]
-    pub bypass_secret: Option<String>,
     pub amount: u64,
     pub max_request_polls: u32,
     pub memo: String,
@@ -255,6 +273,49 @@ struct Chain {
     signer: CosmosSigner,
 }
 
+impl Chain {
+    pub async fn new(
+        grpc_url: String,
+        ws_url: WebSocketClientUrl,
+        gas_config: GasConfig,
+        signer: H256,
+    ) -> Self {
+        let (tm_client, driver) = WebSocketClient::builder(ws_url)
+            .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
+            .build()
+            .await
+            .expect("unable to create tm client");
+
+        tokio::spawn(async move { driver.run().await });
+
+        let chain_id = tm_client
+            .status()
+            .await
+            .expect("unable to fetch status")
+            .node_info
+            .network
+            .to_string();
+
+        let prefix =
+            protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(grpc_url.clone())
+                .await
+                .unwrap()
+                .bech32_prefix(protos::cosmos::auth::v1beta1::Bech32PrefixRequest {})
+                .await
+                .unwrap()
+                .into_inner()
+                .bech32_prefix;
+
+        Self {
+            signer: CosmosSigner::new_from_bytes(signer, prefix.clone()).unwrap(),
+            tm_client,
+            chain_id,
+            grpc_url,
+            gas_config,
+        }
+    }
+}
+
 impl CosmosSdkChainRpcs for Chain {
     fn tm_chain_id(&self) -> String {
         self.chain_id.clone()
@@ -274,7 +335,7 @@ impl CosmosSdkChainRpcs for Chain {
 }
 
 impl DripClient {
-    /// `MultiSend` to the specified addresses. Will panic if there are no signers available.
+    /// `MultiSend` to the specified addresses. Will return `None` if there are no signers available.
     async fn send(&self, to_send: Vec<(String, u64)>) -> Result<H256, BroadcastTxCommitError> {
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
             // this is required to be one element
@@ -325,9 +386,6 @@ struct Mutation;
 
 pub struct CaptchaSecret(pub String);
 
-#[derive(PartialEq, Eq)]
-pub struct CaptchaBypassSecret(pub String);
-
 #[Object]
 impl Mutation {
     async fn send<'ctx>(
@@ -337,20 +395,13 @@ impl Mutation {
         to_address: String,
     ) -> Result<String> {
         let secret = ctx.data::<Option<CaptchaSecret>>().unwrap();
-        let bypass_secret = ctx.data::<Option<CaptchaBypassSecret>>().unwrap();
         let max_request_polls = ctx.data::<MaxRequestPolls>().unwrap();
         let bech32_prefix = ctx.data::<Bech32Prefix>().unwrap();
 
-        let allow_bypass = bypass_secret
-            .as_ref()
-            .is_some_and(|CaptchaBypassSecret(secret)| secret == &captcha_token);
-
         if let Some(secret) = secret {
-            if !allow_bypass {
-                recaptcha_verify::verify(&secret.0, &captcha_token, None)
-                    .await
-                    .map_err(|err| format!("failed to verify captcha: {:?}", err))?;
-            }
+            recaptcha_verify::verify(&secret.0, &captcha_token, None)
+                .await
+                .map_err(|err| format!("failed to verify captcha: {:?}", err))?;
         }
 
         match subtle_encoding::bech32::Bech32::lower_case().decode(&to_address) {

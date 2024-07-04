@@ -6,6 +6,8 @@ use bip32::{
 };
 use ripemd::Digest;
 
+use crate::hash::H256;
+
 /// A simple wrapper around a cosmos signer (ECDSA), easily representable as a bech32 string.
 #[derive(Debug, Clone)]
 pub struct CosmosSigner {
@@ -20,6 +22,16 @@ impl CosmosSigner {
             signing_key,
             prefix,
         }
+    }
+
+    pub fn new_from_bytes(
+        signing_key_bytes: H256,
+        prefix: String,
+    ) -> Result<Self, k256::ecdsa::Error> {
+        Ok(Self {
+            signing_key: k256::ecdsa::SigningKey::from_bytes(&signing_key_bytes.into())?,
+            prefix,
+        })
     }
 
     #[must_use]

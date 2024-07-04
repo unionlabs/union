@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, marker::PhantomData, num::NonZeroU32};
 
-use chain_utils::cosmos_sdk::{CosmosSdkChain, CosmosSdkChainExt, CosmosSdkChainIbcExt};
+use chain_utils::cosmos_sdk::{CosmosSdkChainExt, CosmosSdkChainIbcExt};
 use frunk::{hlist_pat, HList};
 use futures::FutureExt;
 use queue_msg::{
