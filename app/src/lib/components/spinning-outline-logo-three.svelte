@@ -2,6 +2,7 @@
   import * as THREE from 'three'; 
   import Square from './spinning-logo/square.svelte';
   import { onMount } from 'svelte';
+  import { createCube } from '$lib/three/cube';
 
 	let cubeWidth = 64;
 	let cubeCount = 12;
@@ -15,51 +16,17 @@
 	let threeCanvas: HTMLCanvasElement;
 
 	onMount(() => {
-
 		const scene = new THREE.Scene();
 		const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas, alpha: true });
-
 		const devicePixelRatio = window.devicePixelRatio || 1;
 		renderer.setPixelRatio(devicePixelRatio);
-
 		renderer.setClearColor(0x000000, 0);
 
 		const camera = new THREE.PerspectiveCamera(70, 2, 1, 1000);
 		camera.position.z = 400;
 
-		const boxGeometry = new THREE.BoxGeometry(200, 200, 200);
-		const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
-
-		const createTubeLine = (points, thickness) => {
-			const path = new THREE.CatmullRomCurve3(points);
-			const geometry = new THREE.TubeGeometry(path, 20, thickness, 8, false);
-			const material = new THREE.MeshBasicMaterial({ color: 0x000000 });
-			const tube = new THREE.Mesh(geometry, material);
-			return tube;
-		};
-
-		const edgesGroup = new THREE.Group(); // Create a group to hold all edges
-
-		for (let i = 0; i < edgesGeometry.attributes.position.count; i += 2) {
-			const start = new THREE.Vector3(
-				edgesGeometry.attributes.position.getX(i),
-				edgesGeometry.attributes.position.getY(i),
-				edgesGeometry.attributes.position.getZ(i)
-			);
-			const end = new THREE.Vector3(
-				edgesGeometry.attributes.position.getX(i + 1),
-				edgesGeometry.attributes.position.getY(i + 1),
-				edgesGeometry.attributes.position.getZ(i + 1)
-			);
-			const line = createTubeLine([start, end], strokeWidth);
-			edgesGroup.add(line); // Add each edge to the group
-		}
-
-		scene.add(edgesGroup); // Add the group to the scene
-
-		const light1 = new THREE.PointLight(0xff80C0, 2, 0);
-		light1.position.set(200, 100, 300);
-		scene.add(light1);
+		const cube = createCube(strokeWidth);
+		scene.add(cube);
 
 		function resizeCanvasToDisplaySize() {
 			const canvas = renderer.domElement;
@@ -78,8 +45,8 @@
 
 			resizeCanvasToDisplaySize();
 
-			edgesGroup.rotation.x = time * 0.5;
-			edgesGroup.rotation.y = time * 1;
+			cube.rotation.x = time * 2;
+			cube.rotation.y = time * 1;
 
 			renderer.render(scene, camera);
 			requestAnimationFrame(animate);
