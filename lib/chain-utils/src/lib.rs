@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use enumorph::Enumorph;
+use near::{Near, NearInitError};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 use unionlabs::{
@@ -159,6 +160,15 @@ impl GetChain<Ethereum<Mainnet>> for Chains {
     }
 }
 
+impl GetChain<Near> for Chains {
+    fn get_chain(&self, chain_id: &ChainIdOf<Near>) -> Option<Near> {
+        self.chains
+            .get(&chain_id.to_string())
+            .cloned()
+            .map(|chain| chain.try_into().expect("chain is correct type"))
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "chain_type")]
 pub enum ChainConfigType {
@@ -168,6 +178,7 @@ pub enum ChainConfigType {
     Scroll(scroll::Config),
     Arbitrum(arbitrum::Config),
     Berachain(berachain::Config),
+    Near(near::Config),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -200,6 +211,7 @@ pub enum AnyChain {
     Scroll(Scroll),
     Arbitrum(Arbitrum),
     Berachain(Berachain),
+    Near(Near),
 }
 
 impl AnyChain {
@@ -269,6 +281,11 @@ macro_rules! any_chain {
                 type Hc = $crate::berachain::Berachain;
                 $expr
             }
+            AnyChain::Near($c) => {
+                #[allow(dead_code)]
+                type Hc = $crate::near::Near;
+                $expr
+            }
         }
     };
 }
@@ -287,6 +304,8 @@ pub enum AnyChainTryFromConfigError {
     Arbitrum(#[from] ArbitrumInitError),
     #[error("error initializing a berachain chain")]
     Berachain(#[from] BerachainInitError),
+    #[error("error initializing a near chain")]
+    Near(#[from] NearInitError),
 }
 
 impl AnyChain {
@@ -319,6 +338,7 @@ impl AnyChain {
             ChainConfigType::Berachain(berachain) => {
                 Self::Berachain(Berachain::new(berachain).await?)
             }
+            ChainConfigType::Near(near) => Self::Near(Near::new(near).await?),
         })
     }
 }
@@ -374,4 +394,12 @@ impl LightClientType<Ethereum<Mainnet>> for Wasm<Union> {
 
 impl LightClientType<Ethereum<Minimal>> for Wasm<Union> {
     const TYPE: ClientType = ClientType::Wasm(WasmClientType::EthereumMinimal);
+}
+
+impl LightClientType<Near> for Wasm<Union> {
+    const TYPE: ClientType = ClientType::Wasm(WasmClientType::Near);
+}
+
+impl LightClientType<Wasm<Union>> for Near {
+    const TYPE: ClientType = ClientType::Cometbls;
 }

@@ -7,7 +7,7 @@ use queue_msg::{
     aggregate, conc, fetch, queue_msg, wait, HandleFetch, Op, QueueError, QueueMessage,
 };
 use tracing::instrument;
-use unionlabs::ibc::core::client::height::IsHeight;
+use unionlabs::{ibc::core::client::height::IsHeight, never::Never};
 
 use crate::{
     aggregate::{Aggregate, AggregateFetchBlockRange, AnyAggregate},
@@ -92,6 +92,12 @@ where
 
 pub trait DoFetch<C: ChainExt>: Sized + Debug + Clone + PartialEq {
     fn do_fetch(c: &C, _: Self) -> impl Future<Output = Op<BlockMessage>>;
+}
+
+impl<C: ChainExt> DoFetch<C> for Never {
+    fn do_fetch(_: &C, this: Self) -> impl Future<Output = Op<BlockMessage>> {
+        async move { match this {} }
+    }
 }
 
 pub trait DoFetchBlockRange<C: ChainExt>: ChainExt {

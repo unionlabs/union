@@ -114,6 +114,7 @@ pub mod arbitrum;
 pub mod berachain;
 pub mod cosmos;
 pub mod ethereum;
+pub mod near;
 pub mod scroll;
 pub mod union;
 

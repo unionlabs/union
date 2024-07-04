@@ -1,5 +1,6 @@
 use near_jsonrpc_client::methods::{self, status};
 use near_primitives::types::{AccountId, BlockId, BlockReference, Finality};
+use serde::{Deserialize, Serialize};
 use unionlabs::{
     encoding::Borsh,
     ibc::{core::client::height::Height, lightclients::near},
@@ -8,8 +9,11 @@ use unionlabs::{
     traits::{Chain, ChainIdOf, FromStrExact},
 };
 
+use crate::keyring::{ChainKeyring, ConcurrentKeyring};
+
 pub const NEAR_REVISION_NUMBER: u64 = 0;
 
+#[derive(Debug, Clone)]
 pub struct Near {
     // ???
     rpc: near_jsonrpc_client::JsonRpcClient,
@@ -17,21 +21,48 @@ pub struct Near {
     ibc_account_id: AccountId,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     rpc_url: String,
     ibc_account_id: AccountId,
 }
 
-impl Near {
-    pub async fn new(config: Config) -> Self {
-        let rpc = near_jsonrpc_client::JsonRpcClient::connect(config.rpc_url);
-        let chain_id = rpc.call(status::RpcStatusRequest).await.unwrap().chain_id;
+impl ChainKeyring for Near {
+    type Address = String;
 
-        Self {
+    // TODO(aeryz): temporary hack for near
+    type Signer = unionlabs::signer::CosmosSigner;
+
+    fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
+        unimplemented!()
+    }
+
+    async fn balances(&self) -> Vec<crate::keyring::SignerBalance<Self::Address>> {
+        unimplemented!()
+    }
+}
+
+#[derive(thiserror::Error, Debug, Clone)]
+pub enum NearInitError {
+    // TODO(aeryz): add error context?
+    #[error("rpc error")]
+    RpcError,
+}
+
+impl Near {
+    pub async fn new(config: Config) -> Result<Self, NearInitError> {
+        let rpc = near_jsonrpc_client::JsonRpcClient::connect(config.rpc_url);
+        let chain_id = rpc
+            .call(status::RpcStatusRequest)
+            .await
+            .map_err(|_| NearInitError::RpcError)?
+            .chain_id;
+
+        Ok(Self {
             rpc,
             chain_id,
             ibc_account_id: config.ibc_account_id,
-        }
+        })
     }
 }
 
