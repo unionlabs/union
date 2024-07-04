@@ -9,16 +9,17 @@ use axum::{
     Router,
 };
 use chain_utils::{
-    cosmos::{self, Cosmos},
-    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChainExt},
+    cosmos::{self},
+    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChainExt, CosmosSdkChainRpcs, GasConfig},
 };
 use clap::Parser;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
+use tendermint_rpc::{WebSocketClient, WebSocketClientUrl};
 use tokio::net::TcpListener;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
-use unionlabs::{hash::H256, ErrorReporter};
+use unionlabs::{hash::H256, signer::CosmosSigner, ErrorReporter};
 
 #[tokio::main]
 async fn main() {
@@ -69,18 +70,20 @@ async fn main() {
     .await
     .unwrap();
 
-    let drip = DripClient {
-        cosmos: Cosmos::new(config.chain)
+    let prefix =
+        protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(config.grpc_url.clone())
             .await
-            .expect("unable to create cosmos client"),
-        faucet_denom: config.faucet_denom,
-        memo: config.memo,
-    };
+            .unwrap()
+            .bech32_prefix(protos::cosmos::auth::v1beta1::Bech32PrefixRequest {})
+            .await
+            .unwrap()
+            .into_inner()
+            .bech32_prefix;
 
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(pool.clone())
         .data(MaxRequestPolls(config.max_request_polls))
-        .data(Bech32Prefix(drip.cosmos.bech32_prefix.clone()))
+        .data(Bech32Prefix(prefix))
         .data(secret)
         .data(bypass_secret)
         .finish();
@@ -89,7 +92,6 @@ async fn main() {
     tokio::spawn(async move {
         loop {
             let handle = tokio::spawn({
-                let drip = drip.clone();
                 let pool = pool.clone();
                 async move {
                     loop {
@@ -217,7 +219,11 @@ impl fmt::Display for LogFormat {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub chain: cosmos::Config,
+    pub ws_url: WebSocketClientUrl,
+    pub grpc_url: String,
+    pub gas_config: GasConfig,
+    pub signer: H256,
+
     pub faucet_denom: String,
     #[serde(default)]
     pub log_format: LogFormat,
@@ -235,62 +241,83 @@ pub struct Bech32Prefix(pub String);
 
 #[derive(Clone)]
 struct DripClient {
-    cosmos: Cosmos,
+    chain: Chain,
     faucet_denom: String,
     memo: String,
+}
+
+#[derive(Clone)]
+struct Chain {
+    chain_id: String,
+    grpc_url: String,
+    tm_client: WebSocketClient,
+    gas_config: GasConfig,
+    signer: CosmosSigner,
+}
+
+impl CosmosSdkChainRpcs for Chain {
+    fn tm_chain_id(&self) -> String {
+        self.chain_id.clone()
+    }
+
+    fn grpc_url(&self) -> String {
+        self.grpc_url.clone()
+    }
+
+    fn tm_client(&self) -> &WebSocketClient {
+        &self.tm_client
+    }
+
+    fn gas_config(&self) -> &GasConfig {
+        &self.gas_config
+    }
 }
 
 impl DripClient {
     /// `MultiSend` to the specified addresses. Will return `None` if there are no signers available.
     async fn send(&self, to_send: Vec<(String, u64)>) -> Result<H256, BroadcastTxCommitError> {
-        self.cosmos
-            .keyring
-            .with(|signer| async move {
-                let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
-                    // this is required to be one element
-                    inputs: vec![protos::cosmos::bank::v1beta1::Input {
-                        address: signer.to_string(),
-                        coins: vec![protos::cosmos::base::v1beta1::Coin {
-                            denom: self.faucet_denom.clone(),
-                            amount: to_send
-                                .iter()
-                                .map(|(_, amount)| *amount)
-                                .sum::<u64>()
-                                .to_string(),
-                        }],
+        let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
+            // this is required to be one element
+            inputs: vec![protos::cosmos::bank::v1beta1::Input {
+                address: self.chain.signer.to_string(),
+                coins: vec![protos::cosmos::base::v1beta1::Coin {
+                    denom: self.faucet_denom.clone(),
+                    amount: to_send
+                        .iter()
+                        .map(|(_, amount)| *amount)
+                        .sum::<u64>()
+                        .to_string(),
+                }],
+            }],
+            outputs: to_send
+                .into_iter()
+                .map(|(address, amount)| protos::cosmos::bank::v1beta1::Output {
+                    address,
+                    coins: vec![protos::cosmos::base::v1beta1::Coin {
+                        denom: self.faucet_denom.clone(),
+                        amount: amount.to_string(),
                     }],
-                    outputs: to_send
-                        .into_iter()
-                        .map(|(address, amount)| protos::cosmos::bank::v1beta1::Output {
-                            address,
-                            coins: vec![protos::cosmos::base::v1beta1::Coin {
-                                denom: self.faucet_denom.clone(),
-                                amount: amount.to_string(),
-                            }],
-                        })
-                        .collect(),
-                };
+                })
+                .collect(),
+        };
 
-                let msg = protos::google::protobuf::Any {
-                    type_url: protos::cosmos::bank::v1beta1::MsgMultiSend::type_url(),
-                    value: msg.encode_to_vec().into(),
-                };
+        let msg = protos::google::protobuf::Any {
+            type_url: protos::cosmos::bank::v1beta1::MsgMultiSend::type_url(),
+            value: msg.encode_to_vec().into(),
+        };
 
-                let (tx_hash, gas_used) = self
-                    .cosmos
-                    .broadcast_tx_commit(signer, [msg], self.memo.clone())
-                    .await?;
+        let (tx_hash, gas_used) = self
+            .chain
+            .broadcast_tx_commit(&self.chain.signer, [msg], self.memo.clone())
+            .await?;
 
-                info!(
-                    %tx_hash,
-                    %gas_used,
-                    "submitted multisend"
-                );
+        info!(
+            %tx_hash,
+            %gas_used,
+            "submitted multisend"
+        );
 
-                Ok(tx_hash)
-            })
-            .await
-            .expect("no signers available?")
+        Ok(tx_hash)
     }
 }
 

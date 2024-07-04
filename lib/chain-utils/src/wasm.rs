@@ -25,16 +25,20 @@ pub trait Wraps<T: Chain>: Chain {
 }
 
 impl<T: CosmosSdkChain> CosmosSdkChain for Wasm<T> {
-    fn gas_config(&self) -> &GasConfig {
-        self.0.gas_config()
-    }
-
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
         self.0.checksum_cache()
     }
 }
 
 impl<T: CosmosSdkChainRpcs + CosmosSdkChain> CosmosSdkChainRpcs for Wasm<T> {
+    fn tm_chain_id(&self) -> String {
+        self.0.tm_chain_id()
+    }
+
+    fn gas_config(&self) -> &GasConfig {
+        self.0.gas_config()
+    }
+
     fn grpc_url(&self) -> String {
         self.0.grpc_url().clone()
     }

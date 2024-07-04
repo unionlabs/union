@@ -75,16 +75,20 @@ impl ChainKeyring for Cosmos {
 }
 
 impl CosmosSdkChain for Cosmos {
-    fn gas_config(&self) -> &GasConfig {
-        &self.gas_config
-    }
-
     fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
         &self.checksum_cache
     }
 }
 
 impl CosmosSdkChainRpcs for Cosmos {
+    fn tm_chain_id(&self) -> String {
+        self.chain_id.clone()
+    }
+
+    fn gas_config(&self) -> &GasConfig {
+        &self.gas_config
+    }
+
     fn grpc_url(&self) -> String {
         self.grpc_url.clone()
     }
