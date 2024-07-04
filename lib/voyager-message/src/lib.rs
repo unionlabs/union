@@ -956,7 +956,6 @@ mod tests {
                     AggregateMsgCreateClient {
                         config: EthereumConfig {
                             client_type: "cometbls".to_string(),
-                            client_address: H160(hex!("83428c7db9815f482a39a1715684dcf755021997")),
                         },
                         __marker: PhantomData,
                     },
@@ -1192,7 +1191,6 @@ mod tests {
                     AggregateMsgCreateClient {
                         config: EthereumConfig {
                             client_type: "cometbls".to_owned(),
-                            client_address: hex!("4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc").into(),
                         },
                         __marker: PhantomData,
                     },
