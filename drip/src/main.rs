@@ -81,6 +81,7 @@ async fn main() {
         .data(pool.clone())
         .data(MaxRequestPolls(config.max_request_polls))
         .data(Bech32Prefix(prefix))
+        .data(config.bypass_secret.clone().map(CaptchaBypassSecret))
         .data(secret)
         .finish();
 
@@ -249,6 +250,8 @@ pub struct Config {
     pub log_format: LogFormat,
     #[serde(default)]
     pub secret: Option<String>,
+    #[serde(default)]
+    pub bypass_secret: Option<String>,
     pub amount: u64,
     pub max_request_polls: u32,
     pub memo: String,
@@ -256,6 +259,7 @@ pub struct Config {
 
 pub struct MaxRequestPolls(pub u32);
 pub struct Bech32Prefix(pub String);
+pub struct CaptchaBypassSecret(pub String);
 
 #[derive(Clone)]
 struct DripClient {
@@ -395,13 +399,20 @@ impl Mutation {
         to_address: String,
     ) -> Result<String> {
         let secret = ctx.data::<Option<CaptchaSecret>>().unwrap();
+        let bypass_secret = ctx.data::<Option<CaptchaBypassSecret>>().unwrap();
         let max_request_polls = ctx.data::<MaxRequestPolls>().unwrap();
         let bech32_prefix = ctx.data::<Bech32Prefix>().unwrap();
 
+        let allow_bypass = bypass_secret
+            .as_ref()
+            .is_some_and(|CaptchaBypassSecret(secret)| secret == &captcha_token);
+
         if let Some(secret) = secret {
-            recaptcha_verify::verify(&secret.0, &captcha_token, None)
-                .await
-                .map_err(|err| format!("failed to verify captcha: {:?}", err))?;
+            if !allow_bypass {
+                recaptcha_verify::verify(&secret.0, &captcha_token, None)
+                    .await
+                    .map_err(|err| format!("failed to verify captcha: {:?}", err))?;
+            }
         }
 
         match subtle_encoding::bech32::Bech32::lower_case().decode(&to_address) {

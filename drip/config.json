@@ -7,6 +7,8 @@
     "gas_multiplier": "1.1",
     "max_gas": 40000000
   },
+  "secret": "invalid",
+  "bypass_secret": "helloworld",
   "signer": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f",
   "faucet_denom": "muno",
   "log_format": "text",
