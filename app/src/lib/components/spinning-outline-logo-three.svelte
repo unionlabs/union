@@ -24,7 +24,10 @@
 		renderer.setClearColor(0x000000, 0);
 
 		const camera = new THREE.PerspectiveCamera(32, 2, 1, 2000);
-		camera.position.z = cubeWidth * 3;
+
+		const startCameraZ = cubeWidth * 3;
+		
+		camera.position.z = startCameraZ;
 
 		let cubes: Array<THREE.Group> = [];
 		for (let x = 0; x <  cubeCount; x++) {
@@ -72,12 +75,28 @@
 					camera.rotation.y += secs * 0.1
 				}
 				if (translating) {
-					camera.position.z -= secs * 20;
+					camera.position.z -= secs * 30;
 				}
 			}
 			else if (animationState === "SLIDING_LEFT") {
 				if (camera.position.x > -cubeWidth) {
 					camera.position.x -= (secs * 150);
+				} else {
+					animationState = "ROTATING_LEFT";
+				}
+			}
+
+			else if (animationState === "ROTATING_LEFT") {
+				const rotating = camera.rotation.y > 0;
+				const translating = camera.position.z < startCameraZ;
+				if (!rotating && !translating) {
+					animationState = "SLIDING_RIGHT";
+				}
+				if (rotating) {
+					camera.rotation.y -= secs * 0.1
+				}
+				if (translating) {
+					camera.position.z += secs * 30;
 				}
 			}
 
