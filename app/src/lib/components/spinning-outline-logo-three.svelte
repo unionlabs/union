@@ -5,8 +5,11 @@
   import { createCube } from '$lib/three/cube';
 
 	let cubeWidth = 128;
-	let gap = 80;
-	let cubeCount = 16;
+	let gap = 128;
+	let cubeCount = 12;
+	// let cubeWidth = 128;
+	// let gap = 80;
+	// let cubeCount = 16;
 	let logoWidth = cubeWidth * cubeCount + gap * (cubeCount - 1);
 	let cubesY = cubeWidth * 2 + gap;
 	$: cubeDelta = (20 - cubeWidth) / 2;
@@ -56,7 +59,7 @@
 		let animationState: "SLIDING_RIGHT" | "ROTATING_RIGHT" | "SLIDING_LEFT" | "ROTATING_LEFT" = "SLIDING_RIGHT";
 
 		function animate(time: number) {
-			const secs = clock.getDelta() * 1;
+			const secs = clock.getDelta() * 0.65;
 
 			resizeCanvasToDisplaySize();
 
