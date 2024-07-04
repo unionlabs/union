@@ -1,3 +1,11 @@
+import type { Readable } from "svelte/store"
+
+export type UnwrapReadable<T> = T extends Readable<infer U> ? U : never
+
+export type DiscriminatedUnion<K extends PropertyKey, T extends object> = {
+  [P in keyof T]: { [Q in K]: P } & T[P] extends infer U ? { [Q in keyof U]: U[Q] } : never
+}[keyof T]
+
 export type LooseAutocomplete<T> = {
   [K in keyof T]: T[K]
 } & {

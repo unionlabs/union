@@ -1,12 +1,13 @@
 import { derived } from "svelte/store"
 import type { CreateQueryResult } from "@tanstack/svelte-query"
-import type { Readable } from "svelte"
+import type { Readable } from "svelte/store"
 
 export function raise(message?: string, opts?: ErrorOptions): never {
   throw new Error(message, opts)
 }
 
-export const noThrow = async <T>(x: Promise<T>): Promise<T | undefined> => x.catch(() => undefined)
+export const noThrow = async <T>(x: Promise<T>): Promise<T | undefined> =>
+  x.then(x => x).catch(() => undefined)
 
 export const noThrowSync = <T>(callback: T): T | undefined => {
   try {

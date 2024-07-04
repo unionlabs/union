@@ -5,7 +5,7 @@ import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
 import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { noThrow, raise, sleep } from "$lib/utilities/index.ts"
+import { raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.js"
@@ -28,7 +28,6 @@ import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import { erc20Abi } from "viem"
-import Precise from "$lib/components/precise.svelte"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
@@ -38,7 +37,6 @@ import {
   simulateContract,
   waitForTransactionReceipt,
   getConnectorClient,
-  getAccount,
   switchChain
 } from "@wagmi/core"
 import { sepolia } from "viem/chains"
@@ -59,9 +57,7 @@ let amount = ""
 $: amountLargerThanZero = Number.parseFloat(amount) > 0
 
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
-$: {
-  amount = amount.replaceAll(amountRegex, "")
-}
+$: amount = amount.replaceAll(amountRegex, "")
 
 let balanceCoversAmount: boolean
 $: if ($fromChain && $asset && amount) {
@@ -289,7 +285,7 @@ const transfer = async () => {
   } else if ($fromChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
     if (connectorClient?.chain?.id !== sepolia.id) {
-      await noThrow(windowEthereumSwitchChain())
+      await windowEthereumSwitchChain()
       await sleep(1_500)
     }
 
@@ -779,74 +775,77 @@ const resetInput = () => {
           {/if}
         </section>
 
-        <section>
-          <CardSectionHeading>Amount</CardSectionHeading>
-          <Input
-            autocapitalize="none"
-            autocomplete="off"
-            autocorrect="off"
-            bind:value={amount}
-            class={cn(!balanceCoversAmount && amount ? 'border-red-500' : '')}
-            disabled={
-          !$asset
-          }
-            maxlength={64}
-            minlength={1}
-            pattern="^[0-9]*[.,]?[0-9]*$"
-            placeholder="0.00"
-            spellcheck="false"
-          />
-        </section>
-        <section>
-          <CardSectionHeading>Recipient</CardSectionHeading>
-          <div class="flex items-start gap-2">
-            <div class="w-full">
-              <div class="relative w-full mb-2">
-                <Input
-                  autocapitalize="none"
-                  autocomplete="off"
-                  autocorrect="off"
-                  bind:value={address}
-                  class="disabled:opacity-100 disabled:bg-black/20"
-                  disabled={inputState === 'locked'}
-                  id="address"
-                  on:input={handleInput}
-                  placeholder="Select chain"
-                  required={true}
-                  spellcheck="false"
-                  type="text"
-                />
+          <section>
+            <CardSectionHeading>Amount</CardSectionHeading>
+            <Input
+              autocapitalize="none"
+              autocomplete="off"
+              autocorrect="off"
+              type="number"
+              inputmode="decimal"
+              bind:value={amount}
+              class={cn(
+                !balanceCoversAmount && amount ? 'border-red-500' : '',
+                'focus:ring-0 focus-visible:ring-0',
+              )}
+              disabled={!$asset}
+              maxlength={64}
+              minlength={1}
+              pattern="^[0-9]*[.,]?[0-9]*$"
+              placeholder="0.00"
+              spellcheck="false"
+            />
+          </section>
+          <section>
+            <CardSectionHeading>Recipient</CardSectionHeading>
+            <div class="flex items-start gap-2">
+              <div class="w-full">
+                <div class="relative w-full mb-2">
+                  <Input
+                    autocapitalize="none"
+                    autocomplete="off"
+                    autocorrect="off"
+                    bind:value={address}
+                    class="disabled:opacity-100 disabled:bg-black/20"
+                    disabled={inputState === 'locked'}
+                    id="address"
+                    on:input={handleInput}
+                    placeholder="Select chain"
+                    required={true}
+                    spellcheck="false"
+                    type="text"
+                  />
+                </div>
+                <div class="flex justify-between px-1">
+                  {#if userInput}
+                    <button
+                      type="button"
+                      on:click={resetInput}
+                      class="text-xs text-muted-foreground hover:text-primary transition"
+                    >
+                      Reset
+                    </button>
+                  {/if}
+                </div>
               </div>
-              <div class="flex justify-between px-1">
-                {#if userInput}
-                  <button
-                    type="button"
-                    on:click={resetInput}
-                    class="text-xs text-muted-foreground hover:text-primary transition"
-                  >
-                    Reset
-                  </button>
-                {/if}
-              </div>
+              <!--            <Button-->
+              <!--              aria-label="Toggle address lock"-->
+              <!--              class="px-3"-->
+              <!--              on:click={onLockClick}-->
+              <!--              variant="ghost"-->
+              <!--            >-->
+              <!--              {#if inputState === 'locked'}-->
+              <!--                <LockLockedIcon class="size-4.5"/>-->
+              <!--              {:else}-->
+              <!--                <LockOpenIcon class="size-4.5"/>-->
+              <!--              {/if}-->
+              <!--            </Button>-->
             </div>
-            <!--            <Button-->
-            <!--              aria-label="Toggle address lock"-->
-            <!--              class="px-3"-->
-            <!--              on:click={onLockClick}-->
-            <!--              variant="ghost"-->
-            <!--            >-->
-            <!--              {#if inputState === 'locked'}-->
-            <!--                <LockLockedIcon class="size-4.5"/>-->
-            <!--              {:else}-->
-            <!--                <LockOpenIcon class="size-4.5"/>-->
-            <!--              {/if}-->
-            <!--            </Button>-->
-          </div>
-        </section>
-      </Card.Content>
-      <Card.Footer class="flex flex-col gap-4 items-start">
-        <Button
-          disabled={!amount ||
+          </section>
+        </Card.Content>
+        <Card.Footer class="flex flex-col gap-4 items-start">
+          <Button
+            disabled={!amount ||
           !$asset ||
           !$toChainId ||
           !$recipient ||
@@ -873,17 +872,18 @@ const resetInput = () => {
       <Card.Root
         class={cn("cube-back p-6")}>
         {#if $fromChain}
-          <Stepper steps={stepperSteps}
-                   on:cancel={() => transferState.set({kind: "PRE_TRANSFER"})}
-                   onRetry={() => {
-        transferState.update(ts => {
-          // @ts-ignore
-          ts.error = undefined;
-          return ts
-        });
-
-        transfer()
-      }}/>
+          <Stepper
+            steps={stepperSteps}
+            on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}
+            onRetry={() => {
+              transferState.update(ts => {
+                // @ts-ignore
+                ts.error = undefined
+                return ts
+              })
+              transfer()
+            }}
+          />
         {/if}
       </Card.Root>
       <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
