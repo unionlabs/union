@@ -14,6 +14,7 @@ import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import type { Chain } from "$lib/types"
 import type { UnwrapReadable } from "$lib/utilities/types"
+import { raise } from '$lib/utilities'
 
 export let chains: Array<Chain>
 
@@ -22,7 +23,7 @@ let transfers = createQuery({
   refetchInterval: 5_000,
   queryFn: async () => request(URLS.GRAPHQL, allTransfersQueryDocument, {}),
   select: data => {
-    if (!data.v0_transfers) return []
+    if (!data.v0_transfers) raise("error fetching transfers")
 
     return data.v0_transfers.map(tx => {
       let destinationChainId = tx.destination_chain_id

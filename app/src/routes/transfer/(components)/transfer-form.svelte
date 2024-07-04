@@ -57,10 +57,7 @@ let amount = ""
 $: amountLargerThanZero = Number.parseFloat(amount) > 0
 
 const amountRegex = /[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g
-$: amount = amount
-  .replaceAll(/[^0-9.]/g, "")
-  .replaceAll(/(\..*?)\..*/g, "$1")
-  .replaceAll(/^0[^.]/g, "0")
+$: amount = amount.replaceAll(amountRegex, "")
 
 let balanceCoversAmount: boolean
 $: if ($fromChain && $asset && amount) {
