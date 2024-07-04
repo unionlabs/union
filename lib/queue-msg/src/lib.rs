@@ -309,7 +309,15 @@ impl<T: QueueMessage> Op<T> {
                 Self::Defer(Defer::Relative(seconds)) => Ok(Some(defer_absolute(now() + seconds))),
                 Self::Defer(Defer::Absolute(seconds)) => {
                     // if we haven't hit the time yet, requeue the defer msg
-                    if now() < seconds {
+                    let current_ts_seconds = now();
+                    if current_ts_seconds < seconds {
+                        trace!(
+                            %current_ts_seconds,
+                            %seconds,
+                            delta = %seconds - current_ts_seconds,
+                            "defer timestamp not hit yet"
+                        );
+
                         // TODO: Make the time configurable?
                         sleep(Duration::from_millis(10)).await;
 
@@ -964,7 +972,7 @@ impl<T: QueueMessage> Engine<T> {
         O: PurePass<T>,
     {
         try_unfold::<_, _, _, Option<T::Data>>((), move |()| async move {
-            trace!("stepping");
+            // trace!("stepping");
 
             // dbg!(&q);
 

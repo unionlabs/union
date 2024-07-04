@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use chain_utils::{
     arbitrum::{Arbitrum, ARBITRUM_REVISION_NUMBER},
-    ethereum::EthereumConsensusChain,
+    ethereum::{AnyEthereum, EthereumConsensusChain},
 };
 use enumorph::Enumorph;
 use queue_msg::{aggregation::do_aggregate, fetch, queue_msg, Op};
@@ -61,9 +61,14 @@ where
             Self::FetchGetLogs(get_logs) => {
                 fetch_get_logs(c, get_logs, ARBITRUM_REVISION_NUMBER).await
             }
-            Self::FetchBeaconBlockRange(beacon_block_range) => {
-                fetch_beacon_block_range(c, beacon_block_range, &c.l1.beacon_api_client).await
-            }
+            Self::FetchBeaconBlockRange(beacon_block_range) => match &c.l1 {
+                AnyEthereum::Mainnet(eth) => {
+                    fetch_beacon_block_range(c, beacon_block_range, &eth.beacon_api_client).await
+                }
+                AnyEthereum::Minimal(eth) => {
+                    fetch_beacon_block_range(c, beacon_block_range, &eth.beacon_api_client).await
+                }
+            },
             Self::FetchChannel(FetchChannel { height, path }) => {
                 fetch_channel(
                     c,

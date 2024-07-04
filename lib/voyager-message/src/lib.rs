@@ -653,7 +653,7 @@ mod tests {
     use unionlabs::{
         ethereum::config::Minimal,
         events::ConnectionOpenTry,
-        hash::{H160, H256},
+        hash::H256,
         ibc::core::{
             channel::{
                 self, channel::Channel, msg_channel_open_init::MsgChannelOpenInit, order::Order,

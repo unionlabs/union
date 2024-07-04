@@ -216,6 +216,9 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            #[cfg(feature = "ethabi")]
+            impl ::ethers_core::abi::TokenizableItem for $Struct {}
+
             impl AsRef<[u8]> for $Struct {
                 fn as_ref(&self) -> &[u8] {
                     &self.0

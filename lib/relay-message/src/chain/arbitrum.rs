@@ -2,7 +2,7 @@ use std::{collections::VecDeque, marker::PhantomData};
 
 use chain_utils::{
     arbitrum::Arbitrum,
-    ethereum::{EthereumChain, EthereumChainExt, EthereumConsensusChain, IbcHandlerExt},
+    ethereum::{EthereumConsensusChain, EthereumIbcChain, EthereumIbcChainExt, IbcHandlerExt},
 };
 use ethers::providers::Middleware;
 use frunk::{hlist_pat, HList};
@@ -148,7 +148,7 @@ where
                     c.chain_id(),
                     Fetch::specific(FetchLatestConfirmedProofs {
                         height: update_info.update_to,
-                        l1_latest_confirmed_slot: c.l1_latest_confirmed_slot,
+                        l1_latest_confirmed_slot: c.l1_next_node_num_slot,
                         l1_nodes_slot: c.l1_nodes_slot,
                         l1_contract_address: c.l1_contract_address,
                     }),
@@ -260,19 +260,19 @@ where
                     .await;
 
                 let latest_confirmed = arbitrum
-                    .latest_confirmed_at_beacon_slot(height.revision_height)
+                    .next_node_num_at_beacon_slot(height.revision_height)
                     .await;
 
                 let [latest_confirmed_slot_proof, nodes_slot_proof] = arbitrum
                     .l1
-                    .provider
+                    .provider()
                     .get_proof(
                         ethers::types::H160(l1_contract_address.0),
                         vec![
                             l1_latest_confirmed_slot.to_be_bytes().into(),
                             arbitrum_verifier::nodes_confirm_data_mapping_key(
                                 l1_nodes_slot,
-                                latest_confirmed.into(),
+                                latest_confirmed,
                                 arbitrum.l1_nodes_confirm_data_offset,
                             )
                             .to_be_bytes()
@@ -525,7 +525,7 @@ where
                 chain_id: _latest_confirmed_proofs_chain_id,
                 t: LatestConfirmedProofs {
                     height: _latest_confirmed_proofs_height,
-                    latest_confirmed,
+                    latest_confirmed: _latest_confirmed,
                     latest_confirmed_slot_proof,
                     nodes_slot_proof,
                     __marker: _
@@ -585,8 +585,7 @@ where
                     l1_height: req.update_to,
                     l1_account_proof: l1_contract_root_proof,
                     l2_ibc_account_proof: ibc_contract_root_proof,
-                    latest_confirmed,
-                    l1_latest_confirmed_slot_proof: latest_confirmed_slot_proof,
+                    l1_next_node_num_slot_proof: latest_confirmed_slot_proof,
                     l1_nodes_slot_proof: nodes_slot_proof,
                     l2_header,
                 },

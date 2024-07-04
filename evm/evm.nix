@@ -164,6 +164,12 @@
           private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
         }
         {
+          # for use with the local arbitrum devnet from offchainlabs/nitro-testnode
+          network = "arbitrum-devnet";
+          rpc-url = "http://localhost:8547";
+          private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
+        }
+        {
           network = "testnet";
           rpc-url = "https://rpc-sepolia.rockx.com";
           private-key = ''"$1"'';

@@ -209,6 +209,12 @@ impl AnyChain {
             })
         })
     }
+
+    pub fn chain_id(&self) -> String {
+        let this = self;
+
+        any_chain!(|this| this.chain_id().to_string())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -224,30 +230,37 @@ macro_rules! any_chain {
     (|$c:ident| $expr:expr) => {
         match $c {
             AnyChain::Union($c) => {
+                #[allow(dead_code)]
                 type Hc = $crate::union::Union;
                 $expr
             }
             AnyChain::Cosmos($c) => {
+                #[allow(dead_code)]
                 type Hc = $crate::cosmos::Cosmos;
                 $expr
             }
             AnyChain::EthereumMainnet($c) => {
+                #[allow(dead_code)]
                 type Hc = $crate::ethereum::Ethereum<::unionlabs::ethereum::config::Mainnet>;
                 $expr
             }
             AnyChain::EthereumMinimal($c) => {
+                #[allow(dead_code)]
                 type Hc = $crate::ethereum::Ethereum<::unionlabs::ethereum::config::Minimal>;
                 $expr
             }
             AnyChain::Scroll($c) => {
+                #[allow(dead_code)]
                 type Hc = $crate::scroll::Scroll;
                 $expr
             }
             AnyChain::Arbitrum($c) => {
+                #[allow(dead_code)]
                 type Hc = $crate::arbitrum::Arbitrum;
                 $expr
             }
             AnyChain::Berachain($c) => {
+                #[allow(dead_code)]
                 type Hc = $crate::berachain::Berachain;
                 $expr
             }

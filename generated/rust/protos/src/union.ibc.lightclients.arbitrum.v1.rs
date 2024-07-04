@@ -8,23 +8,29 @@ pub struct ClientState {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(uint64, tag = "3")]
     pub l1_latest_slot: u64,
+    /// The address of the [`RollupCore`](<https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol>) contract on the L1.
     #[prost(bytes = "vec", tag = "4")]
     pub l1_contract_address: ::prost::alloc::vec::Vec<u8>,
-    /// _latestConfirmed
+    /// The slot containing the next node num. If tracking full finalization, this will be the slot containing `_latestConfirmed`, otherwise if tracking head this will be the slot containing `_latestNodeCreated`.
+    ///
+    /// Since these are [stored in the same slot](<https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L60-L63>) in the arbitrum rollup contract, `l1_next_node_num_slot_offset` is provided as a way to subscript into the slot.
     #[prost(bytes = "vec", tag = "5")]
-    pub l1_latest_confirmed_slot: ::prost::alloc::vec::Vec<u8>,
-    /// _nodes\[_latestConfirmed\].confirmData
-    #[prost(bytes = "vec", tag = "6")]
+    pub l1_next_node_num_slot: ::prost::alloc::vec::Vec<u8>,
+    /// The offset of the u64 value of the node num within the `l1_lext_node_num_slot`.
+    #[prost(uint32, tag = "6")]
+    pub l1_next_node_num_slot_offset_bytes: u32,
+    /// _nodes\[l1_next_node_num_slot\].confirmData
+    #[prost(bytes = "vec", tag = "7")]
     pub l1_nodes_slot: ::prost::alloc::vec::Vec<u8>,
     /// offset of Node.confirmData
-    #[prost(bytes = "vec", tag = "7")]
-    pub confirm_data_offset: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "8")]
+    #[prost(bytes = "vec", tag = "8")]
+    pub l1_nodes_confirm_data_offset: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "9")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(bytes = "vec", tag = "9")]
-    pub l2_ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "10")]
+    pub l2_ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "11")]
     pub l2_ibc_commitment_slot: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ClientState {
@@ -52,23 +58,19 @@ impl ::prost::Name for ConsensusState {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
+    /// The height of the L1 to update to. The L1 client must have a consensus state at this height.
     #[prost(message, optional, tag = "1")]
     pub l1_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     /// Proof of the L1 rollup account in the L1 state root.
     #[prost(message, optional, tag = "2")]
     pub l1_account_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
-    /// Proof of the l2 ibc contract address in the l2 state root.
+    /// Proof of the L2 ibc contract address in the L2 state root.
     #[prost(message, optional, tag = "3")]
     pub l2_ibc_account_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
-    /// The latest confirmed node number, as stored in `_latestConfirmed`.
-    ///
-    /// <https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L60>
-    #[prost(uint64, tag = "6")]
-    pub latest_confirmed: u64,
-    /// Proof of `latest_confirmed`.
+    /// The latest confirmed node number, as stored in `ClientState.l1_next_node_num_slot` at `ClientState.l1_next_node_num_slot_offset_bytes`.
     #[prost(message, optional, tag = "7")]
-    pub l1_latest_confirmed_slot_proof:
+    pub l1_next_node_num_slot_proof:
         ::core::option::Option<super::super::ethereum::v1::StorageProof>,
     /// The proof of the \[`_nodes`\] mapping at `latest_confirmed`, offset to \[`Node.confirmData`\].
     ///

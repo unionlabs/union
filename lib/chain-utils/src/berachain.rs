@@ -36,8 +36,8 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, balance_of_signers, EthereumChain, EthereumConsensusChain, EthereumSignerMiddleware,
-        EthereumSignersConfig, ReadWrite,
+        self, balance_of_signers, EthereumConsensusChain, EthereumIbcChain,
+        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, SignerBalance},
 };
@@ -237,7 +237,7 @@ impl Chain for Berachain {
     }
 }
 
-impl EthereumChain for Berachain {
+impl EthereumIbcChain for Berachain {
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }
