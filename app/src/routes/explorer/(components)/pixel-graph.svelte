@@ -16,7 +16,7 @@ function normalize(
   return ((value - min) / (max - min)) * (newMax - newMin) + newMin
 }
 
-const normalizedData = data.map(d => ({
+$: normalizedData = data.map(d => ({
   ...d,
   normalizedValue: Math.floor(normalize(d.count, minValue, maxValue, 0, 9))
 }))
