@@ -10,10 +10,11 @@
 	let logoWidth = cubeWidth * cubeCount + gap * (cubeCount - 1);
 	let cubesY = cubeWidth * 2 + gap;
 	$: cubeDelta = (20 - cubeWidth) / 2;
-	let strokeWidth = 3;
+	let strokeWidth = 2.5;
 
 	let threeContainer: HTMLElement;
 	let threeCanvas: HTMLCanvasElement;
+
 
 	onMount(() => {
 		const scene = new THREE.Scene();
@@ -22,13 +23,13 @@
 		renderer.setPixelRatio(devicePixelRatio);
 		renderer.setClearColor(0x000000, 0);
 
-		const camera = new THREE.PerspectiveCamera(30, 2, 1, 1000);
+		const camera = new THREE.PerspectiveCamera(32, 2, 1, 2000);
 		camera.position.z = cubeWidth * 3;
 
 		let cubes: Array<THREE.Group> = [];
 		for (let x = 0; x <  cubeCount; x++) {
 			const cube = createCube(cubeWidth, strokeWidth);
-			cube.position.z = -cubeWidth;
+			cube.position.z = 0;
 			cube.position.x = (x * (cubeWidth + gap));
 			cubes.push(cube);
 			scene.add(cube);
@@ -48,16 +49,43 @@
 
 		const clock = new THREE.Clock();
 
+		let animationState: "SLIDING_RIGHT" | "ROTATING_RIGHT" | "SLIDING_LEFT" | "ROTATING_LEFT" = "SLIDING_RIGHT";
+
 		function animate(time: number) {
-			const secs = clock.getDelta();
+			const secs = clock.getDelta() * 2;
 
 			resizeCanvasToDisplaySize();
 
-			camera.position.x += (secs * 100);
+			if (animationState === "SLIDING_RIGHT") {
+				camera.position.x += (secs * 150);
+				if (camera.position.x >= logoWidth + cubeWidth) {
+					animationState = "ROTATING_RIGHT";
+				}
+			} 
+			else if (animationState === "ROTATING_RIGHT") {
+				const rotating = camera.rotation.y < Math.PI/2;
+				const translating = camera.position.z > 0;
+				if (!rotating && !translating) {
+					animationState = "SLIDING_LEFT";
+				}
+				if (rotating) {
+					camera.rotation.y += secs * 0.1
+				}
+				if (translating) {
+					camera.position.z -= secs * 20;
+				}
+			}
+			else if (animationState === "SLIDING_LEFT") {
+				if (camera.position.x > -cubeWidth) {
+					camera.position.x -= (secs * 150);
+				}
+			}
+
 			cubes.forEach(cube => {cube.rotation.z += secs * -2})
 
 			renderer.render(scene, camera);
 			requestAnimationFrame(animate);
+			// console.log(clock.elapsedTime);
 		}
 
 		requestAnimationFrame(animate);
