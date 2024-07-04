@@ -11,7 +11,7 @@ export const transferCountQueryDocument = graphql(/* GraphQL */ `
 `)
 
 export const packetCountQueryDocument = graphql(/* GraphQL */ `
-  query PacketCountQuery  {
+  query PacketCountQuery @cached(ttl: 5)  {
       v0_packets_mat_aggregate {
           aggregate {
               count
