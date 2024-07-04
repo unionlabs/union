@@ -22,6 +22,8 @@ type DataRow = $$Generic
 
 export let columns: Array<ColumnDef<DataRow>>
 export let dataStore: Readable<Array<DataRow>>
+export let pageIndex = 0
+export let pageSize = $dataStore.length
 export let onClick: undefined | ((row: DataRow) => MaybePromise<void>) = undefined
 
 const options = writable<TableOptions<any>>({
@@ -35,7 +37,11 @@ const options = writable<TableOptions<any>>({
   enableMultiRowSelection: true,
   getCoreRowModel: getCoreRowModel(),
   getFilteredRowModel: getFilteredRowModel(),
-  getPaginationRowModel: getPaginationRowModel()
+  getPaginationRowModel: getPaginationRowModel(),
+  state: {
+    pagination: { pageIndex, pageSize }
+  },
+  debugTable: import.meta.env.MODE === "development",
 })
 
 let virtualListElement: HTMLDivElement

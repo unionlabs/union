@@ -1,5 +1,39 @@
 import { graphql } from "gql.tada"
 
+/**
+ * transfers query after timestamp
+ */
+export const transfersAfterTimestampQueryDocument = graphql(/* GraphQL */ `
+  query TransfersQueryGteTimestamp(
+    $limit: Int! = 10,
+    $offset: Int,
+    $timestamp: timestamptz_comparison_exp!,
+  ) {
+    v0_transfers(
+      limit: $limit,
+      offset: $offset,
+      order_by: { source_timestamp: desc },
+      where: { source_timestamp: $timestamp },
+    ) {
+      sender
+      source_chain { chain_id display_name }
+      source_timestamp
+      source_transaction_hash
+      receiver
+      destination_chain { chain_id display_name }
+      destination_timestamp
+      destination_transaction_hash
+      assets
+      forwards_2 {
+        chain { chain_id }
+        port
+        channel
+        receiver
+      }
+    }
+  }  
+`)
+
 export const allTransfersQueryDocument = graphql(/* GraphQL */ `
     query AllTransfersQuery @cached(ttl: 5) {
     v0_transfers(limit: 25, order_by: {source_timestamp: desc}) {

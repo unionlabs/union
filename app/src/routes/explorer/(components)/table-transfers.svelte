@@ -1,6 +1,5 @@
 <script lang="ts">
 import request from "graphql-request"
-import { allTransfersQueryDocument } from "$lib/graphql/documents/transfers.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
@@ -13,8 +12,12 @@ import { goto } from "$app/navigation"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import type { Chain } from "$lib/types"
-import type { UnwrapReadable } from "$lib/utilities/types"
+import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import { raise } from "$lib/utilities"
+import {
+  allTransfersQueryDocument,
+  transfersAfterTimestampQueryDocument
+} from "$lib/graphql/documents/transfers.ts"
 
 export let chains: Array<Chain>
 
