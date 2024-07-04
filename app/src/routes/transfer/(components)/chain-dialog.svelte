@@ -76,7 +76,7 @@ function selectChain(chain: { chain_id: string; display_name: string; rpc_type: 
               variant={'ghost'}
               on:click={() => {selectChain(chain)}}
               class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex items-center justify-between',
-                selected ? 'bg-foreground text-background' : ''
+                selected ? 'bg-muted-foreground text-background' : ''
               )}
             >
               <span class="text-lg font-bold">

@@ -63,7 +63,7 @@ function hasInfoProperty(assets: Object) {
 onDestroy(unsubscribe)
 </script>
 
-<Card.Root>
+<Card.Root class="dark:bg-muted">
   <div bind:this={virtualListElement}>
     <Table.Root>
       <Table.Header>
@@ -90,7 +90,7 @@ onDestroy(unsubscribe)
             {#if $showUnsupported || isSupported}
               <Table.Row
                 class={cn(onClick !== undefined ? 'cursor-pointer' : '',
-              index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
+              index % 2 === 0 ? 'bg-secondary/10 dark:bg-secondary/30 ' : 'bg-transparent',
               isSupported ? '' : 'opacity-50'
 
             )}

@@ -28,7 +28,7 @@ const cancel = () => {
   <li class="flex gap-4 w-full">
     <div class="flex flex-col items-center">
       <!-- top step connector !-->
-      <div class={cn("w-1 flex-1", index !== 0 ?  "bg-black" : "")}></div>
+      <div class={cn("w-1 flex-1 dark:bg-muted-foreground", index !== 0 ?  "bg-black" : "")}></div>
       <!-- stepper icon !-->
       <div class={cn(
         "size-12 border-4 relative transition-all duration-300",
@@ -53,7 +53,7 @@ const cancel = () => {
         {/if}
       </div>
       <!-- bottom step connector !-->
-      <div class={cn("w-1 flex-1", index !== $steps.length - 1  && step.status !== "ERROR" && step.status !== "WARNING" ?  "bg-black" : "")}></div>
+      <div class={cn("w-1 flex-1 dark:bg-muted-foreground", index !== $steps.length - 1  && step.status !== "ERROR" && step.status !== "WARNING" ?  "bg-black" : "")}></div>
     </div>
     <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
       {#if step.traceDetails}

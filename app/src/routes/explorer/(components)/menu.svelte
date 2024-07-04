@@ -19,7 +19,7 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
 
 <nav
   class={cn(
-    'rounded-none flex flex-col items-start'
+    'rounded-none flex flex-col items-start h-full dark:bg-background'
   )}
 >
   {#each tableRoutes as { route, icon }}

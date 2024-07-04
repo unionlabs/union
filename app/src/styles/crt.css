@@ -218,6 +218,24 @@
   }
 }
 
+body * {
+  text-shadow: 0 0 5px #00000050;
+}
+
+/* Light theme */
+@media (prefers-color-scheme: light) {
+  body * {
+    text-shadow: 0 0 5px #00000050;
+  }
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  body * {
+    text-shadow: 0 0 5px #ffffff50;
+  }
+}
+
 /* .jpg { */
   /* background: url("https://pompompom.mehdi.cc/crt-art-for-scanlines.jpg") no-repeat; */
   /* background-size: cover; */

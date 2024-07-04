@@ -382,7 +382,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4">
+  <Card.Root class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4 dark:bg-muted">
     <Card.Header class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center">
       TRANSFER <Truncate value={transfer.source_transaction_hash} type="hash"/>
     </Card.Header>
@@ -408,18 +408,18 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <section class="flex flex-col sm:flex-row">
       <div class="flex-1 lex-col text-muted-foreground">
         <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.source_chain_id, chains)}</h2>
-        <p class="text-sm">{transfer.source_chain_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.source_connection_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.source_channel_id}</p>
+        <p class="text-sm dark:text-muted-foreground">{transfer.source_chain_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.source_connection_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.source_channel_id}</p>
       </div>
       <div class="flex items-center justify-center px-8">
         <MoveRightIcon class="text-foreground size-8"/>
       </div>
       <div class="flex-1 sm:text-right flex-col text-muted-foreground">
         <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.destination_chain_id, chains)}</h2>
-        <p class="text-sm">{transfer.destination_chain_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.destination_connection_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.destination_channel_id}</p>
+        <p class="text-sm dark:text-muted-foreground">{transfer.destination_chain_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.destination_connection_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.destination_channel_id}</p>
       </div>
     </section>
     {#if transfer.hop_chain_id}

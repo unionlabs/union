@@ -16,6 +16,8 @@ import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 import { deviceWidth } from "$lib/utilities/device.ts"
+import { page } from "$app/stores"
+import { updateTheme } from "$lib/utilities/update-theme.ts"
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
@@ -23,16 +25,18 @@ if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 onMount(() => {
   disablePinchToZoom()
   const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
-  if (
-    lastConnectedWallet &&
-    window[lastConnectedWallet] &&
-    ["leap", "keplr"].includes(lastConnectedWallet)
-  )
-    return cosmosStore.connect(lastConnectedWallet)
+  // if (
+  //   lastConnectedWallet &&
+  //   window[lastConnectedWallet] &&
+  //   ["leap", "keplr"].includes(lastConnectedWallet)
+  // )
+  //   return cosmosStore.connect(lastConnectedWallet)
 
   // if (window?.keplr) cosmosStore.connect("keplr")
   // else if (window?.leap) cosmosStore.connect("leap")
 })
+
+$: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 </script>
 
 <svelte:head>

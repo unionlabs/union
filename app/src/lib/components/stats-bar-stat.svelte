@@ -44,3 +44,4 @@ function formatValue(value: number | string): string {
         100% { @apply text-primary; }
     }
 </style>
+

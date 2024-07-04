@@ -13,7 +13,7 @@ $: packetCountData = packetCountQuery()
 $: transferCountData = transferCountQuery()
 </script>
 
-  <div class="bg-muted border-b flex">
+  <div class="bg-muted dark:bg-background border-b flex">
     <div class="w-full flex flex-1">
       <StatsBarStat label={"Total Transfers"} value={$transferCountData?.data?.aggregate?.count || 0} blink={true}/>
       <Separator orientation="vertical"/>

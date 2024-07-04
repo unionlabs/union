@@ -84,7 +84,7 @@ const fetchFromFaucet = async () => {
           defer></script>
 </svelte:head>
 
-<main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full">
+<main class="flex flex-col gap-6 items-center max-h-full py-6 px-3 sm:px-6 w-full dark:bg-muted">
   <Card.Root class="w-full max-w-lg">
     <Card.Header>
       <Card.Title>UNO Drip Faucet</Card.Title>

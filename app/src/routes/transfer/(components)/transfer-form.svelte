@@ -716,7 +716,7 @@ const resetInput = () => {
 </script>
 
 <div
-  class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
+  class={cn("size-full duration-1000 transition-colors dark:bg-muted", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
 
 <div class="cube-scene" id="scene">
 
@@ -774,7 +774,7 @@ const resetInput = () => {
             </div>
           {/if}
         </section>
-
+        
           <section>
             <CardSectionHeading>Amount</CardSectionHeading>
             <Input
