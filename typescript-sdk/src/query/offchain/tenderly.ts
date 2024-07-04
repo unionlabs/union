@@ -1,6 +1,6 @@
 import { ofetch } from "ofetch"
-import { bech32AddressToHex } from "../convert.ts"
-import { ucs01Abi } from "../abi/berachain/ucs-01.ts"
+import { bech32AddressToHex } from "../../convert.ts"
+import { ucs01Abi } from "../../abi/berachain/ucs-01.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 
 const TENDERLY_URL =

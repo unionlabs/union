@@ -1,5 +1,5 @@
 import { raise } from "./utilities/index.ts"
-import type { Ucs1Configuration } from "./query/hubble.ts"
+import type { Ucs1Configuration } from "./query/offchain/hubble.ts"
 
 export const createPfmMemo = ({
   port,

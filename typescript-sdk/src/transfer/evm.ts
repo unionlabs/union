@@ -11,7 +11,7 @@ import { ucs01RelayAbi } from "../abi/ucs-01.ts"
 import { timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import type { TransactionResponse } from "../types.ts"
-import { simulateTransaction } from "../query/evm-gas-estimation.ts"
+import { simulateTransaction } from "../query/offchain/tenderly.ts"
 
 /**
  * TODO:
