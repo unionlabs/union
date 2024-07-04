@@ -22,11 +22,10 @@
 		renderer.setPixelRatio(devicePixelRatio);
 		renderer.setClearColor(0x000000, 0);
 
-		const camera = new THREE.PerspectiveCamera(45, 2, 1, 1000);
-		camera.position.z = cubeWidth;
+		const camera = new THREE.PerspectiveCamera(30, 2, 1, 1000);
+		camera.position.z = cubeWidth * 3;
 
-
-		let cubes = [];
+		let cubes: Array<THREE.Group> = [];
 		for (let x = 0; x <  cubeCount; x++) {
 			const cube = createCube(cubeWidth, strokeWidth);
 			cube.position.z = -cubeWidth;
@@ -47,13 +46,15 @@
 			}
 		}
 
+		const clock = new THREE.Clock();
+
 		function animate(time: number) {
-			time *= 0.001; // seconds
+			const secs = clock.getDelta();
 
 			resizeCanvasToDisplaySize();
 
-			// cube.rotation.x = time * 2;
-			// cube.rotation.y = time * 1;
+			camera.position.x += (secs * 100);
+			cubes.forEach(cube => {cube.rotation.z += secs * -2})
 
 			renderer.render(scene, camera);
 			requestAnimationFrame(animate);
