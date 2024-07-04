@@ -5,8 +5,8 @@
   import { createCube } from '$lib/three/cube';
 
 	let cubeWidth = 128;
-	let gap = 128;
-	let cubeCount = 12;
+	let gap = 80;
+	let cubeCount = 16;
 	let logoWidth = cubeWidth * cubeCount + gap * (cubeCount - 1);
 	let cubesY = cubeWidth * 2 + gap;
 	$: cubeDelta = (20 - cubeWidth) / 2;
@@ -34,6 +34,7 @@
 			const cube = createCube(cubeWidth, strokeWidth);
 			cube.position.z = 0;
 			cube.position.x = (x * (cubeWidth + gap));
+			cube.rotation.y = x * ((Math.PI/2)/cubeCount);
 			cubes.push(cube);
 			scene.add(cube);
 		}
@@ -55,7 +56,7 @@
 		let animationState: "SLIDING_RIGHT" | "ROTATING_RIGHT" | "SLIDING_LEFT" | "ROTATING_LEFT" = "SLIDING_RIGHT";
 
 		function animate(time: number) {
-			const secs = clock.getDelta() * 2;
+			const secs = clock.getDelta() * 1;
 
 			resizeCanvasToDisplaySize();
 
@@ -93,10 +94,10 @@
 					animationState = "SLIDING_RIGHT";
 				}
 				if (rotating) {
-					camera.rotation.y -= secs * 0.1
+					camera.rotation.y -= secs * 0.60
 				}
 				if (translating) {
-					camera.position.z += secs * 30;
+					camera.position.z += secs * 60;
 				}
 			}
 
