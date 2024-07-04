@@ -60,9 +60,10 @@ message BlockHeaderInnerLiteView {
 }
 
 message ClientState {
-  uint64 latest_height = 1;
-  string account_id = 2;
-  repeated ValidatorStakeView iniitial_block_producers = 3;
+  string chain_id = 1;
+  uint64 latest_height = 2;
+  string account_id = 3;
+  repeated ValidatorStakeView iniitial_block_producers = 4;
 }
 
 message ConsensusState {

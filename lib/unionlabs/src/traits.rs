@@ -317,6 +317,15 @@ impl Header for tendermint::header::Header {
     }
 }
 
+impl Header for near::header::Header {
+    fn trusted_height(&self) -> Height {
+        Height {
+            revision_number: NEAR_REVISION_NUMBER,
+            revision_height: self.trusted_height,
+        }
+    }
+}
+
 pub trait ConsensusState {
     fn timestamp(&self) -> u64;
 }

@@ -15,8 +15,7 @@ pub struct ClientState {
     pub chain_id: String,
     pub latest_height: u64,
     pub ibc_account_id: AccountId,
-    // TODO: Remove this option
-    pub initial_block_producers: Option<Vec<ValidatorStakeView>>,
+    pub initial_block_producers: Vec<ValidatorStakeView>,
     // TODO: Make option
     pub frozen_height: u64,
 }
@@ -29,7 +28,6 @@ impl From<ClientState> for protos::union::ibc::lightclients::near::v1::ClientSta
             account_id: value.ibc_account_id.into(),
             iniitial_block_producers: value
                 .initial_block_producers
-                .unwrap_or(Vec::new())
                 .into_iter()
                 .map(Into::into)
                 .collect(),
@@ -58,18 +56,12 @@ impl TryFrom<protos::union::ibc::lightclients::near::v1::ClientState> for Client
                 .account_id
                 .try_into()
                 .map_err(TryFromClientStateError::AccountId)?,
-            initial_block_producers: if !value.iniitial_block_producers.is_empty() {
-                Some(
-                    value
-                        .iniitial_block_producers
-                        .into_iter()
-                        .map(TryInto::try_into)
-                        .collect::<Result<Vec<_>, _>>()
-                        .map_err(TryFromClientStateError::InitialBlockProducers)?,
-                )
-            } else {
-                None
-            },
+            initial_block_producers: value
+                .iniitial_block_producers
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(TryFromClientStateError::InitialBlockProducers)?,
             frozen_height: 0,
         })
     }

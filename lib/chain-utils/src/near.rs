@@ -4,8 +4,11 @@ use unionlabs::{
     encoding::Borsh,
     ibc::{core::client::height::Height, lightclients::near},
     id::ClientId,
-    traits::{Chain, ChainIdOf},
+    near::raw_state_proof::RawStateProof,
+    traits::{Chain, ChainIdOf, FromStrExact},
 };
+
+pub const NEAR_REVISION_NUMBER: u64 = 0;
 
 pub struct Near {
     // ???
@@ -20,18 +23,27 @@ pub struct Config {
 }
 
 impl Near {
-    pub fn new(config: Config) -> Self {
+    pub async fn new(config: Config) -> Self {
         let rpc = near_jsonrpc_client::JsonRpcClient::connect(config.rpc_url);
+        let chain_id = rpc.call(status::RpcStatusRequest).await.unwrap().chain_id;
+
         Self {
             rpc,
-            chain_id: rpc.call(status::RpcStatusRequest).await.unwrap().chain_id,
+            chain_id,
             ibc_account_id: config.ibc_account_id,
         }
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct NearChainType;
+
+impl FromStrExact for NearChainType {
+    const EXPECTING: &'static str = "near";
+}
+
 impl Chain for Near {
-    type ChainType;
+    type ChainType = NearChainType;
 
     type SelfClientState = near::client_state::ClientState;
     type SelfConsensusState = near::consensus_state::ConsensusState;
@@ -44,7 +56,7 @@ impl Chain for Near {
     type ClientId = ClientId;
     type IbcStateEncoding = Borsh;
     type StateProof = RawStateProof;
-    type ClientType;
+    type ClientType = String;
 
     type Error = Box<dyn std::error::Error>;
 
@@ -83,73 +95,47 @@ impl Chain for Near {
         let block = self
             .rpc
             .call(methods::block::RpcBlockRequest {
-                block_reference: BlockReference::Finality(Finality::Final),
+                block_reference: BlockReference::BlockId(BlockId::Height(height.revision_height)),
             })
             .await
-            .map_err(|x| Box::new(x))?;
+            .unwrap();
 
-        let lc_block = self
+        let validators = self
             .rpc
             .call(
-                methods::next_light_client_block::RpcLightClientNextBlockRequest {
-                    last_block_hash: block.header.last_final_block,
+                methods::EXPERIMENTAL_validators_ordered::RpcValidatorsOrderedRequest {
+                    block_id: Some(BlockId::Height(block.header.height)),
                 },
             )
             .await
-            .map_err(|x| Box::new(x) as _)?
-            .expect("needs a light client block");
+            .unwrap();
 
-        Ok(near::client_state::ClientState {
-            latest_height: lc_block.inner_lite.height - 1,
+        near::client_state::ClientState {
+            chain_id: self.chain_id.clone(),
+            latest_height: block.header.height - 1,
             ibc_account_id: self.ibc_account_id.clone(),
-            initial_block_producers: lc_block.next_bps.map(convert_block_producers),
+            initial_block_producers: convert_block_producers(validators),
             frozen_height: 0,
-        })
+        }
     }
 
     async fn self_consensus_state(&self, height: Self::Height) -> Self::SelfConsensusState {
         let block = self
             .rpc
             .call(methods::block::RpcBlockRequest {
-                block_reference: BlockReference::Finality(Finality::Final),
+                block_reference: BlockReference::BlockId(BlockId::Height(height.revision_height)),
             })
             .await
-            .map_err(|x| Box::new(x))?;
+            .unwrap();
 
-        let lc_block = self
-            .rpc
-            .call(
-                methods::next_light_client_block::RpcLightClientNextBlockRequest {
-                    last_block_hash: block.header.last_final_block,
-                },
-            )
-            .await
-            .map_err(|x| Box::new(x) as _)?
-            .expect("needs a light client block");
+        let chunk_prev_state_root = block.header.prev_state_root;
+        let timestamp = block.header.timestamp_nanosec;
 
-        let prev_state_root = self
-            .rpc
-            .call(methods::block::RpcBlockRequest {
-                block_reference: BlockReference::BlockId(BlockId::Height(
-                    lc_block.inner_lite.height,
-                )),
-            })
-            .await
-            .map(|x| x.chunks[0].prev_state_root)
-            .map_err(|x| Box::new(x) as _)?;
-
-        Ok(near::consensus_state::ConsensusState {
-            state: convert_block_header_inner(lc_block.inner_lite),
-            chunk_prev_state_root: prev_state_root,
-            timestamp: self
-                .rpc
-                .call(methods::block::RpcBlockRequest {
-                    block_reference: BlockReference::Finality(Finality::Final),
-                })
-                .await
-                .map(|x| x.header.timestamp_nanosec.try_into().expect("idk bro"))
-                .map_err(|x| Box::new(x))?,
-        })
+        near::consensus_state::ConsensusState {
+            state: block_header_to_inner_lite(block.header),
+            chunk_prev_state_root,
+            timestamp,
+        }
     }
 }
 
@@ -162,7 +148,7 @@ pub fn convert_block_producers(
             let stake = near::validator_stake_view::ValidatorStakeView::V1(
                 near::validator_stake_view::ValidatorStakeViewV1 {
                     account_id: stake.account_id,
-                    public_key: ::near::types::PublicKey::Ed25519(
+                    public_key: unionlabs::near::types::PublicKey::Ed25519(
                         stake.public_key.key_data().try_into().unwrap(),
                     ),
                     stake: stake.stake,
@@ -173,18 +159,35 @@ pub fn convert_block_producers(
         .collect()
 }
 
-pub fn convert_block_header_inner(
-    block_view: near_primitives::views::BlockHeaderInnerLiteView,
+// pub fn convert_block_header_inner(
+//     block_view: near_primitives::views::BlockHeaderInnerLiteView,
+// ) -> near::block_header_inner::BlockHeaderInnerLiteView {
+//     near::block_header_inner::BlockHeaderInnerLiteView {
+//         height: block_view.height,
+//         epoch_id: near_primitives_core::CryptoHash(block_view.epoch_id.0),
+//         next_epoch_id: near_primitives_core::CryptoHash(block_view.next_epoch_id.0),
+//         prev_state_root: near_primitives_core::CryptoHash(block_view.prev_state_root.0),
+//         outcome_root: near_primitives_core::CryptoHash(block_view.outcome_root.0),
+//         timestamp: block_view.timestamp,
+//         timestamp_nanosec: block_view.timestamp_nanosec,
+//         next_bp_hash: block_view.next_bp_hash.0.into(),
+//         block_merkle_root: near_primitives_core::CryptoHash(block_view.block_merkle_root.0),
+//     }
+// }
+
+pub fn block_header_to_inner_lite(
+    header: near_primitives::views::BlockHeaderView,
 ) -> near::block_header_inner::BlockHeaderInnerLiteView {
+    use near_primitives_core::hash::CryptoHash;
     near::block_header_inner::BlockHeaderInnerLiteView {
-        height: block_view.height,
-        epoch_id: near_primitives_core::CryptoHash(block_view.epoch_id.0),
-        next_epoch_id: near_primitives_core::CryptoHash(block_view.next_epoch_id.0),
-        prev_state_root: near_primitives_core::CryptoHash(block_view.prev_state_root.0),
-        outcome_root: near_primitives_core::CryptoHash(block_view.outcome_root.0),
-        timestamp: block_view.timestamp,
-        timestamp_nanosec: block_view.timestamp_nanosec,
-        next_bp_hash: block_view.next_bp_hash.0.into(),
-        block_merkle_root: near_primitives_core::CryptoHash(block_view.block_merkle_root.0),
+        height: header.height,
+        epoch_id: CryptoHash(header.epoch_id.0),
+        next_epoch_id: CryptoHash(header.next_epoch_id.0),
+        prev_state_root: CryptoHash(header.prev_state_root.0),
+        outcome_root: CryptoHash(header.outcome_root.0),
+        timestamp: header.timestamp,
+        timestamp_nanosec: header.timestamp_nanosec,
+        next_bp_hash: CryptoHash(header.next_bp_hash.0),
+        block_merkle_root: CryptoHash(header.block_merkle_root.0),
     }
 }

@@ -8,7 +8,7 @@ use msgs::{ChannelOpenTry, RecvPacket};
 use near_primitives_core::hash::CryptoHash;
 use near_workspaces::{
     network::Sandbox,
-    sandbox,
+    sandbox, testnet,
     types::{Gas, KeyType, NearToken, SecretKey},
     Account, AccountId, Contract, Worker,
 };
@@ -65,11 +65,18 @@ pub async fn deploy_contract(
         .unwrap()
 }
 
+async fn my_main() {
+    let testnet = testnet().await.unwrap();
+}
+
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    let sandbox = sandbox().await.unwrap();
 
+    my_main().await;
+    panic!();
+
+    let sandbox = sandbox().await.unwrap();
     let ibc_contract = deploy_contract(&sandbox, "ibc.test.near", IBC_WASM_PATH_ENV).await;
     let alice_lc = deploy_contract(&sandbox, "light-client.test.near", NEAR_LC_WASM_PATH_ENV).await;
     let bob_lc = deploy_contract(
@@ -657,6 +664,7 @@ async fn create_client(
     let create = CreateClient {
         client_type: client_type.clone(),
         client_state: borsh::to_vec(&ClientState {
+            chain_id: "hello".to_string(),
             latest_height: height - 1,
             ibc_account_id: ibc_contract.id().clone(),
             // TODO(aeryz): this is only valid in this sandboxed environment where the validator set is not changing. For a real environment,

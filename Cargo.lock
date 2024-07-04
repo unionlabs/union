@@ -11453,7 +11453,7 @@ dependencies = [
  "k256",
  "macros",
  "milagro_bls",
- "near-primitives-core 0.21.2",
+ "near-primitives-core 0.23.0",
  "near-sdk",
  "paste",
  "primitive-types 0.12.2",
