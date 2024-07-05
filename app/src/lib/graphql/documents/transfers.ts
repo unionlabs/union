@@ -6,19 +6,12 @@ import { graphql } from "gql.tada"
 export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
   query TransfersQueryTimestampFilter(
     $limit: Int! = 10,
-    $offset: Int,
-    $timestamp: timestamptz_comparison_exp!,
-    $cacheSeconds: Int = 300,
-    $cacheForceRefresh: Boolean = false,
-  ) @cached(
-    ttl: $cacheSeconds,
-    refresh: $cacheForceRefresh
+    $timestamp: timestamptz!
   ) {
-    v0_transfers(
+    top: v0_transfers(
       limit: $limit,
-      offset: $offset,
-      order_by: { source_timestamp: desc },
-      where: { source_timestamp: $timestamp },
+      order_by: { source_timestamp: asc },
+      where: { source_timestamp: {_gte: $timestamp} },
     ) {
       sender
       source_chain { chain_id display_name }
@@ -36,7 +29,28 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
         receiver
       }
     }
-  }
+    bottom: v0_transfers(
+      limit: $limit,
+      order_by: { source_timestamp: desc },
+      where: { source_timestamp: {_lt: $timestamp} },
+    ) {
+      sender
+      source_chain { chain_id display_name }
+      source_timestamp
+      source_transaction_hash
+      receiver
+      destination_chain { chain_id display_name }
+      destination_timestamp
+      destination_transaction_hash
+      assets
+      forwards_2 {
+        chain { chain_id }
+        port
+        channel
+        receiver
+      }
+    }
+  }  
 `)
 
 export const allTransfersQueryDocument = graphql(/* GraphQL */ `

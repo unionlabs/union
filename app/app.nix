@@ -18,6 +18,20 @@
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
           installPhase = ''
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+            node --version
+            npm --version
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+            echo ""
             mkdir -p $out
             cp -r ./build/* $out
           '';

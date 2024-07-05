@@ -37,7 +37,23 @@ export let onPreviousPage: (page: number) => void
       <time class="font-normal text-lg uppercase font-mono">
         {toPrettyDateTimeFormat(timestamp)}
       </time>
+            <!-- <div class={cn('flex flex-row')}>
+        {#each pages as page (page.key)}
+          {#if page.type === 'ellipsis'}
+            <Pagination.Item>
+              <Pagination.Ellipsis />
+            </Pagination.Item>
+          {:else}
+            <Pagination.Item>
+              <Pagination.Link class="text-xs" {page} isActive={currentPage === page.value}>
+                {page.value}
+              </Pagination.Link>
+            </Pagination.Item>
+          {/if}
+        {/each}
+      </div> -->
     </div>
+
     <Pagination.Item>
       <Pagination.NextButton
         on:click={() => onNextPage(Number(currentPage) + 1)}

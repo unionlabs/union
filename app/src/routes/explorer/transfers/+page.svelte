@@ -41,7 +41,7 @@ let enableRefetch = $pagination.pageIndex === 0
 
 let transfers = createQuery(
   derived(pagination, $pagination => ({
-    queryKey: ["transfers", $pagination.pageIndex],
+    queryKey: ["transfers", $timestamp],
     refetchOnMount: enableRefetch,
     refetchOnReconnect: enableRefetch,
     refetchOnWindowFocus: enableRefetch,
@@ -53,7 +53,7 @@ let transfers = createQuery(
         timestamp: {
           // if first page, use current time
           // if not, use the last timestamp
-          [$pagination.pageIndex === 0 ? "_gte" : "_gt"]: $timestamp
+          [$pagination.pageIndex === 0 ? "_gte" : "_le"]: $timestamp
         },
         limit: $pagination.pageSize,
         offset: $pagination.pageIndex * $pagination.pageSize
