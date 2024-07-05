@@ -203,12 +203,7 @@
             aarch64-linux = { site = self.packages.aarch64-linux.site; app = self.packages.aarch64-linux.app; };
           };
           herculesCI = {
-            onPush = filterAttrs isCi self.packages.x86_64-linux;
-              # // filterAttrs isCi self.packages.aarch64-linux
-              # // filterAttrs isCi self.checks.x86_64-linux
-              # // filterAttrs isCi self.checks.aarch64-linux
-              # // filterAttrs isCi self.devShells.x86_64-linux
-              # // filterAttrs isCi self.devShells.aarch64-linux;
+            onPush = self.packages.x86_64-linux.uniond;
           };
         };
       systems =
