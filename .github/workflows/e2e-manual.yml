@@ -9,3 +9,4 @@ jobs:
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       github-token: ${{ secrets.GITHUB_TOKEN }}
+      org_token: ${{ secrets.GH_NIX_TOKEN }}
