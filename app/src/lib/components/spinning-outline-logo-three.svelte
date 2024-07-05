@@ -5,7 +5,7 @@
   import { createCube } from '$lib/three/cube';
 
 	let cubeWidth = 128;
-	let gap = 128;
+	let gap = 64;
 	let cubeCount = 12;
 	// let cubeWidth = 128;
 	// let gap = 80;
@@ -38,7 +38,7 @@
 			const cube = createCube(cubeWidth, strokeWidth);
 			cube.position.z = 0;
 			cube.position.x = (x * (cubeWidth + gap));
-			// cube.rotation.y = x * ((Math.PI/2)/cubeCount);
+			cube.rotation.x = x * ((Math.PI/2)/cubeCount);
 			cubes.push(cube);
 			scene.add(cube);
 		}
@@ -105,7 +105,7 @@
 				}
 			}
 
-			cubes.forEach(cube => {cube.rotation.z += secs * -2})
+			cubes.forEach(cube => {cube.rotation.x += secs * -2})
 
 			renderer.render(scene, camera);
 			requestAnimationFrame(animate);
