@@ -6,7 +6,7 @@
 
 	let cubeWidth = 128;
 	let gap = 64;
-	let cubeCount = 12;
+	let cubeCount = 16;
 	// let cubeWidth = 128;
 	// let gap = 80;
 	// let cubeCount = 16;
@@ -81,10 +81,10 @@
 					animationState = "SLIDING_LEFT";
 				}
 				if (rotating) {
-					camera.rotation.y += secs * 0.2
+					camera.rotation.y += secs * 0.4
 				}
 				if (translating) {
-					camera.position.z -= secs * 80;
+					camera.position.z -= secs * 160;
 				}
 			}
 			else if (animationState === "SLIDING_LEFT") {
