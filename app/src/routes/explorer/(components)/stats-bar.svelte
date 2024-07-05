@@ -3,7 +3,7 @@ import StatsBarStat from "$lib/components/stats-bar-stat.svelte"
 import { packetCountQuery, transferCountQuery, transfersPerDayQuery } from "$lib/queries/stats.ts"
 import PixelGraph from "../(components)/pixel-graph.svelte"
 import { userTime } from "$lib/utilities/user-time.ts"
-import SpinningOutlineLogo from "$lib/components/spinning-outline-logo.svelte"
+import SpinningOutlineLogoThree from "$lib/components/spinning-outline-logo-three.svelte"
 import { Separator } from "$lib/components/ui/separator"
 
 // 30 days
@@ -27,6 +27,6 @@ $: transferCountData = transferCountQuery()
         {/if}
       </StatsBarStat>
       <Separator orientation="vertical"/>
-      <!--<SpinningOutlineLogo/>!-->
+      <SpinningOutlineLogoThree/>
     </div>
   </div>
