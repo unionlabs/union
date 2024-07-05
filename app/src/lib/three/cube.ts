@@ -1,7 +1,7 @@
 import * as THREE from "three"
 
 export function createCube(cubeWidth: number, strokeWidth: number): THREE.Group {
-  const boxGeometry = new THREE.BoxGeometry(cubeWidth, cubeWidth, cubeWidth);
+  const boxGeometry = new THREE.BoxGeometry(cubeWidth, cubeWidth, cubeWidth)
   const edgesGeometry = new THREE.EdgesGeometry(boxGeometry)
 
   const createTubeLine = (points, thickness) => {
