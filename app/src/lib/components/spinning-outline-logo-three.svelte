@@ -26,9 +26,10 @@
 		renderer.setPixelRatio(devicePixelRatio);
 		renderer.setClearColor(0x000000, 0);
 
-		const camera = new THREE.PerspectiveCamera(32, 2, 1, 2000);
+		const camera = new THREE.PerspectiveCamera(20, 2, 1, 4000);
 
-		const startCameraZ = cubeWidth * 3;
+		const startCameraZ = cubeWidth * 5;
+		const sideCameraOffset = cubeWidth * 3;
 		
 		camera.position.z = startCameraZ;
 
@@ -37,7 +38,7 @@
 			const cube = createCube(cubeWidth, strokeWidth);
 			cube.position.z = 0;
 			cube.position.x = (x * (cubeWidth + gap));
-			cube.rotation.y = x * ((Math.PI/2)/cubeCount);
+			// cube.rotation.y = x * ((Math.PI/2)/cubeCount);
 			cubes.push(cube);
 			scene.add(cube);
 		}
@@ -65,7 +66,7 @@
 
 			if (animationState === "SLIDING_RIGHT") {
 				camera.position.x += (secs * 150);
-				if (camera.position.x >= logoWidth + cubeWidth) {
+				if (camera.position.x >= logoWidth + sideCameraOffset) {
 					animationState = "ROTATING_RIGHT";
 				}
 			} 
@@ -76,14 +77,14 @@
 					animationState = "SLIDING_LEFT";
 				}
 				if (rotating) {
-					camera.rotation.y += secs * 0.1
+					camera.rotation.y += secs * 0.2
 				}
 				if (translating) {
-					camera.position.z -= secs * 30;
+					camera.position.z -= secs * 80;
 				}
 			}
 			else if (animationState === "SLIDING_LEFT") {
-				if (camera.position.x > -cubeWidth) {
+				if (camera.position.x > -sideCameraOffset) {
 					camera.position.x -= (secs * 150);
 				} else {
 					animationState = "ROTATING_LEFT";
@@ -100,7 +101,7 @@
 					camera.rotation.y -= secs * 0.60
 				}
 				if (translating) {
-					camera.position.z += secs * 60;
+					camera.position.z += secs * 80;
 				}
 			}
 
