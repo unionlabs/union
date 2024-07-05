@@ -57,7 +57,11 @@
 
 		const clock = new THREE.Clock();
 
-		let animationState: "SLIDING_RIGHT" | "ROTATING_RIGHT" | "SLIDING_LEFT" | "ROTATING_LEFT" = "SLIDING_RIGHT";
+		// start with going through the cubes
+		let animationState: "SLIDING_RIGHT" | "ROTATING_RIGHT" | "SLIDING_LEFT" | "ROTATING_LEFT" = "SLIDING_LEFT";
+		camera.rotation.y = Math.PI/2;
+		camera.position.z = 0;
+		camera.position.x = logoWidth + sideCameraOffset;
 
 		function animate(time: number) {
 			const secs = clock.getDelta() * 0.65;
@@ -98,14 +102,14 @@
 					animationState = "SLIDING_RIGHT";
 				}
 				if (rotating) {
-					camera.rotation.y -= secs * 0.60
+					camera.rotation.y -= secs * 4.00
 				}
 				if (translating) {
-					camera.position.z += secs * 80;
+					camera.position.z += secs * 400;
 				}
 			}
 
-			cubes.forEach(cube => {cube.rotation.x += secs * -2})
+			cubes.forEach((cube, index) => {cube.rotation.x += secs * -2 * (((cubeCount - index) + 1)/(cubeCount + 1))})
 
 			renderer.render(scene, camera);
 			requestAnimationFrame(animate);
