@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { toast } from 'svelte-sonner'
-  import { shortcut } from '@svelte-put/shortcut'
-  import { useQueryClient } from '@tanstack/svelte-query'
+import { toast } from "svelte-sonner"
+import { shortcut } from "@svelte-put/shortcut"
+import { useQueryClient } from "@tanstack/svelte-query"
 
-  const queryClient = useQueryClient()
+const queryClient = useQueryClient()
 </script>
 
 <svelte:window

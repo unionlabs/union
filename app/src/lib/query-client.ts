@@ -1,5 +1,6 @@
 import { toast } from "svelte-sonner"
 import { browser } from "$app/environment"
+import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/svelte-query"
 
@@ -38,5 +39,10 @@ export function createQueryClient() {
     storage: typeof window !== "undefined" ? window.localStorage : undefined // Use local storage if in browser
   })
 
-  return { queryClient, localStoragePersister, QueryClientProvider }
+  return {
+    queryClient,
+    QueryClientProvider,
+    localStoragePersister,
+    PersistQueryClientProvider
+  }
 }

@@ -1,5 +1,6 @@
 import type { LayoutLoad } from "./$types.ts"
 import type { SvelteComponent } from "svelte"
+import { getCurrentISODateTime } from "$lib/utilities/date.ts"
 
 import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
 // import BlocksIcon from "$lib/components/union-icons/color/icon-blocks-color.svelte"
@@ -18,6 +19,7 @@ export interface Table {
 
 export const load = (loadEvent => ({
   sourceRoute: loadEvent.route,
+  timestamp: getCurrentISODateTime(),
   tables: [
     {
       route: "transfers",

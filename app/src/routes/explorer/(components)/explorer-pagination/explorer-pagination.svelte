@@ -1,18 +1,18 @@
 <script lang="ts">
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import ChevronLeft from 'virtual:icons/lucide/chevron-left'
-  import ChevronRight from 'virtual:icons/lucide/chevron-right'
-  import { toPrettyDateTimeFormat } from '$lib/utilities/date.ts'
-  import * as Pagination from '$lib/components/ui/pagination/index.ts'
+import { cn } from "$lib/utilities/shadcn.ts"
+import ChevronLeft from "virtual:icons/lucide/chevron-left"
+import ChevronRight from "virtual:icons/lucide/chevron-right"
+import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
+import * as Pagination from "$lib/components/ui/pagination/index.ts"
 
-  export let timestamp: string
-  export let rowsPerPage: number
-  export let totalTableRows: number
+export let timestamp: string
+export let rowsPerPage: number
+export let totalTableRows: number
 
-  export let status: 'pending' | 'done' = 'done'
+export let status: "pending" | "done" = "done"
 
-  export let onNextPage: (page: number) => void
-  export let onPreviousPage: (page: number) => void
+export let onNextPage: (page: number) => void
+export let onPreviousPage: (page: number) => void
 </script>
 
 <Pagination.Root
@@ -48,13 +48,4 @@
       </Pagination.NextButton>
     </Pagination.Item>
   </Pagination.Content>
-  <!-- {#if import.meta.env.MODE === 'development'}
-    <pre class="text-sm">{JSON.stringify(
-        { timestamp, rowsPerPage, currentPage, offset: (Number(currentPage) - 1) * rowsPerPage },
-        undefined,
-        2,
-      )}</pre>
-  {/if} -->
 </Pagination.Root>
-
-<style lang="postcss"></style>

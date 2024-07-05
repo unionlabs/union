@@ -19,7 +19,8 @@ export default (<Config>{
     files: ["./src/**/*.{html,js,svelte,ts}"]
   },
   experimental: {
-    matchVariant: true
+    matchVariant: true,
+    optimizeUniversalDefaults: true
   },
   safelist: ["dark", "light"],
   darkMode: "class",
