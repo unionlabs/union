@@ -30,6 +30,7 @@
     "bech32": "^2.0.0",
     "bits-ui": "^0.21.11",
     "cmdk-sv": "^0.0.17",
+    "devalue": "^5.0.0",
     "formsnap": "^1.0.1",
     "gql.tada": "^1.8.0",
     "graphql-request": "7.1.0",

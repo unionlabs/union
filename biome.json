@@ -39,6 +39,9 @@
     ]
   },
   "css": {
+    "linter": {
+      "enabled": true
+    },
     "formatter": {
       "enabled": true,
       "indentWidth": 2,
@@ -85,6 +88,9 @@
     ]
   },
   "json": {
+    "linter": {
+      "enabled": true
+    },
     "parser": {
       "allowComments": true,
       "allowTrailingCommas": true
@@ -140,6 +146,7 @@
         "useForOf": "off",
         "noNamespace": "off",
         "noDefaultExport": "off",
+        "noCommaOperator": "off",
         "useFragmentSyntax": "off",
         "noParameterAssign": "off",
         "noNamespaceImport": "off",
@@ -237,6 +244,9 @@
     ]
   },
   "javascript": {
+    "linter": {
+      "enabled": true
+    },
     "globals": ["NodeJS", "Astro"],
     "parser": {
       "unsafeParameterDecoratorsEnabled": true

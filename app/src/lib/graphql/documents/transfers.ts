@@ -3,11 +3,16 @@ import { graphql } from "gql.tada"
 /**
  * transfers query after timestamp
  */
-export const transfersAfterTimestampQueryDocument = graphql(/* GraphQL */ `
-  query TransfersQueryGteTimestamp(
+export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
+  query TransfersQueryTimestampFilter(
     $limit: Int! = 10,
     $offset: Int,
     $timestamp: timestamptz_comparison_exp!,
+    $cacheSeconds: Int = 300,
+    $cacheForceRefresh: Boolean = false,
+  ) @cached(
+    ttl: $cacheSeconds,
+    refresh: $cacheForceRefresh
   ) {
     v0_transfers(
       limit: $limit,
@@ -31,7 +36,7 @@ export const transfersAfterTimestampQueryDocument = graphql(/* GraphQL */ `
         receiver
       }
     }
-  }  
+  }
 `)
 
 export const allTransfersQueryDocument = graphql(/* GraphQL */ `
