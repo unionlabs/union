@@ -6,6 +6,9 @@
       mkCosmosDevnet = import ./mkCosmosDevnet.nix {
         inherit pkgs dbg;
       };
+      mkBabylonDevnet = import ./mkBabylonDevnet.nix {
+        inherit pkgs dbg;
+      };
       lnav = inputs'.nixpkgs-lnav.legacyPackages.lnav;
 
       cosmwasmContracts = [
@@ -101,7 +104,7 @@
             instances = [ ];
           }
         ];
-        portIncrease = 0;
+        portIncrease = 100;
         has08Wasm = true;
       };
 
@@ -160,6 +163,21 @@
         portIncrease = 300;
       };
 
+      devnet-babylon = mkBabylonDevnet {
+        node = self'.packages.babylond;
+        chainId = "babylon-devnet-1";
+        chainName = "babylon";
+        denom = "ubbn";
+        keyType = "ed25519";
+        validatorCount = 4;
+        lightClients = [
+          self'.packages.cometbls-light-client
+        ];
+        inherit cosmwasmContracts;
+        portIncrease = 400;
+        sdkVersion = 47;
+      };
+
       devnet-union-minimal = mkCosmosDevnet {
         node = (get-flake inputs.v0_21_0).packages.${system}.uniond;
         chainId = "union-minimal-devnet-1";
@@ -212,13 +230,14 @@
           '';
       };
 
-      allCosmosDevnets = [ devnet-union devnet-osmosis devnet-simd devnet-stargaze ];
+      allCosmosDevnets = [ devnet-union devnet-osmosis devnet-simd devnet-stargaze devnet-babylon ];
 
       services = {
         devnet-union = devnet-union.services;
         devnet-simd = devnet-simd.services;
         devnet-stargaze = devnet-stargaze.services;
         devnet-osmosis = devnet-osmosis.services;
+        devnet-babylon = devnet-babylon.services;
 
         devnet-union-minimal = devnet-union-minimal.services;
 
@@ -302,6 +321,7 @@
       // mkNamedModule "devnet-eth"
       // mkNamedModule "devnet-stargaze"
       // mkNamedModule "devnet-osmosis"
+      // mkNamedModule "devnet-babylon"
       // mkNamedModule "devnet-simd"
       // mkNamedModule "devnet-union-minimal"
       // mkNamedModule "devnet-union";
@@ -321,6 +341,7 @@
       // mkNamedSpec "devnet-eth"
       // mkNamedSpec "devnet-stargaze"
       // mkNamedSpec "devnet-osmosis"
+      // mkNamedSpec "devnet-babylon"
       // mkNamedSpec "devnet-simd"
       // mkNamedSpec "devnet-union-minimal"
       // mkNamedSpec "devnet-union";
@@ -334,6 +355,7 @@
         // mkNamedBuild "devnet-eth"
         // mkNamedBuild "devnet-stargaze"
         // mkNamedBuild "devnet-osmosis"
+        // mkNamedBuild "devnet-babylon"
         // mkNamedBuild "devnet-simd"
         // mkNamedBuild "devnet-union-minimal"
         // mkNamedBuild "devnet-union";
@@ -363,6 +385,7 @@
               cp -R ${self'.packages.devnet-osmosis-home} ./.devnet/homes/osmosis/ 
               cp -R ${self'.packages.devnet-stargaze-home} ./.devnet/homes/stargaze/ 
               cp -R ${self'.packages.devnet-simd-home} ./.devnet/homes/simd/ 
+              cp -R ${self'.packages.devnet-babylon-home} ./.devnet/homes/babylon/ 
 
               # Fix no write permission on keys
               chmod -R +w ./.devnet/homes
@@ -384,6 +407,7 @@
           };
         devnet-union-home = mkCi false (devnet-union.devnet-home);
         devnet-simd-home = mkCi false (devnet-simd.devnet-home);
+        devnet-babylon-home = mkCi false (devnet-babylon.devnet-home);
         devnet-stargaze-home = mkCi false (devnet-stargaze.devnet-home);
         devnet-osmosis-home = mkCi false (devnet-osmosis.devnet-home);
 
@@ -399,6 +423,7 @@
       // (mkArionBuild "voyager-queue" false)
       // (mkArionBuild "devnet-union" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-simd" (system == "x86_64-linux"))
+      // (mkArionBuild "devnet-babylon" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))

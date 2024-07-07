@@ -106,6 +106,10 @@
       url = "github:osmosis-labs/osmosis/v24.0.0-rc0";
       flake = false;
     };
+    babylon = {
+      url = "git+ssh://git@github.com/aeryz/babylon?rev=d9f206068bf6c1b9f5d7873e01662fd20d2d207d";
+      flake = false;
+    };
 
     public-awesome-launchpad = {
       type = "github";
@@ -249,6 +253,7 @@
         ./networks/simulation/simd.nix
         ./networks/stargaze.nix
         ./networks/osmosis.nix
+        ./networks/babylon.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix

@@ -23,6 +23,23 @@
         "type": "github"
       }
     },
+    "babylon": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1720176747,
+        "narHash": "sha256-WXsxUSh+9DjXGurBH2wPJCZm6Gbw9pXDdOAjIZq+Bco=",
+        "ref": "refs/heads/union-integration",
+        "rev": "d9f206068bf6c1b9f5d7873e01662fd20d2d207d",
+        "revCount": 682,
+        "type": "git",
+        "url": "ssh://git@github.com/aeryz/babylon"
+      },
+      "original": {
+        "rev": "d9f206068bf6c1b9f5d7873e01662fd20d2d207d",
+        "type": "git",
+        "url": "ssh://git@github.com/aeryz/babylon"
+      }
+    },
     "biome": {
       "flake": false,
       "locked": {
@@ -588,6 +605,7 @@
     "root": {
       "inputs": {
         "arion": "arion",
+        "babylon": "babylon",
         "biome": "biome",
         "bls-eth-go": "bls-eth-go",
         "blst": "blst",
