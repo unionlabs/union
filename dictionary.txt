@@ -6,6 +6,7 @@ AUTOINCREMENT
 Accs
 Acknowledgemets
 Acks
+Agglayer
 Axelar
 BAYC
 BLOCKSCOUT
@@ -56,6 +57,7 @@ FLUSHCOMPLETE
 Fatalf
 Feegrant
 Feiock
+Felten
 Fil
 Filenaming
 Founderheads
@@ -119,6 +121,7 @@ Nonexist
 Noto
 Npcwo
 Nullam
+Offchain
 PINGPONG
 PRECOMMIT
 PREVOTE
@@ -961,6 +964,7 @@ shazow
 shentu
 shiki
 shikiji
+sidechains
 sifchain
 sigint
 sigtypes
