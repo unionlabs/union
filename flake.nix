@@ -205,12 +205,12 @@
           herculesCI = {
             onPush.default = {
               outputs = {
-                x86_64-linux = filterAttrs isCi self.packages.x86_64-linux 
-                // filterAttrs isCi self.checks.x86_64-linux 
-                // filterAttrs isCi self.devShells.x86_64-linux;
+                x86_64-linux = filterAttrs isCi self.packages.x86_64-linux
+                  // filterAttrs isCi self.checks.x86_64-linux
+                  // filterAttrs isCi self.devShells.x86_64-linux;
                 aarch64-linux = filterAttrs isCi self.packages.aarch64-linux
-                // filterAttrs isCi self.checks.aarch64-linux 
-                // filterAttrs isCi self.devShells.aarch64-linux;
+                  // filterAttrs isCi self.checks.aarch64-linux
+                  // filterAttrs isCi self.devShells.aarch64-linux;
               };
             };
           };
