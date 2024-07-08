@@ -186,18 +186,6 @@
           isCi = attr: v: (if v?ci then v.ci else true);
         in
         {
-          build = {
-            x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
-            aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
-          };
-          test = {
-            x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
-            aarch64-linux = filterAttrs isCi self.checks.aarch64-linux;
-          };
-          dev = {
-            x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
-            aarch64-linux = filterAttrs isCi self.devShells.aarch64-linux;
-          };
           site = {
             x86_64-linux = { site = self.packages.x86_64-linux.site; app = self.packages.x86_64-linux.app; };
             aarch64-linux = { site = self.packages.aarch64-linux.site; app = self.packages.aarch64-linux.app; };
@@ -205,12 +193,12 @@
           herculesCI = {
             onPush.default = {
               outputs = {
-                x86_64-linux = filterAttrs isCi self.packages.x86_64-linux
-                  // filterAttrs isCi self.checks.x86_64-linux
-                  // filterAttrs isCi self.devShells.x86_64-linux;
-                aarch64-linux = filterAttrs isCi self.packages.aarch64-linux
-                  // filterAttrs isCi self.checks.aarch64-linux
-                  // filterAttrs isCi self.devShells.aarch64-linux;
+                packages.x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
+                checks.x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
+                devShells.x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
+                packages.aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
+                checks.aarch64-linux = filterAttrs isCi self.checks.aarch64-linux;
+                devShells.aarch64-linux =  filterAttrs isCi self.devShells.aarch64-linux;
               };
             };
           };
