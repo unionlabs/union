@@ -12,12 +12,14 @@ export async function GET(context: APIContext) {
     title: "The Union Blog",
     description:
       "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
-    items: blog.map(post => ({
-      title: post.data.title,
-      pubDate: post.data.date,
-      link: `/blog/${post.slug}/`,
-      description: post.data.description
-    })),
+    items: blog
+      .filter(post => !post.data.hidden)
+      .map(post => ({
+        title: post.data.title,
+        pubDate: post.data.date,
+        link: `/blog/${post.slug}/`,
+        description: post.data.description
+      })),
     // (optional) inject custom xml
     customData: `<language>en-us</language>`
   })
