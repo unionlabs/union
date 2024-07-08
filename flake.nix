@@ -198,7 +198,7 @@
                 devShells.x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
                 packages.aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
                 checks.aarch64-linux = filterAttrs isCi self.checks.aarch64-linux;
-                devShells.aarch64-linux =  filterAttrs isCi self.devShells.aarch64-linux;
+                devShells.aarch64-linux = filterAttrs isCi self.devShells.aarch64-linux;
               };
             };
           };
