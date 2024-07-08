@@ -114,6 +114,7 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
+    pub multicall_address: H160,
 
     pub keyring: S::Out,
     pub provider: Arc<Provider<Ws>>,
@@ -125,6 +126,7 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
 pub struct Config<S: EthereumSignersConfig = ReadWrite> {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
+    pub multicall_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
     // TODO: Write a custom ser/de implementation for this struct to avoid this hackery
@@ -533,6 +535,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
                 provider.clone(),
             ),
             ibc_handler_address: config.ibc_handler_address,
+            multicall_address: config.multicall_address,
             provider: Arc::new(provider),
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
         })

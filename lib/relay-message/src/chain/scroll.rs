@@ -68,7 +68,14 @@ where
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Self, Tr>)>,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<Op<RelayMessage>, Self::MsgError> {
-        do_msg(self.chain_id(), &self.keyring, msg, true).await
+        do_msg(
+            self.chain_id(),
+            self.multicall_address,
+            &self.keyring,
+            msg,
+            true,
+        )
+        .await
     }
 }
 

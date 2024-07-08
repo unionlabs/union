@@ -6,6 +6,7 @@
       "preset_base": "minimal",
       "ibc_commitment_slot": "0",
       "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+      "multicall_address": "0x72459D25D5e30ec16b9Ac91cfB7e5a7969347E58",
       "keyring": {
         "name": "ethereum-devnet",
         "keys": [
@@ -44,6 +45,7 @@
       "chain_type": "berachain",
       "ibc_commitment_slot": "0",
       "ibc_handler_address": "0x9664d804589c1c9f573288edc2b9027661d624fa",
+      "multicall_address": "0x0000000000000000000000000000000000000000",
       "keyring": {
         "name": "berachain-devnet",
         "keys": [

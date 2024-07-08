@@ -64,6 +64,8 @@ pub struct Berachain {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
+    pub multicall_address: H160,
+
     pub keyring: Arc<<ReadWrite as EthereumSignersConfig>::Out>,
 
     // tendermint
@@ -82,6 +84,7 @@ pub struct Config {
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
+    pub multicall_address: H160,
 
     pub keyring: <ReadWrite as EthereumSignersConfig>::Config,
 }
@@ -309,6 +312,7 @@ impl Berachain {
             consensus_chain_id,
             execution_chain_id: execution_chain_id.into(),
             ibc_handler_address: config.ibc_handler_address,
+            multicall_address: config.multicall_address,
             keyring: Arc::new(ReadWrite::new(
                 config.keyring,
                 config.ibc_handler_address,

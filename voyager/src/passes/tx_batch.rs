@@ -41,10 +41,18 @@ impl PurePass<VoyagerMessage> for TxBatch {
         let mut berachain_on_union_batch = Batcher::new(self);
         let mut wasm_cosmos_on_union_batch = Batcher::new(self);
         let mut cosmos_on_union_batch = Batcher::new(self);
+        let mut union_on_ethereum_mainnet = Batcher::new(self);
+        let mut union_on_ethereum_minimal = Batcher::new(self);
+        let mut union_on_scroll = Batcher::new(self);
+        let mut union_on_arbitrum = Batcher::new(self);
+        let mut union_on_berachain = Batcher::new(self);
+        let mut union_on_wasm_cosmos = Batcher::new(self);
+        let mut union_on_cosmos = Batcher::new(self);
+        let mut cosmos_on_cosmos = Batcher::new(self);
 
         debug!(count = msgs.len(), "optimizing messages");
 
-        let mut do_batch = |idx, effect, opt_res: &mut OptimizationResult<_>| match effect {
+        let mut do_batch = |idx, effect| match effect {
             AnyLightClientIdentified::EthereumMainnetOnUnion(effect) => {
                 ethereum_mainnet_on_union_batch.push(idx, effect)
             }
@@ -66,20 +74,33 @@ impl PurePass<VoyagerMessage> for TxBatch {
             AnyLightClientIdentified::CosmosOnUnion(effect) => {
                 cosmos_on_union_batch.push(idx, effect)
             }
-            e => {
-                opt_res
-                    .optimize_further
-                    .push((vec![idx], Op::Effect(VoyagerEffect::Relay(e))));
+            AnyLightClientIdentified::UnionOnEthereumMainnet(effect) => {
+                union_on_ethereum_mainnet.push(idx, effect)
             }
+            AnyLightClientIdentified::UnionOnEthereumMinimal(effect) => {
+                union_on_ethereum_minimal.push(idx, effect)
+            }
+            AnyLightClientIdentified::UnionOnScroll(effect) => union_on_scroll.push(idx, effect),
+            AnyLightClientIdentified::UnionOnArbitrum(effect) => {
+                union_on_arbitrum.push(idx, effect)
+            }
+            AnyLightClientIdentified::UnionOnBerachain(effect) => {
+                union_on_berachain.push(idx, effect)
+            }
+            AnyLightClientIdentified::UnionOnWasmCosmos(effect) => {
+                union_on_wasm_cosmos.push(idx, effect)
+            }
+            AnyLightClientIdentified::UnionOnCosmos(effect) => union_on_cosmos.push(idx, effect),
+            AnyLightClientIdentified::CosmosOnCosmos(effect) => cosmos_on_cosmos.push(idx, effect),
         };
 
         for (idx, msg) in msgs.into_iter().enumerate() {
             match msg {
                 Op::Retry { remaining: _, msg } => match *msg {
-                    Op::Effect(VoyagerEffect::Relay(effect)) => do_batch(idx, effect, &mut opt_res),
+                    Op::Effect(VoyagerEffect::Relay(effect)) => do_batch(idx, effect),
                     msg => opt_res.optimize_further.push((vec![idx], msg)),
                 },
-                Op::Effect(VoyagerEffect::Relay(effect)) => do_batch(idx, effect, &mut opt_res),
+                Op::Effect(VoyagerEffect::Relay(effect)) => do_batch(idx, effect),
                 msg => opt_res.optimize_further.push((vec![idx], msg)),
             }
         }
@@ -105,6 +126,21 @@ impl PurePass<VoyagerMessage> for TxBatch {
         opt_res
             .ready
             .extend(cosmos_on_union_batch.into_batch().ready);
+
+        opt_res
+            .ready
+            .extend(union_on_ethereum_mainnet.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_ethereum_minimal.into_batch().ready);
+        opt_res.ready.extend(union_on_scroll.into_batch().ready);
+        opt_res.ready.extend(union_on_arbitrum.into_batch().ready);
+        opt_res.ready.extend(union_on_berachain.into_batch().ready);
+        opt_res
+            .ready
+            .extend(union_on_wasm_cosmos.into_batch().ready);
+        opt_res.ready.extend(union_on_cosmos.into_batch().ready);
+        opt_res.ready.extend(cosmos_on_cosmos.into_batch().ready);
 
         opt_res
     }

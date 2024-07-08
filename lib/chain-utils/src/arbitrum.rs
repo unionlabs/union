@@ -45,6 +45,7 @@ pub struct Arbitrum {
     pub provider: Arc<Provider<Ws>>,
     pub ibc_handler_address: H160,
     pub ibc_commitment_slot: U256,
+    pub multicall_address: H160,
 
     pub l1: Ethereum<Mainnet, Readonly>,
     pub l1_contract_address: H160,
@@ -63,6 +64,7 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
     pub ibc_commitment_slot: U256,
+    pub multicall_address: H160,
 
     /// The signer that will be used to submit transactions by voyager.
     pub keyring: KeyringConfig,
@@ -120,6 +122,7 @@ impl Arbitrum {
                 provider.clone(),
             ),
             ibc_handler_address: config.ibc_handler_address,
+            multicall_address: config.multicall_address,
             provider: Arc::new(provider),
             l1: Ethereum::new(config.l1).await?,
             l1_client_id: config.l1_client_id,

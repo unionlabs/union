@@ -174,6 +174,7 @@ pub struct EthereumChainConfig {
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
+    pub multicall_address: H160,
 
     /// The signers that will be used to submit transactions by voyager.
     pub keyring: KeyringConfig,
@@ -280,6 +281,7 @@ impl AnyChain {
             ChainConfigType::Ethereum(ethereum) => {
                 let config = crate::ethereum::Config {
                     ibc_handler_address: ethereum.ibc_handler_address,
+                    multicall_address: ethereum.multicall_address,
                     keyring: ethereum.keyring,
                     eth_rpc_api: ethereum.eth_rpc_api,
                     eth_beacon_rpc_api: ethereum.eth_beacon_rpc_api,

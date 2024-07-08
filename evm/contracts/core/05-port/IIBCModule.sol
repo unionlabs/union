@@ -12,7 +12,8 @@ interface IIBCModule {
         string calldata portId,
         string calldata channelId,
         IbcCoreChannelV1Counterparty.Data calldata counterparty,
-        string calldata version
+        string calldata version,
+        address relayer
     ) external;
 
     function onChanOpenTry(
@@ -22,29 +23,34 @@ interface IIBCModule {
         string calldata channelId,
         IbcCoreChannelV1Counterparty.Data calldata counterparty,
         string calldata version,
-        string calldata counterpartyVersion
+        string calldata counterpartyVersion,
+        address relayer
     ) external;
 
     function onChanOpenAck(
         string calldata portId,
         string calldata channelId,
         string calldata counterpartyChannelId,
-        string calldata counterpartyVersion
+        string calldata counterpartyVersion,
+        address relayer
     ) external;
 
     function onChanOpenConfirm(
         string calldata portId,
-        string calldata channelId
+        string calldata channelId,
+        address relayer
     ) external;
 
     function onChanCloseInit(
         string calldata portId,
-        string calldata channelId
+        string calldata channelId,
+        address relayer
     ) external;
 
     function onChanCloseConfirm(
         string calldata portId,
-        string calldata channelId
+        string calldata channelId,
+        address relayer
     ) external;
 
     function onRecvPacket(

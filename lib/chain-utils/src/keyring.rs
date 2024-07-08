@@ -2,6 +2,7 @@ use std::{collections::HashMap, fmt::Display, hash::Hash, path::PathBuf, sync::A
 
 use crossbeam_queue::ArrayQueue;
 use futures::Future;
+use rand::prelude::SliceRandom;
 use serde::{Deserialize, Serialize};
 use tracing::{info_span, warn, Instrument};
 
@@ -54,6 +55,11 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         let mut signers = HashMap::new();
         let addresses_buffer = ArrayQueue::new(entries.len());
 
+        let mut rng = &mut rand::thread_rng();
+
+        let mut entries = entries.collect::<Vec<_>>();
+        entries.shuffle(&mut rng);
+
         for key in entries {
             key_to_address.insert(key.name.clone(), key.address.clone());
             address_to_key.insert(key.address.clone(), key.name);
@@ -77,7 +83,7 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         self.key_to_address.iter().map(|(a, b)| (a.as_str(), b))
     }
 
-    pub async fn with<'a, F: FnOnce(&'a S) -> Fut + 'a, Fut: Future<Output: 'static> + 'a>(
+    pub async fn with<'a, F: FnOnce(&'a S) -> Fut + 'a, Fut: Future<Output: 'a> + 'a>(
         &'a self,
         f: F,
     ) -> Option<Fut::Output> {

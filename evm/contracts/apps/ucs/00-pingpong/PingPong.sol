@@ -145,7 +145,8 @@ contract PingPong is IBCAppBase {
         string calldata,
         string calldata,
         IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override onlyIBC {
         // This protocol is only accepting a single counterparty.
         if (bytes(channelId).length != 0) {
@@ -160,7 +161,8 @@ contract PingPong is IBCAppBase {
         string calldata,
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenInit
         if (bytes(channelId).length != 0) {
@@ -172,7 +174,8 @@ contract PingPong is IBCAppBase {
         string calldata,
         string calldata _channelId,
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override onlyIBC {
         // Store the port/channel needed to send packets.
         channelId = _channelId;
@@ -180,7 +183,8 @@ contract PingPong is IBCAppBase {
 
     function onChanOpenConfirm(
         string calldata,
-        string calldata _channelId
+        string calldata _channelId,
+        address
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenAck
         channelId = _channelId;
@@ -188,7 +192,8 @@ contract PingPong is IBCAppBase {
 
     function onChanCloseInit(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override onlyIBC {
         // The ping-pong is infinite, closing the channel is disallowed.
         revert PingPongLib.ErrInfiniteGame();
@@ -196,7 +201,8 @@ contract PingPong is IBCAppBase {
 
     function onChanCloseConfirm(
         string calldata,
-        string calldata
+        string calldata,
+        address
     ) external virtual override onlyIBC {
         // Symmetric to onChanCloseInit
         revert PingPongLib.ErrInfiniteGame();

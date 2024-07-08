@@ -14,11 +14,13 @@ library IBCMsgs {
         string clientType;
         bytes clientStateBytes;
         bytes consensusStateBytes;
+        address relayer;
     }
 
     struct MsgUpdateClient {
         string clientId;
         bytes clientMessage;
+        address relayer;
     }
 
     /* Connection */
@@ -28,6 +30,7 @@ library IBCMsgs {
         IbcCoreConnectionV1Version.Data version;
         IbcCoreConnectionV1Counterparty.Data counterparty;
         uint64 delayPeriod;
+        address relayer;
     }
 
     struct MsgConnectionOpenTry {
@@ -41,6 +44,7 @@ library IBCMsgs {
         bytes proofConsensus; // proof that chainA stored chainB's consensus state at consensus height
         IbcCoreClientV1Height.Data proofHeight; // height at which relayer constructs proof of A storing connectionEnd in state
         IbcCoreClientV1Height.Data consensusHeight; // latest height of chain B which chain A has stored in its chain B client
+        address relayer;
     }
 
     struct MsgConnectionOpenAck {
@@ -53,12 +57,14 @@ library IBCMsgs {
         bytes proofConsensus; // proof that chainB has stored ConsensusState of chainA on its client
         IbcCoreClientV1Height.Data proofHeight; // height that relayer constructed proofTry
         IbcCoreClientV1Height.Data consensusHeight; // latest height of chainA that chainB has stored on its chainA client
+        address relayer;
     }
 
     struct MsgConnectionOpenConfirm {
         string connectionId;
         bytes proofAck;
         IbcCoreClientV1Height.Data proofHeight;
+        address relayer;
     }
 
     /* Channel */
@@ -66,6 +72,7 @@ library IBCMsgs {
     struct MsgChannelOpenInit {
         string portId;
         IbcCoreChannelV1Channel.Data channel;
+        address relayer;
     }
 
     struct MsgChannelOpenTry {
@@ -74,6 +81,7 @@ library IBCMsgs {
         string counterpartyVersion;
         bytes proofInit;
         IbcCoreClientV1Height.Data proofHeight;
+        address relayer;
     }
 
     struct MsgChannelOpenAck {
@@ -83,6 +91,7 @@ library IBCMsgs {
         string counterpartyChannelId;
         bytes proofTry;
         IbcCoreClientV1Height.Data proofHeight;
+        address relayer;
     }
 
     struct MsgChannelOpenConfirm {
@@ -90,11 +99,13 @@ library IBCMsgs {
         string channelId;
         bytes proofAck;
         IbcCoreClientV1Height.Data proofHeight;
+        address relayer;
     }
 
     struct MsgChannelCloseInit {
         string portId;
         string channelId;
+        address relayer;
     }
 
     struct MsgChannelCloseConfirm {
@@ -102,6 +113,7 @@ library IBCMsgs {
         string channelId;
         bytes proofInit;
         IbcCoreClientV1Height.Data proofHeight;
+        address relayer;
     }
 
     /* Packet relay */
@@ -110,6 +122,7 @@ library IBCMsgs {
         IbcCoreChannelV1Packet.Data packet;
         bytes proof;
         IbcCoreClientV1Height.Data proofHeight;
+        address relayer;
     }
 
     struct MsgPacketAcknowledgement {
@@ -117,6 +130,7 @@ library IBCMsgs {
         bytes acknowledgement;
         bytes proof;
         IbcCoreClientV1Height.Data proofHeight;
+        address relayer;
     }
 
     struct MsgPacketTimeout {
@@ -124,5 +138,6 @@ library IBCMsgs {
         bytes proof;
         IbcCoreClientV1Height.Data proofHeight;
         uint64 nextSequenceRecv;
+        address relayer;
     }
 }

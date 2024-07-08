@@ -39,6 +39,8 @@ pub struct Scroll {
 
     /// The address of the `IBCHandler` smart contract deployed on scroll.
     pub ibc_handler_address: H160,
+    pub multicall_address: H160,
+
     pub scroll_api_client: ScrollClient,
     pub scroll_rpc: scroll_rpc::JsonRpcClient,
     pub l1: Ethereum<Mainnet, Readonly>,
@@ -62,6 +64,7 @@ pub struct Scroll {
 pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
+    pub multicall_address: H160,
 
     /// The signers that will be used to submit transactions by voyager.
     pub keyring: KeyringConfig,
@@ -170,6 +173,7 @@ impl Scroll {
                 provider.clone(),
             ),
             ibc_handler_address: config.ibc_handler_address,
+            multicall_address: config.multicall_address,
             provider: Arc::new(provider),
             scroll_api_client: ScrollClient::new(config.scroll_api),
             l1: Ethereum::new(config.l1).await?,

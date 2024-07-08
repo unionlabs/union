@@ -187,8 +187,8 @@
         }
       ];
 
-      eth-deploy = { rpc-url, private-key, extra-args ? "", ... }: pkgs.writeShellApplication {
-        name = "eth-deploy";
+      eth-deploy-full = { rpc-url, private-key, extra-args ? "", ... }: pkgs.writeShellApplication {
+        name = "eth-deploy-full";
         runtimeInputs = [ self'.packages.forge ];
         text = ''
           ${ensureAtRepositoryRoot}
@@ -197,7 +197,8 @@
           cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
           cp --no-preserve=mode -r ${evmSources}/* .
 
-          PRIVATE_KEY=${private-key} FOUNDRY_PROFILE="script" \
+          PRIVATE_KEY=${private-key} \
+          FOUNDRY_PROFILE="script" \
             forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
             -vvvv \
             --rpc-url ${rpc-url} \
@@ -207,6 +208,42 @@
           rm -rf "$OUT"
         '';
       };
+
+      eth-deploy-multicall = { rpc-url, kind, extra-args ? "", ... }: pkgs.writeShellApplicationWithArgs {
+        name = "eth-deploy-multicall";
+        runtimeInputs = [ self'.packages.forge ];
+        arguments = [
+          {
+            arg = "deployer_pk";
+            required = true;
+            help = "The deployer contract address.";
+          }
+          {
+            arg = "private_key";
+            required = true;
+            help = "The contract owner private key.";
+          }
+        ];
+        text = ''
+          ${ensureAtRepositoryRoot}
+          OUT="$(mktemp -d)"
+          pushd "$OUT"
+          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+          cp --no-preserve=mode -r ${evmSources}/* .
+
+          DEPLOYER="$argc_deployer_pk" \
+          PRIVATE_KEY="$argc_private_key" \
+          FOUNDRY_PROFILE="script" \
+            forge script scripts/Deploy.s.sol:Deploy${kind} \
+            -vvvv \
+            --rpc-url "${rpc-url}" \
+            --broadcast ${extra-args}
+
+          popd
+          rm -rf "$OUT"
+        '';
+      };
+
       eth-upgrade = { dry ? false, rpc-url, protocol, ... }: mkCi false (pkgs.writeShellApplicationWithArgs {
         name = "evm-${pkgs.lib.optionalString dry "dry"}upgrade-${protocol}";
         runtimeInputs = [ self'.packages.forge pkgs.jq ];
@@ -425,7 +462,12 @@
       } //
       builtins.listToAttrs (
         builtins.map
-          (args: { name = "eth-deploy-${args.network}"; value = eth-deploy args; })
+          (args: { name = "eth-deploy-${args.network}-full"; value = eth-deploy-full args; })
+          networks
+      ) //
+      builtins.listToAttrs (
+        builtins.map
+          (args: { name = "eth-deploy-${args.network}-multicall"; value = eth-deploy-multicall ({ kind = "Multicall"; } // args); })
           networks
       ) //
       builtins.listToAttrs (

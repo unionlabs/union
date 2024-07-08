@@ -8,6 +8,7 @@ import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/access/Ownable.sol";
 
 import "../contracts/Glue.sol";
+import "../contracts/Multicall.sol";
 import "../contracts/core/02-client/IBCClient.sol";
 import "../contracts/core/03-connection/IBCConnection.sol";
 import "../contracts/core/04-channel/IBCChannelHandshake.sol";
@@ -47,6 +48,15 @@ interface Deployer {
     ) external returns (address);
 }
 
+library LIB {
+    string constant NAMESPACE = "lib";
+    string constant MULTICALL = "multicall";
+
+    function make(string memory lib) internal pure returns (string memory) {
+        return string(abi.encodePacked(NAMESPACE, "/", lib));
+    }
+}
+
 library IBC {
     string constant BASED = "ibc-is-based";
 }
@@ -80,7 +90,7 @@ library Protocols {
 }
 
 abstract contract UnionBase is Script {
-    function deployDeployer(VmSafe.Wallet memory) internal returns (Deployer) {
+    function deployDeployer() internal returns (Deployer) {
         bytes memory bytecode = DEPLOYER_BYTECODE_SOLIDITY_8_23_f704f362;
         Deployer deployer;
         assembly {
@@ -99,6 +109,16 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (address) {
         return getDeployer().deploy(
             salt, abi.encodePacked(type(ERC1967Proxy).creationCode, args), 0
+        );
+    }
+
+    function deployMulticall() internal returns (Multicall) {
+        return Multicall(
+            getDeployer().deploy(
+                LIB.make(LIB.MULTICALL),
+                abi.encodePacked(type(Multicall).creationCode),
+                0
+            )
         );
     }
 
@@ -170,11 +190,16 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
-    function deployIBC(address owner) internal {
+    function deployIBC(address owner)
+        internal
+        returns (IBCHandler, CometblsClient, UCS01Relay, UCS02NFT, Multicall)
+    {
         IBCHandler handler = deployIBCHandler(owner);
-        deployCometbls(handler, owner);
-        deployUCS01(handler, owner);
-        deployUCS02(handler, owner);
+        CometblsClient client = deployCometbls(handler, owner);
+        UCS01Relay relay = deployUCS01(handler, owner);
+        UCS02NFT nft = deployUCS02(handler, owner);
+        Multicall multicall = deployMulticall();
+        return (handler, client, relay, nft, multicall);
     }
 }
 
@@ -182,7 +207,30 @@ contract DeployDeployer is UnionBase {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
-        deployDeployer(vm.createWallet(privateKey));
+
+        deployDeployer();
+
+        vm.stopBroadcast();
+    }
+}
+
+contract DeployMulticall is UnionScript {
+    Deployer immutable deployer;
+
+    constructor() {
+        deployer = Deployer(vm.envAddress("DEPLOYER"));
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return deployer;
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+
+        deployMulticall();
+
         vm.stopBroadcast();
     }
 }
@@ -200,11 +248,16 @@ contract DeployIBC is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        VmSafe.Wallet memory wallet = vm.createWallet(privateKey);
-
         vm.startBroadcast(privateKey);
 
-        deployIBC(wallet.addr);
+        (
+            IBCHandler handler,
+            CometblsClient client,
+            UCS01Relay relay,
+            UCS02NFT nft,
+            Multicall multicall
+        ) = deployIBC(vm.addr(privateKey));
+        handler.registerClient(LightClients.COMETBLS, client);
 
         vm.stopBroadcast();
     }
@@ -220,14 +273,28 @@ contract DeployDeployerAndIBC is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        VmSafe.Wallet memory wallet = vm.createWallet(privateKey);
-
         vm.startBroadcast(privateKey);
 
-        deployer = deployDeployer(wallet);
-        deployIBC(wallet.addr);
+        deployer = deployDeployer();
+
+        (
+            IBCHandler handler,
+            CometblsClient client,
+            UCS01Relay relay,
+            UCS02NFT nft,
+            Multicall multicall
+        ) = deployIBC(vm.addr(privateKey));
+        handler.registerClient(LightClients.COMETBLS, client);
 
         vm.stopBroadcast();
+
+        console.log("Deployer: ", address(deployer));
+        console.log("Sender: ", vm.addr(privateKey));
+        console.log("IBCHandler: ", address(handler));
+        console.log("CometblsClient: ", address(client));
+        console.log("UCS01: ", address(relay));
+        console.log("UCS02: ", address(nft));
+        console.log("Multicall: ", address(multicall));
     }
 }
 
