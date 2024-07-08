@@ -9,7 +9,7 @@
     {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-9Td/Z4ZpR+c+xF4FS6bYh+4H/p1ajeWaMCq5IaC0e1c=";
+          npmDepsHash = "sha256-BMyRtRfX2iTcYES/gcThGgRuMeFBlCd776Cu/lZI7so=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [ "--legacy-peer-deps" ];
@@ -18,20 +18,6 @@
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
           installPhase = ''
-            echo ""
-            echo ""
-            echo ""
-            echo ""
-            echo ""
-            echo ""
-            node --version
-            npm --version
-            echo ""
-            echo ""
-            echo ""
-            echo ""
-            echo ""
-            echo ""
             mkdir -p $out
             cp -r ./build/* $out
           '';
