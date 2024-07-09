@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', lib, unstablePkgs, pkgs, system, config, rust, crane, stdenv, dbg, ... }:
+  perSystem = { self', lib, unstablePkgs, pkgs, system, config, rust, crane, stdenv, dbg, python, ... }:
     let
 
       near-ibc-tests = pkgs.stdenv.mkDerivation {
@@ -68,17 +68,14 @@
 
       nearcore = craneLib.buildPackage rec {
         pname = "neard";
-        version = "326c6098c652c0fe3419067ad0ff839804658b7d";
+        version = "177c8657acd79a9a33f4e9f2ecadfabad792eae1";
 
         buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ] ++ (
           lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
         );
 
         nativeBuildInputs = [
-          # pkgs.llvmPackages_14.libclang
-          # pkgs.llvmPackages_14.libcxxClang
           pkgs.clang
-          # pkgs.stdenv.cc.libc
         ];
 
         LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
@@ -86,10 +83,10 @@
         cargoExtraArgs = " --verbose --verbose -p neard";
 
         src = pkgs.fetchFromGitHub {
-          owner = "near";
+          owner = "aeryz";
           repo = "nearcore";
           rev = version;
-          hash = "sha256-zGKyBwQrCfDYGlqd7sEf/JbTrKkMG5MEwbGvsJvOZVQ=";
+          hash = "sha256-2Iii+prFl5W4OS9VLwbce+QssKe8dLH/P+bVG8AWJ2c=";
         };
       };
 
@@ -140,8 +137,13 @@
 
       near-localnet = pkgs.writeShellApplication {
         name = "near-localnet";
+        # runtimeInputs = [ nearup ];
+        runtimeInputs = [(python.withPackages (py-pkgs: [
+          py-pkgs.nearup
+        ]))] ++ [ pkgs.strace pkgs.iproute pkgs.busybox ];
         text = ''
           nearup run --override --binary-path ${nearcore}/bin localnet
+          tail -f /.nearup/logs/localnet/node0.log
         '';
       };
     in

@@ -339,7 +339,7 @@
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs mkCi;
+              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs mkCi python;
 
               gitRev =
                 if (builtins.hasAttr "rev" self) then self.rev else "dirty";
