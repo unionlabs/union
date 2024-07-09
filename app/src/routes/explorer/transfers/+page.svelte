@@ -1,212 +1,201 @@
 <script lang="ts">
-import {
-  flexRender,
-  type ColumnDef,
-  getCoreRowModel,
-  type TableOptions,
-  createSvelteTable,
-  getFilteredRowModel,
-  getPaginationRowModel
-} from "@tanstack/svelte-table"
-import { page } from "$app/stores"
-import { URLS } from "$lib/constants"
-import request from "graphql-request"
-import { raise } from "$lib/utilities"
-import { onDestroy, onMount } from "svelte"
-import { cn } from "$lib/utilities/shadcn.ts"
-import * as Table from "$lib/components/ui/table"
-import { showUnsupported } from "$lib/stores/user.ts"
-import DevTools from "$lib/components/dev-tools.svelte"
-import * as Card from "$lib/components/ui/card/index.ts"
-import CellAssets from "../(components)/cell-assets.svelte"
-import LoadingLogo from "$lib/components/loading-logo.svelte"
-import type { UnwrapReadable } from "$lib/utilities/types.ts"
-import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
-import { goto, pushState, replaceState } from "$app/navigation"
-import { derived, writable, type Readable } from "svelte/store"
-import CellDuration from "../(components)/cell-duration-text.svelte"
-import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
-import { ExplorerPagination } from "../(components)/explorer-pagination/index.ts"
-import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
-import { transfersTimestampFilterQueryDocument } from "$lib/graphql/documents/transfers.ts"
+  import {
+    flexRender,
+    type ColumnDef,
+    getCoreRowModel,
+    type TableOptions,
+    createSvelteTable,
+    getFilteredRowModel,
+    getPaginationRowModel,
+  } from '@tanstack/svelte-table'
+  import { page } from '$app/stores'
+  import { URLS } from '$lib/constants'
+  import request from 'graphql-request'
+  import { raise } from '$lib/utilities'
+  import { onDestroy, onMount } from 'svelte'
+  import { cn } from '$lib/utilities/shadcn.ts'
+  import * as Table from '$lib/components/ui/table'
+  import { showUnsupported } from '$lib/stores/user.ts'
+  import DevTools from '$lib/components/dev-tools.svelte'
+  import * as Card from '$lib/components/ui/card/index.ts'
+  import CellAssets from '../(components)/cell-assets.svelte'
+  import LoadingLogo from '$lib/components/loading-logo.svelte'
+  import type { UnwrapReadable } from '$lib/utilities/types.ts'
+  import { toPrettyDateTimeFormat } from '$lib/utilities/date.ts'
+  import { goto, pushState, replaceState } from '$app/navigation'
+  import { derived, writable, type Readable } from 'svelte/store'
+  import CellDuration from '../(components)/cell-duration-text.svelte'
+  import CellOriginTransfer from '../(components)/cell-origin-transfer.svelte'
+  import { ExplorerPagination } from '../(components)/explorer-pagination/index.ts'
+  import { createQuery, useQueryClient, keepPreviousData } from '@tanstack/svelte-query'
+  import {
+    latestTransfersQueryDocument,
+    transfersBeforeTimestampQueryDocument,
+    transfersOnOrAfterTimestampQueryDocument,
+  } from '$lib/graphql/documents/transfers.ts'
+  import {
+    latestTransfers,
+    transfersBeforeTimestamp,
+    transfersOnOrAfterTimestamp,
+  } from './paginated-transfers.ts'
 
-const queryClient = useQueryClient()
+  /**
+   * 3 queries:
+   *
+   * 1. Get the latest timestamp, only when the page index is 0, disabled otherwise, automatically refetch every 5 seconds.
+   * 2. Previous page, enaled when pagination is <= 0, get the oldest timestamp, no refetch.
+   * 3. Next page, get the latest timestamp, no refetch.
+   */
 
-const QUERY_LIMIT = 12
+  const QUERY_LIMIT = 12
+  const queryClient = useQueryClient()
+  let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
+  let timestamp = writable(Temporal.Now.plainDateTimeISO().toString())
 
-let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
+  let transfers = createQuery(
+    derived([timestamp, pagination], ([$timestamp, $pagination]) => ({
+      queryKey: ['transfers', $timestamp],
+      staleTime: 5_000,
+      placeholderData: keepPreviousData,
+      refetchOnMount: $pagination.pageIndex === 0,
+      enabled: () => $pagination.pageIndex === 0,
+      refetchOnReconnect: $pagination.pageIndex === 0,
+      refetchInterval: () => ($pagination.pageIndex === 0 ? 5_000 : false),
+      queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT }),
+    })),
+  )
 
-let timestamp = writable(Temporal.Now.plainDateTimeISO().toString())
-let enableRefetch = $pagination.pageIndex === 0
+  let olderTransfers = createQuery(
+    derived([timestamp, pagination], ([$timestamp, $pagination]) => ({
+      queryKey: ['transfers', $timestamp],
+      staleTime: 5_000,
+      placeholderData: keepPreviousData,
+      refetchOnMount: false,
+      enabled: () => $pagination.pageIndex !== 0,
+      refetchOnReconnect: false,
+      queryFn: async () =>
+        await transfersBeforeTimestamp({
+          timestamp: $timestamp,
+          limit: QUERY_LIMIT,
+        }),
+    })),
+  )
 
-let transfers = createQuery(
-  derived(pagination, $pagination => ({
-    queryKey: ["transfers", $timestamp],
-    refetchOnMount: enableRefetch,
-    refetchOnReconnect: enableRefetch,
-    refetchOnWindowFocus: enableRefetch,
-    placeholderData: keepPreviousData,
-    refetchInterval: () => ($pagination.pageIndex === 0 ? 5_000 : false),
-    staleTime: 5_000,
-    queryFn: async () => {
-      const data = await request(URLS.GRAPHQL, transfersTimestampFilterQueryDocument, {
-        timestamp: {
-          // if first page, use current time
-          // if not, use the last timestamp
-          [$pagination.pageIndex === 0 ? "_gte" : "_le"]: $timestamp
-        },
-        limit: $pagination.pageSize,
-        offset: $pagination.pageIndex * $pagination.pageSize
-      })
+  let queryStatus: 'pending' | 'done' =
+    $transfers.status === 'pending' || $transfers.fetchStatus === 'fetching' ? 'pending' : 'done'
+  $: queryStatus =
+    $transfers.status === 'pending' || $transfers.fetchStatus === 'fetching' ? 'pending' : 'done'
 
-      if (!data.v0_transfers) raise("error fetching transfers")
+  let transfersDataStore = derived(
+    [transfers, olderTransfers, pagination],
+    ([$transfers, $olderTransfers, $pagination]) =>
+      $pagination.pageIndex === 0 ? $transfers?.data ?? [] : $olderTransfers?.data ?? [],
+  )
 
-      return data.v0_transfers.map(tx => {
-        let destinationChainId = tx.destination_chain?.chain_id
-        let receiver = tx.receiver
+  type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 
-        const lastForward = tx.forwards_2?.at(-1)
-        if (lastForward && lastForward.receiver !== null && lastForward.chain !== null) {
-          receiver = lastForward.receiver
-          destinationChainId = lastForward.chain.chain_id
-        }
-
-        return {
-          source: {
-            chain_display_name: tx.source_chain?.chain_id,
-            address: tx.sender || "unknown"
-          },
-          destination: {
-            chain_display_name: tx.destination_chain?.chain_id,
-            address: tx.receiver || "unknown"
-          },
-          assets: tx.assets,
-          timestamp: String(tx.source_timestamp),
-          source_transaction_hash: tx.source_transaction_hash
-        }
-      })
-    }
+  let timestamps = derived(transfers, $transfers => ({
+    oldestTimestamp: $transfers?.data?.at(-1)?.timestamp ?? '',
+    latestTimestamp: $transfers?.data?.at(0)?.timestamp ?? '',
   }))
-)
 
-let queryStatus: "pending" | "done" =
-  $transfers.status === "pending" || $transfers.fetchStatus === "fetching" ? "pending" : "done"
-$: queryStatus =
-  $transfers.status === "pending" || $transfers.fetchStatus === "fetching" ? "pending" : "done"
+  const encodeTimestampSearchParam = (timestamp: string) =>
+    `?timestamp=${toPrettyDateTimeFormat(timestamp)?.replaceAll('-', '').replaceAll(':', '').replaceAll(' ', '')}`
 
-let transfersDataStore = derived(transfers, $transfers => $transfers.data ?? [])
-
-type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
-
-/**
- * Always update timestamp to the last timestamp of the last row
- * except when the page index is 0, in that case, update to the current time
- */
-transfersDataStore.subscribe(value => {
-  if ($pagination.pageIndex === 0) {
-    timestamp.set(Temporal.Now.plainDateTimeISO().toString())
-  } else {
-    const lastTimestamp = value.at(0)?.timestamp
-    if (lastTimestamp) timestamp.set(lastTimestamp)
+  const decodeTimestampSearchParam = (search: string) => {
+    const timestamp = new URLSearchParams(search).get('timestamp')
+    return timestamp
+      ? toPrettyDateTimeFormat(timestamp)
+      : Temporal.Now.plainDateTimeISO().toString()
   }
-})
 
-const encodeTimestampSearchParam = (timestamp: string) =>
-  `?timestamp=${toPrettyDateTimeFormat(timestamp)?.replaceAll("-", "").replaceAll(":", "").replaceAll(" ", "-")}`
+  timestamp.subscribe(value => {
+    goto(encodeTimestampSearchParam(value))
+  })
 
-const decodeTimestampSearchParam = (search: string) => {
-  const timestamp = new URLSearchParams(search).get("timestamp")
-  return timestamp ? toPrettyDateTimeFormat(timestamp) : Temporal.Now.plainDateTimeISO().toString()
-}
+  const columns: Array<ColumnDef<DataRow>> = [
+    {
+      accessorKey: 'source',
+      header: () => 'Source',
+      size: 200,
+      minSize: 200,
+      maxSize: 200,
+      cell: info => flexRender(CellOriginTransfer, { value: info.getValue() }),
+    },
+    {
+      accessorKey: 'destination',
+      header: () => 'Destination',
+      size: 200,
+      minSize: 200,
+      maxSize: 200,
+      cell: info => flexRender(CellOriginTransfer, { value: info.getValue() }),
+    },
+    {
+      accessorKey: 'assets',
+      header: () => 'Assets',
+      size: 200,
+      minSize: 200,
+      maxSize: 200,
+      cell: info => flexRender(CellAssets, { value: info.getValue() }),
+    },
+    {
+      accessorKey: 'timestamp',
+      header: () => 'Time',
+      size: 200,
+      minSize: 200,
+      maxSize: 200,
+      // @ts-ignore
+      cell: info => toPrettyDateTimeFormat(info.getValue()),
+    },
+  ]
 
-timestamp.subscribe(value => {
-  goto(encodeTimestampSearchParam(value))
-})
+  const options = writable<TableOptions<DataRow>>({
+    data: $transfersDataStore,
+    // enableHiding: true,
+    // enableFilters: true,
+    columns,
+    rowCount: $transfersDataStore?.length,
+    autoResetPageIndex: true,
+    // enableColumnFilters: true,
+    // enableColumnResizing: true,
+    // enableMultiRowSelection: true,
+    getCoreRowModel: getCoreRowModel(),
+    // getFilteredRowModel: getFilteredRowModel(),
+    manualPagination: true,
+    getPaginationRowModel: getPaginationRowModel(),
+    // state: {
+    //   pagination: $pagination,
+    // },
+    debugTable: import.meta.env.MODE === 'development',
+  })
 
-const columns: Array<ColumnDef<DataRow>> = [
-  {
-    accessorKey: "source",
-    header: () => "Source",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
-    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
-  },
-  {
-    accessorKey: "destination",
-    header: () => "Destination",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
-    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
-  },
-  {
-    accessorKey: "assets",
-    header: () => "Assets",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
-    cell: info => flexRender(CellAssets, { value: info.getValue() })
-  },
-  {
-    accessorKey: "timestamp",
-    header: () => "Time",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
-    cell: info => toPrettyDateTimeFormat(info.cell.getValue())
+  const rerender = () => {
+    options.update(options => ({
+      ...options,
+      data: $transfersDataStore,
+    }))
   }
-]
 
-const options = writable<TableOptions<DataRow>>({
-  data: $transfersDataStore,
-  // enableHiding: true,
-  // enableFilters: true,
-  columns,
-  rowCount: $transfersDataStore.length,
-  autoResetPageIndex: true,
-  // enableColumnFilters: true,
-  // enableColumnResizing: true,
-  // enableMultiRowSelection: true,
-  getCoreRowModel: getCoreRowModel(),
-  // getFilteredRowModel: getFilteredRowModel(),
-  manualPagination: true,
-  getPaginationRowModel: getPaginationRowModel(),
-  state: {
-    pagination: $pagination
-  },
-  debugTable: import.meta.env.MODE === "development"
-})
+  const table = createSvelteTable(options)
+  const rows = derived(table, $t => $t.getRowModel().rows)
 
-const rerender = () => {
-  options.update(options => ({
-    ...options,
-    data: $transfersDataStore
-  }))
-}
+  function hasInfoProperty(assets: Object) {
+    const info = Object?.keys(assets).at(0)
+    if (!info) return false
+    // @ts-ignore
+    if (!assets[info]) return false
+    // @ts-ignore
+    return Object.hasOwn(assets[info], 'info')
+  }
 
-const table = createSvelteTable(options)
-const rows = derived(table, $t => $t.getRowModel().rows)
-
-function hasInfoProperty(assets: Object) {
-  const info = Object?.keys(assets).at(0)
-  if (!info) return false
-  // @ts-ignore
-  if (!assets[info]) return false
-  // @ts-ignore
-  return Object.hasOwn(assets[info], "info")
-}
-
-$: if ($transfersDataStore) rerender()
+  $: if ($transfersDataStore) rerender()
 </script>
 
 <DevTools />
 <pre class="text-xs">{JSON.stringify(
     {
-      lastRowFetched: {
-        timestamp: $transfersDataStore?.at(-1)?.timestamp,
-        hash: $transfersDataStore?.at(-1)?.source_transaction_hash,
-      },
+      oldestTimestamp: $timestamps.oldestTimestamp,
+      latestTimestamp: $timestamps.latestTimestamp,
       config: { $pagination, status: queryStatus },
     },
     undefined,
@@ -235,16 +224,15 @@ $: if ($transfersDataStore) rerender()
       {#each $table.getRowModel().rows as row, index (row.index)}
         <!-- {@const containsAsset = $rows[row.index].original.assets} -->
         <!-- {#if containsAsset} -->
-        {@const isSupported = hasInfoProperty($rows[row.index]?.original?.assets)}
+        <!-- {@const isSupported = hasInfoProperty($rows[row.index]?.original?.assets)} -->
         <!-- {#if $showUnsupported || isSupported} -->
         <Table.Row
           class={cn(
             'cursor-pointer tabular-nums',
             index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
-            isSupported ? '' : 'opacity-50',
+            // isSupported ? '' : 'opacity-50',
           )}
-          on:click={() =>
-            goto(`/explorer/transfers/${$rows[row.index].original.source_transaction_hash}`)}
+          on:click={() => goto(`/explorer/transfers/${$rows[row.index].original.hash}`)}
         >
           {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
             <Table.Cell class="tabular-nums">
@@ -277,6 +265,13 @@ $: if ($transfersDataStore) rerender()
   totalTableRows={2000}
   timestamp={$timestamp}
   bind:rowsPerPage={$pagination.pageSize}
-  onNextPage={page => pagination.update(p => ({ ...p, pageIndex: page + 1 }))}
-  onPreviousPage={page => pagination.update(p => ({ ...p, pageIndex: page - 1 }))}
+  onNextPage={page => {
+    console.info($pagination.pageIndex, page)
+    pagination.update(p => ({ ...p, pageIndex: page + 1 }))
+    timestamp.set($timestamps.oldestTimestamp)
+  }}
+  onPreviousPage={page => {
+    pagination.update(p => ({ ...p, pageIndex: page - 1 }))
+    timestamp.set($timestamps.latestTimestamp)
+  }}
 />

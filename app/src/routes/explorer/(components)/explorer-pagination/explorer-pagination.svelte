@@ -1,18 +1,18 @@
 <script lang="ts">
-import { cn } from "$lib/utilities/shadcn.ts"
-import ChevronLeft from "virtual:icons/lucide/chevron-left"
-import ChevronRight from "virtual:icons/lucide/chevron-right"
-import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
-import * as Pagination from "$lib/components/ui/pagination/index.ts"
+  import { cn } from '$lib/utilities/shadcn.ts'
+  import ChevronLeft from 'virtual:icons/lucide/chevron-left'
+  import ChevronRight from 'virtual:icons/lucide/chevron-right'
+  import { toPrettyDateTimeFormat } from '$lib/utilities/date.ts'
+  import * as Pagination from '$lib/components/ui/pagination/index.ts'
 
-export let timestamp: string
-export let rowsPerPage: number
-export let totalTableRows: number
+  export let timestamp: string
+  export let rowsPerPage: number
+  export let totalTableRows: number
 
-export let status: "pending" | "done" = "done"
+  export let status: 'pending' | 'done' = 'done'
 
-export let onNextPage: (page: number) => void
-export let onPreviousPage: (page: number) => void
+  export let onNextPage: (page: number) => void
+  export let onPreviousPage: (page: number) => void
 </script>
 
 <Pagination.Root
@@ -22,22 +22,22 @@ export let onPreviousPage: (page: number) => void
   perPage={rowsPerPage}
   count={totalTableRows}
 >
-  <Pagination.Content class="py-2 text-lg uppercase font-supermolot">
+  <Pagination.Content class="py-2 text-md uppercase font-supermolot">
     <Pagination.Item>
       <Pagination.PrevButton
-        disabled={currentPage === 1 || status === 'pending'}
-        class={cn(currentPage === 1 || status === 'pending' ? 'cursor-not-allowed' : '')}
-        on:click|once={() => onPreviousPage(Number(currentPage) - 1)}
+        disabled={status === 'pending'}
+        class={cn(status === 'pending' ? 'cursor-not-allowed' : '')}
+        on:click={() => onPreviousPage(Math.max(0, Number(currentPage) - 1))}
       >
         <ChevronLeft class="size-6" />
-        <span class="hidden sm:block text-lg uppercase font-supermolot">Previous</span>
+        <span class="hidden sm:block text-md uppercase font-supermolot">Newer</span>
       </Pagination.PrevButton>
     </Pagination.Item>
     <div class={cn('flex flex-col align-baseline gap-y-0.5')}>
-      <time class="font-normal text-lg uppercase font-mono">
+      <time class="font-normal text-md uppercase font-mono">
         {toPrettyDateTimeFormat(timestamp)}
       </time>
-            <!-- <div class={cn('flex flex-row')}>
+      <!-- <div class={cn('flex flex-row')}>
         {#each pages as page (page.key)}
           {#if page.type === 'ellipsis'}
             <Pagination.Item>
@@ -56,10 +56,10 @@ export let onPreviousPage: (page: number) => void
 
     <Pagination.Item>
       <Pagination.NextButton
-        on:click={() => onNextPage(Number(currentPage) + 1)}
+        on:click={() => onNextPage(Number(currentPage))}
         disabled={currentPage === pages.length || status === 'pending'}
       >
-        <span class="hidden sm:block text-lg uppercase font-supermolot">Next</span>
+        <span class="hidden sm:block text-md uppercase font-supermolot">Older</span>
         <ChevronRight class="size-6" />
       </Pagination.NextButton>
     </Pagination.Item>

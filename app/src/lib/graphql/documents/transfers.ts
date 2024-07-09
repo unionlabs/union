@@ -1,56 +1,119 @@
-import { graphql } from "gql.tada"
+import { graphql } from "../index.ts"
 
-/**
- * transfers query after timestamp
- */
-export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
-  query TransfersQueryTimestampFilter(
-    $limit: Int! = 10,
+// export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
+//   query TransfersQueryTimestampFilter(
+//     $limit: Int! = 10,
+//     $timestamp: timestamptz!
+//   ) {
+//     top: v0_transfers(
+//       limit: $limit,
+//       order_by: { source_timestamp: asc },
+//       where: { source_timestamp: {_gte: $timestamp} },
+//     ) {
+//       sender
+//       source_chain { chain_id display_name }
+//       source_timestamp
+//       source_transaction_hash
+//       receiver
+//       destination_chain { chain_id display_name }
+//       destination_timestamp
+//       destination_transaction_hash
+//       assets
+//       forwards_2 {
+//         chain { chain_id }
+//         port
+//         channel
+//         receiver
+//       }
+//     }
+//     bottom: v0_transfers(
+//       limit: $limit,
+//       order_by: { source_timestamp: desc },
+//       where: { source_timestamp: {_lt: $timestamp} },
+//     ) {
+//       sender
+//       source_chain { chain_id display_name }
+//       source_timestamp
+//       source_transaction_hash
+//       receiver
+//       destination_chain { chain_id display_name }
+//       destination_timestamp
+//       destination_transaction_hash
+//       assets
+//       forwards_2 {
+//         chain { chain_id }
+//         port
+//         channel
+//         receiver
+//       }
+//     }
+//   }
+// `)
+export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
+  query TransfersQuery(
+    $limit: Int! = 8,
+  ) @cached(ttl: 5) {
+    data: v0_transfers(
+      limit: $limit,
+      order_by: { source_timestamp: desc },
+    ) {
+      sender
+      source_timestamp
+      source_transaction_hash
+      source_chain { chain_id display_name }
+      receiver
+      destination_timestamp
+      destination_transaction_hash
+      destination_chain { chain_id display_name }
+      assets
+    }
+  }  
+`)
+
+export const transfersOnOrAfterTimestampQueryDocument = graphql(/* GraphQL */ `
+  query TransfersOnOrAfterTimestampQuery(
+    $limit: Int! = 8,
     $timestamp: timestamptz!
-  ) {
-    top: v0_transfers(
+  ) @cached(ttl: 5) {
+    data: v0_transfers(
       limit: $limit,
       order_by: { source_timestamp: asc },
       where: { source_timestamp: {_gte: $timestamp} },
     ) {
       sender
-      source_chain { chain_id display_name }
       source_timestamp
       source_transaction_hash
+      source_chain { chain_id display_name }
       receiver
-      destination_chain { chain_id display_name }
       destination_timestamp
       destination_transaction_hash
+      destination_chain { chain_id display_name }
       assets
-      forwards_2 {
-        chain { chain_id }
-        port
-        channel
-        receiver
-      }
     }
-    bottom: v0_transfers(
+  }
+`)
+
+export const transfersBeforeTimestampQueryDocument = graphql(/* GraphQL */ `
+  query TransfersBeforeTimestampQuery(
+    $limit: Int! = 10,
+    $timestamp: timestamptz!
+  ) @cached(ttl: 5) {
+    data: v0_transfers(
       limit: $limit,
       order_by: { source_timestamp: desc },
-      where: { source_timestamp: {_lt: $timestamp} },
+      where: { source_timestamp: {_lte: $timestamp} },
     ) {
       sender
-      source_chain { chain_id display_name }
       source_timestamp
       source_transaction_hash
+      source_chain { chain_id display_name }
       receiver
-      destination_chain { chain_id display_name }
       destination_timestamp
       destination_transaction_hash
+      destination_chain { chain_id display_name }
       assets
-      forwards_2 {
-        chain { chain_id }
-        port
-        channel
-        receiver
-      }
     }
-  }  
+  }
 `)
 
 export const allTransfersQueryDocument = graphql(/* GraphQL */ `
