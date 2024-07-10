@@ -11,8 +11,8 @@
 
   export let status: 'pending' | 'done' = 'done'
 
-  export let onNextPage: (page: number) => void
-  export let onPreviousPage: (page: number) => void
+  export let onOlderPage: (page: number) => void
+  export let onNewerPage: (page: number) => void
 </script>
 
 <Pagination.Root
@@ -27,7 +27,7 @@
       <Pagination.PrevButton
         disabled={status === 'pending'}
         class={cn(status === 'pending' ? 'cursor-not-allowed' : '')}
-        on:click={() => onPreviousPage(Math.max(0, Number(currentPage) - 1))}
+        on:click={event => onNewerPage(Number(currentPage) - 1)}
       >
         <ChevronLeft class="size-6" />
         <span class="hidden sm:block text-md uppercase font-supermolot">Newer</span>
@@ -53,11 +53,10 @@
         {/each}
       </div> -->
     </div>
-
     <Pagination.Item>
       <Pagination.NextButton
-        on:click={() => onNextPage(Number(currentPage))}
-        disabled={currentPage === pages.length || status === 'pending'}
+        disabled={status === 'pending'}
+        on:click={event => onOlderPage(Number(currentPage) + 1)}
       >
         <span class="hidden sm:block text-md uppercase font-supermolot">Older</span>
         <ChevronRight class="size-6" />

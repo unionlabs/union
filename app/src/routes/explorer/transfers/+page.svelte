@@ -21,6 +21,7 @@
   import CellAssets from '../(components)/cell-assets.svelte'
   import LoadingLogo from '$lib/components/loading-logo.svelte'
   import type { UnwrapReadable } from '$lib/utilities/types.ts'
+  import { paginatedTransfers } from './paginated-transfers.ts'
   import { toPrettyDateTimeFormat } from '$lib/utilities/date.ts'
   import { goto, pushState, replaceState } from '$app/navigation'
   import { derived, writable, type Readable } from 'svelte/store'
@@ -28,29 +29,11 @@
   import CellOriginTransfer from '../(components)/cell-origin-transfer.svelte'
   import { ExplorerPagination } from '../(components)/explorer-pagination/index.ts'
   import { createQuery, useQueryClient, keepPreviousData } from '@tanstack/svelte-query'
-  import {
-    latestTransfersQueryDocument,
-    transfersBeforeTimestampQueryDocument,
-    transfersOnOrAfterTimestampQueryDocument,
-  } from '$lib/graphql/documents/transfers.ts'
-  import {
-    latestTransfers,
-    transfersBeforeTimestamp,
-    transfersOnOrAfterTimestamp,
-  } from './paginated-transfers.ts'
-
-  /**
-   * 3 queries:
-   *
-   * 1. Get the latest timestamp, only when the page index is 0, disabled otherwise, automatically refetch every 5 seconds.
-   * 2. Previous page, enaled when pagination is <= 0, get the oldest timestamp, no refetch.
-   * 3. Next page, get the latest timestamp, no refetch.
-   */
 
   const QUERY_LIMIT = 12
   const queryClient = useQueryClient()
   let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
-  let timestamp = writable(Temporal.Now.plainDateTimeISO().toString())
+  let timestamp = writable(Temporal.Now.plainDateTimeISO('UTC').toString())
 
   let transfers = createQuery(
     derived([timestamp, pagination], ([$timestamp, $pagination]) => ({
@@ -58,26 +41,9 @@
       staleTime: 5_000,
       placeholderData: keepPreviousData,
       refetchOnMount: $pagination.pageIndex === 0,
-      enabled: () => $pagination.pageIndex === 0,
       refetchOnReconnect: $pagination.pageIndex === 0,
       refetchInterval: () => ($pagination.pageIndex === 0 ? 5_000 : false),
-      queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT }),
-    })),
-  )
-
-  let olderTransfers = createQuery(
-    derived([timestamp, pagination], ([$timestamp, $pagination]) => ({
-      queryKey: ['transfers', $timestamp],
-      staleTime: 5_000,
-      placeholderData: keepPreviousData,
-      refetchOnMount: false,
-      enabled: () => $pagination.pageIndex !== 0,
-      refetchOnReconnect: false,
-      queryFn: async () =>
-        await transfersBeforeTimestamp({
-          timestamp: $timestamp,
-          limit: QUERY_LIMIT,
-        }),
+      queryFn: async () => await paginatedTransfers({ limit: QUERY_LIMIT, timestamp: $timestamp }),
     })),
   )
 
@@ -86,11 +52,7 @@
   $: queryStatus =
     $transfers.status === 'pending' || $transfers.fetchStatus === 'fetching' ? 'pending' : 'done'
 
-  let transfersDataStore = derived(
-    [transfers, olderTransfers, pagination],
-    ([$transfers, $olderTransfers, $pagination]) =>
-      $pagination.pageIndex === 0 ? $transfers?.data ?? [] : $olderTransfers?.data ?? [],
-  )
+  let transfersDataStore = derived(transfers, $transfers => $transfers?.data ?? [])
 
   type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 
@@ -151,21 +113,21 @@
 
   const options = writable<TableOptions<DataRow>>({
     data: $transfersDataStore,
-    // enableHiding: true,
-    // enableFilters: true,
+    enableHiding: true,
+    enableFilters: true,
     columns,
     rowCount: $transfersDataStore?.length,
     autoResetPageIndex: true,
-    // enableColumnFilters: true,
-    // enableColumnResizing: true,
-    // enableMultiRowSelection: true,
+    enableColumnFilters: true,
+    enableColumnResizing: true,
+    enableMultiRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
-    // getFilteredRowModel: getFilteredRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     manualPagination: true,
     getPaginationRowModel: getPaginationRowModel(),
-    // state: {
-    //   pagination: $pagination,
-    // },
+    state: {
+      pagination: $pagination,
+    },
     debugTable: import.meta.env.MODE === 'development',
   })
 
@@ -265,13 +227,13 @@
   totalTableRows={2000}
   timestamp={$timestamp}
   bind:rowsPerPage={$pagination.pageSize}
-  onNextPage={page => {
+  onOlderPage={page => {
     console.info($pagination.pageIndex, page)
-    pagination.update(p => ({ ...p, pageIndex: page + 1 }))
     timestamp.set($timestamps.oldestTimestamp)
+    pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
   }}
-  onPreviousPage={page => {
-    pagination.update(p => ({ ...p, pageIndex: page - 1 }))
+  onNewerPage={page => {
     timestamp.set($timestamps.latestTimestamp)
+    pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
   }}
 />
