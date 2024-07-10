@@ -1,10 +1,10 @@
-import type { introspection } from '$generated/graphql-env';
-import { initGraphQLTada } from 'gql.tada';
+import type { introspection } from "$generated/graphql-env"
+import { initGraphQLTada } from "gql.tada"
 
 export const graphql = initGraphQLTada<{
-  introspection: introspection;
+  introspection: introspection
   scalars: {
-    jsonb: any;
-    timestamptz: string;
+    jsonb: any
+    timestamptz: string
   }
 }>()

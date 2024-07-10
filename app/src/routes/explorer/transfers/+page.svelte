@@ -1,155 +1,153 @@
 <script lang="ts">
-  import {
-    flexRender,
-    type ColumnDef,
-    getCoreRowModel,
-    type TableOptions,
-    createSvelteTable,
-    getFilteredRowModel,
-    getPaginationRowModel,
-  } from '@tanstack/svelte-table'
-  import { onDestroy } from 'svelte'
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import * as Table from '$lib/components/ui/table'
-  import { showUnsupported } from '$lib/stores/user.ts'
-  import DevTools from '$lib/components/dev-tools.svelte'
-  import * as Card from '$lib/components/ui/card/index.ts'
-  import CellAssets from '../(components)/cell-assets.svelte'
-  import LoadingLogo from '$lib/components/loading-logo.svelte'
-  import type { UnwrapReadable } from '$lib/utilities/types.ts'
-  import { paginatedTransfers } from './paginated-transfers.ts'
-  import { toPrettyDateTimeFormat } from '$lib/utilities/date.ts'
-  import { goto, pushState, replaceState } from '$app/navigation'
-  import { derived, writable, type Readable } from 'svelte/store'
-  import CellDuration from '../(components)/cell-duration-text.svelte'
-  import { createQuery, keepPreviousData } from '@tanstack/svelte-query'
-  import CellOriginTransfer from '../(components)/cell-origin-transfer.svelte'
-  import { ExplorerPagination } from '../(components)/explorer-pagination/index.ts'
+import {
+  flexRender,
+  type ColumnDef,
+  getCoreRowModel,
+  type TableOptions,
+  createSvelteTable,
+  getFilteredRowModel,
+  getPaginationRowModel
+} from "@tanstack/svelte-table"
+import { onDestroy } from "svelte"
+import { cn } from "$lib/utilities/shadcn.ts"
+import * as Table from "$lib/components/ui/table"
+import { showUnsupported } from "$lib/stores/user.ts"
+import DevTools from "$lib/components/dev-tools.svelte"
+import * as Card from "$lib/components/ui/card/index.ts"
+import CellAssets from "../(components)/cell-assets.svelte"
+import LoadingLogo from "$lib/components/loading-logo.svelte"
+import type { UnwrapReadable } from "$lib/utilities/types.ts"
+import { paginatedTransfers } from "./paginated-transfers.ts"
+import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
+import { goto, pushState, replaceState } from "$app/navigation"
+import { derived, writable, type Readable } from "svelte/store"
+import CellDuration from "../(components)/cell-duration-text.svelte"
+import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
+import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
+import { ExplorerPagination } from "../(components)/explorer-pagination/index.ts"
 
-  const QUERY_LIMIT = 12
-  let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
-  let timestamp = writable(Temporal.Now.plainDateTimeISO('UTC').toString())
+const QUERY_LIMIT = 12
+let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
+let timestamp = writable(Temporal.Now.plainDateTimeISO("UTC").toString())
 
-  let transfers = createQuery(
-    derived([timestamp, pagination], ([$timestamp, $pagination]) => ({
-      queryKey: ['transfers', $timestamp],
-      staleTime: 5_000,
-      placeholderData: keepPreviousData,
-      refetchOnMount: $pagination.pageIndex === 0,
-      refetchOnReconnect: $pagination.pageIndex === 0,
-      refetchInterval: () => ($pagination.pageIndex === 0 ? 5_000 : false),
-      queryFn: async () => await paginatedTransfers({ limit: QUERY_LIMIT, timestamp: $timestamp }),
-    })),
-  )
-
-  let queryStatus: 'pending' | 'done' =
-    $transfers.status === 'pending' || $transfers.fetchStatus === 'fetching' ? 'pending' : 'done'
-  $: queryStatus =
-    $transfers.status === 'pending' || $transfers.fetchStatus === 'fetching' ? 'pending' : 'done'
-
-  let transfersDataStore = derived(transfers, $transfers => $transfers?.data ?? [])
-
-  type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
-
-  let timestamps = derived(transfers, $transfers => ({
-    oldestTimestamp: $transfers?.data?.at(-1)?.timestamp ?? '',
-    latestTimestamp: $transfers?.data?.at(0)?.timestamp ?? '',
+let transfers = createQuery(
+  derived([timestamp, pagination], ([$timestamp, $pagination]) => ({
+    queryKey: ["transfers", $timestamp],
+    staleTime: 5_000,
+    placeholderData: keepPreviousData,
+    refetchOnMount: $pagination.pageIndex === 0,
+    refetchOnReconnect: $pagination.pageIndex === 0,
+    refetchInterval: () => ($pagination.pageIndex === 0 ? 5_000 : false),
+    queryFn: async () => await paginatedTransfers({ limit: QUERY_LIMIT, timestamp: $timestamp })
   }))
+)
 
-  const encodeTimestampSearchParam = (timestamp: string) =>
-    `?timestamp=${toPrettyDateTimeFormat(timestamp)?.replaceAll('-', '').replaceAll(':', '').replaceAll(' ', '')}`
+let queryStatus: "pending" | "done" =
+  $transfers.status === "pending" || $transfers.fetchStatus === "fetching" ? "pending" : "done"
+$: queryStatus =
+  $transfers.status === "pending" || $transfers.fetchStatus === "fetching" ? "pending" : "done"
 
-  const decodeTimestampSearchParam = (search: string) => {
-    const timestamp = new URLSearchParams(search).get('timestamp')
-    return timestamp
-      ? toPrettyDateTimeFormat(timestamp)
-      : Temporal.Now.plainDateTimeISO().toString()
-  }
+let transfersDataStore = derived(transfers, $transfers => $transfers?.data ?? [])
 
-  const unsubscribe = timestamp.subscribe(value => {
-    goto(encodeTimestampSearchParam(value))
-  })
+type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 
-  const columns: Array<ColumnDef<DataRow>> = [
-    {
-      accessorKey: 'source',
-      header: () => 'Source',
-      size: 200,
-      minSize: 200,
-      maxSize: 200,
-      cell: info => flexRender(CellOriginTransfer, { value: info.getValue() }),
-    },
-    {
-      accessorKey: 'destination',
-      header: () => 'Destination',
-      size: 200,
-      minSize: 200,
-      maxSize: 200,
-      cell: info => flexRender(CellOriginTransfer, { value: info.getValue() }),
-    },
-    {
-      accessorKey: 'assets',
-      header: () => 'Assets',
-      size: 200,
-      minSize: 200,
-      maxSize: 200,
-      cell: info => flexRender(CellAssets, { value: info.getValue() }),
-    },
-    {
-      accessorKey: 'timestamp',
-      header: () => 'Time',
-      size: 200,
-      minSize: 200,
-      maxSize: 200,
-      // @ts-ignore
-      cell: info => toPrettyDateTimeFormat(info.getValue()),
-    },
-  ]
+let timestamps = derived(transfers, $transfers => ({
+  oldestTimestamp: $transfers?.data?.at(-1)?.timestamp ?? "",
+  latestTimestamp: $transfers?.data?.at(0)?.timestamp ?? ""
+}))
 
-  const options = writable<TableOptions<DataRow>>({
-    data: $transfersDataStore,
-    enableHiding: true,
-    enableFilters: true,
-    columns,
-    rowCount: $transfersDataStore?.length,
-    autoResetPageIndex: true,
-    enableColumnFilters: true,
-    enableColumnResizing: true,
-    enableMultiRowSelection: true,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    manualPagination: true,
-    getPaginationRowModel: getPaginationRowModel(),
-    state: {
-      pagination: $pagination,
-    },
-    debugTable: import.meta.env.MODE === 'development',
-  })
+const encodeTimestampSearchParam = (timestamp: string) =>
+  `?timestamp=${toPrettyDateTimeFormat(timestamp)?.replaceAll("-", "").replaceAll(":", "").replaceAll(" ", "")}`
 
-  const rerender = () => {
-    options.update(options => ({
-      ...options,
-      data: $transfersDataStore,
-    }))
-  }
+const decodeTimestampSearchParam = (search: string) => {
+  const timestamp = new URLSearchParams(search).get("timestamp")
+  return timestamp ? toPrettyDateTimeFormat(timestamp) : Temporal.Now.plainDateTimeISO().toString()
+}
 
-  const table = createSvelteTable(options)
-  const rows = derived(table, $t => $t.getRowModel().rows)
+const unsubscribe = timestamp.subscribe(value => {
+  goto(encodeTimestampSearchParam(value))
+})
 
-  function hasInfoProperty(assets: Object) {
-    const info = Object?.keys(assets).at(0)
-    if (!info) return false
+const columns: Array<ColumnDef<DataRow>> = [
+  {
+    accessorKey: "source",
+    header: () => "Source",
+    size: 200,
+    minSize: 200,
+    maxSize: 200,
+    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
+  },
+  {
+    accessorKey: "destination",
+    header: () => "Destination",
+    size: 200,
+    minSize: 200,
+    maxSize: 200,
+    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
+  },
+  {
+    accessorKey: "assets",
+    header: () => "Assets",
+    size: 200,
+    minSize: 200,
+    maxSize: 200,
+    cell: info => flexRender(CellAssets, { value: info.getValue() })
+  },
+  {
+    accessorKey: "timestamp",
+    header: () => "Time",
+    size: 200,
+    minSize: 200,
+    maxSize: 200,
     // @ts-ignore
-    if (!assets[info]) return false
-    // @ts-ignore
-    return Object.hasOwn(assets[info], 'info')
+    cell: info => toPrettyDateTimeFormat(info.getValue())
   }
+]
 
-  $: if ($transfersDataStore) rerender()
+const options = writable<TableOptions<DataRow>>({
+  data: $transfersDataStore,
+  enableHiding: true,
+  enableFilters: true,
+  columns,
+  rowCount: $transfersDataStore?.length,
+  autoResetPageIndex: true,
+  enableColumnFilters: true,
+  enableColumnResizing: true,
+  enableMultiRowSelection: true,
+  getCoreRowModel: getCoreRowModel(),
+  getFilteredRowModel: getFilteredRowModel(),
+  manualPagination: true,
+  getPaginationRowModel: getPaginationRowModel(),
+  state: {
+    pagination: $pagination
+  },
+  debugTable: import.meta.env.MODE === "development"
+})
 
-  onDestroy(() => {
-    unsubscribe()
-  })
+const rerender = () => {
+  options.update(options => ({
+    ...options,
+    data: $transfersDataStore
+  }))
+}
+
+const table = createSvelteTable(options)
+const rows = derived(table, $t => $t.getRowModel().rows)
+
+function hasInfoProperty(assets: Object) {
+  const info = Object?.keys(assets).at(0)
+  if (!info) return false
+  // @ts-ignore
+  if (!assets[info]) return false
+  // @ts-ignore
+  return Object.hasOwn(assets[info], "info")
+}
+
+$: if ($transfersDataStore) rerender()
+
+onDestroy(() => {
+  unsubscribe()
+})
 </script>
 
 <DevTools />

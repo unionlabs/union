@@ -1,4 +1,4 @@
-import type { DocumentNode } from 'graphql'
+import type { DocumentNode } from "graphql"
 
 export type RequestDocument = string | DocumentNode
 export type RemoveIndex<T> = {
