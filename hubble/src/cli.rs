@@ -67,6 +67,8 @@ pub enum IndexerConfig {
     Tm(crate::tm::Config),
     #[serde(rename = "ethereum")]
     Eth(crate::eth::Config),
+    #[serde(rename = "ethereum-fork")]
+    EthFork(crate::eth::fork::Config),
     #[serde(rename = "beacon")]
     Beacon(crate::beacon::Config),
     #[serde(rename = "bera")]
@@ -80,6 +82,7 @@ impl IndexerConfig {
             Self::Eth(cfg) => &cfg.label,
             Self::Beacon(cfg) => &cfg.label,
             Self::Bera(cfg) => &cfg.label,
+            Self::EthFork(cfg) => &cfg.label,
         }
     }
 }
@@ -110,6 +113,14 @@ impl IndexerConfig {
                     .await
             }
             Self::Bera(cfg) => {
+                cfg.indexer(db)
+                    .instrument(initializer_span)
+                    .await?
+                    .index()
+                    .instrument(indexer_span)
+                    .await
+            }
+            Self::EthFork(cfg) => {
                 cfg.indexer(db)
                     .instrument(initializer_span)
                     .await?

@@ -1,9 +1,10 @@
 use core::fmt::Debug;
 use std::fmt;
 
+use futures::{Stream, TryStreamExt};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use sqlx::{Acquire, Postgres};
+use sqlx::{Acquire, PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::info;
 use valuable::Valuable;
@@ -91,6 +92,63 @@ impl<'a> ChainIdInner<'a> {
     }
 }
 
+pub fn get_last_n_logs<'a>(
+    db: &'a PgPool,
+    chain_id: ChainId,
+    n: i64,
+) -> sqlx::Result<impl Stream<Item = sqlx::Result<(String, i32)>> + 'a> {
+    Ok(sqlx::query!(
+        "SELECT block_hash, height from v0.logs where chain_id = $1 ORDER BY height DESC LIMIT $2",
+        chain_id.db,
+        n
+    )
+    .fetch(db)
+    .map_ok(|r| (r.block_hash, r.height)))
+}
+
+pub async fn update_batch_logs<C: ChainType, T: Serialize>(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    logs: impl IntoIterator<Item = Log<C, T>>,
+) -> sqlx::Result<()>
+where
+    <C as ChainType>::BlockHeight: Into<i32>,
+    <C as ChainType>::BlockHash: Into<String> + Debug,
+{
+    let (chain_ids, hashes, data, height, time): (
+        Vec<i32>,
+        Vec<String>,
+        Vec<_>,
+        Vec<i32>,
+        Vec<OffsetDateTime>,
+    ) = logs
+        .into_iter()
+        .map(|l| {
+            (
+                l.chain_id.db,
+                l.block_hash.into(),
+                serde_json::to_value(&l.data).expect("data should be json serializable"),
+                l.height.into(),
+                l.time,
+            )
+        })
+        .multiunzip();
+
+    sqlx::query!("
+        UPDATE v0.logs
+        SET chain_id = batch.chain_id,
+            block_hash = batch.block_hash,
+            data = batch.data,
+            height = batch.height,
+            time = batch.time
+        FROM (
+            SELECT unnest($1::int[]) as chain_id, unnest($2::text[]) as block_hash, unnest($3::jsonb[]) as data, unnest($4::int[]) as height, unnest($5::timestamptz[]) as time
+        ) as batch
+        WHERE batch.height = v0.logs.height AND batch.chain_id = v0.logs.chain_id
+        ", &chain_ids, &hashes, &data, &height, &time)
+    .execute(tx.as_mut()).await?;
+    Ok(())
+}
+
 pub async fn insert_batch_logs<C: ChainType, T: Serialize>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     logs: impl IntoIterator<Item = Log<C, T>>,
@@ -141,33 +199,6 @@ where
     }
     Ok(())
 }
-
-// pub async fn upsert_log<C: ChainType, T: Serialize>(
-//     tx: &mut sqlx::Transaction<'_, Postgres>,
-//     log: Log<C, T>,
-// ) -> sqlx::Result<()>
-// where
-//     <C as ChainType>::BlockHeight: Into<i32>,
-//     <C as ChainType>::BlockHash: AsRef<str>,
-// {
-//     sqlx::query!(
-//         "
-//         INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
-//         VALUES ($1, $2, $3, $4, $5)
-//         ON CONFLICT (chain_id, block_hash)
-//         DO UPDATE
-//         SET chain_id = $1, block_hash = $2, data = $3, height = $4, time = $5
-//         ",
-//         log.chain_id.db,
-//         log.block_hash.as_ref(),
-//         serde_json::to_value(&log.data).unwrap(),
-//         log.height.into(),
-//         log.time
-//     )
-//     .execute(tx.as_mut())
-//     .await?;
-//     Ok(())
-// }
 
 #[derive(Copy, Clone, Debug, Default, Deserialize)]
 pub enum InsertMode {
