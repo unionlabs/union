@@ -26,9 +26,9 @@ export async function latestTransfers({ limit = 12 }: { limit?: number } = {}) {
 }
 
 export async function paginatedTransfers({
-  limit = 12,
+  limit,
   timestamp
-}: { limit?: number; timestamp: string }) {
+}: { limit: number; timestamp: string }) {
   const { older, newer } = await request(URLS.GRAPHQL, transfersTimestampFilterQueryDocument, {
     limit,
     timestamp

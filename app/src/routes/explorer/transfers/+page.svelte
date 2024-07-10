@@ -9,6 +9,11 @@ import {
   getPaginationRowModel
 } from "@tanstack/svelte-table"
 import {
+  currentUtcTimestamp,
+  toPrettyDateTimeFormat,
+  currentUtcTimestampWithBuffer
+} from "$lib/utilities/date.ts"
+import {
   paginatedTransfers,
   decodeTimestampSearchParam,
   encodeTimestampSearchParam
@@ -28,7 +33,6 @@ import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellDuration from "../(components)/cell-duration-text.svelte"
 import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../(components)/explorer-pagination/index.ts"
-import { currentUtcTimestamp, toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 import { createQuery, keepPreviousData, useQueryClient } from "@tanstack/svelte-query"
 
 /**
@@ -38,7 +42,9 @@ import { createQuery, keepPreviousData, useQueryClient } from "@tanstack/svelte-
 const QUERY_LIMIT = 12 // 12 x 2 = 24
 const REFRESH_INTERVAL = 5_000 // 5 seconds
 
+// minus 1 to account for the 0-based index
 let timestamp = writable(currentUtcTimestamp())
+$: console.info($timestamp)
 let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
 
 const queryClient = useQueryClient()
@@ -192,7 +198,7 @@ onNavigate(navigation => {
 </script>
 
 <DevTools />
-<!-- {`${JSON.stringify({ REFETCH_ENABLED, idx: $pagination.pageIndex }, undefined, 2)}`} -->
+{`${JSON.stringify({ REFETCH_ENABLED, idx: $pagination.pageIndex }, undefined, 2)}`}
 {#if $transfers?.data}
   <Card.Root>
     <Table.Root>
@@ -216,7 +222,7 @@ onNavigate(navigation => {
       <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
         {#each $table.getRowModel().rows as row, index (row.index)}
           {@const isSupported = hasInfoProperty($rows[row.index]?.original?.assets)}
-          {@const shouldHide = !$showUnsupported && !isSupported}
+          {@const showUnsupported = $showUnsupported}
           <Table.Row
             class={cn(
               'cursor-pointer tabular-nums',
@@ -248,8 +254,8 @@ onNavigate(navigation => {
     currentPage={$pagination.pageIndex}
     bind:rowsPerPage={$pagination.pageSize}
     onOlderPage={page => {
-      pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
       timestamp.set($timestamps.oldestTimestamp)
+      pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
       REFETCH_ENABLED = false
     }}
     onCurrentClick={() => {
@@ -259,8 +265,8 @@ onNavigate(navigation => {
     }}
     newerDisabled={!hasNewer}
     onNewerPage={() => {
-      pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
       timestamp.set($timestamps.latestTimestamp)
+      pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
       REFETCH_ENABLED = false
     }}
   />

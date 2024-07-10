@@ -36,7 +36,6 @@
     "graphql-request": "7.1.0",
     "mode-watcher": "^0.3.1",
     "paneforge": "^0.0.5",
-    "svelte-legos": "^0.2.3",
     "svelte-persisted-store": "^0.11.0",
     "svelte-radix": "^1.1.0",
     "svelte-sonner": "^0.3.24",

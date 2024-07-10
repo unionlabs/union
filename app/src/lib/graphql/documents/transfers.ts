@@ -2,7 +2,7 @@ import { graphql } from "../index.ts"
 
 export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
   query TransfersQueryTimestampFilter(
-    $limit: Int! = 10,
+    $limit: Int!,
     $timestamp: timestamptz!
   ) {
     newer: v0_transfers(

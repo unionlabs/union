@@ -35,6 +35,12 @@ export const formatTimestamp = (timestamp: string) =>
   })
 
 export const currentUtcTimestamp = () => Temporal.Now.plainDateTimeISO("UTC").toString()
+
+export const currentUtcTimestampWithBuffer = ({
+  milliseconds = 0
+}: { milliseconds?: number } = {}) =>
+  Temporal.Now.plainDateTimeISO("UTC").add({ milliseconds }).toString()
+
 // yyyy-mm-dd hh:mm:ss
 export function toPrettyDateTimeFormat(timestamp: string) {
   const date = new Date(timestamp)
