@@ -1,5 +1,4 @@
 import { URLS } from "$lib/constants/index.ts"
-import { transfersTimestampFilterQueryDocument } from "$lib/graphql/documents/transfers"
 import type {
   Variables,
   RequestDocument,
@@ -28,9 +27,3 @@ export async function graphqlRequest<T, V extends Variables = object>(
 
   return data
 }
-
-graphqlRequest(transfersTimestampFilterQueryDocument, {
-  timestamp: "2024-07-05T13:49:24+00:00"
-}).then(_ => {
-  console.info(_.bottom)
-})

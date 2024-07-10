@@ -16,11 +16,11 @@
 </script>
 
 <Pagination.Root
-  let:pages
   let:currentPage
   siblingCount={2000}
   perPage={rowsPerPage}
   count={totalTableRows}
+  class={cn()}
 >
   <Pagination.Content class="py-2 text-md uppercase font-supermolot">
     <Pagination.Item>

@@ -8,11 +8,7 @@
     getFilteredRowModel,
     getPaginationRowModel,
   } from '@tanstack/svelte-table'
-  import { page } from '$app/stores'
-  import { URLS } from '$lib/constants'
-  import request from 'graphql-request'
-  import { raise } from '$lib/utilities'
-  import { onDestroy, onMount } from 'svelte'
+  import { onDestroy } from 'svelte'
   import { cn } from '$lib/utilities/shadcn.ts'
   import * as Table from '$lib/components/ui/table'
   import { showUnsupported } from '$lib/stores/user.ts'
@@ -26,12 +22,11 @@
   import { goto, pushState, replaceState } from '$app/navigation'
   import { derived, writable, type Readable } from 'svelte/store'
   import CellDuration from '../(components)/cell-duration-text.svelte'
+  import { createQuery, keepPreviousData } from '@tanstack/svelte-query'
   import CellOriginTransfer from '../(components)/cell-origin-transfer.svelte'
   import { ExplorerPagination } from '../(components)/explorer-pagination/index.ts'
-  import { createQuery, useQueryClient, keepPreviousData } from '@tanstack/svelte-query'
 
   const QUERY_LIMIT = 12
-  const queryClient = useQueryClient()
   let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
   let timestamp = writable(Temporal.Now.plainDateTimeISO('UTC').toString())
 
@@ -71,7 +66,7 @@
       : Temporal.Now.plainDateTimeISO().toString()
   }
 
-  timestamp.subscribe(value => {
+  const unsubscribe = timestamp.subscribe(value => {
     goto(encodeTimestampSearchParam(value))
   })
 
@@ -151,84 +146,66 @@
   }
 
   $: if ($transfersDataStore) rerender()
+
+  onDestroy(() => {
+    unsubscribe()
+  })
 </script>
 
 <DevTools />
-<pre class="text-xs">{JSON.stringify(
-    {
-      oldestTimestamp: $timestamps.oldestTimestamp,
-      latestTimestamp: $timestamps.latestTimestamp,
-      config: { $pagination, status: queryStatus },
-    },
-    undefined,
-    2,
-  )}</pre>
-<Card.Root>
-  <Table.Root>
-    <Table.Header class="tabular-nums">
-      {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-        <Table.Row class="tabular-nums">
-          {#each headerGroup.headers as header (header.id)}
-            <Table.Head
-              colspan={header.colSpan}
-              rowspan={header.rowSpan}
-              class={cn(`whitespace-nowrap tabular-nums`)}
-            >
-              <svelte:component
-                this={flexRender(header.column.columnDef.header, header.getContext())}
-              />
-            </Table.Head>
-          {/each}
-        </Table.Row>
-      {/each}
-    </Table.Header>
-    <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
-      {#each $table.getRowModel().rows as row, index (row.index)}
-        <!-- {@const containsAsset = $rows[row.index].original.assets} -->
-        <!-- {#if containsAsset} -->
-        <!-- {@const isSupported = hasInfoProperty($rows[row.index]?.original?.assets)} -->
-        <!-- {#if $showUnsupported || isSupported} -->
-        <Table.Row
-          class={cn(
-            'cursor-pointer tabular-nums',
-            index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
-            // isSupported ? '' : 'opacity-50',
-          )}
-          on:click={() => goto(`/explorer/transfers/${$rows[row.index].original.hash}`)}
-        >
-          {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-            <Table.Cell class="tabular-nums">
-              <svelte:component this={flexRender(cell.column.columnDef.cell, cell.getContext())} />
-            </Table.Cell>
-          {/each}
-        </Table.Row>
-        <!-- {/if} -->
-        <!-- {:else}
+{#if $transfers.data}
+  <Card.Root>
+    <Table.Root>
+      <Table.Header class="tabular-nums">
+        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
+          <Table.Row class="tabular-nums">
+            {#each headerGroup.headers as header (header.id)}
+              <Table.Head
+                colspan={header.colSpan}
+                rowspan={header.rowSpan}
+                class={cn(`whitespace-nowrap tabular-nums`)}
+              >
+                <svelte:component
+                  this={flexRender(header.column.columnDef.header, header.getContext())}
+                />
+              </Table.Head>
+            {/each}
+          </Table.Row>
+        {/each}
+      </Table.Header>
+      <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
+        {#each $table.getRowModel().rows as row, index (row.index)}
+          {@const containsAsset = $rows[row.index].original.assets}
+          {@const isSupported = hasInfoProperty($rows[row.index]?.original?.assets)}
           <Table.Row
-            class={cn('cursor-pointer', index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent')}
-            on:click={() =>
-              goto(`/explorer/transfers/${$rows[row.index].original.source_transaction_hash}`)}
+            class={cn(
+              'cursor-pointer tabular-nums',
+              index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
+              isSupported ? '' : 'opacity-50',
+            )}
+            on:click={() => goto(`/explorer/transfers/${$rows[row.index].original.hash}`)}
           >
             {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              <Table.Cell>
+              <Table.Cell class="tabular-nums">
                 <svelte:component
                   this={flexRender(cell.column.columnDef.cell, cell.getContext())}
                 />
               </Table.Cell>
             {/each}
           </Table.Row>
-        {/if} -->
-      {/each}
-    </Table.Body>
-  </Table.Root>
-</Card.Root>
+        {/each}
+      </Table.Body>
+    </Table.Root>
+  </Card.Root>
+{:else if $transfers.isLoading}
+  <LoadingLogo class="size-16" />
+{/if}
 <ExplorerPagination
   status={queryStatus}
   totalTableRows={2000}
   timestamp={$timestamp}
   bind:rowsPerPage={$pagination.pageSize}
   onOlderPage={page => {
-    console.info($pagination.pageIndex, page)
     timestamp.set($timestamps.oldestTimestamp)
     pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
   }}
