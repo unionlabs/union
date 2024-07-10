@@ -52,7 +52,7 @@ onNavigate(navigation => {
 
     <div class="flex flex-col flex-1 size-full">
       {#if $deviceWidth >= 888 && $page.route.id?.split('/').length !== 4}
-        <!-- <StatsBar/> -->
+        <StatsBar/>
       {/if   }
       <div class="p-2 pt-0 sm:p-6 ">
         <div class={cn($page.route.id?.split('/').length === 3 ? "" : "hidden")}>
