@@ -8,36 +8,56 @@ import {
   getFilteredRowModel,
   getPaginationRowModel
 } from "@tanstack/svelte-table"
+import {
+  paginatedTransfers,
+  decodeTimestampSearchParam,
+  encodeTimestampSearchParam
+} from "./paginated-transfers.ts"
 import { onDestroy } from "svelte"
+import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { derived, writable } from "svelte/store"
 import * as Table from "$lib/components/ui/table"
+import { goto, onNavigate } from "$app/navigation"
 import { showUnsupported } from "$lib/stores/user.ts"
 import DevTools from "$lib/components/dev-tools.svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
 import CellAssets from "../(components)/cell-assets.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
-import { paginatedTransfers } from "./paginated-transfers.ts"
-import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
-import { goto, pushState, replaceState } from "$app/navigation"
-import { derived, writable, type Readable } from "svelte/store"
 import CellDuration from "../(components)/cell-duration-text.svelte"
-import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
 import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../(components)/explorer-pagination/index.ts"
+import { currentUtcTimestamp, toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
+import { createQuery, keepPreviousData, useQueryClient } from "@tanstack/svelte-query"
 
-const QUERY_LIMIT = 12
+/**
+ * the timestamp is the source of trust, used as query key and url search param
+ */
+
+const QUERY_LIMIT = 12 // 12 x 2 = 24
+const REFRESH_INTERVAL = 5_000 // 5 seconds
+
+let timestamp = writable(currentUtcTimestamp())
 let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
-let timestamp = writable(Temporal.Now.plainDateTimeISO("UTC").toString())
+
+const queryClient = useQueryClient()
+
+/**
+ * only happens when:
+ *  1. it is the first query on initial page load,
+ *  2. the user clicks on the `current` button which resets to current and live data
+ */
+let REFETCH_ENABLED = true
 
 let transfers = createQuery(
   derived([timestamp, pagination], ([$timestamp, $pagination]) => ({
     queryKey: ["transfers", $timestamp],
-    staleTime: 5_000,
+    staleTime: REFRESH_INTERVAL,
+    refetchOnMount: REFETCH_ENABLED,
     placeholderData: keepPreviousData,
-    refetchOnMount: $pagination.pageIndex === 0,
-    refetchOnReconnect: $pagination.pageIndex === 0,
-    refetchInterval: () => ($pagination.pageIndex === 0 ? 5_000 : false),
+    refetchOnReconnect: REFETCH_ENABLED,
+    refetchInterval: () => (REFETCH_ENABLED ? REFRESH_INTERVAL : false),
     queryFn: async () => await paginatedTransfers({ limit: QUERY_LIMIT, timestamp: $timestamp })
   }))
 )
@@ -47,24 +67,34 @@ let queryStatus: "pending" | "done" =
 $: queryStatus =
   $transfers.status === "pending" || $transfers.fetchStatus === "fetching" ? "pending" : "done"
 
-let transfersDataStore = derived(transfers, $transfers => $transfers?.data ?? [])
+let transfersDataStore = derived(transfers, $transfers => $transfers?.data?.transfers ?? [])
+
+$: hasNewer = $transfers?.data?.hasNewer
+$: hasOlder = $transfers?.data?.hasOlder
+
+$: if (!hasNewer) {
+  REFETCH_ENABLED = true
+  pagination.update(p => ({ ...p, pageIndex: 0 }))
+}
 
 type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 
 let timestamps = derived(transfers, $transfers => ({
-  oldestTimestamp: $transfers?.data?.at(-1)?.timestamp ?? "",
-  latestTimestamp: $transfers?.data?.at(0)?.timestamp ?? ""
+  oldestTimestamp: $transfers?.data?.oldestTimestamp ?? "",
+  latestTimestamp: $transfers?.data?.latestTimestamp ?? ""
 }))
 
-const encodeTimestampSearchParam = (timestamp: string) =>
-  `?timestamp=${toPrettyDateTimeFormat(timestamp)?.replaceAll("-", "").replaceAll(":", "").replaceAll(" ", "")}`
+const unsubscribeTimestamps = timestamps.subscribe(value => {
+  if (REFETCH_ENABLED && value.latestTimestamp) {
+    goto(encodeTimestampSearchParam(value.latestTimestamp), {
+      noScroll: true,
+      keepFocus: true,
+      replaceState: true
+    })
+  }
+})
 
-const decodeTimestampSearchParam = (search: string) => {
-  const timestamp = new URLSearchParams(search).get("timestamp")
-  return timestamp ? toPrettyDateTimeFormat(timestamp) : Temporal.Now.plainDateTimeISO().toString()
-}
-
-const unsubscribe = timestamp.subscribe(value => {
+const unsubscribeTimestamp = timestamp.subscribe(value => {
   goto(encodeTimestampSearchParam(value))
 })
 
@@ -106,9 +136,9 @@ const columns: Array<ColumnDef<DataRow>> = [
 
 const options = writable<TableOptions<DataRow>>({
   data: $transfersDataStore,
+  columns,
   enableHiding: true,
   enableFilters: true,
-  columns,
   rowCount: $transfersDataStore?.length,
   autoResetPageIndex: true,
   enableColumnFilters: true,
@@ -146,12 +176,24 @@ function hasInfoProperty(assets: Object) {
 $: if ($transfersDataStore) rerender()
 
 onDestroy(() => {
-  unsubscribe()
+  unsubscribeTimestamp()
+  unsubscribeTimestamps()
+})
+
+/**
+ * this can be removed if desired
+ * it is only used to clear the cache when navigating away from the page `/explorer/transfers`
+ */
+onNavigate(navigation => {
+  if (navigation.to?.route.id !== "/explorer/transfers") {
+    queryClient.removeQueries({ queryKey: ["transfers"] })
+  }
 })
 </script>
 
 <DevTools />
-{#if $transfers.data}
+<!-- {`${JSON.stringify({ REFETCH_ENABLED, idx: $pagination.pageIndex }, undefined, 2)}`} -->
+{#if $transfers?.data}
   <Card.Root>
     <Table.Root>
       <Table.Header class="tabular-nums">
@@ -173,8 +215,8 @@ onDestroy(() => {
       </Table.Header>
       <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
         {#each $table.getRowModel().rows as row, index (row.index)}
-          {@const containsAsset = $rows[row.index].original.assets}
           {@const isSupported = hasInfoProperty($rows[row.index]?.original?.assets)}
+          {@const shouldHide = !$showUnsupported && !isSupported}
           <Table.Row
             class={cn(
               'cursor-pointer tabular-nums',
@@ -198,17 +240,33 @@ onDestroy(() => {
 {:else if $transfers.isLoading}
   <LoadingLogo class="size-16" />
 {/if}
-<ExplorerPagination
-  status={queryStatus}
-  totalTableRows={2000}
-  timestamp={$timestamp}
-  bind:rowsPerPage={$pagination.pageSize}
-  onOlderPage={page => {
-    timestamp.set($timestamps.oldestTimestamp)
-    pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
-  }}
-  onNewerPage={page => {
-    timestamp.set($timestamps.latestTimestamp)
-    pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
-  }}
-/>
+<div class="flex sm:justify-start sm:flex-row flex-col justify-center gap-1">
+  <ExplorerPagination
+    class={cn('w-min')}
+    totalTableRows={20}
+    status={queryStatus}
+    currentPage={$pagination.pageIndex}
+    bind:rowsPerPage={$pagination.pageSize}
+    onOlderPage={page => {
+      pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
+      timestamp.set($timestamps.oldestTimestamp)
+      REFETCH_ENABLED = false
+    }}
+    onCurrentClick={() => {
+      timestamp.set(currentUtcTimestamp())
+      pagination.update(p => ({ ...p, pageIndex: 0 }))
+      REFETCH_ENABLED = true
+    }}
+    newerDisabled={!hasNewer}
+    onNewerPage={() => {
+      pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
+      timestamp.set($timestamps.latestTimestamp)
+      REFETCH_ENABLED = false
+    }}
+  />
+  <time class="font-normal text-md uppercase font-mono w-full my-auto sm:text-left text-center">
+    {$page.url.searchParams.get('timestamp')
+      ? decodeTimestampSearchParam(`${$page.url.searchParams.get('timestamp')}`)
+      : $timestamp}
+  </time>
+</div>
