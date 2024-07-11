@@ -62,13 +62,13 @@ Production contracts will get solely upgraded through the proxy.
 - Multicall: [0x70BEDecc56C7104e410c1e4c25FcA0bcd29A0bA9](https://sepolia.etherscan.io/address/0x70bedecc56c7104e410c1e4c25fca0bcd29a0ba9)
 
 ### Berachain
-- Deployer:  [0x1d95c54b436A73A43bC879E1C6A4b282fB88E784](https://bartio.beratrail.io/address/0x1d95c54b436A73A43bC879E1C6A4b282fB88E784)
-- Sender:  [0x2c077908e1173ff1A6097ca9E2aF547c1E5130C4](https://bartio.beratrail.io/address/0x2c077908e1173ff1A6097ca9E2aF547c1E5130C4)
-- IBCHandler:  [0x663955E2eebf9b398CD9D32cA72359fdA17F2482](https://bartio.beratrail.io/address/0x663955E2eebf9b398CD9D32cA72359fdA17F2482)
-- CometblsClient:  [0xf9C6120Ef88E27937304622ccfc8Dcdb92C88b56](https://bartio.beratrail.io/address/0xf9C6120Ef88E27937304622ccfc8Dcdb92C88b56)
-- UCS01:  [0x7f8e0965ffdAFa1c5621B14C51bDc631165fc788](https://bartio.beratrail.io/address/0x7f8e0965ffdAFa1c5621B14C51bDc631165fc788)
-- UCS02:  [0x749937900103DF548625C47D3de5d928b61b8409](https://bartio.beratrail.io/address/0x749937900103DF548625C47D3de5d928b61b8409)
-- Multicall:  [0x248717213d7f79Ac37Fb0C01bA4f370be5c2Ab18](https://bartio.beratrail.io/address/0x248717213d7f79Ac37Fb0C01bA4f370be5c2Ab18)
+- Deployer: [0x17425b7d2d97E613dE2ADa01Dc472F76879E08Fe](https://bartio.beratrail.io/address/0x1d95c54b436A73A43bC879E1C6A4b282fB88E784)
+- Sender: [0x27156Eb671984304ae75Da49aD60C4479B490A06](https://bartio.beratrail.io/address/0x2c077908e1173ff1A6097ca9E2aF547c1E5130C4)
+- IBCHandler: [0x851c0EB711fe5C7c8fe6dD85d9A0254C8dd11aFD](https://bartio.beratrail.io/address/0x663955E2eebf9b398CD9D32cA72359fdA17F2482)
+- CometblsClient: [0x702F0C9e4E0F5EB125866C6E2F57eC3751B4da1A](https://bartio.beratrail.io/address/0xf9C6120Ef88E27937304622ccfc8Dcdb92C88b56)
+- UCS01: [0x6F270608fB562133777AF0f71F6386ffc1737C30](https://bartio.beratrail.io/address/0x7f8e0965ffdAFa1c5621B14C51bDc631165fc788)
+- UCS02: [0xD05751B3F4d8dCf8487DB33b57C523dD7DB11C25](https://bartio.beratrail.io/address/0x749937900103DF548625C47D3de5d928b61b8409)
+- Multicall: [0x3147CA8f531070DDAC1b93700ef18E4Dd05b86ec](https://bartio.beratrail.io/address/0x248717213d7f79Ac37Fb0C01bA4f370be5c2Ab18)
 
 ## Other networks
 
