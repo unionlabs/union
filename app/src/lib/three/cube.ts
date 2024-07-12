@@ -1,13 +1,22 @@
 import * as THREE from "three"
 
+const darkModeColor = 0xffffff
+const lightModeColor = 0x000000
+
 export function createCube(cubeWidth: number, strokeWidth: number): THREE.Group {
   const boxGeometry = new THREE.BoxGeometry(cubeWidth, cubeWidth, cubeWidth)
   const edgesGeometry = new THREE.EdgesGeometry(boxGeometry)
 
+  function checkIfDark(): boolean {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+  }
+
   const createTubeLine = (points, thickness) => {
     const path = new THREE.CatmullRomCurve3(points)
     const geometry = new THREE.TubeGeometry(path, 20, thickness, 8, false)
-    const material = new THREE.MeshBasicMaterial({ color: 0x000000 })
+    const material = new THREE.MeshBasicMaterial(
+      checkIfDark() ? { color: darkModeColor } : { color: lightModeColor }
+    )
     const tube = new THREE.Mesh(geometry, material)
     return tube
   }
