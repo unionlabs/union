@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
+  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, mkCi, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
       nodeDeps = with unstablePkgs; [ vips nodePackages_latest.nodejs ];
@@ -7,7 +7,7 @@
     in
     {
       packages = {
-        site = unstablePkgs.buildNpmPackage {
+        site = mkCi false (unstablePkgs.buildNpmPackage {
           npmDepsHash = "sha256-iacabyQyragOOO1AsWc0+N14e9cyl2p3Kq+egRaSGYc=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
@@ -24,7 +24,7 @@
           PUPPETEER_SKIP_DOWNLOAD = 1;
           NODE_OPTIONS = "--no-warnings";
           ASTRO_TELEMETRY_DISABLED = 1;
-        };
+        });
       };
 
       apps = {

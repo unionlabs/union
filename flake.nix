@@ -122,11 +122,17 @@
       flake = false;
     };
     cometbls = {
-      url = "git+ssh://git@github.com/unionlabs/cometbls?rev=360766577f7daa89f958a4c28eee909340eb4b02";
+      type = "github";
+      owner = "unionlabs";
+      repo = "cometbls";
+      rev = "360766577f7daa89f958a4c28eee909340eb4b02";
       flake = false;
     };
     cosmossdk = {
-      url = "git+ssh://git@github.com/unionlabs/cosmos-sdk?rev=7d067955f7028f45b3ce205b5c35aab2e1946b19";
+      type = "github";
+      owner = "unionlabs";
+      repo = "cosmos-sdk";
+      rev = "7d067955f7028f45b3ce205b5c35aab2e1946b19";
       flake = false;
     };
 
@@ -180,21 +186,21 @@
           isCi = attr: v: (if v?ci then v.ci else true);
         in
         {
-          build = {
-            x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
-            aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
-          };
-          test = {
-            x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
-            aarch64-linux = filterAttrs isCi self.checks.aarch64-linux;
-          };
-          dev = {
-            x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
-            aarch64-linux = filterAttrs isCi self.devShells.aarch64-linux;
-          };
           site = {
             x86_64-linux = { site = self.packages.x86_64-linux.site; app = self.packages.x86_64-linux.app; };
             aarch64-linux = { site = self.packages.aarch64-linux.site; app = self.packages.aarch64-linux.app; };
+          };
+          herculesCI = {
+            onPush.default = {
+              outputs = {
+                packages.x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
+                checks.x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
+                devShells.x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
+                packages.aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
+                checks.aarch64-linux = filterAttrs isCi self.checks.aarch64-linux;
+                devShells.aarch64-linux = filterAttrs isCi self.devShells.aarch64-linux;
+              };
+            };
           };
         };
       systems =
