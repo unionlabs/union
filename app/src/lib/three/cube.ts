@@ -8,7 +8,7 @@ export function createCube(cubeWidth: number, strokeWidth: number): THREE.Group 
   const edgesGeometry = new THREE.EdgesGeometry(boxGeometry)
 
   function checkIfDark(): boolean {
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches
   }
 
   const createTubeLine = (points, thickness) => {
