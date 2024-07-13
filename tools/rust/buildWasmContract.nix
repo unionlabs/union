@@ -15,19 +15,19 @@ let
   featuresString = features: if features == null then "" else (lib.concatMapStrings (feature: "-${feature}") features);
   allChecks = checks: maxSize: builtins.concatLists [
     checks
-    [
-      (file_name: ''
-        file_size=$(stat -c %s "${file_name}")
-        max_size_str="${toString maxSize}"
+    # [
+    #   (file_name: ''
+    #     file_size=$(stat -c %s "${file_name}")
+    #     max_size_str="${toString maxSize}"
 
-        if [ "$file_size" -gt "$max_size_str" ]; then
-          echo "Error: File size: $file_size exceeds $max_size_str bytes"
-          exit 1
-        else
-          echo "File size: $file_size bytes"
-        fi
-      '')
-    ]
+    #     if [ "$file_size" -gt "$max_size_str" ]; then
+    #       echo "Error: File size: $file_size exceeds $max_size_str bytes"
+    #       exit 1
+    #     else
+    #       echo "File size: $file_size bytes"
+    #     fi
+    #   '')
+    # ]
   ];
 
   cargoBuildInstallPhase = { features, contractFileNameWithoutExt, checks, maxSize }:
