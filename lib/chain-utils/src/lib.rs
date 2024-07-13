@@ -10,6 +10,7 @@ use unionlabs::{
     ethereum::config::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
     hash::H160,
     traits::{Chain, ChainIdOf, FromStrExact},
+    uint::U256,
     ClientType, WasmClientType,
 };
 
@@ -184,6 +185,9 @@ pub struct EthereumChainConfig {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
+
+    #[serde(default)]
+    pub max_gas_price: Option<U256>,
 }
 
 #[derive(Debug, Clone, Enumorph)]
@@ -298,6 +302,7 @@ impl AnyChain {
                     keyring: ethereum.keyring,
                     eth_rpc_api: ethereum.eth_rpc_api,
                     eth_beacon_rpc_api: ethereum.eth_beacon_rpc_api,
+                    max_gas_price: ethereum.max_gas_price,
                 };
                 match ethereum.preset_base {
                     PresetBaseKind::Minimal => {

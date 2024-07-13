@@ -130,6 +130,7 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
     pub keyring: S::Out,
     pub provider: Arc<Provider<Ws>>,
     pub beacon_api_client: BeaconApiClient<C>,
+    pub max_gas_price: Option<U256>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, enumorph::Enumorph)]
@@ -218,6 +219,9 @@ pub struct Config<S: EthereumSignersConfig = ReadWrite> {
     pub eth_rpc_api: String,
     /// The RPC endpoint for the beacon chain.
     pub eth_beacon_rpc_api: String,
+
+    #[serde(default)]
+    pub max_gas_price: Option<U256>,
 }
 
 // lol
@@ -621,6 +625,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
             multicall_address: config.multicall_address,
             provider: Arc::new(provider),
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
+            max_gas_price: config.max_gas_price,
         })
     }
 }

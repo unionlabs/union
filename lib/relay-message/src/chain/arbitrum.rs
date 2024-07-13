@@ -71,6 +71,7 @@ where
             &self.keyring,
             msg,
             false,
+            None,
         )
         .await
     }
