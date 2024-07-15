@@ -27,7 +27,7 @@ onNavigate(navigation => {
 </svelte:head>
 
 <!-- mobile layout !-->
-<div class="flex flex-row sm:divide-x overflow-x-none max-w-full w-full dark:bg-muted">
+<div class="flex flex-row sm:divide-x overflow-x-none max-w-full w-full">
   <nav
     class={cn("sm:bg-muted h-full overflow-y-auto", explorerRoute === null ? "flex-1 sm:flex-none" : "hidden sm:block sm:w-[174px]")}>
     <h2 class="sm:hidden ml-3 mt-6 mb-3 text-2xl font-bold font-supermolot">
