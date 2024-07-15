@@ -23,6 +23,7 @@ use unionlabs::{hash::H256, signer::CosmosSigner, ErrorReporter};
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     let args = AppArgs::parse();
+    let batch_size = args.batch_size;
 
     let config = serde_json::from_str::<Config>(
         &read_to_string(&args.config_file_path).expect("can't read config file"),
@@ -108,18 +109,17 @@ async fn main() {
                     faucet_denom: config.faucet_denom.clone(),
                     memo: config.memo.clone(),
                 };
-
                 info!("entering worker poll loop");
                 loop {
                     let (ids, addresses) = pool
-                        .conn(|conn| {
+                        .conn(move |conn| {
                             let mut stmt = conn
                                 .prepare_cached(
-                                    "SELECT id, address FROM requests WHERE tx_hash IS NULL",
+                                    "SELECT id, address FROM requests WHERE tx_hash IS NULL LIMIT ?1",
                                 )
                                 .expect("???");
 
-                            let mut rows = stmt.query([]).expect("can't query rows");
+                            let mut rows = stmt.query([batch_size as i64]).expect("can't query rows");
 
                             let mut addresses = vec![];
                             let mut ids = vec![];
@@ -141,7 +141,6 @@ async fn main() {
                         tokio::time::sleep(Duration::from_millis(1000)).await;
                         continue;
                     }
-
                     let mut i = 0;
                     let result = loop {
                         let send_res = drip
@@ -191,7 +190,7 @@ async fn main() {
                         Ok(())
                     })
                     .await
-                    .expect("pool error");
+                    .expect("pool error");                    
                 }
             })
             .await;
@@ -219,6 +218,9 @@ async fn main() {
 pub struct AppArgs {
     #[arg(long, short = 'c')]
     pub config_file_path: OsString,
+
+    #[arg(long, short = 'b', default_value_t = 6000)]
+    pub batch_size: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -387,7 +389,7 @@ impl DripClient {
 }
 
 struct Mutation;
-
+#[derive(Debug)]
 pub struct CaptchaSecret(pub String);
 
 #[Object]
@@ -438,7 +440,6 @@ impl Mutation {
                 Ok(id)
             })
             .await?;
-
         let mut counter = 0;
         let tx_hash = loop {
             let tx_hash: Option<String> = db
