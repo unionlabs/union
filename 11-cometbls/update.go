@@ -67,7 +67,7 @@ func (cs *ClientState) verifyHeader(
 	}
 
 	// assert header height is newer than consensus state
-	if header.GetHeight().LTE(header.TrustedHeight) {
+	if header.GetHeight().LTE(*header.TrustedHeight) {
 		return errorsmod.Wrapf(
 			clienttypes.ErrInvalidHeader,
 			"header height ≤ consensus state height (%s ≤ %s)", header.GetHeight(), header.TrustedHeight,
