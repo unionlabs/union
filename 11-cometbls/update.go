@@ -58,11 +58,11 @@ func (cs *ClientState) verifyHeader(
 		)
 	}
 
-	if consState.GetTimestamp() > uint64(header.SignedHeader.Header.GetTime().UnixNano()) {
+	if consState.GetTimestamp() > uint64(header.SignedHeader.GetTime().UnixNano()) {
 		return errorsmod.Wrapf(
 			ErrInvalidHeaderTimestamp,
 			"trusted header timestamp %d is greater than the new header timestamp %d",
-			consState.GetTimestamp(), header.SignedHeader.Header.GetTime().UnixNano(),
+			consState.GetTimestamp(), header.SignedHeader.GetTime().UnixNano(),
 		)
 	}
 
@@ -81,11 +81,11 @@ func (cs *ClientState) verifyHeader(
 		)
 	}
 
-	if header.SignedHeader.Header.Height == int64(header.TrustedHeight.RevisionHeight)+1 &&
-		!bytes.Equal(header.SignedHeader.Header.ValidatorsHash, consState.NextValidatorsHash) {
+	if header.SignedHeader.Height == int64(header.TrustedHeight.RevisionHeight)+1 &&
+		!bytes.Equal(header.SignedHeader.ValidatorsHash, consState.NextValidatorsHash) {
 		return errorsmod.Wrapf(
 			clienttypes.ErrInvalidHeader,
-			"the validators hash %s doesn't match the trusted validators hash %s for an adjacent block", header.SignedHeader.Header.ValidatorsHash, consState.NextValidatorsHash,
+			"the validators hash %s doesn't match the trusted validators hash %s for an adjacent block", header.SignedHeader.ValidatorsHash, consState.NextValidatorsHash,
 		)
 	}
 
@@ -95,13 +95,13 @@ func (cs *ClientState) verifyHeader(
 		return err
 	}
 
-	return zkp.Verify(consState.NextValidatorsHash, LightHeader{
-		ChainId:            header.SignedHeader.Header.ChainID,
-		Height:             header.SignedHeader.Header.Height,
+	return zkp.Verify(consState.NextValidatorsHash, ProverLightHeader{
+		ChainId:            cs.ChainId,
+		Height:             header.SignedHeader.Height,
 		Time:               header.GetTime(),
-		ValidatorsHash:     header.SignedHeader.Header.ValidatorsHash,
-		NextValidatorsHash: header.SignedHeader.Header.NextValidatorsHash,
-		AppHash:            header.SignedHeader.Header.AppHash,
+		ValidatorsHash:     header.SignedHeader.ValidatorsHash,
+		NextValidatorsHash: header.SignedHeader.NextValidatorsHash,
+		AppHash:            header.SignedHeader.AppHash,
 	})
 }
 
@@ -142,8 +142,8 @@ func (cs ClientState) UpdateState(ctx sdk.Context, cdc codec.BinaryCodec, client
 
 	consensusState := &ConsensusState{
 		Timestamp:          uint64(header.GetTime().UnixNano()),
-		Root:               commitmenttypes.NewMerkleRoot(header.SignedHeader.Header.GetAppHash()),
-		NextValidatorsHash: header.SignedHeader.Header.NextValidatorsHash,
+		Root:               commitmenttypes.NewMerkleRoot(header.SignedHeader.GetAppHash()),
+		NextValidatorsHash: header.SignedHeader.NextValidatorsHash,
 	}
 
 	// set client state, consensus state and asssociated metadata

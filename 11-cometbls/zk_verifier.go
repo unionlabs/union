@@ -41,7 +41,7 @@ type ZKP struct {
 	ProofCommitmentPoK curve.G1Affine
 }
 
-type LightHeader struct {
+type ProverLightHeader struct {
 	ChainId            string
 	Height             int64
 	Time               time.Time
@@ -88,7 +88,7 @@ func ParseZKP(data []byte) (*ZKP, error) {
 	return &zkp, nil
 }
 
-func (zkp ZKP) Verify(trustedValidatorsHash []byte, header LightHeader) error {
+func (zkp ZKP) Verify(trustedValidatorsHash []byte, header ProverLightHeader) error {
 	if len(header.ChainId) > 31 {
 		return errors.New("chain id length cannot be larger than 31")
 	}
@@ -189,7 +189,7 @@ func commitmentsHash(proofCommitment curve.G1Affine) fr.Element {
 	return hashToField(buffer[:])
 }
 
-func inputsHash(header LightHeader, trustedValidatorsHash []byte) fr.Element {
+func inputsHash(header ProverLightHeader, trustedValidatorsHash []byte) fr.Element {
 	buff := []byte{}
 	var padded [32]byte
 	writeI64 := func(x int64) {

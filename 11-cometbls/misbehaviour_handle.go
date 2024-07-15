@@ -1,7 +1,6 @@
 package cometbls
 
 import (
-	"bytes"
 	"reflect"
 
 	errorsmod "cosmossdk.io/errors"
@@ -9,8 +8,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	tmtypes "github.com/cometbft/cometbft/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -55,23 +52,26 @@ func (ClientState) CheckForMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, 
 	case *Misbehaviour:
 		// if heights are equal check that this is valid misbehaviour of a fork
 		// otherwise if heights are unequal check that this is valid misbehavior of BFT time violation
-		if msg.Header_1.GetHeight().EQ(msg.Header_2.GetHeight()) {
-			blockID1, err := tmtypes.BlockIDFromProto(&msg.Header_1.SignedHeader.Commit.BlockID)
-			if err != nil {
-				return false
-			}
+		if msg.Header_1.GetHeight() == msg.Header_2.GetHeight() {
+			// TODO(aeryz): we need blockid to be in header
 
-			blockID2, err := tmtypes.BlockIDFromProto(&msg.Header_2.SignedHeader.Commit.BlockID)
-			if err != nil {
-				return false
-			}
+			// blockID1, err := tmtypes.BlockIDFromProto(&msg.Header_1.SignedHeader.Commit.BlockID)
+			// if err != nil {
+			// 	return false
+			// }
 
-			// Ensure that Commit Hashes are different
-			if !bytes.Equal(blockID1.Hash, blockID2.Hash) {
-				return true
-			}
+			// blockID2, err := tmtypes.BlockIDFromProto(&msg.Header_2.SignedHeader.Commit.BlockID)
+			// if err != nil {
+			// 	return false
+			// }
 
-		} else if !msg.Header_1.SignedHeader.Header.Time.After(msg.Header_2.SignedHeader.Header.Time) {
+			// // Ensure that Commit Hashes are different
+			// if !bytes.Equal(blockID1.Hash, blockID2.Hash) {
+			// 	return true
+			// }
+			return false
+
+		} else if !msg.Header_1.Time.After(msg.Header_2.Time) {
 			// Header_1 is at greater height than Header_2, therefore Header_1 time must be less than or equal to
 			// Header_2 time in order to be valid misbehaviour (violation of monotonic time).
 			return true
@@ -92,32 +92,34 @@ func (ClientState) CheckForMisbehaviour(ctx sdk.Context, cdc codec.BinaryCodec, 
 func (cs *ClientState) verifyMisbehaviour(ctx sdk.Context, clientStore storetypes.KVStore, cdc codec.BinaryCodec, misbehaviour *Misbehaviour) error {
 	// Regardless of the type of misbehaviour, ensure that both headers are valid and would have been accepted by light-client
 
-	// Retrieve trusted consensus states for each Header in misbehaviour
-	tmConsensusState1, found := GetConsensusState(clientStore, cdc, misbehaviour.Header_1.TrustedHeight)
-	if !found {
-		return errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "could not get trusted consensus state from clientStore for Header_1 at TrustedHeight: %s", misbehaviour.Header_1.TrustedHeight)
-	}
+	// TODO(aeryz): fix this
 
-	tmConsensusState2, found := GetConsensusState(clientStore, cdc, misbehaviour.Header_2.TrustedHeight)
-	if !found {
-		return errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "could not get trusted consensus state from clientStore for Header_2 at TrustedHeight: %s", misbehaviour.Header_2.TrustedHeight)
-	}
+	// // Retrieve trusted consensus states for each Header in misbehaviour
+	// tmConsensusState1, found := GetConsensusState(clientStore, cdc, misbehaviour.Header_1.TrustedHeight)
+	// if !found {
+	// 	return errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "could not get trusted consensus state from clientStore for Header_1 at TrustedHeight: %s", misbehaviour.Header_1.TrustedHeight)
+	// }
 
-	// Check the validity of the two conflicting headers against their respective
-	// trusted consensus states
-	// NOTE: header height and commitment root assertions are checked in
-	// misbehaviour.ValidateBasic by the client keeper and msg.ValidateBasic
-	// by the base application.
-	if err := checkMisbehaviourHeader(
-		cs, tmConsensusState1, misbehaviour.Header_1, uint64(ctx.BlockTime().UnixNano()),
-	); err != nil {
-		return errorsmod.Wrap(err, "verifying Header_1 in Misbehaviour failed")
-	}
-	if err := checkMisbehaviourHeader(
-		cs, tmConsensusState2, misbehaviour.Header_2, uint64(ctx.BlockTime().UnixNano()),
-	); err != nil {
-		return errorsmod.Wrap(err, "verifying Header_2 in Misbehaviour failed")
-	}
+	// tmConsensusState2, found := GetConsensusState(clientStore, cdc, misbehaviour.Header_2.TrustedHeight)
+	// if !found {
+	// 	return errorsmod.Wrapf(clienttypes.ErrConsensusStateNotFound, "could not get trusted consensus state from clientStore for Header_2 at TrustedHeight: %s", misbehaviour.Header_2.TrustedHeight)
+	// }
+
+	// // Check the validity of the two conflicting headers against their respective
+	// // trusted consensus states
+	// // NOTE: header height and commitment root assertions are checked in
+	// // misbehaviour.ValidateBasic by the client keeper and msg.ValidateBasic
+	// // by the base application.
+	// if err := checkMisbehaviourHeader(
+	// 	cs, tmConsensusState1, misbehaviour.Header_1, uint64(ctx.BlockTime().UnixNano()),
+	// ); err != nil {
+	// 	return errorsmod.Wrap(err, "verifying Header_1 in Misbehaviour failed")
+	// }
+	// if err := checkMisbehaviourHeader(
+	// 	cs, tmConsensusState2, misbehaviour.Header_2, uint64(ctx.BlockTime().UnixNano()),
+	// ); err != nil {
+	// 	return errorsmod.Wrap(err, "verifying Header_2 in Misbehaviour failed")
+	// }
 
 	return nil
 }
