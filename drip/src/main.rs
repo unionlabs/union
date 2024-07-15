@@ -11,6 +11,7 @@ use axum::{
 use chain_utils::cosmos_sdk::{
     BroadcastTxCommitError, CosmosSdkChainExt, CosmosSdkChainRpcs, GasConfig,
 };
+use chrono::Utc;
 use clap::Parser;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
@@ -434,7 +435,7 @@ impl Mutation {
         let id: i64 = db
             .conn(move |conn| {
                 let mut stmt = conn.prepare_cached(
-                    "INSERT INTO requests (address, time) VALUES (?, TIME()) RETURNING id",
+                    "INSERT INTO requests (address, time) VALUES (?, datetime('now')) RETURNING id",
                 )?;
                 let id = stmt.query_row([&to_address], |row| row.get(0))?;
                 Ok(id)
@@ -468,12 +469,141 @@ impl Mutation {
     }
 }
 
+#[derive(SimpleObject)]
+struct Request {
+    id: i64,
+    address: String,
+    time: String,
+    tx_hash: Option<String>,
+}
+
 struct Query;
 
 #[Object]
 impl Query {
-    async fn howdy(&self) -> &'static str {
-        "partner"
+    async fn handled_transfers<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        limit: Option<i32>,
+        offset_time: Option<String>,
+    ) -> FieldResult<Vec<Request>> {
+        let db = ctx.data::<Pool>().unwrap();
+        let limit = limit.unwrap_or(10);
+        let offset_time = offset_time.unwrap_or_else(|| {
+            Utc::now()
+                .naive_utc()
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
+        });
+        let requests: Vec<Request> = db
+            .conn(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, address, time, tx_hash 
+                    FROM requests 
+                    WHERE tx_hash IS NOT NULL 
+                    AND tx_hash NOT LIKE 'ERROR%' 
+                    AND time < ?1
+                    ORDER BY time DESC
+                    LIMIT ?2",
+                )?;
+                let rows = stmt.query_map(params![offset_time, limit], |row| {
+                    Ok(Request {
+                        id: row.get(0)?,
+                        address: row.get(1)?,
+                        time: row.get(2)?,
+                        tx_hash: row.get(3)?,
+                    })
+                })?;
+                let requests: Result<Vec<_>, _> = rows.collect();
+                requests
+            })
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(requests)
+    }
+
+    async fn transfers_for_address<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        address: String,
+        limit: Option<i32>,
+        offset_time: Option<String>,
+    ) -> FieldResult<Vec<Request>> {
+        let db = ctx.data::<Pool>().unwrap();
+        let limit = limit.unwrap_or(10);
+        let offset_time = offset_time.unwrap_or_else(|| {
+            Utc::now()
+                .naive_utc()
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
+        });
+        let requests: Vec<Request> = db
+            .conn(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, address, time, tx_hash 
+                     FROM requests 
+                     WHERE address = ?1 
+                     AND time < ?2
+                     ORDER BY time DESC
+                     LIMIT ?3",
+                )?;
+                let rows = stmt.query_map(params![address, offset_time, limit], |row| {
+                    Ok(Request {
+                        id: row.get(0)?,
+                        address: row.get(1)?,
+                        time: row.get(2)?,
+                        tx_hash: row.get(3)?,
+                    })
+                })?;
+                let requests: Result<Vec<_>, _> = rows.collect();
+                requests
+            })
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(requests)
+    }
+
+    async fn unhandled_transfers<'ctx>(
+        &self,
+        ctx: &Context<'ctx>,
+        limit: Option<i32>,
+        offset_time: Option<String>,
+    ) -> FieldResult<Vec<Request>> {
+        let db = ctx.data::<Pool>().unwrap();
+        let limit = limit.unwrap_or(10);
+        let offset_time = offset_time.unwrap_or_else(|| {
+            Utc::now()
+                .naive_utc()
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string()
+        });
+        let requests: Vec<Request> = db
+            .conn(move |conn| {
+                let mut stmt = conn.prepare(
+                    "SELECT id, address, time, tx_hash 
+                    FROM requests 
+                    WHERE tx_hash IS NULL 
+                    AND time < ?1
+                    ORDER BY time DESC
+                    LIMIT ?2",
+                )?;
+                let rows = stmt.query_map(params![offset_time, limit], |row| {
+                    Ok(Request {
+                        id: row.get(0)?,
+                        address: row.get(1)?,
+                        time: row.get(2)?,
+                        tx_hash: row.get(3)?,
+                    })
+                })?;
+                let requests: Result<Vec<_>, _> = rows.collect();
+                requests
+            })
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(requests)
     }
 }
 
