@@ -786,7 +786,7 @@ const resetInput = () => {
               bind:value={amount}
               class={cn(
                 !balanceCoversAmount && amount ? 'border-red-500' : '',
-                'focus:ring-0 focus-visible:ring-0',
+                'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
               )}
               disabled={!$asset}
               maxlength={64}
@@ -806,7 +806,7 @@ const resetInput = () => {
                     autocomplete="off"
                     autocorrect="off"
                     bind:value={address}
-                    class="disabled:opacity-100 disabled:bg-black/20"
+                    class="disabled:bg-black/30"
                     disabled={inputState === 'locked'}
                     id="address"
                     on:input={handleInput}
