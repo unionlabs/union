@@ -258,7 +258,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
             let all_msgs = match (chain_a, chain_b) {
                 (AnyChain::Union(union), AnyChain::Cosmos(cosmos)) => {
-                    mk_handshake::<Union, Wasm<Cosmos>>(&union, &Wasm(cosmos), ty, chains).await
+                    mk_handshake::<Union, Cosmos>(&union, &cosmos, ty, chains).await
                 }
                 (AnyChain::Union(union), AnyChain::EthereumMainnet(ethereum)) => {
                     mk_handshake::<Wasm<Union>, Ethereum<Mainnet>>(

@@ -166,6 +166,7 @@ pub enum ClientType {
     Wasm(WasmClientType),
     Tendermint,
     Cometbls,
+    _11Cometbls,
 }
 
 #[cfg(test)]
@@ -188,6 +189,7 @@ impl ClientType {
             ClientType::Wasm(_) => "08-wasm",
             ClientType::Tendermint => "07-tendermint",
             ClientType::Cometbls => "cometbls",
+            ClientType::_11Cometbls => "11-cometbls",
         }
     }
 }

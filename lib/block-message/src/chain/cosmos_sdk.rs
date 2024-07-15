@@ -268,6 +268,7 @@ where
                                     }
                                 },
                             ),
+                            "11-cometbls" => unionlabs::ClientType::_11Cometbls,
                             ty => panic!("unsupported client type {ty}"),
                         },
                         __marker: PhantomData,

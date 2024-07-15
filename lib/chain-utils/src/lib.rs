@@ -335,6 +335,14 @@ impl LightClientType<Wasm<Cosmos>> for Union {
     const TYPE: ClientType = ClientType::Tendermint;
 }
 
+impl LightClientType<Cosmos> for Union {
+    const TYPE: ClientType = ClientType::Tendermint;
+}
+
+impl LightClientType<Union> for Cosmos {
+    const TYPE: ClientType = ClientType::_11Cometbls;
+}
+
 impl LightClientType<Cosmos> for Cosmos {
     const TYPE: ClientType = ClientType::Tendermint;
 }
