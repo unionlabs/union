@@ -7,6 +7,7 @@ version      = "0.1.0"
 
 [dependencies]
 chain-utils        = { workspace = true }
+chrono             = { workspace = true, features = ["clock"] }
 clap               = { workspace = true, features = ["derive"] }
 dashmap            = { workspace = true }
 prost              = { workspace = true }
@@ -20,11 +21,11 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 unionlabs          = { workspace = true }
 
+
 async-graphql      = "7.0.6"
 async-graphql-axum = "7.0.6"
 async-sqlite       = "0.2.2"
 axum               = "0.7.5"
-chrono             = "0.4.38"
 recaptcha-verify   = "0.1.5"
 subtle-encoding    = { workspace = true, features = ["bech32-preview"] }
 [lints]

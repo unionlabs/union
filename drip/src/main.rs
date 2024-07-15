@@ -25,6 +25,7 @@ use unionlabs::{hash::H256, signer::CosmosSigner, ErrorReporter};
 async fn main() {
     let args = AppArgs::parse();
     let batch_size = args.batch_size;
+    let max_paginated_responses = args.max_paginated_responses;
 
     let config = serde_json::from_str::<Config>(
         &read_to_string(&args.config_file_path).expect("can't read config file"),
@@ -84,6 +85,7 @@ async fn main() {
         .data(MaxRequestPolls(config.max_request_polls))
         .data(Bech32Prefix(prefix))
         .data(config.bypass_secret.clone().map(CaptchaBypassSecret))
+        .data(MaxPaginatedResponses(max_paginated_responses))
         .data(secret)
         .finish();
 
@@ -222,6 +224,9 @@ pub struct AppArgs {
 
     #[arg(long, short = 'b', default_value_t = 6000)]
     pub batch_size: usize,
+
+    #[arg(long, short = 'm', default_value_t = 50)]
+    pub max_paginated_responses: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -477,6 +482,7 @@ struct Request {
     tx_hash: Option<String>,
 }
 
+struct MaxPaginatedResponses(i32);
 struct Query;
 
 #[Object]
@@ -488,7 +494,8 @@ impl Query {
         offset_time: Option<String>,
     ) -> FieldResult<Vec<Request>> {
         let db = ctx.data::<Pool>().unwrap();
-        let limit = limit.unwrap_or(10);
+        let max_paginated_responses = ctx.data::<MaxPaginatedResponses>().unwrap().0;
+        let limit = limit.unwrap_or(10).min(max_paginated_responses);
         let offset_time = offset_time.unwrap_or_else(|| {
             Utc::now()
                 .naive_utc()
@@ -531,7 +538,8 @@ impl Query {
         offset_time: Option<String>,
     ) -> FieldResult<Vec<Request>> {
         let db = ctx.data::<Pool>().unwrap();
-        let limit = limit.unwrap_or(10);
+        let max_paginated_responses = ctx.data::<MaxPaginatedResponses>().unwrap().0;
+        let limit = limit.unwrap_or(10).min(max_paginated_responses);
         let offset_time = offset_time.unwrap_or_else(|| {
             Utc::now()
                 .naive_utc()
@@ -572,7 +580,8 @@ impl Query {
         offset_time: Option<String>,
     ) -> FieldResult<Vec<Request>> {
         let db = ctx.data::<Pool>().unwrap();
-        let limit = limit.unwrap_or(10);
+        let max_paginated_responses = ctx.data::<MaxPaginatedResponses>().unwrap().0;
+        let limit = limit.unwrap_or(10).min(max_paginated_responses);
         let offset_time = offset_time.unwrap_or_else(|| {
             Utc::now()
                 .naive_utc()
