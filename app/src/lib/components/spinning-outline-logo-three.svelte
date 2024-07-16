@@ -4,6 +4,7 @@ import Square from "./spinning-logo/square.svelte"
 import { onMount } from "svelte"
 import { createCube } from "$lib/three/cube"
 import { mode, userPrefersMode } from "mode-watcher"
+import { browser } from "$app/environment"
 
 let cubeWidth = 128
 let gap = 64
@@ -19,7 +20,8 @@ let strokeWidth = 2.5
 let threeContainer: HTMLElement
 let threeCanvas: HTMLCanvasElement
 
-const render = (mode: string) => {
+const render = (mode: string | undefined) => {
+  if (!browser) return
   const scene = new THREE.Scene()
   const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas, alpha: true })
   const devicePixelRatio = window.devicePixelRatio || 1
@@ -117,7 +119,7 @@ const render = (mode: string) => {
   requestAnimationFrame(animate)
 }
 
-onMount(render)
+onMount(() => render($mode))
 $: render($mode)
 </script>
 
