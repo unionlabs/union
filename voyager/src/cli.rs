@@ -705,6 +705,8 @@ pub enum UtilCmd {
         height: QueryHeight<Height>,
     },
     #[command(subcommand)]
+    Ethereum(EthereumCmd),
+    #[command(subcommand)]
     Arbitrum(ArbitrumCmd),
     #[command(subcommand)]
     Berachain(BerachainCmd),
@@ -721,7 +723,7 @@ pub enum SignerCmd {
 
 #[derive(Debug, Subcommand)]
 pub enum ArbitrumCmd {
-    LatestConfirmedAtBeaconSlot { on: String, slot: u64 },
+    NextNodeNumAtBeaconSlot { on: String, slot: u64 },
     ExecutionHeightOfBeaconSlot { on: String, slot: u64 },
 }
 
@@ -730,6 +732,11 @@ pub enum BerachainCmd {
     ExecutionHeightOfBeaconSlot { on: String, slot: u64 },
     ExecutionHeaderAtBeaconSlot { on: String, slot: u64 },
     BeaconHeaderAtBeaconSlot { on: String, slot: u64 },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum EthereumCmd {
+    ExecutionHeightOfBeaconSlot { on: String, slot: u64 },
 }
 
 #[derive(Debug, Subcommand)]

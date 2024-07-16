@@ -2,7 +2,7 @@ use std::{collections::VecDeque, marker::PhantomData};
 
 use beacon_api::client::BeaconApiClient;
 use chain_utils::ethereum::{
-    Ethereum, EthereumChain, EthereumConsensusChain, IBCHandlerEvents, IbcHandlerExt,
+    Ethereum, EthereumConsensusChain, EthereumIbcChain, IBCHandlerEvents, IbcHandlerExt,
     ETHEREUM_REVISION_NUMBER,
 };
 use contracts::{
@@ -54,7 +54,8 @@ use crate::{
     id, AnyChainIdentified, BlockMessage, ChainExt, DoAggregate, Identified, IsAggregateData,
 };
 
-pub trait EthereumChainExt = ChainExt + chain_utils::ethereum::EthereumChainExt;
+pub trait EthereumChainExt =
+    ChainExt + chain_utils::ethereum::EthereumIbcChainExt + chain_utils::ethereum::EthereumChain;
 
 impl<C: ChainSpec> ChainExt for Ethereum<C> {
     type Data = EthereumData<C>;
@@ -197,7 +198,7 @@ pub(crate) async fn fetch_beacon_block_range<C, Hc>(
 ) -> Op<BlockMessage>
 where
     C: ChainSpec,
-    Hc: ChainExt<Fetch: From<FetchGetLogs> + From<FetchBeaconBlockRange>> + EthereumChain,
+    Hc: ChainExt<Fetch: From<FetchGetLogs> + From<FetchBeaconBlockRange>> + EthereumIbcChain,
 
     AnyChainIdentified<AnyFetch>: From<Identified<Hc, Fetch<Hc>>>,
 {
@@ -570,7 +571,7 @@ pub fn with_channel<Hc, T>(
 ) -> Op<BlockMessage>
 where
     Hc: ChainExt<Aggregate: From<AggregateWithChannel<Hc>>, Fetch: From<FetchChannel<Hc>>>
-        + EthereumChain,
+        + EthereumIbcChain,
 
     AggregateWithChannel<Hc>: From<EventInfo<Hc, T>>,
 
@@ -707,7 +708,7 @@ impl<Hc: ChainExt, T: Clone> Clone for EventInfo<Hc, T> {
 }
 
 // NOTE: Currently, we assume that EthereumChains will only connect to Union, and as such hardcode the client_type to be Cometbls. This avoids an extra fetch and aggregation to figure out the client type.
-impl<Hc: ChainExt + EthereumChain> UseAggregate<BlockMessage>
+impl<Hc: ChainExt + EthereumIbcChain> UseAggregate<BlockMessage>
     for Identified<Hc, AggregateWithChannel<Hc>>
 where
     Identified<Hc, ChannelData<Hc>>: IsAggregateData,

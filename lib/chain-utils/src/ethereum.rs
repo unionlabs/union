@@ -26,7 +26,10 @@ use tracing::debug;
 use typenum::Unsigned;
 use unionlabs::{
     encoding::{Decode, EthAbi},
-    ethereum::{config::ChainSpec, IBC_HANDLER_COMMITMENTS_SLOT},
+    ethereum::{
+        config::{ChainSpec, Mainnet, Minimal},
+        IBC_HANDLER_COMMITMENTS_SLOT,
+    },
     hash::{H160, H256},
     ibc::{
         core::client::height::{Height, IsHeight},
@@ -50,9 +53,12 @@ pub type EthereumKeyring = ConcurrentKeyring<H160, IBCHandler<EthereumSignerMidd
 pub type EthereumSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
 
+pub trait EthereumChain =
+    Chain<IbcStateEncoding = EthAbi, ClientType = String, StateProof = StorageProof>;
+
 // NOTE: ClientType bound is temporary until I figure out a better way to deal with client types
 /// A chain running the EVM and our solidity IBC stack. This can be any Ethereum L1 or L2, or a chain running the EVM in a different environment (such as Berachain).
-pub trait EthereumChain: Chain<IbcStateEncoding = EthAbi, ClientType = String> {
+pub trait EthereumIbcChain {
     /// The provider connected to this chain's [JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/).
     fn provider(&self) -> Arc<Provider<Ws>>;
 
@@ -61,7 +67,7 @@ pub trait EthereumChain: Chain<IbcStateEncoding = EthAbi, ClientType = String> {
 }
 
 /// An Ethereum-based chain. This can be any chain that is based off of and settles on Ethereum (i.e. Ethereum mainnet/ Sepolia, L2s such as Scroll).
-pub trait EthereumConsensusChain: EthereumChain<StateProof = StorageProof> {
+pub trait EthereumConsensusChain: EthereumIbcChain {
     /// Fetch the execution height associated with the given beacon slot. For [`Ethereum`], this will simply be the execution block number, but for L2s this will fetch the settled height at the L1 block number.
     fn execution_height_of_beacon_slot(&self, slot: u64) -> impl Future<Output = u64>;
 
@@ -75,16 +81,16 @@ pub trait EthereumConsensusChain: EthereumChain<StateProof = StorageProof> {
 }
 
 #[diagnostic::on_unimplemented(message = "{Self} does not implement `EthereumChain`")]
-pub trait EthereumChainExt: EthereumChain {
+pub trait EthereumIbcChainExt: EthereumIbcChain {
     /// Convenience method to construct an [`IBCHandler`] instance for this chain.
     fn ibc_handler(&self) -> IBCHandler<Provider<Ws>> {
         IBCHandler::new(self.ibc_handler_address(), self.provider())
     }
 }
 
-impl<T: EthereumChain> EthereumChainExt for T {}
+impl<T: EthereumIbcChain> EthereumIbcChainExt for T {}
 
-impl<C: ChainSpec, S: EthereumSignersConfig> EthereumChain for Ethereum<C, S> {
+impl<C: ChainSpec, S: EthereumSignersConfig> EthereumIbcChain for Ethereum<C, S> {
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }
@@ -96,10 +102,15 @@ impl<C: ChainSpec, S: EthereumSignersConfig> EthereumChain for Ethereum<C, S> {
 
 impl<C: ChainSpec, S: EthereumSignersConfig> EthereumConsensusChain for Ethereum<C, S> {
     async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
-        self.beacon_api_client
+        let execution_height = self
+            .beacon_api_client
             .execution_height(beacon_api::client::BlockId::Slot(slot))
             .await
-            .unwrap()
+            .unwrap();
+
+        debug!("beacon slot {slot} is execution height {execution_height}");
+
+        execution_height
     }
 
     async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {
@@ -119,6 +130,76 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
     pub keyring: S::Out,
     pub provider: Arc<Provider<Ws>>,
     pub beacon_api_client: BeaconApiClient<C>,
+}
+
+#[derive(DebugNoBound, CloneNoBound, enumorph::Enumorph)]
+pub enum AnyEthereum<S: EthereumSignersConfig = ReadWrite> {
+    Mainnet(Ethereum<Mainnet, S>),
+    Minimal(Ethereum<Minimal, S>),
+}
+
+impl<S: EthereumSignersConfig> EthereumIbcChain for AnyEthereum<S> {
+    fn provider(&self) -> Arc<Provider<Ws>> {
+        match self {
+            AnyEthereum::Mainnet(eth) => eth.provider(),
+            AnyEthereum::Minimal(eth) => eth.provider(),
+        }
+    }
+
+    fn ibc_handler_address(&self) -> H160 {
+        match self {
+            AnyEthereum::Mainnet(eth) => eth.ibc_handler_address(),
+            AnyEthereum::Minimal(eth) => eth.ibc_handler_address(),
+        }
+    }
+}
+
+impl<S: EthereumSignersConfig> EthereumConsensusChain for AnyEthereum<S> {
+    async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
+        match self {
+            AnyEthereum::Mainnet(eth) => eth.execution_height_of_beacon_slot(slot).await,
+            AnyEthereum::Minimal(eth) => eth.execution_height_of_beacon_slot(slot).await,
+        }
+    }
+
+    async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {
+        match self {
+            AnyEthereum::Mainnet(eth) => eth.get_proof(address, location, block).await,
+            AnyEthereum::Minimal(eth) => eth.get_proof(address, location, block).await,
+        }
+    }
+}
+
+impl<S: EthereumSignersConfig> AnyEthereum<S> {
+    pub async fn new(config: Config<S>) -> Result<Self, AnyEthereumError> {
+        match Ethereum::<Mainnet, S>::new(config.clone()).await {
+            Ok(eth) => return Ok(eth.into()),
+            Err(EthereumInitError::Beacon(beacon_api::client::NewError::IncorrectChainSpec)) => {}
+            Err(err) => {
+                return Err(AnyEthereumError::Mainnet(err));
+            }
+        }
+
+        match Ethereum::<Minimal, S>::new(config).await {
+            Ok(eth) => return Ok(eth.into()),
+            Err(EthereumInitError::Beacon(beacon_api::client::NewError::IncorrectChainSpec)) => {}
+            Err(err) => {
+                return Err(AnyEthereumError::Minimal(err));
+            }
+        }
+
+        Err(AnyEthereumError::UnknownChainSpec)
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AnyEthereumError {
+    #[error("error creating minimal beacon client")]
+    Minimal(#[source] EthereumInitError),
+    #[error("error creating mainnet beacon client")]
+    Mainnet(#[source] EthereumInitError),
+    #[error("unknown chain spec")]
+    UnknownChainSpec,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -518,6 +599,8 @@ pub enum EthereumInitError {
     Ws(#[from] WsClientError),
     #[error("provider error")]
     Provider(#[from] ProviderError),
+    #[error("beacon error")]
+    Beacon(#[from] beacon_api::client::NewError),
 }
 
 impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
@@ -537,13 +620,13 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
             ibc_handler_address: config.ibc_handler_address,
             multicall_address: config.multicall_address,
             provider: Arc::new(provider),
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await,
+            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
         })
     }
 }
 
 /// Fetch an eth_getProof call on an Ethereum-based chain that has the exact same response type as Ethereum.
-pub async fn get_proof<Hc: EthereumChain>(
+pub async fn get_proof<Hc: EthereumIbcChain>(
     hc: &Hc,
     address: H160,
     location: U256,
@@ -597,14 +680,17 @@ pub trait IbcHandlerExt<M: Middleware> {
     ) -> impl Future<Output = Result<P::Value, ContractError<M>>> + Send
     where
         P: EthereumStateRead<Hc, Tr> + 'static,
-        Hc: EthereumChain,
+        Hc: EthereumChain + EthereumIbcChain,
         Tr: Chain;
 
-    fn get_client_state<Hc: EthereumChain, ClientState: Decode<EthAbi>>(
+    fn get_client_state<Hc, ClientState>(
         &self,
         client_id: ClientIdOf<Hc>,
         execution_block_number: u64,
-    ) -> impl Future<Output = ClientState>;
+    ) -> impl Future<Output = ClientState>
+    where
+        Hc: EthereumChain + EthereumIbcChain,
+        ClientState: Decode<EthAbi>;
 }
 
 impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
@@ -615,17 +701,21 @@ impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
     ) -> Result<P::Value, ContractError<M>>
     where
         P: EthereumStateRead<Hc, Tr> + 'static,
-        Hc: EthereumChain,
+        Hc: EthereumChain + EthereumIbcChain,
         Tr: Chain,
     {
         Ok(path.read(self, execution_block_number).await)
     }
 
-    async fn get_client_state<Hc: EthereumChain, ClientState: Decode<EthAbi>>(
+    async fn get_client_state<Hc, ClientState>(
         &self,
         client_id: ClientIdOf<Hc>,
         execution_block_number: u64,
-    ) -> ClientState {
+    ) -> ClientState
+    where
+        Hc: EthereumChain + EthereumIbcChain,
+        ClientState: Decode<EthAbi>,
+    {
         let client_address = self
             .get_client(client_id.to_string())
             .block(execution_block_number)
@@ -653,7 +743,7 @@ pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> 
 
 pub trait EthereumStateRead<Hc, Tr>: IbcPath<Hc, Tr>
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     fn read<M: Middleware>(
@@ -665,7 +755,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientStatePath<ClientIdOf<Hc>>
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
     Self::Value: Decode<Hc::IbcStateEncoding>,
 {
@@ -682,7 +772,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientConsensusStatePath<ClientIdOf<Hc>, HeightOf<Tr>>
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
     Self::Value: Decode<EthAbi>,
 {
@@ -711,7 +801,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ConnectionPath
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     async fn read<M: Middleware>(
@@ -732,7 +822,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ChannelEndPath
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     async fn read<M: Middleware>(
@@ -753,7 +843,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for CommitmentPath
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     async fn read<M: Middleware>(
@@ -776,7 +866,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for AcknowledgementPath
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     async fn read<M: Middleware>(
@@ -799,7 +889,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for NextConnectionSequencePath
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     async fn read<M: Middleware>(
@@ -826,7 +916,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for NextClientSequencePath
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     async fn read<M: Middleware>(
@@ -853,7 +943,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ReceiptPath
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     async fn read<M: Middleware>(
@@ -884,7 +974,7 @@ where
 
 impl<Hc, Tr> EthereumStateRead<Hc, Tr> for NextSequenceRecvPath
 where
-    Hc: EthereumChain,
+    Hc: EthereumChain + EthereumIbcChain,
     Tr: Chain,
 {
     async fn read<M: Middleware>(

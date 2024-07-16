@@ -17,7 +17,7 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, balance_of_signers, Ethereum, EthereumChain, EthereumConsensusChain,
+        self, balance_of_signers, Ethereum, EthereumConsensusChain, EthereumIbcChain,
         EthereumInitError, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
         ReadWrite, Readonly,
     },
@@ -98,7 +98,7 @@ impl ChainKeyring for Scroll {
     }
 }
 
-impl EthereumChain for Scroll {
+impl EthereumIbcChain for Scroll {
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }

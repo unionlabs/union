@@ -29,29 +29,33 @@ pub struct BeaconApiClient<C: ChainSpec> {
     _marker: PhantomData<C>,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum NewError {
+    #[error("incorrect chain spec")]
+    IncorrectChainSpec,
+    #[error(transparent)]
+    Error(#[from] Error),
+}
+
 impl<C: ChainSpec> BeaconApiClient<C> {
-    pub async fn new(base_url: String) -> Self {
+    pub async fn new(base_url: String) -> core::result::Result<Self, NewError> {
         let this = Self {
             client: reqwest::Client::new(),
             base_url,
             _marker: PhantomData,
         };
 
-        let spec = this.spec().await.unwrap();
+        let spec = this.spec().await?;
 
-        assert_eq!(
-            spec.data.seconds_per_slot,
-            C::SECONDS_PER_SLOT::U64,
-            "incorrect chain spec?"
-        );
+        if spec.data.seconds_per_slot != C::SECONDS_PER_SLOT::U64 {
+            return Err(NewError::IncorrectChainSpec);
+        }
 
-        assert_eq!(
-            spec.data.slots_per_epoch,
-            C::SLOTS_PER_EPOCH::U64,
-            "incorrect chain spec?"
-        );
+        if spec.data.slots_per_epoch != C::SLOTS_PER_EPOCH::U64 {
+            return Err(NewError::IncorrectChainSpec);
+        }
 
-        this
+        Ok(this)
     }
 
     pub async fn spec(&self) -> Result<Response<Spec>> {

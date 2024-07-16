@@ -2,13 +2,14 @@ use std::sync::Arc;
 
 use contracts::ibc_handler::IBCHandler;
 use ethers::{
-    contract::EthEvent,
+    contract::{EthAbiCodec, EthAbiType, EthDisplay, EthEvent},
     providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
 };
 use futures::TryFutureExt;
 use serde::{Deserialize, Serialize};
-use tracing::debug;
+use tracing::{debug, instrument};
 use unionlabs::{
+    bounded::BoundedU32,
     encoding::EthAbi,
     ethereum::config::Mainnet,
     google::protobuf::any::Any,
@@ -20,14 +21,13 @@ use unionlabs::{
     id::ClientId,
     traits::{Chain, ChainIdOf, ClientIdOf, FromStrExact},
     uint::U256,
-    ByteArrayExt,
 };
 
 use crate::{
     ethereum::{
-        self, balance_of_signers, get_proof, Ethereum, EthereumChain, EthereumConsensusChain,
-        EthereumInitError, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
-        ReadWrite, Readonly,
+        self, balance_of_signers, get_proof, AnyEthereum, AnyEthereumError, Ethereum,
+        EthereumConsensusChain, EthereumIbcChain, EthereumKeyring, EthereumSignerMiddleware,
+        EthereumSignersConfig, ReadWrite, Readonly,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
     union::Union,
@@ -47,9 +47,10 @@ pub struct Arbitrum {
     pub ibc_commitment_slot: U256,
     pub multicall_address: H160,
 
-    pub l1: Ethereum<Mainnet, Readonly>,
+    pub l1: AnyEthereum<Readonly>,
     pub l1_contract_address: H160,
-    pub l1_latest_confirmed_slot: U256,
+    pub l1_next_node_num_slot: U256,
+    pub l1_next_node_num_slot_offset_bytes: BoundedU32<0, 24>,
     pub l1_nodes_slot: U256,
     pub l1_nodes_confirm_data_offset: U256,
 
@@ -76,6 +77,7 @@ pub struct Config {
     pub l1_latest_confirmed_slot: U256,
     pub l1_nodes_slot: U256,
     pub l1_nodes_confirm_data_offset: U256,
+    pub l1_next_node_num_slot_offset_bytes: BoundedU32<0, 24>,
 
     pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
     pub l1: ethereum::Config<Readonly>,
@@ -100,7 +102,7 @@ impl ChainKeyring for Arbitrum {
 #[derive(Debug, thiserror::Error)]
 pub enum ArbitrumInitError {
     #[error("unable to initialize L1")]
-    Ethereum(#[from] EthereumInitError),
+    Ethereum(#[from] AnyEthereumError),
     #[error("unable to connect to websocket")]
     Ws(#[from] WsClientError),
     #[error("provider error")]
@@ -124,41 +126,59 @@ impl Arbitrum {
             ibc_handler_address: config.ibc_handler_address,
             multicall_address: config.multicall_address,
             provider: Arc::new(provider),
-            l1: Ethereum::new(config.l1).await?,
+            l1: AnyEthereum::new(config.l1).await?,
             l1_client_id: config.l1_client_id,
             union_grpc_url: config.union_grpc_url,
             l1_contract_address: config.l1_contract_address,
-            l1_latest_confirmed_slot: config.l1_latest_confirmed_slot,
+            l1_next_node_num_slot: config.l1_latest_confirmed_slot,
             ibc_commitment_slot: config.ibc_commitment_slot,
             l1_nodes_slot: config.l1_nodes_slot,
+            l1_next_node_num_slot_offset_bytes: config.l1_next_node_num_slot_offset_bytes,
             l1_nodes_confirm_data_offset: config.l1_nodes_confirm_data_offset,
         })
     }
 
-    pub async fn latest_confirmed_at_beacon_slot(&self, slot: u64) -> u64 {
+    #[instrument(
+        skip_all,
+        level = "trace",
+        fields(
+            %slot,
+            %self.l1_next_node_num_slot_offset_bytes,
+            %self.l1_contract_address,
+            %self.l1_next_node_num_slot,
+        )
+    )]
+    pub async fn next_node_num_at_beacon_slot(&self, slot: u64) -> u64 {
         let l1_height = self.l1.execution_height_of_beacon_slot(slot).await;
 
+        let slot_offset_bytes = self.l1_next_node_num_slot_offset_bytes.inner() as usize;
+
+        let raw_slot = self
+            .l1
+            .provider()
+            .get_storage_at(
+                ethers::types::H160::from(self.l1_contract_address),
+                ethers::types::H256(self.l1_next_node_num_slot.to_be_bytes()),
+                Some(ethers::types::BlockNumber::Number(l1_height.into()).into()),
+            )
+            .await
+            .unwrap();
+
+        debug!(raw_slot = %H256::from(raw_slot));
+
         let latest_confirmed = u64::from_be_bytes(
-            self.l1
-                .provider()
-                .get_storage_at(
-                    ethers::types::H160::from(self.l1_contract_address),
-                    ethers::types::H256(self.l1_latest_confirmed_slot.to_be_bytes()),
-                    Some(ethers::types::BlockNumber::Number(l1_height.into()).into()),
-                )
-                .await
-                .unwrap()
-                .0
-                .array_slice::<24, 8>(),
+            raw_slot.0[slot_offset_bytes..slot_offset_bytes + 8]
+                .try_into()
+                .expect("size is correct; qed;"),
         );
 
-        debug!("l1_height {l1_height} is _latestConfirmed {latest_confirmed}");
+        debug!("l1_height {l1_height} is next node num {latest_confirmed}");
 
         latest_confirmed
     }
 }
 
-impl EthereumChain for Arbitrum {
+impl EthereumIbcChain for Arbitrum {
     fn provider(&self) -> Arc<Provider<Ws>> {
         self.provider.clone()
     }
@@ -170,8 +190,8 @@ impl EthereumChain for Arbitrum {
 
 impl EthereumConsensusChain for Arbitrum {
     async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
-        // read `_latestConfirmed` at l1.execution_height(beacon_slot), then from there filter for `NodeConfirmed`
-        let latest_confirmed = self.latest_confirmed_at_beacon_slot(slot).await;
+        // read the next_node_num at l1.execution_height(beacon_slot), then from there filter for `NodeCreated`
+        let next_node_num = self.next_node_num_at_beacon_slot(slot).await;
 
         let [event] = self
             .l1
@@ -182,24 +202,24 @@ impl EthereumConsensusChain for Arbitrum {
                         ethers::types::BlockNumber::Earliest..ethers::types::BlockNumber::Latest,
                     )
                     .address(ethers::types::H160(self.l1_contract_address.0))
-                    .topic0(NodeConfirmed::signature())
-                    .topic1(ethers::types::H256(
-                        U256::from(latest_confirmed).to_be_bytes(),
-                    )),
+                    .topic0(NodeCreated::signature())
+                    .topic1(ethers::types::H256(U256::from(next_node_num).to_be_bytes())),
             )
             .await
             .unwrap()
             .try_into()
             .unwrap();
 
-        let event: NodeConfirmed =
-            NodeConfirmed::decode_log(&ethers::abi::RawLog::from(event)).unwrap();
+        let event: NodeCreated =
+            NodeCreated::decode_log(&ethers::abi::RawLog::from(event)).unwrap();
 
-        debug!("_latestConfirmed {latest_confirmed}: {event}");
+        debug!("next node num: {next_node_num}: {event:?}");
 
         let block = self
             .provider
-            .get_block(ethers::types::H256(event.block_hash.0))
+            .get_block(ethers::types::H256(
+                event.assertion.after_state.global_state.bytes32_vals[0].0,
+            ))
             .await
             .unwrap()
             .unwrap();
@@ -212,15 +232,73 @@ impl EthereumConsensusChain for Arbitrum {
     }
 }
 
-#[derive(Debug, ethers::contract::EthEvent, ethers::contract::EthDisplay)]
+// #[derive(Debug, ethers::contract::EthEvent, ethers::contract::EthDisplay)]
+// #[ethevent(
+//     name = "NodeConfirmed",
+//     abi = "NodeConfirmed(uint64 indexed, bytes32, bytes32)"
+// )]
+// struct NodeConfirmed {
+//     node_num: u64,
+//     block_hash: H256,
+//     send_root: H256,
+// }
+
+#[derive(Debug, ethers::contract::EthEvent, EthDisplay)]
 #[ethevent(
-    name = "NodeConfirmed",
-    abi = "NodeConfirmed(uint64 indexed, bytes32, bytes32)"
+    name = "NodeCreated",
+    abi = "NodeCreated(
+        uint64 indexed,
+        bytes32 indexed,
+        bytes32 indexed,
+        bytes32,
+        (((bytes32[2],uint64[2]),uint8),((bytes32[2],uint64[2]),uint8),uint64),
+        bytes32,
+        bytes32,
+        uint256
+    )"
 )]
-struct NodeConfirmed {
-    node_num: u64,
-    block_hash: H256,
-    send_root: H256,
+struct NodeCreated {
+    pub node_num: u64,
+    pub parent_node_hash: H256,
+    pub node_hash: H256,
+    pub execution_hash: H256,
+    pub assertion: Assertion,
+    pub after_inbox_batch_acc: H256,
+    pub wasm_module_root: H256,
+    pub inbox_max_count: U256,
+}
+
+// https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L15
+#[derive(Debug, EthAbiType, EthAbiCodec, EthDisplay)]
+struct Assertion {
+    before_state: ExecutionState,
+    after_state: ExecutionState,
+    num_blocks: u64,
+}
+
+// https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L10
+#[derive(Debug, EthAbiType, EthAbiCodec, EthDisplay)]
+struct ExecutionState {
+    global_state: GlobalState,
+
+    // https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/state/Machine.sol
+    machine_status: u8,
+}
+
+// ethers doesn't support solidity enums (?????)
+// #[derive(Debug, EthAbiType, EthAbiCodec)]
+// enum MachineStatus {
+//     RUNNING,
+//     FINISHED,
+//     ERRORED,
+//     TOO_FAR,
+// }
+
+// https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/state/GlobalState.sol
+#[derive(Debug, EthAbiType, EthAbiCodec, EthDisplay)]
+struct GlobalState {
+    bytes32_vals: [H256; 2],
+    u64_vals: [u64; 2],
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -277,7 +355,10 @@ impl Chain for Arbitrum {
             )
             .unwrap();
 
-        Ok(self.l1.make_height(l1_client_state.data.latest_slot))
+        Ok(match &self.l1 {
+            AnyEthereum::Mainnet(eth) => eth.make_height(l1_client_state.data.latest_slot),
+            AnyEthereum::Minimal(eth) => eth.make_height(l1_client_state.data.latest_slot),
+        })
     }
 
     async fn query_latest_height_as_destination(&self) -> Result<Self::Height, Self::Error> {
@@ -285,7 +366,10 @@ impl Chain for Arbitrum {
     }
 
     async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
-        self.l1.query_latest_timestamp().map_err(Into::into).await
+        match &self.l1 {
+            AnyEthereum::Mainnet(eth) => eth.query_latest_timestamp().map_err(Into::into).await,
+            AnyEthereum::Minimal(eth) => eth.query_latest_timestamp().map_err(Into::into).await,
+        }
     }
 
     async fn self_client_state(&self, height: Self::Height) -> Self::SelfClientState {
@@ -294,8 +378,9 @@ impl Chain for Arbitrum {
             chain_id: self.chain_id,
             l1_latest_slot: height.revision_height,
             l1_contract_address: self.l1_contract_address,
-            l1_latest_confirmed_slot: self.l1_latest_confirmed_slot,
+            l1_next_node_num_slot: self.l1_next_node_num_slot,
             l1_nodes_slot: self.l1_nodes_slot,
+            l1_next_node_num_slot_offset_bytes: self.l1_next_node_num_slot_offset_bytes,
             l1_nodes_confirm_data_offset: self.l1_nodes_confirm_data_offset,
             frozen_height: Height {
                 revision_number: 0,

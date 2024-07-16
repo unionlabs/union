@@ -145,8 +145,8 @@ pub struct Result {
     /// Log contains the log information from message or handler execution.
     #[prost(string, tag = "2")]
     pub log: ::prost::alloc::string::String,
-    /// Events contains a slice of Event objects that were emitted during message
-    /// or handler execution.
+    // /// Events contains a slice of Event objects that were emitted during message
+    // /// or handler execution.
     // #[prost(message, repeated, tag = "3")]
     // pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
     /// msg_responses contains the Msg handler responses type packed in Anys.

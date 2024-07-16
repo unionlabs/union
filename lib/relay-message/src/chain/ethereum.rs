@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
 
 use chain_utils::ethereum::{
-    Ethereum, EthereumChain, EthereumChainExt as _, EthereumConsensusChain, EthereumKeyring,
+    Ethereum, EthereumChain, EthereumConsensusChain, EthereumIbcChain, EthereumKeyring,
     EthereumSignerMiddleware, IbcHandlerErrors, IbcHandlerExt, ETHEREUM_REVISION_NUMBER,
 };
 use contracts::{
@@ -130,7 +130,7 @@ pub async fn do_msg<Hc, Tr>(
 ) -> Result<Op<RelayMessage>, TxSubmitError>
 where
     Hc: ChainExt<Config = EthereumConfig, SelfClientState: Encode<Tr::IbcStateEncoding>>
-        + EthereumChain,
+        + EthereumIbcChain,
     Tr: ChainExt<
         SelfConsensusState: Encode<EthAbi>,
         SelfClientState: Encode<EthAbi>,
@@ -707,7 +707,7 @@ where
 
 pub async fn fetch_get_proof<Hc, Tr>(c: &Hc, get_proof: GetProof<Hc, Tr>) -> Data<Hc, Tr>
 where
-    Hc: ChainExt + EthereumConsensusChain,
+    Hc: ChainExt + EthereumChain + EthereumConsensusChain,
     Tr: ChainExt,
 {
     let path = get_proof.path.to_string();
@@ -817,7 +817,8 @@ where
     Hc: ChainExt<
             StoredClientState<Tr>: Decode<Hc::IbcStateEncoding>,
             StoredConsensusState<Tr>: Decode<Hc::IbcStateEncoding>,
-        > + EthereumChain
+        > + EthereumIbcChain
+        + EthereumChain
         + EthereumConsensusChain,
     Tr: ChainExt,
 {
@@ -1223,7 +1224,8 @@ pub fn mk_function_call<Call: EthCall, M: Middleware>(
         .expect("method selector is generated; qed;")
 }
 
-pub trait EthereumChainExt = ChainExt + EthereumChain;
+pub trait EthereumChainExt =
+    ChainExt + chain_utils::ethereum::EthereumIbcChainExt + chain_utils::ethereum::EthereumChain;
 
 #[queue_msg]
 pub struct GetProof<Hc: EthereumChainExt, Tr: ChainExt> {

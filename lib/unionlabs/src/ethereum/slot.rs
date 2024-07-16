@@ -27,6 +27,7 @@ impl<'a> Slot<'a> {
                 match &k {
                     MappingKey::String(string) => hasher.update(string.as_bytes()),
                     MappingKey::Uint256(k) => hasher.update(k.to_be_bytes()),
+                    MappingKey::Uint64(k) => hasher.update(U256::from(*k).to_be_bytes()),
                     MappingKey::Bytes32(k) => hasher.update(k.0),
                 };
 
@@ -45,6 +46,7 @@ impl<'a> Slot<'a> {
 pub enum MappingKey<'a> {
     String(&'a str),
     Uint256(U256),
+    Uint64(u64),
     Bytes32(H256),
 }
 

@@ -386,7 +386,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
 
         for (parent_idxs, new_msg) in optimize_further {
             let parents = get_parent_ids(&parent_idxs);
-            debug!(parent_idxs = ?&parent_idxs, parents = ?&parents);
+            trace!(parent_idxs = ?&parent_idxs, parents = ?&parents);
 
             let new_row = sqlx::query(
                 "
@@ -408,7 +408,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
 
         for (parent_idxs, new_msg) in ready {
             let parents = get_parent_ids(&parent_idxs);
-            debug!(parent_idxs = ?&parent_idxs, parents = ?&parents);
+            trace!(parent_idxs = ?&parent_idxs, parents = ?&parents);
 
             let new_row = sqlx::query(
                 "

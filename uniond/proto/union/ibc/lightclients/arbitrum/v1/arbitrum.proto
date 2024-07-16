@@ -10,19 +10,24 @@ message ClientState {
   string chain_id = 2;
   uint64 l1_latest_slot = 3;
 
+  // The address of the [`RollupCore`](https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol) contract on the L1.
   bytes l1_contract_address = 4;
 
-  // _latestConfirmed
-  bytes l1_latest_confirmed_slot = 5;
-  // _nodes[_latestConfirmed].confirmData
-  bytes l1_nodes_slot = 6;
+  // The slot containing the next node num. If tracking full finalization, this will be the slot containing `_latestConfirmed`, otherwise if tracking head this will be the slot containing `_latestNodeCreated`.
+  //
+  // Since these are [stored in the same slot](https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L60-L63) in the arbitrum rollup contract, `l1_next_node_num_slot_offset` is provided as a way to subscript into the slot.
+  bytes l1_next_node_num_slot = 5;
+  // The offset of the u64 value of the node num within the `l1_lext_node_num_slot`.
+  uint32 l1_next_node_num_slot_offset_bytes = 6;
+  // _nodes[l1_next_node_num_slot].confirmData
+  bytes l1_nodes_slot = 7;
   // offset of Node.confirmData
-  bytes confirm_data_offset = 7;
+  bytes l1_nodes_confirm_data_offset = 8;
 
-  .ibc.core.client.v1.Height frozen_height = 8;
+  .ibc.core.client.v1.Height frozen_height = 9;
 
-  bytes l2_ibc_contract_address = 9;
-  bytes l2_ibc_commitment_slot = 10;
+  bytes l2_ibc_contract_address = 10;
+  bytes l2_ibc_commitment_slot = 11;
 }
 
 message ConsensusState {
@@ -31,21 +36,17 @@ message ConsensusState {
 }
 
 message Header {
+  // The height of the L1 to update to. The L1 client must have a consensus state at this height.
   .ibc.core.client.v1.Height l1_height = 1;
 
   // Proof of the L1 rollup account in the L1 state root.
   .union.ibc.lightclients.ethereum.v1.AccountProof l1_account_proof = 2;
 
-  // Proof of the l2 ibc contract address in the l2 state root.
+  // Proof of the L2 ibc contract address in the L2 state root.
   .union.ibc.lightclients.ethereum.v1.AccountProof l2_ibc_account_proof = 3;
 
-  // The latest confirmed node number, as stored in `_latestConfirmed`.
-  //
-  // https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L60
-  uint64 latest_confirmed = 6;
-
-  // Proof of `latest_confirmed`.
-  .union.ibc.lightclients.ethereum.v1.StorageProof l1_latest_confirmed_slot_proof = 7;
+  // The latest confirmed node number, as stored in `ClientState.l1_next_node_num_slot` at `ClientState.l1_next_node_num_slot_offset_bytes`.
+  .union.ibc.lightclients.ethereum.v1.StorageProof l1_next_node_num_slot_proof = 7;
   // The proof of the [`_nodes`] mapping at `latest_confirmed`, offset to [`Node.confirmData`].
   //
   // [`_nodes`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L64

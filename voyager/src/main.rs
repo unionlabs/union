@@ -71,8 +71,8 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{
-        any_state_proof_to_json, AppArgs, ArbitrumCmd, BerachainCmd, Command, HandshakeCmd,
-        HandshakeType, QueryCmd, SignerCmd, UtilCmd,
+        any_state_proof_to_json, AppArgs, ArbitrumCmd, BerachainCmd, Command, EthereumCmd,
+        HandshakeCmd, HandshakeType, QueryCmd, SignerCmd, UtilCmd,
     },
     config::{Config, GetChainError},
     queue::{chains_from_config, AnyQueueConfig, RunError, Voyager, VoyagerInitError},
@@ -397,12 +397,12 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                 });
             }
             UtilCmd::Arbitrum(cmd) => match cmd {
-                ArbitrumCmd::LatestConfirmedAtBeaconSlot { on, slot } => print_json(
+                ArbitrumCmd::NextNodeNumAtBeaconSlot { on, slot } => print_json(
                     &voyager_config
                         .get_chain(&on.to_string())
                         .await?
                         .downcast::<Arbitrum>()?
-                        .latest_confirmed_at_beacon_slot(slot)
+                        .next_node_num_at_beacon_slot(slot)
                         .await,
                 ),
                 ArbitrumCmd::ExecutionHeightOfBeaconSlot { on, slot } => print_json(
@@ -439,6 +439,22 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                         .beacon_block_header_at_beacon_slot(slot)
                         .await,
                 ),
+            },
+            UtilCmd::Ethereum(cmd) => match cmd {
+                EthereumCmd::ExecutionHeightOfBeaconSlot { on, slot } => {
+                    print_json(&match voyager_config.get_chain(&on.to_string()).await? {
+                        AnyChain::EthereumMainnet(on) => {
+                            on.execution_height_of_beacon_slot(slot).await
+                        }
+                        AnyChain::EthereumMinimal(on) => {
+                            on.execution_height_of_beacon_slot(slot).await
+                        }
+                        chain => panic!(
+                            "chain type for `{}` not supported for this method",
+                            chain.chain_id()
+                        ),
+                    })
+                }
             },
         },
         Command::Signer(cmd) => match cmd {

@@ -1,17 +1,23 @@
-use std::fmt::Display;
-
 use reqwest::StatusCode;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+// NOTE: Some of these are specific to lodestar
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    Http(reqwest::Error),
-    Internal(InternalServerError),
-    NotFound(NotFoundError),
-    Json(serde_json::Error),
+    #[error("http error")]
+    Http(#[from] reqwest::Error),
+    #[error("internal error")]
+    Internal(#[from] InternalServerError),
+    #[error("not found")]
+    NotFound(#[from] NotFoundError),
+    #[error("json deserialization error")]
+    Json(#[from] serde_json::Error),
+    #[error("unknown error ({code}): {text}")]
     Other { code: StatusCode, text: String },
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize, thiserror::Error)]
+#[error("{status_code} {error}: {message}")]
 pub struct NotFoundError {
     #[serde(rename = "statusCode")]
     pub status_code: u64,
@@ -19,30 +25,11 @@ pub struct NotFoundError {
     pub message: String,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize, thiserror::Error)]
+#[error("{status_code} {error}: {message}")]
 pub struct InternalServerError {
     #[serde(rename = "statusCode")]
     pub status_code: u64,
     pub error: String,
     pub message: String,
 }
-
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Http(err) => write!(f, "Http error: {err}"),
-            Self::Internal(err) => write!(f, "Internal server error: {err:#?}"),
-            Error::NotFound(err) => write!(f, "Not found: {err:#?}"),
-            Self::Json(err) => write!(f, "Deserialization error: {err}"),
-            Self::Other { code, text } => write!(f, "Unknown error (code {code}): {text}"),
-        }
-    }
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(value: reqwest::Error) -> Self {
-        Self::Http(value)
-    }
-}
-
-impl std::error::Error for Error {}
