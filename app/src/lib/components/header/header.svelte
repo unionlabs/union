@@ -9,7 +9,7 @@ import { routes } from "$lib/components/navigation/index.ts"
 
 <header
   class={cn(
-    'p-2.5 min-w-full w-screen flex flex-row items-center md:gap-4 z-10',
+    'dark:bg-muted p-2.5 min-w-full w-screen flex flex-row items-center md:gap-4 z-10',
     'bg-card flex md:justify-start justify-between border-b border-solid',
   )}
 >
@@ -29,7 +29,7 @@ import { routes } from "$lib/components/navigation/index.ts"
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
       {@const currentRoute = $page.route.id?.split('/')[1] === path.split('/').at(1)}
       <Button
-        size="default"
+        size="sm"
         href={path}
         variant="link"
         class={cn(

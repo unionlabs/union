@@ -382,7 +382,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4">
+  <Card.Root class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4 dark:bg-muted">
     <Card.Header class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center">
       TRANSFER <Truncate value={transfer.source_transaction_hash} type="hash"/>
     </Card.Header>
@@ -408,18 +408,18 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     <section class="flex flex-col sm:flex-row">
       <div class="flex-1 lex-col text-muted-foreground">
         <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.source_chain_id, chains)}</h2>
-        <p class="text-sm">{transfer.source_chain_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.source_connection_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.source_channel_id}</p>
+        <p class="text-sm dark:text-muted-foreground">{transfer.source_chain_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.source_connection_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.source_channel_id}</p>
       </div>
       <div class="flex items-center justify-center px-8">
         <MoveRightIcon class="text-foreground size-8"/>
       </div>
       <div class="flex-1 sm:text-right flex-col text-muted-foreground">
         <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.destination_chain_id, chains)}</h2>
-        <p class="text-sm">{transfer.destination_chain_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.destination_connection_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black" : "text-transparent")}>{transfer.destination_channel_id}</p>
+        <p class="text-sm dark:text-muted-foreground">{transfer.destination_chain_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.destination_connection_id}</p>
+        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.destination_channel_id}</p>
       </div>
     </section>
     {#if transfer.hop_chain_id}
@@ -435,12 +435,12 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       <div class=" lex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-bold font-supermolot">Sender</h2>
         {#if sourceExplorer !== undefined}<a href={`${sourceExplorer.address_url}${transfer.sender}`} class="block text-sm underline break-words">{transfer.sender}</a>{:else}<p class="text-sm break-words">{transfer.sender}</p>{/if}
-        <p class={cn("text-[10px] break-words", transfer.normalized_sender ? "text-black" : "text-transparent")}>raw: {transfer.normalized_sender}</p>
+        <p class={cn("text-[10px] break-words", transfer.normalized_sender ? "text-black dark:text-muted-foreground" : "text-transparent")}>raw: {transfer.normalized_sender}</p>
       </div>
       <div class="flex-1 lg:text-right flex-col text-muted-foreground">
         <h2 class="text-lg text-foreground font-supermolot font-bold">Receiver</h2>
         {#if destinationExplorer !== undefined}<a href={`${destinationExplorer.address_url}${transfer.receiver}`} class="block text-sm underline break-words">{transfer.receiver}</a>{:else}<p class="text-sm break-words">{transfer.receiver}</p>{/if}
-        <p class={cn("text-[10px] break-words", transfer.normalized_receiver ? "text-black" : "text-transparent")}>raw: {transfer.normalized_receiver}</p>
+        <p class={cn("text-[10px] break-words", transfer.normalized_receiver ? "text-black dark:text-muted-foreground" : "text-transparent")}>raw: {transfer.normalized_receiver}</p>
       </div>
     </section>
     </Card.Content>

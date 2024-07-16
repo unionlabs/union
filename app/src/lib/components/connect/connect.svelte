@@ -13,6 +13,9 @@ import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.
 import { Switch } from "$lib/components/ui/switch"
 import { Label } from "$lib/components/ui/label"
 import { showUnsupported } from "$lib/stores/user.ts"
+import Sun from "virtual:icons/lucide/sun"
+import Moon from "virtual:icons/lucide/moon"
+import { toggleMode } from "mode-watcher"
 
 let buttonText: string
 
@@ -93,11 +96,21 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={cosmosStore.connect}
       onDisconnectClick={cosmosStore.disconnect}
     />
-    <div class="flex items-center space-x-2 mt-auto">
-      <Switch bind:checked={$showUnsupported} id="unsupported-assets"/>
-      <Label for="unsupported-assets">Show unverified assets</Label>
+    <div class="mt-auto flex justify-between">
+      <div class="flex items-center space-x-2">
+        <Switch bind:checked={$showUnsupported} id="unsupported-assets"/>
+        <Label for="unsupported-assets">Show unverified assets</Label>
+      </div>
+      <Button on:click={toggleMode} variant="default" size="icon" class="hover:text-black hover:bg-accent">
+        <Sun
+          class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+        />
+        <Moon
+          class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+        />
+        <span class="sr-only">Toggle theme</span>
+      </Button>
     </div>
-    <ThemeSwitch/>
   </Sheet.Content>
 </Sheet.Root>
 

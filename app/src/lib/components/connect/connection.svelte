@@ -105,7 +105,7 @@ let metamaskAlertDialogOpen = false
             "capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent",
             connectStatus === "connected" && connectedWalletId === id && "border-border",
             (connectStatus === "disconnected" || connectStatus == undefined) &&
-              "opacity-75 hover:opacity-100",
+              "opacity-75 hover:opacity-100 dark:hover:text-black",
             hoverState === "hover" &&
               connectedWalletId === id &&
               "hover:text-destructive border-destructive hover:bg-transparent",

@@ -27,7 +27,7 @@ onMount(() => {
 })
 </script>
 
-<div class="bg-muted border-b flex">
+<div class="bg-muted border-b flex dark:bg-background">
   <div class="w-full">
     {#if show === 1}
       <div class="w-full flex h-full" in:fade>

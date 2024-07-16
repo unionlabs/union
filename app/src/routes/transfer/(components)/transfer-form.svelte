@@ -716,7 +716,7 @@ const resetInput = () => {
 </script>
 
 <div
-  class={cn("size-full duration-1000	 transition-colors bg-background", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
+  class={cn("size-full duration-1000 transition-colors dark:bg-muted", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
 
 <div class="cube-scene" id="scene">
 
@@ -774,7 +774,7 @@ const resetInput = () => {
             </div>
           {/if}
         </section>
-
+        
           <section>
             <CardSectionHeading>Amount</CardSectionHeading>
             <Input
@@ -786,7 +786,7 @@ const resetInput = () => {
               bind:value={amount}
               class={cn(
                 !balanceCoversAmount && amount ? 'border-red-500' : '',
-                'focus:ring-0 focus-visible:ring-0',
+                'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
               )}
               disabled={!$asset}
               maxlength={64}
@@ -806,7 +806,7 @@ const resetInput = () => {
                     autocomplete="off"
                     autocorrect="off"
                     bind:value={address}
-                    class="disabled:opacity-100 disabled:bg-black/20"
+                    class="disabled:bg-black/30"
                     disabled={inputState === 'locked'}
                     id="address"
                     on:input={handleInput}
