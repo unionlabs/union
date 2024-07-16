@@ -1,11 +1,13 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
+import * as Tooltip from "$lib/components/ui/tooltip"
 
 export let value: {
   chain_display_name: string
   chain_id: string
   connection_id: string
   channel_id: string
+  port_id: string
 }
 </script>
 
@@ -14,4 +16,12 @@ export let value: {
   <div>{value.chain_id}</div>
   <div>{value.connection_id}</div>
   <div>{value.channel_id}</div>
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      <div class="max-w-[200px] truncate">{value.port_id}</div>
+    </Tooltip.Trigger>
+    <Tooltip.Content>
+      {value.port_id}
+    </Tooltip.Content>
+  </Tooltip.Root>
 </div>
