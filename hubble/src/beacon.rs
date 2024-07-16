@@ -13,8 +13,9 @@ use crate::consensus::{Indexer, Querier};
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub label: String,
-    pub url: url::Url,
+    pub urls: Vec<url::Url>,
     pub chain_id: String,
+    pub start_height: Option<i64>,
 }
 
 impl Config {
@@ -31,9 +32,9 @@ impl Config {
         .retry(&ExponentialBuilder::default())
         .await?;
 
-        let querier = Beacon::new(self.url, reqwest::Client::new());
+        let querier = Beacon::new(self.urls[0].clone(), reqwest::Client::new());
 
-        Ok(Indexer::new(chain_id, db, querier))
+        Ok(Indexer::new(chain_id, db, querier, self.start_height))
     }
 }
 
@@ -184,7 +185,7 @@ mod block {
         #[serde(rename = "voluntary_exits")]
         pub voluntary_exits: Vec<Value>,
         #[serde(rename = "sync_aggregate")]
-        pub sync_aggregate: SyncAggregate,
+        pub sync_aggregate: Option<SyncAggregate>,
         #[serde(rename = "execution_payload")]
         pub execution_payload: ExecutionPayload,
         #[serde(rename = "bls_to_execution_changes")]

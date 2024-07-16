@@ -14,8 +14,9 @@ use crate::consensus::{Indexer, Querier};
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub label: String,
-    url: url::Url,
-    chain_id: String,
+    pub urls: Vec<url::Url>,
+    pub chain_id: String,
+    pub start_height: Option<i64>,
 }
 
 impl Config {
@@ -32,10 +33,10 @@ impl Config {
         .retry(&ExponentialBuilder::default())
         .await?;
 
-        let client = Client::new(self.url.as_str()).await?;
+        let client = Client::new(self.urls[0].as_str()).await?;
         let querier = Bera::new(client);
 
-        Ok(Indexer::new(chain_id, db, querier))
+        Ok(Indexer::new(chain_id, db, querier, self.start_height))
     }
 }
 
@@ -60,7 +61,11 @@ impl Bera {
             .abci_query(
                 "store/beacon/key",
                 data,
-                Some((slot - 1).try_into().unwrap()),
+                Some(
+                    (slot - 1)
+                        .try_into()
+                        .expect("converting slot to abci_query slot"),
+                ),
                 prove,
             )
             .await?;
