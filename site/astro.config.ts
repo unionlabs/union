@@ -1,6 +1,7 @@
 import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
+import storyblok from "@storyblok/astro"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
@@ -9,11 +10,12 @@ import starlightLinksValidator from "starlight-links-validator"
 
 const SITE_URL = "https://union.build"
 
-const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
-  process.env.NODE_ENV,
-  process.cwd(),
-  ""
-)
+const {
+  NODE_ENV,
+  PORT = 4321,
+  STORYBLOK_TOKEN,
+  ENABLE_DEV_TOOLBAR = "false"
+} = loadEnv(process.env.NODE_ENV, process.cwd(), "")
 
 export default defineConfig({
   site: SITE_URL,
@@ -27,6 +29,21 @@ export default defineConfig({
   markdown: markdownConfiguration,
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   integrations: [
+    storyblok({
+      bridge: true, // default: true
+      // livePreview: false, // only works in SSR mode
+      accessToken: STORYBLOK_TOKEN,
+      components: {
+        // Add your components here
+        page: "storyblok/page",
+        blogPost: "storyblok/blog-post",
+        blogPostList: "storyblok/blog-post-list"
+      },
+      apiOptions: {
+        // Choose your Storyblok space region
+        region: "eu" // optional,  or 'eu' (default)
+      }
+    }),
     starlight({
       title: "Union",
       tagline: "Connecting blockchains trustlessly",
@@ -142,7 +159,7 @@ export default defineConfig({
   ],
   vite: {
     optimizeDeps: {
-      exclude: ["@urql/svelte", "echarts"]
+      exclude: ["echarts"]
     },
     assetsInclude: ["**/*.splinecode"]
   }

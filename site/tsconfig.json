@@ -36,6 +36,7 @@
     "astro.config.ts",
     "svelte.config.js",
     "tailwind.config.ts",
+    "postcss.config.cjs",
     "markdown.config.ts"
   ],
   "exclude": ["_", "dist", "node_modules"]

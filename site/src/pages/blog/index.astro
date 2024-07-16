@@ -1,13 +1,12 @@
 ---
-import SectionsLayout from "#/layouts/SectionsLayout.astro"
-import { getCollection } from "astro:content"
 import Card from "#/components/Card.astro"
+import { getCollection } from "astro:content"
+import TextA from "#/components/TextA.astro"
+import H3 from "#/components/typography/h3.astro"
+import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
-import TextA from "#/components/TextA.astro"
-
-import H3 from "#/components/typography/h3.astro"
 
 const isProduction = import.meta.env.PROD
 
