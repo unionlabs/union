@@ -3,7 +3,11 @@ import * as THREE from "three"
 const darkModeColor = 0xffffff
 const lightModeColor = 0x000000
 
-export function createCube(cubeWidth: number, strokeWidth: number, mode: string | undefined): THREE.Group {
+export function createCube(
+  cubeWidth: number,
+  strokeWidth: number,
+  mode: string | undefined
+): THREE.Group {
   const boxGeometry = new THREE.BoxGeometry(cubeWidth, cubeWidth, cubeWidth)
   const edgesGeometry = new THREE.EdgesGeometry(boxGeometry)
 
@@ -15,7 +19,13 @@ export function createCube(cubeWidth: number, strokeWidth: number, mode: string 
     const path = new THREE.CatmullRomCurve3(points)
     const geometry = new THREE.TubeGeometry(path, 20, thickness, 8, false)
     const material = new THREE.MeshBasicMaterial(
-      mode ? mode === "dark" ? { color: darkModeColor } : { color: lightModeColor } : checkIfDark() ? { color: darkModeColor } : { color: lightModeColor }
+      mode
+        ? mode === "dark"
+          ? { color: darkModeColor }
+          : { color: lightModeColor }
+        : checkIfDark()
+          ? { color: darkModeColor }
+          : { color: lightModeColor }
     )
     const tube = new THREE.Mesh(geometry, material)
     return tube

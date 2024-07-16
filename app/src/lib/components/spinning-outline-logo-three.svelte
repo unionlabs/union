@@ -79,7 +79,7 @@ const render = (mode: string | undefined) => {
     } else if (animationState === "ROTATING_RIGHT") {
       const rotating = camera.rotation.y < Math.PI / 2
       const translating = camera.position.z > 0
-      if (!rotating && !translating) {
+      if (!(rotating && translating)) {
         animationState = "SLIDING_LEFT"
       }
       if (rotating) {
@@ -97,7 +97,7 @@ const render = (mode: string | undefined) => {
     } else if (animationState === "ROTATING_LEFT") {
       const rotating = camera.rotation.y > 0
       const translating = camera.position.z < startCameraZ
-      if (!rotating && !translating) {
+      if (!(rotating || translating)) {
         animationState = "SLIDING_RIGHT"
       }
       if (rotating) {
