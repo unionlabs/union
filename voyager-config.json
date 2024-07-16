@@ -6,7 +6,7 @@
       "preset_base": "minimal",
       "ibc_commitment_slot": "0",
       "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
-      "multicall_address": "0x72459D25D5e30ec16b9Ac91cfB7e5a7969347E58",
+      "multicall_address": "0x9fd9D9528c8373D990a1380B9414bDE179007A35",
       "keyring": {
         "name": "ethereum-devnet",
         "keys": [

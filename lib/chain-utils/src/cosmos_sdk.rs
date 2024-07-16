@@ -8,7 +8,7 @@ use tracing::{debug, error, info, warn};
 use unionlabs::{
     cosmos::{
         auth::base_account::BaseAccount,
-        base::coin::Coin,
+        base::{abci::gas_info::GasInfo, coin::Coin},
         crypto::{secp256k1, AnyPubKey},
         tx::{
             auth_info::AuthInfo, fee::Fee, mode_info::ModeInfo, sign_doc::SignDoc,
@@ -192,74 +192,12 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
         memo: String,
     ) -> Result<(H256, u64), BroadcastTxCommitError> {
-        use protos::cosmos::tx;
-
         let account = self.account_info(&signer.to_string()).await;
 
-        let mut client = tx::v1beta1::service_client::ServiceClient::connect(self.grpc_url())
+        let (tx_body, mut auth_info, simulation_gas_info) = self
+            .simulate_tx(signer, messages, memo)
             .await
-            .unwrap();
-
-        let tx_body = TxBody {
-            messages: messages.clone().into_iter().collect(),
-            // TODO(benluelo): What do we want to use as our memo?
-            memo,
-            timeout_height: 0,
-            extension_options: vec![],
-            non_critical_extension_options: vec![],
-        };
-
-        let mut auth_info = AuthInfo {
-            signer_infos: [SignerInfo {
-                public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                    key: signer.public_key(),
-                })),
-                mode_info: ModeInfo::Single {
-                    mode: SignMode::Direct,
-                },
-                sequence: account.sequence,
-            }]
-            .to_vec(),
-            fee: self.gas_config().mk_fee(self.gas_config().max_gas).clone(),
-        };
-
-        let simulation_signature = signer
-            .try_sign(
-                &SignDoc {
-                    body_bytes: tx_body.clone().encode_as::<Proto>(),
-                    auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.tm_chain_id().to_string(),
-                    account_number: account.account_number,
-                }
-                .encode_as::<Proto>(),
-            )
-            .expect("signing failed")
-            .to_vec();
-
-        let simulation_gas_info = {
-            let result = client
-                .simulate(tx::v1beta1::SimulateRequest {
-                    tx_bytes: Tx {
-                        body: tx_body.clone(),
-                        auth_info: auth_info.clone(),
-                        signatures: [simulation_signature.clone()].to_vec(),
-                    }
-                    .encode_as::<Proto>(),
-                    ..Default::default()
-                })
-                .await;
-
-            match result {
-                Ok(ok) => ok
-                    .into_inner()
-                    .gas_info
-                    .expect("gas info is present on successful simulation result"),
-                Err(err) => {
-                    error!(error = %err.message(), "tx simulation failed");
-                    return Err(BroadcastTxCommitError::SimulateTx(err.message().to_owned()));
-                }
-            }
-        };
+            .map_err(BroadcastTxCommitError::SimulateTx)?;
 
         info!(
             gas_used = %simulation_gas_info.gas_used,
@@ -393,6 +331,83 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
                     i += 1;
                     continue;
                 }
+            }
+        }
+    }
+
+    async fn simulate_tx(
+        &self,
+        signer: &CosmosSigner,
+        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+        memo: String,
+    ) -> Result<(TxBody, AuthInfo, GasInfo), String> {
+        use protos::cosmos::tx;
+
+        let account = self.account_info(&signer.to_string()).await;
+
+        let mut client = tx::v1beta1::service_client::ServiceClient::connect(self.grpc_url())
+            .await
+            .unwrap();
+
+        let tx_body = TxBody {
+            messages: messages.clone().into_iter().collect(),
+            memo,
+            timeout_height: 0,
+            extension_options: vec![],
+            non_critical_extension_options: vec![],
+        };
+
+        let auth_info = AuthInfo {
+            signer_infos: [SignerInfo {
+                public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
+                    key: signer.public_key(),
+                })),
+                mode_info: ModeInfo::Single {
+                    mode: SignMode::Direct,
+                },
+                sequence: account.sequence,
+            }]
+            .to_vec(),
+            fee: self.gas_config().mk_fee(self.gas_config().max_gas).clone(),
+        };
+
+        let simulation_signature = signer
+            .try_sign(
+                &SignDoc {
+                    body_bytes: tx_body.clone().encode_as::<Proto>(),
+                    auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
+                    chain_id: self.tm_chain_id().to_string(),
+                    account_number: account.account_number,
+                }
+                .encode_as::<Proto>(),
+            )
+            .expect("signing failed")
+            .to_vec();
+
+        let result = client
+            .simulate(tx::v1beta1::SimulateRequest {
+                tx_bytes: Tx {
+                    body: tx_body.clone(),
+                    auth_info: auth_info.clone(),
+                    signatures: [simulation_signature.clone()].to_vec(),
+                }
+                .encode_as::<Proto>(),
+                ..Default::default()
+            })
+            .await;
+
+        match result {
+            Ok(ok) => Ok((
+                tx_body,
+                auth_info,
+                ok.into_inner()
+                    .gas_info
+                    .expect("gas info is present on successful simulation result")
+                    .into(),
+            )),
+            Err(err) => {
+                info!(error = %err.message(), "tx simulation failed");
+                Err(err.message().to_owned())
             }
         }
     }

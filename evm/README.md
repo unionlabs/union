@@ -45,7 +45,7 @@ This links are working if you run a local devnet on a x86 machine only (Blocksco
 - CometblsClient: [0xc4f27a952faba4174ce0ee6d9d0c6f4c41524d49](http://localhost/address/0xc4f27a952faba4174ce0ee6d9d0c6f4c41524d49)
 - UCS01: [0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46](http://localhost/address/0xa9d03ba6e27b43c69a64c87f845485b73a8e5d46)
 - UCS02: [0x524d4d28fc90dc5a257162abe37081f52681c7d6](http://localhost/address/0x524d4d28fc90dc5a257162abe37081f52681c7d6)
-- Multicall: [0x72459D25D5e30ec16b9Ac91cfB7e5a7969347E58](http://localhost/address/0x72459D25D5e30ec16b9Ac91cfB7e5a7969347E58?tab=contract)
+- Multicall: [0x9fd9D9528c8373D990a1380B9414bDE179007A35](http://localhost/address/0x9fd9D9528c8373D990a1380B9414bDE179007A35?tab=contract)
 
 ## Testnet 8
 

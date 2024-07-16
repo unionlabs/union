@@ -5,8 +5,9 @@ use chain_utils::{
     keyring::ChainKeyring,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
+use futures::{stream, FutureExt, StreamExt};
 use queue_msg::{data, effect, fetch, noop, seq, wait, Op};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Proto},
     google::protobuf::any::{mk_any, IntoAny},
@@ -70,20 +71,58 @@ where
         .with(|signer| {
             let msg = msg.clone();
 
+            // TODO: Figure out a way to thread this value through
+            let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
+
             async move {
-                let msgs = process_msgs(msg, signer, mk_create_client_states, mk_client_message);
+                let mut msgs =
+                    process_msgs(msg, signer, mk_create_client_states, mk_client_message);
+
+                let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
+                    .then(|(idx, msg)| {
+                        let type_url = msg.type_url.clone();
+                        hc.simulate_tx(signer, [msg], memo.clone())
+                            .map(move |res| (idx, type_url, res))
+                    })
+                    .collect::<Vec<(usize, String, Result<_, _>)>>()
+                    .await;
+
+                // iterate backwards such that when we remove items from msgs, we don't shift the relative indices
+                for (idx, type_url, simulation_result) in simulation_results.into_iter().rev() {
+                    match simulation_result {
+                        Ok((_, _, gas_info)) => {
+                            debug!(
+                                msg = %type_url,
+                                %idx,
+                                gas_wanted = %gas_info.gas_wanted,
+                                gas_used = %gas_info.gas_used,
+                                "individual message simulation successful"
+                            )
+                        }
+                        Err(error) => {
+                            error!(
+                                %error,
+                                msg = %type_url,
+                                %idx,
+                                "individual message simulation failed"
+                            );
+
+                            msgs.remove(idx);
+                        }
+                    }
+                }
+
+                if msgs.is_empty() {
+                    info!(
+                        "no messages remaining to submit after filtering out failed transactions"
+                    );
+                    return Ok(());
+                }
 
                 let batch_size = msgs.len();
                 let msg_names = msgs.iter().map(|x| x.type_url.clone()).collect::<Vec<_>>();
 
-                let (tx_hash, gas_used) = hc
-                    .broadcast_tx_commit(
-                        signer,
-                        msgs,
-                        // TODO: Figure out a way to thread this value through
-                        format!("Voyager {}", env!("CARGO_PKG_VERSION")),
-                    )
-                    .await?;
+                let (tx_hash, gas_used) = hc.broadcast_tx_commit(signer, msgs, memo).await?;
 
                 info!(
                     %tx_hash,
@@ -91,6 +130,7 @@ where
                     batch.size = %batch_size,
                     "submitted cosmos transaction"
                 );
+
                 for msg in msg_names {
                     info!(%tx_hash, %msg, "cosmos tx");
                 }
