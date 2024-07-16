@@ -187,23 +187,23 @@
         in
         {
           site = {
-            x86_64-linux = { 
-              site = self.packages.x86_64-linux.site; 
-              app = self.packages.x86_64-linux.app; 
+            x86_64-linux = {
+              site = self.packages.x86_64-linux.site;
+              app = self.packages.x86_64-linux.app;
             };
-            aarch64-linux = { 
-              site = self.packages.aarch64-linux.site; 
-              app = self.packages.aarch64-linux.app; 
+            aarch64-linux = {
+              site = self.packages.aarch64-linux.site;
+              app = self.packages.aarch64-linux.app;
             };
           };
           herculesCI = { branch, ... }: {
             onPush.default = {
               outputs = {
-                packages.x86_64-linux = 
+                packages.x86_64-linux =
                   filterAttrs isCi self.packages.x86_64-linux;
-                checks.x86_64-linux = 
+                checks.x86_64-linux =
                   filterAttrs isCi self.checks.x86_64-linux;
-                devShells.x86_64-linux = 
+                devShells.x86_64-linux =
                   filterAttrs isCi self.devShells.x86_64-linux;
               };
             };
