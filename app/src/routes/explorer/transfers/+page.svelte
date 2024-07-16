@@ -1,206 +1,293 @@
 <script lang="ts">
-import {
-  flexRender,
-  type ColumnDef,
-  getCoreRowModel,
-  type TableOptions,
-  createSvelteTable,
-  getFilteredRowModel,
-  getPaginationRowModel
-} from "@tanstack/svelte-table"
-import {
-  currentUtcTimestamp,
-  toPrettyDateTimeFormat,
-  currentUtcTimestampWithBuffer
-} from "$lib/utilities/date.ts"
-import {
-  paginatedTransfers,
-  decodeTimestampSearchParam,
-  encodeTimestampSearchParam
-} from "./paginated-transfers.ts"
-import { onDestroy } from "svelte"
-import { page } from "$app/stores"
-import { cn } from "$lib/utilities/shadcn.ts"
-import { derived, writable } from "svelte/store"
-import * as Table from "$lib/components/ui/table"
-import { goto, onNavigate } from "$app/navigation"
-import { showUnsupported } from "$lib/stores/user.ts"
-import DevTools from "$lib/components/dev-tools.svelte"
-import * as Card from "$lib/components/ui/card/index.ts"
-import CellAssets from "../(components)/cell-assets.svelte"
-import LoadingLogo from "$lib/components/loading-logo.svelte"
-import type { UnwrapReadable } from "$lib/utilities/types.ts"
-import CellDuration from "../(components)/cell-duration-text.svelte"
-import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
-import { ExplorerPagination } from "../(components)/explorer-pagination/index.ts"
-import { createQuery, keepPreviousData, useQueryClient } from "@tanstack/svelte-query"
+  import {
+    flexRender,
+    type ColumnDef,
+    getCoreRowModel,
+    type TableOptions,
+    createSvelteTable,
+    getFilteredRowModel,
+    getPaginationRowModel,
+  } from '@tanstack/svelte-table'
+  import {
+    currentUtcTimestamp,
+    toPrettyDateTimeFormat,
+    currentUtcTimestampWithBuffer,
+  } from '$lib/utilities/date.ts'
+  import {
+    latestTransfers,
+    paginatedTransfers,
+    decodeTimestampSearchParam,
+    encodeTimestampSearchParam,
+    transfersAfterOrAtTimestamp,
+    transfersBeforeOrAtTimestamp,
+  } from './paginated-transfers.ts'
+  import { onDestroy } from 'svelte'
+  import { page } from '$app/stores'
+  import { cn } from '$lib/utilities/shadcn.ts'
+  import { derived, writable, type Writable } from 'svelte/store'
+  import * as Table from '$lib/components/ui/table'
+  import { goto, onNavigate } from '$app/navigation'
+  import { showUnsupported } from '$lib/stores/user.ts'
+  import DevTools from '$lib/components/dev-tools.svelte'
+  import * as Card from '$lib/components/ui/card/index.ts'
+  import CellAssets from '../(components)/cell-assets.svelte'
+  import LoadingLogo from '$lib/components/loading-logo.svelte'
+  import type { UnwrapReadable } from '$lib/utilities/types.ts'
+  import CellDuration from '../(components)/cell-duration-text.svelte'
+  import CellOriginTransfer from '../(components)/cell-origin-transfer.svelte'
+  import { ExplorerPagination } from '../(components)/explorer-pagination/index.ts'
+  import { createQuery, keepPreviousData, useQueryClient } from '@tanstack/svelte-query'
 
-/**
- * the timestamp is the source of trust, used as query key and url search param
- */
+  /**
+   * the timestamp is the source of trust, used as query key and url search param
+   */
 
-const QUERY_LIMIT = 12 // 12 x 2 = 24
-const REFRESH_INTERVAL = 5_000 // 5 seconds
+  const QUERY_LIMIT = 8
+  const REFRESH_INTERVAL = 5_000 // 5 seconds
 
-// minus 1 to account for the 0-based index
-let timestamp = writable(currentUtcTimestamp())
-$: console.info($timestamp)
-let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
+  // minus 1 to account for the 0-based index
+  let timestamp = writable(
+    $page.url.searchParams.has('timestamp')
+      ? decodeTimestampSearchParam(`${$page.url.searchParams.get('timestamp')}`)
+      : currentUtcTimestampWithBuffer(),
+  )
+  // $: console.info($timestamp)
 
-const queryClient = useQueryClient()
+  let CURSOR: Writable<'ON_OR_BEFORE' | 'ON_OR_AFTER'> = writable('ON_OR_BEFORE')
+  let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
 
-/**
- * only happens when:
- *  1. it is the first query on initial page load,
- *  2. the user clicks on the `current` button which resets to current and live data
- */
-let REFETCH_ENABLED = true
+  // CURSOR.subscribe(value => {
+  //   if (value === 'ON_OR_AFTER') {
+  //     pagination.update(p => ({ ...p, pageIndex: 0 }))
+  //   } else {
+  //     pagination.update(p => ({ ...p, pageIndex: 0 }))
+  //   }
+  // })
+  const queryClient = useQueryClient()
 
-let transfers = createQuery(
-  derived([timestamp, pagination], ([$timestamp, $pagination]) => ({
-    queryKey: ["transfers", $timestamp],
-    staleTime: REFRESH_INTERVAL,
-    refetchOnMount: REFETCH_ENABLED,
-    placeholderData: keepPreviousData,
-    refetchOnReconnect: REFETCH_ENABLED,
-    refetchInterval: () => (REFETCH_ENABLED ? REFRESH_INTERVAL : false),
-    queryFn: async () => await paginatedTransfers({ limit: QUERY_LIMIT, timestamp: $timestamp })
-  }))
-)
+  /**
+   * only happens when:
+   *  1. it is the first query on initial page load,
+   *  2. the user clicks on the `current` button which resets to current and live data
+   */
+  let REFETCH_ENABLED = writable($page.url.searchParams.has('timestamp') ? false : true)
 
-let queryStatus: "pending" | "done" =
-  $transfers.status === "pending" || $transfers.fetchStatus === "fetching" ? "pending" : "done"
-$: queryStatus =
-  $transfers.status === "pending" || $transfers.fetchStatus === "fetching" ? "pending" : "done"
+  let liveTransfers = createQuery(
+    derived(REFETCH_ENABLED, $REFETCH_ENABLED => ({
+      queryKey: ['transfers', 'live'],
+      // staleTime: () => ($REFETCH_ENABLED ? 0 : REFRESH_INTERVAL),
+      staleTime: Number.POSITIVE_INFINITY,
+      enabled: $REFETCH_ENABLED,
+      refetchOnMount: $REFETCH_ENABLED,
+      placeholderData: keepPreviousData,
+      refetchOnReconnect: $REFETCH_ENABLED,
+      refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
+      queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT }),
+    })),
+  )
 
-let transfersDataStore = derived(transfers, $transfers => $transfers?.data?.transfers ?? [])
+  $: console.info({ $CURSOR })
 
-$: hasNewer = $transfers?.data?.hasNewer
-$: hasOlder = $transfers?.data?.hasOlder
+  let transfers = createQuery(
+    derived([timestamp, REFETCH_ENABLED, CURSOR], ([$timestamp, $REFETCH_ENABLED, $CURSOR]) => ({
+      queryKey: ['transfers', $timestamp],
+      staleTime: Number.POSITIVE_INFINITY,
+      // staleTime: ($REFETCH_ENABLED ? REFRESH_INTERVAL : 0),
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      enabled: () => $REFETCH_ENABLED === false,
+      placeholderData: keepPreviousData,
+      // refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
+      queryFn: async () => {
+        // console.info($CURSOR)
+        return $CURSOR === 'ON_OR_AFTER'
+          ? await transfersAfterOrAtTimestamp({
+              timestamp: $timestamp,
+              limit: QUERY_LIMIT,
+            })
+          : await transfersBeforeOrAtTimestamp({
+              timestamp: $timestamp,
+              limit: QUERY_LIMIT,
+            })
+      },
+    })),
+  )
 
-$: if (!hasNewer) {
-  REFETCH_ENABLED = true
-  pagination.update(p => ({ ...p, pageIndex: 0 }))
-}
+  // $: console.info(JSON.stringify($transfers.data, undefined, 2))
 
-type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
+  let queryStatus: 'pending' | 'done' = $REFETCH_ENABLED
+    ? $liveTransfers.status === 'pending' || $liveTransfers.fetchStatus === 'fetching'
+      ? 'pending'
+      : 'done'
+    : $transfers.status === 'pending' || $transfers.fetchStatus === 'fetching'
+      ? 'pending'
+      : 'done'
+  $: queryStatus = $REFETCH_ENABLED
+    ? $liveTransfers.status === 'pending' || $liveTransfers.fetchStatus === 'fetching'
+      ? 'pending'
+      : 'done'
+    : $transfers.status === 'pending' || $transfers.fetchStatus === 'fetching'
+      ? 'pending'
+      : 'done'
 
-let timestamps = derived(transfers, $transfers => ({
-  oldestTimestamp: $transfers?.data?.oldestTimestamp ?? "",
-  latestTimestamp: $transfers?.data?.latestTimestamp ?? ""
-}))
+  let transfersDataStore = derived(
+    [liveTransfers, transfers, REFETCH_ENABLED],
+    ([$liveTransfers, $transfers, $REFETCH_ENABLED]) => {
+      if ($REFETCH_ENABLED) return $liveTransfers?.data?.transfers ?? []
+      return $transfers?.data?.transfers ?? []
+    },
+  )
 
-const unsubscribeTimestamps = timestamps.subscribe(value => {
-  if (REFETCH_ENABLED && value.latestTimestamp) {
-    goto(encodeTimestampSearchParam(value.latestTimestamp), {
-      noScroll: true,
-      keepFocus: true,
-      replaceState: true
-    })
+  // $: console.info($transfersDataStore)
+
+  // $: hasNewer = $transfers?.data?.hasNewer
+  // $: hasOlder = $transfers?.data?.hasOlder
+
+  // $: if (!hasNewer) {
+  //   $REFETCH_ENABLED = true
+  //   pagination.update(p => ({ ...p, pageIndex: 0 }))
+  // }
+
+  type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
+
+  let timestamps = derived(
+    [liveTransfers, transfers, REFETCH_ENABLED],
+    ([$liveTransfers, $transfers, $REFETCH_ENABLED]) =>
+      $REFETCH_ENABLED
+        ? {
+            oldestTimestamp: $liveTransfers?.data?.oldestTimestamp ?? '',
+            latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? '',
+          }
+        : {
+            oldestTimestamp: $transfers?.data?.oldestTimestamp ?? '',
+            latestTimestamp: $transfers?.data?.latestTimestamp ?? '',
+          },
+  )
+
+  // const unsubscribeTimestamps = timestamps.subscribe(value => {
+  //   if ($REFETCH_ENABLED) return
+  //   if (value.latestTimestamp) {
+  //     goto(encodeTimestampSearchParam(value.latestTimestamp), {
+  //       noScroll: true,
+  //       keepFocus: true,
+  //       replaceState: true,
+  //     })
+  //   }
+  // })
+
+  // const unsubscribeTimestamp = timestamp.subscribe(value => {
+  //   if($page.url.searchParams.has('timestamp')) return
+  //   goto(encodeTimestampSearchParam(value))
+  // })
+
+  const columns: Array<ColumnDef<DataRow>> = [
+    {
+      accessorKey: 'source',
+      header: () => 'Source',
+      size: 200,
+      minSize: 200,
+      maxSize: 200,
+      cell: info => flexRender(CellOriginTransfer, { value: info.getValue() }),
+    },
+    {
+      accessorKey: 'destination',
+      header: () => 'Destination',
+      size: 200,
+      minSize: 200,
+      maxSize: 200,
+      cell: info => flexRender(CellOriginTransfer, { value: info.getValue() }),
+    },
+    {
+      accessorKey: 'assets',
+      header: () => 'Assets',
+      size: 200,
+      minSize: 200,
+      maxSize: 200,
+      cell: info => flexRender(CellAssets, { value: info.getValue() }),
+    },
+    {
+      accessorKey: 'timestamp',
+      header: () => 'Time',
+      size: 200,
+      minSize: 200,
+      maxSize: 200,
+      // @ts-ignore
+      cell: info => toPrettyDateTimeFormat(info.getValue(), { local: true }),
+    },
+  ]
+
+  const options = writable<TableOptions<DataRow>>({
+    data: $transfersDataStore,
+    columns,
+    enableHiding: true,
+    enableFilters: true,
+    rowCount: $transfersDataStore?.length,
+    autoResetPageIndex: true,
+    enableColumnFilters: true,
+    enableColumnResizing: true,
+    enableMultiRowSelection: true,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    manualPagination: true,
+    getPaginationRowModel: getPaginationRowModel(),
+    state: {
+      pagination: $pagination,
+    },
+    // debugTable: import.meta.env.MODE === 'development',
+  })
+
+  const rerender = () => {
+    options.update(options => ({
+      ...options,
+      data: $transfersDataStore,
+    }))
   }
-})
 
-const unsubscribeTimestamp = timestamp.subscribe(value => {
-  goto(encodeTimestampSearchParam(value))
-})
+  const table = createSvelteTable(options)
+  const rows = derived(table, $t => $t.getRowModel().rows)
 
-const columns: Array<ColumnDef<DataRow>> = [
-  {
-    accessorKey: "source",
-    header: () => "Source",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
-    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
-  },
-  {
-    accessorKey: "destination",
-    header: () => "Destination",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
-    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
-  },
-  {
-    accessorKey: "assets",
-    header: () => "Assets",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
-    cell: info => flexRender(CellAssets, { value: info.getValue() })
-  },
-  {
-    accessorKey: "timestamp",
-    header: () => "Time",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
+  function hasInfoProperty(assets: Object) {
+    const info = Object?.keys(assets).at(0)
+    if (!info) return false
     // @ts-ignore
-    cell: info => toPrettyDateTimeFormat(info.getValue())
+    if (!assets[info]) return false
+    // @ts-ignore
+    return Object.hasOwn(assets[info], 'info')
   }
-]
 
-const options = writable<TableOptions<DataRow>>({
-  data: $transfersDataStore,
-  columns,
-  enableHiding: true,
-  enableFilters: true,
-  rowCount: $transfersDataStore?.length,
-  autoResetPageIndex: true,
-  enableColumnFilters: true,
-  enableColumnResizing: true,
-  enableMultiRowSelection: true,
-  getCoreRowModel: getCoreRowModel(),
-  getFilteredRowModel: getFilteredRowModel(),
-  manualPagination: true,
-  getPaginationRowModel: getPaginationRowModel(),
-  state: {
-    pagination: $pagination
-  },
-  debugTable: import.meta.env.MODE === "development"
-})
+  $: if ($transfersDataStore) rerender()
 
-const rerender = () => {
-  options.update(options => ({
-    ...options,
-    data: $transfersDataStore
-  }))
-}
+  onDestroy(() => {
+    // unsubscribeTimestamp()
+    // unsubscribeTimestamps()
+  })
 
-const table = createSvelteTable(options)
-const rows = derived(table, $t => $t.getRowModel().rows)
-
-function hasInfoProperty(assets: Object) {
-  const info = Object?.keys(assets).at(0)
-  if (!info) return false
-  // @ts-ignore
-  if (!assets[info]) return false
-  // @ts-ignore
-  return Object.hasOwn(assets[info], "info")
-}
-
-$: if ($transfersDataStore) rerender()
-
-onDestroy(() => {
-  unsubscribeTimestamp()
-  unsubscribeTimestamps()
-})
-
-/**
- * this can be removed if desired
- * it is only used to clear the cache when navigating away from the page `/explorer/transfers`
- */
-onNavigate(navigation => {
-  if (navigation.to?.route.id !== "/explorer/transfers") {
-    queryClient.removeQueries({ queryKey: ["transfers"] })
-  }
-})
+  /**
+   * this can be removed if desired
+   * it is only used to clear the cache when navigating away from the page `/explorer/transfers`
+   */
+  onNavigate(navigation => {
+    if (navigation.to?.route.id !== '/explorer/transfers') {
+      queryClient.removeQueries({ queryKey: ['transfers'] })
+    }
+  })
 </script>
 
 <DevTools>
-  {`${JSON.stringify({ REFETCH_ENABLED, idx: $pagination.pageIndex }, undefined, 2)}`}
+  <pre>{JSON.stringify(
+      {
+        idx: $pagination.pageIndex,
+        $REFETCH_ENABLED,
+        firstHash: $transfersDataStore?.[0]?.hash,
+        firstTimestamp: $transfersDataStore?.[0]?.timestamp,
+        lastHash: $transfersDataStore?.[$transfersDataStore?.length - 1]?.hash,
+        lastTimestamp: $transfersDataStore?.[$transfersDataStore?.length - 1]?.timestamp,
+      },
+      undefined,
+      2,
+    )}</pre>
 </DevTools>
-{#if $transfers?.data}
+{#if $transfersDataStore?.length}
   <Card.Root>
     <Table.Root>
       <Table.Header class="tabular-nums">
@@ -230,13 +317,19 @@ onNavigate(navigation => {
               index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
               isSupported ? '' : 'opacity-50',
             )}
-            on:click={() => goto(`/explorer/transfers/${$rows[row.index].original.hash}`)}
           >
             {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              <Table.Cell class="tabular-nums">
-                <svelte:component
-                  this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-                />
+              {@const hash = $rows[row.index].original.hash}
+              <Table.Cell class="tabular-nums" headers="header">
+                <a
+                  title={hash}
+                  href={`/explorer/transfers/${hash}`}
+                  class="size-full min-size-full w-full"
+                >
+                  <svelte:component
+                    this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  />
+                </a>
               </Table.Cell>
             {/each}
           </Table.Row>
@@ -244,36 +337,42 @@ onNavigate(navigation => {
       </Table.Body>
     </Table.Root>
   </Card.Root>
-{:else if $transfers.isLoading}
+{:else if queryStatus === 'pending'}
   <LoadingLogo class="size-16" />
 {/if}
 <div class="flex sm:justify-start sm:flex-row flex-col justify-center gap-1">
   <ExplorerPagination
     class={cn('w-min')}
+    rowsPerPage={20}
     totalTableRows={20}
     status={queryStatus}
-    currentPage={$pagination.pageIndex}
-    bind:rowsPerPage={$pagination.pageSize}
     onOlderPage={page => {
       timestamp.set($timestamps.oldestTimestamp)
+      goto(encodeTimestampSearchParam($timestamps.oldestTimestamp), { replaceState: true })
       pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
-      REFETCH_ENABLED = false
+      $REFETCH_ENABLED = false
+      // CURSOR = 'ON_OR_BEFORE'
+      // CURSOR.set('ON_OR_BEFORE')
+      CURSOR.update(c => 'ON_OR_BEFORE')
     }}
     onCurrentClick={() => {
-      timestamp.set(currentUtcTimestamp())
+      // timestamp.set(currentUtcTimestamp())
       pagination.update(p => ({ ...p, pageIndex: 0 }))
-      REFETCH_ENABLED = true
+      $REFETCH_ENABLED = true
+      goto('/explorer/transfers', { replaceState: true })
     }}
-    newerDisabled={!hasNewer}
     onNewerPage={() => {
       timestamp.set($timestamps.latestTimestamp)
+      console.info($timestamp, $timestamps.latestTimestamp)
+      goto(encodeTimestampSearchParam($timestamps.latestTimestamp), { replaceState: true })
       pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
-      REFETCH_ENABLED = false
+      $REFETCH_ENABLED = false
+      // CURSOR = 'ON_OR_AFTER'
+      // CURSOR.set('ON_OR_AFTER')
+      CURSOR.update(c => 'ON_OR_AFTER')
     }}
   />
   <time class="font-normal text-md uppercase font-mono w-full my-auto sm:text-left text-center">
-    {$page.url.searchParams.get('timestamp')
-      ? decodeTimestampSearchParam(`${$page.url.searchParams.get('timestamp')}`)
-      : $timestamp}
+    {$timestamps.latestTimestamp ? toPrettyDateTimeFormat($timestamps.latestTimestamp) : ''}
   </time>
 </div>

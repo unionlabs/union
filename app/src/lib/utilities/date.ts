@@ -42,7 +42,7 @@ export const currentUtcTimestampWithBuffer = ({
   Temporal.Now.plainDateTimeISO("UTC").add({ milliseconds }).toString()
 
 // yyyy-mm-dd hh:mm:ss
-export function toPrettyDateTimeFormat(timestamp: string) {
+export function toPrettyDateTimeFormat(timestamp: string, { local = false } = {}) {
   const date = new Date(timestamp)
   return date.toISOString().replaceAll("T", " ").split(".").at(0)
 }

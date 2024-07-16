@@ -7,7 +7,10 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
   ) {
     newer: v0_transfers(
       limit: $limit,
-      order_by: { source_timestamp: asc },
+      order_by: [
+        { source_timestamp: asc },
+        { source_transaction_hash: asc }
+      ],
       where: { source_timestamp: { _gt: $timestamp } },
     ) {
       sender
@@ -22,8 +25,63 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
     }
     older: v0_transfers(
       limit: $limit,
-      order_by: { source_timestamp: desc },
+      order_by: [
+        { source_timestamp: desc },
+        { source_transaction_hash: desc }
+      ],
       where: { source_timestamp: { _lt: $timestamp } },
+    ) {
+      sender
+      source_timestamp
+      source_transaction_hash
+      source_chain { chain_id display_name }
+      receiver
+      destination_timestamp
+      destination_transaction_hash
+      destination_chain { chain_id display_name }
+      assets
+    }
+  }
+`)
+
+export const transfersBeforeOrAtTimestampQueryDocument = graphql(/* GraphQL */ `
+  query TransfersBeforeOrAtTimestampQuery(
+    $limit: Int!,
+    $timestamp: timestamptz!
+  ) {
+    data: v0_transfers(
+      limit: $limit,
+      order_by: [
+        { source_timestamp: desc },
+        { source_transaction_hash: desc }
+      ],
+      where: { source_timestamp: { _lte: $timestamp } },
+    ) {
+      sender
+      source_timestamp
+      source_transaction_hash
+      source_chain { chain_id display_name }
+      receiver
+      destination_timestamp
+      destination_transaction_hash
+      destination_chain { chain_id display_name }
+      assets
+    }
+  }  
+`)
+
+export const transfersAfterOrAtTimestampQueryDocument = graphql(/* GraphQL */ `
+  query TransfersAfterOrAtTimestampQuery(
+    $limit: Int!,
+    $timestamp: timestamptz!
+  ) {
+    data: v0_transfers(
+      limit: $limit,
+      order_by: [
+        { source_timestamp: asc },
+        { source_transaction_hash: asc }
+      ],
+      where: { source_timestamp: { _gte: $timestamp } },
     ) {
       sender
       source_timestamp
@@ -41,10 +99,13 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
 export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
   query TransfersQuery(
     $limit: Int! = 8,
-  ) @cached(ttl: 5) {
+  ) {
     data: v0_transfers(
       limit: $limit,
-      order_by: { source_timestamp: desc },
+      order_by: [
+        { source_timestamp: desc },
+        { source_transaction_hash: desc }
+      ],
     ) {
       sender
       source_timestamp
