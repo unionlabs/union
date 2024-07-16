@@ -16,6 +16,7 @@ pub struct Config {
     pub label: String,
     pub urls: Vec<url::Url>,
     pub chain_id: String,
+    pub start_height: Option<i64>,
 }
 
 impl Config {
@@ -35,7 +36,7 @@ impl Config {
         let client = Client::new(self.urls[0].as_str()).await?;
         let querier = Bera::new(client);
 
-        Ok(Indexer::new(chain_id, db, querier))
+        Ok(Indexer::new(chain_id, db, querier, self.start_height))
     }
 }
 

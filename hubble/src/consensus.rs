@@ -7,6 +7,7 @@ pub struct Indexer<T: Querier + Send + Sync> {
     chain_id: ChainId,
     pool: sqlx::PgPool,
     querier: T,
+    start_height: Option<i64>,
 }
 
 pub trait Querier {
@@ -14,17 +15,22 @@ pub trait Querier {
 }
 
 impl<T: Querier + Send + Sync> Indexer<T> {
-    pub fn new(chain_id: ChainId, pool: sqlx::PgPool, querier: T) -> Self {
+    pub fn new(chain_id: ChainId, pool: sqlx::PgPool, querier: T, start_height: Option<i64>) -> Self {
         Self {
             chain_id,
             pool,
             querier,
+            start_height
         }
     }
 
     pub async fn index(&self) -> Result<()> {
-        let mut consensus_height =
-            crate::postgres::get_max_consensus_height(&self.pool, self.chain_id).await? + 1;
+        let start_height = self.start_height.unwrap_or_default();
+        let mut consensus_height = std::cmp::max(
+            crate::postgres::get_max_consensus_height(&self.pool, self.chain_id).await? + 1,
+            start_height,
+        );
+
         loop {
             info!("mapping consensus height {consensus_height}");
 
