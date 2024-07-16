@@ -38,7 +38,7 @@
       } else
         { }));
 
-      galoisd-image = pkgs.dockerTools.buildImage {
+      galoisd-image = pkgs.dockerTools.buildLayeredImage {
         name = "${self'.packages.galoisd.name}-image";
         copyToRoot = pkgs.buildEnv {
           name = "image-root";
@@ -132,6 +132,19 @@
               --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
           '';
         });
+
+      galoisd-testnet-image = pkgs.dockerTools.buildImage {
+        name = "${self'.packages.galoisd.name}-testnet-image";
+        copyToRoot = pkgs.buildEnv {
+          name = "image-root";
+          paths = [ pkgs.coreutils-full pkgs.cacert ];
+          pathsToLink = [ "/bin" ];
+        };
+        config = {
+          Entrypoint = [ (pkgs.lib.getExe self'.packages.galoisd-testnet-standalone) ];
+          Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+        };
+      };
     };
   };
 

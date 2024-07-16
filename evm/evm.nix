@@ -465,6 +465,36 @@
         forge = wrappedForge;
 
         evm-sources = evmSources;
+
+        evm-deployer-image =
+          let forge-deploy =
+                pkgs.writeShellApplication {
+                  name = "forge-deploy";
+                  runtimeInputs = [ self'.packages.forge ];
+                  text = ''
+                    mkdir -p /evm
+                    cd /evm
+                    cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+                    cp --no-preserve=mode -r ${self'.packages.evm-sources}/* .
+                    FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:DeployDeployerAndIBC -vvv --rpc-url "$RPC_URL" --broadcast
+                  '';
+                };
+          in
+            pkgs.dockerTools.buildLayeredImage {
+              name = "evm-deployer-image";
+              contents = [
+                pkgs.coreutils
+                pkgs.curl
+                pkgs.jq
+                forge-deploy
+                self'.packages.evm-sources
+                self'.packages.evm-contracts
+              ];
+              config = {
+                Entrypoint = [ (pkgs.lib.getExe forge-deploy) ];
+                Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+              };
+            };
       } //
       builtins.listToAttrs (
         builtins.map
