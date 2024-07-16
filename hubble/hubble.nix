@@ -89,14 +89,13 @@
               text =
                 let
                   indexersJson = builtins.toJSON cfg.indexers;
-                  datastore = if cfg.datastore-method == "hasura" then ''--hasura-admin-secret "$(head -n 1 ${cfg.api-key-file})" --url ${cfg.url}'' else ''--database-url "$(head -n 1 ${cfg.api-key-file})"'';
                 in
                 ''
                   ${pkgs.lib.getExe cfg.package}  \
-                    ${datastore} \
+                    --database-url "$(head -n 1 ${cfg.api-key-file})" \
                     --log-format ${cfg.log-format} \
                     --metrics-addr ${cfg.metrics-addr} \
-                    --indexers '${indexersJson}'
+                    --indexers '${indexersJson}' 
                 '';
             };
           in
