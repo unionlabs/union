@@ -234,7 +234,7 @@ replace (
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
 	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0-20240429153234-e1e6da7e4ead
-	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240716070347-b224834b049a
+	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240502084625-d5a6c7b15fdc
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
 	// TODO(aeryz): `go mod tidy` upgrades this to `0.52.x` although the major version is `0` which means any update can be breaking.
 	// This upgrade breaks `cosmos-sdk`, hence I had to pin it to 0.47. Leaving a todo to myself to update this when it's possible.

@@ -792,7 +792,7 @@ github.com/cosmos/ibc-go/modules/light-clients/08-wasm/client/cli
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types
-# github.com/cosmos/ibc-go/v8 v8.0.0 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240716070347-b224834b049a
+# github.com/cosmos/ibc-go/v8 v8.0.0 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240502084625-d5a6c7b15fdc
 ## explicit; go 1.21
 github.com/cosmos/ibc-go/v8/internal/logging
 github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts
@@ -1811,7 +1811,7 @@ sigs.k8s.io/yaml/goyaml.v2
 # github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 # github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
 # github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0-20240429153234-e1e6da7e4ead
-# github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240716070347-b224834b049a
+# github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240502084625-d5a6c7b15fdc
 # github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
 # github.com/prometheus/common => github.com/prometheus/common v0.47.0
 # github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

@@ -98,10 +98,10 @@ func (k Keeper) ConnOpenTry(
 		return "", err
 	}
 
-	// expectedConsensusState, err := k.consensusHost.GetSelfConsensusState(ctx, consensusHeight)
-	// if err != nil {
-	// 	return "", errorsmod.Wrapf(err, "self consensus state not found for height %s", consensusHeight.String())
-	// }
+	expectedConsensusState, err := k.consensusHost.GetSelfConsensusState(ctx, consensusHeight)
+	if err != nil {
+		return "", errorsmod.Wrapf(err, "self consensus state not found for height %s", consensusHeight.String())
+	}
 
 	// expectedConnection defines Chain A's ConnectionEnd
 	// NOTE: chain A's counterparty is chain B (i.e where this code is executed)
@@ -134,13 +134,12 @@ func (k Keeper) ConnOpenTry(
 		return "", err
 	}
 
-	// NOTE(aeryz): this is removed since it heavilty restricts which clients we can use
-	// // Check that ChainA stored the correct ConsensusState of chainB at the given consensusHeight
-	// if err := k.VerifyClientConsensusState(
-	// 	ctx, connection, proofHeight, consensusHeight, consensusProof, expectedConsensusState,
-	// ); err != nil {
-	// 	return "", err
-	// }
+	// Check that ChainA stored the correct ConsensusState of chainB at the given consensusHeight
+	if err := k.VerifyClientConsensusState(
+		ctx, connection, proofHeight, consensusHeight, consensusProof, expectedConsensusState,
+	); err != nil {
+		return "", err
+	}
 
 	// store connection in chainB state
 	if err := k.addConnectionToClient(ctx, clientID, connectionID); err != nil {
@@ -211,10 +210,10 @@ func (k Keeper) ConnOpenAck(
 	}
 
 	// Retrieve chainA's consensus state at consensusheight
-	// expectedConsensusState, err := k.consensusHost.GetSelfConsensusState(ctx, consensusHeight)
-	// if err != nil {
-	// 	return errorsmod.Wrapf(err, "self consensus state not found for height %s", consensusHeight.String())
-	// }
+	expectedConsensusState, err := k.consensusHost.GetSelfConsensusState(ctx, consensusHeight)
+	if err != nil {
+		return errorsmod.Wrapf(err, "self consensus state not found for height %s", consensusHeight.String())
+	}
 
 	prefix := k.GetCommitmentPrefix()
 	expectedCounterparty := types.NewCounterparty(connection.ClientId, connectionID, commitmenttypes.NewMerklePrefix(prefix.Bytes()))
@@ -233,13 +232,12 @@ func (k Keeper) ConnOpenAck(
 		return err
 	}
 
-	// NOTE(aeryz): this is removed since it heavilty restricts which clients we can use
-	// // Ensure that ChainB has stored the correct ConsensusState for chainA at the consensusHeight
-	// if err := k.VerifyClientConsensusState(
-	// 	ctx, connection, proofHeight, consensusHeight, consensusProof, expectedConsensusState,
-	// ); err != nil {
-	// 	return err
-	// }
+	// Ensure that ChainB has stored the correct ConsensusState for chainA at the consensusHeight
+	if err := k.VerifyClientConsensusState(
+		ctx, connection, proofHeight, consensusHeight, consensusProof, expectedConsensusState,
+	); err != nil {
+		return err
+	}
 
 	k.Logger(ctx).Info("connection state updated", "connection-id", connectionID, "previous-state", types.INIT.String(), "new-state", types.OPEN.String())
 
