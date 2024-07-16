@@ -69,7 +69,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
   client={queryClient}
   persistOptions={{ persister: localStoragePersister }}
 >
-  <ModeWatcher />
+  <ModeWatcher defaultMode="system" />
   <Toaster position="bottom-right" />
 
   <Header />
