@@ -57,7 +57,6 @@ async fn main() -> color_eyre::eyre::Result<()> {
                 .map_err(Into::into)
         });
     }
-
     args.indexers.clone().into_iter().for_each(|indexer| {
         let db: sqlx::Pool<sqlx::Postgres> = db.clone();
         set.spawn(async move {

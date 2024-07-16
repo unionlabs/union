@@ -8,19 +8,22 @@ use tendermint_rpc::{
     error::ErrorDetail,
     query::{Condition, Query},
     response_error::Code,
-    Client, Error, HttpClient, Order,
+    Error, HttpClient, Order,
 };
 use time::OffsetDateTime;
 use tokio::time::{sleep, Duration};
 use tracing::{debug, info, info_span, warn, Instrument};
 use url::Url;
 
-use crate::postgres::{self, ChainId};
+use crate::{
+    postgres::{self, ChainId},
+    tm::client::RaceClient,
+};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub label: String,
-    pub url: Url,
+    pub urls: Vec<Url>,
     /// The GRPC endpoint of this chain. required for `--fetch-client-chain-ids`.
     pub grpc_url: Option<String>,
 
@@ -58,7 +61,13 @@ impl Config {
         for<'a> &'a DB:
             sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
     {
-        let client = HttpClient::new(self.url.as_str()).unwrap();
+        let client = RaceClient::new(
+            self.urls
+                .into_iter()
+                .map(|url| HttpClient::new(url.as_str()).unwrap())
+                .collect(),
+        );
+
         let mode = self.mode;
         let (chain_id, height) = if self.harden {
             (|| fetch_meta(&client, &pool).inspect_err(|e| debug!(?e, "error fetching meta")))
@@ -137,7 +146,10 @@ impl Config {
 
 /// fetches the ChainId for a given `HttpClient`, among with the `Height` up until we have indexed that chain in the DB.
 /// If we have not yet indexed any block for that chain, then Height = None.
-async fn fetch_meta<DB>(client: &HttpClient, pool: &DB) -> Result<(ChainId, Option<Height>), Report>
+async fn fetch_meta<DB>(
+    client: &RaceClient<HttpClient>,
+    pool: &DB,
+) -> Result<(ChainId, Option<Height>), Report>
 where
     for<'a> &'a DB:
         sqlx::Acquire<'a, Database = Postgres> + sqlx::Executor<'a, Database = Postgres>,
@@ -193,7 +205,7 @@ pub fn is_height_exceeded_error(err: &Error) -> bool {
 /// # Errors
 /// On IO errors when communicating with the node.
 async fn should_fast_sync_up_to(
-    client: &HttpClient,
+    client: &RaceClient<HttpClient>,
     batch_size: u32,
     current: Height,
 ) -> Result<Option<Height>, Report> {
@@ -220,7 +232,7 @@ async fn should_fast_sync_up_to(
 ///
 /// Will return None if the node had no new blocks and no inserts were made, otherwise it will returns the last height inserted.
 async fn fetch_and_insert_blocks(
-    client: &HttpClient,
+    client: &RaceClient<HttpClient>,
     tx: &mut sqlx::Transaction<'_, Postgres>,
     chain_id: ChainId,
     batch_size: u32,
@@ -370,7 +382,7 @@ async fn fetch_and_insert_blocks(
 }
 
 async fn fetch_transactions_for_block(
-    client: &HttpClient,
+    client: &RaceClient<HttpClient>,
     height: Height,
     expected: impl Into<Option<usize>>,
 ) -> Result<Vec<tendermint_rpc::endpoint::tx::Response>, Report> {
