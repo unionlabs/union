@@ -26,9 +26,9 @@ const netlifyAdapter = netlify({
 
 export default defineConfig({
   site: SITE_URL,
+  trailingSlash: "ignore",
   output: PUBLIC_ENV === "preview" ? "server" : "static",
   adapter: PUBLIC_ENV === "preview" ? netlifyAdapter : undefined,
-  trailingSlash: "ignore",
   redirects: {
     "/feed": "/rss.xml",
     "/logo": "/union-logo.zip"

@@ -1,8 +1,8 @@
 ---
-import LanderSection from '#/components/LanderSection.astro'
-import type { ISbRichtext, SbBlokData } from '@storyblok/astro'
-import { storyblokEditable, renderRichText } from '@storyblok/astro'
-import SocialsSection from '#/components/sections/SocialsSection.astro'
+import LanderSection from "#/components/LanderSection.astro"
+import type { ISbRichtext, SbBlokData } from "@storyblok/astro"
+import { storyblokEditable, renderRichText } from "@storyblok/astro"
+import SocialsSection from "#/components/sections/SocialsSection.astro"
 
 interface Props {
   blok: SbBlokData & {
@@ -17,11 +17,8 @@ interface Props {
 }
 
 const { blok } = Astro.props
-console.info(blok)
-
-const content = renderRichText(blok.content)
-
 const blokDate = new Date(blok.date)
+const content = renderRichText(blok.content)
 ---
 
 <article {...storyblokEditable(blok)}>
