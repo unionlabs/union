@@ -1,6 +1,7 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Tooltip from "$lib/components/ui/tooltip"
+import { truncate } from "$lib/utilities/format.ts";
 
 export let value: {
   chain_display_name: string
@@ -18,7 +19,7 @@ export let value: {
   <div>{value.channel_id}</div>
   <Tooltip.Root>
     <Tooltip.Trigger>
-      <div class="max-w-[200px] truncate">{value.port_id}</div>
+      <div class="text-start">{truncate(value.port_id, 10)}</div>
     </Tooltip.Trigger>
     <Tooltip.Content>
       {value.port_id}
