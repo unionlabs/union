@@ -187,17 +187,57 @@
         in
         {
           site = {
-            x86_64-linux = { site = self.packages.x86_64-linux.site; app = self.packages.x86_64-linux.app; };
-            aarch64-linux = { site = self.packages.aarch64-linux.site; app = self.packages.aarch64-linux.app; };
+            x86_64-linux = { 
+              site = self.packages.x86_64-linux.site; 
+              app = self.packages.x86_64-linux.app; 
+            };
+            aarch64-linux = { 
+              site = self.packages.aarch64-linux.site; 
+              app = self.packages.aarch64-linux.app; 
+            };
           };
-          herculesCI = {
+          herculesCI = { branch, ... }: {
             onPush.default = {
               outputs = {
-                packages.x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
-                checks.x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
-                devShells.x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
+                packages.x86_64-linux = 
+                  filterAttrs isCi self.packages.x86_64-linux;
+                checks.x86_64-linux = 
+                  filterAttrs isCi self.checks.x86_64-linux;
+                devShells.x86_64-linux = 
+                  filterAttrs isCi self.devShells.x86_64-linux;
               };
             };
+            onSchedule =
+              if (branch == "main")
+              then
+                {
+                  nightly = {
+                    # 4 AM CET, generally low traffic time for runners
+                    when = {
+                      hour = [ 4 ];
+                    };
+                    outputs = {
+                      checks.x86_64-linux.ensure-blocks =
+                        self.checks.x86_64-linux.ensure-blocks;
+                      checks.x86_64-linux.epoch-completes =
+                        self.checks.x86_64-linux.epoch-completes;
+                      checks.x86_64-linux.forced-set-rotation =
+                        self.checks.x86_64-linux.forced-set-rotation;
+                      checks.x86_64-linux.sepolia-runs =
+                        self.checks.x86_64-linux.sepolia-runs;
+                      checks.x86_64-linux.union-runs =
+                        self.checks.x86_64-linux.union-runs;
+                      checks.x86_64-linux.upgrade-from-genesis =
+                        self.checks.x86_64-linux.upgrade-from-genesis;
+                      checks.x86_64-linux.upgrade-with-tokenfactory-state =
+                        self.checks.x86_64-linux.upgrade-with-tokenfactory-state;
+                      checks.x86_64-linux.virtualisation-works =
+                        self.checks.x86_64-linux.virtualisation-works;
+                    };
+                  };
+                }
+              else
+                { };
           };
         };
       systems =
@@ -278,7 +318,6 @@
         }:
         let
           mkCi = import ./tools/mkCi.nix { inherit pkgs; };
-          mkUnpack = import ./tools/mkUnpack.nix { inherit pkgs; };
           dbg = value:
             builtins.trace
               (
