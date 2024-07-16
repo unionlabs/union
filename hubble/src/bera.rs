@@ -60,7 +60,11 @@ impl Bera {
             .abci_query(
                 "store/beacon/key",
                 data,
-                Some((slot - 1).try_into().unwrap()),
+                Some(
+                    (slot - 1)
+                        .try_into()
+                        .expect("converting slot to abci_query slot"),
+                ),
                 prove,
             )
             .await?;

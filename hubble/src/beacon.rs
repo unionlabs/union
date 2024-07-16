@@ -184,7 +184,7 @@ mod block {
         #[serde(rename = "voluntary_exits")]
         pub voluntary_exits: Vec<Value>,
         #[serde(rename = "sync_aggregate")]
-        pub sync_aggregate: SyncAggregate,
+        pub sync_aggregate: Option<SyncAggregate>,
         #[serde(rename = "execution_payload")]
         pub execution_payload: ExecutionPayload,
         #[serde(rename = "bls_to_execution_changes")]
