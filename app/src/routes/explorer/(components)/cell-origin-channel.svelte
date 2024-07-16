@@ -1,7 +1,7 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Tooltip from "$lib/components/ui/tooltip"
-import { truncate } from "$lib/utilities/format.ts";
+import { truncate } from "$lib/utilities/format.ts"
 
 export let value: {
   chain_display_name: string
@@ -12,7 +12,7 @@ export let value: {
 }
 </script>
 
-<div  class={cn("flex flex-col ")} {...$$restProps}>
+<div {...$$restProps} class={cn("flex flex-col ")}>
   <div class="font-bold">{value.chain_display_name}</div>
   <div>{value.chain_id}</div>
   <div>{value.connection_id}</div>
