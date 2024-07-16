@@ -29,7 +29,7 @@ import { routes } from "$lib/components/navigation/index.ts"
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
       {@const currentRoute = $page.route.id?.split('/')[1] === path.split('/').at(1)}
       <Button
-        size="default"
+        size="sm"
         href={path}
         variant="link"
         class={cn(
