@@ -41,19 +41,19 @@ let buttons = [
         'flex flex-col text-xs gap-px h-16 w-full',
         isCurrentPage(button.href)
           ? 'bg-foreground text-primary-foreground hover:bg-foreground hover:text-primary-foreground'
-          : 'bg-transparent',
+          : 'bg-transparent dark:hover:text-black',
       )}
     >
       <svelte:component
         this={button.icon}
-        class="size-7 min-w-6 dark:hover:text-white text-zinc-accent"
+        class="size-7 min-w-6 text-zinc-accent"
       />
       <div>{button.displayName}</div>
     </Button>
   {/each}
 
   <Button
-    class="flex flex-col text-xs gap-px h-16 w-full"
+    class="flex flex-col text-xs gap-px h-16 w-full dark:hover:text-black"
     size="icon"
     name="wallet"
     type="button"
