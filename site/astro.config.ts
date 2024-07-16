@@ -1,38 +1,47 @@
 import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
+import netlify from "@astrojs/netlify"
 import storyblok from "@storyblok/astro"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
-import { defineConfig } from "astro/config"
+import basicSsl from "@vitejs/plugin-basic-ssl"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightLinksValidator from "starlight-links-validator"
+import { defineConfig, type ViteUserConfig } from "astro/config"
 
 const SITE_URL = "https://union.build"
 
 const {
-  NODE_ENV,
   PORT = 4321,
   STORYBLOK_TOKEN,
+  PUBLIC_ENV = "production",
   ENABLE_DEV_TOOLBAR = "false"
 } = loadEnv(process.env.NODE_ENV, process.cwd(), "")
 
+const netlifyAdapter = netlify({
+  imageCDN: true, // default: true
+  edgeMiddleware: false // default: false
+})
+
 export default defineConfig({
   site: SITE_URL,
-  output: "static",
+  output: PUBLIC_ENV === "preview" ? "server" : "static",
+  adapter: PUBLIC_ENV === "preview" ? netlifyAdapter : undefined,
   trailingSlash: "ignore",
-  server: () => ({ port: Number(PORT) }),
   redirects: {
     "/feed": "/rss.xml",
     "/logo": "/union-logo.zip"
   },
+  vite: viteConfiguration(),
   markdown: markdownConfiguration,
+  server: _ => ({ port: Number(PORT) }),
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   integrations: [
     storyblok({
-      bridge: true, // default: true
-      // livePreview: false, // only works in SSR mode
+      bridge: true,
       accessToken: STORYBLOK_TOKEN,
+      livePreview: PUBLIC_ENV === "preview",
       components: {
         // Add your components here
         page: "storyblok/page",
@@ -40,8 +49,8 @@ export default defineConfig({
         blogPostList: "storyblok/blog-post-list"
       },
       apiOptions: {
-        // Choose your Storyblok space region
-        region: "eu" // optional,  or 'eu' (default)
+        region: "eu",
+        cache: { clear: "auto", type: "memory" }
       }
     }),
     starlight({
@@ -156,11 +165,24 @@ export default defineConfig({
     }),
     svelte(),
     sitemap()
-  ],
-  vite: {
+  ]
+})
+
+function viteConfiguration(): ViteUserConfig {
+  const baseConfiguration = {
     optimizeDeps: {
       exclude: ["echarts"]
     },
     assetsInclude: ["**/*.splinecode"]
-  }
-})
+  } satisfies ViteUserConfig
+
+  const previewConfiguration = {
+    plugins: [basicSsl()],
+    server: { https: {} }
+  } satisfies ViteUserConfig
+  return Object.assign(
+    baseConfiguration,
+    // don't include 'preview' configuration in development/production
+    PUBLIC_ENV === "preview" ? previewConfiguration : {}
+  )
+}

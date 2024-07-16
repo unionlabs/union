@@ -1,0 +1,49 @@
+---
+import Layout from '#/layouts/Layout.astro'
+import { useStoryblokApi } from '@storyblok/astro'
+import StoryblokComponent from '@storyblok/astro/StoryblokComponent.astro'
+
+const sbApi = useStoryblokApi()
+
+export async function getStaticPaths() {
+  const sbApi = useStoryblokApi()
+
+  const { data } = await sbApi.get('cdn/stories', {
+    content_type: 'blogPost',
+    version: import.meta.env.DEV ? 'draft' : 'published',
+  })
+
+  const stories = Object.values(data.stories) as Array<any>
+
+  return stories.map(story => ({ params: { slug: story.slug } }))
+}
+
+const { slug } = Astro.params
+const { data } = await sbApi.get(`cdn/stories/blog/${slug}`, {
+  version: import.meta.env.DEV ? 'draft' : 'published',
+})
+
+const story = data.story as {
+  name: string
+  content: {
+    date: string
+    title: string
+    author: string
+    description: string
+    cover: {
+      filename: string // the url of the image
+    }
+  }
+}
+---
+
+<Layout
+  url={Astro.url.href}
+  title={story.content.title}
+  image={story.content.cover.filename}
+  description={story.content.description}
+>
+  <StoryblokComponent blok={data.story.content} />
+</Layout>
+
+<script is:inline type="module" src="/scripts/anchor-targets.js"></script>

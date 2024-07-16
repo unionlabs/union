@@ -1,0 +1,121 @@
+---
+import LanderSection from '#/components/LanderSection.astro'
+import type { ISbRichtext, SbBlokData } from '@storyblok/astro'
+import { storyblokEditable, renderRichText } from '@storyblok/astro'
+import SocialsSection from '#/components/sections/SocialsSection.astro'
+
+interface Props {
+  blok: SbBlokData & {
+    content: ISbRichtext
+    date: string
+    author: string
+    description: string
+    conver: {
+      filename: string // the url of the image
+    }
+  }
+}
+
+const { blok } = Astro.props
+console.info(blok)
+
+const content = renderRichText(blok.content)
+
+const blokDate = new Date(blok.date)
+---
+
+<article {...storyblokEditable(blok)}>
+  <LanderSection gradient="to-t">
+    <div class="max-w-2xl self-center md:text-lg text-gray-300">
+      <div class="text-lg">
+        <time class="text-lg text-gray-400" datetime={blokDate.toISOString()}>
+          {
+            blokDate.toLocaleDateString('fr-CA', {
+              year: 'numeric',
+              month: 'numeric',
+              day: 'numeric',
+            })
+          }
+        </time>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
+        {blok.title}
+      </h1>
+      <p>
+        <em>{blok.description}</em>
+      </p>
+      <Fragment set:html={content} />
+    </div>
+  </LanderSection>
+  <SocialsSection />
+</article>
+
+<style is:inline lang="postcss">
+  h1 {
+    color: white !important; 
+  }
+  img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px !important;
+  }
+
+  p > a, ul a:not(header a), ol a:not(header a) {
+    text-decoration: underline;
+    text-decoration-color: #A0ECFD !important;
+    transition: border-bottom-color 0.2s ease-in-out;
+    color: #A0ECFD !important;
+  }
+
+  p, q, blockquote {
+    margin-bottom: 1rem;
+    color: #D1D5DB;
+  }
+
+
+  p > a:hover {
+    color: #A0ECFD;
+  }
+
+  ol, ul {
+    li {
+      color: #D1D5DB;
+    }
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 640px) {
+    p > a:hover {
+      color: #A0ECFD;
+      text-decoration-color: #fff !important;
+    }
+    h2 {
+      font-size: 1.5rem !important;
+    }
+  }
+
+  h2,h3,h4,h5 {
+    margin-top: 2rem;
+    margin-bottom: 0rem;
+    font-size: 1.87rem;
+    color: #ffffff;
+  }
+
+  h2::after, h3::after, h4::after, h5::after {
+    content: '#';
+    color: #ffffff;
+    margin-left: 0.5rem;
+    font-size: 1.5rem;
+    position: relative;
+    visibility: hidden;
+  }
+
+  h2:hover::after, h3:hover::after, h4:hover::after, h5:hover::after {
+    visibility: visible;
+  }
+
+  *::selection {
+    background-color: #A0ECFD;
+    color: #000;
+  }
+</style>
