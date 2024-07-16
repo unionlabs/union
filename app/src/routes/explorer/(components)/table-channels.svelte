@@ -21,13 +21,15 @@ let channels = createQuery({
         chain_display_name: channel.source?.display_name,
         chain_id: channel.from_chain_id ?? "unknown",
         connection_id: channel.to_connection_id ?? "unknown",
-        channel_id: channel.from_channel_id ?? "unknown"
+        channel_id: channel.from_channel_id ?? "unknown",
+        port_id: channel.from_port_id ?? "unknown"
       },
       destination: {
         chain_display_name: channel.destination?.display_name,
         chain_id: channel.to_chain_id ?? "unknown",
         connection_id: channel.to_connection_id ?? "unknown",
-        channel_id: channel.to_channel_id ?? "unknown"
+        channel_id: channel.to_channel_id ?? "unknown",
+        port_id: channel.to_port_id ?? "unknown"
       },
       status: channel.status
     }))
