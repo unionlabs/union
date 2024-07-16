@@ -103,7 +103,9 @@ func goVersion() string {
 	return "UNKNOWN"
 }
 
-// XGoogHeader is for use by the Google Cloud Libraries only.
+// XGoogHeader is for use by the Google Cloud Libraries only. See package
+// [github.com/googleapis/gax-go/v2/callctx] for help setting/retrieving
+// request/response headers.
 //
 // XGoogHeader formats key-value pairs.
 // The resulting string is suitable for x-goog-api-client header.
@@ -125,7 +127,8 @@ func XGoogHeader(keyval ...string) string {
 }
 
 // InsertMetadataIntoOutgoingContext is for use by the Google Cloud Libraries
-// only.
+// only. See package [github.com/googleapis/gax-go/v2/callctx] for help
+// setting/retrieving request/response headers.
 //
 // InsertMetadataIntoOutgoingContext returns a new context that merges the
 // provided keyvals metadata pairs with any existing metadata/headers in the
@@ -137,7 +140,9 @@ func InsertMetadataIntoOutgoingContext(ctx context.Context, keyvals ...string) c
 	return metadata.NewOutgoingContext(ctx, insertMetadata(ctx, keyvals...))
 }
 
-// BuildHeaders is for use by the Google Cloud Libraries only.
+// BuildHeaders is for use by the Google Cloud Libraries only. See package
+// [github.com/googleapis/gax-go/v2/callctx] for help setting/retrieving
+// request/response headers.
 //
 // BuildHeaders returns a new http.Header that merges the provided
 // keyvals header pairs with any existing metadata/headers in the provided

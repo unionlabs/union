@@ -15,10 +15,10 @@ cannot find package "github.com/hashicorp/hcl/tree/hcl1" in any of:
 ```
 
 As the error message suggests, Go tries to look up dependencies in `GOPATH` mode (as it's commonly called) from the `GOPATH`.
-Viper opted to use [Go Modules](https://github.com/golang/go/wiki/Modules) to manage its dependencies. While in many cases the two methods are interchangeable, once a dependency releases new (major) versions, `GOPATH` mode is no longer able to decide which version to use, so it'll either use one that's already present or pick a version (usually the `master` branch).
+Viper opted to use [Go Modules](https://go.dev/wiki/Modules) to manage its dependencies. While in many cases the two methods are interchangeable, once a dependency releases new (major) versions, `GOPATH` mode is no longer able to decide which version to use, so it'll either use one that's already present or pick a version (usually the `master` branch).
 
 The solution is easy: switch to using Go Modules.
-Please refer to the [wiki](https://github.com/golang/go/wiki/Modules) on how to do that.
+Please refer to the [wiki](https://go.dev/wiki/Modules) on how to do that.
 
 **tl;dr* `export GO111MODULE=on`
 

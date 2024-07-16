@@ -11,14 +11,11 @@ It provides a set of APIs to directly measure performance and behavior of your s
 
 ## Project Status
 
-| Signal  | Status     |
-|---------|------------|
-| Traces  | Stable     |
-| Metrics | Stable     |
-| Logs    | Design [1] |
-
-- [1]: Currently the logs signal development is in a design phase ([#4696](https://github.com/open-telemetry/opentelemetry-go/issues/4696)).
-   No Logs Pull Requests are currently being accepted.
+| Signal  | Status             |
+|---------|--------------------|
+| Traces  | Stable             |
+| Metrics | Stable             |
+| Logs    | In development[^1] |
 
 Progress and status specific to this repository is tracked in our
 [project boards](https://github.com/open-telemetry/opentelemetry-go/projects)
@@ -27,6 +24,8 @@ and
 
 Project versioning information and stability guarantees can be found in the
 [versioning documentation](VERSIONING.md).
+
+[^1]: https://github.com/orgs/open-telemetry/projects/43
 
 ### Compatibility
 
@@ -50,14 +49,19 @@ Currently, this project supports the following environments.
 
 | OS      | Go Version | Architecture |
 |---------|------------|--------------|
+| Ubuntu  | 1.22       | amd64        |
 | Ubuntu  | 1.21       | amd64        |
 | Ubuntu  | 1.20       | amd64        |
+| Ubuntu  | 1.22       | 386          |
 | Ubuntu  | 1.21       | 386          |
 | Ubuntu  | 1.20       | 386          |
+| MacOS   | 1.22       | amd64        |
 | MacOS   | 1.21       | amd64        |
 | MacOS   | 1.20       | amd64        |
+| Windows | 1.22       | amd64        |
 | Windows | 1.21       | amd64        |
 | Windows | 1.20       | amd64        |
+| Windows | 1.22       | 386          |
 | Windows | 1.21       | 386          |
 | Windows | 1.20       | 386          |
 

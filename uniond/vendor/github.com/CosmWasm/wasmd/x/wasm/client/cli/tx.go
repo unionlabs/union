@@ -112,7 +112,6 @@ func parseStoreCodeArgs(file, sender string, flags *flag.FlagSet) (types.MsgStor
 	// gzip the wasm file
 	if ioutils.IsWasm(wasm) {
 		wasm, err = ioutils.GzipIt(wasm)
-
 		if err != nil {
 			return types.MsgStoreCode{}, err
 		}
@@ -358,7 +357,7 @@ func parseInstantiateArgs(rawCodeID, initMsg string, kr keyring.Keyring, sender 
 	return &msg, msg.ValidateBasic()
 }
 
-// ExecuteContractCmd will instantiate a contract from previously uploaded code.
+// ExecuteContractCmd will execute a contract method using its address and JSON-encoded arguments.
 func ExecuteContractCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "execute [contract_addr_bech32] [json_encoded_send_args] --amount [coins,optional]",

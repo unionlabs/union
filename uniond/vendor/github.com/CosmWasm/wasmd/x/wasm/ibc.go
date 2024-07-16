@@ -5,6 +5,7 @@ import (
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/v2/types"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
@@ -17,6 +18,12 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/types"
 )
+
+// DefaultMaxIBCCallbackGas is the default value of maximum gas that an IBC callback can use.
+// If the callback uses more gas, it will be out of gas and the contract state changes will be reverted,
+// but the transaction will be committed.
+// Pass this to the callbacks middleware or choose a custom value.
+const DefaultMaxIBCCallbackGas = uint64(1_000_000)
 
 var _ porttypes.IBCModule = IBCHandler{}
 
@@ -278,7 +285,7 @@ func (i IBCHandler) OnRecvPacket(
 	msg := wasmvmtypes.IBCPacketReceiveMsg{Packet: newIBCPacket(packet), Relayer: relayer.String()}
 	ack, err := i.keeper.OnRecvPacket(ctx.WithEventManager(em), contractAddr, msg)
 	if err != nil {
-		ack = channeltypes.NewErrorAcknowledgement(err)
+		ack = CreateErrorAcknowledgement(err)
 		// the state gets reverted, so we drop all captured events
 	} else if ack == nil || ack.Success() {
 		// emit all contract and submessage events on success
@@ -326,22 +333,146 @@ func (i IBCHandler) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet,
 	return nil
 }
 
-func newIBCPacket(packet channeltypes.Packet) wasmvmtypes.IBCPacket {
-	timeout := wasmvmtypes.IBCTimeout{
-		Timestamp: packet.TimeoutTimestamp,
+// IBCSendPacketCallback implements the IBC Callbacks ContractKeeper interface
+// see https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-008-app-caller-cbs.md#contractkeeper
+func (i IBCHandler) IBCSendPacketCallback(
+	cachedCtx sdk.Context,
+	sourcePort string,
+	sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	packetData []byte,
+	contractAddress,
+	packetSenderAddress string,
+) error {
+	_, err := validateSender(contractAddress, packetSenderAddress)
+	if err != nil {
+		return err
 	}
-	if !packet.TimeoutHeight.IsZero() {
+
+	// no-op, since we are not interested in this callback
+	return nil
+}
+
+// IBCOnAcknowledgementPacketCallback implements the IBC Callbacks ContractKeeper interface
+// see https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-008-app-caller-cbs.md#contractkeeper
+func (i IBCHandler) IBCOnAcknowledgementPacketCallback(
+	cachedCtx sdk.Context,
+	packet channeltypes.Packet,
+	acknowledgement []byte,
+	relayer sdk.AccAddress,
+	contractAddress,
+	packetSenderAddress string,
+) error {
+	contractAddr, err := validateSender(contractAddress, packetSenderAddress)
+	if err != nil {
+		return err
+	}
+
+	msg := wasmvmtypes.IBCSourceCallbackMsg{
+		Acknowledgement: &wasmvmtypes.IBCAckCallbackMsg{
+			Acknowledgement: wasmvmtypes.IBCAcknowledgement{Data: acknowledgement},
+			OriginalPacket:  newIBCPacket(packet),
+			Relayer:         relayer.String(),
+		},
+	}
+	err = i.keeper.IBCSourceCallback(cachedCtx, contractAddr, msg)
+	if err != nil {
+		return errorsmod.Wrap(err, "on source chain callback ack")
+	}
+
+	return nil
+}
+
+// IBCOnTimeoutPacketCallback implements the IBC Callbacks ContractKeeper interface
+// see https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-008-app-caller-cbs.md#contractkeeper
+func (i IBCHandler) IBCOnTimeoutPacketCallback(
+	cachedCtx sdk.Context,
+	packet channeltypes.Packet,
+	relayer sdk.AccAddress,
+	contractAddress,
+	packetSenderAddress string,
+) error {
+	contractAddr, err := validateSender(contractAddress, packetSenderAddress)
+	if err != nil {
+		return err
+	}
+
+	msg := wasmvmtypes.IBCSourceCallbackMsg{
+		Timeout: &wasmvmtypes.IBCTimeoutCallbackMsg{
+			Packet:  newIBCPacket(packet),
+			Relayer: relayer.String(),
+		},
+	}
+	err = i.keeper.IBCSourceCallback(cachedCtx, contractAddr, msg)
+	if err != nil {
+		return errorsmod.Wrap(err, "on source chain callback timeout")
+	}
+	return nil
+}
+
+// IBCReceivePacketCallback implements the IBC Callbacks ContractKeeper interface
+// see https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-008-app-caller-cbs.md#contractkeeper
+func (i IBCHandler) IBCReceivePacketCallback(
+	cachedCtx sdk.Context,
+	packet ibcexported.PacketI,
+	ack ibcexported.Acknowledgement,
+	contractAddress string,
+) error {
+	// sender validation makes no sense here, as the receiver is never the sender
+	contractAddr, err := sdk.AccAddressFromBech32(contractAddress)
+	if err != nil {
+		return err
+	}
+
+	msg := wasmvmtypes.IBCDestinationCallbackMsg{
+		Ack:    wasmvmtypes.IBCAcknowledgement{Data: ack.Acknowledgement()},
+		Packet: newIBCPacket(packet),
+	}
+
+	err = i.keeper.IBCDestinationCallback(cachedCtx, contractAddr, msg)
+	if err != nil {
+		return errorsmod.Wrap(err, "on destination chain callback")
+	}
+
+	return nil
+}
+
+func validateSender(contractAddr, senderAddr string) (sdk.AccAddress, error) {
+	contractAddress, err := sdk.AccAddressFromBech32(contractAddr)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "contract address")
+	}
+	senderAddress, err := sdk.AccAddressFromBech32(senderAddr)
+	if err != nil {
+		return nil, errorsmod.Wrapf(err, "packet sender address")
+	}
+
+	// We only allow the contract that sent the message to receive source chain callbacks for it.
+	if !contractAddress.Equals(senderAddress) {
+		return nil, errorsmod.Wrapf(types.ErrExecuteFailed, "contract address %s does not match packet sender %s", contractAddr, senderAddress)
+	}
+
+	return contractAddress, nil
+}
+
+func newIBCPacket(packet ibcexported.PacketI) wasmvmtypes.IBCPacket {
+	timeout := wasmvmtypes.IBCTimeout{
+		Timestamp: packet.GetTimeoutTimestamp(),
+	}
+	timeoutHeight := packet.GetTimeoutHeight()
+	if !timeoutHeight.IsZero() {
 		timeout.Block = &wasmvmtypes.IBCTimeoutBlock{
-			Height:   packet.TimeoutHeight.RevisionHeight,
-			Revision: packet.TimeoutHeight.RevisionNumber,
+			Height:   timeoutHeight.GetRevisionHeight(),
+			Revision: timeoutHeight.GetRevisionNumber(),
 		}
 	}
 
 	return wasmvmtypes.IBCPacket{
-		Data:     packet.Data,
-		Src:      wasmvmtypes.IBCEndpoint{ChannelID: packet.SourceChannel, PortID: packet.SourcePort},
-		Dest:     wasmvmtypes.IBCEndpoint{ChannelID: packet.DestinationChannel, PortID: packet.DestinationPort},
-		Sequence: packet.Sequence,
+		Data:     packet.GetData(),
+		Src:      wasmvmtypes.IBCEndpoint{ChannelID: packet.GetSourceChannel(), PortID: packet.GetSourcePort()},
+		Dest:     wasmvmtypes.IBCEndpoint{ChannelID: packet.GetDestChannel(), PortID: packet.GetDestPort()},
+		Sequence: packet.GetSequence(),
 		Timeout:  timeout,
 	}
 }
@@ -357,4 +488,13 @@ func ValidateChannelParams(channelID string) error {
 		return errorsmod.Wrapf(types.ErrMaxIBCChannels, "channel sequence %d is greater than max allowed transfer channels %d", channelSequence, math.MaxUint32)
 	}
 	return nil
+}
+
+// CreateErrorAcknowledgement turns an error into an error acknowledgement.
+//
+// This function is x/wasm specific and might include the full error text in the future
+// as we gain confidence that it is deterministic. Don't use it in other contexts.
+// See also https://github.com/CosmWasm/wasmd/issues/1740.
+func CreateErrorAcknowledgement(err error) ibcexported.Acknowledgement {
+	return channeltypes.NewErrorAcknowledgementWithCodespace(err)
 }

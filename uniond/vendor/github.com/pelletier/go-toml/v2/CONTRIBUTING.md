@@ -165,25 +165,22 @@ Checklist:
 
 ### New release
 
-1. Decide on the next version number. Use semver.
-2. Generate release notes using [`gh`][gh]. Example:
+1. Decide on the next version number. Use semver. Review commits since last
+   version to assess.
+2. Tag release. For example:
 ```
-$ gh api -X POST \
-  -F tag_name='v2.0.0-beta.5' \
-  -F target_commitish='v2' \
-  -F previous_tag_name='v2.0.0-beta.4' \
-  --jq '.body' \
-  repos/pelletier/go-toml/releases/generate-notes
+git checkout v2
+git pull
+git tag v2.2.0
+git push --tags
 ```
-3. Look for "Other changes". That would indicate a pull request not labeled
-   properly. Tweak labels and pull request titles until changelog looks good for
-   users.
-4. [Draft new release][new-release].
-5. Fill tag and target with the same value used to generate the changelog.
-6. Set title to the new tag value.
-7. Paste the generated changelog.
-8. Check "create discussion", in the "Releases" category.
-9. Check pre-release if new version is an alpha or beta.
+3. CI automatically builds a draft Github release. Review it and edit as
+   necessary. Look for "Other changes". That would indicate a pull request not
+   labeled properly. Tweak labels and pull request titles until changelog looks
+   good for users.
+4. Check "create discussion" box, in the "Releases" category.
+5. If new version is an alpha or beta only, check pre-release box.
+
 
 [issues-tracker]: https://github.com/pelletier/go-toml/issues
 [bug-report]: https://github.com/pelletier/go-toml/issues/new?template=bug_report.md

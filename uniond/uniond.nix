@@ -1,7 +1,7 @@
 { inputs, ... }: {
   perSystem = { pkgs, self', crane, system, ensureAtRepositoryRoot, nix-filter, gitRev, uniondBundleVersions, goPkgs, mkCi, ... }:
     let
-      libwasmvm = self'.packages.libwasmvm-2_0_1;
+      libwasmvm = self'.packages.libwasmvm-2_1_0;
       CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -I${self'.packages.bls-eth.src}/bls/include -O";
       CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib -L${self'.packages.bls-eth}/lib -s -w";
       CGO_LD_TEST_FLAGS = "-L${self'.packages.bls-eth}/lib";

@@ -63,7 +63,7 @@ func SetTracerProvider(tp trace.TracerProvider) {
 			// to itself.
 			Error(
 				errors.New("no delegate configured in tracer provider"),
-				"Setting tracer provider to it's current value. No delegate will be configured",
+				"Setting tracer provider to its current value. No delegate will be configured",
 			)
 			return
 		}
@@ -92,7 +92,7 @@ func SetTextMapPropagator(p propagation.TextMapPropagator) {
 			// delegate to itself.
 			Error(
 				errors.New("no delegate configured in text map propagator"),
-				"Setting text map propagator to it's current value. No delegate will be configured",
+				"Setting text map propagator to its current value. No delegate will be configured",
 			)
 			return
 		}
@@ -123,7 +123,7 @@ func SetMeterProvider(mp metric.MeterProvider) {
 			// to itself.
 			Error(
 				errors.New("no delegate configured in meter provider"),
-				"Setting meter provider to it's current value. No delegate will be configured",
+				"Setting meter provider to its current value. No delegate will be configured",
 			)
 			return
 		}

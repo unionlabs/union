@@ -275,18 +275,24 @@ func (b *BucketHandle) detectDefaultGoogleAccessID() (string, error) {
 		err := json.Unmarshal(b.c.creds.JSON, &sa)
 		if err != nil {
 			returnErr = err
-		} else if sa.CredType == "impersonated_service_account" {
-			start, end := strings.LastIndex(sa.SAImpersonationURL, "/"), strings.LastIndex(sa.SAImpersonationURL, ":")
-
-			if end <= start {
-				returnErr = errors.New("error parsing impersonated service account credentials")
-			} else {
-				return sa.SAImpersonationURL[start+1 : end], nil
-			}
-		} else if sa.CredType == "service_account" && sa.ClientEmail != "" {
-			return sa.ClientEmail, nil
 		} else {
-			returnErr = errors.New("unable to parse credentials; only service_account and impersonated_service_account credentials are supported")
+			switch sa.CredType {
+			case "impersonated_service_account", "external_account":
+				start, end := strings.LastIndex(sa.SAImpersonationURL, "/"), strings.LastIndex(sa.SAImpersonationURL, ":")
+
+				if end <= start {
+					returnErr = errors.New("error parsing external or impersonated service account credentials")
+				} else {
+					return sa.SAImpersonationURL[start+1 : end], nil
+				}
+			case "service_account":
+				if sa.ClientEmail != "" {
+					return sa.ClientEmail, nil
+				}
+				returnErr = errors.New("empty service account client email")
+			default:
+				returnErr = errors.New("unable to parse credentials; only service_account, external_account and impersonated_service_account credentials are supported")
+			}
 		}
 	}
 
@@ -302,7 +308,7 @@ func (b *BucketHandle) detectDefaultGoogleAccessID() (string, error) {
 		}
 
 	}
-	return "", fmt.Errorf("storage: unable to detect default GoogleAccessID: %w. Please provide the GoogleAccessID or use a supported means for autodetecting it (see https://pkg.go.dev/cloud.google.com/go/storage#hdr-Credential_requirements_for_[BucketHandle.SignedURL]_and_[BucketHandle.GenerateSignedPostPolicyV4])", returnErr)
+	return "", fmt.Errorf("storage: unable to detect default GoogleAccessID: %w. Please provide the GoogleAccessID or use a supported means for autodetecting it (see https://pkg.go.dev/cloud.google.com/go/storage#hdr-Credential_requirements_for_signing)", returnErr)
 }
 
 func (b *BucketHandle) defaultSignBytesFunc(email string) func([]byte) ([]byte, error) {

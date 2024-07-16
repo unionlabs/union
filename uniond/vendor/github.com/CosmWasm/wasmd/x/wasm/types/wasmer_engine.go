@@ -233,6 +233,36 @@ type WasmEngine interface {
 		deserCost wasmvmtypes.UFraction,
 	) (*wasmvmtypes.IBCBasicResult, uint64, error)
 
+	// IBCSourceCallback is available on IBC-callbacks-enabled contracts and is called when an
+	// IBC-callbacks-enabled IBC message previously sent by this contract is either acknowledged or
+	// times out.
+	IBCSourceCallback(
+		checksum wasmvm.Checksum,
+		env wasmvmtypes.Env,
+		msg wasmvmtypes.IBCSourceCallbackMsg,
+		store wasmvm.KVStore,
+		goapi wasmvm.GoAPI,
+		querier wasmvm.Querier,
+		gasMeter wasmvm.GasMeter,
+		gasLimit uint64,
+		deserCost wasmvmtypes.UFraction,
+	) (*wasmvmtypes.IBCBasicResult, uint64, error)
+
+	// IBCSourceCallback is available on IBC-callbacks-enabled contracts and is called when an
+	// IBC-callbacks-enabled IBC message previously sent by this contract is either acknowledged or
+	// times out.
+	IBCDestinationCallback(
+		checksum wasmvm.Checksum,
+		env wasmvmtypes.Env,
+		msg wasmvmtypes.IBCDestinationCallbackMsg,
+		store wasmvm.KVStore,
+		goapi wasmvm.GoAPI,
+		querier wasmvm.Querier,
+		gasMeter wasmvm.GasMeter,
+		gasLimit uint64,
+		deserCost wasmvmtypes.UFraction,
+	) (*wasmvmtypes.IBCBasicResult, uint64, error)
+
 	// Pin pins a code to an in-memory cache, such that is
 	// always loaded quickly when executed.
 	// Pin is idempotent.
@@ -246,6 +276,9 @@ type WasmEngine interface {
 
 	// GetMetrics some internal metrics for monitoring purposes.
 	GetMetrics() (*wasmvmtypes.Metrics, error)
+
+	// GetPinnedMetrics some internal metrics about pinned contracts for monitoring purposes.
+	GetPinnedMetrics() (*wasmvmtypes.PinnedMetrics, error)
 }
 
 var _ wasmvm.KVStore = &StoreAdapter{}

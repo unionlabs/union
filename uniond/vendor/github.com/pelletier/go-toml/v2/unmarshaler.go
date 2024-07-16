@@ -35,6 +35,9 @@ type Decoder struct {
 
 	// global settings
 	strict bool
+
+	// toggles unmarshaler interface
+	unmarshalerInterface bool
 }
 
 // NewDecoder creates a new Decoder that will read from r.
@@ -51,6 +54,24 @@ func NewDecoder(r io.Reader) *Decoder {
 // description of the missing fields.
 func (d *Decoder) DisallowUnknownFields() *Decoder {
 	d.strict = true
+	return d
+}
+
+// EnableUnmarshalerInterface allows to enable unmarshaler interface.
+//
+// With this feature enabled, types implementing the unstable/Unmarshaler
+// interface can be decoded from any structure of the document. It allows types
+// that don't have a straightfoward TOML representation to provide their own
+// decoding logic.
+//
+// Currently, types can only decode from a single value. Tables and array tables
+// are not supported.
+//
+// *Unstable:* This method does not follow the compatibility guarantees of
+// semver. It can be changed or removed without a new major version being
+// issued.
+func (d *Decoder) EnableUnmarshalerInterface() *Decoder {
+	d.unmarshalerInterface = true
 	return d
 }
 
@@ -108,6 +129,7 @@ func (d *Decoder) Decode(v interface{}) error {
 		strict: strict{
 			Enabled: d.strict,
 		},
+		unmarshalerInterface: d.unmarshalerInterface,
 	}
 
 	return dec.FromParser(v)
@@ -127,6 +149,10 @@ type decoder struct {
 	// need to be skipped.
 	skipUntilTable bool
 
+	// Flag indicating that the current array/slice table should be cleared because
+	// it is the first encounter of an array table.
+	clearArrayTable bool
+
 	// Tracks position in Go arrays.
 	// This is used when decoding [[array tables]] into Go arrays. Given array
 	// tables are separate TOML expression, we need to keep track of where we
@@ -138,6 +164,9 @@ type decoder struct {
 
 	// Strict mode
 	strict strict
+
+	// Flag that enables/disables unmarshaler interface.
+	unmarshalerInterface bool
 
 	// Current context for the error.
 	errorContext *errorContext
@@ -246,9 +275,10 @@ Rules for the unmarshal code:
 func (d *decoder) handleRootExpression(expr *unstable.Node, v reflect.Value) error {
 	var x reflect.Value
 	var err error
+	var first bool // used for to clear array tables on first use
 
 	if !(d.skipUntilTable && expr.Kind == unstable.KeyValue) {
-		err = d.seen.CheckExpression(expr)
+		first, err = d.seen.CheckExpression(expr)
 		if err != nil {
 			return err
 		}
@@ -267,6 +297,7 @@ func (d *decoder) handleRootExpression(expr *unstable.Node, v reflect.Value) err
 	case unstable.ArrayTable:
 		d.skipUntilTable = false
 		d.strict.EnterArrayTable(expr)
+		d.clearArrayTable = first
 		x, err = d.handleArrayTable(expr.Key(), v)
 	default:
 		panic(fmt.Errorf("parser should not permit expression of kind %s at document root", expr.Kind))
@@ -307,6 +338,10 @@ func (d *decoder) handleArrayTableCollectionLast(key unstable.Iterator, v reflec
 				reflect.Copy(nelem, elem)
 				elem = nelem
 			}
+			if d.clearArrayTable && elem.Len() > 0 {
+				elem.SetLen(0)
+				d.clearArrayTable = false
+			}
 		}
 		return d.handleArrayTableCollectionLast(key, elem)
 	case reflect.Ptr:
@@ -325,6 +360,10 @@ func (d *decoder) handleArrayTableCollectionLast(key unstable.Iterator, v reflec
 
 		return v, nil
 	case reflect.Slice:
+		if d.clearArrayTable && v.Len() > 0 {
+			v.SetLen(0)
+			d.clearArrayTable = false
+		}
 		elemType := v.Type().Elem()
 		var elem reflect.Value
 		if elemType.Kind() == reflect.Interface {
@@ -576,7 +615,7 @@ func (d *decoder) handleKeyValues(v reflect.Value) (reflect.Value, error) {
 			break
 		}
 
-		err := d.seen.CheckExpression(expr)
+		_, err := d.seen.CheckExpression(expr)
 		if err != nil {
 			return reflect.Value{}, err
 		}
@@ -632,6 +671,14 @@ func (d *decoder) tryTextUnmarshaler(node *unstable.Node, v reflect.Value) (bool
 func (d *decoder) handleValue(value *unstable.Node, v reflect.Value) error {
 	for v.Kind() == reflect.Ptr {
 		v = initAndDereferencePointer(v)
+	}
+
+	if d.unmarshalerInterface {
+		if v.CanAddr() && v.Addr().CanInterface() {
+			if outi, ok := v.Addr().Interface().(unstable.Unmarshaler); ok {
+				return outi.UnmarshalTOML(value)
+			}
+		}
 	}
 
 	ok, err := d.tryTextUnmarshaler(value, v)
@@ -1097,9 +1144,9 @@ func (d *decoder) handleKeyValuePart(key unstable.Iterator, value *unstable.Node
 
 		f := fieldByIndex(v, path)
 
-		if !f.CanSet() {
-			// If the field is not settable, need to take a slower path and make a copy of
-			// the struct itself to a new location.
+		if !f.CanAddr() {
+			// If the field is not addressable, need to take a slower path and
+			// make a copy of the struct itself to a new location.
 			nvp := reflect.New(v.Type())
 			nvp.Elem().Set(v)
 			v = nvp.Elem()

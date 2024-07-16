@@ -89,6 +89,7 @@ func (ds *DialSettings) HasCustomAudience() bool {
 	return len(ds.Audiences) > 0
 }
 
+// IsNewAuthLibraryEnabled returns true if the new auth library should be used.
 func (ds *DialSettings) IsNewAuthLibraryEnabled() bool {
 	if ds.EnableNewAuthLibrary {
 		return true
@@ -185,6 +186,8 @@ func (ds *DialSettings) GetUniverseDomain() string {
 	return ds.UniverseDomain
 }
 
+// IsUniverseDomainGDU returns true if the universe domain is the default Google
+// universe.
 func (ds *DialSettings) IsUniverseDomainGDU() bool {
 	return ds.GetUniverseDomain() == ds.GetDefaultUniverseDomain()
 }
@@ -192,7 +195,7 @@ func (ds *DialSettings) IsUniverseDomainGDU() bool {
 // GetUniverseDomain returns the default service domain for a given Cloud
 // universe, from google.Credentials, for comparison with the value returned by
 // (*DialSettings).GetUniverseDomain. This wrapper function should be removed
-// to close [TODO(chrisdsmith): issue link here]. See details below.
+// to close https://github.com/googleapis/google-api-go-client/issues/2399.
 func GetUniverseDomain(creds *google.Credentials) (string, error) {
 	timer := time.NewTimer(time.Second)
 	defer timer.Stop()
@@ -209,9 +212,10 @@ func GetUniverseDomain(creds *google.Credentials) (string, error) {
 	}()
 
 	select {
-	case err := <-errors:
-		// An error that is returned before the timer expires is legitimate.
-		return "", err
+	case <-errors:
+		// An error that is returned before the timer expires is likely to be
+		// connection refused. Temporarily (2024-03-21) return the GDU domain.
+		return universeDomainDefault, nil
 	case res := <-results:
 		return res, nil
 	case <-timer.C: // Timer is expired.

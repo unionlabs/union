@@ -84,6 +84,9 @@ type Options struct {
 
 	// Ethereum has found that commit of 100KB is optimal, ref ethereum/go-ethereum#15115
 	FlushThreshold int
+
+	// AsyncPruning is a flag to enable async pruning
+	AsyncPruning bool
 }
 
 // DefaultOptions returns the default options for IAVL.
@@ -116,5 +119,12 @@ func StatOption(stats *Statistics) Option {
 func FlushThresholdOption(ft int) Option {
 	return func(opts *Options) {
 		opts.FlushThreshold = ft
+	}
+}
+
+// AsyncPruningOption sets the AsyncPruning for the tree.
+func AsyncPruningOption(asyncPruning bool) Option {
+	return func(opts *Options) {
+		opts.AsyncPruning = asyncPruning
 	}
 }

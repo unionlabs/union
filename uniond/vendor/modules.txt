@@ -1,4 +1,4 @@
-# cloud.google.com/go v0.112.0
+# cloud.google.com/go v0.112.1
 ## explicit; go 1.19
 cloud.google.com/go/internal
 cloud.google.com/go/internal/optional
@@ -14,13 +14,13 @@ cloud.google.com/go/compute/metadata
 ## explicit; go 1.19
 cloud.google.com/go/iam
 cloud.google.com/go/iam/apiv1/iampb
-# cloud.google.com/go/storage v1.36.0
+# cloud.google.com/go/storage v1.38.0
 ## explicit; go 1.19
 cloud.google.com/go/storage
 cloud.google.com/go/storage/internal
 cloud.google.com/go/storage/internal/apiv2
 cloud.google.com/go/storage/internal/apiv2/storagepb
-# cosmossdk.io/api v0.7.4
+# cosmossdk.io/api v0.7.5
 ## explicit; go 1.20
 cosmossdk.io/api/amino
 cosmossdk.io/api/cosmos/app/runtime/v1alpha1
@@ -184,7 +184,7 @@ cosmossdk.io/x/tx/signing/directaux
 cosmossdk.io/x/tx/signing/textual
 cosmossdk.io/x/tx/signing/textual/internal/cbor
 cosmossdk.io/x/tx/signing/textual/internal/textualpb
-# cosmossdk.io/x/upgrade v0.1.2 => cosmossdk.io/x/upgrade v0.1.0
+# cosmossdk.io/x/upgrade v0.1.3 => cosmossdk.io/x/upgrade v0.1.0
 ## explicit; go 1.21
 cosmossdk.io/x/upgrade
 cosmossdk.io/x/upgrade/client/cli
@@ -203,7 +203,7 @@ github.com/99designs/go-keychain
 # github.com/99designs/keyring v1.2.2
 ## explicit; go 1.19
 github.com/99designs/keyring
-# github.com/CosmWasm/wasmd v0.51.0
+# github.com/CosmWasm/wasmd v0.52.0
 ## explicit; go 1.21
 github.com/CosmWasm/wasmd/app/params
 github.com/CosmWasm/wasmd/x/wasm
@@ -221,7 +221,7 @@ github.com/CosmWasm/wasmd/x/wasm/types
 # github.com/CosmWasm/wasmvm v1.5.2
 ## explicit; go 1.18
 github.com/CosmWasm/wasmvm/types
-# github.com/CosmWasm/wasmvm/v2 v2.0.1
+# github.com/CosmWasm/wasmvm/v2 v2.1.0
 ## explicit; go 1.21
 github.com/CosmWasm/wasmvm/v2
 github.com/CosmWasm/wasmvm/v2/internal/api
@@ -388,7 +388,7 @@ github.com/cockroachdb/redact/internal/rfmt/fmtsort
 # github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06
 ## explicit; go 1.19
 github.com/cockroachdb/tokenbucket
-# github.com/cometbft/cometbft v0.38.6 => github.com/unionlabs/cometbls v0.0.0-20240408193122-ee48ab4d6789
+# github.com/cometbft/cometbft v0.38.9 => github.com/unionlabs/cometbls v0.0.0-20240408193122-ee48ab4d6789
 ## explicit; go 1.21
 github.com/cometbft/cometbft/abci/client
 github.com/cometbft/cometbft/abci/example/kvstore
@@ -523,7 +523,7 @@ github.com/cosmos/cosmos-db
 github.com/cosmos/cosmos-proto
 github.com/cosmos/cosmos-proto/anyutil
 github.com/cosmos/cosmos-proto/runtime
-# github.com/cosmos/cosmos-sdk v0.50.6 => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
+# github.com/cosmos/cosmos-sdk v0.50.7 => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
 ## explicit; go 1.21
 github.com/cosmos/cosmos-sdk/baseapp
 github.com/cosmos/cosmos-sdk/baseapp/internal/protocompat
@@ -735,7 +735,7 @@ github.com/cosmos/go-bip39
 # github.com/cosmos/gogogateway v1.2.0
 ## explicit; go 1.12
 github.com/cosmos/gogogateway
-# github.com/cosmos/gogoproto v1.4.12
+# github.com/cosmos/gogoproto v1.5.0
 ## explicit; go 1.19
 github.com/cosmos/gogoproto/gogoproto
 github.com/cosmos/gogoproto/grpc
@@ -768,7 +768,7 @@ github.com/cosmos/gogoproto/sortkeys
 github.com/cosmos/gogoproto/types
 github.com/cosmos/gogoproto/vanity
 github.com/cosmos/gogoproto/vanity/command
-# github.com/cosmos/iavl v1.1.2
+# github.com/cosmos/iavl v1.2.0
 ## explicit; go 1.20
 github.com/cosmos/iavl
 github.com/cosmos/iavl/cache
@@ -792,7 +792,7 @@ github.com/cosmos/ibc-go/modules/light-clients/08-wasm/client/cli
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper
 github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types
-# github.com/cosmos/ibc-go/v8 v8.0.0 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240502084625-d5a6c7b15fdc
+# github.com/cosmos/ibc-go/v8 v8.3.2 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240502084625-d5a6c7b15fdc
 ## explicit; go 1.21
 github.com/cosmos/ibc-go/v8/internal/logging
 github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts
@@ -1052,7 +1052,7 @@ github.com/google/uuid
 ## explicit; go 1.19
 github.com/googleapis/enterprise-certificate-proxy/client
 github.com/googleapis/enterprise-certificate-proxy/client/util
-# github.com/googleapis/gax-go/v2 v2.12.0
+# github.com/googleapis/gax-go/v2 v2.12.3
 ## explicit; go 1.19
 github.com/googleapis/gax-go/v2
 github.com/googleapis/gax-go/v2/apierror
@@ -1106,7 +1106,7 @@ github.com/gsterjov/go-libsecret
 # github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-getter v1.7.3
+# github.com/hashicorp/go-getter v1.7.5
 ## explicit; go 1.13
 github.com/hashicorp/go-getter
 github.com/hashicorp/go-getter/helper/url
@@ -1292,7 +1292,7 @@ github.com/oklog/run
 github.com/opencontainers/go-digest
 # github.com/opencontainers/runc v1.1.5
 ## explicit; go 1.16
-# github.com/pelletier/go-toml/v2 v2.1.0
+# github.com/pelletier/go-toml/v2 v2.2.2
 ## explicit; go 1.16
 github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/characters
@@ -1308,7 +1308,7 @@ github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v1.19.0 => github.com/prometheus/client_golang v1.18.0
+# github.com/prometheus/client_golang v1.19.1 => github.com/prometheus/client_golang v1.18.0
 ## explicit; go 1.19
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
@@ -1358,7 +1358,7 @@ github.com/rogpeppe/go-internal/fmtsort
 # github.com/rs/cors v1.8.3
 ## explicit; go 1.13
 github.com/rs/cors
-# github.com/rs/zerolog v1.32.0
+# github.com/rs/zerolog v1.33.0
 ## explicit; go 1.15
 github.com/rs/zerolog
 github.com/rs/zerolog/internal/cbor
@@ -1373,6 +1373,17 @@ github.com/sagikazarmark/slog-shim
 # github.com/sasha-s/go-deadlock v0.3.1
 ## explicit
 github.com/sasha-s/go-deadlock
+# github.com/shamaton/msgpack/v2 v2.2.0
+## explicit; go 1.20
+github.com/shamaton/msgpack/v2
+github.com/shamaton/msgpack/v2/def
+github.com/shamaton/msgpack/v2/ext
+github.com/shamaton/msgpack/v2/internal/common
+github.com/shamaton/msgpack/v2/internal/decoding
+github.com/shamaton/msgpack/v2/internal/encoding
+github.com/shamaton/msgpack/v2/internal/stream/decoding
+github.com/shamaton/msgpack/v2/internal/stream/encoding
+github.com/shamaton/msgpack/v2/time
 # github.com/sirupsen/logrus v1.9.0
 ## explicit; go 1.13
 github.com/sirupsen/logrus
@@ -1396,8 +1407,8 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/spf13/viper v1.18.2
-## explicit; go 1.18
+# github.com/spf13/viper v1.19.0
+## explicit; go 1.20
 github.com/spf13/viper
 github.com/spf13/viper/internal/encoding
 github.com/spf13/viper/internal/encoding/dotenv
@@ -1480,15 +1491,15 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0
+# go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0
 ## explicit; go 1.20
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/internal
-# go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0
+# go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0
 ## explicit; go 1.20
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp/internal/semconvutil
-# go.opentelemetry.io/otel v1.22.0
+# go.opentelemetry.io/otel v1.24.0
 ## explicit; go 1.20
 go.opentelemetry.io/otel
 go.opentelemetry.io/otel/attribute
@@ -1501,11 +1512,12 @@ go.opentelemetry.io/otel/internal/global
 go.opentelemetry.io/otel/propagation
 go.opentelemetry.io/otel/semconv/v1.17.0
 go.opentelemetry.io/otel/semconv/v1.20.0
-# go.opentelemetry.io/otel/metric v1.22.0
+# go.opentelemetry.io/otel/metric v1.24.0
 ## explicit; go 1.20
 go.opentelemetry.io/otel/metric
 go.opentelemetry.io/otel/metric/embedded
-# go.opentelemetry.io/otel/trace v1.22.0
+go.opentelemetry.io/otel/metric/noop
+# go.opentelemetry.io/otel/trace v1.24.0
 ## explicit; go 1.20
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
@@ -1601,7 +1613,7 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.5.0
 ## explicit; go 1.18
 golang.org/x/time/rate
-# google.golang.org/api v0.162.0
+# google.golang.org/api v0.171.0
 ## explicit; go 1.19
 google.golang.org/api/googleapi
 google.golang.org/api/googleapi/transport
@@ -1635,9 +1647,8 @@ google.golang.org/appengine/urlfetch
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/type/date
 google.golang.org/genproto/googleapis/type/expr
-google.golang.org/genproto/internal
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
+# google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //nolint:staticcheck
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	connectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -105,6 +105,13 @@ type ICS4Wrapper interface {
 		timeoutTimestamp uint64,
 		data []byte,
 	) (uint64, error)
+
+	WriteAcknowledgement(
+		ctx sdk.Context,
+		chanCap *capabilitytypes.Capability,
+		packet ibcexported.PacketI,
+		acknowledgement ibcexported.Acknowledgement,
+	) error
 }
 
 // ClientKeeper defines the expected IBC client keeper

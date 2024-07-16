@@ -137,7 +137,7 @@ func (tree *MutableTree) Hash() []byte {
 
 // WorkingHash returns the hash of the current working tree.
 func (tree *MutableTree) WorkingHash() []byte {
-	return tree.ImmutableTree.Hash()
+	return tree.root.hashWithCount(tree.WorkingVersion())
 }
 
 func (tree *MutableTree) WorkingVersion() int64 {
@@ -686,6 +686,17 @@ func (tree *MutableTree) GetVersioned(key []byte, version int64) ([]byte, error)
 		return value, nil
 	}
 	return nil, nil
+}
+
+// SetCommitting sets a flag to indicate that the tree is in the process of being saved.
+// This is used to prevent parallel writing from async pruning.
+func (tree *MutableTree) SetCommitting() {
+	tree.ndb.SetCommitting()
+}
+
+// UnsetCommitting unsets the flag to indicate that the tree is no longer in the process of being saved.
+func (tree *MutableTree) UnsetCommitting() {
+	tree.ndb.UnsetCommitting()
 }
 
 // SaveVersion saves a new tree version to disk, based on the current state of

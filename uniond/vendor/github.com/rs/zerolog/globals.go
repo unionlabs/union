@@ -1,6 +1,7 @@
 package zerolog
 
 import (
+	"bytes"
 	"encoding/json"
 	"strconv"
 	"sync/atomic"
@@ -81,8 +82,22 @@ var (
 	}
 
 	// InterfaceMarshalFunc allows customization of interface marshaling.
-	// Default: "encoding/json.Marshal"
-	InterfaceMarshalFunc = json.Marshal
+	// Default: "encoding/json.Marshal" with disabled HTML escaping
+	InterfaceMarshalFunc = func(v interface{}) ([]byte, error) {
+		var buf bytes.Buffer
+		encoder := json.NewEncoder(&buf)
+		encoder.SetEscapeHTML(false)
+		err := encoder.Encode(v)
+		if err != nil {
+			return nil, err
+		}
+		b := buf.Bytes()
+		if len(b) > 0 {
+			// Remove trailing \n which is added by Encode.
+			return b[:len(b)-1], nil
+		}
+		return b, nil
+	}
 
 	// TimeFieldFormat defines the time format of the Time field type. If set to
 	// TimeFormatUnix, TimeFormatUnixMs, TimeFormatUnixMicro or TimeFormatUnixNano, the time is formatted as a UNIX
@@ -136,6 +151,11 @@ var (
 	// TriggerLevelWriterBufferReuseLimit is a limit in bytes that a buffer is dropped
 	// from the TriggerLevelWriter buffer pool if the buffer grows above the limit.
 	TriggerLevelWriterBufferReuseLimit = 64 * 1024
+
+	// FloatingPointPrecision, if set to a value other than -1, controls the number
+	// of digits when formatting float numbers in JSON. See strconv.FormatFloat for
+	// more details.
+	FloatingPointPrecision = -1
 )
 
 var (

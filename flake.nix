@@ -89,8 +89,8 @@
       url = "github:CosmWasm/wasmvm/v1.5.0";
       flake = false;
     };
-    wasmvm-2_0_1 = {
-      url = "github:CosmWasm/wasmvm/v2.0.1";
+    wasmvm-2_1_0 = {
+      url = "github:CosmWasm/wasmvm/v2.1.0";
       flake = false;
     };
     biome = {

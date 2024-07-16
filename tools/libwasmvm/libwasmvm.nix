@@ -10,19 +10,20 @@
         else if system == "x86_64-darwin" then "x86_64-apple-darwin"
         else throwBadSystem;
 
-      rustToolchain = rust.mkNightly {
-        channel = "nightly-2024-01-27";
+      rustToolchain = channel: rust.mkNightly {
+        inherit channel;
         targets = [ CARGO_BUILD_TARGET ];
       };
 
       mkLibwasmvm =
         wasmvm:
+        rustChannel:
         let
           attrs = {
             inherit CARGO_BUILD_TARGET;
             pname = "libwasmvm";
             version = wasmvm.rev;
-            buildInputs = [ rustToolchain ];
+            buildInputs = [ (rustToolchain rustChannel) ];
             src = "${wasmvm}/libwasmvm";
             installCargoArtifactsMode = "use-zstd";
           } // (if pkgs.stdenv.isLinux then {
@@ -39,15 +40,15 @@
               mv target/${CARGO_BUILD_TARGET}/release/deps/libwasmvm.dylib $out/lib/libwasmvm.dylib
             '';
           } else throwBadSystem);
-          craneLib = crane.lib.overrideToolchain rustToolchain;
+          craneLib = crane.lib.overrideToolchain (rustToolchain rustChannel);
         in
         craneLib.buildPackage (attrs // {
           cargoArtifacts = craneLib.buildDepsOnly attrs;
         });
     in
     {
-      packages.libwasmvm = mkLibwasmvm inputs.wasmvm;
-      packages.libwasmvm-1_5_0 = mkLibwasmvm inputs.wasmvm-1_5_0;
-      packages.libwasmvm-2_0_1 = mkLibwasmvm inputs.wasmvm-2_0_1;
+      packages.libwasmvm = mkLibwasmvm inputs.wasmvm "nightly-2024-01-27";
+      packages.libwasmvm-1_5_0 = mkLibwasmvm inputs.wasmvm-1_5_0 "nightly-2024-01-27";
+      packages.libwasmvm-2_1_0 = mkLibwasmvm inputs.wasmvm-2_1_0 "nightly-2024-05-07";
     };
 }

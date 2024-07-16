@@ -51,6 +51,9 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/encoding/protojson"
+	protov2 "google.golang.org/protobuf/proto"
+
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/cosmos/gogoproto/types"
 )
@@ -128,6 +131,19 @@ type JSONPBUnmarshaler interface {
 
 // Marshal marshals a protocol buffer into JSON.
 func (m *Marshaler) Marshal(out io.Writer, pb proto.Message) error {
+	if msgV2, ok := pb.(protov2.Message); ok {
+		bz, err := protojson.MarshalOptions{
+			Indent:          m.Indent,
+			UseProtoNames:   m.OrigName,
+			UseEnumNumbers:  m.EnumsAsInts,
+			EmitUnpopulated: m.EmitDefaults,
+		}.Marshal(msgV2)
+		if err != nil {
+			return err
+		}
+		_, err = out.Write(bz)
+		return err
+	}
 	v := reflect.ValueOf(pb)
 	if pb == nil || (v.Kind() == reflect.Ptr && v.IsNil()) {
 		return errors.New("Marshal called with nil")
@@ -770,6 +786,11 @@ func (u *Unmarshaler) UnmarshalNext(dec *json.Decoder, pb proto.Message) error {
 	inputValue := json.RawMessage{}
 	if err := dec.Decode(&inputValue); err != nil {
 		return err
+	}
+	if msgV2, ok := pb.(protov2.Message); ok {
+		return protojson.UnmarshalOptions{
+			AllowPartial: u.AllowUnknownFields,
+		}.Unmarshal(inputValue, msgV2)
 	}
 	if err := u.unmarshalValue(reflect.ValueOf(pb).Elem(), inputValue, nil); err != nil {
 		return err

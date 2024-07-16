@@ -33,7 +33,7 @@
       "location": "me-central2"
     }
   ],
-  "etag": "\"3136323232353032373039383637313835303036\"",
+  "etag": "\"33383639383534303336303331313132393335\"",
   "icons": {
     "x16": "https://www.google.com/images/icons/product/cloud_storage-16.png",
     "x32": "https://www.google.com/images/icons/product/cloud_storage-32.png"
@@ -1632,6 +1632,11 @@
             "managedFolder"
           ],
           "parameters": {
+            "allowNonEmpty": {
+              "description": "Allows the deletion of a managed folder even if it is not empty. A managed folder is empty if there are no objects or managed folders that it applies to. Callers must have storage.managedFolders.setIamPolicy permission.",
+              "location": "query",
+              "type": "boolean"
+            },
             "bucket": {
               "description": "Name of the bucket containing the managed folder.",
               "location": "path",
@@ -3212,9 +3217,6 @@
             }
           },
           "path": "b/{bucket}/o/{object}/restore",
-          "request": {
-            "$ref": "Object"
-          },
           "response": {
             "$ref": "Object"
           },
@@ -4040,7 +4042,7 @@
       }
     }
   },
-  "revision": "20240105",
+  "revision": "20240311",
   "rootUrl": "https://storage.googleapis.com/",
   "schemas": {
     "AnywhereCache": {
@@ -4853,6 +4855,11 @@
           "description": "The name of the bucket containing this folder.",
           "type": "string"
         },
+        "createTime": {
+          "description": "The creation time of the folder in RFC 3339 format.",
+          "format": "date-time",
+          "type": "string"
+        },
         "id": {
           "description": "The ID of the folder, including the bucket name, folder name.",
           "type": "string"
@@ -4861,14 +4868,6 @@
           "default": "storage#folder",
           "description": "The kind of item this is. For folders, this is always storage#folder.",
           "type": "string"
-        },
-        "metadata": {
-          "additionalProperties": {
-            "description": "An individual metadata entry.",
-            "type": "string"
-          },
-          "description": "User-provided metadata, in key/value pairs.",
-          "type": "object"
         },
         "metageneration": {
           "description": "The version of the metadata for this folder. Used for preconditions and for detecting changes in metadata.",
@@ -4893,12 +4892,7 @@
           "description": "The link to this folder.",
           "type": "string"
         },
-        "timeCreated": {
-          "description": "The creation time of the folder in RFC 3339 format.",
-          "format": "date-time",
-          "type": "string"
-        },
-        "updated": {
+        "updateTime": {
           "description": "The modification time of the folder metadata in RFC 3339 format.",
           "format": "date-time",
           "type": "string"

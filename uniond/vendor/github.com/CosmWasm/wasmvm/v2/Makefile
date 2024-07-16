@@ -1,7 +1,7 @@
 .PHONY: all build build-rust build-go test
 
 # Builds the Rust library libwasmvm
-BUILDERS_PREFIX := cosmwasm/go-ext-builder:0018
+BUILDERS_PREFIX := cosmwasm/go-ext-builder:0019
 # Contains a full Go dev environment including CGO support in order to run Go tests on the built shared library
 # This image is currently not published.
 ALPINE_TESTER := cosmwasm/alpine-tester:local
@@ -134,7 +134,6 @@ create-tester-image:
 	docker build -t $(ALPINE_TESTER) - < ./Dockerfile.alpine_tester
 
 test-alpine: release-build-alpine create-tester-image
-	@[ "$(shell uname -m)" = "x86_64" ] || (echo "This test is only working on x86_64. See https://github.com/CosmWasm/wasmvm/issues/483."; exit 78)
 # try running go tests using this lib with muslc
 	docker run --rm -u $(USER_ID):$(USER_GROUP) -v $(shell pwd):/mnt/testrun -w /mnt/testrun $(ALPINE_TESTER) go build -tags muslc ./...
 # Use package list mode to include all subdirectores. The -count=1 turns off caching.
@@ -161,8 +160,11 @@ test-alpine: release-build-alpine create-tester-image
 format:
 	find . -name '*.go' -type f | xargs gofumpt -w -s
 	find . -name '*.go' -type f | xargs misspell -w
-	find . -name '*.go' -type f | xargs goimports -w -local github.com/CosmWasm/wasmvm
 
 .PHONY: lint
 lint:
 	golangci-lint run
+
+.PHONY: lint-fix
+lint-fix:
+	golangci-lint run --fix

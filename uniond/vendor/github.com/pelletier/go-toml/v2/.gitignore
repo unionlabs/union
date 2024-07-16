@@ -4,3 +4,4 @@ cmd/tomll/tomll
 cmd/tomljson/tomljson
 cmd/tomltestgen/tomltestgen
 dist
+tests/

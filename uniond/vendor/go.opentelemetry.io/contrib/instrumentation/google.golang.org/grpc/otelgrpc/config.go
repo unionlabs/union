@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
@@ -89,6 +90,9 @@ func newConfig(opts []Option, role string) *config {
 		metric.WithUnit("ms"))
 	if err != nil {
 		otel.Handle(err)
+		if c.rpcDuration == nil {
+			c.rpcDuration = noop.Float64Histogram{}
+		}
 	}
 
 	c.rpcRequestSize, err = c.meter.Int64Histogram("rpc."+role+".request.size",
@@ -96,6 +100,9 @@ func newConfig(opts []Option, role string) *config {
 		metric.WithUnit("By"))
 	if err != nil {
 		otel.Handle(err)
+		if c.rpcRequestSize == nil {
+			c.rpcRequestSize = noop.Int64Histogram{}
+		}
 	}
 
 	c.rpcResponseSize, err = c.meter.Int64Histogram("rpc."+role+".response.size",
@@ -103,6 +110,9 @@ func newConfig(opts []Option, role string) *config {
 		metric.WithUnit("By"))
 	if err != nil {
 		otel.Handle(err)
+		if c.rpcResponseSize == nil {
+			c.rpcResponseSize = noop.Int64Histogram{}
+		}
 	}
 
 	c.rpcRequestsPerRPC, err = c.meter.Int64Histogram("rpc."+role+".requests_per_rpc",
@@ -110,6 +120,9 @@ func newConfig(opts []Option, role string) *config {
 		metric.WithUnit("{count}"))
 	if err != nil {
 		otel.Handle(err)
+		if c.rpcRequestsPerRPC == nil {
+			c.rpcRequestsPerRPC = noop.Int64Histogram{}
+		}
 	}
 
 	c.rpcResponsesPerRPC, err = c.meter.Int64Histogram("rpc."+role+".responses_per_rpc",
@@ -117,6 +130,9 @@ func newConfig(opts []Option, role string) *config {
 		metric.WithUnit("{count}"))
 	if err != nil {
 		otel.Handle(err)
+		if c.rpcResponsesPerRPC == nil {
+			c.rpcResponsesPerRPC = noop.Int64Histogram{}
+		}
 	}
 
 	return c

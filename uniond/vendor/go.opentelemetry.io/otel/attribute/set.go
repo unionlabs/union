@@ -427,7 +427,7 @@ func (l *Set) MarshalJSON() ([]byte, error) {
 	return json.Marshal(l.equivalent.iface)
 }
 
-// MarshalLog is the marshaling function used by the logging system to represent this exporter.
+// MarshalLog is the marshaling function used by the logging system to represent this Set.
 func (l Set) MarshalLog() interface{} {
 	kvs := make(map[string]string)
 	for _, kv := range l.ToSlice() {

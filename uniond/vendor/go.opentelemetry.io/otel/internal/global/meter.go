@@ -130,9 +130,11 @@ func (m *meter) setDelegate(provider metric.MeterProvider) {
 		inst.setDelegate(meter)
 	}
 
-	for e := m.registry.Front(); e != nil; e = e.Next() {
+	var n *list.Element
+	for e := m.registry.Front(); e != nil; e = n {
 		r := e.Value.(*registration)
 		r.setDelegate(meter)
+		n = e.Next()
 		m.registry.Remove(e)
 	}
 

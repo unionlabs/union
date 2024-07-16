@@ -3,6 +3,7 @@ package toml
 import (
 	"bytes"
 	"encoding"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -37,10 +38,11 @@ type Encoder struct {
 	w io.Writer
 
 	// global settings
-	tablesInline    bool
-	arraysMultiline bool
-	indentSymbol    string
-	indentTables    bool
+	tablesInline       bool
+	arraysMultiline    bool
+	indentSymbol       string
+	indentTables       bool
+	marshalJsonNumbers bool
 }
 
 // NewEncoder returns a new Encoder that writes to w.
@@ -84,6 +86,17 @@ func (enc *Encoder) SetIndentSymbol(s string) *Encoder {
 // SetIndentTables forces the encoder to intent tables and array tables.
 func (enc *Encoder) SetIndentTables(indent bool) *Encoder {
 	enc.indentTables = indent
+	return enc
+}
+
+// SetMarshalJsonNumbers forces the encoder to serialize `json.Number` as a
+// float or integer instead of relying on TextMarshaler to emit a string.
+//
+// *Unstable:* This method does not follow the compatibility guarantees of
+// semver. It can be changed or removed without a new major version being
+// issued.
+func (enc *Encoder) SetMarshalJsonNumbers(indent bool) *Encoder {
+	enc.marshalJsonNumbers = indent
 	return enc
 }
 
@@ -252,6 +265,18 @@ func (enc *Encoder) encode(b []byte, ctx encoderCtx, v reflect.Value) ([]byte, e
 		return append(b, x.String()...), nil
 	case LocalDateTime:
 		return append(b, x.String()...), nil
+	case json.Number:
+		if enc.marshalJsonNumbers {
+			if x == "" { /// Useful zero value.
+				return append(b, "0"...), nil
+			} else if v, err := x.Int64(); err == nil {
+				return enc.encode(b, ctx, reflect.ValueOf(v))
+			} else if f, err := x.Float64(); err == nil {
+				return enc.encode(b, ctx, reflect.ValueOf(f))
+			} else {
+				return nil, fmt.Errorf("toml: unable to convert %q to int64 or float64", x)
+			}
+		}
 	}
 
 	hasTextMarshaler := v.Type().Implements(textMarshalerType)
@@ -707,6 +732,8 @@ func walkStruct(ctx encoderCtx, t *table, v reflect.Value) {
 			if fieldType.Anonymous {
 				if fieldType.Type.Kind() == reflect.Struct {
 					walkStruct(ctx, t, f)
+				} else if fieldType.Type.Kind() == reflect.Pointer && !f.IsNil() && f.Elem().Kind() == reflect.Struct {
+					walkStruct(ctx, t, f.Elem())
 				}
 				continue
 			} else {
@@ -997,6 +1024,10 @@ func (enc *Encoder) encodeSliceAsArrayTable(b []byte, ctx encoderCtx, v reflect.
 	scratch := make([]byte, 0, 64)
 
 	scratch = enc.commented(ctx.commented, scratch)
+
+	if enc.indentTables {
+		scratch = enc.indent(ctx.indent, scratch)
+	}
 
 	scratch = append(scratch, "[["...)
 
