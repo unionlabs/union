@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    wasm_execute, Addr, AnyMsg, Attribute, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event,
+    wasm_execute, Addr, AnyMsg, Attribute, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env,
     HexBinary, IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use prost::{Message, Name};
@@ -7,31 +7,25 @@ use protos::deferredack::v1beta1::{DeferredPacketInfo, MsgWriteDeferredAck};
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
-    middleware::{
-        InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError,
-        PFM_ERROR_EVENT,
-    },
+    middleware::{InFlightPfmPacket, Memo, MiddlewareError, PacketForward, PacketForwardError},
     protocol::{
-        AddrOf, TransferProtocol, ATTR_ERROR, ATTR_PFM, ATTR_SUCCESS, ATTR_VALUE_PFM_ACK,
-        IBC_SEND_ID,
+        AddrOf, ProtocolSwitch, TransferProtocol, ATTR_ERROR, ATTR_PFM, ATTR_SUCCESS,
+        ATTR_VALUE_PFM_ACK, IBC_SEND_ID,
     },
     types::{
         make_foreign_denom, DenomOrigin, EncodingError, GenericAck, Ics20Ack, Ics20Packet,
-        JsonWasm, TransferPacket, TransferToken, Ucs01Ack, Ucs01TransferPacket,
+        JsonWasm, NormalizedTransferToken, TransferToken, Ucs01Ack, Ucs01TransferPacket,
     },
 };
-use unionlabs::{
-    encoding::{self, Encode, EncodeAs},
-    ibc::core::client::height::Height,
-};
+use unionlabs::{encoding, ibc::core::client::height::Height};
 
 use crate::{
     contract::execute_transfer,
     error::ContractError,
     msg::{ExecuteMsg, TransferMsg},
     state::{
-        ChannelInfo, Hash, PfmRefundPacketKey, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH, HASH_LENGTH,
-        HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS,
+        ChannelInfo, Hash, PfmRefundPacketKey, CHANNEL_INFO, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH,
+        HASH_LENGTH, HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS,
     },
 };
 
@@ -147,11 +141,11 @@ pub trait TransferProtocolExt<'a>:
         tokens: Vec<Coin>,
         original_packet: IbcPacket,
         forward: PacketForward,
-        receiver: Addr,
+        sender: Addr,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
         // Prepare forward message
         let msg_info = MessageInfo {
-            sender: receiver,
+            sender,
             funds: tokens,
         };
 
@@ -169,6 +163,7 @@ pub trait TransferProtocolExt<'a>:
             receiver: forward.receiver.value(),
             timeout: Some(timeout),
             memo,
+            fees: forward.fees,
         };
 
         // Send forward message
@@ -206,10 +201,9 @@ pub trait TransferProtocolExt<'a>:
             );
         }
 
-        let add_events = IbcReceiveResponse::without_ack()
+        Ok(IbcReceiveResponse::without_ack()
             .add_submessages(transfer.messages)
-            .add_events(transfer.events);
-        Ok(add_events)
+            .add_events(transfer.events))
     }
 }
 
@@ -350,6 +344,7 @@ fn normalize_for_ibc_transfer(
     Ok(TransferToken {
         denom: normalized_denom,
         amount: token.amount,
+        fee: token.fee,
     })
 }
 trait OnReceive {
@@ -373,64 +368,129 @@ trait OnReceive {
         endpoint: &IbcEndpoint,
         counterparty_endpoint: &IbcEndpoint,
         receiver: &str,
+        relayer: &str,
         tokens: Vec<TransferToken>,
-    ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<TokenFactoryMsg>>), ContractError> {
+        cut_fees: bool,
+    ) -> Result<
+        (
+            Vec<NormalizedTransferToken>,
+            Vec<CosmosMsg<TokenFactoryMsg>>,
+        ),
+        ContractError,
+    > {
         tokens
             .into_iter()
-            .map(|TransferToken { denom, amount }| {
-                match DenomOrigin::from((denom.as_str(), counterparty_endpoint)) {
-                    DenomOrigin::Local { denom } => {
-                        self.local_unescrow(&endpoint.channel_id, denom, amount)?;
-                        Ok((
-                            TransferToken {
-                                denom: denom.to_string(),
-                                amount,
-                            },
-                            vec![BankMsg::Send {
-                                to_address: receiver.to_string(),
-                                amount: vec![Coin {
-                                    denom: denom.to_string(),
-                                    amount,
-                                }],
+            .map(
+                |ref token @ TransferToken {
+                     ref denom,
+                     amount,
+                     fee,
+                 }| {
+                    let (actual_amount, fee_amount) = if cut_fees {
+                        token.amounts()?
+                    } else {
+                        (token.amount, Uint128::zero())
+                    };
+                    let origin_denom = denom;
+                    match DenomOrigin::from((denom.as_str(), counterparty_endpoint)) {
+                        DenomOrigin::Local { denom } => {
+                            let total_amount = token.amount;
+                            self.local_unescrow(&endpoint.channel_id, denom, total_amount)?;
+                            let mut bank_msgs = Vec::with_capacity(2);
+                            if !actual_amount.is_zero() {
+                                bank_msgs.push(
+                                    BankMsg::Send {
+                                        to_address: receiver.to_string(),
+                                        amount: vec![Coin {
+                                            denom: denom.to_string(),
+                                            amount: actual_amount,
+                                        }],
+                                    }
+                                    .into(),
+                                );
                             }
-                            .into()],
-                        ))
-                    }
-                    DenomOrigin::Remote { denom } => {
-                        let foreign_denom = make_foreign_denom(endpoint, denom);
-                        let (exists, hashed_foreign_denom, register_msg) =
-                            self.foreign_toggle(contract_address, endpoint, &foreign_denom)?;
-                        let normalized_foreign_denom =
-                            format!("0x{}", hex::encode(hashed_foreign_denom));
-                        let factory_denom =
-                            format!("factory/{}/{}", contract_address, normalized_foreign_denom);
-                        let mint = TokenFactoryMsg::MintTokens {
-                            denom: factory_denom.clone(),
-                            amount,
-                            mint_to_address: receiver.to_string(),
-                        };
-                        Ok((
-                            TransferToken {
-                                denom: factory_denom,
-                                amount,
-                            },
-                            if exists {
-                                vec![mint.into()]
-                            } else {
-                                vec![
-                                    register_msg,
+                            if !fee_amount.is_zero() {
+                                bank_msgs.push(
+                                    BankMsg::Send {
+                                        to_address: relayer.to_string(),
+                                        amount: vec![Coin {
+                                            denom: denom.to_string(),
+                                            amount: fee_amount,
+                                        }],
+                                    }
+                                    .into(),
+                                );
+                            }
+                            Ok((
+                                NormalizedTransferToken {
+                                    origin_denom: origin_denom.into(),
+                                    token: TransferToken {
+                                        denom: denom.to_string(),
+                                        amount,
+                                        fee,
+                                    },
+                                },
+                                bank_msgs,
+                            ))
+                        }
+                        DenomOrigin::Remote { denom } => {
+                            let foreign_denom = make_foreign_denom(endpoint, denom);
+                            let (exists, hashed_foreign_denom, register_msg) =
+                                self.foreign_toggle(contract_address, endpoint, &foreign_denom)?;
+                            let normalized_foreign_denom =
+                                format!("0x{}", hex::encode(hashed_foreign_denom));
+                            let factory_denom = format!(
+                                "factory/{}/{}",
+                                contract_address, normalized_foreign_denom
+                            );
+                            let mut msgs = Vec::with_capacity(4);
+                            // Create and register the asset if not already present.
+                            if !exists {
+                                msgs.push(register_msg);
+                                msgs.push(
                                     TokenFactoryMsg::CreateDenom {
                                         subdenom: normalized_foreign_denom.clone(),
                                         metadata: None,
                                     }
                                     .into(),
-                                    mint.into(),
-                                ]
-                            },
-                        ))
+                                );
+                            }
+                            // Only ever yield mint messages if the amount are non zero.
+                            if !actual_amount.is_zero() {
+                                msgs.push(
+                                    TokenFactoryMsg::MintTokens {
+                                        denom: factory_denom.clone(),
+                                        amount: actual_amount,
+                                        mint_to_address: receiver.to_string(),
+                                    }
+                                    .into(),
+                                );
+                            }
+                            if !fee_amount.is_zero() {
+                                msgs.push(
+                                    TokenFactoryMsg::MintTokens {
+                                        denom: factory_denom.clone(),
+                                        amount: fee_amount,
+                                        mint_to_address: relayer.to_string(),
+                                    }
+                                    .into(),
+                                );
+                            }
+                            Ok((
+                                NormalizedTransferToken {
+                                    origin_denom: origin_denom.into(),
+                                    token: TransferToken {
+                                        denom: factory_denom,
+                                        amount,
+                                        fee,
+                                    },
+                                },
+                                msgs,
+                            ))
+                        }
                     }
-                }
-            })
+                },
+            )
             .collect::<Result<(_, Vec<_>), _>>()
             .map(|(x, y)| (x, y.into_iter().flatten().collect()))
     }
@@ -484,6 +544,7 @@ trait ForTokens {
         channel_id: &str,
         denom: &str,
         amount: Uint128,
+        fee_amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError>;
 
     fn on_remote(
@@ -491,6 +552,7 @@ trait ForTokens {
         channel_id: &str,
         denom: &str,
         amount: Uint128,
+        fee_amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError>;
 
     fn execute(
@@ -500,9 +562,10 @@ trait ForTokens {
         tokens: Vec<TransferToken>,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
         let mut messages = Vec::with_capacity(tokens.len());
-        for TransferToken { denom, amount } in tokens {
+        for token in tokens {
             // This is the origin from the counterparty POV
-            match DenomOrigin::from((denom.as_str(), endpoint)) {
+            let (actual_amount, fee_amount) = token.amounts()?;
+            match DenomOrigin::from((token.denom.as_str(), endpoint)) {
                 DenomOrigin::Local { denom } => {
                     // the denom has been previously normalized (factory/{}/ prefix removed), we must reconstruct to burn
                     let foreign_denom = hash_denom_str(&make_foreign_denom(endpoint, denom));
@@ -510,11 +573,17 @@ trait ForTokens {
                     messages.append(&mut self.on_remote(
                         &endpoint.channel_id,
                         &factory_denom,
-                        amount,
+                        actual_amount,
+                        fee_amount,
                     )?);
                 }
                 DenomOrigin::Remote { denom } => {
-                    messages.append(&mut self.on_local(&endpoint.channel_id, denom, amount)?);
+                    messages.append(&mut self.on_local(
+                        &endpoint.channel_id,
+                        denom,
+                        actual_amount,
+                        fee_amount,
+                    )?);
                 }
             }
         }
@@ -533,8 +602,12 @@ impl<'a> ForTokens for StatefulSendTokens<'a> {
         channel_id: &str,
         denom: &str,
         amount: Uint128,
+        fee_amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
-        increase_outstanding(self.deps.branch(), channel_id, denom, amount)?;
+        let total_amount = amount
+            .checked_add(fee_amount)
+            .expect("impossible; fee must be split from the base amount");
+        increase_outstanding(self.deps.branch(), channel_id, denom, total_amount)?;
         Ok(Default::default())
     }
 
@@ -543,10 +616,13 @@ impl<'a> ForTokens for StatefulSendTokens<'a> {
         _channel_id: &str,
         denom: &str,
         amount: Uint128,
+        fee_amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
         Ok(vec![TokenFactoryMsg::BurnTokens {
             denom: denom.into(),
-            amount,
+            amount: amount
+                .checked_add(fee_amount)
+                .expect("impossible; fee must be split from the base amount"),
             burn_from_address: self.contract_address.clone(),
         }
         .into()])
@@ -564,13 +640,17 @@ impl<'a> ForTokens for StatefulRefundTokens<'a> {
         channel_id: &str,
         denom: &str,
         amount: Uint128,
+        fee_amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
-        decrease_outstanding(self.deps.branch(), channel_id, denom, amount)?;
+        let total_amount = amount
+            .checked_add(fee_amount)
+            .expect("impossible; fee must be split from the base amount");
+        decrease_outstanding(self.deps.branch(), channel_id, denom, total_amount)?;
         Ok(vec![BankMsg::Send {
             to_address: self.receiver.clone(),
             amount: vec![Coin {
                 denom: denom.into(),
-                amount,
+                amount: total_amount,
             }],
         }
         .into()])
@@ -581,10 +661,14 @@ impl<'a> ForTokens for StatefulRefundTokens<'a> {
         _channel_id: &str,
         denom: &str,
         amount: Uint128,
+        fee_amount: Uint128,
     ) -> Result<Vec<CosmosMsg<TokenFactoryMsg>>, ContractError> {
+        let total_amount = amount
+            .checked_add(fee_amount)
+            .expect("impossible; fee must be split from the base amount");
         Ok(vec![TokenFactoryMsg::MintTokens {
             denom: denom.into(),
-            amount,
+            amount: total_amount,
             mint_to_address: self.receiver.clone(),
         }
         .into()])
@@ -623,6 +707,10 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
 
     fn self_addr(&self) -> &cosmwasm_std::Addr {
         &self.common.env.contract.address
+    }
+
+    fn self_addr_canonicalized(&self) -> Result<AddrOf<Self::Packet>, Self::Error> {
+        Ok(self.self_addr().to_string())
     }
 
     fn ack_success() -> Self::Ack {
@@ -681,7 +769,14 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         &mut self,
         receiver: &AddrOf<Self::Packet>,
         tokens: Vec<TransferToken>,
-    ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), ContractError> {
+        cut_fees: bool,
+    ) -> Result<
+        (
+            Vec<NormalizedTransferToken>,
+            Vec<CosmosMsg<Self::CustomMsg>>,
+        ),
+        Self::Error,
+    > {
         let (tokens, msgs) = StatefulOnReceive {
             deps: self.common.deps.branch(),
         }
@@ -690,11 +785,13 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
             &self.common.channel.endpoint,
             &self.common.channel.counterparty_endpoint,
             receiver.as_str(),
+            self.common.info.sender.as_str(),
             tokens,
+            cut_fees,
         )?;
-
         Ok((tokens, batch_submessages(self.self_addr(), msgs)?))
     }
+
     fn normalize_for_ibc_transfer(
         &mut self,
         token: TransferToken,
@@ -723,68 +820,14 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         Ics20Packet::try_from(packet)
     }
 
-    fn packet_forward(
-        &mut self,
-        packet: Self::Packet,
-        original_packet: IbcPacket,
-        forward: PacketForward,
-        processed: bool,
-    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
-        let mut msgs: Vec<CosmosMsg<Self::CustomMsg>> = Vec::new();
-        // Override the receiving address for intermediate transfers on this chain with the contract address
-        let override_addr = self.self_addr().to_owned();
-
-        // If not already processed by other middleware, receive tokens into the contract address.
-        let mut tokens: Vec<Coin> = Vec::new();
-        if !processed {
-            msgs.append(&mut match self
-                .receive_transfer(&override_addr.to_string(), packet.tokens().to_vec())
-            {
-                Ok((t, msgs)) => {
-                    t.into_iter().for_each(|t| {
-                        tokens.push(Coin {
-                            denom: t.denom,
-                            amount: t.amount,
-                        })
-                    });
-                    msgs
-                }
-                Err(error) => {
-                    return Self::receive_error(error);
-                }
-            });
-        }
-
-        // Forward the packet
-        let forward_response = match self.forward_transfer_packet(
-            tokens,
-            original_packet.clone(),
-            forward,
-            override_addr,
-        ) {
-            Ok(forward_response) => forward_response,
-            Err(e) => {
-                return IbcReceiveResponse::new(
-                    Self::ack_failure(e.to_string()).encode_as::<JsonWasm>(),
-                )
-                .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
-            }
-        };
-
-        IbcReceiveResponse::without_ack()
-            .add_messages(msgs)
-            .add_submessages(forward_response.messages)
-            .add_events(forward_response.events)
-    }
-
     fn forward_transfer_packet(
         &mut self,
         tokens: Vec<Coin>,
         original_packet: IbcPacket,
         forward: PacketForward,
-        receiver: Addr,
+        sender: Addr,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, ContractError> {
-        self.do_forward_transfer_packet(tokens, original_packet, forward, receiver)
+        self.do_forward_transfer_packet(tokens, original_packet, forward, sender)
     }
 
     fn pfm_ack(
@@ -821,6 +864,23 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
     fn get_in_flight_packet(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
         self.do_get_in_flight_packet(forward_packet)
     }
+
+    fn load_channel_protocol_version(&self, channel_id: &str) -> Result<String, Self::Error> {
+        Ok(CHANNEL_INFO
+            .load(self.common.deps.storage, channel_id)?
+            .protocol_version)
+    }
+
+    fn protocol_switch_result(
+        &self,
+        counterparty_protocol_version: &str,
+    ) -> ucs01_relay_api::protocol::ProtocolSwitch {
+        match counterparty_protocol_version {
+            Ucs01Protocol::VERSION => ProtocolSwitch::Upgrade,
+            Ics20Protocol::VERSION => ProtocolSwitch::Stable,
+            x => panic!("impossible, unknown protocol: {}", x),
+        }
+    }
 }
 
 pub struct Ucs01Protocol<'a> {
@@ -848,6 +908,15 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 
     fn self_addr(&self) -> &cosmwasm_std::Addr {
         &self.common.env.contract.address
+    }
+
+    fn self_addr_canonicalized(&self) -> Result<AddrOf<Self::Packet>, Self::Error> {
+        Ok(self
+            .common
+            .deps
+            .api
+            .addr_canonicalize(self.self_addr().as_str())?
+            .into())
     }
 
     fn ack_success() -> Self::Ack {
@@ -908,7 +977,14 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         &mut self,
         receiver: &AddrOf<Self::Packet>,
         tokens: Vec<TransferToken>,
-    ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), ContractError> {
+        cut_fees: bool,
+    ) -> Result<
+        (
+            Vec<NormalizedTransferToken>,
+            Vec<CosmosMsg<Self::CustomMsg>>,
+        ),
+        Self::Error,
+    > {
         let receiver = self
             .common
             .deps
@@ -923,7 +999,9 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
             &self.common.channel.endpoint,
             &self.common.channel.counterparty_endpoint,
             receiver.as_str(),
+            self.common.info.sender.as_str(),
             tokens,
+            cut_fees,
         )?;
 
         Ok((tokens, batch_submessages(self.self_addr(), msgs)?))
@@ -975,77 +1053,14 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         ))
     }
 
-    fn packet_forward(
-        &mut self,
-        packet: Self::Packet,
-        original_packet: IbcPacket,
-        forward: PacketForward,
-        processed: bool,
-    ) -> cosmwasm_std::IbcReceiveResponse<Self::CustomMsg> {
-        let mut msgs: Vec<CosmosMsg<Self::CustomMsg>> = Vec::new();
-        // Override the receiving address for intermediate transfers on this chain with the contract address
-        let override_addr = self.self_addr().to_owned();
-        let override_con_addr = match self
-            .common
-            .deps
-            .api
-            .addr_canonicalize(override_addr.as_str())
-        {
-            Ok(addr) => addr,
-            Err(error) => {
-                return Self::receive_error(error);
-            }
-        };
-
-        // If not already processed by other middleware, receive tokens into the contract address.
-        let mut tokens: Vec<Coin> = Vec::new();
-        if !processed {
-            msgs.append(&mut match self
-                .receive_transfer(&override_con_addr.into(), packet.tokens().to_vec())
-            {
-                Ok((t, msgs)) => {
-                    t.into_iter().for_each(|t| {
-                        tokens.push(Coin {
-                            denom: t.denom,
-                            amount: t.amount,
-                        })
-                    });
-                    msgs
-                }
-                Err(error) => {
-                    return Self::receive_error(error);
-                }
-            });
-        }
-
-        // Forward the packet
-        let forward_response = match self.forward_transfer_packet(
-            tokens,
-            original_packet.clone(),
-            forward,
-            override_addr,
-        ) {
-            Ok(forward_response) => forward_response,
-            Err(e) => {
-                return IbcReceiveResponse::new(Self::ack_failure(e.to_string()).encode())
-                    .add_event(Event::new(PFM_ERROR_EVENT).add_attribute("error", e.to_string()))
-            }
-        };
-
-        IbcReceiveResponse::without_ack()
-            .add_messages(msgs)
-            .add_submessages(forward_response.messages)
-            .add_events(forward_response.events)
-    }
-
     fn forward_transfer_packet(
         &mut self,
         tokens: Vec<Coin>,
         original_packet: IbcPacket,
         forward: PacketForward,
-        receiver: Addr,
+        sender: Addr,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, ContractError> {
-        self.do_forward_transfer_packet(tokens, original_packet, forward, receiver)
+        self.do_forward_transfer_packet(tokens, original_packet, forward, sender)
     }
 
     #[allow(clippy::type_complexity)]
@@ -1082,6 +1097,23 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
     fn get_in_flight_packet(&self, forward_packet: IbcPacket) -> Option<InFlightPfmPacket> {
         self.do_get_in_flight_packet(forward_packet)
     }
+
+    fn load_channel_protocol_version(&self, channel_id: &str) -> Result<String, Self::Error> {
+        Ok(CHANNEL_INFO
+            .load(self.common.deps.storage, channel_id)?
+            .protocol_version)
+    }
+
+    fn protocol_switch_result(
+        &self,
+        counterparty_protocol_version: &str,
+    ) -> ucs01_relay_api::protocol::ProtocolSwitch {
+        match counterparty_protocol_version {
+            Ucs01Protocol::VERSION => ProtocolSwitch::Stable,
+            Ics20Protocol::VERSION => ProtocolSwitch::Downgrade,
+            x => panic!("impossible, unknown protocol: {}", x),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -1091,7 +1123,10 @@ mod tests {
         wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcEndpoint, Uint128,
     };
     use token_factory_api::TokenFactoryMsg;
-    use ucs01_relay_api::{protocol::TransferProtocol, types::TransferToken};
+    use ucs01_relay_api::{
+        protocol::TransferProtocol,
+        types::{FeePerU128, TransferToken},
+    };
 
     use super::{hash_denom, ForTokens, OnReceive, StatefulOnReceive};
     use crate::{
@@ -1175,10 +1210,13 @@ mod tests {
                         channel_id: "channel-34".into(),
                     },
                     "receiver",
+                    "relayer",
                     vec![TransferToken {
                         denom: "from-counterparty".into(),
-                        amount: Uint128::from(100u128)
-                    },],
+                        amount: Uint128::from(100u128),
+                        fee: FeePerU128::percent(10u128.try_into().unwrap()).unwrap(),
+                    }],
+                    true
                 )
                 .unwrap()
                 .1,
@@ -1204,8 +1242,14 @@ mod tests {
                 .into(),
                 TokenFactoryMsg::MintTokens {
                     denom: format!("factory/0xDEADC0DE/{}", denom_str),
-                    amount: Uint128::from(100u128),
+                    amount: Uint128::from(91u128),
                     mint_to_address: "receiver".into()
+                }
+                .into(),
+                TokenFactoryMsg::MintTokens {
+                    denom: format!("factory/0xDEADC0DE/{}", denom_str),
+                    amount: Uint128::from(9u128),
+                    mint_to_address: "relayer".into()
                 }
                 .into(),
             ]
@@ -1234,10 +1278,13 @@ mod tests {
                     &source_endpoint_1,
                     &conflicting_destination,
                     "receiver",
+                    "relayer",
                     vec![TransferToken {
                         denom: "from-counterparty".into(),
                         amount: Uint128::from(100u128),
+                        fee: FeePerU128::zero(),
                     }],
+                    true,
                 )
                 .unwrap()
                 .1[0]
@@ -1252,10 +1299,13 @@ mod tests {
                     &source_endpoint_2,
                     &conflicting_destination,
                     "receiver",
+                    "relayer",
                     vec![TransferToken {
                         denom: "from-counterparty".into(),
                         amount: Uint128::from(100u128),
+                        fee: FeePerU128::zero(),
                     }],
+                    true,
                 )
                 .unwrap()
                 .1[0]
@@ -1281,22 +1331,36 @@ mod tests {
                         channel_id: "channel-34".into(),
                     },
                     "receiver",
+                    "relayer",
                     vec![TransferToken {
                         denom: "from-counterparty".into(),
-                        amount: Uint128::from(100u128)
-                    },],
+                        amount: Uint128::from(100u128),
+                        fee: FeePerU128::percent(5u128.try_into().unwrap()).unwrap(),
+                    }],
+                    true
                 )
                 .unwrap()
                 .1,
-            vec![TokenFactoryMsg::MintTokens {
-                denom: format!(
-                    "factory/0xDEADC0DE/{}",
-                    hash_denom_str("wasm.0xDEADC0DE/channel-1/from-counterparty")
-                ),
-                amount: Uint128::from(100u128),
-                mint_to_address: "receiver".into()
-            }
-            .into()]
+            vec![
+                TokenFactoryMsg::MintTokens {
+                    denom: format!(
+                        "factory/0xDEADC0DE/{}",
+                        hash_denom_str("wasm.0xDEADC0DE/channel-1/from-counterparty")
+                    ),
+                    amount: Uint128::from(96u128),
+                    mint_to_address: "receiver".into()
+                }
+                .into(),
+                TokenFactoryMsg::MintTokens {
+                    denom: format!(
+                        "factory/0xDEADC0DE/{}",
+                        hash_denom_str("wasm.0xDEADC0DE/channel-1/from-counterparty")
+                    ),
+                    amount: Uint128::from(4u128),
+                    mint_to_address: "relayer".into()
+                }
+                .into()
+            ]
         );
     }
 
@@ -1315,21 +1379,34 @@ mod tests {
                         channel_id: "channel-34".into(),
                     },
                     "receiver",
+                    "relayer",
                     vec![TransferToken {
                         denom: "transfer/channel-34/local-denom".into(),
-                        amount: Uint128::from(119u128)
+                        amount: Uint128::from(119u128),
+                        fee: FeePerU128::percent(10u128.try_into().unwrap()).unwrap()
                     }],
+                    true
                 )
                 .unwrap()
                 .1,
-            vec![BankMsg::Send {
-                to_address: "receiver".into(),
-                amount: vec![Coin {
-                    denom: "local-denom".into(),
-                    amount: Uint128::from(119u128)
-                }]
-            }
-            .into()]
+            vec![
+                BankMsg::Send {
+                    to_address: "receiver".into(),
+                    amount: vec![Coin {
+                        denom: "local-denom".into(),
+                        amount: Uint128::from(108u128)
+                    }]
+                }
+                .into(),
+                BankMsg::Send {
+                    to_address: "relayer".into(),
+                    amount: vec![Coin {
+                        denom: "local-denom".into(),
+                        amount: Uint128::from(11u128)
+                    }]
+                }
+                .into()
+            ]
         );
     }
 
@@ -1342,6 +1419,7 @@ mod tests {
                 _channel_id: &str,
                 _denom: &str,
                 _amount: Uint128,
+                _fee_amount: Uint128,
             ) -> Result<
                 Vec<cosmwasm_std::CosmosMsg<token_factory_api::TokenFactoryMsg>>,
                 crate::error::ContractError,
@@ -1354,13 +1432,14 @@ mod tests {
                 _channel_id: &str,
                 denom: &str,
                 amount: Uint128,
+                fee_amount: Uint128,
             ) -> Result<
                 Vec<cosmwasm_std::CosmosMsg<token_factory_api::TokenFactoryMsg>>,
                 crate::error::ContractError,
             > {
                 Ok(vec![TokenFactoryMsg::BurnTokens {
                     denom: denom.into(),
-                    amount,
+                    amount: amount + fee_amount,
                     burn_from_address: "0xCAFEBABE".into(),
                 }
                 .into()])
@@ -1378,15 +1457,18 @@ mod tests {
                     vec![
                         TransferToken {
                             denom: "transfer-source/blabla/remote-denom".into(),
-                            amount: Uint128::from(119u128)
+                            amount: Uint128::from(119u128),
+                            fee: FeePerU128::zero()
                         },
                         TransferToken {
                             denom: "transfer-source/blabla-2/remote-denom".into(),
-                            amount: Uint128::from(10u128)
+                            amount: Uint128::from(10u128),
+                            fee: FeePerU128::zero()
                         },
                         TransferToken {
                             denom: "transfer-source/blabla/remote-denom2".into(),
-                            amount: Uint128::from(129u128)
+                            amount: Uint128::from(129u128),
+                            fee: FeePerU128::zero()
                         },
                     ],
                 )
@@ -1425,11 +1507,12 @@ mod tests {
                 _channel_id: &str,
                 _denom: &str,
                 amount: Uint128,
+                fee_amount: Uint128,
             ) -> Result<
                 Vec<cosmwasm_std::CosmosMsg<token_factory_api::TokenFactoryMsg>>,
                 crate::error::ContractError,
             > {
-                self.total += amount;
+                self.total += amount + fee_amount;
                 Ok(Default::default())
             }
 
@@ -1438,6 +1521,7 @@ mod tests {
                 _channel_id: &str,
                 _denom: &str,
                 _amount: Uint128,
+                _fee_amount: Uint128,
             ) -> Result<
                 Vec<cosmwasm_std::CosmosMsg<token_factory_api::TokenFactoryMsg>>,
                 crate::error::ContractError,
@@ -1457,11 +1541,13 @@ mod tests {
                     vec![
                         TransferToken {
                             denom: "transfer/channel-2/remote-denom".into(),
-                            amount: Uint128::from(119u128)
+                            amount: Uint128::from(119u128),
+                            fee: FeePerU128::zero()
                         },
                         TransferToken {
                             denom: "transfer/channel-2/remote-denom2".into(),
-                            amount: Uint128::from(129u128)
+                            amount: Uint128::from(129u128),
+                            fee: FeePerU128::zero()
                         }
                     ],
                 )
@@ -1483,13 +1569,15 @@ mod tests {
                 },
                 TransferToken {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                    amount: Uint128::MAX
+                    amount: Uint128::MAX,
+                    fee: FeePerU128::zero()
                 }
             )
             .unwrap(),
             TransferToken {
                 denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                amount: Uint128::MAX
+                amount: Uint128::MAX,
+                fee: FeePerU128::zero()
             }
         );
         assert_eq!(
@@ -1502,13 +1590,15 @@ mod tests {
                 },
                 TransferToken {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                    amount: Uint128::MAX
+                    amount: Uint128::MAX,
+                    fee: FeePerU128::zero()
                 }
             )
             .unwrap(),
             TransferToken {
                 denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                amount: Uint128::MAX
+                amount: Uint128::MAX,
+                fee: FeePerU128::zero()
             }
         );
     }
@@ -1525,13 +1615,15 @@ mod tests {
                 },
                 TransferToken {
                     denom: "factory/0xDEADC0DE/0xaf30fd00576e1d27471a4d2b0c0487dc6876e0589e".into(),
-                    amount: Uint128::MAX
+                    amount: Uint128::MAX,
+                    fee: FeePerU128::zero()
                 }
             )
             .unwrap(),
             TransferToken {
                 denom: "transfer/channel-332/blabla-1".into(),
-                amount: Uint128::MAX
+                amount: Uint128::MAX,
+                fee: FeePerU128::zero()
             }
         );
     }

@@ -1,6 +1,6 @@
 use std::string::FromUtf8Error;
 
-use cosmwasm_std::{IbcOrder, OverflowError, StdError, SubMsgResult};
+use cosmwasm_std::{CheckedMultiplyRatioError, IbcOrder, OverflowError, StdError, SubMsgResult};
 use cw_controllers::AdminError;
 use thiserror::Error;
 use ucs01_relay_api::{middleware::MiddlewareError, protocol::ProtocolError, types::EncodingError};
@@ -66,11 +66,14 @@ pub enum ContractError {
     #[error("Only myself is able to trigger this message")]
     Unauthorized,
 
-    #[error("{0}")]
+    #[error(transparent)]
     MiddlewareError(#[from] MiddlewareError),
 
     #[error("unable to decode json value")]
     SerdeJson(#[from] serde_json_wasm::de::Error),
+
+    #[error(transparent)]
+    Arithmetic(#[from] CheckedMultiplyRatioError),
 }
 
 impl From<FromUtf8Error> for ContractError {

@@ -1,7 +1,14 @@
+use std::collections::BTreeMap;
+
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256};
+use cosmwasm_std::{
+    Binary, CheckedMultiplyRatioError, Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256,
+};
 use ethabi::{ParamType, Token};
-use unionlabs::encoding::{self, Decode, Encode, EncodeAs, Encoding};
+use unionlabs::{
+    bounded::BoundedU128,
+    encoding::{self, Decode, Encode, EncodeAs, Encoding},
+};
 
 pub type GenericAck = Result<Vec<u8>, Vec<u8>>;
 
@@ -9,6 +16,8 @@ pub type GenericAck = Result<Vec<u8>, Vec<u8>>;
 pub enum EncodingError {
     #[error("ICS20 can handle a single coin only.")]
     Ics20OnlyOneCoin,
+    #[error("ICS20 cannot handle fee directly.")]
+    Ics20CannotHandleFee,
     #[error("Could not decode UCS01 packet: value: {data}, err: {err:?}", data = serde_utils::to_hex(.value))]
     InvalidUCS01PacketEncoding { value: Vec<u8>, err: ethabi::Error },
     #[error("Could not decode UCS01 ack, expected a boolean, got: {data}", data = serde_utils::to_hex(.got))]
@@ -69,16 +78,52 @@ pub struct TransferPacketCommon<T> {
 pub struct TransferToken {
     pub denom: String,
     pub amount: Uint128,
+    pub fee: FeePerU128,
 }
 
-impl From<Coin> for TransferToken {
-    fn from(value: Coin) -> Self {
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct NormalizedTransferToken {
+    pub origin_denom: String,
+    pub token: TransferToken,
+}
+
+impl TransferToken {
+    pub fn amounts(&self) -> Result<(Uint128, Uint128), CheckedMultiplyRatioError> {
+        let fee_amount = self.amount.checked_multiply_ratio(self.fee.0, u128::MAX)?;
+        let actual_amount = self.amount - fee_amount;
+        Ok((actual_amount, fee_amount))
+    }
+}
+
+#[cw_serde]
+#[derive(Default, Copy, Eq)]
+pub struct FeePerU128(Uint128);
+
+impl FeePerU128 {
+    pub fn new(x: impl Into<Uint128>) -> Self {
+        FeePerU128(x.into())
+    }
+
+    pub const fn zero() -> Self {
+        Self(Uint128::zero())
+    }
+
+    pub fn percent(x: BoundedU128<0, 100>) -> Result<Self, CheckedMultiplyRatioError> {
+        Ok(Self(Uint128::MAX.checked_multiply_ratio(x, 100u128)?))
+    }
+}
+
+impl From<(Coin, FeePerU128)> for TransferToken {
+    fn from((coin, fee): (Coin, FeePerU128)) -> Self {
         Self {
-            denom: value.denom,
-            amount: value.amount,
+            denom: coin.denom,
+            amount: coin.amount,
+            fee,
         }
     }
 }
+
+pub type Fees = BTreeMap<String, FeePerU128>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ucs01TransferPacket {
@@ -127,10 +172,11 @@ impl Encode<encoding::EthAbi> for Ucs01TransferPacket {
             Token::Array(
                 self.tokens
                     .into_iter()
-                    .map(|TransferToken { denom, amount }| {
+                    .map(|TransferToken { denom, amount, fee }| {
                         Token::Tuple(vec![
                             Token::String(denom),
                             Token::Uint(Uint256::from(amount).to_be_bytes().into()),
+                            Token::Uint(Uint256::from(fee.0).to_be_bytes().into()),
                         ])
                     })
                     .collect(),
@@ -150,6 +196,7 @@ impl Decode<encoding::EthAbi> for Ucs01TransferPacket {
                 ParamType::Bytes,
                 ParamType::Array(Box::new(ParamType::Tuple(vec![
                     ParamType::String,
+                    ParamType::Uint(128),
                     ParamType::Uint(128),
                 ]))),
                 ParamType::String,
@@ -172,9 +219,10 @@ impl Decode<encoding::EthAbi> for Ucs01TransferPacket {
                         .map(|encoded_token| {
                             if let Token::Tuple(encoded_token_inner) = encoded_token {
                                 match &encoded_token_inner[..] {
-                                    [Token::String(denom), Token::Uint(amount)] => TransferToken {
+                                    [Token::String(denom), Token::Uint(amount), Token::Uint(fee)] => TransferToken {
                                         denom: denom.clone(),
                                         amount: Uint128::new(amount.as_u128()),
+                                        fee: FeePerU128(Uint128::new(fee.as_u128())),
                                     },
                                     _ => unreachable!(),
                                 }
@@ -248,6 +296,7 @@ impl TransferPacket for Ics20Packet {
         vec![TransferToken {
             denom: self.denom.clone(),
             amount: self.amount,
+            fee: FeePerU128(0u128.into()),
         }]
     }
 
@@ -330,7 +379,13 @@ impl TryFrom<TransferPacketCommon<String>> for Ics20Packet {
         }: TransferPacketCommon<String>,
     ) -> Result<Self, Self::Error> {
         let (denom, amount) = match &tokens[..] {
-            [TransferToken { denom, amount }] => Ok((denom.clone(), *amount)),
+            [TransferToken { denom, amount, fee }] => {
+                if fee.0.is_zero() {
+                    Ok((denom.clone(), *amount))
+                } else {
+                    Err(EncodingError::Ics20CannotHandleFee)
+                }
+            }
             _ => Err(EncodingError::Ics20OnlyOneCoin),
         }?;
         Ok(Self {
@@ -378,7 +433,7 @@ mod tests {
     use unionlabs::encoding::{Decode, DecodeAs, Encode, EncodeAs};
 
     use super::{Ics20Packet, TransferToken, Ucs01Ack, Ucs01TransferPacket};
-    use crate::types::{DenomOrigin, Ics20Ack, JsonWasm};
+    use crate::types::{DenomOrigin, FeePerU128, Ics20Ack, JsonWasm};
 
     #[test]
     fn ucs01_packet_encode_decode_iso() {
@@ -389,14 +444,17 @@ mod tests {
                 TransferToken {
                     denom: "denom-0".into(),
                     amount: Uint128::from(1u32),
+                    fee: FeePerU128::zero(),
                 },
                 TransferToken {
                     denom: "denom-1".into(),
                     amount: Uint128::MAX,
+                    fee: FeePerU128::zero(),
                 },
                 TransferToken {
                     denom: "denom-2".into(),
                     amount: Uint128::from(1337u32),
+                    fee: FeePerU128::zero(),
                 },
             ],
             memo: String::new(),

@@ -6,7 +6,7 @@ use unionlabs::{
     validated::{Validate, Validated},
 };
 
-use crate::protocol::ProtocolError;
+use crate::{protocol::ProtocolError, types::Fees};
 
 pub const DEFAULT_PFM_TIMEOUT: &str = "1m";
 pub const DEFAULT_PFM_RETRIES: u8 = 0;
@@ -25,7 +25,7 @@ pub const SRC_PORT_ATTR: &str = "src_port";
 
 #[derive(Error, Debug, PartialEq)]
 pub enum MiddlewareError {
-    #[error("{0}")]
+    #[error(transparent)]
     PacketForward(#[from] PacketForwardError),
 }
 
@@ -107,6 +107,9 @@ pub struct PacketForward {
     pub retries: u8,
     pub next: Option<Box<PacketForward>>,
     pub return_info: Option<PacketId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub fees: Option<Fees>,
 }
 
 impl PacketForward {
@@ -171,7 +174,5 @@ mod tests {
         let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
 
         dbg!(parsed);
-
-        // panic!()
     }
 }

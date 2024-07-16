@@ -8,7 +8,7 @@ use cw2::set_contract_version;
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
     protocol::{TransferInput, TransferProtocol},
-    types::TransferToken,
+    types::{FeePerU128, TransferToken},
 };
 
 use crate::{
@@ -115,10 +115,18 @@ pub fn execute_transfer(
     info: MessageInfo,
     msg: TransferMsg,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
+    let fees = msg.fees.unwrap_or_default();
     let tokens: Vec<TransferToken> = Coins::try_from(info.funds.clone())
         .map_err(|_| StdError::generic_err("Couldn't decode funds to Coins"))?
         .into_vec()
         .into_iter()
+        .map(|coin| {
+            let denom = coin.denom.clone();
+            (
+                coin,
+                fees.get(&denom).copied().unwrap_or(FeePerU128::zero()),
+            )
+        })
         .map(Into::into)
         .collect();
 

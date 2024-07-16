@@ -1,15 +1,19 @@
-use std::fmt::Debug;
+use std::{collections::btree_map::Entry, fmt::Debug};
 
 use cosmwasm_std::{
-    Addr, Attribute, Binary, Coin, CosmosMsg, Event, IbcBasicResponse, IbcEndpoint, IbcMsg,
-    IbcOrder, IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response, SubMsg, Timestamp,
+    Addr, Attribute, Binary, CheckedMultiplyRatioError, Coin, CosmosMsg, Event, IbcBasicResponse,
+    IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcReceiveResponse, Response,
+    SubMsg, Timestamp,
 };
 use thiserror::Error;
 use unionlabs::encoding::{self, Decode, DecodeErrorOf, Encode};
 
 use crate::{
     middleware::{InFlightPfmPacket, Memo, PacketForward},
-    types::{EncodingError, GenericAck, TransferPacket, TransferPacketCommon, TransferToken},
+    types::{
+        EncodingError, GenericAck, NormalizedTransferToken, TransferPacket, TransferPacketCommon,
+        TransferToken,
+    },
 };
 
 // https://github.com/cosmos/ibc-go/blob/8218aeeef79d556852ec62a773f2bc1a013529d4/modules/apps/transfer/types/keys.go#L12
@@ -31,6 +35,7 @@ pub const ATTR_ERROR: &str = "error";
 pub const ATTR_ACK: &str = "acknowledgement";
 pub const ATTR_PFM: &str = "pfm";
 pub const ATTR_ASSETS: &str = "assets";
+pub const ATTR_FEE_ASSETS: &str = "fee_assets";
 
 pub const ATTR_VALUE_PFM_ACK: &str = "pfm_ack";
 pub const ATTR_VALUE_TRUE: &str = "true";
@@ -61,21 +66,47 @@ pub struct TransferInput {
     pub tokens: Vec<TransferToken>,
 }
 
-pub fn tokens_to_attr(tokens: impl IntoIterator<Item = TransferToken>) -> Attribute {
-    (
-        ATTR_ASSETS,
-        cosmwasm_std::to_json_string(
-            &tokens
-                .into_iter()
-                .map(|token| Coin::new(token.amount.u128(), token.denom))
-                .collect::<Vec<_>>(),
+pub fn tokens_to_attr(
+    tokens: impl IntoIterator<Item = TransferToken>,
+) -> Result<Vec<Attribute>, CheckedMultiplyRatioError> {
+    let (amounts, fee_amounts): (Vec<_>, Vec<_>) = tokens
+        .into_iter()
+        .map(|token| {
+            let (actual_amount, fee_amount) = token.amounts()?;
+            Ok((
+                Coin::new(actual_amount, token.denom.clone()),
+                Coin::new(fee_amount, token.denom),
+            ))
+        })
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .unzip();
+    Ok([
+        (
+            ATTR_ASSETS,
+            cosmwasm_std::to_json_string(&amounts).expect("impossible"),
         )
-        .expect("impossible"),
-    )
-        .into()
+            .into(),
+        (
+            ATTR_FEE_ASSETS,
+            cosmwasm_std::to_json_string(&fee_amounts).expect("impossible"),
+        )
+            .into(),
+    ]
+    .into())
 }
 
 pub type AddrOf<T> = <T as TransferPacket>::Addr;
+
+/// Either the protocol upgrades or downgrades when switching version.
+pub enum ProtocolSwitch {
+    /// The protocol is getting upgraded, meaning that the target version is a superset.
+    Upgrade,
+    /// The protocol is getting downgraded, meaning that the target version is a subset.
+    Downgrade,
+    /// The two ends speaks the same protcol.
+    Stable,
+}
 
 // We follow the following module implementation, events and attributes are
 // almost 1:1 with the traditional go implementation. As we generalized the base
@@ -102,13 +133,18 @@ pub trait TransferProtocol {
         + From<ProtocolError>
         + From<EncodingError>
         + From<DecodeErrorOf<Self::Encoding, Self::Packet>>
-        + From<DecodeErrorOf<Self::Encoding, Self::Ack>>;
+        + From<DecodeErrorOf<Self::Encoding, Self::Ack>>
+        + From<CheckedMultiplyRatioError>;
+
+    fn load_channel_protocol_version(&self, channel_id: &str) -> Result<String, Self::Error>;
 
     fn channel_endpoint(&self) -> &IbcEndpoint;
 
     fn caller(&self) -> &Addr;
 
     fn self_addr(&self) -> &Addr;
+
+    fn self_addr_canonicalized(&self) -> Result<AddrOf<Self::Packet>, Self::Error>;
 
     // TODO: Remove use of Encoding Error
     fn common_to_protocol_packet(
@@ -191,7 +227,7 @@ pub trait TransferProtocol {
                         (ATTR_SENDER, input.sender.as_str()),
                         (ATTR_RECEIVER, input.receiver.as_str()),
                     ])
-                    .add_attributes([tokens_to_attr(tokens)]),
+                    .add_attributes(tokens_to_attr(tokens)?),
                 Event::new(MESSAGE_EVENT).add_attribute(ATTR_MODULE, TRANSFER_MODULE),
             ]))
     }
@@ -270,7 +306,7 @@ pub trait TransferProtocol {
                             ibc_packet.acknowledgement.data.to_string().as_str(),
                         ),
                     ])
-                    .add_attributes([tokens_to_attr(packet.tokens())]),
+                    .add_attributes(tokens_to_attr(packet.tokens())?),
             )
             .add_event(Event::new(PACKET_EVENT).add_attributes(ack_attr))
             .add_messages(ack_msgs))
@@ -311,7 +347,7 @@ pub trait TransferProtocol {
                         (ATTR_MODULE, TRANSFER_MODULE),
                         (ATTR_REFUND_RECEIVER, packet.sender().to_string().as_str()),
                     ])
-                    .add_attributes([tokens_to_attr(packet.tokens())]),
+                    .add_attributes(tokens_to_attr(packet.tokens())?),
             )
             .add_messages(refund_msgs))
     }
@@ -321,7 +357,14 @@ pub trait TransferProtocol {
         &mut self,
         receiver: &AddrOf<Self::Packet>,
         tokens: Vec<TransferToken>,
-    ) -> Result<(Vec<TransferToken>, Vec<CosmosMsg<Self::CustomMsg>>), Self::Error>;
+        cut_fees: bool,
+    ) -> Result<
+        (
+            Vec<NormalizedTransferToken>,
+            Vec<CosmosMsg<Self::CustomMsg>>,
+        ),
+        Self::Error,
+    >;
 
     fn receive(&mut self, original_packet: IbcPacket) -> IbcReceiveResponse<Self::CustomMsg> {
         let handle = || -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
@@ -332,7 +375,7 @@ pub trait TransferProtocol {
             if let Ok(memo) = serde_json_wasm::from_str::<Memo>(&memo) {
                 match memo {
                     Memo::Forward { forward } => {
-                        return Ok(self.packet_forward(packet, original_packet, forward, false))
+                        return self.packet_forward(packet, original_packet, forward)
                     }
                     Memo::None { .. } => {}
                 };
@@ -344,7 +387,7 @@ pub trait TransferProtocol {
             // the reply handler via the `receive_error` for the acknowledgement
             // to be overwritten.
             let transfer_msgs = self
-                .receive_transfer(packet.receiver(), packet.tokens())?
+                .receive_transfer(packet.receiver(), packet.tokens(), true)?
                 .1
                 .into_iter()
                 .map(|msg| SubMsg::reply_on_error(msg, Self::RECEIVE_REPLY_ID));
@@ -364,7 +407,7 @@ pub trait TransferProtocol {
                             (ATTR_RECEIVER, packet.receiver().to_string().as_str()),
                             (ATTR_SUCCESS, ATTR_VALUE_TRUE),
                         ])
-                        .add_attributes([tokens_to_attr(packet.tokens())]),
+                        .add_attributes(tokens_to_attr(packet.tokens())?),
                 )
                 .add_submessages(transfer_msgs))
         };
@@ -393,9 +436,50 @@ pub trait TransferProtocol {
         &mut self,
         packet: Self::Packet,
         original_packet: IbcPacket,
-        forward: PacketForward,
-        processed: bool,
-    ) -> IbcReceiveResponse<Self::CustomMsg>;
+        mut forward: PacketForward,
+    ) -> Result<cosmwasm_std::IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
+        // The funds will hop on the contract for the transfer. The contract
+        // acts as an intermediary sending the funds on behalf of the user.
+        let self_receiver = self.self_addr_canonicalized()?;
+        let self_sender = self.self_addr().clone();
+
+        let (tokens, msgs) = {
+            // Never cut fees on PFM hop, let the destination handle it.
+            let cut_fees = false;
+            let (t, msgs) =
+                self.receive_transfer(&self_receiver, packet.tokens().clone(), cut_fees)?;
+            (
+                t.into_iter()
+                    .map(|t| {
+                        // We need to remap the fee key when hopping as our
+                        // origin denom will be wrapped. If you bridge from
+                        // Osmosis to Ethereum through Union, you want to set
+                        // the fees in uosmos let's says. When hopping on union
+                        // using PFM, uosmo will be represented as a factory
+                        // denom (wrapped version with a completely different
+                        // denom). For this reason, we update the fees by
+                        // remapping the fee under the origin key to the locally
+                        // normalized denom.
+                        if let Some(fees) = forward.fees.as_mut() {
+                            if let Entry::Occupied(fee_entry) = fees.entry(t.origin_denom) {
+                                let fee = fee_entry.remove();
+                                fees.insert(t.token.denom.clone(), fee);
+                            }
+                        }
+                        Coin {
+                            denom: t.token.denom,
+                            amount: t.token.amount,
+                        }
+                    })
+                    .collect::<Vec<_>>(),
+                msgs,
+            )
+        };
+
+        Ok(self
+            .forward_transfer_packet(tokens, original_packet, forward, self_sender)?
+            .add_messages(msgs))
+    }
 
     /// Create the IBC transfer message from the provided forward information.
     ///
@@ -405,7 +489,7 @@ pub trait TransferProtocol {
         tokens: Vec<Coin>,
         original_packet: IbcPacket,
         forward: PacketForward,
-        receiver: Addr,
+        sender: Addr,
     ) -> Result<IbcReceiveResponse<Self::CustomMsg>, Self::Error>;
 
     /// Check if a packet is an in flight pfm, if so return the `InFlightPfmPacket` from storage
@@ -430,6 +514,8 @@ pub trait TransferProtocol {
         foreign_protocol: &str,
         ack: GenericAck,
     ) -> Result<GenericAck, Self::Error>;
+
+    fn protocol_switch_result(&self, counterparty_protocol_version: &str) -> ProtocolSwitch;
 }
 
 #[cfg(test)]
@@ -437,26 +523,34 @@ mod tests {
     use cosmwasm_std::{Coin, Uint128};
 
     use crate::{
-        protocol::{tokens_to_attr, ATTR_ASSETS},
-        types::TransferToken,
+        protocol::{tokens_to_attr, ATTR_ASSETS, ATTR_FEE_ASSETS},
+        types::{FeePerU128, TransferToken},
     };
 
     #[test]
     fn test_token_attr() {
         let token = TransferToken {
             denom: "factory/1/2/3".into(),
-            amount: 0xDEAD_u64.into(),
+            amount: 1000_u64.into(),
+            fee: FeePerU128::percent(50u128.try_into().unwrap()).unwrap(),
         };
         let token2 = TransferToken {
             denom: "factory/1/3/3".into(),
-            amount: 0xC0DE_u64.into(),
+            amount: 1337_u64.into(),
+            fee: FeePerU128::zero(),
         };
-        let attr = tokens_to_attr([token, token2]);
-        let coins = cosmwasm_std::from_json::<Vec<Coin>>(attr.value).unwrap();
-        assert_eq!(attr.key, ATTR_ASSETS);
-        assert_eq!(coins[0].denom, "factory/1/2/3");
-        assert_eq!(coins[0].amount, Uint128::from(0xDEAD_u64));
-        assert_eq!(coins[1].denom, "factory/1/3/3");
-        assert_eq!(coins[1].amount, Uint128::from(0xC0DE_u64));
+        let attrs = tokens_to_attr([token, token2]).unwrap();
+        let amount = cosmwasm_std::from_json::<Vec<Coin>>(attrs[0].value.clone()).unwrap();
+        assert_eq!(attrs[0].key, ATTR_ASSETS);
+        assert_eq!(amount[0].denom, "factory/1/2/3");
+        assert_eq!(amount[0].amount, Uint128::from(501u64));
+        assert_eq!(amount[1].denom, "factory/1/3/3");
+        assert_eq!(amount[1].amount, Uint128::from(1337_u64));
+        let fee_amount = cosmwasm_std::from_json::<Vec<Coin>>(attrs[1].value.clone()).unwrap();
+        assert_eq!(attrs[1].key, ATTR_FEE_ASSETS);
+        assert_eq!(fee_amount[0].denom, "factory/1/2/3");
+        assert_eq!(fee_amount[0].amount, Uint128::from(499u64));
+        assert_eq!(fee_amount[1].denom, "factory/1/3/3");
+        assert_eq!(fee_amount[1].amount, Uint128::from(0_u64));
     }
 }
