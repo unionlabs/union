@@ -5,6 +5,7 @@ import LoadingDots from "$lib/components/loading-dots.svelte"
 
 export let label: string
 export let value: number | string
+export let blink: boolean
 
 function formatValue(value: number | string): string {
   if (typeof value === "number") {
@@ -25,8 +26,21 @@ function formatValue(value: number | string): string {
         <LoadingDots class="size-6"/>
       </div>
     {:else }
-      <div class="text-xl pt-2 font-bold">{formatValue(value)}</div>
+      {#key value}
+        <p class="text-xl pt-2 font-bold" class:blink={blink}>{formatValue(value)}</p>
+      {/key}
     {/if}
   </div>
   <slot/>
 </div>
+
+<style>
+    .blink {
+        animation: blink-animation 0.5s;
+    }
+
+    @keyframes blink-animation {
+        0% { @apply text-accent; }
+        100% { @apply text-primary; }
+    }
+</style>
