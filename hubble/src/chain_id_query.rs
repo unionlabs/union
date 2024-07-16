@@ -222,10 +222,13 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                         .unwrap()
                         .unwrap();
 
-                    let msg = <contracts::ibc_handler::CreateClientCall as ethers::abi::AbiDecode>::decode(
-                        &tx.input,
-                    )
-                    .unwrap();
+                    let msg = match <contracts::ibc_handler::CreateClientCall as ethers::abi::AbiDecode>::decode(&tx.input) {
+                        Ok(msg) => msg,
+                        Err(err) => {
+                            warn!("could not decode CreateClientCall, most likely due to ABI change: {}", err);
+                            continue
+                        }
+                    };
 
                     match &*msg.0.client_type {
                         "cometbls" => {

@@ -15,12 +15,17 @@ pub trait Querier {
 }
 
 impl<T: Querier + Send + Sync> Indexer<T> {
-    pub fn new(chain_id: ChainId, pool: sqlx::PgPool, querier: T, start_height: Option<i64>) -> Self {
+    pub fn new(
+        chain_id: ChainId,
+        pool: sqlx::PgPool,
+        querier: T,
+        start_height: Option<i64>,
+    ) -> Self {
         Self {
             chain_id,
             pool,
             querier,
-            start_height
+            start_height,
         }
     }
 
