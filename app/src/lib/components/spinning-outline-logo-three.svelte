@@ -1,127 +1,130 @@
-<script lang="ts"> 
-  import * as THREE from 'three'; 
+<script lang="ts">
+  import * as THREE from 'three';
   import Square from './spinning-logo/square.svelte';
   import { onMount } from 'svelte';
   import { createCube } from '$lib/three/cube';
-
-	let cubeWidth = 128;
-	let gap = 64;
-	let cubeCount = 16;
-	// let cubeWidth = 128;
-	// let gap = 80;
-	// let cubeCount = 16;
-	let logoWidth = cubeWidth * cubeCount + gap * (cubeCount - 1);
-	let cubesY = cubeWidth * 2 + gap;
-	$: cubeDelta = (20 - cubeWidth) / 2;
-	let strokeWidth = 2.5;
-
-	let threeContainer: HTMLElement;
-	let threeCanvas: HTMLCanvasElement;
+  import { mode, userPrefersMode } from "mode-watcher";
 
 
-	onMount(() => {
-		const scene = new THREE.Scene();
-		const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas, alpha: true });
-		const devicePixelRatio = window.devicePixelRatio || 1;
-		renderer.setPixelRatio(devicePixelRatio);
-		renderer.setClearColor(0x000000, 0);
+  let cubeWidth = 128;
+  let gap = 64;
+  let cubeCount = 16;
+  // let cubeWidth = 128;
+  // let gap = 80;
+  // let cubeCount = 16;
+  let logoWidth = cubeWidth * cubeCount + gap * (cubeCount - 1);
+  let cubesY = cubeWidth * 2 + gap;
+  $: cubeDelta = (20 - cubeWidth) / 2;
+  let strokeWidth = 2.5;
 
-		const camera = new THREE.PerspectiveCamera(20, 2, 1, 4000);
+  let threeContainer: HTMLElement;
+  let threeCanvas: HTMLCanvasElement;
 
-		const startCameraZ = cubeWidth * 5;
-		const sideCameraOffset = cubeWidth * 3;
-		
-		camera.position.z = startCameraZ;
+  const render = (mode: string) => {
+      const scene = new THREE.Scene();
+      const renderer = new THREE.WebGLRenderer({ antialias: true, canvas: threeCanvas, alpha: true });
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      renderer.setPixelRatio(devicePixelRatio);
+      renderer.setClearColor(0x000000, 0);
 
-		let cubes: Array<THREE.Group> = [];
-		for (let x = 0; x <  cubeCount; x++) {
-			const cube = createCube(cubeWidth, strokeWidth);
-			cube.position.z = 0;
-			cube.position.x = (x * (cubeWidth + gap));
-			cube.rotation.x = x * ((Math.PI/2)/cubeCount);
-			cubes.push(cube);
-			scene.add(cube);
-		}
+      const camera = new THREE.PerspectiveCamera(20, 2, 1, 4000);
 
-		function resizeCanvasToDisplaySize() {
-			const canvas = renderer.domElement;
-			const width = canvas.clientWidth;
-			const height = canvas.clientHeight;
+      const startCameraZ = cubeWidth * 5;
+      const sideCameraOffset = cubeWidth * 3;
 
-			if (canvas.width !== width || canvas.height !== height) {
-				renderer.setSize(width, height, false);
-				camera.aspect = width / height;
-				camera.updateProjectionMatrix();
-			}
-		}
+      camera.position.z = startCameraZ;
 
-		const clock = new THREE.Clock();
+      let cubes: Array<THREE.Group> = [];
+      for (let x = 0; x < cubeCount; x++) {
+        const cube = createCube(cubeWidth, strokeWidth, mode);
+        cube.position.z = 0;
+        cube.position.x = (x * (cubeWidth + gap));
+        cube.rotation.x = x * ((Math.PI / 2) / cubeCount);
+        cubes.push(cube);
+        scene.add(cube);
+      }
 
-		// start with going through the cubes
-		let animationState: "SLIDING_RIGHT" | "ROTATING_RIGHT" | "SLIDING_LEFT" | "ROTATING_LEFT" = "SLIDING_LEFT";
-		camera.rotation.y = Math.PI/2;
-		camera.position.z = 0;
-		camera.position.x = logoWidth + sideCameraOffset;
+      function resizeCanvasToDisplaySize() {
+        const canvas = renderer.domElement;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
 
-		function animate(time: number) {
-			const secs = clock.getDelta() * 0.65;
+        if (canvas.width !== width || canvas.height !== height) {
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        }
+      }
 
-			resizeCanvasToDisplaySize();
+      const clock = new THREE.Clock();
 
-			if (animationState === "SLIDING_RIGHT") {
-				camera.position.x += (secs * 150);
-				if (camera.position.x >= logoWidth + sideCameraOffset) {
-					animationState = "ROTATING_RIGHT";
-				}
-			} 
-			else if (animationState === "ROTATING_RIGHT") {
-				const rotating = camera.rotation.y < Math.PI/2;
-				const translating = camera.position.z > 0;
-				if (!rotating && !translating) {
-					animationState = "SLIDING_LEFT";
-				}
-				if (rotating) {
-					camera.rotation.y += secs * 0.4
-				}
-				if (translating) {
-					camera.position.z -= secs * 160;
-				}
-			}
-			else if (animationState === "SLIDING_LEFT") {
-				if (camera.position.x > -sideCameraOffset) {
-					camera.position.x -= (secs * 150);
-				} else {
-					animationState = "ROTATING_LEFT";
-				}
-			}
+      // start with going through the cubes
+      let animationState: "SLIDING_RIGHT" | "ROTATING_RIGHT" | "SLIDING_LEFT" | "ROTATING_LEFT" = "SLIDING_LEFT";
+      camera.rotation.y = Math.PI / 2;
+      camera.position.z = 0;
+      camera.position.x = logoWidth + sideCameraOffset;
 
-			else if (animationState === "ROTATING_LEFT") {
-				const rotating = camera.rotation.y > 0;
-				const translating = camera.position.z < startCameraZ;
-				if (!rotating && !translating) {
-					animationState = "SLIDING_RIGHT";
-				}
-				if (rotating) {
-					camera.rotation.y -= secs * 4.00
-				}
-				if (translating) {
-					camera.position.z += secs * 400;
-				}
-			}
+      function animate(time: number) {
+        const secs = clock.getDelta() * 0.65;
 
-			cubes.forEach((cube, index) => {cube.rotation.x += secs * -2 * (((cubeCount - index) + 1)/(cubeCount + 1))})
+        resizeCanvasToDisplaySize();
 
-			renderer.render(scene, camera);
-			requestAnimationFrame(animate);
-			// console.log(clock.elapsedTime);
-		}
+        if (animationState === "SLIDING_RIGHT") {
+          camera.position.x += (secs * 150);
+          if (camera.position.x >= logoWidth + sideCameraOffset) {
+            animationState = "ROTATING_RIGHT";
+          }
+        } else if (animationState === "ROTATING_RIGHT") {
+          const rotating = camera.rotation.y < Math.PI / 2;
+          const translating = camera.position.z > 0;
+          if (!rotating && !translating) {
+            animationState = "SLIDING_LEFT";
+          }
+          if (rotating) {
+            camera.rotation.y += secs * 0.4
+          }
+          if (translating) {
+            camera.position.z -= secs * 160;
+          }
+        } else if (animationState === "SLIDING_LEFT") {
+          if (camera.position.x > -sideCameraOffset) {
+            camera.position.x -= (secs * 150);
+          } else {
+            animationState = "ROTATING_LEFT";
+          }
+        } else if (animationState === "ROTATING_LEFT") {
+          const rotating = camera.rotation.y > 0;
+          const translating = camera.position.z < startCameraZ;
+          if (!rotating && !translating) {
+            animationState = "SLIDING_RIGHT";
+          }
+          if (rotating) {
+            camera.rotation.y -= secs * 4.00
+          }
+          if (translating) {
+            camera.position.z += secs * 400;
+          }
+        }
 
-		requestAnimationFrame(animate);
-	});
+        cubes.forEach((cube, index) => {
+          cube.rotation.x += secs * -2 * (((cubeCount - index) + 1) / (cubeCount + 1))
+        })
+
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+        // console.log(clock.elapsedTime);
+      }
+      requestAnimationFrame(animate);
+  }
+
+
+  onMount(render)
+  $: render($mode)
+
 </script>
 
 <div class="relative flex-1">
-  <div class="absolute size-full" bind:this={threeContainer}>
-    <canvas class="size-full" bind:this={threeCanvas}></canvas>
+  <div bind:this={threeContainer} class="absolute size-full">
+    <canvas bind:this={threeCanvas} class="size-full"></canvas>
   </div>
 </div>
