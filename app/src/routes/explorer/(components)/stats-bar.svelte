@@ -15,11 +15,11 @@ $: transferCountData = transferCountQuery()
 
   <div class="bg-muted border-b flex">
     <div class="w-full flex flex-1">
-      <StatsBarStat label={"Total Transfers"} value={$transferCountData?.data?.aggregate?.count || 0}/>
+      <StatsBarStat label={"Total Transfers"} value={$transferCountData?.data?.aggregate?.count || 0} blink={true}/>
       <Separator orientation="vertical"/>
-      <StatsBarStat label="Total Packets" value={$packetCountData?.data?.aggregate?.count || 0}/>
+      <StatsBarStat label="Total Packets" value={$packetCountData?.data?.aggregate?.count || 0} blink={true}/>
       <Separator orientation="vertical"/>
-      <StatsBarStat label="Metrics" value={$userTime}>
+      <StatsBarStat label="Metrics" value={$userTime} blink={false}>
         {#if $transfersPerDayData.data}
           <div class="ml-6 flex items-end">
             <PixelGraph data={$transfersPerDayData.data}/>
