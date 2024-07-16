@@ -67,7 +67,6 @@ func (cs ClientState) Status(ctx sdk.Context, clientStore storetypes.KVStore, _ 
 	payload := QueryMsg{Status: &StatusMsg{}}
 	result, err := wasmQuery[StatusResult](ctx, clientStore, &cs, payload)
 	if err != nil {
-		ctx.Logger().Error("ERROR QUERYING STATUS", "error", err.Error())
 		return exported.Unknown
 	}
 
