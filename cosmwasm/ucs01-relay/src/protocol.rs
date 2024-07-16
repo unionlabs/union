@@ -1,6 +1,7 @@
 use cosmwasm_std::{
     wasm_execute, Addr, AnyMsg, Attribute, BankMsg, Binary, Coin, CosmosMsg, DepsMut, Env, Event,
-    HexBinary, IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
+    HexBinary, IbcAcknowledgement, IbcEndpoint, IbcMsg, IbcOrder, IbcPacket, IbcReceiveResponse,
+    MessageInfo, Uint128, Uint512,
 };
 use prost::{Message, Name};
 use protos::deferredack::v1beta1::{DeferredPacketInfo, MsgWriteDeferredAck};
@@ -105,29 +106,36 @@ pub trait TransferProtocolExt<'a>:
             },
         };
 
-        let deferred_packet_into = DeferredPacketInfo {
-            refund_channel_id: refund_info.origin_packet.dest.channel_id,
-            refund_port_id: refund_info.origin_packet.dest.port_id,
-            packet_src_channel_id: refund_info.origin_packet.src.channel_id,
-            packet_src_port_id: refund_info.origin_packet.src.port_id,
-            packet_timeout_timestamp,
-            packet_timeout_height: packet_timeout_height.to_string(),
-            packet_data: refund_info.origin_packet.data.to_vec(),
-            sequence: refund_info.origin_packet.sequence,
+        let write_ack = IbcMsg::WriteAcknowledgement {
+            channel_id: refund_info.origin_packet.src.channel_id,
+            packet_sequence: refund_info.origin_packet.sequence,
+            ack: IbcAcknowledgement::new(ack_bytes),
         };
 
-        let deferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
-            type_url: MsgWriteDeferredAck::type_url(),
-            value: MsgWriteDeferredAck {
-                sender: self.self_addr().to_string(),
-                deferred_packet_info: Some(deferred_packet_into),
-                ack: ack_bytes,
-            }
-            .encode_to_vec()
-            .into(),
-        });
+        // let deferred_packet_into = DeferredPacketInfo {
+        //     refund_channel_id: refund_info.origin_packet.dest.channel_id,
+        //     refund_port_id: refund_info.origin_packet.dest.port_id,
+        //     packet_src_channel_id: refund_info.origin_packet.src.channel_id,
+        //     packet_src_port_id: refund_info.origin_packet.src.port_id,
+        //     packet_timeout_timestamp,
+        //     packet_timeout_height: packet_timeout_height.to_string(),
+        //     packet_data: refund_info.origin_packet.data.to_vec(),
+        //     sequence: refund_info.origin_packet.sequence,
+        // };
 
-        ack_msgs.push(deferred_ack_msg);
+        // let deferred_ack_msg = CosmosMsg::<Self::CustomMsg>::Any(AnyMsg {
+        //     type_url: MsgWriteDeferredAck::type_url(),
+        //     value: MsgWriteDeferredAck {
+        //         sender: self.self_addr().to_string(),
+        //         deferred_packet_info: Some(deferred_packet_into),
+        //         ack: ack_bytes,
+        //     }
+        //     .encode_to_vec()
+        //     .into(),
+        // });
+
+        // ack_msgs.push(deferred_ack_msg);
+        ack_msgs.push(write_ack.into());
         ack_attrs.push(Attribute::new(ATTR_PFM, ATTR_VALUE_PFM_ACK.to_string()));
 
         IN_FLIGHT_PFM_PACKETS.remove(
