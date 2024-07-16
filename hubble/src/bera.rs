@@ -14,8 +14,8 @@ use crate::consensus::{Indexer, Querier};
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub label: String,
-    url: url::Url,
-    chain_id: String,
+    pub urls: Vec<url::Url>,
+    pub chain_id: String,
 }
 
 impl Config {
@@ -32,7 +32,7 @@ impl Config {
         .retry(&ExponentialBuilder::default())
         .await?;
 
-        let client = Client::new(self.url.as_str()).await?;
+        let client = Client::new(self.urls[0].as_str()).await?;
         let querier = Bera::new(client);
 
         Ok(Indexer::new(chain_id, db, querier))

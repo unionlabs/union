@@ -13,7 +13,7 @@ use crate::consensus::{Indexer, Querier};
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub label: String,
-    pub url: url::Url,
+    pub urls: Vec<url::Url>,
     pub chain_id: String,
 }
 
@@ -31,7 +31,7 @@ impl Config {
         .retry(&ExponentialBuilder::default())
         .await?;
 
-        let querier = Beacon::new(self.url, reqwest::Client::new());
+        let querier = Beacon::new(self.urls[0].clone(), reqwest::Client::new());
 
         Ok(Indexer::new(chain_id, db, querier))
     }
