@@ -18,7 +18,7 @@ export const markdownConfiguration = {
   remarkPlugins: [
     mermaid(),
     remarkMathPlugin,
-    remarkSmartypants,
+    remarkSmartypants as RemarkPlugin,
     [remarkToc, { heading: "contents", prefix: "toc-" }]
   ],
   rehypePlugins: [

@@ -32,6 +32,9 @@
 
               echo "Running biome lint"
               nix build .\#checks.${pkgs.system}.biome-lint -L
+
+              echo "Running Site Check"
+              nix run .\#site-check
             '';
           };
         };

@@ -19,7 +19,7 @@ export default defineConfig({
   site: SITE_URL,
   output: "static",
   trailingSlash: "ignore",
-  server: ({ command }) => ({ port: Number(PORT) }),
+  server: () => ({ port: Number(PORT) }),
   redirects: {
     "/feed": "/rss.xml",
     "/logo": "/union-logo.zip"
