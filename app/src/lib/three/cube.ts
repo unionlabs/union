@@ -11,7 +11,7 @@ export function createCube(cubeWidth: number, strokeWidth: number, mode: string)
     const path = new THREE.CatmullRomCurve3(points)
     const geometry = new THREE.TubeGeometry(path, 20, thickness, 8, false)
     const material = new THREE.MeshBasicMaterial(
-      mode === 'dark'? { color: darkModeColor } : { color: lightModeColor }
+      mode === "dark" ? { color: darkModeColor } : { color: lightModeColor }
     )
     const tube = new THREE.Mesh(geometry, material)
     return tube

@@ -13,9 +13,9 @@ import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.
 import { Switch } from "$lib/components/ui/switch"
 import { Label } from "$lib/components/ui/label"
 import { showUnsupported } from "$lib/stores/user.ts"
-import Sun from "virtual:icons/lucide/sun";
-import Moon from "virtual:icons/lucide/moon";
-import { toggleMode } from "mode-watcher";
+import Sun from "virtual:icons/lucide/sun"
+import Moon from "virtual:icons/lucide/moon"
+import { toggleMode } from "mode-watcher"
 
 let buttonText: string
 
