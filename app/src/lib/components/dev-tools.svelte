@@ -37,3 +37,7 @@ const queryClient = useQueryClient()
     ],
   }}
 />
+
+{#if import.meta.env.MODE === 'development'}
+  <slot />
+{/if}

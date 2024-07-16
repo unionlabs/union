@@ -197,8 +197,9 @@ onNavigate(navigation => {
 })
 </script>
 
-<DevTools />
-{`${JSON.stringify({ REFETCH_ENABLED, idx: $pagination.pageIndex }, undefined, 2)}`}
+<DevTools>
+  {`${JSON.stringify({ REFETCH_ENABLED, idx: $pagination.pageIndex }, undefined, 2)}`}
+</DevTools>
 {#if $transfers?.data}
   <Card.Root>
     <Table.Root>
