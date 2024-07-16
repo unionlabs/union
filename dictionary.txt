@@ -156,6 +156,7 @@ SIGINT
 SMALLVEC
 SOURCIFY
 SSWU
+STORYBLOK
 SUBNETWORK
 SVDW
 Secp
@@ -163,6 +164,7 @@ Segoe
 Shacham
 Snapshotter
 Solana
+Storyblok
 Subdemom
 Sublist
 Subo
@@ -1013,6 +1015,7 @@ staticlib
 stdenv
 storemetrics
 storetypes
+storyblok
 strangelove
 stretchr
 struct
