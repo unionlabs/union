@@ -103,7 +103,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         override
         returns (string memory)
     {
-        if(!msg_.portId.lower().eq(msg_.portId)) {
+        if (!msg_.portId.lower().eq(msg_.portId)) {
             revert IBCChannelLib.ErrPortIdMustBeLowercase();
         }
         (string memory connectionId,) = ensureConnectionFeature(
@@ -168,7 +168,7 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         override
         returns (string memory)
     {
-        if(!msg_.portId.lower().eq(msg_.portId)) {
+        if (!msg_.portId.lower().eq(msg_.portId)) {
             revert IBCChannelLib.ErrPortIdMustBeLowercase();
         }
         (
