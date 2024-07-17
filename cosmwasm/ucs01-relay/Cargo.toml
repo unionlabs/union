@@ -21,6 +21,7 @@ base58            = { version = "0.2" }
 cosmwasm-schema   = { version = "2.0.0" }
 cosmwasm-std      = { version = "2.0.0", features = ["stargate", "cosmwasm_2_0", "abort"] }
 cw-controllers    = { version = "2.0.0" }
+cw-multi-test      = { git = "https://github.com/CosmWasm/cw-multi-test.git", rev = "e1a2f587c7f9d723444ec93ad8fa48f1d88b65bc", features = ["stargate", "staking"] }
 cw-storage-plus   = { version = "2.0.0" }
 cw2               = { version = "2.0.0" }
 dlmalloc          = { workspace = true, features = ["global"] }
@@ -37,5 +38,7 @@ serde-utils       = { workspace = true }
 sha2              = { workspace = true }
 thiserror         = { workspace = true }
 token-factory-api = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
 ucs01-relay-api   = { workspace = true }
 unionlabs         = { workspace = true }

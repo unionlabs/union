@@ -1,0 +1,59 @@
+---
+compiled_package_info:
+  package_name: move-ibc
+  address_alias_instantiation:
+    ContractAAddress: 000000000000000000000000000000000000000000000000000000000000000a
+    ContractBAddress: 000000000000000000000000000000000000000000000000000000000000000b
+    ContractTestAddress: "0000000000000000000000000000000000000000000000000000000000000000"
+    Extensions: "0000000000000000000000000000000000000000000000000000000000000001"
+    IBC: "0000000000000000000000000000000000000000000000000111111111111111"
+    IBCModuleAddr: "0000000000000000000000000000000000000000000000000333333333333333"
+    aptos_framework: "0000000000000000000000000000000000000000000000000000000000000001"
+    aptos_fungible_asset: 000000000000000000000000000000000000000000000000000000000000000a
+    aptos_std: "0000000000000000000000000000000000000000000000000000000000000001"
+    aptos_token: "0000000000000000000000000000000000000000000000000000000000000003"
+    core_resources: 000000000000000000000000000000000000000000000000000000000a550c18
+    mock_relayer_address: "0000000000000000000000000000000000000000000000000222222222222222"
+    std: "0000000000000000000000000000000000000000000000000000000000000001"
+    vm: "0000000000000000000000000000000000000000000000000000000000000000"
+    vm_reserved: "0000000000000000000000000000000000000000000000000000000000000000"
+  source_digest: 45362FA4DA1EB1C93A1A30AD3ED9BE995EFD5EA8696049824ECDF47A71381C69
+  build_flags:
+    dev_mode: true
+    test_mode: true
+    override_std: ~
+    generate_docs: false
+    generate_abis: false
+    generate_move_model: true
+    full_model_generation: false
+    install_dir: ~
+    force_recompilation: false
+    additional_named_addresses: {}
+    architecture: ~
+    fetch_deps_only: false
+    skip_fetch_latest_git_deps: false
+    compiler_config:
+      bytecode_version: ~
+      known_attributes:
+        - bytecode_instruction
+        - deprecated
+        - event
+        - expected_failure
+        - "fmt::skip"
+        - legacy_entry_fun
+        - "lint::allow_unsafe_randomness"
+        - native_interface
+        - randomness
+        - resource_group
+        - resource_group_member
+        - test
+        - test_only
+        - verify_only
+        - view
+      skip_attribute_checks: false
+      compiler_version: ~
+      language_version: ~
+dependencies:
+  - AptosFramework
+  - AptosStdlib
+  - MoveStdlib
