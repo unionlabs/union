@@ -404,51 +404,28 @@
                       };
                     };
                     solc =
-                      let
-                        jsoncppVersion = "1.9.3";
-                        jsoncppUrl =
-                          "https://github.com/open-source-parsers/jsoncpp/archive/${jsoncppVersion}.tar.gz";
-                        jsoncpp = pkgs.fetchzip {
-                          url = jsoncppUrl;
-                          sha256 =
-                            "1vbhi503rgwarf275ajfdb8vpdcbn1f7917wjkf8jghqwb1c24lq";
+                      super.stdenv.mkDerivation rec {
+                        pname = "solc-static";
+                        version = "0.8.23";
+                        src = pkgs.fetchurl {
+                          url = "https://github.com/ethereum/solidity/releases/download/v${version}/solc-static-linux";
+                          hash = "sha256-KHJqRSKQxw4ZhPFcU60wiOfZh4PuMHCxGzZk2ndBVzI=";
                         };
-                        range3Version = "0.12.0";
-                        range3Url =
-                          "https://github.com/ericniebler/range-v3/archive/${range3Version}.tar.gz";
-                        range3 = pkgs.fetchzip {
-                          url = range3Url;
-                          sha256 =
-                            "sha256-bRSX91+ROqG1C3nB9HSQaKgLzOHEFy9mrD2WW3PRBWU=";
+                        dontUnpack = true;
+                        nativeBuildInputs = pkgs.lib.optionals (!super.stdenv.isDarwin) [ super.autoPatchelfHook ];
+                        installPhase = ''
+                          runHook preInstall
+                          mkdir -p $out/bin
+                          cp ${src} $out/bin/solc
+                          chmod +x $out/bin/solc
+                          runHook postInstall
+                        '';
+                        meta = {
+                          description = "Static binary of compiler for Ethereum smart contract language Solidity";
+                          homepage = "https://github.com/ethereum/solidity";
+                          license = super.lib.licenses.gpl3;
                         };
-                        fmtlibVersion = "9.1.0";
-                        fmtlibUrl =
-                          "https://github.com/fmtlib/fmt/archive/${fmtlibVersion}.tar.gz";
-                        fmtlib = pkgs.fetchzip {
-                          url = fmtlibUrl;
-                          sha256 =
-                            "1mnvxqsan034d2jiqnw2yvkljl7lwvhakmj5bscwp1fpkn655bbw";
-                        };
-                      in
-                      nixpkgs-solc.legacyPackages.${system}.solc.overrideAttrs
-                        (old:
-                          old // rec {
-                            version = "0.8.23";
-                            src = pkgs.fetchzip {
-                              url =
-                                "https://github.com/ethereum/solidity/releases/download/v${version}/solidity_${version}.tar.gz";
-                              sha256 =
-                                "sha256-9GIDfjkjDFrZQ0uqopDycMWYUN+M9yLF9NpOgSksXqI=";
-                            };
-                            postPatch = ''
-                              substituteInPlace cmake/jsoncpp.cmake \
-                                --replace "${jsoncppUrl}" ${jsoncpp}
-                              substituteInPlace cmake/range-v3.cmake \
-                                --replace "${range3Url}" ${range3}
-                              substituteInPlace cmake/fmtlib.cmake \
-                                --replace "${fmtlibUrl}" ${fmtlib}
-                            '';
-                          });
+                      };
                   })
                 ]);
 
