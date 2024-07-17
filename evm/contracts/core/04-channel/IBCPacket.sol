@@ -36,6 +36,7 @@ library IBCPacketLib {
     error ErrLatestTimestampNotFound();
     error ErrInvalidTimeoutHeight();
     error ErrInvalidTimeoutTimestamp();
+    error ErrTimeoutMustBeSet();
     error ErrSourceAndCounterpartyPortMismatch();
     error ErrSourceAndCounterpartyChannelMismatch();
     error ErrDestinationAndCounterpartyPortMismatch();
@@ -51,7 +52,6 @@ library IBCPacketLib {
     error ErrAcknowledgementAlreadyExists();
     error ErrPacketCommitmentNotFound();
     error ErrInvalidPacketCommitment();
-    error ErrPacketWithoutTimeout();
     error ErrTimeoutHeightNotReached();
     error ErrTimeoutTimestampNotReached();
     error ErrNextSequenceMustBeGreaterThanTimeoutSequence();
@@ -86,6 +86,10 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
 
         IbcCoreChannelV1Channel.Data storage channel =
             ensureChannelState(sourcePort, sourceChannel);
+
+        if (timeoutTimestamp == 0 && timeoutHeight.isZero()) {
+            revert IBCPacketLib.ErrTimeoutMustBeSet();
+        }
 
         string memory clientId =
             connections[channel.connection_hops[0]].client_id;
@@ -259,7 +263,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             msg_.packet.destination_port, msg_.packet.destination_channel
         );
         bytes memory acknowledgement =
-            module.onRecvPacket(msg_.packet, msg.sender);
+            module.onRecvPacket(msg_.packet, msg_.relayer);
         if (acknowledgement.length > 0) {
             _writeAcknowledgement(msg_.packet, acknowledgement);
         }
@@ -411,7 +415,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
             msg_.packet.source_port, msg_.packet.source_channel
         );
         module.onAcknowledgementPacket(
-            msg_.packet, msg_.acknowledgement, msg.sender
+            msg_.packet, msg_.acknowledgement, msg_.relayer
         );
 
         emit IBCPacketLib.AcknowledgePacket(msg_.packet, msg_.acknowledgement);
@@ -482,12 +486,6 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         }
 
         if (
-            msg_.packet.timeout_timestamp == 0
-                && msg_.packet.timeout_height.isZero()
-        ) {
-            revert IBCPacketLib.ErrPacketWithoutTimeout();
-        }
-        if (
             msg_.packet.timeout_timestamp > 0
                 && msg_.packet.timeout_timestamp >= proofTimestamp
         ) {
@@ -549,7 +547,7 @@ contract IBCPacket is IBCStore, IIBCPacket, ModuleManager {
         IIBCModule module = lookupModuleByChannel(
             msg_.packet.source_port, msg_.packet.source_channel
         );
-        module.onTimeoutPacket(msg_.packet, msg.sender);
+        module.onTimeoutPacket(msg_.packet, msg_.relayer);
 
         emit IBCPacketLib.TimeoutPacket(msg_.packet);
     }

@@ -1,6 +1,8 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/utils/Strings.sol";
+import "solady/utils/LibString.sol";
+
 import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../25-handler/IBCMsgs.sol";
 import "../02-client/IBCHeight.sol";
@@ -42,6 +44,7 @@ library IBCChannelLib {
     event ChannelCloseInit(string channelId, string portId);
     event ChannelCloseConfirm(string channelId, string portId);
 
+    error ErrPortIdMustBeLowercase();
     error ErrConnNotSingleHop();
     error ErrConnNotSingleVersion();
     error ErrInvalidConnectionState();
@@ -88,6 +91,7 @@ library IBCChannelLib {
  */
 contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
     using IBCHeight for IbcCoreClientV1Height.Data;
+    using LibString for *;
 
     /* Handshake functions */
 
@@ -99,6 +103,9 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         override
         returns (string memory)
     {
+        if(!msg_.portId.lower().eq(msg_.portId)) {
+            revert IBCChannelLib.ErrPortIdMustBeLowercase();
+        }
         (string memory connectionId,) = ensureConnectionFeature(
             msg_.channel.connection_hops, msg_.channel.ordering
         );
@@ -161,6 +168,9 @@ contract IBCChannelHandshake is ModuleManager, IIBCChannelHandshake {
         override
         returns (string memory)
     {
+        if(!msg_.portId.lower().eq(msg_.portId)) {
+            revert IBCChannelLib.ErrPortIdMustBeLowercase();
+        }
         (
             string memory connectionId,
             IbcCoreConnectionV1ConnectionEnd.Data memory connection
