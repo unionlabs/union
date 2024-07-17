@@ -47,6 +47,8 @@ pub enum ProtocolError {
     NoSuchChannel { channel_id: String },
     #[error("protocol must be caller")]
     Unauthorized,
+    #[error("timeout must be greater than or equal to 1 second")]
+    InvalidTimeout,
 }
 
 pub type PacketExtensionOf<T> = <<T as TransferProtocol>::Packet as TransferPacket>::Extension;

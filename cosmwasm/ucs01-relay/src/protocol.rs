@@ -155,7 +155,7 @@ pub trait TransferProtocolExt<'a>:
             funds: tokens,
         };
 
-        let timeout = forward.get_effective_timeout();
+        let timeout = forward.get_effective_timeout()?;
 
         // TODO: persist full memo
         let memo = match forward.next {

@@ -6,6 +6,8 @@ use unionlabs::{
     validated::{Validate, Validated},
 };
 
+use crate::protocol::ProtocolError;
+
 pub const DEFAULT_PFM_TIMEOUT: &str = "1m";
 pub const DEFAULT_PFM_RETRIES: u8 = 0;
 
@@ -112,13 +114,13 @@ impl PacketForward {
     ///
     /// If the `timeout` is invalid or cannot be parsed, the default timeout is used.
     /// Timeouts are considered invalid if they are less than or equal to zero.
-    pub fn get_effective_timeout(&self) -> u64 {
+    pub fn get_effective_timeout(&self) -> Result<u64, ProtocolError> {
         let retries = self.retries as i64 + 1;
         let default_timeout = go_parse_duration::parse_duration(&default_pfm_timeout())
             .expect("default timeout is correctly formatted")
             * retries;
 
-        (match go_parse_duration::parse_duration(&self.timeout) {
+        ((match go_parse_duration::parse_duration(&self.timeout) {
             Ok(timeout) => {
                 if timeout <= 0 {
                     default_timeout
@@ -127,7 +129,9 @@ impl PacketForward {
                 }
             }
             Err(_error) => default_timeout,
-        }) as u64
+        }) as u64)
+            .checked_div(1_000_000_000)
+            .ok_or(ProtocolError::InvalidTimeout)
     }
 }
 
