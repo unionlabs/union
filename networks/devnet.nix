@@ -229,7 +229,7 @@
           };
           forge = import ./services/forge.nix {
             inherit pkgs;
-            inherit (self'.packages) forge evm-sources;
+            inherit (self'.packages) forge evm-sources evm-contracts;
           };
           lodestar = import ./services/lodestar.nix {
             inherit pkgs;
