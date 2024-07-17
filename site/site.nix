@@ -24,6 +24,7 @@
           PUPPETEER_SKIP_DOWNLOAD = 1;
           NODE_OPTIONS = "--no-warnings";
           ASTRO_TELEMETRY_DISABLED = 1;
+          STORYBLOK_TOKEN = "ZFTB4SdJbq04vXyGKK1ENgtt";
         });
       };
 

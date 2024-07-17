@@ -19,29 +19,26 @@ const {
   ENABLE_DEV_TOOLBAR = "false"
 } = loadEnv(process.env.NODE_ENV, process.cwd(), "")
 
-const netlifyAdapter = netlify({
-  imageCDN: true, // default: true
-  edgeMiddleware: false // default: false
-})
+if (!STORYBLOK_TOKEN) throw new Error("STORYBLOK_TOKEN is required")
 
 export default defineConfig({
   site: SITE_URL,
+  output: "server",
   trailingSlash: "ignore",
-  output: PUBLIC_ENV === "preview" ? "server" : "static",
-  adapter: PUBLIC_ENV === "preview" ? netlifyAdapter : undefined,
-  redirects: {
-    "/feed": "/rss.xml",
-    "/logo": "/union-logo.zip"
-  },
+  adapter: netlify({
+    imageCDN: true, // default: true
+    edgeMiddleware: false // default: false
+  }),
   vite: viteConfiguration(),
   markdown: markdownConfiguration,
   server: _ => ({ port: Number(PORT) }),
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
+  redirects: { "/feed": "/rss.xml", "/logo": "/union-logo.zip" },
   integrations: [
     storyblok({
       bridge: true,
+      livePreview: true,
       accessToken: STORYBLOK_TOKEN,
-      livePreview: PUBLIC_ENV === "preview",
       components: {
         // Add your components here
         page: "storyblok/page",

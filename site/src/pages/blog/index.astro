@@ -2,8 +2,10 @@
 import Card from "#/components/Card.astro"
 import TextA from "#/components/TextA.astro"
 import H3 from "#/components/typography/h3.astro"
+import type { DeepPartial } from "#/lib/types.ts"
 import { useStoryblokApi } from "@storyblok/astro"
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
+import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
@@ -19,12 +21,12 @@ const blogEntries = data.stories as Array<{
   name: string
   slug: string
   full_slug: string
-  content: {
+  content: DeepPartial<{
     date: string
     title: string
     description: string
     cover: { filename: string }
-  }
+  }>
 }>
 ---
 
@@ -40,13 +42,9 @@ const blogEntries = data.stories as Array<{
             <Card class="size-full" padded>
               <time
                 class="text-lg text-gray-400"
-                datetime={new Date(blogPostEntry.content.date).toISOString()}
+                datetime={toISODate(blogPostEntry?.content?.date)}
               >
-                {new Date(blogPostEntry.content.date).toLocaleDateString('fr-CA', {
-                  year: 'numeric',
-                  month: 'numeric',
-                  day: 'numeric',
-                })}
+                {saneDateTime(blogPostEntry?.content?.date)}
               </time>
               <H3>{blogPostEntry.name}</H3>
               <p class="sm:text-xl text-gray-400">{blogPostEntry.content.description}</p>

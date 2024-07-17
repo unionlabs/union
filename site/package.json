@@ -4,9 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "NODE_ENV='development' astro dev",
+    "dev": "NODE_ENV='development' PUBLIC_ENV='development' astro dev",
     "start": "astro dev",
-    "build": "SHARP_IGNORE_GLOBAL_LIBVIPS=1 astro build",
+    "build": "PUBLIC_ENV='production' SHARP_IGNORE_GLOBAL_LIBVIPS=1 astro build",
     "build:preview": "PUBLIC_ENV='preview' SHARP_IGNORE_GLOBAL_LIBVIPS=1 astro build",
     "preview": "PUBLIC_ENV='preview' astro dev",
     "astro": "astro",

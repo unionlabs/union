@@ -12,11 +12,13 @@ BAYC
 BLOCKSCOUT
 Bera
 Berachain
+ZFTB
 Beriker
 Bitfield
 Bitvector
 Boiron
 Boneh
+Ngtt
 Borsh
 CBFF
 CCTP

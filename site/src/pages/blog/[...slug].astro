@@ -1,0 +1,39 @@
+---
+import Layout from "#/layouts/Layout.astro"
+import { useStoryblok } from "@storyblok/astro"
+import type { DeepPartial } from "#/lib/types.ts"
+import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro"
+
+const { slug } = Astro.params
+
+const sbApi = await useStoryblok(
+  `cdn/stories/blog/${slug}`,
+  { version: import.meta.env.DEV ? "draft" : "published" },
+  {},
+  Astro
+)
+
+const story = sbApi as {
+  name: string
+  content: DeepPartial<{
+    date: string
+    title: string
+    author: string
+    description: string
+    cover?: {
+      filename?: string // the url of the image
+    }
+  }>
+}
+---
+
+<Layout
+  url={Astro.url.href}
+  title={story.content.title}
+  image={story.content?.cover?.filename}
+  description={story.content.description}
+>
+  <StoryblokComponent blok={sbApi.content} />
+</Layout>
+
+<script is:inline type="module" src="/scripts/anchor-targets.js"></script>

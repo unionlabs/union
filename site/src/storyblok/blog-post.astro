@@ -1,5 +1,7 @@
 ---
+import type { DeepPartial } from "#/lib/types.ts"
 import LanderSection from "#/components/LanderSection.astro"
+import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import type { ISbRichtext, SbBlokData } from "@storyblok/astro"
 import { storyblokEditable, renderRichText } from "@storyblok/astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
@@ -7,17 +9,18 @@ import SocialsSection from "#/components/sections/SocialsSection.astro"
 interface Props {
   blok: SbBlokData & {
     content: ISbRichtext
-    date: string
-    author: string
-    description: string
-    cover: {
-      filename: string // the url of the image
-    }
-  }
+  } & DeepPartial<{
+      date: string
+      author: string
+      description: string
+      cover: {
+        filename?: string // the url of the image
+      }
+    }>
 }
 
 const { blok } = Astro.props
-const blokDate = new Date(blok.date)
+const blokDate = new Date(blok?.date ?? Date.now())
 const content = renderRichText(blok.content)
 ---
 
@@ -25,14 +28,8 @@ const content = renderRichText(blok.content)
   <LanderSection gradient="to-t">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
       <div class="text-lg">
-        <time class="text-lg text-gray-400" datetime={blokDate.toISOString()}>
-          {
-            blokDate.toLocaleDateString('fr-CA', {
-              year: 'numeric',
-              month: 'numeric',
-              day: 'numeric',
-            })
-          }
+        <time class="text-lg text-gray-400" datetime={toISODate(blokDate)}>
+          {saneDateTime(blokDate)}
         </time>
       </div>
       <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
@@ -99,7 +96,7 @@ const content = renderRichText(blok.content)
   }
 
   h2::after, h3::after, h4::after, h5::after {
-    content: '#';
+    content: "#";
     color: #ffffff;
     margin-left: 0.5rem;
     font-size: 1.5rem;
