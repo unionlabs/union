@@ -2,6 +2,7 @@
   "name": "site",
   "version": "0.0.1",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "NODE_ENV='development' astro dev",
     "start": "astro dev",
@@ -24,8 +25,8 @@
     "@expressive-code/plugin-collapsible-sections": "^0.35.3",
     "@splinetool/runtime": "^1.9.0",
     "@splinetool/viewer": "^1.9.0",
-    "@storyblok/astro": "^4.1.1",
-    "astro": "^4.11.5",
+    "@storyblok/astro": "^5.0.0",
+    "astro": "^4.11.6",
     "astro-capo": "^0.0.1",
     "astro-font": "^0.0.81",
     "astro-seo": "^0.8.4",
@@ -47,8 +48,8 @@
     "svelte": "^4.2.18"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.8.1",
-    "@astrojs/language-server": "^2.12.0",
+    "@astrojs/check": "^0.8.2",
+    "@astrojs/language-server": "^2.12.1",
     "@astrojs/ts-plugin": "^1.9.0",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/container-queries": "^0.1.1",
@@ -72,7 +73,8 @@
   },
   "overrides": {
     "sharp": "$sharp",
-    "is-core-module": "npm:@nolyfill/is-core-module@^1"
-  },
-  "private": true
+    "is-core-module": "npm:@nolyfill/is-core-module@^1",
+    "isarray": "npm:@nolyfill/isarray@^1",
+    "side-channel": "npm:@nolyfill/side-channel@^1"
+  }
 }

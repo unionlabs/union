@@ -69,3 +69,4 @@ process-compose.override.yml
 # prometheus
 data/
 .netlify
+.cursorignore

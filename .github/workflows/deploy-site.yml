@@ -61,7 +61,8 @@ jobs:
     env:
       npm_config_yes: true
     environment: 'site-preview'
-    if: github.event_name == 'pull_request'
+    # manually disable this for now since we use Netlify for site previews
+    if: false
     steps:
       - uses: actions/checkout@v4
         with:
