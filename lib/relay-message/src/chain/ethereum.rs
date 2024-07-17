@@ -29,7 +29,7 @@ use queue_msg::{
     data, defer_relative, effect, fetch, noop, queue_msg, void, wait, Op,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, error_span, info};
+use tracing::{debug, error, error_span, info, warn};
 use typenum::Unsigned;
 use unionlabs::{
     encoding::{Decode, Encode, EncodeAs, EthAbi},
@@ -115,6 +115,7 @@ where
             &self.keyring,
             msg,
             false,
+            self.max_gas_price,
         )
         .await
     }
@@ -127,6 +128,7 @@ pub async fn do_msg<Hc, Tr>(
     ibc_handlers: &EthereumKeyring,
     msg: Effect<Hc, Tr>,
     legacy: bool,
+    max_gas_price: Option<U256>,
 ) -> Result<Op<RelayMessage>, TxSubmitError>
 where
     Hc: ChainExt<Config = EthereumConfig, SelfClientState: Encode<Tr::IbcStateEncoding>>
@@ -147,7 +149,23 @@ where
 
             move |ibc_handler: &IBCHandler<_>| -> _ {
                 async move {
-                    // TODO: thread multicall address here
+                    if let Some(max_gas_price) = max_gas_price {
+                        let gas_price = U256::from(ibc_handler
+                            .client()
+                            .provider()
+                            .get_gas_price()
+                            .await
+                            .expect("unable to fetch gas price"));
+
+                        if gas_price > max_gas_price {
+                            warn!(%max_gas_price, %gas_price, "gas price is too high");
+                            return Err(TxSubmitError::GasPriceTooHigh {
+                                max: max_gas_price,
+                                price: gas_price
+                            })
+                        }
+                    }
+
                     let multicall = Multicall::new(multicall_address, ibc_handler.client());
 
                     let msgs = process_msgs(
@@ -232,6 +250,7 @@ where
 
                                     info!(
                                         tx_hash = %H256::from(tx_rcp.transaction_hash),
+                                        gas_used = %tx_rcp.gas_used.unwrap_or_default(),
                                         batch.size = msg_names.len(),
                                         "ethereum messages batched"
                                     );
@@ -253,8 +272,12 @@ where
 
                                 //     Ok(())
                                 // }
+                                Err(ContractError::ProviderError { e: ProviderError::JsonRpcClientError(e) }) if e.as_error_response().is_some_and(|e| e.message.contains("insufficient funds for gas * price + value")) => {
+                                    error!("out of gas");
+                                    Err(TxSubmitError::OutOfGas)
+                                },
                                 _ => {
-                                    panic!("evm transaction non-recoverable failure");
+                                    panic!("evm transaction non-recoverable failure")
                                 }
                             }
                         }
@@ -306,7 +329,11 @@ where
         .await;
 
     match res {
-        Some(res) => res.map(|()| noop()),
+        Some(Ok(())) => Ok(noop()),
+        Some(Err(TxSubmitError::GasPriceTooHigh { .. })) => {
+            Ok(seq([defer_relative(6), effect(id(chain_id, msg))]))
+        }
+        Some(Err(err)) => Err(err),
         None => Ok(effect(id(chain_id, msg))),
     }
 }
@@ -1206,6 +1233,10 @@ pub enum TxSubmitError {
     NoTxReceipt,
     #[error("invalid revert code: {0}")]
     InvalidRevert(Bytes),
+    #[error("out of gas")]
+    OutOfGas,
+    #[error("gas price is too high: max {max}, price {price}")]
+    GasPriceTooHigh { max: U256, price: U256 },
 }
 
 impl MaybeRecoverableError for TxSubmitError {
