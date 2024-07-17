@@ -201,8 +201,6 @@ pub fn ibc_packet_receive(
         funds: Default::default(),
     };
 
-    let _ = msg.packet.timeout;
-
     match channel_info.protocol_version.as_str() {
         Ics20Protocol::VERSION => Ok(Ics20Protocol {
             common: ProtocolCommon {
