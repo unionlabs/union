@@ -41,6 +41,7 @@
           (version: {
             name =
               "${meta.versions_directory}/${version}/${meta.binary_name}";
+            # Dynamically load the flake dependency to avoid having the full tree in the lock file.
             path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond-release;
           })
           versions
@@ -101,25 +102,14 @@
     with lib;
     let
       cfg = config.services.unionvisor;
-
-      wrappedUnionvisor = pkgs.symlinkJoin {
-        name = "unionvisor";
-        paths = [ cfg.bundle ];
-        buildInputs = [ pkgs.makeWrapper ];
-        postBuild = ''
-          wrapProgram $out/unionvisor \
-            --set UNIONVISOR_ROOT /var/lib/unionvisor \
-            --set HOME /var/lib/unionvisor \
-            --set UNIONVISOR_BUNDLE ${cfg.bundle}
-
-          mkdir -p $out/bin/
-          mv $out/unionvisor $out/bin/unionvisor
-        '';
-      };
     in
     {
       options.services.unionvisor = {
         enable = mkEnableOption "Unionvisor service";
+        package = mkOption {
+          type = types.package;
+          default = self.packages.${pkgs.system}.unionvisor;
+        };
         bundle = mkOption {
           type = types.package;
           default = self.packages.${pkgs.system}.bundle-testnet-8;
@@ -178,18 +168,33 @@
           type = types.nullOr types.path;
           default = null;
         };
+        root = mkOption {
+          type = types.str;
+          default = "/var/lib/unionvisor";
+        };
+        home = mkOption {
+          type = types.str;
+          default = "/var/lib/unionvisor";
+        };
+        extra-args = mkOption {
+          description = lib.mdDoc ''
+            Extra arguments to unionvisor.
+          '';
+          type = types.listOf types.str;
+          default = [ ];
+        };
       };
 
       config = mkIf cfg.enable {
         environment.systemPackages = [
-          wrappedUnionvisor
+          cfg.package
         ];
 
         systemd.services.unionvisor =
           let
             unionvisor-systemd-script = pkgs.writeShellApplication {
               name = "unionvisor-systemd";
-              runtimeInputs = [ pkgs.coreutils wrappedUnionvisor ];
+              runtimeInputs = [ pkgs.coreutils cfg.package ];
               text =
                 let
                   configSymlinks = [
@@ -214,10 +219,10 @@
                 ''
                   ${pkgs.coreutils}/bin/mkdir -p /var/lib/unionvisor
                   cd /var/lib/unionvisor
-                  unionvisor --log-format ${cfg.logFormat} init --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty
+                  unionvisor --log-format ${cfg.logFormat} init --moniker ${cfg.moniker} --seeds ${cfg.seeds} --network ${cfg.network} --allow-dirty ${builtins.concatStringsSep " " cfg.extra-args}
 
                   ${configSymLinkCommands}
-                
+
                   unionvisor --log-format ${cfg.logFormat} run
                 '';
             };
@@ -230,10 +235,12 @@
               ExecStart = pkgs.lib.getExe unionvisor-systemd-script;
               Restart = mkForce "always";
             };
+            environment = {
+              UNIONVISOR_BUNDLE = cfg.bundle;
+              UNIONVISOR_ROOT = cfg.root;
+              HOME = cfg.home;
+            };
           };
       };
     };
 }
-
-
-
