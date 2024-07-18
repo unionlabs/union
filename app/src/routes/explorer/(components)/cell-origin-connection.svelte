@@ -1,6 +1,6 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
-import { copy } from "$lib/utilities/copy.ts";
+import { copy } from "$lib/utilities/copy.ts"
 import CopyIcon from "virtual:icons/lucide/copy"
 
 export let value: {

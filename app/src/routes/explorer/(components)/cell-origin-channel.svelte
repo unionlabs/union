@@ -1,18 +1,17 @@
 <script lang="ts">
-  import { cn } from "$lib/utilities/shadcn.ts"
-  import * as Tooltip from "$lib/components/ui/tooltip"
-  import { truncate } from "$lib/utilities/format.ts"
-  import { copy } from "$lib/utilities/copy.ts";
-  import CopyIcon from "virtual:icons/lucide/copy"
+import { cn } from "$lib/utilities/shadcn.ts"
+import * as Tooltip from "$lib/components/ui/tooltip"
+import { truncate } from "$lib/utilities/format.ts"
+import { copy } from "$lib/utilities/copy.ts"
+import CopyIcon from "virtual:icons/lucide/copy"
 
-
-  export let value: {
-    chain_display_name: string
-    chain_id: string
-    connection_id: string
-    channel_id: string
-    port_id: string
-  }
+export let value: {
+  chain_display_name: string
+  chain_id: string
+  connection_id: string
+  channel_id: string
+  port_id: string
+}
 </script>
 
 <div {...$$restProps} class={cn("flex flex-col ")}>
