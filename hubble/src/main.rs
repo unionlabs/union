@@ -22,6 +22,7 @@ mod healthz;
 mod logging;
 mod metrics;
 mod postgres;
+mod race_client;
 mod tm;
 
 #[cfg(not(target_env = "msvc"))]

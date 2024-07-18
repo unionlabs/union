@@ -3,7 +3,7 @@ use std::time::Duration;
 use backon::Retryable;
 use color_eyre::Report;
 use ethers::{
-    providers::{Http, Middleware, Provider},
+    providers::{Http, Provider},
     types::BlockId,
 };
 use futures::{StreamExt, TryStreamExt};
@@ -14,12 +14,13 @@ use url::Url;
 use crate::{
     eth::BlockInsert,
     postgres::{self, ChainId},
+    race_client::RaceClient,
 };
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub label: String,
-    pub url: Url,
+    pub urls: Vec<Url>,
     #[serde(default = "default_interval")]
     pub interval: Duration,
 }
@@ -31,13 +32,18 @@ fn default_interval() -> Duration {
 pub struct Indexer {
     chain_id: ChainId,
     pool: PgPool,
-    provider: Provider<Http>,
+    provider: RaceClient<Provider<Http>>,
     interval: Duration,
 }
 
 impl Config {
     pub async fn indexer(self, pool: PgPool) -> Result<Indexer, Report> {
-        let provider = Provider::<Http>::try_from(self.url.clone().as_str()).unwrap();
+        let provider = RaceClient::new(
+            self.urls
+                .into_iter()
+                .map(|url| Provider::<Http>::try_from(url.as_str()).unwrap())
+                .collect(),
+        );
 
         info!("fetching chain-id from node");
         let chain_id = (|| {
@@ -76,7 +82,7 @@ impl Indexer {
                 chain_id: ChainId,
                 hash: String,
                 height: i32,
-                provider: Provider<Http>,
+                provider: RaceClient<Provider<Http>>,
             ) -> Result<Option<BlockInsert>, Report> {
                 let block = BlockInsert::from_provider_retried(
                     chain_id,

@@ -1,4 +1,5 @@
+mod client;
 pub mod fork;
-mod indexer;
+pub mod indexer;
 
 pub use indexer::*;
