@@ -4,10 +4,9 @@ import sitemap from "@astrojs/sitemap"
 import netlify from "@astrojs/netlify"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
-import basicSsl from "@vitejs/plugin-basic-ssl"
+import { defineConfig } from "astro/config"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightLinksValidator from "starlight-links-validator"
-import { defineConfig, type ViteUserConfig } from "astro/config"
 
 const SITE_URL = "https://union.build"
 
@@ -25,7 +24,7 @@ export default defineConfig({
    *   - use this when most of your site should be static
    *   - any individual page or endpoint can opt-out of pre-rendering
    */
-  output: "server",
+  output: "hybrid",
   experimental: {
     clientPrerender: true,
     directRenderScript: true
@@ -35,12 +34,17 @@ export default defineConfig({
     imageCDN: true,
     edgeMiddleware: false
   }),
-  vite: viteConfiguration(),
   markdown: markdownConfiguration,
   server: _ => ({ port: Number(PORT) }),
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   redirects: { "/feed": "/rss.xml", "/logo": "/union-logo.zip" },
+  vite: {
+    assetsInclude: ["**/*.splinecode"],
+    optimizeDeps: {
+      exclude: ["echarts"]
+    }
+  },
   integrations: [
     starlight({
       title: "Union",
@@ -156,23 +160,3 @@ export default defineConfig({
     sitemap()
   ]
 })
-
-function viteConfiguration(): ViteUserConfig {
-  const baseConfiguration = {
-    optimizeDeps: {
-      exclude: ["echarts"]
-    },
-    assetsInclude: ["**/*.splinecode"]
-  } satisfies ViteUserConfig
-
-  const previewConfiguration = {
-    plugins: [basicSsl()],
-    server: { https: {} }
-  } satisfies ViteUserConfig
-  // return Object.assign(
-  //   baseConfiguration,
-  //   // don't include 'preview' configuration in development/production
-  //   PUBLIC_ENV === "preview" ? previewConfiguration : {}
-  // )
-  return baseConfiguration
-}

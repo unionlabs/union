@@ -10,6 +10,8 @@ import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 
+export const prerender = false
+
 const blogEntries = await contentfulClient.getEntries<BlogPost>({
   content_type: "blog"
 })

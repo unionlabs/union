@@ -8,6 +8,8 @@ import { BLOCKS, INLINES } from "@contentful/rich-text-types"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
+export const prerender = false
+
 const { slug } = Astro.params
 
 const {
