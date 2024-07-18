@@ -15,7 +15,8 @@ import { Label } from "$lib/components/ui/label"
 import { showUnsupported } from "$lib/stores/user.ts"
 import Sun from "virtual:icons/lucide/sun"
 import Moon from "virtual:icons/lucide/moon"
-import { toggleMode } from "mode-watcher"
+import { setMode, toggleMode } from "mode-watcher"
+import * as Popover from "$lib/components/ui/popover"
 
 let buttonText: string
 
@@ -101,15 +102,24 @@ $: if ($navigating) sheetOpen = false
         <Switch bind:checked={$showUnsupported} id="unsupported-assets"/>
         <Label for="unsupported-assets">Show unverified assets</Label>
       </div>
-      <Button on:click={toggleMode} variant="default" size="icon" class="hover:text-black hover:bg-accent">
-        <Sun
-          class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-        />
-        <Moon
-          class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-        />
-        <span class="sr-only">Toggle theme</span>
-      </Button>
+      <Popover.Root>
+        <Popover.Trigger>
+          <Button variant="default" size="icon" class="hover:text-black hover:bg-accent">
+            <Sun
+              class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+            />
+            <Moon
+              class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+            />
+            <span class="sr-only">Toggle theme</span>
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content class="rounded-none bg-secondary w-fit">
+          <Button on:click={() => setMode('system')} size="sm">System</Button>
+          <Button on:click={() => setMode('dark')} size="sm">Dark</Button>
+          <Button on:click={() => setMode('light')} size="sm">Light</Button>
+        </Popover.Content>
+      </Popover.Root>
     </div>
   </Sheet.Content>
 </Sheet.Root>
