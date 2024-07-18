@@ -26,10 +26,15 @@ Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
 
 // Tag the page with the blog post slug
 if (slug) Astro.response.headers.set("netlify-cache-tag", slug)
+
+const imageWithProtocol = (url: string) => `https:${url}`
+
+// @ts-expect-error
+const imageUrl = imageWithProtocol(blogPost.fields.cover.fields.file.url)
 ---
 
 <Layout
-  image={undefined}
+  image={imageUrl}
   url={Astro.url.href}
   title={blogPost.fields.title}
   description={blogPost.fields.description}
@@ -50,9 +55,11 @@ if (slug) Astro.response.headers.set("netlify-cache-tag", slug)
       <article
         set:html={documentToHtmlString(blogPost.fields.content, {
           renderNode: {
-            [BLOCKS['EMBEDDED_ASSET']]: _ =>
-              // @ts-expect-error
-              `<Image src="https:${blogPost.fields.cover.fields.file.url}" alt="" />`,
+            [BLOCKS['EMBEDDED_ASSET']]: asset => {
+              const imageUrl = imageWithProtocol(asset.data.target.fields.file.url)
+              const altText = asset.data.target.fields.title
+              return `<Image src="${imageUrl}" alt="${altText}" />`
+            },
             [INLINES['HYPERLINK']]: params => /* html */ `
               <a 
                 target="_blank"
