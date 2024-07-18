@@ -9,7 +9,6 @@ import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
 const blogEntries = await contentfulClient.getEntries<BlogPost>({
   content_type: "blog"

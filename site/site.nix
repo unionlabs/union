@@ -8,7 +8,7 @@
     {
       packages = {
         site = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-LIVhP3Gc53NlGM7y3L2ZOHR3xTScQ3MuEDBGWSkoAt0=";
+          npmDepsHash = "sha256-f7Orq2r7rZzqgHzsSMdbEPXDOXHH4R9/eFyZCqbUefI=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";
@@ -40,6 +40,18 @@
               export PUPPETEER_SKIP_DOWNLOAD=1 
               npm install
               npm run dev
+            '';
+          };
+        };
+        site-check = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "site-check";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd site/
+              npm_config_yes=true npx astro check
             '';
           };
         };
