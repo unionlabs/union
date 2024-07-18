@@ -14,6 +14,7 @@ interface EnvironmentVariables {
   readonly CONTENTFUL_SPACE_ID: string
   readonly CONTENTFUL_PREVIEW_TOKEN: string
   readonly CONTENTFUL_DELIVERY_TOKEN: string
+  readonly CONTENTFUL_WEBHOOK_SECRET: string
 }
 
 // Node.js environment variables types
