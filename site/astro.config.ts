@@ -11,18 +11,11 @@ import { defineConfig, type ViteUserConfig } from "astro/config"
 
 const SITE_URL = "https://union.build"
 
-const {
-  PORT = 4321,
-  CONTENTFUL_SPACE_ID,
-  CONTENTFUL_PREVIEW_TOKEN,
-  CONTENTFUL_DELIVERY_TOKEN,
-  PUBLIC_ENV = "production",
-  ENABLE_DEV_TOOLBAR = "false"
-} = loadEnv(process.env.NODE_ENV, process.cwd(), "")
-
-if (!(CONTENTFUL_SPACE_ID || CONTENTFUL_PREVIEW_TOKEN || CONTENTFUL_DELIVERY_TOKEN)) {
-  throw new Error("Missing Contentful environment variables")
-}
+const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
+  process.env.NODE_ENV,
+  process.cwd(),
+  ""
+)
 
 export default defineConfig({
   site: SITE_URL,
@@ -32,17 +25,21 @@ export default defineConfig({
    *   - use this when most of your site should be static
    *   - any individual page or endpoint can opt-out of pre-rendering
    */
-  output: "hybrid",
-  experimental: {},
+  output: "server",
+  experimental: {
+    clientPrerender: true,
+    directRenderScript: true
+  },
   trailingSlash: "ignore",
   adapter: netlify({
-    imageCDN: true, // default: true
-    edgeMiddleware: false // default: false
+    imageCDN: true,
+    edgeMiddleware: false
   }),
   vite: viteConfiguration(),
   markdown: markdownConfiguration,
   server: _ => ({ port: Number(PORT) }),
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
+  prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   redirects: { "/feed": "/rss.xml", "/logo": "/union-logo.zip" },
   integrations: [
     starlight({
@@ -172,9 +169,10 @@ function viteConfiguration(): ViteUserConfig {
     plugins: [basicSsl()],
     server: { https: {} }
   } satisfies ViteUserConfig
-  return Object.assign(
-    baseConfiguration,
-    // don't include 'preview' configuration in development/production
-    PUBLIC_ENV === "preview" ? previewConfiguration : {}
-  )
+  // return Object.assign(
+  //   baseConfiguration,
+  //   // don't include 'preview' configuration in development/production
+  //   PUBLIC_ENV === "preview" ? previewConfiguration : {}
+  // )
+  return baseConfiguration
 }

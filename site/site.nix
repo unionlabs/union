@@ -22,8 +22,8 @@
           '';
           doDist = false;
           PUPPETEER_SKIP_DOWNLOAD = 1;
-          NODE_OPTIONS = "--no-warnings";
           ASTRO_TELEMETRY_DISABLED = 1;
+          NODE_OPTIONS = "--no-warnings";
         });
       };
 

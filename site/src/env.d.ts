@@ -1,10 +1,6 @@
 /// <reference types="astro/client" />
+/// <reference path="../.astro/env.d.ts" />
 /// <reference path="../.astro/types.d.ts" />
-
-declare module "*.splinecode" {
-  const content: string
-  export default content
-}
 
 interface EventTarget {
   value?: string
@@ -16,8 +12,8 @@ interface EnvironmentVariables {
   /* https://union.build in production, http://localhost:${PORT} in development */
   readonly SITE_URL: string
   readonly CONTENTFUL_SPACE_ID: string
-  readonly CONTENTFUL_DELIVERY_TOKEN: string
   readonly CONTENTFUL_PREVIEW_TOKEN: string
+  readonly CONTENTFUL_DELIVERY_TOKEN: string
 }
 
 // Node.js environment variables types
@@ -31,5 +27,7 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
-// Cloudflare Pages/Workers
-interface Env extends EnvironmentVariables {}
+declare module "*.splinecode" {
+  const content: string
+  export default content
+}
