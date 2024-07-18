@@ -2,7 +2,6 @@ import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
 import netlify from "@astrojs/netlify"
-import storyblok from "@storyblok/astro"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import basicSsl from "@vitejs/plugin-basic-ssl"
@@ -14,16 +13,27 @@ const SITE_URL = "https://union.build"
 
 const {
   PORT = 4321,
-  STORYBLOK_TOKEN,
+  CONTENTFUL_SPACE_ID,
+  CONTENTFUL_PREVIEW_TOKEN,
+  CONTENTFUL_DELIVERY_TOKEN,
   PUBLIC_ENV = "production",
   ENABLE_DEV_TOOLBAR = "false"
 } = loadEnv(process.env.NODE_ENV, process.cwd(), "")
 
-if (!STORYBLOK_TOKEN) throw new Error("STORYBLOK_TOKEN is required")
+if (!(CONTENTFUL_SPACE_ID || CONTENTFUL_PREVIEW_TOKEN || CONTENTFUL_DELIVERY_TOKEN)) {
+  throw new Error("Missing Contentful environment variables")
+}
 
 export default defineConfig({
   site: SITE_URL,
-  output: "server",
+  /**
+   * hybrid:
+   *   - pre-rendered to HTML by default
+   *   - use this when most of your site should be static
+   *   - any individual page or endpoint can opt-out of pre-rendering
+   */
+  output: "hybrid",
+  experimental: {},
   trailingSlash: "ignore",
   adapter: netlify({
     imageCDN: true, // default: true
@@ -35,21 +45,6 @@ export default defineConfig({
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   redirects: { "/feed": "/rss.xml", "/logo": "/union-logo.zip" },
   integrations: [
-    storyblok({
-      bridge: true,
-      livePreview: true,
-      accessToken: STORYBLOK_TOKEN,
-      components: {
-        // Add your components here
-        page: "storyblok/page",
-        blogPost: "storyblok/blog-post",
-        blogPostList: "storyblok/blog-post-list"
-      },
-      apiOptions: {
-        region: "eu",
-        cache: { clear: "auto", type: "memory" }
-      }
-    }),
     starlight({
       title: "Union",
       tagline: "Connecting blockchains trustlessly",
