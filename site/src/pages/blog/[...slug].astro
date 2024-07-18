@@ -1,39 +1,39 @@
 ---
-import { Image } from 'astro:assets'
-import Layout from '#/layouts/Layout.astro'
-import type { BlogPost } from '#/lib/types.ts'
-import { contentfulClient } from '#/lib/contentful.ts'
-import LanderSection from '#/components/LanderSection.astro'
-import { toISODate, saneDateTime } from '#/lib/utilities.ts'
-import { BLOCKS, INLINES } from '@contentful/rich-text-types'
-import SocialsSection from '#/components/sections/SocialsSection.astro'
-import { documentToHtmlString } from '@contentful/rich-text-html-renderer'
+import { Image } from "astro:assets"
+import Layout from "#/layouts/Layout.astro"
+import type { BlogPost } from "#/lib/types.ts"
+import { contentfulClient } from "#/lib/contentful.ts"
+import LanderSection from "#/components/LanderSection.astro"
+import { toISODate, saneDateTime } from "#/lib/utilities.ts"
+import { BLOCKS, INLINES } from "@contentful/rich-text-types"
+import SocialsSection from "#/components/sections/SocialsSection.astro"
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
 export const prerender = false
 
 const { slug } = Astro.params
 
 const {
-  items: [blogPost],
+  items: [blogPost]
 } = await contentfulClient.getEntries<BlogPost>({
-  'fields.slug': slug,
-  content_type: 'blog',
+  "fields.slug": slug,
+  content_type: "blog"
 })
 // The browser should always check freshness
-Astro.response.headers.set('cache-control', 'public, max-age=0, must-revalidate')
+Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
 
 // The CDN should cache for a year, but revalidate if the cache tag changes
-Astro.response.headers.set('netlify-cdn-cache-control', 's-maxage=31536000')
+Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
 
 // Tag the page with the blog post slug
-if (slug) Astro.response.headers.set('netlify-cache-tag', slug)
+if (slug) Astro.response.headers.set("netlify-cache-tag", slug)
 
 const imageWithProtocol = (url: string) => `https:${url}`
 
 // @ts-expect-error
-const coverFileds = blogPost.fields.cover.fields
-const imageUrl = imageWithProtocol(coverFileds.file.url)
-const { width, height } = coverFileds.file.details.image as { width: number; height: number }
+const coverFields = blogPost.fields.cover.fields
+const imageUrl = imageWithProtocol(coverFields.file.url)
+const { width, height } = coverFields.file.details.image as { width: number; height: number }
 ---
 
 <Layout
@@ -52,7 +52,7 @@ const { width, height } = coverFileds.file.details.image as { width: number; hei
       <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
         {blogPost.fields.title}
       </h1>
-      <Image {width} {height} src={imageUrl} loading="eager" alt={coverFileds.title} class="my-3" />
+      <Image {width} {height} src={imageUrl} loading="eager" alt={coverFields.title} class="my-3" />
       <p>
         <em>{blogPost.fields.description}</em>
       </p>

@@ -405,6 +405,7 @@ crisistypes
 crossorigin
 cryptocom
 cryptware
+ctfassets
 ctxt
 ctypes
 curr
