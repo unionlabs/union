@@ -5,7 +5,7 @@ use backon::{ConstantBuilder, Retryable};
 use color_eyre::Report;
 use ethers::{
     core::types::BlockId,
-    providers::{Http, Middleware, Provider},
+    providers::{Http, Provider},
     types::H256,
 };
 use futures::{stream::FuturesOrdered, FutureExt, StreamExt, TryFutureExt};
@@ -14,12 +14,14 @@ use sqlx::{PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::{debug, info, info_span, Instrument};
 use url::Url;
-const DEFAULT_CHUNK_SIZE: usize = 200;
 
 use crate::{
     metrics,
     postgres::{self, ChainId, InsertMode},
+    race_client::RaceClient,
 };
+
+const DEFAULT_CHUNK_SIZE: usize = 200;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
@@ -59,14 +61,19 @@ pub struct Indexer {
     chain_id: ChainId,
     tasks: tokio::task::JoinSet<Result<(), Report>>,
     pool: PgPool,
-    provider: Provider<Http>,
+    provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
 }
 
 impl Config {
     pub async fn indexer(self, pool: PgPool) -> Result<Indexer, Report> {
-        let provider = Provider::<Http>::try_from(self.urls[0].clone().as_str()).unwrap();
+        let provider = RaceClient::new(
+            self.urls
+                .into_iter()
+                .map(|url| Provider::<Http>::try_from(url.as_str()).unwrap())
+                .collect(),
+        );
 
         info!("fetching chain-id from node");
         let chain_id = (|| {
@@ -182,7 +189,7 @@ async fn index_blocks(
     pool: PgPool,
     range: Range<u64>,
     chain_id: ChainId,
-    provider: Provider<Http>,
+    provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
 ) -> Result<(), Report> {
@@ -232,7 +239,7 @@ async fn index_blocks_by_chunk(
     pool: PgPool,
     range: Range<u64>,
     chain_id: ChainId,
-    provider: Provider<Http>,
+    provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
 ) -> Result<(), IndexBlockError> {
@@ -432,7 +439,7 @@ impl BlockInsert {
     pub async fn from_provider_retried<T: Into<BlockId> + Send + Sync + Debug + Clone>(
         chain_id: ChainId,
         id: T,
-        provider: Provider<Http>,
+        provider: RaceClient<Provider<Http>>,
     ) -> Result<Self, FromProviderError> {
         let id = id.into();
         debug!(?id, "fetching block from provider");
@@ -449,7 +456,7 @@ impl BlockInsert {
     async fn from_provider<T: Into<BlockId> + Send + Sync + Debug>(
         chain_id: ChainId,
         id: T,
-        provider: Provider<Http>,
+        provider: RaceClient<Provider<Http>>,
     ) -> Result<Self, FromProviderError> {
         let block = provider
             .get_block(id)

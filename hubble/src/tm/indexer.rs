@@ -17,7 +17,7 @@ use url::Url;
 
 use crate::{
     postgres::{self, ChainId},
-    tm::client::RaceClient,
+    race_client::RaceClient,
 };
 
 #[derive(Clone, Debug, serde::Deserialize)]
