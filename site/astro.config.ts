@@ -31,7 +31,7 @@ export default defineConfig({
   },
   trailingSlash: "ignore",
   adapter: netlify({
-    imageCDN: true,
+    imageCDN: false,
     edgeMiddleware: false
   }),
   image: {
