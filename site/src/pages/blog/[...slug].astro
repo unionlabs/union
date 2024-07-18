@@ -7,6 +7,7 @@ import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { BLOCKS, INLINES } from "@contentful/rich-text-types"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
+import { Image } from "astro:assets"
 
 export const prerender = false
 
@@ -49,6 +50,13 @@ const imageUrl = imageWithProtocol(blogPost.fields.cover.fields.file.url)
       <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
         {blogPost.fields.title}
       </h1>
+      <Image
+        height={100}
+        width={100}
+        src={imageUrl}
+        loading="eager"
+        alt={(blogPost.fields.cover as any).fields.title}
+      />
       <p>
         <em>{blogPost.fields.description}</em>
       </p>
