@@ -1,6 +1,6 @@
 ---
+import type { BlogPost } from "./types.ts"
 import Layout from "#/layouts/Layout.astro"
-import type { EntryFieldTypes } from "contentful"
 import { contentfulClient } from "#/lib/contentful.ts"
 import LanderSection from "#/components/LanderSection.astro"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
@@ -11,19 +11,6 @@ import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 export const prerender = false
 
 const { slug } = Astro.params
-
-interface BlogPost {
-  contentTypeId: "blog"
-  fields: {
-    date: EntryFieldTypes.Text
-    slug: EntryFieldTypes.Text
-    title: EntryFieldTypes.Text
-    author: EntryFieldTypes.Text
-    cover: EntryFieldTypes.AssetLink
-    content: EntryFieldTypes.RichText
-    description: EntryFieldTypes.Text
-  }
-}
 
 const {
   items: [blogPost]
@@ -39,7 +26,6 @@ const {
   title={blogPost.fields.title}
   description={blogPost.fields.description}
 >
-  <a></a>
   <LanderSection gradient="to-t">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
       <div class="text-lg">
@@ -56,10 +42,10 @@ const {
       <article
         set:html={documentToHtmlString(blogPost.fields.content, {
           renderNode: {
-            [BLOCKS['EMBEDDED_ASSET']]: _ =>
+            [BLOCKS["EMBEDDED_ASSET"]]: _ =>
               // @ts-expect-error
               `<Image src="https:${blogPost.fields.cover.fields.file.url}" />`,
-            [INLINES['HYPERLINK']]: params => /* html */ `
+            [INLINES["HYPERLINK"]]: params => /* html */ `
               <a 
                 target="_blank"
                 href="${params.data.uri}"

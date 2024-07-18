@@ -8,7 +8,7 @@
     {
       packages = {
         site = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-zoF9zJGof/gHvBXi2/l/x/zKpWX2u6xbvBtqWesvAZs=";
+          npmDepsHash = "sha256-LIVhP3Gc53NlGM7y3L2ZOHR3xTScQ3MuEDBGWSkoAt0=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";
@@ -24,7 +24,6 @@
           PUPPETEER_SKIP_DOWNLOAD = 1;
           NODE_OPTIONS = "--no-warnings";
           ASTRO_TELEMETRY_DISABLED = 1;
-          STORYBLOK_TOKEN = "ZFTB4SdJbq04vXyGKK1ENgtt";
         });
       };
 

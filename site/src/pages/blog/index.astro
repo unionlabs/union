@@ -1,8 +1,8 @@
 ---
+import type { BlogPost } from "./types.ts"
 import Card from "#/components/Card.astro"
 import TextA from "#/components/TextA.astro"
 import H3 from "#/components/typography/h3.astro"
-import type { EntryFieldTypes } from "contentful"
 import { contentfulClient } from "#/lib/contentful.ts"
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import { saneDateTime, toISODate } from "#/lib/utilities.ts"
@@ -10,19 +10,6 @@ import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
-
-interface BlogPost {
-  contentTypeId: "blog"
-  fields: {
-    date: EntryFieldTypes.Text
-    slug: EntryFieldTypes.Text
-    title: EntryFieldTypes.Text
-    author: EntryFieldTypes.Text
-    content: EntryFieldTypes.RichText
-    description: EntryFieldTypes.RichText
-    cover: { fields: { file: { url: EntryFieldTypes.AssetLink } } }
-  }
-}
 
 const blogEntries = await contentfulClient.getEntries<BlogPost>({
   content_type: "blog"
