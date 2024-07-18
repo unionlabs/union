@@ -385,6 +385,7 @@ pub struct Vote {
     #[prost(enumeration = "SignedMsgType", tag = "1")]
     pub r#type: i32,
     #[prost(int64, tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(int32, tag = "3")]
     pub round: i32,
@@ -394,21 +395,25 @@ pub struct Vote {
     #[prost(message, optional, tag = "5")]
     pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(bytes = "vec", tag = "6")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(int32, tag = "7")]
     pub validator_index: i32,
     /// Vote signature by the validator if they participated in consensus for the
     /// associated block.
     #[prost(bytes = "vec", tag = "8")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub signature: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension provided by the application. Only valid for precommit
     /// messages.
     #[prost(bytes = "vec", tag = "9")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub extension: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension signature by the validator if they participated in
     /// consensus for the associated block.
     /// Only valid for precommit messages.
     #[prost(bytes = "vec", tag = "10")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub extension_signature: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for Vote {
@@ -648,6 +653,7 @@ impl SignedMsgType {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
     #[prost(oneof = "evidence::Sum", tags = "1, 2")]
+    #[cfg_attr(feature = "serde", serde(flatten))]
     pub sum: ::core::option::Option<evidence::Sum>,
 }
 /// Nested message and enum types in `Evidence`.
@@ -655,10 +661,13 @@ pub mod evidence {
     #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
     pub enum Sum {
         #[prost(message, tag = "1")]
+        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
         DuplicateVoteEvidence(super::DuplicateVoteEvidence),
         #[prost(message, tag = "2")]
+        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
         LightClientAttackEvidence(super::LightClientAttackEvidence),
     }
 }
@@ -679,10 +688,15 @@ pub struct DuplicateVoteEvidence {
     #[prost(message, optional, tag = "2")]
     pub vote_b: ::core::option::Option<Vote>,
     #[prost(int64, tag = "3")]
+    #[serde(alias = "TotalVotingPower")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub total_voting_power: i64,
     #[prost(int64, tag = "4")]
+    #[serde(alias = "ValidatorPower")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub validator_power: i64,
     #[prost(message, optional, tag = "5")]
+    #[serde(alias = "Timestamp")]
     pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
 }
 impl ::prost::Name for DuplicateVoteEvidence {
@@ -700,10 +714,12 @@ pub struct LightClientAttackEvidence {
     #[prost(message, optional, tag = "1")]
     pub conflicting_block: ::core::option::Option<LightBlock>,
     #[prost(int64, tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub common_height: i64,
     #[prost(message, repeated, tag = "3")]
     pub byzantine_validators: ::prost::alloc::vec::Vec<Validator>,
     #[prost(int64, tag = "4")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub total_voting_power: i64,
     #[prost(message, optional, tag = "5")]
     pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,

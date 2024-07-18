@@ -88,6 +88,15 @@
             sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
             sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
             sed -i 's/Bls12_381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12_381")\]Bls12_381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/tendermint.crypto.rs"
+
+
+
+            # required until https://github.com/tokio-rs/prost/issues/507 is fixed
+            sed -i 's/pub sum: ::core::option::Option<evidence::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<evidence::Sum>,/' "./src/tendermint.types.rs"
+            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/tendermint.types.rs"
+
+            sed -i 's/DuplicateVoteEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]DuplicateVoteEvidence(/' "./src/tendermint.types.rs"
+            sed -i 's/LightClientAttackEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]LightClientAttackEvidence(/' "./src/tendermint.types.rs"
           '';
         };
         uniond = rec {
@@ -342,6 +351,12 @@
             ".tendermint.types.Commit.height" = [ serde_string ];
             ".tendermint.types.CommitSig.signature" = [ serde_base64_opt_default ];
             ".tendermint.types.CommitSig.validator_address" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.CommitSig.timestamp" = [
+              ''#[cfg_attr(
+                  feature = "serde",
+                  serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
+              )]''
+            ];
 
             ".tendermint.version.Consensus.block" = [ serde_string ];
             ".tendermint.version.Consensus.app" = [ serde_default ];
@@ -367,11 +382,32 @@
             ".tendermint.types.Validator.proposer_priority" = [ serde_string ];
 
             ".tendermint.types.Data.txs" = [ serde_inner_base64 ];
+
+            ".tendermint.types.Vote.height" = [ serde_string ];
+            ".tendermint.types.Vote.validator_address" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.Vote.signature" = [ serde_base64 ];
+            ".tendermint.types.Vote.extension" = [ serde_base64_opt_default ];
+            ".tendermint.types.Vote.extension_signature" = [ serde_base64_opt_default ];
+            # ".tendermint.types.Vote.timestamp" = [
+            #   ''#[cfg_attr(
+            #       feature = "serde",
+            #       serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
+            #   )]''
+            # ];
+
+            ".tendermint.types.DuplicateVoteEvidence.total_voting_power" = [ (serde_alias "TotalVotingPower") serde_string ];
+            ".tendermint.types.DuplicateVoteEvidence.validator_power" = [ (serde_alias "ValidatorPower") serde_string ];
+            ".tendermint.types.DuplicateVoteEvidence.timestamp" = [ (serde_alias "Timestamp") ];
+
+            ".tendermint.types.LightClientAttackEvidence.common_height" = [ serde_string ];
+            ".tendermint.types.LightClientAttackEvidence.total_voting_power" = [ serde_string ];
             # ".tendermint.crypto.PublicKey.sum" = [ serde_flatten ];
           };
 
           enum_attribute = {
-            ".tendermint.crypto.PublicKey.sum.Ed25519" = [ (serde_alias "tendermint/PubKeyEd25519") ];
+            # ".tendermint.crypto.PublicKey.sum.Ed25519" = [ (serde_alias "tendermint/PubKeyEd25519") ];
+            # ".tendermint.types.Evidence.sum.DuplicateVoteEvidence" = [ (serde_alias "tendermint/DuplicateVoteEvidence") ];
+            # ".tendermint.types.Evidence.sum.LightClientAttackEvidence" = [ (serde_alias "tendermint/LightClientAttackEvidence") ];
           };
         };
 
