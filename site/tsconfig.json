@@ -11,6 +11,7 @@
     "strict": true,
     "allowArbitraryExtensions": true,
     "alwaysStrict": true,
+    "strictNullChecks": true,
     "allowImportingTsExtensions": true,
     "jsx": "preserve",
     "skipDefaultLibCheck": true,
