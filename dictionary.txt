@@ -262,6 +262,7 @@ backon
 backported
 bankkeeper
 banktypes
+bartio
 baseapp
 beacond
 beacondata

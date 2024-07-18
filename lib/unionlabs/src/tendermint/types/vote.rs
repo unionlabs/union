@@ -20,8 +20,14 @@ pub struct Vote {
     pub timestamp: Timestamp,
     pub validator_address: H160,
     pub validator_index: i32,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub signature: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub extension: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub extension_signature: Vec<u8>,
 }
 
