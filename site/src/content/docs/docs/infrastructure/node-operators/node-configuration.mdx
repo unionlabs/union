@@ -76,12 +76,12 @@ Located in `config/config.toml`, this file is host to many settings.
 
 ### Consensus
 
-To achive a low target block time, the Union team asks validators to make the following changes to their configuration.
+To achieve a low target block time, the Union team asks validators to make the following changes to their configuration.
 
 Located in the `consensus` TOML table under the "Consensus Configuration Options" section.
 
 ```toml
-# How long we wait for a proposal block before prevoting nil
+# How long we wait for a proposal block before pre-voting nil
 timeout_propose = "3s"
 # How much timeout_propose increases with each round
 timeout_propose_delta = "500ms"
