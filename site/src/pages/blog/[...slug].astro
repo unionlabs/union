@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets"
 import Layout from "#/layouts/Layout.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import { contentfulClient } from "#/lib/contentful.ts"
@@ -7,7 +8,6 @@ import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { BLOCKS, INLINES } from "@contentful/rich-text-types"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
-import { Image } from "astro:assets"
 
 export const prerender = false
 
@@ -31,7 +31,9 @@ if (slug) Astro.response.headers.set("netlify-cache-tag", slug)
 const imageWithProtocol = (url: string) => `https:${url}`
 
 // @ts-expect-error
-const imageUrl = imageWithProtocol(blogPost.fields.cover.fields.file.url)
+const coverFileds = blogPost.fields.cover.fields
+const imageUrl = imageWithProtocol(coverFileds.file.url)
+const { width, height } = coverFileds.file.details.image as { width: number; height: number }
 ---
 
 <Layout
@@ -50,13 +52,7 @@ const imageUrl = imageWithProtocol(blogPost.fields.cover.fields.file.url)
       <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
         {blogPost.fields.title}
       </h1>
-      <Image
-        height={100}
-        width={100}
-        src={imageUrl}
-        loading="eager"
-        alt={(blogPost.fields.cover as any).fields.title}
-      />
+      <Image {width} {height} src={imageUrl} loading="eager" alt={coverFileds.title} />
       <p>
         <em>{blogPost.fields.description}</em>
       </p>
@@ -64,9 +60,10 @@ const imageUrl = imageWithProtocol(blogPost.fields.cover.fields.file.url)
         set:html={documentToHtmlString(blogPost.fields.content, {
           renderNode: {
             [BLOCKS['EMBEDDED_ASSET']]: asset => {
-              const imageUrl = imageWithProtocol(asset.data.target.fields.file.url)
-              const altText = asset.data.target.fields.title
-              return `<Image src="${imageUrl}" alt="${altText}" />`
+              const dataFields = asset.data.target.fields
+              const imageUrl = imageWithProtocol(dataFields.file.url)
+              const { width, height } = dataFields.file.details.image
+              return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
             },
             [INLINES['HYPERLINK']]: params => /* html */ `
               <a 
