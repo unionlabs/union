@@ -34,6 +34,14 @@ export default defineConfig({
     imageCDN: true,
     edgeMiddleware: false
   }),
+  image: {
+    domains: [
+      "cdn.contentful.com",
+      "images.ctfassets.net",
+      "raw.githubusercontent.com",
+      "avatars.githubusercontent.com"
+    ]
+  },
   markdown: markdownConfiguration,
   server: _ => ({ port: Number(PORT) }),
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
