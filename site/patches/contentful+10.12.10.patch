@@ -1,0 +1,18 @@
+diff --git a/node_modules/contentful/package.json b/node_modules/contentful/package.json
+index a263eb8..ce9597a 100644
+--- a/node_modules/contentful/package.json
++++ b/node_modules/contentful/package.json
+@@ -6,6 +6,13 @@
+   "main": "./dist/contentful.node.min.js",
+   "browser": "./dist/contentful.browser.min.js",
+   "types": "./dist/types/index.d.ts",
++  "exports": {
++    ".": {
++      "require": "./dist/contentful.node.min.js",
++      "import": "./dist/contentful.node.min.js",
++      "types": "./dist/types/index.d.ts"
++    }
++  },
+   "engines": {
+     "node": ">=18"
+   },

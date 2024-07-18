@@ -2,32 +2,31 @@
 import Card from "#/components/Card.astro"
 import TextA from "#/components/TextA.astro"
 import H3 from "#/components/typography/h3.astro"
-import type { DeepPartial } from "#/lib/types.ts"
-import { useStoryblokApi } from "@storyblok/astro"
+import type { EntryFieldTypes } from "contentful"
+import { contentfulClient } from "#/lib/contentful.ts"
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import LanderSection from "#/components/LanderSection.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
-const sbApi = useStoryblokApi()
+interface BlogPost {
+  contentTypeId: "blog"
+  fields: {
+    date: EntryFieldTypes.Text
+    slug: EntryFieldTypes.Text
+    title: EntryFieldTypes.Text
+    author: EntryFieldTypes.Text
+    content: EntryFieldTypes.RichText
+    description: EntryFieldTypes.RichText
+    cover: { fields: { file: { url: EntryFieldTypes.AssetLink } } }
+  }
+}
 
-const { data } = await sbApi.get("cdn/stories", {
-  content_type: "blogPost",
-  version: import.meta.env.DEV ? "draft" : "published"
+const blogEntries = await contentfulClient.getEntries<BlogPost>({
+  content_type: "blog"
 })
-
-const blogEntries = data.stories as Array<{
-  name: string
-  slug: string
-  full_slug: string
-  content: DeepPartial<{
-    date: string
-    title: string
-    description: string
-    cover: { filename: string }
-  }>
-}>
 ---
 
 <SectionsLayout title="Union Blog" gapless>
@@ -37,17 +36,14 @@ const blogEntries = data.stories as Array<{
     </IntroHeading>
     <div class="flex flex-col md:grid grid-cols-2 gap-4 md:gap-6 flex-1">
       {
-        blogEntries.map(blogPostEntry => (
-          <a class="pointer-cursor" href={`/blog/${blogPostEntry.slug}`}>
+        blogEntries.items.map(blogPostEntry => (
+          <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
             <Card class="size-full" padded>
-              <time
-                class="text-lg text-gray-400"
-                datetime={toISODate(blogPostEntry?.content?.date)}
-              >
-                {saneDateTime(blogPostEntry?.content?.date)}
+              <time class="text-lg text-gray-400" datetime={toISODate(blogPostEntry?.fields?.date)}>
+                {saneDateTime(blogPostEntry?.fields?.date)}
               </time>
-              <H3>{blogPostEntry.name}</H3>
-              <p class="sm:text-xl text-gray-400">{blogPostEntry.content.description}</p>
+              <H3>{blogPostEntry.fields.title}</H3>
+              <p class="sm:text-xl text-gray-400">{blogPostEntry.fields.description}</p>
 
               <TextA fake>Read Post</TextA>
             </Card>

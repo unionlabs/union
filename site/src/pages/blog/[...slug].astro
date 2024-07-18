@@ -1,39 +1,143 @@
 ---
 import Layout from "#/layouts/Layout.astro"
-import { useStoryblok } from "@storyblok/astro"
-import type { DeepPartial } from "#/lib/types.ts"
-import StoryblokComponent from "@storyblok/astro/StoryblokComponent.astro"
+import type { EntryFieldTypes } from "contentful"
+import { contentfulClient } from "#/lib/contentful.ts"
+import LanderSection from "#/components/LanderSection.astro"
+import { toISODate, saneDateTime } from "#/lib/utilities.ts"
+import { BLOCKS, INLINES } from "@contentful/rich-text-types"
+import SocialsSection from "#/components/sections/SocialsSection.astro"
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
 const { slug } = Astro.params
 
-const sbApi = await useStoryblok(
-  `cdn/stories/blog/${slug}`,
-  { version: import.meta.env.DEV ? "draft" : "published" },
-  {},
-  Astro
-)
-
-const story = sbApi as {
-  name: string
-  content: DeepPartial<{
-    date: string
-    title: string
-    author: string
-    description: string
-    cover?: {
-      filename?: string // the url of the image
-    }
-  }>
+interface BlogPost {
+  contentTypeId: "blog"
+  fields: {
+    date: EntryFieldTypes.Text
+    slug: EntryFieldTypes.Text
+    title: EntryFieldTypes.Text
+    author: EntryFieldTypes.Text
+    cover: EntryFieldTypes.AssetLink
+    content: EntryFieldTypes.RichText
+    description: EntryFieldTypes.Text
+  }
 }
+
+const {
+  items: [blogPost]
+} = await contentfulClient.getEntries<BlogPost>({
+  "fields.slug": slug,
+  content_type: "blog"
+})
 ---
 
 <Layout
+  image={undefined}
   url={Astro.url.href}
-  title={story.content.title}
-  image={story.content?.cover?.filename}
-  description={story.content.description}
+  title={blogPost.fields.title}
+  description={blogPost.fields.description}
 >
-  <StoryblokComponent blok={sbApi.content} />
+  <a></a>
+  <LanderSection gradient="to-t">
+    <div class="max-w-2xl self-center md:text-lg text-gray-300">
+      <div class="text-lg">
+        <time class="text-lg text-gray-400" datetime={toISODate(blogPost.fields.date)}>
+          {saneDateTime(blogPost.fields.date)}
+        </time>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
+        {blogPost.fields.title}
+      </h1>
+      <p>
+        <em>{blogPost.fields.description}</em>
+      </p>
+      <article
+        set:html={documentToHtmlString(blogPost.fields.content, {
+          renderNode: {
+            [BLOCKS['EMBEDDED_ASSET']]: _ =>
+              // @ts-expect-error
+              `<Image src="https:${blogPost.fields.cover.fields.file.url}" />`,
+            [INLINES['HYPERLINK']]: params => /* html */ `
+              <a 
+                target="_blank"
+                href="${params.data.uri}"
+                rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+          },
+        })}
+      />
+    </div>
+  </LanderSection>
+  <SocialsSection />
 </Layout>
 
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>
+
+<style is:inline lang="postcss">
+  h1 {
+    color: white !important; 
+  }
+  img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px !important;
+  }
+
+  p > a, ul a:not(header a), ol a:not(header a) {
+    text-decoration: underline;
+    text-decoration-color: #A0ECFD !important;
+    transition: border-bottom-color 0.2s ease-in-out;
+    color: #A0ECFD !important;
+  }
+
+  p, q, blockquote {
+    margin-bottom: 1rem;
+    color: #D1D5DB;
+  }
+
+
+  p > a:hover {
+    color: #A0ECFD;
+  }
+
+  ol, ul {
+    li {
+      color: #D1D5DB;
+    }
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 640px) {
+    p > a:hover {
+      color: #A0ECFD;
+      text-decoration-color: #fff !important;
+    }
+    h2 {
+      font-size: 1.5rem !important;
+    }
+  }
+
+  h2,h3,h4,h5 {
+    margin-top: 2rem;
+    margin-bottom: 0rem;
+    font-size: 1.87rem;
+    color: #ffffff;
+  }
+
+  h2::after, h3::after, h4::after, h5::after {
+    content: "#";
+    color: #ffffff;
+    margin-left: 0.5rem;
+    font-size: 1.5rem;
+    position: relative;
+    visibility: hidden;
+  }
+
+  h2:hover::after, h3:hover::after, h4:hover::after, h5:hover::after {
+    visibility: visible;
+  }
+
+  *::selection {
+    background-color: #A0ECFD;
+    color: #000;
+  }
+</style>

@@ -22,4 +22,5 @@ pnpm-debug.log*
 .vercel
 ''
 .wrangler
+.stackbit
 .eslintcache

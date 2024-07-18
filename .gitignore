@@ -70,3 +70,4 @@ process-compose.override.yml
 data/
 .netlify
 .cursorignore
+.stackbit
