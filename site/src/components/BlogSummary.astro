@@ -1,30 +1,37 @@
 ---
-import { getCollection } from "astro:content"
 import Card from "#/components/Card.astro"
-import ButtonA from "#/components/ButtonA.astro"
 import TextA from "#/components/TextA.astro"
+import type { BlogPost } from "#/lib/types.ts"
+import ButtonA from "#/components/ButtonA.astro"
 import H3 from "#/components/typography/h3.astro"
+import { contentfulClient } from "#/lib/contentful.ts"
 
 const BLOG_POST_COUNT = 4
 
-const publishedBlogPosts = await getCollection("blog", ({ slug, data }) => {
-  if (data.hidden) return false
-  return { slug, data }
+const blogEntries = await contentfulClient.getEntries<BlogPost>({
+  content_type: "blog"
 })
 
-publishedBlogPosts.sort((a, b) => Number(a.data.date) - Number(b.data.date))
+// TODO: filter out unpublished blog posts
+const publishedBlogPosts = blogEntries.items
+
+publishedBlogPosts.sort((a, b) => Number(a.fields.date) - Number(b.fields.date))
 
 const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse().slice(0, BLOG_POST_COUNT)
 ---
 
-
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
   <Card padded>
-    <a class="flex flex-col items-start gap md:gap-2 size-full" href={`/blog/${latestBlogPost.slug}`}>
-      <H3>{latestBlogPost.data.title}</H3>
-      <p class="text-pretty text-left md:text-lg text-gray-400 mb-4">{latestBlogPost.data.description}</p>
+    <a
+      class="flex flex-col items-start gap md:gap-2 size-full"
+      href={`/blog/${latestBlogPost.fields.slug}`}
+    >
+      <H3>{latestBlogPost.fields.title}</H3>
+      <p class="text-pretty text-left md:text-lg text-gray-400 mb-4">
+        {latestBlogPost.fields.description}
+      </p>
       <div class="w-full flex flex-1 items-end">
-        <ButtonA href={`/blog/${latestBlogPost.slug}`} fake>read full post</ButtonA>
+        <ButtonA href={`/blog/${latestBlogPost.fields.slug}`} fake>read full post</ButtonA>
       </div>
     </a>
   </Card>
@@ -35,10 +42,10 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse().slice(0, BLO
     {
       blogPosts.map(post => (
         <a
-          href={`/blog/${post.slug}`}
+          href={`/blog/${post.fields.slug}`}
           class="justify-center w-full flex flex-col text-left flex-start p-4 md:px-6"
         >
-          <p class="text-xl font-bold">{post.data.title}</p>
+          <p class="text-xl font-bold">{post.fields.title}</p>
           <TextA fake>Read more</TextA>
         </a>
       ))
