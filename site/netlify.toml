@@ -1,7 +1,4 @@
 [build]
-publish = "dist"
+command = "npm_config_yes=true npx astro@latest build"
 ignore  = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ./site/"
-command = "GIT_LFS_ENABLED=true GIT_LFS_FETCH_INCLUDE='*' npm_config_yes=true npx astro@latest build"
-
-[[plugin]]
-package = "@netlify/plugin-lighthouse"
+publish = "dist"
