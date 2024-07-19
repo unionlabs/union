@@ -218,9 +218,9 @@
   }
 }
 
-body * {
-  text-shadow: 0 0 5px #00000050;
-}
+/*body * {*/
+/*  text-shadow: 0 0 5px #00000050;*/
+/*}*/
 
 /*!* Light theme *!*/
 /*@media (prefers-color-scheme: light) {*/
