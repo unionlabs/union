@@ -991,7 +991,7 @@ impl<T: QueueMessage> Engine<T> {
         o: &'a O,
     ) -> Result<Option<Option<T::Data>>, BoxDynError> {
         // yield back to the runtime
-        futures::future::ready(()).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 
         let s = self.store.clone();
 

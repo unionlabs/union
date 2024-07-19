@@ -201,8 +201,6 @@ pub fn ibc_packet_receive(
         funds: Default::default(),
     };
 
-    let _ = msg.packet.timeout;
-
     match channel_info.protocol_version.as_str() {
         Ics20Protocol::VERSION => Ok(Ics20Protocol {
             common: ProtocolCommon {
@@ -239,7 +237,7 @@ pub fn ibc_packet_ack(
     let channel_info = CHANNEL_INFO.load(deps.storage, &msg.original_packet.src.channel_id)?;
 
     let info = MessageInfo {
-        sender: msg.clone().relayer,
+        sender: msg.relayer.clone(),
         funds: Default::default(),
     };
 

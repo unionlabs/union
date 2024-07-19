@@ -947,27 +947,36 @@ contract IBCPacketHandlerTest is TestPlus {
 
     function test_timeoutPacket_payloadTampered(
         address relayer,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
         bytes memory payload
     ) public {
         vm.assume(relayer != address(0) && relayer != address(app));
+        vm.assume(timeoutHeight > LATEST_HEIGHT);
+        vm.assume(timeoutTimestamp > LATEST_TIMESTAMP);
+        vm.assume(timeoutTimestamp < type(uint64).max / 1e9);
         vm.prank(address(app));
         handler.sendPacket(
             channelId,
-            ClientHeight.Data({revision_number: 0, revision_height: 0}),
-            0,
+            ClientHeight.Data({
+                revision_number: 0,
+                revision_height: timeoutHeight
+            }),
+            timeoutTimestamp * 1e9,
             payload
         );
+        vm.warp(timeoutTimestamp);
         client.pushValidMembership();
         vm.prank(relayer);
-        vm.expectRevert(IBCPacketLib.ErrPacketWithoutTimeout.selector);
+        vm.expectRevert(IBCPacketLib.ErrInvalidPacketCommitment.selector);
         handler.timeoutPacket(
             MsgMocks.packetTimeout(
                 address(app).toHexString(),
                 channelId,
                 LATEST_HEIGHT,
-                0,
-                0,
-                payload
+                timeoutHeight,
+                timeoutTimestamp * 1e9,
+                abi.encodePacked(hex"00", payload)
             )
         );
     }

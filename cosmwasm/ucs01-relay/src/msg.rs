@@ -1,6 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary, CosmosMsg, IbcChannel, IbcEndpoint, Uint512};
 use token_factory_api::TokenFactoryMsg;
+use ucs01_relay_api::types::Fees;
 
 use crate::state::ChannelInfo;
 
@@ -45,6 +46,8 @@ pub struct TransferMsg {
     pub timeout: Option<u64>,
     /// The memo
     pub memo: String,
+    /// Fee associated with the transfer, denominated in transferred coins
+    pub fees: Option<Fees>,
 }
 
 #[cw_serde]

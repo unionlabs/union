@@ -282,12 +282,13 @@ contract IBCChannelHandlerTest is TestPlus {
 
     function test_handshake_init_noConnection(
         uint64 proofHeight,
-        string memory portIdParam
+        address portIdParam
     ) public {
         vm.assume(proofHeight > 0);
 
-        IBCMsgs.MsgChannelOpenInit memory msg_init =
-            MsgMocks.channelOpenInit("invalid-connection", portIdParam);
+        IBCMsgs.MsgChannelOpenInit memory msg_init = MsgMocks.channelOpenInit(
+            "invalid-connection", portIdParam.toHexString()
+        );
         vm.expectRevert(IBCChannelLib.ErrInvalidConnectionState.selector);
         handler.channelOpenInit(msg_init);
     }
@@ -460,12 +461,13 @@ contract IBCChannelHandlerTest is TestPlus {
 
     function test_handshake_try_notTryOpen(
         uint64 proofHeight,
-        string memory portIdParam
+        address portIdParam
     ) public {
         (, string memory connId) = setupConnection(proofHeight);
 
-        IBCMsgs.MsgChannelOpenTry memory msg_try =
-            MsgMocks.channelOpenTry(connId, portIdParam, proofHeight);
+        IBCMsgs.MsgChannelOpenTry memory msg_try = MsgMocks.channelOpenTry(
+            connId, portIdParam.toHexString(), proofHeight
+        );
         msg_try.channel.state = ChannelEnums.State.STATE_INIT;
 
         client.pushValidMembership();
