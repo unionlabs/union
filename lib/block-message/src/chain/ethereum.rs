@@ -17,13 +17,14 @@ use contracts::{
 use enumorph::Enumorph;
 use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
 use frunk::{hlist_pat, HList};
-use futures::StreamExt;
+use futures::{stream::FuturesUnordered, StreamExt, TryStreamExt};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
     conc, data, fetch, noop, queue_msg, Op,
 };
 use serde::{Deserialize, Serialize};
+use tokio::task::JoinSet;
 use tracing::{debug, info, warn};
 use unionlabs::{
     ethereum::config::ChainSpec,
@@ -143,25 +144,59 @@ where
     let to_block = c.execution_height_of_beacon_slot(to_slot).await;
 
     if from_block == to_block {
-        debug!(%from_block, %to_block, %from_slot, %to_slot, "beacon block range is empty");
+        info!(%from_block, %to_block, %from_slot, %to_slot, "beacon block range is empty");
         noop()
     } else {
-        debug!(%from_block, %to_block, "fetching block range");
-        // REVIEW: Surely transactions and events can be fetched in parallel?
-        conc(
-            futures::stream::iter(
-                c.provider()
+        const ETH_GET_LOGS_BATCH_SIZE: u64 = 100;
+
+        info!(%from_block, %to_block, "fetching block range");
+
+        let mut from_block = from_block;
+
+        let mut msgs = vec![];
+        let mut join_set = FuturesUnordered::new();
+
+        for (from_block, to_block) in std::iter::from_fn(move || {
+            if from_block < to_block {
+                // NOTE: These -1s are very important, else events will be double fetched
+                if to_block - from_block < ETH_GET_LOGS_BATCH_SIZE {
+                    Some((from_block, {
+                        from_block = to_block;
+                        from_block - 1
+                    }))
+                } else {
+                    Some((from_block, {
+                        from_block += ETH_GET_LOGS_BATCH_SIZE;
+                        from_block - 1
+                    }))
+                }
+            } else {
+                None
+            }
+        }) {
+            info!(%from_block, %to_block, %from_slot, %to_slot, "fetching logs in range");
+
+            let provider = c.provider();
+            let ibc_handler_address = c.ibc_handler_address();
+
+            join_set.push(async move {
+                provider
                     .get_logs(
                         &Filter::new()
-                            .address(ethers::types::H160::from(c.ibc_handler_address()))
+                            .address(ethers::types::H160::from(ibc_handler_address))
                             .from_block(from_block)
-                            // NOTE: This -1 is very important, else events will be double fetched
-                            .to_block(to_block - 1),
+                            .to_block(to_block),
                     )
                     .await
-                    .unwrap(),
-            )
-            .filter_map(|log| async {
+            });
+        }
+
+        for logs in join_set
+            .try_collect::<Vec<_>>()
+            .await
+            .expect("unable to fetch logs")
+        {
+            for log in logs {
                 let tx_hash = log
                     .transaction_hash
                     .expect("log should have transaction_hash")
@@ -172,7 +207,7 @@ where
                 match IBCHandlerEvents::decode_log(&log.into()) {
                     Ok(event) => {
                         debug!(?event, "found IBCHandler event");
-                        Some(
+                        msgs.push(
                             mk_aggregate_event(c, event, event_height, tx_hash, |event_height| {
                                 c.execution_height_of_beacon_slot(event_height.revision_height())
                             })
@@ -181,13 +216,23 @@ where
                     }
                     Err(e) => {
                         warn!("could not decode evm event {}", e);
-                        None
                     }
                 }
-            })
-            .collect::<Vec<_>>()
-            .await,
-        )
+            }
+        }
+
+        info!(
+            %from_block,
+            %to_block,
+            %from_slot,
+            %to_slot,
+
+            total = %msgs.len(),
+
+            "fetched logs in block range"
+        );
+
+        conc(msgs)
     }
 }
 
