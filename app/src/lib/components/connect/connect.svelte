@@ -7,7 +7,6 @@ import { Button } from "$lib/components/ui/button"
 import * as Avatar from "$lib/components/ui/avatar"
 import WalletIcon from "virtual:icons/lucide/wallet"
 import { Separator } from "$lib/components/ui/separator"
-import ThemeSwitch from "$lib/components/header/theme-switch.svelte"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 import { Switch } from "$lib/components/ui/switch"
@@ -15,7 +14,8 @@ import { Label } from "$lib/components/ui/label"
 import { showUnsupported } from "$lib/stores/user.ts"
 import Sun from "virtual:icons/lucide/sun"
 import Moon from "virtual:icons/lucide/moon"
-import { toggleMode } from "mode-watcher"
+import { setMode } from "mode-watcher"
+import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 
 let buttonText: string
 
@@ -101,15 +101,26 @@ $: if ($navigating) sheetOpen = false
         <Switch bind:checked={$showUnsupported} id="unsupported-assets"/>
         <Label for="unsupported-assets">Show unverified assets</Label>
       </div>
-      <Button on:click={toggleMode} variant="default" size="icon" class="hover:text-black hover:bg-accent">
-        <Sun
-          class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-        />
-        <Moon
-          class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-        />
-        <span class="sr-only">Toggle theme</span>
-      </Button>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild let:builder>
+          <Button builders={[builder]} variant="default" size="icon" class="hover:text-black hover:bg-accent">
+            <Sun
+              class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+            />
+            <Moon
+              class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+            />
+            <span class="sr-only">Toggle theme</span>
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content class="w-fit rounded-none bg-secondary">
+          <DropdownMenu.Group>
+            <DropdownMenu.Item on:click={() => setMode('system')} class="cursor-pointer">System</DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => setMode('dark')} class="cursor-pointer">Dark</DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => setMode('light')} class="cursor-pointer">Light</DropdownMenu.Item>
+          </DropdownMenu.Group>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
     </div>
   </Sheet.Content>
 </Sheet.Root>
