@@ -20,7 +20,7 @@ export function initializeContentfulLivePreview({
     locale,
     debugMode,
     enableLiveUpdates: true,
-    enableInspectorMode: false,
+    enableInspectorMode: true,
     targetOrigin: "https://app.contentful.com"
   })
 

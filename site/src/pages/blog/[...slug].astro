@@ -31,6 +31,7 @@ const {
     "fields.description"
   ]
 })
+
 // The browser should always check freshness
 Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
 
@@ -61,7 +62,7 @@ const { width, height } = coverFields.file.details.image as {
 >
   <LanderSection gradient="to-t">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
-      <div class="text-lg">
+      <div class="text-lg flex gap-x-3 h-min">
         <time
           class="text-lg text-gray-400"
           data-contentful-field-id="date"
@@ -70,6 +71,13 @@ const { width, height } = coverFields.file.details.image as {
         >
           {saneDateTime(blogPost.fields.date)}
         </time>
+        <p
+          class="hidden"
+          data-contentful-field-id="author"
+          data-contentful-entry-id={entryId}
+        >
+          {blogPost.fields.author}
+        </p>
       </div>
       <h1
         data-contentful-field-id="title"
@@ -99,6 +107,9 @@ const { width, height } = coverFields.file.details.image as {
       <article
         data-contentful-field-id="content"
         data-contentful-entry-id={entryId}
+      >
+      </article>
+      <article
         set:html={documentToHtmlString(blogPost.fields.content, {
           renderNode: {
             [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
@@ -121,16 +132,21 @@ const { width, height } = coverFields.file.details.image as {
 </Layout>
 
 <script>
-  import { initializeContentfulLivePreview } from "#/lib/contentful/live-preview.ts"
+  // @ts-expect-error
+  import * as contentful from "contentful/browser"
+  import { ContentfulLivePreview } from "@contentful/live-preview"
 
-  const emElement = document.querySelector("em[data-contentful-entry-id]")
-  const entryId = emElement?.dataset.contentfulEntryId
-
-  /**
-   * TODO: check that it's not in production
-   */
+  type ConfigOptions = {
+    locale: string
+    entryId: string
+    debugMode: boolean
+    fields: Array<string>
+    subscriptions: Array<VoidFunction>
+  }
 
   document.addEventListener("DOMContentLoaded", () => {
+    const emElement = document.querySelector("em[data-contentful-entry-id]")
+    const entryId = emElement?.dataset.contentfulEntryId
     if (!entryId) return
     initializeContentfulLivePreview({
       entryId,
@@ -139,7 +155,6 @@ const { width, height } = coverFields.file.details.image as {
       subscriptions: [],
       fields: [
         "date",
-        "slug",
         "date",
         "title",
         "cover",
@@ -149,6 +164,114 @@ const { width, height } = coverFields.file.details.image as {
       ]
     })
   })
+
+  function initializeContentfulLivePreview({
+    locale,
+    fields,
+    entryId,
+    debugMode,
+    subscriptions
+  }: ConfigOptions) {
+    const contentfulClient = contentful.createClient({
+      space: "pf7z332xkown",
+      host: "preview.contentful.com",
+      /**
+       * this token will be revoked before porting to own repo
+       */
+      accessToken: "Du9sF4eDPHdNyXN7hZTeWyyEB6tV7i2BuOyvUbrE-Uo"
+    })
+    ContentfulLivePreview.init({
+      locale,
+      debugMode,
+      enableLiveUpdates: true,
+      enableInspectorMode: true,
+      targetOrigin: "https://app.contentful.com"
+    })
+
+    contentfulClient
+      .getEntry(entryId)
+      .then((entry: any) => {
+        console.info("[initializeContentfulLivePreview.contentful]", entry)
+        fields.forEach((fieldId) => {
+          displayFieldData({
+            entry,
+            client: contentfulClient,
+            fieldId,
+            entryId
+          })
+          setupLivePreview({ entry, fieldId, entryId, subscriptions })
+        })
+      })
+      .catch((error: any) =>
+        console.error(`[initializeContentfulLivePreview]`, error)
+      )
+  }
+
+  function setupLivePreview({
+    entry,
+    entryId,
+    fieldId,
+    subscriptions
+  }: {
+    entry: any
+    entryId: string
+    fieldId: string
+    subscriptions: Array<VoidFunction>
+  }) {
+    const callback = (updatedData: any) => {
+      const domElement = findElementByDataAttribute({ entryId, fieldId })
+      if (domElement && updatedData.fields && updatedData.fields[fieldId]) {
+        // Check if the content is text
+        if (typeof updatedData.fields[fieldId] === "string") {
+          domElement.textContent = updatedData.fields[fieldId]
+        }
+      }
+    }
+    const unsubscribe = ContentfulLivePreview.subscribe({
+      callback,
+      data: entry,
+      locale: "en-US"
+    })
+
+    subscriptions.push(unsubscribe)
+  }
+
+  function findElementByDataAttribute({
+    entryId,
+    fieldId
+  }: {
+    entryId: string
+    fieldId: string
+  }) {
+    if (typeof document === "undefined") return
+    return document.querySelector(
+      `[data-contentful-entry-id="${entryId}"][data-contentful-field-id="${fieldId}"]`
+    )
+  }
+
+  function displayFieldData({
+    entry,
+    client,
+    fieldId,
+    entryId
+  }: {
+    entry: any
+    client: any
+    fieldId: string
+    entryId: string
+  }) {
+    const domElement = findElementByDataAttribute({ entryId, fieldId })
+
+    if (!domElement) {
+      console.error(
+        `DOM element with entry ID "${entryId}" and field ID "${fieldId}" not found.`
+      )
+      return
+    }
+
+    if (typeof document === "undefined") return
+    domElement.textContent = entry.fields[fieldId]
+  }
 </script>
 
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>

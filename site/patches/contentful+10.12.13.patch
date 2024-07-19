@@ -1,16 +1,21 @@
 diff --git a/node_modules/contentful/package.json b/node_modules/contentful/package.json
-index a263eb8..ce9597a 100644
+index 4678f4f..139d46f 100644
 --- a/node_modules/contentful/package.json
 +++ b/node_modules/contentful/package.json
-@@ -6,6 +6,13 @@
+@@ -6,6 +6,18 @@
    "main": "./dist/contentful.node.min.js",
    "browser": "./dist/contentful.browser.min.js",
    "types": "./dist/types/index.d.ts",
 +  "exports": {
 +    ".": {
-+      "require": "./dist/contentful.node.min.js",
++      "types": "./dist/types/index.d.ts",
 +      "import": "./dist/contentful.node.min.js",
-+      "types": "./dist/types/index.d.ts"
++      "require": "./dist/contentful.node.min.js"
++    },
++    "./browser": {
++      "types": "./dist/types/index.d.ts",
++      "import": "./dist/contentful.browser.min.js",
++      "default": "./dist/contentful.browser.min.js"
 +    }
 +  },
    "engines": {
