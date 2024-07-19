@@ -104,7 +104,7 @@ pub enum ProtocolSwitch {
     Upgrade,
     /// The protocol is getting downgraded, meaning that the target version is a subset.
     Downgrade,
-    /// The two ends speaks the same protcol.
+    /// The two ends speaks the same protocol.
     Stable,
 }
 
@@ -144,7 +144,7 @@ pub trait TransferProtocol {
 
     fn self_addr(&self) -> &Addr;
 
-    fn self_addr_canonicalized(&self) -> Result<AddrOf<Self::Packet>, Self::Error>;
+    fn self_addr_canonical(&self) -> Result<AddrOf<Self::Packet>, Self::Error>;
 
     // TODO: Remove use of Encoding Error
     fn common_to_protocol_packet(
@@ -440,7 +440,7 @@ pub trait TransferProtocol {
     ) -> Result<cosmwasm_std::IbcReceiveResponse<Self::CustomMsg>, Self::Error> {
         // The funds will hop on the contract for the transfer. The contract
         // acts as an intermediary sending the funds on behalf of the user.
-        let self_receiver = self.self_addr_canonicalized()?;
+        let self_receiver = self.self_addr_canonical()?;
         let self_sender = self.self_addr().clone();
 
         let (tokens, msgs) = {
@@ -454,7 +454,7 @@ pub trait TransferProtocol {
                         // We need to remap the fee key when hopping as our
                         // origin denom will be wrapped. If you bridge from
                         // Osmosis to Ethereum through Union, you want to set
-                        // the fees in uosmos let's says. When hopping on union
+                        // the fees in uosmo let's says. When hopping on union
                         // using PFM, uosmo will be represented as a factory
                         // denom (wrapped version with a completely different
                         // denom). For this reason, we update the fees by

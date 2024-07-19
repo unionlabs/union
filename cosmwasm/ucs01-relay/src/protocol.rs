@@ -709,7 +709,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         &self.common.env.contract.address
     }
 
-    fn self_addr_canonicalized(&self) -> Result<AddrOf<Self::Packet>, Self::Error> {
+    fn self_addr_canonical(&self) -> Result<AddrOf<Self::Packet>, Self::Error> {
         Ok(self.self_addr().to_string())
     }
 
@@ -910,7 +910,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         &self.common.env.contract.address
     }
 
-    fn self_addr_canonicalized(&self) -> Result<AddrOf<Self::Packet>, Self::Error> {
+    fn self_addr_canonical(&self) -> Result<AddrOf<Self::Packet>, Self::Error> {
         Ok(self
             .common
             .deps
