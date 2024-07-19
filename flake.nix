@@ -106,6 +106,10 @@
       url = "github:osmosis-labs/osmosis/v24.0.0-rc0";
       flake = false;
     };
+    Ogchain = {
+      url = "github:aeryz/0g-chain?rev=cd12ebf4942d5cfd3657cf3beb3ed8f651b5f94d";
+      flake = false;
+    };
 
     public-awesome-launchpad = {
       type = "github";
@@ -292,6 +296,7 @@
         ./networks/simulation/simd.nix
         ./networks/stargaze.nix
         ./networks/osmosis.nix
+        ./networks/0g.nix
         ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix

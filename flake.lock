@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "Ogchain": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1721372792,
+        "narHash": "sha256-5HqepoQbwSZPoa46Mb4YPiiFklmJP0CyP1+GIJL8Hbg=",
+        "owner": "aeryz",
+        "repo": "0g-chain",
+        "rev": "cd12ebf4942d5cfd3657cf3beb3ed8f651b5f94d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "aeryz",
+        "repo": "0g-chain",
+        "rev": "cd12ebf4942d5cfd3657cf3beb3ed8f651b5f94d",
+        "type": "github"
+      }
+    },
     "arion": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -587,6 +604,7 @@
     },
     "root": {
       "inputs": {
+        "Ogchain": "Ogchain",
         "arion": "arion",
         "biome": "biome",
         "bls-eth-go": "bls-eth-go",

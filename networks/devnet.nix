@@ -160,6 +160,21 @@
         portIncrease = 300;
       };
 
+      devnet-0gchain = mkCosmosDevnet {
+        node = self'.packages.Ogchaind ;
+        chainId = "kavalocalnet_8888-1";
+        chainName = "0gchain";
+        denom = "stake";
+        keyType = "ed25519";
+        validatorCount = 4;
+        lightClients = [
+          self'.packages.cometbls-light-client
+        ];
+        inherit cosmwasmContracts;
+        portIncrease = 400;
+        sdkVersion = 47;
+      };
+
       devnet-union-minimal = mkCosmosDevnet {
         node = (get-flake inputs.v0_21_0).packages.${system}.uniond;
         chainId = "union-minimal-devnet-1";
@@ -212,13 +227,14 @@
           '';
       };
 
-      allCosmosDevnets = [ devnet-union devnet-osmosis devnet-simd devnet-stargaze ];
+      allCosmosDevnets = [ devnet-union devnet-osmosis devnet-simd devnet-stargaze devnet-0gchain ];
 
       services = {
         devnet-union = devnet-union.services;
         devnet-simd = devnet-simd.services;
         devnet-stargaze = devnet-stargaze.services;
         devnet-osmosis = devnet-osmosis.services;
+        devnet-0gchain = devnet-0gchain.services;
 
         devnet-union-minimal = devnet-union-minimal.services;
 
@@ -302,6 +318,7 @@
       // mkNamedModule "devnet-eth"
       // mkNamedModule "devnet-stargaze"
       // mkNamedModule "devnet-osmosis"
+      // mkNamedModule "devnet-0gchain"
       // mkNamedModule "devnet-simd"
       // mkNamedModule "devnet-union-minimal"
       // mkNamedModule "devnet-union";
@@ -321,6 +338,7 @@
       // mkNamedSpec "devnet-eth"
       // mkNamedSpec "devnet-stargaze"
       // mkNamedSpec "devnet-osmosis"
+      // mkNamedSpec "devnet-0gchain"
       // mkNamedSpec "devnet-simd"
       // mkNamedSpec "devnet-union-minimal"
       // mkNamedSpec "devnet-union";
@@ -334,6 +352,7 @@
         // mkNamedBuild "devnet-eth"
         // mkNamedBuild "devnet-stargaze"
         // mkNamedBuild "devnet-osmosis"
+        // mkNamedBuild "devnet-0gchain"
         // mkNamedBuild "devnet-simd"
         // mkNamedBuild "devnet-union-minimal"
         // mkNamedBuild "devnet-union";
@@ -361,6 +380,7 @@
               mkdir -p ./.devnet/homes/
               cp -R ${self'.packages.devnet-union-home} ./.devnet/homes/union/ 
               cp -R ${self'.packages.devnet-osmosis-home} ./.devnet/homes/osmosis/ 
+              cp -R ${self'.packages.devnet-0gchain-home} ./.devnet/homes/0gchain/ 
               cp -R ${self'.packages.devnet-stargaze-home} ./.devnet/homes/stargaze/ 
               cp -R ${self'.packages.devnet-simd-home} ./.devnet/homes/simd/ 
 
@@ -386,6 +406,7 @@
         devnet-simd-home = mkCi false (devnet-simd.devnet-home);
         devnet-stargaze-home = mkCi false (devnet-stargaze.devnet-home);
         devnet-osmosis-home = mkCi false (devnet-osmosis.devnet-home);
+        devnet-0gchain-home = mkCi false (devnet-0gchain.devnet-home);
 
         # FIXME: This shouldn't be defined in this file
         devnet-eth-config = pkgs.linkFarm "devnet-eth-config" [
@@ -401,6 +422,7 @@
       // (mkArionBuild "devnet-simd" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
+      // (mkArionBuild "devnet-0gchain" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
       // (mkArionBuild "devnet-union-minimal" (system == "x86_64-linux"))
       // (builtins.foldl' (acc: elem: elem.scripts or { } // acc) { } allCosmosDevnets);
