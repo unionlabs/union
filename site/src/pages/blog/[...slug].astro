@@ -2,10 +2,10 @@
 import { Image } from "astro:assets"
 import Layout from "#/layouts/Layout.astro"
 import type { BlogPost } from "#/lib/types.ts"
-import { contentfulClient } from "#/lib/contentful.ts"
 import LanderSection from "#/components/LanderSection.astro"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { BLOCKS, INLINES } from "@contentful/rich-text-types"
+import { contentfulClient } from "#/lib/contentful/client.ts"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
@@ -16,8 +16,20 @@ const { slug } = Astro.params
 const {
   items: [blogPost]
 } = await contentfulClient.getEntries<BlogPost>({
+  limit: 1,
   "fields.slug": slug,
-  content_type: "blog"
+  content_type: "blog",
+  select: [
+    "sys.id", // entry id
+    "fields.date",
+    "fields.slug",
+    "fields.date",
+    "fields.title",
+    "fields.cover",
+    "fields.author",
+    "fields.content",
+    "fields.description"
+  ]
 })
 // The browser should always check freshness
 Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
@@ -30,10 +42,15 @@ if (slug) Astro.response.headers.set("netlify-cache-tag", slug)
 
 const imageWithProtocol = (url: string) => `https:${url}`
 
+const entryId = blogPost.sys.id
+
 // @ts-expect-error
 const coverFields = blogPost.fields.cover.fields
 const imageUrl = imageWithProtocol(coverFields.file.url)
-const { width, height } = coverFields.file.details.image as { width: number; height: number }
+const { width, height } = coverFields.file.details.image as {
+  width: number
+  height: number
+}
 ---
 
 <Layout
@@ -45,38 +62,94 @@ const { width, height } = coverFields.file.details.image as { width: number; hei
   <LanderSection gradient="to-t">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
       <div class="text-lg">
-        <time class="text-lg text-gray-400" datetime={toISODate(blogPost.fields.date)}>
+        <time
+          class="text-lg text-gray-400"
+          data-contentful-field-id="date"
+          data-contentful-entry-id={entryId}
+          datetime={toISODate(blogPost.fields.date)}
+        >
           {saneDateTime(blogPost.fields.date)}
         </time>
       </div>
-      <h1 class="text-3xl sm:text-4xl font-extrabold mb-0">
+      <h1
+        data-contentful-field-id="title"
+        data-contentful-entry-id={entryId}
+        class="text-3xl sm:text-4xl font-extrabold mb-0"
+      >
         {blogPost.fields.title}
       </h1>
-      <Image {width} {height} src={imageUrl} loading="eager" alt={coverFields.title} class="my-3" />
+      <Image
+        {width}
+        {height}
+        class="my-3"
+        loading="eager"
+        src={imageUrl}
+        alt={coverFields.title}
+        data-contentful-field-id="cover"
+        data-contentful-entry-id={entryId}
+      />
       <p>
-        <em>{blogPost.fields.description}</em>
+        <em
+          data-contentful-entry-id={entryId}
+          data-contentful-field-id="description"
+        >
+          {blogPost.fields.description}
+        </em>
       </p>
       <article
+        data-contentful-field-id="content"
+        data-contentful-entry-id={entryId}
         set:html={documentToHtmlString(blogPost.fields.content, {
           renderNode: {
-            [BLOCKS['EMBEDDED_ASSET']]: asset => {
+            [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
               const dataFields = asset.data.target.fields
               const imageUrl = imageWithProtocol(dataFields.file.url)
               const { width, height } = dataFields.file.details.image
               return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
             },
-            [INLINES['HYPERLINK']]: params => /* html */ `
+            [INLINES["HYPERLINK"]]: (params) => /* html */ `
               <a 
                 target="_blank"
                 href="${params.data.uri}"
-                rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
-          },
+                rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
+          }
         })}
       />
     </div>
   </LanderSection>
   <SocialsSection />
 </Layout>
+
+<script>
+  import { initializeContentfulLivePreview } from "#/lib/contentful/live-preview.ts"
+
+  const emElement = document.querySelector("em[data-contentful-entry-id]")
+  const entryId = emElement?.dataset.contentfulEntryId
+
+  /**
+   * TODO: check that it's not in production
+   */
+
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!entryId) return
+    initializeContentfulLivePreview({
+      entryId,
+      locale: "en-US",
+      debugMode: true,
+      subscriptions: [],
+      fields: [
+        "date",
+        "slug",
+        "date",
+        "title",
+        "cover",
+        "author",
+        "content",
+        "description"
+      ]
+    })
+  })
+</script>
 
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>
 

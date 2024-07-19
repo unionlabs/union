@@ -42,8 +42,6 @@ jobs:
         with:
           nixbuild_token: ${{secrets.nixbuild_token}}
       - name: Build site
-        env:
-          STORYBLOK_TOKEN: ${{ secrets.STORYBLOK_TOKEN }}
         run: |
           touch build.json
           nix build .#packages.x86_64-linux.site \

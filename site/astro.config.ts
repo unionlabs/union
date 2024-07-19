@@ -18,14 +18,9 @@ const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
 
 export default defineConfig({
   site: SITE_URL,
-  /**
-   * hybrid:
-   *   - pre-rendered to HTML by default
-   *   - use this when most of your site should be static
-   *   - any individual page or endpoint can opt-out of pre-rendering
-   */
   output: "hybrid",
   experimental: {
+    serverIslands: true,
     clientPrerender: true,
     directRenderScript: true
   },
@@ -51,6 +46,9 @@ export default defineConfig({
     assetsInclude: ["**/*.splinecode"],
     optimizeDeps: {
       exclude: ["echarts"]
+    },
+    define: {
+      global: {}
     }
   },
   integrations: [

@@ -3,17 +3,20 @@ import Card from "#/components/Card.astro"
 import TextA from "#/components/TextA.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import H3 from "#/components/typography/h3.astro"
-import { contentfulClient } from "#/lib/contentful.ts"
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import LanderSection from "#/components/LanderSection.astro"
+import { contentfulClient } from "#/lib/contentful/client.ts"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 
 export const prerender = false
 
 const blogEntries = await contentfulClient.getEntries<BlogPost>({
-  content_type: "blog"
+  content_type: "blog",
+  // @ts-expect-error
+  order: "-fields.date",
+  limit: 100 // max limit
 })
 
 // The browser should always check freshness
@@ -33,14 +36,19 @@ Astro.response.headers.set("netlify-cache-tag", "blog")
     </IntroHeading>
     <div class="flex flex-col md:grid grid-cols-2 gap-4 md:gap-6 flex-1">
       {
-        blogEntries.items.map(blogPostEntry => (
+        blogEntries.items.map((blogPostEntry) => (
           <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
             <Card class="size-full" padded>
-              <time class="text-lg text-gray-400" datetime={toISODate(blogPostEntry?.fields?.date)}>
+              <time
+                class="text-lg text-gray-400"
+                datetime={toISODate(blogPostEntry?.fields?.date)}
+              >
                 {saneDateTime(blogPostEntry?.fields?.date)}
               </time>
               <H3>{blogPostEntry.fields.title}</H3>
-              <p class="sm:text-xl text-gray-400">{blogPostEntry.fields.description}</p>
+              <p class="sm:text-xl text-gray-400">
+                {blogPostEntry.fields.description}
+              </p>
 
               <TextA fake>Read Post</TextA>
             </Card>

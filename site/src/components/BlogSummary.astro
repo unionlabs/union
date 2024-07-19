@@ -4,20 +4,21 @@ import TextA from "#/components/TextA.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import ButtonA from "#/components/ButtonA.astro"
 import H3 from "#/components/typography/h3.astro"
-import { contentfulClient } from "#/lib/contentful.ts"
+import { contentfulClient } from "#/lib/contentful/client.ts"
 
 const BLOG_POST_COUNT = 4
 
 const blogEntries = await contentfulClient.getEntries<BlogPost>({
-  content_type: "blog"
+  content_type: "blog",
+  // @ts-expect-error
+  order: "-fields.date",
+  limit: BLOG_POST_COUNT
 })
 
 // TODO: filter out unpublished blog posts
 const publishedBlogPosts = blogEntries.items
 
-publishedBlogPosts.sort((a, b) => Number(a.fields.date) - Number(b.fields.date))
-
-const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse().slice(0, BLOG_POST_COUNT)
+const [latestBlogPost, ...blogPosts] = publishedBlogPosts
 ---
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -31,7 +32,9 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse().slice(0, BLO
         {latestBlogPost.fields.description}
       </p>
       <div class="w-full flex flex-1 items-end">
-        <ButtonA href={`/blog/${latestBlogPost.fields.slug}`} fake>read full post</ButtonA>
+        <ButtonA href={`/blog/${latestBlogPost.fields.slug}`} fake
+          >read full post</ButtonA
+        >
       </div>
     </a>
   </Card>
@@ -40,7 +43,7 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts.reverse().slice(0, BLO
     class="w-full flex flex-col items-start justify-start divide divide-y divide-solid divide-border/30"
   >
     {
-      blogPosts.map(post => (
+      blogPosts.map((post) => (
         <a
           href={`/blog/${post.fields.slug}`}
           class="justify-center w-full flex flex-col text-left flex-start p-4 md:px-6"
