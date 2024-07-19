@@ -276,8 +276,8 @@ where
                                     error!("out of gas");
                                     Err(TxSubmitError::OutOfGas)
                                 },
-                                _ => {
-                                    panic!("evm transaction non-recoverable failure")
+                                err => {
+                                    panic!("evm transaction non-recoverable failure: {err:?}")
                                 }
                             }
                         }

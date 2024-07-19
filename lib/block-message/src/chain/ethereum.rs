@@ -17,14 +17,13 @@ use contracts::{
 use enumorph::Enumorph;
 use ethers::{contract::EthLogDecode, providers::Middleware, types::Filter};
 use frunk::{hlist_pat, HList};
-use futures::{stream::FuturesUnordered, StreamExt, TryStreamExt};
+use futures::{stream::FuturesUnordered, TryStreamExt};
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
     conc, data, fetch, noop, queue_msg, Op,
 };
 use serde::{Deserialize, Serialize};
-use tokio::task::JoinSet;
 use tracing::{debug, info, warn};
 use unionlabs::{
     ethereum::config::ChainSpec,
@@ -154,7 +153,7 @@ where
         let mut from_block = from_block;
 
         let mut msgs = vec![];
-        let mut join_set = FuturesUnordered::new();
+        let join_set = FuturesUnordered::new();
 
         for (from_block, to_block) in std::iter::from_fn(move || {
             if from_block < to_block {
@@ -224,8 +223,12 @@ where
         info!(
             %from_block,
             %to_block,
+
             %from_slot,
             %to_slot,
+
+            slot_range_len = %(to_slot - from_slot),
+            block_range_len = %(to_block - from_block),
 
             total = %msgs.len(),
 
