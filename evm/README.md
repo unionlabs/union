@@ -70,6 +70,15 @@ Production contracts will get solely upgraded through the proxy.
 - UCS02: [0xD05751B3F4d8dCf8487DB33b57C523dD7DB11C25](https://bartio.beratrail.io/address/0x749937900103DF548625C47D3de5d928b61b8409)
 - Multicall: [0x3147CA8f531070DDAC1b93700ef18E4Dd05b86ec](https://bartio.beratrail.io/address/0x248717213d7f79Ac37Fb0C01bA4f370be5c2Ab18)
 
+### Arbitrum
+- Deployer: [0x7d00b15A53B8b14a482BF761653532F07b7DcBdE](https://sepolia.arbiscan.io/address/0x7d00b15A53B8b14a482BF761653532F07b7DcBdE)
+- Sender: [0x50C9C35e0197e781e9aD7a3F6baDD8d01E45c377](https://sepolia.arbiscan.io/address/0x50C9C35e0197e781e9aD7a3F6baDD8d01E45c377)
+- IBCHandler: [0xb599bfcfb9D4fCaE9f8aB5D45d9A6F145E6b7573](https://sepolia.arbiscan.io/address/0xb599bfcfb9D4fCaE9f8aB5D45d9A6F145E6b7573)
+- CometblsClient: [0x2c84Dd2515e906a04C57c8604535CEAd6B2F5F73](https://sepolia.arbiscan.io/address/0x2c84Dd2515e906a04C57c8604535CEAd6B2F5F73)
+- UCS01: [0xBd346331b31f8C43CC378286Bfe49f2f7F128c39](https://sepolia.arbiscan.io/address/0xBd346331b31f8C43CC378286Bfe49f2f7F128c39)
+- UCS02: [0x4505EB10bc6E8DfB38C2AB65B3017fd0Ae223827](https://sepolia.arbiscan.io/address/0x4505EB10bc6E8DfB38C2AB65B3017fd0Ae223827)
+- Multicall: [0xd867c233ee0908FC7BC21095dA47F775F6479F2A](https://sepolia.arbiscan.io/address/0xd867c233ee0908FC7BC21095dA47F775F6479F2A)
+
 ## Other networks
 
 Assuming you create the deployer from a fresh account `<SOURCE>` (0 nonce), the `<DEPLOYER>` address can be precomputed with `cast compute-address --nonce 0 <SOURCE>`

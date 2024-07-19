@@ -362,6 +362,7 @@ trait OnReceive {
         amount: Uint128,
     ) -> Result<(), ContractError>;
 
+    #[allow(clippy::too_many_arguments)]
     fn receive_phase1_transfer(
         &mut self,
         contract_address: &Addr,

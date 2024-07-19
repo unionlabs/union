@@ -27,6 +27,10 @@ pub enum Fetch<C: ChainExt> {
     ChainSpecific(ChainSpecificFetch<C>),
 }
 
+fn assert_send<T: Send>(t: T) -> T {
+    t
+}
+
 impl HandleFetch<BlockMessage> for AnyChainIdentified<AnyFetch> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
     async fn handle(
@@ -35,14 +39,14 @@ impl HandleFetch<BlockMessage> for AnyChainIdentified<AnyFetch> {
     ) -> Result<Op<BlockMessage>, QueueError> {
         let fetch = self;
 
-        any_chain! {
+        assert_send(any_chain! {
             |fetch| {
                 Ok(store
                     .with_chain(&fetch.chain_id, move |c| fetch.t.handle(c))
                     .map_err(|e| QueueError::Fatal(Box::new(e)))?
                     .await)
             }
-        }
+        })
     }
 }
 
