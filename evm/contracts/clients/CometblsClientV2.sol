@@ -228,7 +228,7 @@ contract CometblsClient is
             }
         }
 
-        bool ok = verifyZKP(
+        bool ok = internalVerifyZKP(
             header.zero_knowledge_proof,
             clientState.chain_id,
             trustedValidatorsHash,
@@ -428,10 +428,20 @@ contract CometblsClient is
 
     function verifyZKP(
         bytes calldata zkpBytes,
+        string calldata chainId,
+        bytes32 trustedValidatorsHash,
+        UnionIbcLightclientsCometblsV1LightHeader.Data calldata header
+    ) public virtual returns (bool) {
+        return
+            internalVerifyZKP(zkpBytes, chainId, trustedValidatorsHash, header);
+    }
+
+    function internalVerifyZKP(
+        bytes calldata zkpBytes,
         string memory chainId,
         bytes32 trustedValidatorsHash,
-        UnionIbcLightclientsCometblsV1LightHeader.Data memory header
-    ) public virtual returns (bool) {
+        UnionIbcLightclientsCometblsV1LightHeader.Data calldata header
+    ) internal virtual returns (bool) {
         ZKP calldata zkp;
         assembly {
             zkp := zkpBytes.offset

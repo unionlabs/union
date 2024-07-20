@@ -56,12 +56,12 @@ contract TestCometblsClient is CometblsClient {
         validMembershipProof[index] = true;
     }
 
-    function verifyZKP(
+    function internalVerifyZKP(
         bytes calldata,
         string memory,
         bytes32,
-        UnionIbcLightclientsCometblsV1LightHeader.Data memory
-    ) public pure override returns (bool) {
+        UnionIbcLightclientsCometblsV1LightHeader.Data calldata
+    ) internal override returns (bool) {
         return true;
     }
 
