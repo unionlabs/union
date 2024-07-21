@@ -1,7 +1,10 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::{
-    cosmos_sdk::{BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt, CosmosSdkChainIbcExt},
+    cosmos_sdk::{
+        cosmos_sdk_error::{ChannelError, CosmosSdkError},
+        BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt, CosmosSdkChainIbcExt,
+    },
     keyring::ChainKeyring,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
@@ -122,20 +125,31 @@ where
                 let batch_size = msgs.len();
                 let msg_names = msgs.iter().map(|x| x.type_url.clone()).collect::<Vec<_>>();
 
-                let (tx_hash, gas_used) = hc.broadcast_tx_commit(signer, msgs, memo).await?;
+                match hc.broadcast_tx_commit(signer, msgs, memo).await {
+                    Ok((tx_hash, gas_used)) => {
+                        info!(
+                            %tx_hash,
+                            %gas_used,
+                            batch.size = %batch_size,
+                            "submitted cosmos transaction"
+                        );
 
-                info!(
-                    %tx_hash,
-                    %gas_used,
-                    batch.size = %batch_size,
-                    "submitted cosmos transaction"
-                );
+                        for msg in msg_names {
+                            info!(%tx_hash, %msg, "cosmos tx");
+                        }
 
-                for msg in msg_names {
-                    info!(%tx_hash, %msg, "cosmos tx");
+                        Ok(())
+                    }
+                    Err(err) => match err {
+                        BroadcastTxCommitError::Tx(CosmosSdkError::ChannelError(
+                            ChannelError::ErrRedundantTx,
+                        )) => {
+                            info!("packet messages are redundant");
+                            Ok(())
+                        }
+                        err => Err(err),
+                    },
                 }
-
-                Ok(())
             }
         })
         .await;
