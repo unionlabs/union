@@ -1,7 +1,6 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
-import * as Tooltip from "$lib/components/ui/tooltip"
-import { truncate } from "$lib/utilities/format.ts"
+import CellCopy from "./cell-copy.svelte"
 
 export let value: {
   chain_display_name: string
@@ -13,16 +12,9 @@ export let value: {
 </script>
 
 <div {...$$restProps} class={cn("flex flex-col ")}>
-  <div class="font-bold">{value.chain_display_name}</div>
-  <div>{value.chain_id}</div>
-  <div>{value.connection_id}</div>
-  <div>{value.channel_id}</div>
-  <Tooltip.Root>
-    <Tooltip.Trigger>
-      <div class="text-start">{truncate(value.port_id, 10)}</div>
-    </Tooltip.Trigger>
-    <Tooltip.Content>
-      {value.port_id}
-    </Tooltip.Content>
-  </Tooltip.Root>
+  <CellCopy value={value.chain_display_name}/>
+  <CellCopy value={value.chain_id}/>
+  <CellCopy value={value.connection_id}/>
+  <CellCopy value={value.channel_id}/>
+  <CellCopy trunc={10} value={value.port_id}/>
 </div>

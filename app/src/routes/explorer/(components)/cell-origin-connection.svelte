@@ -1,5 +1,6 @@
 <script lang="ts">
 import { cn } from "$lib/utilities/shadcn.ts"
+import CellCopy from "./cell-copy.svelte"
 
 export let value: {
   chain_display_name: string
@@ -10,8 +11,8 @@ export let value: {
 </script>
 
 <div  class={cn("flex flex-col ")} {...$$restProps}>
-  <div class="font-bold">{value.chain_display_name}</div>
-  <div>{value.chain_id}</div>
-  <div>{value.connection_id}</div>
-  <div>{value.client_id}</div>
+  <CellCopy value={value.chain_display_name}/>
+  <CellCopy value={value.chain_id}/>
+  <CellCopy value={value.connection_id}/>
+  <CellCopy value={value.client_id}/>
 </div>
