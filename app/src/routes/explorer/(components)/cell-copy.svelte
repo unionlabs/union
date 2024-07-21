@@ -29,7 +29,7 @@
     variant="ghost"
   >
     {#if copyClicked}
-      <CheckIcon class="size-4 text-accent"/>
+      <CheckIcon class="size-4"/>
     {:else}
       <CopyIcon class="size-4"/>
     {/if}
