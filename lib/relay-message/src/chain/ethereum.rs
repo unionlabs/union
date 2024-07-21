@@ -18,6 +18,7 @@ use ethers::{
     self,
     abi::{AbiDecode, AbiEncode},
     contract::{ContractError, EthCall, FunctionCall},
+    middleware::{nonce_manager::NonceManagerError, signer::SignerMiddlewareError},
     providers::{Middleware, ProviderError},
     types::{Bytes, TransactionReceipt},
     utils::keccak256,
@@ -211,14 +212,16 @@ where
                                         "evm tx"
                                     );
 
-                                    let tx_rcp: TransactionReceipt =
-                                        ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
+                                    let tx_rcp: TransactionReceipt = ok.await?.ok_or(TxSubmitError::NoTxReceipt)?;
 
                                     let result = <MulticallResultFilter as ethers::contract::EthLogDecode>::decode_log(
-                                        &ethers::abi::RawLog::from(tx_rcp
-                                            .logs
-                                            .last()
-                                            .expect("multicall event should be last log").clone()),
+                                        &ethers::abi::RawLog::from(
+                                            tx_rcp
+                                                .logs
+                                                .last()
+                                                .expect("multicall event should be last log")
+                                                .clone(),
+                                        ),
                                     )
                                     .expect("unable to decode multicall result log");
 
@@ -229,7 +232,9 @@ where
                                                 tx_hash = %H256::from(tx_rcp.transaction_hash),
                                                 "evm message successful"
                                             );
-                                        } else if let Ok(known_revert) = IbcHandlerErrors::decode(&*result.return_data.clone()) {
+                                        } else if let Ok(known_revert) =
+                                            IbcHandlerErrors::decode(&*result.return_data.clone())
+                                        {
                                             error!(
                                                 msg = msg_names[idx],
                                                 tx_hash = %H256::from(tx_rcp.transaction_hash),
@@ -272,10 +277,22 @@ where
 
                                 //     Ok(())
                                 // }
-                                Err(ContractError::ProviderError { e: ProviderError::JsonRpcClientError(e) }) if e.as_error_response().is_some_and(|e| e.message.contains("insufficient funds for gas * price + value")) => {
+                                Err(ContractError::ProviderError {
+                                    e: ProviderError::JsonRpcClientError(e),
+                                })
+                                | Err(ContractError::MiddlewareError {
+                                    e:
+                                        SignerMiddlewareError::MiddlewareError(NonceManagerError::MiddlewareError(
+                                            ProviderError::JsonRpcClientError(e),
+                                        )),
+                                }) if e.as_error_response().is_some_and(|e| {
+                                    e.message
+                                        .contains("insufficient funds for gas * price + value")
+                                }) =>
+                                {
                                     error!("out of gas");
                                     Err(TxSubmitError::OutOfGas)
-                                },
+                                }
                                 err => {
                                     panic!("evm transaction non-recoverable failure: {err:?}")
                                 }
@@ -332,6 +349,9 @@ where
         Some(Ok(())) => Ok(noop()),
         Some(Err(TxSubmitError::GasPriceTooHigh { .. })) => {
             Ok(seq([defer_relative(6), effect(id(chain_id, msg))]))
+        }
+        Some(Err(TxSubmitError::OutOfGas)) => {
+            Ok(seq([defer_relative(12), effect(id(chain_id, msg))]))
         }
         Some(Err(err)) => Err(err),
         None => Ok(effect(id(chain_id, msg))),
