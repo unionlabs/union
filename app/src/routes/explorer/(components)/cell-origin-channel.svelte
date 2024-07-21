@@ -1,15 +1,14 @@
 <script lang="ts">
-  import { cn } from "$lib/utilities/shadcn.ts"
-  import CellCopy from "./cell-copy.svelte";
+import { cn } from "$lib/utilities/shadcn.ts"
+import CellCopy from "./cell-copy.svelte"
 
-  export let value: {
-    chain_display_name: string
-    chain_id: string
-    connection_id: string
-    channel_id: string
-    port_id: string
-  }
-
+export let value: {
+  chain_display_name: string
+  chain_id: string
+  connection_id: string
+  channel_id: string
+  port_id: string
+}
 </script>
 
 <div {...$$restProps} class={cn("flex flex-col ")}>
