@@ -4,11 +4,9 @@ import Layout from "#/layouts/Layout.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import LanderSection from "#/components/LanderSection.astro"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
-import { BLOCKS, INLINES } from "@contentful/rich-text-types"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import { ContentfulLivePreview } from "@contentful/live-preview"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
 export const prerender = false
 
@@ -117,36 +115,20 @@ const { width, height } = coverFields.file.details.image as {
         data-contentful-field-id="content"
         data-contentful-entry-id={entryId}
         {...ContentfulLivePreview.getProps({ entryId, fieldId: "content" })}
-        class="hidden"
       >
         {blogPost.fields.content}
       </article>
     </div>
-    <article
-      set:html={documentToHtmlString(blogPost.fields.content, {
-        renderNode: {
-          [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
-            const dataFields = asset.data.target.fields
-            const imageUrl = imageWithProtocol(dataFields.file.url)
-            const { width, height } = dataFields.file.details.image
-            return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
-          },
-          [INLINES["HYPERLINK"]]: (params) => /* html */ `
-              <a 
-                target="_blank"
-                href="${params.data.uri}"
-                rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
-        }
-      })}
-    />
   </LanderSection>
+  <SocialsSection />
 </Layout>
-<SocialsSection />
 
 <script>
+  import { BLOCKS, INLINES } from "@contentful/rich-text-types"
+  import { ContentfulLivePreview } from "@contentful/live-preview"
+  import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
   // @ts-expect-error
   import * as contentful from "node_modules/contentful/dist/contentful.browser.min.js"
-  import { ContentfulLivePreview } from "@contentful/live-preview"
 
   type ConfigOptions = {
     locale: string
@@ -203,15 +185,11 @@ const { width, height } = coverFields.file.details.image as {
 
     contentfulClient
       .getEntry(entryId)
-      .then((entry: any) => {
+      // @ts-expect-error
+      .then((entry) => {
         console.info("[initializeContentfulLivePreview.contentful]", entry)
         fields.forEach((fieldId) => {
-          displayFieldData({
-            entry,
-            client: contentfulClient,
-            fieldId,
-            entryId
-          })
+          displayFieldData({ entry, fieldId, entryId })
           setupLivePreview({ entry, fieldId, entryId })
         })
       })
@@ -225,7 +203,7 @@ const { width, height } = coverFields.file.details.image as {
     entryId,
     fieldId
   }: {
-    entry: any
+    entry: contentful.Entry
     entryId: string
     fieldId: string
   }) {
@@ -262,14 +240,14 @@ const { width, height } = coverFields.file.details.image as {
     )
   }
 
-  function displayFieldData({
+  const imageWithProtocol = (url: string) => `https:${url}`
+
+  function displayFieldData<T extends contentful.Entry>({
     entry,
-    client,
     fieldId,
     entryId
   }: {
-    entry: any
-    client: any
+    entry: T
     fieldId: string
     entryId: string
   }) {
@@ -283,8 +261,28 @@ const { width, height } = coverFields.file.details.image as {
     }
 
     if (typeof document === "undefined") return
-    // console.info(entry.fields[fieldId])
-    domElement.textContent = entry.fields[fieldId]
+
+    if (typeof entry.fields[fieldId] === "string") {
+      domElement.textContent = entry.fields[fieldId]
+    }
+    if (entry.fields[fieldId].nodeType === "document") {
+      domElement.innerHTML = documentToHtmlString(entry.fields[fieldId], {
+        renderNode: {
+          [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
+            const dataFields = asset.data.target.fields
+            const imageUrl = imageWithProtocol(dataFields.file.url)
+            const { width, height } = dataFields.file.details.image
+            return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
+          },
+          [INLINES["HYPERLINK"]]: (params) => /* html */ `
+            <a 
+              target="_blank"
+              href="${params.data.uri}"
+              rel="noopener noreferrer"
+            >${(params.content.at(0) as any)?.value}</a>`
+        }
+      })
+    }
   }
 </script>
 
