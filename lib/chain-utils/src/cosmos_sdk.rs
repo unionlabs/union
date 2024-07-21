@@ -406,8 +406,8 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
                     .into(),
             )),
             Err(err) => {
-                info!(error = %err.message(), "tx simulation failed");
-                Err(err.message().to_owned())
+                info!(error = %err, "tx simulation failed");
+                Err(err.to_string())
             }
         }
     }
