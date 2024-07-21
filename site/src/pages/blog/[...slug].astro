@@ -6,6 +6,7 @@ import LanderSection from "#/components/LanderSection.astro"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { BLOCKS, INLINES } from "@contentful/rich-text-types"
 import { contentfulClient } from "#/lib/contentful/client.ts"
+import { ContentfulLivePreview } from "@contentful/live-preview"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
@@ -68,6 +69,7 @@ const { width, height } = coverFields.file.details.image as {
           data-contentful-field-id="date"
           data-contentful-entry-id={entryId}
           datetime={toISODate(blogPost.fields.date)}
+          {...ContentfulLivePreview.getProps({ entryId, fieldId: "date" })}
         >
           {saneDateTime(blogPost.fields.date)}
         </time>
@@ -75,6 +77,7 @@ const { width, height } = coverFields.file.details.image as {
           class="hidden"
           data-contentful-field-id="author"
           data-contentful-entry-id={entryId}
+          {...ContentfulLivePreview.getProps({ entryId, fieldId: "author" })}
         >
           {blogPost.fields.author}
         </p>
@@ -83,6 +86,7 @@ const { width, height } = coverFields.file.details.image as {
         data-contentful-field-id="title"
         data-contentful-entry-id={entryId}
         class="text-3xl sm:text-4xl font-extrabold mb-0"
+        {...ContentfulLivePreview.getProps({ entryId, fieldId: "title" })}
       >
         {blogPost.fields.title}
       </h1>
@@ -90,16 +94,21 @@ const { width, height } = coverFields.file.details.image as {
         {width}
         {height}
         class="my-3"
-        loading="eager"
         src={imageUrl}
+        loading="eager"
         alt={coverFields.title}
         data-contentful-field-id="cover"
         data-contentful-entry-id={entryId}
+        {...ContentfulLivePreview.getProps({ entryId, fieldId: "cover" })}
       />
       <p>
         <em
           data-contentful-entry-id={entryId}
           data-contentful-field-id="description"
+          {...ContentfulLivePreview.getProps({
+            entryId,
+            fieldId: "description"
+          })}
         >
           {blogPost.fields.description}
         </em>
@@ -107,32 +116,34 @@ const { width, height } = coverFields.file.details.image as {
       <article
         data-contentful-field-id="content"
         data-contentful-entry-id={entryId}
+        {...ContentfulLivePreview.getProps({ entryId, fieldId: "content" })}
+        class="hidden"
       >
+        {blogPost.fields.content}
       </article>
-      <article
-        set:html={documentToHtmlString(blogPost.fields.content, {
-          renderNode: {
-            [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
-              const dataFields = asset.data.target.fields
-              const imageUrl = imageWithProtocol(dataFields.file.url)
-              const { width, height } = dataFields.file.details.image
-              return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
-            },
-            [INLINES["HYPERLINK"]]: (params) => /* html */ `
+    </div>
+    <article
+      set:html={documentToHtmlString(blogPost.fields.content, {
+        renderNode: {
+          [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
+            const dataFields = asset.data.target.fields
+            const imageUrl = imageWithProtocol(dataFields.file.url)
+            const { width, height } = dataFields.file.details.image
+            return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
+          },
+          [INLINES["HYPERLINK"]]: (params) => /* html */ `
               <a 
                 target="_blank"
                 href="${params.data.uri}"
                 rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
-          }
-        })}
-      />
-    </div>
+        }
+      })}
+    />
   </LanderSection>
-  <SocialsSection />
 </Layout>
+<SocialsSection />
 
 <script>
-  // @ts-expect-error
   import * as contentful from "contentful/browser"
   import { ContentfulLivePreview } from "@contentful/live-preview"
 
@@ -144,15 +155,18 @@ const { width, height } = coverFields.file.details.image as {
     subscriptions: Array<VoidFunction>
   }
 
+  const subscriptions: Array<VoidFunction> = []
+  console.info("[initializeContentfulLivePreview]", subscriptions)
+
   document.addEventListener("DOMContentLoaded", () => {
-    const emElement = document.querySelector("em[data-contentful-entry-id]")
+    const emElement = document.querySelector("h1[data-contentful-entry-id]")
     const entryId = emElement?.dataset.contentfulEntryId
     if (!entryId) return
     initializeContentfulLivePreview({
       entryId,
       locale: "en-US",
       debugMode: true,
-      subscriptions: [],
+      subscriptions,
       fields: [
         "date",
         "date",
@@ -169,8 +183,7 @@ const { width, height } = coverFields.file.details.image as {
     locale,
     fields,
     entryId,
-    debugMode,
-    subscriptions
+    debugMode
   }: ConfigOptions) {
     const contentfulClient = contentful.createClient({
       space: "pf7z332xkown",
@@ -184,8 +197,7 @@ const { width, height } = coverFields.file.details.image as {
       locale,
       debugMode,
       enableLiveUpdates: true,
-      enableInspectorMode: true,
-      targetOrigin: "https://app.contentful.com"
+      enableInspectorMode: true
     })
 
     contentfulClient
@@ -199,28 +211,28 @@ const { width, height } = coverFields.file.details.image as {
             fieldId,
             entryId
           })
-          setupLivePreview({ entry, fieldId, entryId, subscriptions })
+          setupLivePreview({ entry, fieldId, entryId })
         })
       })
       .catch((error: any) =>
-        console.error(`[initializeContentfulLivePreview]`, error)
+        console.error(`[initializeContentfulLivePreview] error`, error)
       )
   }
 
   function setupLivePreview({
     entry,
     entryId,
-    fieldId,
-    subscriptions
+    fieldId
   }: {
     entry: any
     entryId: string
     fieldId: string
-    subscriptions: Array<VoidFunction>
   }) {
     const callback = (updatedData: any) => {
       const domElement = findElementByDataAttribute({ entryId, fieldId })
+      // console.info(domElement && updatedData.fields[fieldId])
       if (domElement && updatedData.fields && updatedData.fields[fieldId]) {
+        // console.info(updatedData.fields[fieldId])
         // Check if the content is text
         if (typeof updatedData.fields[fieldId] === "string") {
           domElement.textContent = updatedData.fields[fieldId]
@@ -270,6 +282,7 @@ const { width, height } = coverFields.file.details.image as {
     }
 
     if (typeof document === "undefined") return
+    // console.info(entry.fields[fieldId])
     domElement.textContent = entry.fields[fieldId]
   }
 </script>
