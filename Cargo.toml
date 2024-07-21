@@ -74,7 +74,7 @@ members = [
   "near/dummy-ibc-app",
   "near/near-ibc-tests",
 
-  "drip",
+  "drip", "lib/ibc-test",
 ]
 
 [workspace.package]

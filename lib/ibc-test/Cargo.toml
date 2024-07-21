@@ -1,0 +1,22 @@
+[package]
+name = "ibc-test"
+version = "0.1.0"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[dependencies]
+alloy-primitives = "0.7.7"
+alloy-sol-macro = "0.7.7"
+alloy-sol-types = "0.7.7"
+cosmwasm-vm = "2.1.0"
+reth-db-api = { git = "https://github.com/paradigmxyz/reth", version = "1.0.3" }
+reth-primitives = { git = "https://github.com/paradigmxyz/reth", version = "1.0.3" }
+reth-primitives-traits = { git = "https://github.com/paradigmxyz/reth", version = "1.0.3" }
+reth-revm = { git = "https://github.com/paradigmxyz/reth", version = "1.0.3", features = ["test-utils"] }
+reth-rpc-eth-api = { git = "https://github.com/paradigmxyz/reth", version = "1.0.3" }
+revm = "12.1.0"
+sha2.workspace = true
+
+[lints]
+workspace = true
