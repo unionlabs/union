@@ -350,6 +350,9 @@ where
         Some(Err(TxSubmitError::GasPriceTooHigh { .. })) => {
             Ok(seq([defer_relative(6), effect(id(chain_id, msg))]))
         }
+        Some(Err(TxSubmitError::OutOfGas)) => {
+            Ok(seq([defer_relative(12), effect(id(chain_id, msg))]))
+        }
         Some(Err(err)) => Err(err),
         None => Ok(effect(id(chain_id, msg))),
     }
