@@ -144,7 +144,8 @@ const { width, height } = coverFields.file.details.image as {
 <SocialsSection />
 
 <script>
-  import * as contentful from "contentful/browser"
+  // @ts-expect-error
+  import * as contentful from "node_modules/contentful/dist/contentful.browser.min.js"
   import { ContentfulLivePreview } from "@contentful/live-preview"
 
   type ConfigOptions = {
