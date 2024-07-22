@@ -176,6 +176,10 @@ where
         Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => {
             Ok(effect(id(hc.chain_id(), msg)))
         }
+        Some(Err(BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(SdkError::ErrOutOfGas)))) => {
+            error!("out of gas");
+            Ok(effect(id(hc.chain_id(), msg)))
+        }
         Some(res) => res.map(|()| noop()),
         // None => Ok(seq([defer_relative(1), effect(id(hc.chain_id(), msg))])),
         None => Ok(effect(id(hc.chain_id(), msg))),
