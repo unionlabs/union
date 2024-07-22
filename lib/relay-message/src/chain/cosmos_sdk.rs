@@ -103,14 +103,22 @@ where
                             )
                         }
                         Err(error) => {
-                            error!(
-                                %error,
-                                msg = %type_url,
-                                %idx,
-                                "individual message simulation failed"
-                            );
+                            if error.contains("account sequence mismatch") {
+                                warn!(
+                                    msg = %type_url,
+                                    %idx,
+                                    "account sequence mismatch on individual message simulation, treating this message as successful"
+                                );
+                            } else {
+                                error!(
+                                    %error,
+                                    msg = %type_url,
+                                    %idx,
+                                    "individual message simulation failed"
+                                );
 
-                            msgs.remove(idx);
+                                msgs.remove(idx);
+                            }
                         }
                     }
                 }
