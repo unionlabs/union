@@ -159,7 +159,7 @@ where
                             SdkError::ErrWrongSequence
                         )) => {
                             warn!("account sequence mismatch on tx submission, message will be requeued and retried");
-                            Ok(())
+                            Err(BroadcastTxCommitError::AccountSequenceMismatch(format!("{err}")))
                         }
                         BroadcastTxCommitError::SimulateTx(err) if err.contains("account sequence mismatch") => {
                             warn!("account sequence mismatch on simulation, message will be requeued and retried");
