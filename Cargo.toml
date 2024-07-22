@@ -75,6 +75,7 @@ members = [
   "near/near-ibc-tests",
 
   "drip",
+  "sentinel",
 ]
 
 [workspace.package]
@@ -153,7 +154,7 @@ bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.0", default-features = false }
 bytes                    = { version = "1.2.1", default-features = false }
 chrono                   = { version = "0.4.26", default-features = false }
-clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
+clap                     = { version = "4.5.9", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }
 cosmwasm-schema          = { version = "1.5", default-features = false }
 cosmwasm-std             = { version = "1.5", default-features = false }

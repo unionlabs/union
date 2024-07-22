@@ -1,0 +1,30 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "sentinel"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+anyhow             = "1.0.86"
+async-trait        = "0.1.81"
+chrono             = { workspace = true, features = ["serde", "std", "now"] }
+clap               = { workspace = true, features = ["derive", "usage", "help", "std"] }
+either             = { workspace = true, features = ["serde"] }
+erased-serde       = "0.4.5"
+futures            = { workspace = true, features = ["std"] }
+graphql_client     = { version = "0.14.0", features = ["reqwest"] }
+json_value_merge   = "2.0.0"
+regex              = "1.10.5"
+reqwest.workspace  = true
+serde              = { workspace = true, features = ["derive"] }
+serde_json         = { workspace = true }
+tokio              = { workspace = true, features = ["full"] }
+tokio-timer        = "0.2.13"
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tracing.workspace  = true
+typetag            = "0.2.16"
+url                = { version = "2.5.2", features = ["serde"] }
+
+[lints]
+workspace = true

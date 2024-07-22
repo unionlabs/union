@@ -1,0 +1,60 @@
+ query LastTransfersLimit($limit: Int!) {
+    v0_transfers(limit: $limit, order_by: {source_timestamp: desc}) {
+        assets
+        destination_block_hash
+        destination_chain_id
+        destination_channel_id
+        destination_connection_id
+        destination_data
+        destination_height
+        destination_id
+        destination_json
+        destination_port
+        destination_sequence
+        destination_timeout_timestamp
+        destination_timestamp
+        destination_transaction_hash
+        destination_transaction_index
+        is_initiating
+        normalized_receiver
+        normalized_sender
+        packet_data_jsonb
+        pfm_destination_channel
+        pfm_destination_port
+        pfm_recv_sequence
+        pfm_sent_sequence
+        pfm_source_channel
+        pfm_source_port
+        receiver
+        sender
+        source_block_hash
+        source_chain_id
+        source_channel_id
+        source_connection_id
+        source_data
+        source_height
+        source_id
+        source_json
+        source_port
+        source_sequence
+        source_timeout_timestamp
+        source_timestamp
+        source_transaction_hash
+        source_transaction_index
+        status
+        transaction_hash
+    }
+}
+
+query LastTransfersWithTraces($limit: Int!, $source_time: timestamptz!) {
+  v0_transfers(limit: $limit, order_by: {source_timestamp: desc}, where: {source_timestamp: {_lte: $source_time}}) {
+    source_timestamp
+    traces(order_by: {timestamp: asc}) {
+      chain_id
+      initiating_transaction_hash
+      timestamp
+      transaction_hash
+      type
+    }
+  }
+}
