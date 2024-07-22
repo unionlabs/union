@@ -149,7 +149,7 @@ impl Chain for Cosmos {
         self.tm_client
             .latest_block()
             .await
-            .map(|resonse| resonse.block.header.time.unix_timestamp())
+            .map(|response| response.block.header.time.unix_timestamp())
     }
 
     async fn self_client_state(&self, height: Height) -> Self::SelfClientState {
