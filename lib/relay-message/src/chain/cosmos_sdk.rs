@@ -2,7 +2,7 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use chain_utils::{
     cosmos_sdk::{
-        cosmos_sdk_error::{ChannelError, CosmosSdkError},
+        cosmos_sdk_error::{ChannelError, CosmosSdkError, SdkError},
         BroadcastTxCommitError, CosmosSdkChain, CosmosSdkChainExt, CosmosSdkChainIbcExt,
     },
     keyring::ChainKeyring,
@@ -10,7 +10,7 @@ use chain_utils::{
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use futures::{stream, FutureExt, StreamExt};
 use queue_msg::{data, effect, fetch, noop, seq, wait, Op};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Proto},
     google::protobuf::any::{mk_any, IntoAny},
@@ -147,6 +147,16 @@ where
                             info!("packet messages are redundant");
                             Ok(())
                         }
+                        BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
+                            SdkError::ErrWrongSequence
+                        )) => {
+                            warn!("account sequence mismatch on tx submission, message will be requeued and retried");
+                            Ok(())
+                        }
+                        BroadcastTxCommitError::SimulateTx(err) if err.contains("account sequence mismatch") => {
+                            warn!("account sequence mismatch on simulation, message will be requeued and retried");
+                            Err(BroadcastTxCommitError::AccountSequenceMismatch(err))
+                        }
                         err => Err(err),
                     },
                 }
@@ -155,6 +165,9 @@ where
         .await;
 
     match res {
+        Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => {
+            Ok(effect(id(hc.chain_id(), msg)))
+        }
         Some(res) => res.map(|()| noop()),
         // None => Ok(seq([defer_relative(1), effect(id(hc.chain_id(), msg))])),
         None => Ok(effect(id(hc.chain_id(), msg))),

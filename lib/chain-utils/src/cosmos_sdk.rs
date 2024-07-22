@@ -503,8 +503,10 @@ pub enum BroadcastTxCommitError {
     Inclusion(#[source] tendermint_rpc::Error),
     #[error("tx failed: {0:?}")]
     Tx(CosmosSdkError),
-    #[error("tx simulation failed: {0:?}")]
+    #[error("tx simulation failed: {0}")]
     SimulateTx(String),
+    #[error("account sequence mismatch: {0}")]
+    AccountSequenceMismatch(String),
 }
 
 impl MaybeRecoverableError for BroadcastTxCommitError {
