@@ -1,6 +1,7 @@
 import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
+import netlify from "@astrojs/netlify"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
@@ -17,15 +18,39 @@ const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
 
 export default defineConfig({
   site: SITE_URL,
-  output: "static",
+  output: "hybrid",
+  experimental: {
+    serverIslands: true,
+    clientPrerender: true,
+    directRenderScript: true
+  },
   trailingSlash: "ignore",
-  server: () => ({ port: Number(PORT) }),
-  redirects: {
-    "/feed": "/rss.xml",
-    "/logo": "/union-logo.zip"
+  adapter: netlify({
+    imageCDN: false,
+    edgeMiddleware: false
+  }),
+  image: {
+    domains: [
+      "cdn.contentful.com",
+      "images.ctfassets.net",
+      "raw.githubusercontent.com",
+      "avatars.githubusercontent.com"
+    ]
   },
   markdown: markdownConfiguration,
+  server: _ => ({ port: Number(PORT) }),
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
+  prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
+  redirects: { "/feed": "/rss.xml", "/logo": "/union-logo.zip" },
+  vite: {
+    assetsInclude: ["**/*.splinecode"],
+    optimizeDeps: {
+      exclude: ["echarts"]
+    },
+    define: {
+      global: {}
+    }
+  },
   integrations: [
     starlight({
       title: "Union",
@@ -139,11 +164,5 @@ export default defineConfig({
     }),
     svelte(),
     sitemap()
-  ],
-  vite: {
-    optimizeDeps: {
-      exclude: ["@urql/svelte", "echarts"]
-    },
-    assetsInclude: ["**/*.splinecode"]
-  }
+  ]
 })

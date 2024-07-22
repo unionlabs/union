@@ -8,7 +8,7 @@
     {
       packages = {
         site = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-RNJ5cMMBfaPJJS/vsRRRNyWvOKWoJzQ5PEtOGSC+owk=";
+          npmDepsHash = "sha256-dVZqwFkwkVVXACx2DaEdX622QWFpaBWs3xlMuqdJCXY=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";
@@ -22,8 +22,8 @@
           '';
           doDist = false;
           PUPPETEER_SKIP_DOWNLOAD = 1;
-          NODE_OPTIONS = "--no-warnings";
           ASTRO_TELEMETRY_DISABLED = 1;
+          NODE_OPTIONS = "--no-warnings";
         });
       };
 
@@ -40,6 +40,18 @@
               export PUPPETEER_SKIP_DOWNLOAD=1 
               npm install
               npm run dev
+            '';
+          };
+        };
+        site-check = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "site-check";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd site/
+              npm_config_yes=true npx astro check
             '';
           };
         };

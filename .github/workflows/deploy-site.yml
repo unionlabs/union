@@ -61,7 +61,8 @@ jobs:
     env:
       npm_config_yes: true
     environment: 'site-preview'
-    if: github.event_name == 'pull_request'
+    # manually disable this for now since we use Netlify for site previews
+    if: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -140,14 +141,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="site" deploy result
 
-
   deploy-production:
     runs-on: ['ubuntu-latest']
     needs: [build]
     env:
       npm_config_yes: true
     environment: 'site-production'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # manually disable this for now since we use Netlify
+    if: false
     steps:
       - uses: actions/checkout@v4
         with:

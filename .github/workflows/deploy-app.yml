@@ -40,7 +40,7 @@ jobs:
       - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
         with:
           nixbuild_token: ${{secrets.nixbuild_token}}
-      - name: Build site
+      - name: Build app
         run: |
           touch build.json
           nix build .#packages.x86_64-linux.app \

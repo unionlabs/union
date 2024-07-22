@@ -1,3 +1,12 @@
+export const toISODate = (date?: string | Date) => (date ? new Date(date).toISOString() : "")
+
+export const saneDateTime = (date?: string | Date) =>
+  new Date(date ?? "").toLocaleDateString("fr-CA", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric"
+  })
+
 export const arraySizeN = (n: number) => Array.from(new Array(n).keys())
 
 export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))

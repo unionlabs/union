@@ -1,21 +1,32 @@
 ---
-import SectionsLayout from "#/layouts/SectionsLayout.astro"
-import { getCollection } from "astro:content"
 import Card from "#/components/Card.astro"
+import TextA from "#/components/TextA.astro"
+import type { BlogPost } from "#/lib/types.ts"
+import H3 from "#/components/typography/h3.astro"
+import SectionsLayout from "#/layouts/SectionsLayout.astro"
+import { saneDateTime, toISODate } from "#/lib/utilities.ts"
 import LanderSection from "#/components/LanderSection.astro"
+import { contentfulClient } from "#/lib/contentful/client.ts"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
-import TextA from "#/components/TextA.astro"
 
-import H3 from "#/components/typography/h3.astro"
+export const prerender = false
 
-const isProduction = import.meta.env.PROD
+const blogEntries = await contentfulClient.getEntries<BlogPost>({
+  content_type: "blog",
+  // @ts-expect-error
+  order: "-fields.date",
+  limit: 100 // max limit
+})
 
-let blogEntries = await getCollection("blog", ({ data }) =>
-  // filter out unpublished posts in production
-  isProduction ? data.hidden !== true : true
-)
-blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
+// The browser should always check freshness
+Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
+
+// The CDN should cache for a year, but revalidate if the cache tag changes
+Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
+
+// Tag the page with the content type
+Astro.response.headers.set("netlify-cache-tag", "blog")
 ---
 
 <SectionsLayout title="Union Blog" gapless>
@@ -25,18 +36,19 @@ blogEntries = blogEntries.sort((a, b) => (a.data.date > b.data.date ? -1 : 1))
     </IntroHeading>
     <div class="flex flex-col md:grid grid-cols-2 gap-4 md:gap-6 flex-1">
       {
-        blogEntries.map(blogPostEntry => (
-          <a class="pointer-cursor" href={`/blog/${blogPostEntry.slug}`}>
+        blogEntries.items.map((blogPostEntry) => (
+          <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
             <Card class="size-full" padded>
-              <time class="text-lg text-gray-400" datetime={blogPostEntry.data.date.toISOString()}>
-                {blogPostEntry.data.date.toLocaleDateString('fr-CA', {
-                  year: 'numeric',
-                  month: 'numeric',
-                  day: 'numeric',
-                })}
+              <time
+                class="text-lg text-gray-400"
+                datetime={toISODate(blogPostEntry?.fields?.date)}
+              >
+                {saneDateTime(blogPostEntry?.fields?.date)}
               </time>
-              <H3>{blogPostEntry.data.title}</H3>
-              <p class="sm:text-xl text-gray-400">{blogPostEntry.data.description}</p>
+              <H3>{blogPostEntry.fields.title}</H3>
+              <p class="sm:text-xl text-gray-400">
+                {blogPostEntry.fields.description}
+              </p>
 
               <TextA fake>Read Post</TextA>
             </Card>
