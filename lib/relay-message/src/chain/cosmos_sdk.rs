@@ -94,7 +94,7 @@ where
                 for (idx, type_url, simulation_result) in simulation_results.into_iter().rev() {
                     match simulation_result {
                         Ok((_, _, gas_info)) => {
-                            debug!(
+                            info!(
                                 msg = %type_url,
                                 %idx,
                                 gas_wanted = %gas_info.gas_wanted,
