@@ -6,7 +6,9 @@ import LanderSection from "#/components/LanderSection.astro"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import { ContentfulLivePreview } from "@contentful/live-preview"
+import { MARKS, BLOCKS, INLINES } from "@contentful/rich-text-types"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
 export const prerender = false
 
@@ -32,7 +34,10 @@ const {
 })
 
 // The browser should always check freshness
-Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
+Astro.response.headers.set(
+  "cache-control",
+  "public, max-age=0, must-revalidate"
+)
 
 // The CDN should cache for a year, but revalidate if the cache tag changes
 Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
@@ -116,7 +121,55 @@ const { width, height } = coverFields.file.details.image as {
         data-contentful-entry-id={entryId}
         {...ContentfulLivePreview.getProps({ entryId, fieldId: "content" })}
       >
-        {blogPost.fields.content}
+        {
+          documentToHtmlString(blogPost.fields.content, {
+            renderMark: {
+              [MARKS["BOLD"]]: (text) => `<strong>${text}</strong>`,
+              [MARKS["ITALIC"]]: (text) => `<em>${text}</em>`,
+              [MARKS["UNDERLINE"]]: (text) => `<u>${text}</u>`,
+              [MARKS["CODE"]]: (text) => `<code>${text}</code>`,
+              [MARKS["STRIKETHROUGH"]]: (text) => `<s>${text}</s>`,
+              [MARKS["SUPERSCRIPT"]]: (text) => `<sup>${text}</sup>`,
+              [MARKS["SUBSCRIPT"]]: (text) => `<sub>${text}</sub>`
+            },
+            renderNode: {
+              [BLOCKS["PARAGRAPH"]]: (node, next) =>
+                `<p>${next(node.content)}</p>`,
+              [BLOCKS["HEADING_1"]]: (node, next) =>
+                `<h1>${next(node.content)}</h1>`,
+              [BLOCKS["HEADING_2"]]: (node, next) =>
+                `<h2>${next(node.content)}</h2>`,
+              [BLOCKS["HEADING_3"]]: (node, next) =>
+                `<h3>${next(node.content)}</h3>`,
+              [BLOCKS["HEADING_4"]]: (node, next) =>
+                `<h4>${next(node.content)}</h4>`,
+              [BLOCKS["HEADING_5"]]: (node, next) =>
+                `<h5>${next(node.content)}</h5>`,
+              [BLOCKS["HEADING_6"]]: (node, next) =>
+                `<h6>${next(node.content)}</h6>`,
+              [BLOCKS["UL_LIST"]]: (node, next) =>
+                `<ul>${next(node.content)}</ul>`,
+              [BLOCKS["OL_LIST"]]: (node, next) =>
+                `<ol>${next(node.content)}</ol>`,
+              [BLOCKS["LIST_ITEM"]]: (node, next) =>
+                `<li>${next(node.content)}</li>`,
+              [BLOCKS["QUOTE"]]: (node, next) =>
+                `<blockquote>${next(node.content)}</blockquote>`,
+              [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
+                const dataFields = asset.data.target.fields
+                const imageUrl = imageWithProtocol(dataFields.file.url)
+                const { width, height } = dataFields.file.details.image
+                return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
+              },
+              [INLINES["HYPERLINK"]]: (params) => /* html */ `
+            <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+              [INLINES["ENTRY_HYPERLINK"]]: (params) => /* html */ `
+              <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+              [INLINES["ASSET_HYPERLINK"]]: (params) => /* html */ `
+              <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
+            }
+          })
+        }
       </article>
     </div>
   </LanderSection>
@@ -270,52 +323,38 @@ const { width, height } = coverFields.file.details.image as {
     if (typeof entry.fields[fieldId] === "string") {
       domElement.textContent = entry.fields[fieldId]
     }
-    if (entry.fields[fieldId].nodeType === "document") {
+    if (entry.fields[fieldId]?.nodeType === "document") {
       console.info("documentToHtmlString", entry.fields[fieldId])
       domElement.innerHTML = documentToHtmlString(entry.fields[fieldId], {
         renderMark: {
-          [MARKS["BOLD"]]: (text) => `<strong>${text}</strong>`,
           [MARKS["ITALIC"]]: (text) => `<em>${text}</em>`,
           [MARKS["UNDERLINE"]]: (text) => `<u>${text}</u>`,
           [MARKS["CODE"]]: (text) => `<code>${text}</code>`,
           [MARKS["STRIKETHROUGH"]]: (text) => `<s>${text}</s>`,
-          [MARKS["SUPERSCRIPT"]]: (text) => `<sup>${text}</sup>`,
-          [MARKS["SUBSCRIPT"]]: (text) => `<sub>${text}</sub>`
+          [MARKS["SUBSCRIPT"]]: (text) => `<sub>${text}</sub>`,
+          [MARKS["BOLD"]]: (text) => `<strong>${text}</strong>`,
+          [MARKS["SUPERSCRIPT"]]: (text) => `<sup>${text}</sup>`
         },
         renderNode: {
-          [BLOCKS["PARAGRAPH"]]: (node, next) => {
-            return `<p>${next(node.content)}</p>`
-          },
-          [BLOCKS["HEADING_1"]]: (node, next) => {
-            return `<h1>${next(node.content)}</h1>`
-          },
-          [BLOCKS["HEADING_2"]]: (node, next) => {
-            return `<h2>${next(node.content)}</h2>`
-          },
-          [BLOCKS["HEADING_3"]]: (node, next) => {
-            return `<h3>${next(node.content)}</h3>`
-          },
-          [BLOCKS["HEADING_4"]]: (node, next) => {
-            return `<h4>${next(node.content)}</h4>`
-          },
-          [BLOCKS["HEADING_5"]]: (node, next) => {
-            return `<h5>${next(node.content)}</h5>`
-          },
-          [BLOCKS["HEADING_6"]]: (node, next) => {
-            return `<h6>${next(node.content)}</h6>`
-          },
-          [BLOCKS["UL_LIST"]]: (node, next) => {
-            return `<ul>${next(node.content)}</ul>`
-          },
-          [BLOCKS["OL_LIST"]]: (node, next) => {
-            return `<ol>${next(node.content)}</ol>`
-          },
-          [BLOCKS["LIST_ITEM"]]: (node, next) => {
-            return `<li>${next(node.content)}</li>`
-          },
-          [BLOCKS["QUOTE"]]: (node, next) => {
-            return `<blockquote>${next(node.content)}</blockquote>`
-          },
+          [BLOCKS["HEADING_1"]]: (node, next) =>
+            `<h1>${next(node.content)}</h1>`,
+          [BLOCKS["HEADING_2"]]: (node, next) =>
+            `<h2>${next(node.content)}</h2>`,
+          [BLOCKS["HEADING_3"]]: (node, next) =>
+            `<h3>${next(node.content)}</h3>`,
+          [BLOCKS["HEADING_4"]]: (node, next) =>
+            `<h4>${next(node.content)}</h4>`,
+          [BLOCKS["HEADING_5"]]: (node, next) =>
+            `<h5>${next(node.content)}</h5>`,
+          [BLOCKS["HEADING_6"]]: (node, next) =>
+            `<h6>${next(node.content)}</h6>`,
+          [BLOCKS["PARAGRAPH"]]: (node, next) => `<p>${next(node.content)}</p>`,
+          [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
+          [BLOCKS["OL_LIST"]]: (node, next) => `<ol>${next(node.content)}</ol>`,
+          [BLOCKS["LIST_ITEM"]]: (node, next) =>
+            `<li>${next(node.content)}</li>`,
+          [BLOCKS["QUOTE"]]: (node, next) =>
+            `<blockquote>${next(node.content)}</blockquote>`,
           [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
             const dataFields = asset.data.target.fields
             const imageUrl = imageWithProtocol(dataFields.file.url)
@@ -323,23 +362,11 @@ const { width, height } = coverFields.file.details.image as {
             return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
           },
           [INLINES["HYPERLINK"]]: (params) => /* html */ `
-            <a 
-              target="_blank"
-              href="${params.data.uri}"
-              rel="noopener noreferrer"
-            >${(params.content.at(0) as any)?.value}</a>`,
+            <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
           [INLINES["ENTRY_HYPERLINK"]]: (params) => /* html */ `
-              <a 
-                target="_blank"
-                href="${params.data.uri}"
-                rel="noopener noreferrer"
-              >${(params.content.at(0) as any)?.value}</a>`,
+              <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
           [INLINES["ASSET_HYPERLINK"]]: (params) => /* html */ `
-              <a 
-                target="_blank"
-                href="${params.data.uri}"
-                rel="noopener noreferrer"
-              >${(params.content.at(0) as any)?.value}</a>`
+              <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
         }
       })
     }
