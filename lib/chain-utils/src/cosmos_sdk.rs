@@ -318,7 +318,21 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
                             &tx.tx_result.codespace,
                             tx.tx_result.code.value(),
                         );
-                        warn!(%error, %tx_hash, "cosmos transaction failed");
+                        warn!(
+                            %error,
+                            %tx_hash,
+
+                            ?tx.tx_result.code,
+                            tx.tx_result.data = %::serde_utils::to_hex(&tx.tx_result.data),
+                            %tx.tx_result.log,
+                            %tx.tx_result.info,
+                            %tx.tx_result.gas_wanted,
+                            %tx.tx_result.gas_used,
+                            ?tx.tx_result.events,
+                            %tx.tx_result.codespace,
+
+                            "cosmos transaction failed"
+                        );
                         break Err(BroadcastTxCommitError::Tx(error));
                     }
                 }
