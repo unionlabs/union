@@ -41,7 +41,7 @@ impl Contract {
         let mut block_producers = LookupMap::new(b"epoch_block_producers".as_slice());
         block_producers.insert(
             consensus_state.state.epoch_id,
-            client_state.initial_block_producers.clone().unwrap(),
+            client_state.initial_block_producers.clone(),
         );
         let mut consensus_states: LookupMap<u64, ConsensusState> = LookupMap::new(b"c");
         consensus_states.insert(client_state.latest_height, consensus_state);
@@ -197,7 +197,8 @@ impl NearVerifierCtx for Contract {
     fn get_epoch_block_producers(
         &self,
         epoch_id: CryptoHash,
-    ) -> Option<Vec<unionlabs::ibc::lightclients::near::validator_stake_view::ValidatorStakeView>> {
+    ) -> Option<Vec<unionlabs::ibc::lightclients::near::validator_stake_view::ValidatorStakeView>>
+    {
         self.epoch_block_producers_map
             .get(&epoch_id)
             .map(|bps| bps.clone())

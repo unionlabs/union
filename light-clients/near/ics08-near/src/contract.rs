@@ -9,10 +9,13 @@ use protos::ibc::lightclients::wasm::v1::{
 };
 use unionlabs::{
     encoding::{DecodeAs, Proto},
-    ibc::{core::client::height::Height, lightclients::near::client_state::ClientState},
+    ibc::{
+        core::client::height::Height,
+        lightclients::near::{client_state::ClientState, consensus_state::ConsensusState},
+    },
 };
 
-use crate::{client::NearLightClient, errors::Error};
+use crate::{client::NearLightClient, errors::Error, state::EPOCH_BLOCK_PRODUCERS_MAP};
 
 #[entry_point]
 pub fn instantiate(
@@ -23,6 +26,17 @@ pub fn instantiate(
 ) -> Result<Response, Error> {
     let client_state =
         ClientState::decode_as::<Proto>(&msg.client_state).map_err(Error::ClientStateDecode)?;
+
+    let consensus_state = ConsensusState::decode_as::<Proto>(&msg.consensus_state)
+        .map_err(Error::ConsensusStateDecode)?;
+
+    EPOCH_BLOCK_PRODUCERS_MAP
+        .save(
+            deps.storage,
+            consensus_state.state.epoch_id.0,
+            &client_state.initial_block_producers,
+        )
+        .unwrap();
 
     save_proto_consensus_state::<NearLightClient>(
         deps.branch(),

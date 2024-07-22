@@ -31,10 +31,14 @@ cw-storage-plus = { workspace = true }
 
 ics008-wasm-client = { workspace = true }
 unionlabs          = { workspace = true, features = [ "near" ] }
-near-primitives-core = { version = "0.21" }
+near-primitives-core = { version = "0.23" }
 near-verifier = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }
 lazy_static = "1.4.0"
 serde_json  = { workspace = true }
+near-jsonrpc-client = "0.10.1"
+tokio = { workspace = true, features = [ "full" ] }
+near-primitives = "0.23.0"
+near-crypto             = "0.23"
