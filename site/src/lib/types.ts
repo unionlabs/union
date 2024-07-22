@@ -13,6 +13,7 @@ export interface BlogPost {
     slug: EntryFieldTypes.Text
     title: EntryFieldTypes.Text
     author: EntryFieldTypes.Text
+    hidden: EntryFieldTypes.Boolean
     cover: EntryFieldTypes.AssetLink
     content: EntryFieldTypes.RichText
     description: EntryFieldTypes.Text

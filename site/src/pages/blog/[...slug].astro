@@ -6,9 +6,7 @@ import LanderSection from "#/components/LanderSection.astro"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import { ContentfulLivePreview } from "@contentful/live-preview"
-import { MARKS, BLOCKS, INLINES } from "@contentful/rich-text-types"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
 export const prerender = false
 
@@ -28,6 +26,7 @@ const {
     "fields.title",
     "fields.cover",
     "fields.author",
+    "fields.hidden",
     "fields.content",
     "fields.description"
   ]
@@ -74,7 +73,7 @@ const { width, height } = coverFields.file.details.image as {
           {saneDateTime(blogPost.fields.date)}
         </time>
         <p
-          class="hidden"
+          class="m-0"
           data-contentful-field-id="author"
           data-contentful-entry-id={entryId}
           {...ContentfulLivePreview.getProps({ entryId, fieldId: "author" })}

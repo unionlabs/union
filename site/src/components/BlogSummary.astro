@@ -15,8 +15,9 @@ const blogEntries = await contentfulClient.getEntries<BlogPost>({
   limit: BLOG_POST_COUNT
 })
 
-// TODO: filter out unpublished blog posts
-const publishedBlogPosts = blogEntries.items
+const publishedBlogPosts = blogEntries.items.filter(entry =>
+  import.meta.env.MODE === "production" ? entry.fields.hidden !== true : true
+)
 
 const [latestBlogPost, ...blogPosts] = publishedBlogPosts
 ---
