@@ -8,6 +8,8 @@ import BlogSection from "#/components/sections/BlogSection.astro"
 import CodeSection from "#/components/sections/CodeSection.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 
+export const prerender = false
+
 // The browser should always check freshness
 Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
 
