@@ -39,7 +39,7 @@ message ValidatorStakeView {
     bytes secp256k1 = 3;
   }
   // TODO(aeryz): u128
-  uint64 balance = 4;
+  bytes balance = 4;
 }
 
 message PublicKey {

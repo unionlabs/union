@@ -43,8 +43,7 @@ impl From<ValidatorStakeView> for protos::union::ibc::lightclients::near::v1::Va
         Self {
             account_id: value.account_id.to_string(),
             public_key: Some(value.public_key.into()),
-            // TODO(aeryz): make this a u128
-            balance: value.stake.try_into().unwrap(),
+            balance: value.stake.to_le_bytes().into(),
         }
     }
 }
@@ -57,6 +56,8 @@ pub enum TryFromValidatorStakeView {
     AccountId(#[from] ParseAccountError),
     #[error(transparent)]
     PublicKey(#[from] TryFromPublicKeyError),
+    #[error("invalid balance size {0:?}")]
+    Balance(Vec<u8>),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::near::v1::ValidatorStakeView>
@@ -73,9 +74,12 @@ impl TryFrom<protos::union::ibc::lightclients::near::v1::ValidatorStakeView>
             public_key: required!(value.public_key)?
                 .try_into()
                 .map_err(TryFromValidatorStakeView::PublicKey)?,
-            // TODO(aeryz): make this a u128
-            // this will need to be done through string (or two fields, low and high bits)
-            stake: value.balance.try_into().unwrap(),
+            stake: u128::from_le_bytes(
+                value
+                    .balance
+                    .try_into()
+                    .map_err(TryFromValidatorStakeView::Balance)?,
+            ),
         }))
     }
 }

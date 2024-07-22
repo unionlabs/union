@@ -4744,7 +4744,10 @@ dependencies = [
  "hex",
  "ics008-wasm-client",
  "lazy_static",
- "near-primitives-core 0.21.2",
+ "near-crypto 0.23.0",
+ "near-jsonrpc-client 0.10.1",
+ "near-primitives 0.23.0",
+ "near-primitives-core 0.23.0",
  "near-verifier",
  "prost 0.12.6",
  "protos",
@@ -4757,6 +4760,7 @@ dependencies = [
  "sha2 0.10.8",
  "sha3",
  "thiserror",
+ "tokio",
  "unionlabs",
 ]
 
@@ -6763,7 +6767,7 @@ name = "near-verifier"
 version = "0.1.0"
 dependencies = [
  "borsh 1.5.1",
- "near-primitives-core 0.21.2",
+ "near-primitives-core 0.23.0",
  "near-sdk",
  "serde",
  "sha2 0.10.8",

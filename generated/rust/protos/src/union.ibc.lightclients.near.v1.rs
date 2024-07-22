@@ -86,8 +86,8 @@ pub struct ValidatorStakeView {
     #[prost(string, tag = "1")]
     pub account_id: ::prost::alloc::string::String,
     /// TODO(aeryz): u128
-    #[prost(uint64, tag = "4")]
-    pub balance: u64,
+    #[prost(bytes = "vec", tag = "4")]
+    pub balance: ::prost::alloc::vec::Vec<u8>,
     #[prost(oneof = "validator_stake_view::PublicKey", tags = "2, 3")]
     pub public_key: ::core::option::Option<validator_stake_view::PublicKey>,
 }
