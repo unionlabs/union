@@ -209,9 +209,9 @@ const { width, height } = coverFields.file.details.image as {
   }) {
     const callback = (updatedData: any) => {
       const domElement = findElementByDataAttribute({ entryId, fieldId })
-      // console.info(domElement && updatedData.fields[fieldId])
+      console.info(domElement && updatedData.fields[fieldId])
       if (domElement && updatedData.fields && updatedData.fields[fieldId]) {
-        // console.info(updatedData.fields[fieldId])
+        console.info(updatedData.fields[fieldId])
         // Check if the content is text
         if (typeof updatedData.fields[fieldId] === "string") {
           domElement.textContent = updatedData.fields[fieldId]
@@ -266,6 +266,7 @@ const { width, height } = coverFields.file.details.image as {
       domElement.textContent = entry.fields[fieldId]
     }
     if (entry.fields[fieldId].nodeType === "document") {
+      console.info('documentToHtmlString', entry.fields[fieldId])
       domElement.innerHTML = documentToHtmlString(entry.fields[fieldId], {
         renderNode: {
           [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
