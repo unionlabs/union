@@ -15,4 +15,14 @@ pub enum Error {
     MerkleVerificationFailure,
     #[error("state proof verification failed")]
     StateVerificationFailure,
+    #[error("update height ({0}) must be greater than the current height ({1})")]
+    UpdateHeightMustBeGreater(u64, u64),
+    #[error("can only be updated within the same epoch or the next epoch, but got ({0:?})")]
+    InvalidEpochId(CryptoHash),
+    #[error("when updating to the next epoch, `next_bps` must be provided")]
+    MustHaveNextEpochId,
+    #[error("approved stake ({0}) is below the threshold ({1})")]
+    ApprovedStakeBelowThreshold(u128, u128),
+    #[error("next bp hash mismatch ({0} != {1})")]
+    NextBpsHashMismatch(CryptoHash, CryptoHash),
 }

@@ -8,7 +8,7 @@ authors                = ["Union Labs"]
 
 [dependencies]
 unionlabs          = { workspace = true, features = [ "near" ] }
-near-primitives-core = { version = "0.21" }
+near-primitives-core = { version = "0.23" }
 thiserror       = { workspace = true }
 sha2            = { workspace = true }
 serde = { workspace = true }

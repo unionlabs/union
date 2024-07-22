@@ -6,7 +6,7 @@ use near_primitives_core::{
 };
 use near_sdk::AccountId;
 use sha2::{Digest, Sha256};
-use state_proof::RawStateProof;
+use state_proof::StateProof;
 use unionlabs::{
     ibc::lightclients::near::{
         approval::ApprovalInner,
@@ -14,7 +14,10 @@ use unionlabs::{
         light_client_block::LightClientBlockView,
         validator_stake_view::ValidatorStakeView,
     },
-    near::types::{Direction, MerklePath, PublicKey, Signature},
+    near::{
+        raw_state_proof::RawStateProof,
+        types::{Direction, MerklePath, PublicKey, Signature},
+    },
 };
 
 pub mod error;
@@ -40,17 +43,20 @@ pub fn verify_header<Ctx: NearVerifierCtx>(
     let (_current_block_hash, _next_block_hash, approval_message) =
         reconstruct_light_client_block_view_fields(block_view.clone());
 
-    assert!(block_view.inner_lite.height > head.height, "false");
+    if block_view.inner_lite.height <= head.height {
+        return Err(Error::UpdateHeightMustBeGreater(
+            block_view.inner_lite.height,
+            head.height,
+        ));
+    }
 
-    assert!(
-        [&head.epoch_id, &head.next_epoch_id].contains(&&block_view.inner_lite.epoch_id),
-        "false"
-    );
+    if ![&head.epoch_id, &head.next_epoch_id].contains(&&block_view.inner_lite.epoch_id) {
+        return Err(Error::InvalidEpochId(block_view.inner_lite.epoch_id));
+    }
 
-    assert!(
-        !(block_view.inner_lite.epoch_id == head.next_epoch_id && block_view.next_bps.is_none()),
-        "false"
-    );
+    if block_view.inner_lite.epoch_id == head.next_epoch_id && block_view.next_bps.is_none() {
+        return Err(Error::MustHaveNextEpochId);
+    }
 
     let mut total_stake = 0;
     let mut approved_stake = 0;
@@ -92,13 +98,21 @@ pub fn verify_header<Ctx: NearVerifierCtx>(
     }
 
     let threshold = total_stake.checked_mul(2).unwrap().checked_div(3).unwrap();
-    assert!(approved_stake > threshold, "approved_stake <= threshold");
+    if approved_stake <= threshold {
+        return Err(Error::ApprovedStakeBelowThreshold(
+            approved_stake,
+            threshold,
+        ));
+    }
 
     if let Some(next_bps) = &block_view.next_bps {
-        assert!(
-            hash_borsh(next_bps) == block_view.inner_lite.next_bp_hash,
-            "next bps hash mismatch"
-        );
+        let next_bp_hash = hash_borsh(next_bps);
+        if next_bp_hash != block_view.inner_lite.next_bp_hash {
+            return Err(Error::NextBpsHashMismatch(
+                next_bp_hash,
+                block_view.inner_lite.next_bp_hash,
+            ));
+        }
     }
 
     Ok(())
@@ -111,7 +125,7 @@ pub fn verify_state(
     key: &[u8],
     value: Option<&[u8]>,
 ) -> Result<(), Error> {
-    let state_proof = raw_state_proof.parse();
+    let state_proof = StateProof::parse(raw_state_proof);
 
     if !state_proof.verify(state_root, account_id, key, value) {
         return Err(Error::StateVerificationFailure);

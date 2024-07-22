@@ -2,12 +2,17 @@ use std::collections::HashMap;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use near_primitives_core::{hash::CryptoHash, types::AccountId};
+use unionlabs::near::raw_state_proof::RawStateProof;
 
 use crate::nibble_slice::NibbleSlice;
 
-impl RawStateProof {
-    pub fn parse(self) -> StateProof {
-        let state_proof_nodes = self
+pub struct StateProof {
+    pub state_proof_nodes: HashMap<CryptoHash, RawTrieNodeWithSize>,
+}
+
+impl StateProof {
+    pub fn parse(proof: RawStateProof) -> Self {
+        let state_proof_nodes = proof
             .state_proof
             .into_iter()
             .map(|bytes| {
@@ -19,13 +24,7 @@ impl RawStateProof {
 
         StateProof { state_proof_nodes }
     }
-}
 
-pub struct StateProof {
-    pub state_proof_nodes: HashMap<CryptoHash, RawTrieNodeWithSize>,
-}
-
-impl StateProof {
     pub fn verify(
         &self,
         state_root: &CryptoHash,
