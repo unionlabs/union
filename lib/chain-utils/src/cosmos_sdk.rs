@@ -205,10 +205,18 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
             "tx simulation successful"
         );
 
-        auth_info.fee = self.gas_config().mk_fee(u64_mul_f64(
+        let submission_gas = u64_mul_f64(
             simulation_gas_info.gas_used,
             self.gas_config().gas_multiplier,
-        ));
+        );
+
+        auth_info.fee = self.gas_config().mk_fee(submission_gas);
+
+        info!(
+            submission_gas,
+            gas_multiplier = %self.gas_config().gas_multiplier,
+            "submitting transaction with gas"
+        );
 
         // re-sign the new auth info with the simulated gas
         let signature = signer
