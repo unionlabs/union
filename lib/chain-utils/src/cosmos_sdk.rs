@@ -507,6 +507,8 @@ pub enum BroadcastTxCommitError {
     SimulateTx(String),
     #[error("account sequence mismatch: {0}")]
     AccountSequenceMismatch(String),
+    #[error("out of gas")]
+    OutOfGas,
 }
 
 impl MaybeRecoverableError for BroadcastTxCommitError {
