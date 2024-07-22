@@ -26,13 +26,18 @@ import {
   cosmwasmTransferSimulate,
   cosmosSameChainTransferSimulate
 } from "./transfer/cosmos.ts"
+import {
+  transferAssetFromEvm,
+  approveTransferAssetFromEvm,
+  transferAssetFromEvmSimulate,
+  type ApproveTransferAssetFromEvmParams
+} from "./transfer/evm.ts"
 import { sepolia } from "viem/chains"
 import { timestamp } from "./utilities/index.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 import { findPfmPath, createPfmMemo } from "./pfm.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
-import { transferAssetFromEvm, transferAssetFromEvmSimulate } from "./transfer/evm.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
 const pfm = { findPfmPath, createPfmMemo }
@@ -58,6 +63,7 @@ export interface TransferAssetsParameters {
   memo?: string
   amount: bigint
   recipient: string
+  approve?: boolean
   sourcePort?: string
   denomAddress: string
   sourceChannel?: string
@@ -103,12 +109,14 @@ export function createCosmosSdkClient({
         recipient,
         denomAddress,
         sourceChannel,
+        approve = false,
         simulate = true,
         relayContractAddress
       }: {
         amount: bigint
         account?: Account
         recipient: string
+        approve?: boolean
         simulate?: boolean
         denomAddress: Address
         sourceChannel: string
@@ -118,6 +126,7 @@ export function createCosmosSdkClient({
         const transaction = await transferAssetFromEvm(client, {
           amount,
           account,
+          approve,
           simulate,
           recipient,
           denomAddress,
@@ -136,6 +145,7 @@ export function createCosmosSdkClient({
         sourcePort,
         denomAddress,
         sourceChannel,
+        approve = false,
         relayContractAddress,
         evmSigner = evm.account,
         gasPrice = cosmos.gasPrice,
@@ -158,6 +168,7 @@ export function createCosmosSdkClient({
             const transactionHash = await client.transferAssetFromEvm({
               memo,
               amount,
+              approve,
               recipient,
               sourceChannel,
               simulate: true,
@@ -290,7 +301,7 @@ export function createCosmosSdkClient({
           if (!relayContractAddress) {
             return { success: false, data: "Relay contract address not found" }
           }
-          evmSigner ||= client.account
+
           if (sourceChainId === destinationChainId) {
             const gas = await client.estimateContractGas({
               abi: erc20Abi,
@@ -402,6 +413,24 @@ export function createCosmosSdkClient({
         }
 
         return { success: false, data: "Unsupported network" }
+      }
+    }))
+    .extend(client => ({
+      /** evm only */
+      approveTransaction: async ({
+        amount,
+        account,
+        denomAddress,
+        simulate = true,
+        relayContractAddress
+      }: ApproveTransferAssetFromEvmParams): Promise<TransactionResponse> => {
+        return await approveTransferAssetFromEvm(client, {
+          amount,
+          account,
+          simulate,
+          denomAddress,
+          relayContractAddress
+        })
       }
     }))
 }
