@@ -140,9 +140,24 @@
         # runtimeInputs = [ nearup ];
         runtimeInputs = [(python.withPackages (py-pkgs: [
           py-pkgs.nearup
-        ]))] ++ [ pkgs.strace pkgs.iproute pkgs.busybox ];
+        ]))] ++ [ pkgs.strace pkgs.iproute pkgs.busybox unstablePkgs.nodePackages_latest.near-cli ];
         text = ''
+          mkdir /tmp
+          export TMPDIR=/tmp
+          export TEMP=/tmp
+
           nearup run --override --binary-path ${nearcore}/bin localnet
+          sleep 3
+          echo Deploying ibc..
+          ls -la ~/.near
+          mkdir neardev
+          echo N | near dev-deploy \
+            --networkId asd \
+            --wasmFile ${self'.packages.near-ibc}/lib/near_ibc.wasm \
+            --masterAccount node0 \
+            --keyPath ~/.near/localnet/node0/validator_key.json \
+            --nodeUrl http://localhost:3030 \
+            --accountId ibc-union
           tail -f /.nearup/logs/localnet/node0.log
         '';
       };
