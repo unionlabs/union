@@ -660,6 +660,11 @@ export const ucs01RelayAbi = [
         ]
       },
       {
+        name: "extension",
+        type: "string",
+        internalType: "string"
+      },
+      {
         name: "timeoutHeight",
         type: "tuple",
         internalType: "struct IbcCoreClientV1Height.Data",
@@ -693,6 +698,34 @@ export const ucs01RelayAbi = [
         name: "newOwner",
         type: "address",
         internalType: "address"
+      }
+    ],
+    outputs: [],
+    stateMutability: "nonpayable"
+  },
+  {
+    type: "function",
+    name: "updateMetadata",
+    inputs: [
+      {
+        name: "denom",
+        type: "address",
+        internalType: "contract IERC20Denom"
+      },
+      {
+        name: "newName",
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "newSymbol",
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "newDecimals",
+        type: "uint8",
+        internalType: "uint8"
       }
     ],
     outputs: [],
@@ -1011,6 +1044,11 @@ export const ucs01RelayAbi = [
   {
     type: "error",
     name: "ErrInvalidAcknowledgement",
+    inputs: []
+  },
+  {
+    type: "error",
+    name: "ErrInvalidAmount",
     inputs: []
   },
   {

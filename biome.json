@@ -137,6 +137,7 @@
       "style": {
         "all": true,
         "useConst": "off",
+        "useForOf": "off",
         "noNamespace": "off",
         "noDefaultExport": "off",
         "useFragmentSyntax": "off",

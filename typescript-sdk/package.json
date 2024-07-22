@@ -8,12 +8,12 @@
     "build": "echo 'No need… jsr.io requires no build step'",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "publish": "bun ./scripts/publish.ts",
-    "publish:dry-run": "bun ./scripts/publish.ts --dry-run",
-    "demo": "bun ./playground/demo.ts",
+    "publish-dry-run": "DRY_RUN=1 bun ./scripts/publish.ts",
     "faucet": "bun ./playground/faucet.ts",
     "balance": "bun ./playground/balance.ts",
     "transfer": "bun ./playground/transfer.ts",
     "test": "vitest --run",
+    "test:typecheck": "vitest --typecheck.only",
     "clean": "rm -rf dist node_modules",
     "postinstall": "patch-package"
   },
@@ -21,26 +21,33 @@
     "#*": "./src/*"
   },
   "dependencies": {
-    "@cosmjs/cosmwasm-stargate": "0.32.3",
-    "@cosmjs/encoding": "^0.32.3",
-    "@cosmjs/stargate": "0.32.3",
-    "@cosmjs/tendermint-rpc": "0.32.3",
-    "viem": "^2.13.6"
+    "@cosmjs/cosmwasm-stargate": "0.32.4",
+    "@cosmjs/encoding": "^0.32.4",
+    "@cosmjs/proto-signing": "^0.32.4",
+    "@cosmjs/stargate": "0.32.4",
+    "@cosmjs/tendermint-rpc": "0.32.4",
+    "ofetch": "^1.3.4",
+    "viem": "^2.17.9"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
-    "@cosmjs/amino": "0.32.3",
-    "@scure/base": "^1.1.6",
+    "@cosmjs/amino": "0.32.4",
+    "@scure/base": "^1.1.7",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/bun": "^1.1.3",
-    "@types/node": "^20.14.1",
+    "@types/bun": "^1.1.6",
+    "@types/node": "^20.14.11",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
+    "jsr": "^0.13.1",
     "patch-package": "^8.0.0",
-    "tsx": "^4.11.2",
-    "typescript": "^5.4.5",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3",
     "vite-tsconfig-paths": "^4.3.2",
-    "vitest": "^1.6.0"
+    "vitest": "^2.0.4"
+  },
+  "overrides": {
+    "globalthis": "npm:@nolyfill/globalthis@^1",
+    "json-stable-stringify": "npm:@nolyfill/json-stable-stringify@^1"
   },
   "repository": {
     "type": "git",

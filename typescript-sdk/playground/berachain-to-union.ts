@@ -1,15 +1,16 @@
 #!/usr/bin/env bun
-import { fallback, http } from "viem"
-import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
+import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
+import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
+import { berachainTestnetbArtio } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
-/* `bun playground/sepolia-to-union.ts --private-key "..."` --estimate-gas */
+/* `bun playground/berachain-to-union.ts --private-key "..."` */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -23,31 +24,29 @@ const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
-const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
+const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
 )
 
-const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
-const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
-const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+const WBTC_CONTRACT_ADDRESS = "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae"
 
 try {
   /**
    * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
    */
   const {
-    data: [sepoliaInfo]
+    data: [beraInfo]
   } = await offchainQuery.chain({
-    chainId: "11155111",
+    chainId: "80084",
     includeEndpoints: true,
     includeContracts: true
   })
-  if (!sepoliaInfo) raise("Sepolia info not found")
+  if (!beraInfo) raise("Berachain info not found")
 
-  const ucsConfiguration = sepoliaInfo.ucs1_configurations
+  const ucsConfiguration = beraInfo.ucs1_configurations
     ?.filter(config => config.destination_chain.chain_id === "union-testnet-8")
     .at(0)
   if (!ucsConfiguration) raise("UCS configuration not found")
@@ -56,37 +55,34 @@ try {
 
   const client = createCosmosSdkClient({
     evm: {
-      chain: sepolia,
-      account: evmAccount,
-      transport: fallback(
-        [
-          http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
-          http(
-            "https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e"
-          ),
-          http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
-          http(sepolia?.rpcUrls.default.http.at(0))
-        ],
-        { rank: true, retryCount: 3 }
-      )
+      account: berachainAccount,
+      chain: berachainTestnetbArtio,
+      transport: fallback([
+        http(
+          "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
+        ),
+        http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
+      ])
     },
-    // @ts-expect-error
-    cosmos: {}
+    cosmos: {
+      account: cosmosAccount,
+      gasPrice: { amount: "0.0025", denom: "muno" },
+      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+    }
   })
 
   const gasEstimationResponse = await client.simulateTransaction({
     amount: 1n,
     sourceChannel: channel_id,
-    evmSigner: evmAccount.address,
-    network: sepoliaInfo.rpc_type,
-    denomAddress: LINK_CONTRACT_ADDRESS,
+    network: beraInfo.rpc_type,
+    denomAddress: WBTC_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
     path: [source_chain.chain_id, destination_chain.chain_id]
   })
 
-  consola.box("Sepolia to Union gas cost:", gasEstimationResponse)
+  consola.box("Berachain to union gas cost:", gasEstimationResponse)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
@@ -98,8 +94,8 @@ try {
   const transfer = await client.transferAsset({
     amount: 1n,
     sourceChannel: channel_id,
-    network: sepoliaInfo.rpc_type,
-    denomAddress: LINK_CONTRACT_ADDRESS,
+    network: beraInfo.rpc_type,
+    denomAddress: WBTC_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
