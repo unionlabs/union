@@ -34,7 +34,10 @@ const {
 })
 
 // The browser should always check freshness
-Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
+Astro.response.headers.set(
+  "cache-control",
+  "public, max-age=0, must-revalidate"
+)
 
 // The CDN should cache for a year, but revalidate if the cache tag changes
 Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
@@ -128,50 +131,50 @@ const { width, height } = coverFields.file.details.image as {
           //   [MARKS["BOLD"]]: (text) => `<strong>${text}</strong>`,
           //   [MARKS["SUPERSCRIPT"]]: (text) => `<sup>${text}</sup>`
           // },
-          // renderNode: {
-          //   [BLOCKS["HEADING_1"]]: (node, next) =>
-          //     `<h1>${next(node.content)}</h1>`,
-          //   [BLOCKS["HEADING_2"]]: (node, next) =>
-          //     `<h2>${next(node.content)}</h2>`,
-          //   [BLOCKS["HEADING_3"]]: (node, next) =>
-          //     `<h3>${next(node.content)}</h3>`,
-          //   [BLOCKS["HEADING_4"]]: (node, next) =>
-          //     `<h4>${next(node.content)}</h4>`,
-          //   [BLOCKS["HEADING_5"]]: (node, next) =>
-          //     `<h5>${next(node.content)}</h5>`,
-          //   [BLOCKS["HEADING_6"]]: (node, next) =>
-          //     `<h6>${next(node.content)}</h6>`,
-          //   [BLOCKS["LIST_ITEM"]]: (node, next) =>
-          //     `<li>${next(node.content)}</li>`,
-          //   [BLOCKS["TABLE"]]: (node, next) =>
-          //     `<table>${next(node.content)}</table>`,
-          //   [BLOCKS["TABLE_ROW"]]: (node, next) =>
-          //     `<tr>${next(node.content)}</tr>`,
-          //   [BLOCKS["TABLE_CELL"]]: (node, next) =>
-          //     `<td>${next(node.content)}</td>`,
-          //   [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) =>
-          //     `<th>${next(node.content)}</th>`,
-          //   [BLOCKS["QUOTE"]]: (node, next) =>
-          //     `<blockquote>${next(node.content)}</blockquote>`,
-          //   [BLOCKS["PARAGRAPH"]]: (node, next) =>
-          //     `<p>${next(node.content)}</p>`,
-          //   [BLOCKS["UL_LIST"]]: (node, next) =>
-          //     `<ul>${next(node.content)}</ul>`,
-          //   [BLOCKS["OL_LIST"]]: (node, next) =>
-          //     `<ol>${next(node.content)}</ol>`,
-          //   [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
-          //     const dataFields = asset.data.target.fields
-          //     const imageUrl = imageWithProtocol(dataFields.file.url)
-          //     const { width, height } = dataFields.file.details.image
-          //     return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
-          //   },
-          //   [INLINES["HYPERLINK"]]: (params) => /* html */ `
-          //       <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
-          //   [INLINES["ENTRY_HYPERLINK"]]: (params) => /* html */ `
-          //         <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
-          //   [INLINES["ASSET_HYPERLINK"]]: (params) => /* html */ `
-          //         <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
-          // }
+          renderNode: {
+            //   [BLOCKS["HEADING_1"]]: (node, next) =>
+            //     `<h1>${next(node.content)}</h1>`,
+            //   [BLOCKS["HEADING_2"]]: (node, next) =>
+            //     `<h2>${next(node.content)}</h2>`,
+            //   [BLOCKS["HEADING_3"]]: (node, next) =>
+            //     `<h3>${next(node.content)}</h3>`,
+            //   [BLOCKS["HEADING_4"]]: (node, next) =>
+            //     `<h4>${next(node.content)}</h4>`,
+            //   [BLOCKS["HEADING_5"]]: (node, next) =>
+            //     `<h5>${next(node.content)}</h5>`,
+            //   [BLOCKS["HEADING_6"]]: (node, next) =>
+            //     `<h6>${next(node.content)}</h6>`,
+            //   [BLOCKS["LIST_ITEM"]]: (node, next) =>
+            //     `<li>${next(node.content)}</li>`,
+            //   [BLOCKS["TABLE"]]: (node, next) =>
+            //     `<table>${next(node.content)}</table>`,
+            //   [BLOCKS["TABLE_ROW"]]: (node, next) =>
+            //     `<tr>${next(node.content)}</tr>`,
+            //   [BLOCKS["TABLE_CELL"]]: (node, next) =>
+            //     `<td>${next(node.content)}</td>`,
+            //   [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) =>
+            //     `<th>${next(node.content)}</th>`,
+            //   [BLOCKS["QUOTE"]]: (node, next) =>
+            //     `<blockquote>${next(node.content)}</blockquote>`,
+            [BLOCKS["PARAGRAPH"]]: (node, next) =>
+              `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${next(node.content)}</p>`
+            //   [BLOCKS["UL_LIST"]]: (node, next) =>
+            //     `<ul>${next(node.content)}</ul>`,
+            //   [BLOCKS["OL_LIST"]]: (node, next) =>
+            //     `<ol>${next(node.content)}</ol>`,
+            //   [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
+            //     const dataFields = asset.data.target.fields
+            //     const imageUrl = imageWithProtocol(dataFields.file.url)
+            //     const { width, height } = dataFields.file.details.image
+            //     return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
+            //   },
+            //   [INLINES["HYPERLINK"]]: (params) => /* html */ `
+            //       <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+            //   [INLINES["ENTRY_HYPERLINK"]]: (params) => /* html */ `
+            //         <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+            //   [INLINES["ASSET_HYPERLINK"]]: (params) => /* html */ `
+            //         <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
+          }
         })}
       />
     </div>
@@ -343,47 +346,48 @@ const { width, height } = coverFields.file.details.image as {
         //   [MARKS["BOLD"]]: (text) => `<strong>${text}</strong>`,
         //   [MARKS["SUPERSCRIPT"]]: (text) => `<sup>${text}</sup>`
         // },
-        // renderNode: {
-        //   [BLOCKS["HEADING_1"]]: (node, next) =>
-        //     `<h1>${next(node.content)}</h1>`,
-        //   [BLOCKS["HEADING_2"]]: (node, next) =>
-        //     `<h2>${next(node.content)}</h2>`,
-        //   [BLOCKS["HEADING_3"]]: (node, next) =>
-        //     `<h3>${next(node.content)}</h3>`,
-        //   [BLOCKS["HEADING_4"]]: (node, next) =>
-        //     `<h4>${next(node.content)}</h4>`,
-        //   [BLOCKS["HEADING_5"]]: (node, next) =>
-        //     `<h5>${next(node.content)}</h5>`,
-        //   [BLOCKS["HEADING_6"]]: (node, next) =>
-        //     `<h6>${next(node.content)}</h6>`,
-        //   [BLOCKS["LIST_ITEM"]]: (node, next) =>
-        //     `<li>${next(node.content)}</li>`,
-        //   [BLOCKS["TABLE"]]: (node, next) =>
-        //     `<table>${next(node.content)}</table>`,
-        //   [BLOCKS["TABLE_ROW"]]: (node, next) =>
-        //     `<tr>${next(node.content)}</tr>`,
-        //   [BLOCKS["TABLE_CELL"]]: (node, next) =>
-        //     `<td>${next(node.content)}</td>`,
-        //   [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) =>
-        //     `<th>${next(node.content)}</th>`,
-        //   [BLOCKS["QUOTE"]]: (node, next) =>
-        //     `<blockquote>${next(node.content)}</blockquote>`,
-        //   [BLOCKS["PARAGRAPH"]]: (node, next) => `<p>${next(node.content)}</p>`,
-        //   [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
-        //   [BLOCKS["OL_LIST"]]: (node, next) => `<ol>${next(node.content)}</ol>`,
-        //   [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
-        //     const dataFields = asset.data.target.fields
-        //     const imageUrl = imageWithProtocol(dataFields.file.url)
-        //     const { width, height } = dataFields.file.details.image
-        //     return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
-        //   },
-        //   [INLINES["HYPERLINK"]]: (params) => /* html */ `
-        //         <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
-        //   [INLINES["ENTRY_HYPERLINK"]]: (params) => /* html */ `
-        //           <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
-        //   [INLINES["ASSET_HYPERLINK"]]: (params) => /* html */ `
-        //           <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
-        // }
+        renderNode: {
+          //   [BLOCKS["HEADING_1"]]: (node, next) =>
+          //     `<h1>${next(node.content)}</h1>`,
+          //   [BLOCKS["HEADING_2"]]: (node, next) =>
+          //     `<h2>${next(node.content)}</h2>`,
+          //   [BLOCKS["HEADING_3"]]: (node, next) =>
+          //     `<h3>${next(node.content)}</h3>`,
+          //   [BLOCKS["HEADING_4"]]: (node, next) =>
+          //     `<h4>${next(node.content)}</h4>`,
+          //   [BLOCKS["HEADING_5"]]: (node, next) =>
+          //     `<h5>${next(node.content)}</h5>`,
+          //   [BLOCKS["HEADING_6"]]: (node, next) =>
+          //     `<h6>${next(node.content)}</h6>`,
+          //   [BLOCKS["LIST_ITEM"]]: (node, next) =>
+          //     `<li>${next(node.content)}</li>`,
+          //   [BLOCKS["TABLE"]]: (node, next) =>
+          //     `<table>${next(node.content)}</table>`,
+          //   [BLOCKS["TABLE_ROW"]]: (node, next) =>
+          //     `<tr>${next(node.content)}</tr>`,
+          //   [BLOCKS["TABLE_CELL"]]: (node, next) =>
+          //     `<td>${next(node.content)}</td>`,
+          //   [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) =>
+          //     `<th>${next(node.content)}</th>`,
+          //   [BLOCKS["QUOTE"]]: (node, next) =>
+          //     `<blockquote>${next(node.content)}</blockquote>`,
+          [BLOCKS["PARAGRAPH"]]: (node, next) =>
+            `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${next(node.content)}</p>`
+          //   [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
+          //   [BLOCKS["OL_LIST"]]: (node, next) => `<ol>${next(node.content)}</ol>`,
+          //   [BLOCKS["EMBEDDED_ASSET"]]: (asset) => {
+          //     const dataFields = asset.data.target.fields
+          //     const imageUrl = imageWithProtocol(dataFields.file.url)
+          //     const { width, height } = dataFields.file.details.image
+          //     return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
+          //   },
+          //   [INLINES["HYPERLINK"]]: (params) => /* html */ `
+          //         <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+          //   [INLINES["ENTRY_HYPERLINK"]]: (params) => /* html */ `
+          //           <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+          //   [INLINES["ASSET_HYPERLINK"]]: (params) => /* html */ `
+          //           <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
+        }
       })
     }
   }
