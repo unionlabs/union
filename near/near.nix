@@ -123,6 +123,12 @@
         extraNativeBuildInputs = [ pkgs.clang ];
       });
 
+      near-ics08 = (crane.buildWasmContract {
+        crateDirFromRoot = "light-clients/near/ics08-near";
+        extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+        extraNativeBuildInputs = [ pkgs.clang ];
+      });
+
       dummy-ibc-app = (crane.buildWasmContract {
         crateDirFromRoot = "near/dummy-ibc-app";
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
@@ -131,6 +137,12 @@
 
       near-ibc = (crane.buildWasmContract {
         crateDirFromRoot = "near/near-ibc";
+        extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+        extraNativeBuildInputs = [ pkgs.clang ];
+      });
+
+      cometbls-near = (crane.buildWasmContract {
+        crateDirFromRoot = "light-clients/cometbls/near";
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });
@@ -151,19 +163,44 @@
           echo Deploying ibc..
           ls -la ~/.near
           mkdir neardev
-          echo N | near dev-deploy \
+
+          echo N | near create-account ibc-union.node0 \
+            --networkId asd \
+            --masterAccount node0 \
+            --keyPath ~/.near/localnet/node0/validator_key.json \
+            --nodeUrl http://localhost:3030
+
+          near deploy \
             --networkId asd \
             --wasmFile ${self'.packages.near-ibc}/lib/near_ibc.wasm \
             --masterAccount node0 \
             --keyPath ~/.near/localnet/node0/validator_key.json \
             --nodeUrl http://localhost:3030 \
-            --accountId ibc-union
+            --accountId ibc-union.node0
+          echo "Deployed near-ibc"
+
+          near create-account cometbls-light-client.node0 \
+            --networkId asd \
+            --masterAccount node0 \
+            --keyPath ~/.near/localnet/node0/validator_key.json \
+            --nodeUrl http://localhost:3030
+
+          near deploy \
+            --networkId asd \
+            --wasmFile ${self'.packages.cometbls-near}/lib/cometbls_near.wasm \
+            --masterAccount node0 \
+            --keyPath ~/.near/localnet/node0/validator_key.json \
+            --nodeUrl http://localhost:3030 \
+            --accountId cometbls-light-client.node0
+          echo "Deployed cometbls-near"
+          cat ~/.near/localnet/node0/validator_key.json
+          
           tail -f /.nearup/logs/localnet/node0.log
         '';
       };
     in
     {
-      packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // {
+      packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // cometbls-near.packages // near-ics08.packages // {
         inherit near-ibc-tests near-sandbox cargo-near nearcore near-localnet;
       };
 
