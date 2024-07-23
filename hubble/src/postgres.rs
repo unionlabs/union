@@ -106,6 +106,22 @@ pub fn get_last_n_logs<'a>(
     .map_ok(|r| (r.block_hash, r.height)))
 }
 
+pub fn get_n_logs_from<'a>(
+    db: &'a PgPool,
+    chain_id: ChainId,
+    height: i32,
+    n: i64,
+) -> sqlx::Result<impl Stream<Item = sqlx::Result<(String, i32)>> + 'a> {
+    Ok(sqlx::query!(
+        "SELECT block_hash, height from v0.logs where chain_id = $1 and height >= $2 ORDER BY height ASC LIMIT $3",
+        chain_id.db,
+        height,
+        n
+    )
+    .fetch(db)
+    .map_ok(|r| (r.block_hash, r.height)))
+}
+
 pub async fn update_batch_logs<C: ChainType, T: Serialize>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     logs: impl IntoIterator<Item = Log<C, T>>,
