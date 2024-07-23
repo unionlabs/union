@@ -173,7 +173,6 @@ export async function approveTransferAssetFromEvm(
 
     if (!approveHash) return { success: false, data: "Approval failed" }
     const receipt = await client.waitForTransactionReceipt({ hash: approveHash })
-    console.info(`[transferAssetFromEvm] Approval transaction hash: ${receipt.transactionHash}`)
 
     return { success: true, data: approveHash }
   } catch (error) {

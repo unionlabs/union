@@ -8,7 +8,7 @@ import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
-import type { ApproveTransferAssetFromEvmParams } from '#transfer/evm.js'
+import type { ApproveTransferAssetFromEvmParams } from "#transfer/evm.js"
 
 /* `bun playground/sepolia-to-union.ts --private-key "..."` --estimate-gas */
 
@@ -120,7 +120,7 @@ try {
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
     path: [source_chain.chain_id, destination_chain.chain_id],
-    ...approvalParams,
+    ...approvalParams
   })
 
   consola.info(transfer)

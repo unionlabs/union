@@ -10,7 +10,7 @@ import { berachainTestnetbArtio } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
-/* `bun playground/berachain-to-union.ts --private-key "..."` */
+/* `bun playground/stride-to-berachain.ts --private-key "..."` --estimate-gas */
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -26,37 +26,44 @@ const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
-console.info(berachainAccount.address)
-
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-  "union"
+  "stride"
 )
-
-const WBTC_CONTRACT_ADDRESS = "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae"
-const DAI_CONTRACT_ADDRESS = "0x806Ef538b228844c73E8E692ADCFa8Eb2fCF729c"
 
 try {
   /**
    * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
    */
   const {
-    data: [beraInfo]
+    data: [strideTestnetInfo]
   } = await offchainQuery.chain({
-    chainId: "80084",
-    includeEndpoints: true,
-    includeContracts: true
+    includeContracts: true,
+    chainId: "stride-internal-1"
   })
-  if (!beraInfo) raise("Berachain info not found")
 
-  const ucsConfiguration = beraInfo.ucs1_configurations
+  if (!strideTestnetInfo) raise("Stride testnet info not found")
+
+  const ucsConfiguration = strideTestnetInfo.ucs1_configurations
     ?.filter(config => config.destination_chain.chain_id === "union-testnet-8")
     .at(0)
+
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
+  const forward = ucsConfiguration.forward.find(item => item.destination_chain.chain_id === "80084")
+
+  if (!forward) raise("Forward configuration not found")
 
   const client = createCosmosSdkClient({
+    cosmos: {
+      account: cosmosAccount,
+      gasPrice: { amount: "0.0025", denom: "ustrd" },
+      transport: cosmosHttp(
+        //
+        // "https://stride.testnet-1.stridenet.co/"
+        "https://stride-testnet-rpc.polkachu.com/"
+      )
+    },
     evm: {
       account: berachainAccount,
       chain: berachainTestnetbArtio,
@@ -66,34 +73,38 @@ try {
         ),
         http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
       ])
-    },
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
     }
+  })
+
+  const pfmMemo = client.createPfmMemo({
+    port: forward.port,
+    channel: forward.channel_id,
+    receiver: berachainAccount.address
   })
 
   const transactionPayload = {
     amount: 1n,
+    memo: pfmMemo,
     approve: true,
-    sourceChannel: channel_id,
-    network: beraInfo.rpc_type,
-    denomAddress: DAI_CONTRACT_ADDRESS,
-    relayContractAddress: contract_address,
-    // or `client.cosmos.account.address` if you want to send to yourself
-    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    path: [source_chain.chain_id, destination_chain.chain_id]
+    denomAddress: "ustrd",
+    network: strideTestnetInfo.rpc_type,
+    sourceChannel: ucsConfiguration.channel_id,
+    // or `client.evm.account.address` if you want to send to yourself
+    recipient: berachainAccount.address,
+    relayContractAddress: ucsConfiguration.contract_address,
+    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   } satisfies TransferAssetsParameters
+
+  console.info(transactionPayload)
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
-  consola.box("Berachain to union gas cost:", gasEstimationResponse)
+  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
   if (!gasEstimationResponse.success) {
-    console.info("Transaction simulation failed")
+    consola.info("Transaction simulation failed")
     process.exit(1)
   }
 
@@ -102,7 +113,7 @@ try {
   consola.info(transfer)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
-  console.error(errorMessage)
+  consola.error(errorMessage)
 } finally {
   process.exit(0)
 }
