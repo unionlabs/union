@@ -161,7 +161,11 @@ let ucs01Configuration = derived(
         hopChainId = foundHopChainId
         ucs1_configuration = $fromChain.ucs1_configurations[hopChainId]
         let forwardConfig = ucs1_configuration.forward[$toChainId]
-        pfmMemo = generatePfmMemo(forwardConfig.channel_id, forwardConfig.port, $recipient.slice(2))
+        pfmMemo = generatePfmMemo(
+          forwardConfig.channel_id,
+          forwardConfig.port,
+          $toChain?.rpc_type === "evm" ? $recipient.slice(2) : $recipient
+        )
         break
       }
     }
@@ -290,7 +294,9 @@ const transfer = async () => {
         })
 
         let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
+        console.log({ ucs1_configuration })
         if (ucs1_configuration.contract_address === "ics20") {
+          console.log({ $recipient })
           transferAssetsMessage = {
             kind: "ibc",
             messageTransfers: [
@@ -306,6 +312,7 @@ const transfer = async () => {
             ]
           }
         } else {
+          console.log("THIS SHOULD NOT HAPPEN")
           transferAssetsMessage = {
             kind: "cosmwasm",
             instructions: [
@@ -314,7 +321,7 @@ const transfer = async () => {
                 msg: {
                   transfer: {
                     channel: ucs1_configuration.channel_id,
-                    receiver: $recipient?.slice(2),
+                    receiver: $toChain.rpc_type === "evm" ? $recipient?.slice(2) : $recipient,
                     memo: pfmMemo ?? ""
                   }
                 },
@@ -323,6 +330,8 @@ const transfer = async () => {
             ]
           }
         }
+
+        console.log({ transferAssetsMessage })
 
         const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
         transferState.set({ kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash })
