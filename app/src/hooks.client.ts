@@ -14,9 +14,15 @@ Sentry.init({
   ]
 })
 
-export const handleError = Sentry.handleErrorWithSentry((context => {
-  console.warn(JSON.stringify(context, undefined, 2))
+// biome-ignore lint/suspicious/useAwait: no need
+export const handleError = (async ({ error, event, status, message, ...context }) => {
   const errorId = crypto.randomUUID()
 
-  return { errorId, message: `${context.message} - ${context.error}` }
-}) satisfies HandleClientError)
+  if (import.meta.env.MODE === "production") {
+    Sentry.captureException(error, {
+      extra: { event, errorId, status, message }
+    })
+  }
+
+  return { errorId, message: `${message} - ${error}` }
+}) satisfies HandleClientError
