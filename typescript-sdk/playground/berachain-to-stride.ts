@@ -101,8 +101,6 @@ try {
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   } satisfies TransferAssetsParameters
 
-  // console.info(JSON.stringify(transactionPayload, undefined, 2))
-
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
   consola.box("gas cost:", gasEstimationResponse)
@@ -113,6 +111,8 @@ try {
     consola.info("Transaction simulation failed")
     process.exit(1)
   }
+
+  client.approveTransaction
 
   const transfer = await client.transferAsset(transactionPayload)
 

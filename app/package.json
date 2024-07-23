@@ -24,9 +24,9 @@
     "@tanstack/svelte-query-persist-client": "^5.49.1",
     "@tanstack/svelte-table": "^8.19.2",
     "@tanstack/svelte-virtual": "^3.8.1",
-    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.37",
-    "@wagmi/connectors": "^5.0.21",
-    "@wagmi/core": "^2.11.6",
+    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.39",
+    "@wagmi/connectors": "^5.1.0",
+    "@wagmi/core": "^2.13.0",
     "bech32": "^2.0.0",
     "bits-ui": "^0.21.11",
     "cmdk-sv": "^0.0.17",
@@ -43,7 +43,7 @@
     "uint8array-extras": "^1.2.0",
     "valibot": "^0.35.0",
     "vaul-svelte": "^0.3.2",
-    "viem": "^2.16.5"
+    "viem": "^2.17.10"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.12.10",
