@@ -186,7 +186,7 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
-async function windowEthereumSwitchChain(id) {
+async function windowEthereumSwitchChain(id: number) {
   if (!window?.ethereum?.request) return
   return await window.ethereum?.request({
     method: "wallet_switchEthereumChain",
