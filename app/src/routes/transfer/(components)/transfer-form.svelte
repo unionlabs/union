@@ -188,7 +188,7 @@ async function windowEthereumSwitchChain() {
   if (!window?.ethereum?.request) return
   return await window.ethereum?.request({
     method: "wallet_switchEthereumChain",
-    params: [{ chainId: toHex(sepolia.id) }]
+    params: [{ chainId: toHex(Number($fromChainId)) }]
   })
 }
 
@@ -356,7 +356,7 @@ const transfer = async () => {
     }
   } else if ($fromChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
-    if (connectorClient?.chain?.id !== sepolia.id) {
+    if (connectorClient?.chain?.id !== Number($fromChainId)) {
       await windowEthereumSwitchChain()
       await sleep(1_500)
     }
@@ -432,7 +432,7 @@ const transfer = async () => {
       console.log("simulating transfer step")
 
       const contractRequest = {
-        chainId: sepolia.id,
+        chainId: Number($fromChainId),
         abi: ucs01abi,
         account: userAddr.evm.canonical,
         functionName: "send",
