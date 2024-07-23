@@ -17,11 +17,7 @@ import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
-import { page } from "$app/stores"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
-import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
-import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
-import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 
 const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
