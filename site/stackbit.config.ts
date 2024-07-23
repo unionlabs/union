@@ -18,5 +18,5 @@ export default defineStackbitConfig({
       environment: process.env.CONTENTFUL_ENVIRONMENT || "master",
       useWebhookForContentUpdates: true // default is false
     })
-  ],
+  ]
 })
