@@ -33,6 +33,11 @@ import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
 import { config } from "$lib/wallet/evm/config"
 import {
+  strideKeplrChainInfo,
+  unionKeplrChainInfo,
+  unionLeapChainInfo
+} from "$lib/wallet/cosmos/chain-info.ts"
+import {
   writeContract,
   simulateContract,
   waitForTransactionReceipt,
@@ -218,10 +223,49 @@ const transfer = async () => {
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
     // @ts-ignore
-    transferState.set({ kind: "CONFIRMING_TRANSFER" })
+    transferState.set({ kind: "SWITCHING_TO_CHAIN" })
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
+
+    if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
+      // switch chain
+      // TODO: don't hardcode this.
+      const chainInfo =
+        $fromChainId === "union-testnet-8"
+          ? unionKeplrChainInfo
+          : $fromChainId === "stride-internal-1"
+            ? strideKeplrChainInfo
+            : null
+
+      if (chainInfo === null) {
+        transferState.set({
+          kind: "SWITCHING_TO_CHAIN",
+          warning: new Error("Failed to switch chain")
+        })
+        return
+      }
+
+      try {
+        await window?.keplr?.experimentalSuggestChain(chainInfo)
+        await window?.keplr?.enable([$fromChainId])
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({
+            kind: "SWITCHING_TO_CHAIN",
+            warning: error
+          })
+        } else {
+          transferState.set({
+            kind: "SWITCHING_TO_CHAIN",
+            warning: new Error("invalid error")
+          })
+        }
+        return
+      }
+      // @ts-ignore
+      transferState.set({ kind: "CONFIRMING_TRANSFER" })
+    }
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
@@ -555,7 +599,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         ts => ({
           status: "ERROR",
           title: `Error switching to ${$fromChain.display_name}`,
-          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.error}`
+          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.warning}`
         }),
         () => ({
           status: "WARNING",
@@ -674,6 +718,27 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   }
   if ($fromChain?.rpc_type === "cosmos") {
     return [
+      stateToStatus(
+        $transferState,
+        "SWITCHING_TO_CHAIN",
+        `Switch to ${$fromChain.display_name}`,
+        `Switched to ${$fromChain.display_name}`,
+        ts => ({
+          status: "ERROR",
+          title: `Error switching to ${$fromChain.display_name}`,
+          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.warning}`
+        }),
+        () => ({
+          status: "WARNING",
+          title: `Could not automatically switch chain.`,
+          description: `Please make sure your wallet is connected to  ${$fromChain.display_name}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: `Switching to ${$fromChain.display_name}`,
+          description: `Click 'Approve' in wallet.`
+        })
+      ),
       stateToStatus(
         $transferState,
         "CONFIRMING_TRANSFER",
