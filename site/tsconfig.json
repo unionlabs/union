@@ -38,7 +38,8 @@
     "svelte.config.js",
     "tailwind.config.ts",
     "postcss.config.cjs",
-    "markdown.config.ts"
+    "markdown.config.ts",
+    "stackbit.config.ts"
   ],
   "exclude": ["_", "dist", "node_modules"]
 }
