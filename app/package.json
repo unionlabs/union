@@ -24,7 +24,7 @@
     "@tanstack/svelte-query-persist-client": "^5.49.1",
     "@tanstack/svelte-table": "^8.19.2",
     "@tanstack/svelte-virtual": "^3.8.1",
-    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.39",
+    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.40",
     "@wagmi/connectors": "^5.1.0",
     "@wagmi/core": "^2.13.0",
     "bech32": "^2.0.0",

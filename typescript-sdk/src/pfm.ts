@@ -1,6 +1,3 @@
-import { raise } from "./utilities/index.ts"
-import type { Ucs1Configuration } from "./query/offchain/hubble.ts"
-
 export const createPfmMemo = ({
   port,
   channel,
@@ -17,15 +14,3 @@ export const createPfmMemo = ({
       receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver
     }
   })
-
-export function findPfmPath({
-  sourceChainId,
-  destinationChainId,
-  data
-}: {
-  sourceChainId: string
-  destinationChainId: string
-  data: Array<Ucs1Configuration>
-}): [source: Ucs1Configuration, destination: Ucs1Configuration] {
-  raise("Not implemented")
-}

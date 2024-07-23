@@ -33,14 +33,14 @@ import {
   type ApproveTransferAssetFromEvmParams
 } from "./transfer/evm.ts"
 import { sepolia } from "viem/chains"
+import { createPfmMemo } from "./pfm.ts"
 import { timestamp } from "./utilities/index.ts"
-import { findPfmPath, createPfmMemo } from "./pfm.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
-const pfm = { findPfmPath, createPfmMemo }
+const pfm = { createPfmMemo }
 
 export {
   /**
@@ -99,7 +99,6 @@ export function createCosmosSdkClient({
       isValidBech32Address
     }))
     .extend(() => ({
-      findPfmPath,
       createPfmMemo
     }))
     .extend(client => ({

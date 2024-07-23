@@ -95,8 +95,6 @@ try {
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   } satisfies TransferAssetsParameters
 
-  console.info(transactionPayload)
-
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
   consola.info(`Gas cost: ${gasEstimationResponse.data}`)
