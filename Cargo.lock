@@ -5993,6 +5993,7 @@ name = "near-ics08"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
+ "borsh 1.5.1",
  "bytes",
  "cosmwasm-std 1.5.2",
  "cw-storage-plus 1.2.0",
@@ -7798,11 +7799,13 @@ dependencies = [
  "chain-utils",
  "cometbft-rpc",
  "hex",
+ "ibc-vm-rs",
  "near-crypto 0.23.0",
  "near-jsonrpc-client 0.10.1",
  "near-jsonrpc-primitives 0.23.0",
  "near-primitives 0.23.0",
  "near-primitives-core 0.23.0",
+ "near-verifier",
  "protos",
  "serde",
  "serde_json",

@@ -45,7 +45,7 @@ impl IbcClient for NearLightClient {
 
     fn verify_membership(
         deps: Deps<Self::CustomQuery>,
-        height: Height,
+        mut height: Height,
         _delay_time_period: u64,
         _delay_block_period: u64,
         proof: Vec<u8>,
@@ -53,23 +53,25 @@ impl IbcClient for NearLightClient {
         value: ics008_wasm_client::StorageState,
     ) -> Result<(), ics008_wasm_client::IbcClientError<Self>> {
         let proof: RawStateProof = serde_json_wasm::from_slice(&proof).unwrap();
+        height.revision_height += 1;
         let consensus_state: WasmConsensusState = read_consensus_state(deps, &height)?
             .ok_or(Error::ConsensusStateNotFound(height.revision_height))?;
         let client_state: WasmClientState = read_client_state(deps)?;
-        let key = path.key_path.last().unwrap();
+        let key = key_from_path(path.key_path.last().unwrap());
+
         match value {
             ics008_wasm_client::StorageState::Occupied(value) => near_verifier::verify_state(
                 proof,
                 &consensus_state.data.chunk_prev_state_root,
                 &client_state.data.ibc_account_id,
-                key.as_bytes(),
-                Some(&value),
+                &key,
+                Some(&borsh::to_vec(&value).unwrap()),
             ),
             ics008_wasm_client::StorageState::Empty => near_verifier::verify_state(
                 proof,
                 &consensus_state.data.chunk_prev_state_root,
                 &client_state.data.ibc_account_id,
-                key.as_bytes(),
+                &key,
                 None,
             ),
         }
@@ -137,6 +139,7 @@ impl IbcClient for NearLightClient {
 
         if update_height > client_state.data.latest_height {
             client_state.data.latest_height = update_height;
+            client_state.latest_height.revision_height = update_height;
             save_client_state::<NearLightClient>(deps.branch(), client_state);
         }
 
@@ -163,7 +166,7 @@ impl IbcClient for NearLightClient {
         _deps: Deps<Self::CustomQuery>,
         _header: Self::Header,
     ) -> Result<bool, ics008_wasm_client::IbcClientError<Self>> {
-        Ok(true)
+        Ok(false)
     }
 
     fn check_for_misbehaviour_on_misbehaviour(
@@ -588,4 +591,11 @@ mod tests {
             block_merkle_root: CryptoHash(header.block_merkle_root.0),
         }
     }
+}
+
+fn key_from_path(path: &str) -> Vec<u8> {
+    let mut commitments: Vec<u8> = Vec::new();
+    commitments.extend(b"commitments");
+    commitments.extend(borsh::to_vec(path).unwrap());
+    commitments
 }

@@ -33,6 +33,7 @@ ics008-wasm-client = { workspace = true }
 unionlabs          = { workspace = true, features = [ "near" ] }
 near-primitives-core = { version = "0.23" }
 near-verifier = { workspace = true }
+borsh = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

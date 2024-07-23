@@ -22,6 +22,8 @@ tendermint-rpc           = { workspace = true, features = ["http-client", "webso
 chain-utils = { workspace = true }
 protos.workspace = true
 hex.workspace = true
+ibc-vm-rs.workspace = true
+near-verifier = { workspace = true }
 
 [lints]
 workspace = true
