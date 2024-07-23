@@ -44,7 +44,7 @@ import { sepolia, berachainTestnetbArtio } from "viem/chains"
 function getChainById(chainId: number): ViemChain | null {
   const chains: { [key: number]: ViemChain } = {
     11155111: sepolia,
-    80084: berachainTestnetbArtio,
+    80084: berachainTestnetbArtio
   }
   return chains[chainId] || null
 }
@@ -294,9 +294,9 @@ const transfer = async () => {
     const connectorClient = await getConnectorClient(config)
     const selectedChain = getChainById(Number($fromChainId))
 
-    if(!selectedChain) {
-      toast.error('From chain not found or supported')
-      return 
+    if (!selectedChain) {
+      toast.error("From chain not found or supported")
+      return
     }
 
     if (connectorClient?.chain?.id !== selectedChain.id) {
