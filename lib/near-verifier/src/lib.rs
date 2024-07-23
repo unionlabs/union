@@ -1,10 +1,10 @@
 use error::Error;
+use near_account_id::AccountId;
 use near_primitives_core::{
     borsh::{self, BorshSerialize},
     hash::CryptoHash,
     types::MerkleHash,
 };
-use near_sdk::AccountId;
 use sha2::{Digest, Sha256};
 use state_proof::StateProof;
 use unionlabs::{

@@ -12,7 +12,7 @@ near-primitives-core = { version = "0.23" }
 thiserror       = { workspace = true }
 sha2            = { workspace = true }
 serde = { workspace = true }
-near-sdk = { workspace = true }
+near-account-id = { workspace = true }
 borsh = { workspace = true }
 
 [lints]
