@@ -378,7 +378,7 @@ const transfer = async () => {
       // ^ the user is continuing continuing after having seen the warning
 
       try {
-        await switchChain(config, { chainId: 11155111 })
+        await switchChain(config, { chainId: Number($fromChainId) })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({ kind: "SWITCHING_TO_CHAIN", warning: error })
