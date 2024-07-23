@@ -1,7 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use macros::model;
+use near_account_id::AccountId;
 use near_primitives_core::account::id::ParseAccountError;
-use near_sdk::AccountId;
 
 use super::validator_stake_view::{TryFromValidatorStakeView, ValidatorStakeView};
 

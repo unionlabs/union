@@ -1,0 +1,21 @@
+[package]
+name = "poc-relayer"
+version = "0.1.0"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[dependencies]
+tokio = { workspace = true, features = [ "full" ] }
+near-primitives = "0.23.0"
+near-crypto             = "0.23"
+base64      = { workspace = true }
+serde_json  = { workspace = true }
+near-jsonrpc-client = "0.10.1"
+unionlabs          = { workspace = true, features = [ "near" ] }
+near-primitives-core = { version = "0.23" }
+near-workspaces = { workspace = true, features = [ "unstable" ] }
+
+
+[lints]
+workspace = true

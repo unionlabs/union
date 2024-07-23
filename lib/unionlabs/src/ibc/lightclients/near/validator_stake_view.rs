@@ -2,8 +2,8 @@ use core::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use macros::model;
+use near_account_id::AccountId;
 use near_primitives_core::{account::id::ParseAccountError, types::Balance};
-use near_sdk::AccountId;
 
 use crate::{
     errors::{required, MissingField},
