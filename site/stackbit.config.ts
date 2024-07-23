@@ -19,13 +19,4 @@ export default defineStackbitConfig({
       useWebhookForContentUpdates: true // default is false
     })
   ],
-  import: {
-    uploadAssets: true,
-    type: "contentful",
-    assetsDirectory: "contentful",
-    contentFile: "contentful/export.json",
-    spaceIdEnvVar: "CONTENTFUL_SPACE_ID",
-    previewTokenEnvVar: "CONTENTFUL_PREVIEW_TOKEN",
-    deliveryTokenEnvVar: "CONTENTFUL_DELIVERY_TOKEN"
-  }
 })
