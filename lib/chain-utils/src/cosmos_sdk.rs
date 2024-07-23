@@ -205,10 +205,18 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
             "tx simulation successful"
         );
 
-        auth_info.fee = self.gas_config().mk_fee(u64_mul_f64(
+        let submission_gas = u64_mul_f64(
             simulation_gas_info.gas_used,
             self.gas_config().gas_multiplier,
-        ));
+        );
+
+        auth_info.fee = self.gas_config().mk_fee(submission_gas);
+
+        info!(
+            submission_gas,
+            gas_multiplier = %self.gas_config().gas_multiplier,
+            "submitting transaction with gas"
+        );
 
         // re-sign the new auth info with the simulated gas
         let signature = signer
@@ -318,7 +326,21 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
                             &tx.tx_result.codespace,
                             tx.tx_result.code.value(),
                         );
-                        warn!(%error, %tx_hash, "cosmos transaction failed");
+                        warn!(
+                            %error,
+                            %tx_hash,
+
+                            ?tx.tx_result.code,
+                            tx.tx_result.data = %::serde_utils::to_hex(&tx.tx_result.data),
+                            %tx.tx_result.log,
+                            %tx.tx_result.info,
+                            %tx.tx_result.gas_wanted,
+                            %tx.tx_result.gas_used,
+                            ?tx.tx_result.events,
+                            %tx.tx_result.codespace,
+
+                            "cosmos transaction failed"
+                        );
                         break Err(BroadcastTxCommitError::Tx(error));
                     }
                 }
@@ -503,8 +525,12 @@ pub enum BroadcastTxCommitError {
     Inclusion(#[source] tendermint_rpc::Error),
     #[error("tx failed: {0:?}")]
     Tx(CosmosSdkError),
-    #[error("tx simulation failed: {0:?}")]
+    #[error("tx simulation failed: {0}")]
     SimulateTx(String),
+    #[error("account sequence mismatch: {0}")]
+    AccountSequenceMismatch(String),
+    #[error("out of gas")]
+    OutOfGas,
 }
 
 impl MaybeRecoverableError for BroadcastTxCommitError {

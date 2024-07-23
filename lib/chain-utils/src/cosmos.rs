@@ -146,15 +146,10 @@ impl Chain for Cosmos {
     }
 
     async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
-        let height = self.query_latest_height().await?;
-        Ok(self
-            .tm_client
-            .block(u32::try_from(height.revision_height).unwrap())
-            .await?
-            .block
-            .header
-            .time
-            .unix_timestamp())
+        self.tm_client
+            .latest_block()
+            .await
+            .map(|response| response.block.header.time.unix_timestamp())
     }
 
     async fn self_client_state(&self, height: Height) -> Self::SelfClientState {
