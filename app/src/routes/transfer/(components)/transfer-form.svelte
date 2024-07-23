@@ -21,7 +21,7 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import { type Address, parseUnits, toHex, formatUnits } from "viem"
+import { type Address, parseUnits, toHex, formatUnits, type Chain as ViemChain } from "viem"
 import Stepper from "$lib/components/stepper.svelte"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -39,7 +39,15 @@ import {
   getConnectorClient,
   switchChain
 } from "@wagmi/core"
-import { sepolia } from "viem/chains"
+import { sepolia, berachainTestnetbArtio } from "viem/chains"
+
+function getChainById(chainId: number): ViemChain | null {
+  const chains: { [key: number]: ViemChain } = {
+    11155111: sepolia,
+    80084: berachainTestnetbArtio,
+  }
+  return chains[chainId] || null
+}
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -178,11 +186,11 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
-async function windowEthereumSwitchChain() {
+async function windowEthereumSwitchChain(id) {
   if (!window?.ethereum?.request) return
   return await window.ethereum?.request({
     method: "wallet_switchEthereumChain",
-    params: [{ chainId: toHex(sepolia.id) }]
+    params: [{ chainId: toHex(id) }]
   })
 }
 
@@ -284,8 +292,12 @@ const transfer = async () => {
     }
   } else if ($fromChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
-    if (connectorClient?.chain?.id !== sepolia.id) {
-      await windowEthereumSwitchChain()
+    const selectedChain = getChainById(Number($fromChainId))
+
+    if(!selectedChain) return
+
+    if (connectorClient?.chain?.id !== selectedChain.id) {
+      await windowEthereumSwitchChain(selectedChain.id)
       await sleep(1_500)
     }
 
@@ -306,7 +318,7 @@ const transfer = async () => {
       // ^ the user is continuing continuing after having seen the warning
 
       try {
-        await switchChain(config, { chainId: 11155111 })
+        await switchChain(config, { chainId: selectedChain.id })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({ kind: "SWITCHING_TO_CHAIN", warning: error })
@@ -321,7 +333,7 @@ const transfer = async () => {
 
       try {
         hash = await writeContract(config, {
-          chain: sepolia,
+          chain: selectedChain,
           account: userAddr.evm.canonical,
           abi: erc20Abi,
           address: $asset.address as Address,
@@ -358,7 +370,7 @@ const transfer = async () => {
       console.log("simulating transfer step")
 
       const contractRequest = {
-        chainId: sepolia.id,
+        chainId: selectedChain.id,
         abi: ucs01abi,
         account: userAddr.evm.canonical,
         functionName: "send",
