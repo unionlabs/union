@@ -294,7 +294,10 @@ const transfer = async () => {
     const connectorClient = await getConnectorClient(config)
     const selectedChain = getChainById(Number($fromChainId))
 
-    if(!selectedChain) return
+    if(!selectedChain) {
+      toast.error('From chain not found or supported')
+      return 
+    }
 
     if (connectorClient?.chain?.id !== selectedChain.id) {
       await windowEthereumSwitchChain(selectedChain.id)
