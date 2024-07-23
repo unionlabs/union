@@ -4733,38 +4733,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ics08-near"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.7",
- "bytes",
- "cosmwasm-std 1.5.2",
- "cw-storage-plus 1.2.0",
- "dlmalloc",
- "hex",
- "ics008-wasm-client",
- "lazy_static",
- "near-crypto 0.23.0",
- "near-jsonrpc-client 0.10.1",
- "near-primitives 0.23.0",
- "near-primitives-core 0.23.0",
- "near-verifier",
- "prost 0.12.6",
- "protos",
- "ripemd",
- "schemars",
- "serde",
- "serde-json-wasm 1.0.1",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3",
- "thiserror",
- "tokio",
- "unionlabs",
-]
-
-[[package]]
 name = "ics23"
 version = "0.1.0"
 dependencies = [
@@ -6021,6 +5989,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "near-ics08"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "bytes",
+ "cosmwasm-std 1.5.2",
+ "cw-storage-plus 1.2.0",
+ "dlmalloc",
+ "hex",
+ "ics008-wasm-client",
+ "lazy_static",
+ "near-crypto 0.23.0",
+ "near-jsonrpc-client 0.10.1",
+ "near-primitives 0.23.0",
+ "near-primitives-core 0.23.0",
+ "near-verifier",
+ "prost 0.12.6",
+ "protos",
+ "ripemd",
+ "schemars",
+ "serde",
+ "serde-json-wasm 1.0.1",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3",
+ "thiserror",
+ "tokio",
+ "unionlabs",
+]
+
+[[package]]
 name = "near-jsonrpc-client"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6767,8 +6767,8 @@ name = "near-verifier"
 version = "0.1.0"
 dependencies = [
  "borsh 1.5.1",
+ "near-account-id",
  "near-primitives-core 0.23.0",
- "near-sdk",
  "serde",
  "sha2 0.10.8",
  "thiserror",
@@ -7787,6 +7787,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38f6d39893cca0701371e3c27294f09797214b86f1fb951b89ade8ec04e2abab"
 dependencies = [
  "plotters-backend",
+]
+
+[[package]]
+name = "poc-relayer"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "borsh 1.5.1",
+ "chain-utils",
+ "cometbft-rpc",
+ "hex",
+ "near-crypto 0.23.0",
+ "near-jsonrpc-client 0.10.1",
+ "near-jsonrpc-primitives 0.23.0",
+ "near-primitives 0.23.0",
+ "near-primitives-core 0.23.0",
+ "protos",
+ "serde",
+ "serde_json",
+ "tendermint-rpc",
+ "tokio",
+ "unionlabs",
 ]
 
 [[package]]
@@ -11457,8 +11479,8 @@ dependencies = [
  "k256",
  "macros",
  "milagro_bls",
+ "near-account-id",
  "near-primitives-core 0.23.0",
- "near-sdk",
  "paste",
  "primitive-types 0.12.2",
  "prost 0.12.6",

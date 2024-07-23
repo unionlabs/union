@@ -2,7 +2,7 @@
 authors                = ["Union Labs"]
 edition.workspace      = true
 license-file.workspace = true
-name                   = "ics08-near"
+name                   = "near-ics08"
 repository.workspace   = true
 version                = "0.1.0"
 

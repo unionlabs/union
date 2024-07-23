@@ -5,11 +5,14 @@ edition.workspace = true
 license-file.workspace = true
 repository.workspace = true
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
 near-sdk                = { workspace = true, features = ["wee_alloc"] }
 near-sdk-contract-tools = { workspace = true }
 ibc-vm-rs               = { workspace = true }
-unionlabs               = { workspace = true }
+unionlabs               = { workspace = true, features = [ "near" ] }
 near-contract-standards = { workspace = true }
 near-primitives-core    = { version = "0.21" }
 borsh = { workspace = true, features = [ "derive"] }
