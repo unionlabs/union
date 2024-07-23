@@ -456,6 +456,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
       {/if}
     </Card.Footer>
   </Card.Root>
+  <div class="text-transparent hover:text-muted-foreground transition">{#if !(source.slice(0,2) === "0x")}0x{/if}{source.toLowerCase()}</div>
   {/each}
 </div>
 {:else if $transfers.isLoading}
@@ -463,4 +464,5 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 {:else if $transfers.isError}
   Error loading transfer data
 {/if}
+
 
