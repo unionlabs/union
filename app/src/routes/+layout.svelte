@@ -14,6 +14,11 @@ import { notifyManager } from "@tanstack/svelte-query"
 import { createQueryClient } from "$lib/query-client.ts"
 import Header from "$lib/components/header/header.svelte"
 import LoadingBar from "$lib/components/loading-bar.svelte"
+import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
+import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
+import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
+import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
+import { page } from "$app/stores"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
@@ -23,6 +28,7 @@ const { queryClient, localStoragePersister } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
 onMount(() => {
+  checkWebGLSupport()
   disablePinchToZoom()
   const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
   // if (
