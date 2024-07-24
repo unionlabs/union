@@ -35,8 +35,8 @@ near-primitives-core = { version = "0.23" }
 near-verifier = { workspace = true }
 borsh = { workspace = true }
 
-[dev-dependencies]
 base64      = { workspace = true }
+[dev-dependencies]
 lazy_static = "1.4.0"
 serde_json  = { workspace = true }
 near-jsonrpc-client = "0.10.1"

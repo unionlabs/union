@@ -19,6 +19,12 @@ pub enum Error {
     ClientStateDecode(#[source] DecodeErrorOf<Proto, ClientState>),
     #[error("unable to decode consensus state")]
     ConsensusStateDecode(#[source] DecodeErrorOf<Proto, ConsensusState>),
+    #[error("the proof path {0} is unknown")]
+    UnknownIbcPath(String),
+    #[error("empty path")]
+    EmptyPath,
+    #[error("unable to decode cometbls state {0:?}")]
+    ForeignStateDecode(Vec<u8>),
 }
 
 impl From<Error> for IbcClientError<NearLightClient> {
