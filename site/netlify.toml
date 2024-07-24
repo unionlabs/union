@@ -5,4 +5,4 @@ ignore  = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ./site/"
 publish = "dist"
 
 [build.processing.html]
-  pretty_urls = true
+pretty_urls = true
