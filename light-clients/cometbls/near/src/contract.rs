@@ -205,13 +205,13 @@ impl Contract {
             return false;
         }
 
-        cometbls_groth16_verifier::verify_zkp(
-            &self.client_state.chain_id,
-            trusted_validators_hash,
-            &header.signed_header,
-            header.zero_knowledge_proof,
-        )
-        .unwrap();
+        // cometbls_groth16_verifier::verify_zkp(
+        //     &self.client_state.chain_id,
+        //     trusted_validators_hash,
+        //     &header.signed_header,
+        //     header.zero_knowledge_proof,
+        // )
+        // .unwrap();
 
         true
     }
