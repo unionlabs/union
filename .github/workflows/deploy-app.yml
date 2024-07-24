@@ -123,13 +123,38 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="app" deploy result
 
+  deploy-staging:
+    runs-on: ['ubuntu-latest']
+    needs: [build]
+    env:
+      npm_config_yes: true
+    environment: 'app-staging'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v26
+      - uses: nixbuild/nixbuild-action@812f1ab2b51842b0d44b9b79574611502d6940a0
+        with:
+          nixbuild_token: ${{ secrets.nixbuild_token }}
+      - run: mkdir dump
+      - run: nix copy --to file://`pwd`/dump --from ssh-ng://eu.nixbuild.net `nix eval --raw .#packages.x86_64-linux.app` --extra-experimental-features nix-command
+      - run: cat dump/nar/*.nar.xz | xz -dc | nix-store --restore result
+
+      - name: '[staging] 🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="app" --branch="staging" deploy result
+
   deploy-production:
     runs-on: ['ubuntu-latest']
     needs: [build]
     env:
       npm_config_yes: true
     environment: 'app-production'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release/app'
     steps:
       - uses: actions/checkout@v4
         with:
