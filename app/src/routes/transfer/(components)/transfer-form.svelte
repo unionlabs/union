@@ -916,7 +916,7 @@ const resetInput = () => {
   userAddr={userAddr}
 />
 
-{#if $sendableBalances !== null}
+{#if $sendableBalances !== null && $fromChain !== null}
   <AssetsDialog
     chain={$fromChain}
     assets={$sendableBalances}
