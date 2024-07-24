@@ -26,15 +26,15 @@ onMount(() => {
   checkWebGLSupport()
   disablePinchToZoom()
   const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
-  // if (
-  //   lastConnectedWallet &&
-  //   window[lastConnectedWallet] &&
-  //   ["leap", "keplr"].includes(lastConnectedWallet)
-  // )
-  //   return cosmosStore.connect(lastConnectedWallet)
+  if (
+    lastConnectedWallet &&
+    window[lastConnectedWallet] &&
+    ["leap", "keplr"].includes(lastConnectedWallet)
+  )
+    return cosmosStore.connect(lastConnectedWallet)
 
-  // if (window?.keplr) cosmosStore.connect("keplr")
-  // else if (window?.leap) cosmosStore.connect("leap")
+  if (window?.keplr) cosmosStore.connect("keplr")
+  else if (window?.leap) cosmosStore.connect("leap")
 })
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
