@@ -2,7 +2,7 @@ import { get } from "svelte/store"
 import { sleep } from "$lib/utilities/index.ts"
 import { persisted } from "svelte-persisted-store"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { keplrChainInfo, leapChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
+import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 
 export const cosmosWalletsInformation = [
   {
@@ -52,8 +52,8 @@ function createCosmosStore(
         return update(v => ({ ...v, connectionStatus: "disconnected" }))
       }
       const chainInfoMap = {
-        keplr: keplrChainInfo,
-        leap: leapChainInfo
+        keplr: unionKeplrChainInfo,
+        leap: unionLeapChainInfo
       }
       const chainInfo = chainInfoMap[walletId]
       if (!chainInfo) {

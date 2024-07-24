@@ -161,6 +161,7 @@ SMALLVEC
 SOURCIFY
 SSWU
 STORYBLOK
+STRD
 STRIKETHROUGH
 SUBNETWORK
 SVDW
@@ -1032,6 +1033,11 @@ storetypes
 storyblok
 strangelove
 stretchr
+stridepub
+stridevalcons
+stridevalconspub
+stridevaloper
+stridevaloperpub
 struct
 structs
 strxor
@@ -1187,6 +1193,7 @@ ursi
 usertransfers
 usizes
 ustars
+ustrd
 utilised
 utilising
 valbz
