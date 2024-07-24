@@ -145,13 +145,11 @@ impl Indexer {
                         .await?;
 
                     if !blocks.is_empty() {
-                        let mut tx = self.pool.begin().await?;
                         crate::postgres::update_batch_logs(
-                            &mut tx,
+                            &self.pool,
                             blocks.into_iter().map(Into::into),
                         )
                         .await?;
-                        tx.commit().await?;
                     }
                 }
             }
@@ -170,10 +168,11 @@ impl Indexer {
                     .await?;
 
                 if !blocks.is_empty() {
-                    let mut tx = self.pool.begin().await?;
-                    crate::postgres::update_batch_logs(&mut tx, blocks.into_iter().map(Into::into))
-                        .await?;
-                    tx.commit().await?;
+                    crate::postgres::update_batch_logs(
+                        &self.pool,
+                        blocks.into_iter().map(Into::into),
+                    )
+                    .await?;
                 }
 
                 tokio::time::sleep(self.interval).await;
