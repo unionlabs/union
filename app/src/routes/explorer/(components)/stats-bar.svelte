@@ -1,17 +1,17 @@
 <script lang="ts">
-  import StatsBarStat from "$lib/components/stats-bar-stat.svelte"
-  import { packetCountQuery, transferCountQuery, transfersPerDayQuery } from "$lib/queries/stats.ts"
-  import PixelGraph from "../(components)/pixel-graph.svelte"
-  import { userTime } from "$lib/utilities/user-time.ts"
-  import SpinningOutlineLogoThree from "$lib/components/spinning-outline-logo-three.svelte"
-  import { Separator } from "$lib/components/ui/separator"
-  import { supportsWebGL } from "$lib/utilities/device.ts";
+import StatsBarStat from "$lib/components/stats-bar-stat.svelte"
+import { packetCountQuery, transferCountQuery, transfersPerDayQuery } from "$lib/queries/stats.ts"
+import PixelGraph from "../(components)/pixel-graph.svelte"
+import { userTime } from "$lib/utilities/user-time.ts"
+import SpinningOutlineLogoThree from "$lib/components/spinning-outline-logo-three.svelte"
+import { Separator } from "$lib/components/ui/separator"
+import { supportsWebGL } from "$lib/utilities/device.ts"
 
-  // 30 days
-  $: transfersPerDayData = transfersPerDayQuery(30)
+// 30 days
+$: transfersPerDayData = transfersPerDayQuery(30)
 
-  $: packetCountData = packetCountQuery()
-  $: transferCountData = transferCountQuery()
+$: packetCountData = packetCountQuery()
+$: transferCountData = transferCountQuery()
 </script>
 
 <div class="bg-muted dark:bg-background border-b flex">
