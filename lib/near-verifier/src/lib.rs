@@ -125,10 +125,16 @@ pub fn verify_state(
     key: &[u8],
     value: Option<&[u8]>,
 ) -> Result<(), Error> {
-    let state_proof = StateProof::parse(raw_state_proof);
+    let state_proof = StateProof::parse(raw_state_proof.clone());
 
     if !state_proof.verify(state_root, account_id, key, value) {
-        return Err(Error::StateVerificationFailure);
+        return Err(Error::StateVerificationFailure(
+            serde_json::to_vec(&raw_state_proof).unwrap(),
+            state_root.0.to_vec(),
+            account_id.clone(),
+            key.to_vec(),
+            value.unwrap().to_vec(),
+        ));
     }
 
     Ok(())
