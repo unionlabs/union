@@ -78,6 +78,7 @@
     "is-core-module": "npm:@nolyfill/is-core-module@^1",
     "isarray": "npm:@nolyfill/isarray@^1",
     "side-channel": "npm:@nolyfill/side-channel@^1",
-    "json-stable-stringify": "npm:@nolyfill/json-stable-stringify@^1"
+    "json-stable-stringify": "npm:@nolyfill/json-stable-stringify@^1",
+    "abab": "npm:@nolyfill/abab@^1"
   }
 }

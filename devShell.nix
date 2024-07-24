@@ -18,7 +18,6 @@
               echo "Applying nix fmt"
               nix fmt
 
-
               echo "Applying biome fmt"
               ${lib.getExe biome} format . \
                 --log-level="info" \
@@ -27,11 +26,19 @@
                 --diagnostic-level="info" \
                 --write
 
-              echo "Checking spelling"
-              nix build .\#checks.${pkgs.system}.spellcheck -L
+              echo "Applying biome lint"
+              ${lib.getExe biome} lint . \
+                --log-level="info" \
+                --log-kind="pretty" \
+                --error-on-warnings \
+                --diagnostic-level="info" \
+                --write
 
-              echo "Running biome lint"
-              nix build .\#checks.${pkgs.system}.biome-lint -L
+              echo "Checking spelling"
+              nix build .\#checks.${pkgs.system}.spellcheck --print-build-logs
+
+              echo "Running App Check"
+              nix run .\#app-svelte-check
 
               echo "Running Site Check"
               nix run .\#site-check

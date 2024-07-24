@@ -37,12 +37,13 @@
               ${ensureAtRepositoryRoot}
               cd site/
 
-              export PUPPETEER_SKIP_DOWNLOAD=1 
+              export PUPPETEER_SKIP_DOWNLOAD=1
               npm install
               npm run dev
             '';
           };
         };
+
         site-check = {
           type = "app";
           program = pkgs.writeShellApplication {
@@ -51,7 +52,8 @@
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/
-              npm_config_yes=true npx astro check
+
+              node_modules/.bin/astro check
             '';
           };
         };

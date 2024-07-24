@@ -62,12 +62,14 @@
       "*.cjs",
       "*.jsx",
       "*.tsx",
+      "*.css",
       "*.d.ts",
       "*.vue",
       "*.json",
       "*.jsonc",
       "*.astro",
-      "*.svelte"
+      "*.svelte",
+      "*.graphql"
     ],
     "ignoreUnknown": true,
     "ignore": [

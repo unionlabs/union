@@ -46,7 +46,7 @@
       _module.args.biome = biome;
       checks.biome-lint = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
         name = "biome-lint";
-        description = "Lint js,ts,jsx,tsx,d.ts,json,jsonc,astro,svelte,vue files";
+        description = "Lint js,ts,jsx,tsx,d.ts,json,jsonc,astro,svelte,vue,css files";
         src = with unstablePkgs.lib.fileset; toSource {
           root = ../../.;
           fileset = intersection
@@ -61,12 +61,13 @@
                 "jsx"
                 "tsx"
                 "vue"
-                "d.ts"
                 "css"
-                "astro"
-                "svelte"
+                "d.ts"
                 "json"
                 "jsonc"
+                "astro"
+                "svelte"
+                "graphql"
               ])) ../../.);
         };
         buildInputs = [ biome ];
