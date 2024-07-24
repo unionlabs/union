@@ -24,6 +24,9 @@ protos.workspace = true
 hex.workspace = true
 ibc-vm-rs.workspace = true
 near-verifier = { workspace = true }
+tendermint               = { workspace = true }
+num-bigint               = { workspace = true }
+tendermint-proto         = { workspace = true }
 
 [lints]
 workspace = true

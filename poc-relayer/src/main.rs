@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     str::FromStr,
     time::{self, Duration},
 };
@@ -20,31 +21,50 @@ use near_primitives::{
     types::{AccountId, BlockId, BlockReference, Finality},
     views::{BlockHeaderInnerLiteView, LightClientBlockView, QueryRequest},
 };
+use num_bigint::BigUint;
+use protos::union::galois::api::v3::union_prover_api_client;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client as _, WebSocketClientUrl};
 use tokio::time::sleep;
 use unionlabs::{
+    bounded::BoundedI64,
+    cometbls::types::canonical_vote::CanonicalVote,
     encoding::{DecodeAs, Encode, EncodeAs, Proto},
     google::protobuf::any::{mk_any, Any, IntoAny},
     hash::H256,
     ibc::{
         core::{
             channel::{self, packet::Packet},
-            client::height::Height,
+            client::height::{Height, IsHeight as _},
             commitment::{merkle_prefix::MerklePrefix, merkle_root::MerkleRoot},
             connection::version::Version,
         },
         lightclients::{
-            cometbls::{client_state::ClientState, consensus_state::ConsensusState},
+            cometbls::{self, client_state::ClientState, consensus_state::ConsensusState},
             near, wasm,
         },
     },
+    ics24::ClientConsensusStatePath,
     id::{ChannelId, ConnectionId, PortId},
     near::{
         raw_state_proof::RawStateProof,
         types::{self, MerklePathItem},
     },
+    tendermint::{
+        crypto::public_key::PublicKey,
+        types::{
+            commit_sig::CommitSig, signed_header::SignedHeader, simple_validator::SimpleValidator,
+            validator::Validator,
+        },
+    },
     traits::Chain,
+    union::galois::{
+        poll_request::PollRequest,
+        poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
+        prove_request::ProveRequest,
+        prove_response::ProveResponse,
+        validator_set_commit::ValidatorSetCommit,
+    },
     validated::ValidateT as _,
 };
 
@@ -67,6 +87,12 @@ pub struct ConnectionOpenInit {
     pub counterparty: connection_handshake::Counterparty,
     pub version: Version,
     pub delay_period: u64,
+}
+
+#[derive(Clone, serde::Serialize)]
+pub struct UpdateClient {
+    pub client_id: String,
+    pub client_msg: Vec<u8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -113,6 +139,182 @@ impl Union {
             })
             .await
             .unwrap(),
+        }
+    }
+
+    async fn fetch_validators(&self, height: Height) -> Vec<Validator> {
+        self.union
+            .tm_client()
+            .validators(
+                TryInto::<::tendermint::block::Height>::try_into(height.revision_height()).unwrap(),
+                tendermint_rpc::Paging::All,
+            )
+            .await
+            .unwrap()
+            .validators
+            .into_iter()
+            .map(tendermint_helpers::tendermint_validator_info_to_validator)
+            .collect()
+    }
+
+    async fn fetch_commit(&self, height: Height) -> SignedHeader {
+        let commit = self
+            .union
+            .tm_client()
+            .commit(
+                TryInto::<::tendermint::block::Height>::try_into(height.revision_height()).unwrap(),
+            )
+            .await
+            .unwrap();
+
+        tendermint_helpers::tendermint_commit_to_signed_header(commit)
+    }
+
+    async fn fetch_prove_request(&self, request: ProveRequest) -> ProveResponse {
+        let response = union_prover_api_client::UnionProverApiClient::connect(
+            self.union.prover_endpoint.clone(),
+        )
+        .await
+        .unwrap()
+        .prove(protos::union::galois::api::v3::ProveRequest::from(request))
+        .await
+        .unwrap();
+        // .poll(protos::union::galois::api::v3::PollRequest::from(
+        //     PollRequest {
+        //         request: request.clone(),
+        //     },
+        // ))
+        // .await
+        // .map(|x| x.into_inner().try_into().unwrap());
+
+        // match response {
+        //     Err(err) => panic!("prove request failed: {:?}", err),
+        //     Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
+        //         panic!("panic with: {message}");
+        //     }
+        //     Ok(PollResponse::Done(ProveRequestDone { response })) => response,
+        //     _ => panic!("other"),
+        // }
+        response.into_inner().try_into().unwrap()
+    }
+
+    async fn next_light_header(
+        &self,
+        trusted_height: Height,
+        new_height: Height,
+    ) -> cometbls::header::Header {
+        let signed_header = self.fetch_commit(new_height).await;
+        let untrusted_validators = self.fetch_validators(new_height).await;
+        let trusted_validators = self.fetch_validators(trusted_height).await;
+
+        let make_validators_commit =
+            |mut validators: Vec<unionlabs::tendermint::types::validator::Validator>| {
+                // Validators must be sorted to match the root, by token then address
+                validators.sort_by(|a, b| {
+                    // TODO: Double check how these comparisons are supposed to work
+                    #[allow(clippy::collapsible_else_if)]
+                    if a.voting_power == b.voting_power {
+                        if a.address < b.address {
+                            std::cmp::Ordering::Less
+                        } else {
+                            std::cmp::Ordering::Greater
+                        }
+                    } else {
+                        if a.voting_power > b.voting_power {
+                            std::cmp::Ordering::Less
+                        } else {
+                            std::cmp::Ordering::Greater
+                        }
+                    }
+                });
+
+                // The bitmap is a public input of the circuit, it must fit in Fr (scalar field) bn254
+                let mut bitmap = BigUint::default();
+                // REVIEW: This will over-allocate for the trusted validators; should be benchmarked
+                let mut signatures = Vec::<Vec<u8>>::with_capacity(validators.len());
+
+                let validators_map = validators
+                    .iter()
+                    .enumerate()
+                    .map(|(i, v)| (v.address, i))
+                    .collect::<HashMap<_, _>>();
+
+                // For each validator signature, we search for the actual validator
+                // in the set and set it's signed bit to 1. We then push the
+                // signature only if the validator signed. It's possible that we
+                // don't find a validator for a given signature as the validator set
+                // may have drifted (trusted validator set).
+                for sig in signed_header.commit.signatures.iter() {
+                    match sig {
+                        CommitSig::Absent => {}
+                        CommitSig::Commit {
+                            validator_address,
+                            timestamp: _,
+                            signature,
+                        } => {
+                            if let Some(validator_index) = validators_map.get(validator_address) {
+                                bitmap.set_bit(*validator_index as u64, true);
+                                signatures.push(signature.clone());
+                            } else {
+                            }
+                        }
+                        CommitSig::Nil { .. } => {}
+                    }
+                }
+
+                let simple_validators = validators
+                    .iter()
+                    .map(|v| {
+                        let PublicKey::Bn254(ref key) = v.pub_key else {
+                            panic!("must be bn254")
+                        };
+                        SimpleValidator {
+                            pub_key: PublicKey::Bn254(key.to_vec()),
+                            voting_power: v.voting_power.into(),
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                ValidatorSetCommit {
+                    validators: simple_validators,
+                    signatures,
+                    bitmap: bitmap.to_bytes_be(),
+                }
+            };
+
+        let trusted_validators_commit = make_validators_commit(trusted_validators);
+        let untrusted_validators_commit = make_validators_commit(untrusted_validators);
+        let proof = self.fetch_prove_request(ProveRequest {
+            vote: CanonicalVote {
+                // REVIEW: Should this be hardcoded to precommit?
+                ty: unionlabs::tendermint::types::signed_msg_type::SignedMsgType::Precommit,
+                height: signed_header.commit.height,
+                round: BoundedI64::new(signed_header.commit.round.inner().into())
+                    .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
+                block_id: unionlabs::tendermint::types::canonical_block_id::CanonicalBlockId {
+                    hash: signed_header.commit.block_id.hash.unwrap_or_default(),
+                    part_set_header: unionlabs::tendermint::types::canonical_block_header::CanonicalPartSetHeader {
+                        total: signed_header.commit.block_id.part_set_header.total,
+                        hash: signed_header
+                            .commit
+                            .block_id
+                            .part_set_header
+                            .hash
+                            .unwrap_or_default(),
+                    },
+                },
+                chain_id: signed_header.header.chain_id.clone(),
+            },
+            untrusted_header: signed_header.header.clone(),
+            trusted_commit: trusted_validators_commit,
+            untrusted_commit: untrusted_validators_commit,
+        })
+        .await;
+
+        cometbls::header::Header {
+            signed_header: signed_header.into(),
+            trusted_height,
+            zero_knowledge_proof: proof.proof.evm_proof,
         }
     }
 
@@ -267,12 +469,7 @@ impl Near {
         }
     }
 
-    async fn state_proof(&self, block_height: u64, commitment_key: &str) -> Vec<u8> {
-        #[derive(serde::Serialize)]
-        pub struct RawStateProof {
-            state_proof: Vec<Vec<u8>>,
-        }
-
+    async fn state_proof(&self, block_height: u64, commitment_key: &str) -> (Vec<u8>, Vec<u8>) {
         let mut proof_key = b"commitments".to_vec();
         proof_key.extend(borsh::to_vec(commitment_key).unwrap());
 
@@ -291,16 +488,29 @@ impl Near {
             .kind
         {
             QueryResponseKind::ViewState(res) => {
+                let value = res.values[0].value.to_vec();
                 let state_proof = res
                     .proof
                     .clone()
                     .into_iter()
                     .map(|item| item.to_vec())
                     .collect();
-                serde_json::to_vec(&RawStateProof { state_proof }).unwrap()
+                (
+                    serde_json::to_vec(&RawStateProof { state_proof }).unwrap(),
+                    borsh::from_slice::<Vec<u8>>(&value).unwrap(),
+                )
             }
             _ => panic!("invalid response"),
         }
+    }
+
+    async fn update_client<T: Encode<Proto>>(&self, client_id: &str, header: T) {
+        let update = UpdateClient {
+            client_id: client_id.to_string(),
+            client_msg: header.encode(),
+        };
+
+        self.send_tx("update_client", update).await;
     }
 
     async fn connection_open_init(&self, client_id: &str, counterparty_client_id: &str) {
@@ -546,6 +756,8 @@ impl Near {
 
         let response = self.rpc.call(request).await.unwrap();
 
+        println!("response: {:?}", response);
+
         for out in response
             .final_execution_outcome
             .unwrap()
@@ -571,14 +783,6 @@ impl Near {
         client_state: A,
         consensus_state: B,
     ) {
-        let block = self
-            .rpc
-            .call(methods::block::RpcBlockRequest {
-                block_reference: BlockReference::Finality(near_primitives::types::Finality::Final),
-            })
-            .await
-            .unwrap();
-
         let create_client = CreateClient {
             client_type: "cometbls".to_string(),
             client_state: client_state.encode(),
@@ -593,9 +797,9 @@ impl Near {
 
 #[tokio::main]
 async fn main() {
-    let near_lc = "08-wasm-2";
-    let cometbls_lc = "cometbls-3";
-    let near_connection = "connection-2";
+    let near_lc = "08-wasm-1";
+    let cometbls_lc = "cometbls-1";
+    let near_connection = "connection-1";
     let near = Near::new();
     let union = Union::new().await;
 
@@ -610,67 +814,81 @@ async fn main() {
     .await;
 
     let cs = near.self_client_state().await;
-    union
-        .create_client(
-            wasm::client_state::ClientState {
-                data: cs.clone(),
-                checksum: hex::decode(
-                    "799fbe760eb51eef4645acc0aa4fc7546503f942c7f9dc414a8202c3b87abc29",
-                )
-                .unwrap()
-                .try_into()
-                .unwrap(),
-                latest_height: Height {
-                    revision_number: 0,
-                    revision_height: cs.latest_height,
-                },
-            },
-            wasm::consensus_state::ConsensusState {
-                data: near.self_consensus_state(cs.latest_height + 1).await,
-            },
-        )
+    // union
+    //     .create_client(
+    //         wasm::client_state::ClientState {
+    //             data: cs.clone(),
+    //             checksum: hex::decode(
+    //                 "88ec41b1142e2895fe8b1260897ed7734670412381322694e32b81348a441a94",
+    //             )
+    //             .unwrap()
+    //             .try_into()
+    //             .unwrap(),
+    //             latest_height: Height {
+    //                 revision_number: 0,
+    //                 revision_height: cs.latest_height,
+    //             },
+    //         },
+    //         wasm::consensus_state::ConsensusState {
+    //             data: near.self_consensus_state(cs.latest_height + 1).await,
+    //         },
+    //     )
+    //     .await;
+
+    // near.connection_open_init(cometbls_lc, near_lc).await;
+    let header = near.next_light_header(cs.latest_height).await;
+    // union.update_client(near_lc, header.clone()).await;
+
+    sleep(Duration::from_secs(3)).await;
+
+    let latest_height = union.union.query_latest_height().await.unwrap();
+    let light_header = union
+        .next_light_header(union_client_state.latest_height, latest_height)
         .await;
 
-    near.connection_open_init(cometbls_lc, near_lc).await;
-    let header = near.next_light_header(cs.latest_height).await;
-    union.update_client(near_lc, header.clone()).await;
+    near.update_client(cometbls_lc, light_header.clone()).await;
+    panic!();
 
     sleep(Duration::from_secs(2)).await;
 
-    let latest_height = union.union.query_latest_height().await.unwrap();
-    let client_state =
-        Any::<wasm::client_state::ClientState<near::client_state::ClientState>>::decode_as::<Proto>(
-            &union
-                .fetch_abci_query(
-                    latest_height.revision_height,
-                    AbciQueryType::State,
-                    format!("clients/{near_lc}/clientState").as_str(),
-                )
-                .await,
-        ).unwrap();
+    // let latest_height = union.union.query_latest_height().await.unwrap();
+    // let client_state =
+    //     Any::<wasm::client_state::ClientState<near::client_state::ClientState>>::decode_as::<Proto>(
+    //         &union
+    //             .fetch_abci_query(
+    //                 latest_height.revision_height,
+    //                 AbciQueryType::State,
+    //                 format!("clients/{near_lc}/clientState").as_str(),
+    //             )
+    //             .await,
+    //     ).unwrap();
 
-    let proof_init = near
+    let (proof_init, _) = near
         .state_proof(
             header.new_state.inner_lite.height - 1,
             &format!("connections/{}", near_connection),
         )
         .await;
 
-    let proof_client = near
+    let (proof_client, client_state) = near
         .state_proof(
             header.new_state.inner_lite.height - 1,
             &format!("clients/{cometbls_lc}/clientState"),
         )
         .await;
 
-    let proof_consensus = near
+    let client_state = ClientState::decode_as::<Proto>(&client_state)
+        .unwrap()
+        .into_any();
+    println!("uinon latest height: {}", union_client_state.latest_height);
+    let (proof_consensus, _) = near
         .state_proof(
             header.new_state.inner_lite.height - 1,
-            format!(
-                "clients/{cometbls_lc}/consensusStates/1-{}",
-                cs.latest_height
-            )
-            .as_str(),
+            &ClientConsensusStatePath {
+                client_id: cometbls_lc.to_string(),
+                height: union_client_state.latest_height,
+            }
+            .to_string(),
         )
         .await;
 
@@ -687,6 +905,13 @@ async fn main() {
             union_client_state.latest_height,
         )
         .await;
+
+    let latest_height = union.union.query_latest_height().await.unwrap();
+    let light_header = union
+        .next_light_header(union_client_state.latest_height, latest_height)
+        .await;
+
+    near.update_client(cometbls_lc, light_header.clone()).await;
 }
 
 pub fn convert_block_producers(
@@ -731,4 +956,187 @@ fn key_from_path(path: &str) -> Vec<u8> {
     commitments.extend(b"commitments");
     commitments.extend(borsh::to_vec(path).unwrap());
     commitments
+}
+
+pub mod tendermint_helpers {
+    use unionlabs::{
+        bounded::BoundedI64,
+        google::protobuf::timestamp::Timestamp,
+        hash::H256,
+        tendermint::{
+            crypto::public_key::PublicKey,
+            types::{
+                block_id::BlockId, commit::Commit, commit_sig::CommitSig,
+                part_set_header::PartSetHeader, signed_header::SignedHeader, validator::Validator,
+            },
+        },
+    };
+
+    pub fn tendermint_commit_to_signed_header(
+        commit: tendermint_rpc::endpoint::commit::Response,
+    ) -> SignedHeader {
+        let header_timestamp =
+            tendermint_proto::google::protobuf::Timestamp::from(commit.signed_header.header.time);
+
+        SignedHeader {
+            header: unionlabs::tendermint::types::header::Header {
+                version: unionlabs::tendermint::version::consensus::Consensus {
+                    block: commit.signed_header.header.version.block,
+                    app: commit.signed_header.header.version.app,
+                },
+                chain_id: commit.signed_header.header.chain_id.into(),
+                height: tendermint_height_to_bounded_i64(commit.signed_header.header.height),
+                time: Timestamp {
+                    seconds: header_timestamp.seconds.try_into().unwrap(),
+                    nanos: header_timestamp.nanos.try_into().unwrap(),
+                },
+                last_block_id: BlockId {
+                    hash: Some(tendermint_hash_to_h256(
+                        commit.signed_header.header.last_block_id.unwrap().hash,
+                    )),
+                    part_set_header: PartSetHeader {
+                        total: commit
+                            .signed_header
+                            .header
+                            .last_block_id
+                            .unwrap()
+                            .part_set_header
+                            .total,
+                        hash: Some(tendermint_hash_to_h256(
+                            commit
+                                .signed_header
+                                .header
+                                .last_block_id
+                                .unwrap()
+                                .part_set_header
+                                .hash,
+                        )),
+                    },
+                },
+                last_commit_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.last_commit_hash.unwrap(),
+                ),
+                data_hash: tendermint_hash_to_h256(commit.signed_header.header.data_hash.unwrap()),
+                validators_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.validators_hash,
+                ),
+                next_validators_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.next_validators_hash,
+                ),
+                consensus_hash: tendermint_hash_to_h256(commit.signed_header.header.consensus_hash),
+                app_hash: commit
+                    .signed_header
+                    .header
+                    .app_hash
+                    .as_bytes()
+                    .try_into()
+                    .unwrap(),
+                last_results_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.last_results_hash.unwrap(),
+                ),
+                evidence_hash: tendermint_hash_to_h256(
+                    commit.signed_header.header.evidence_hash.unwrap(),
+                ),
+                proposer_address: commit
+                    .signed_header
+                    .header
+                    .proposer_address
+                    .as_bytes()
+                    .try_into()
+                    .expect("value is a [u8; 20] internally, this should not fail; qed;"),
+            },
+            commit: Commit {
+                height: tendermint_height_to_bounded_i64(commit.signed_header.commit.height),
+                round: i32::from(commit.signed_header.commit.round)
+                    .try_into()
+                    .unwrap(),
+                block_id: BlockId {
+                    hash: Some(tendermint_hash_to_h256(
+                        commit.signed_header.commit.block_id.hash,
+                    )),
+                    part_set_header: PartSetHeader {
+                        total: commit.signed_header.commit.block_id.part_set_header.total,
+                        hash: Some(tendermint_hash_to_h256(
+                            commit.signed_header.commit.block_id.part_set_header.hash,
+                        )),
+                    },
+                },
+                signatures: commit
+                    .signed_header
+                    .commit
+                    .signatures
+                    .into_iter()
+                    .map(tendermint_commit_sig_to_commit_sig)
+                    .collect(),
+            },
+        }
+    }
+
+    fn tendermint_commit_sig_to_commit_sig(sig: tendermint::block::CommitSig) -> CommitSig {
+        match sig {
+            ::tendermint::block::CommitSig::BlockIdFlagAbsent => CommitSig::Absent,
+            ::tendermint::block::CommitSig::BlockIdFlagCommit {
+                validator_address,
+                timestamp,
+                signature,
+            } => CommitSig::Commit {
+                validator_address: Vec::from(validator_address).try_into().unwrap(),
+                timestamp: {
+                    let ts = tendermint_proto::google::protobuf::Timestamp::from(timestamp);
+
+                    Timestamp {
+                        seconds: ts.seconds.try_into().unwrap(),
+                        nanos: ts.nanos.try_into().unwrap(),
+                    }
+                },
+                signature: signature.unwrap().into_bytes(),
+            },
+            ::tendermint::block::CommitSig::BlockIdFlagNil {
+                validator_address,
+                timestamp,
+                signature,
+            } => CommitSig::Nil {
+                validator_address: Vec::from(validator_address).try_into().unwrap(),
+                timestamp: {
+                    let ts = tendermint_proto::google::protobuf::Timestamp::from(timestamp);
+
+                    Timestamp {
+                        seconds: ts.seconds.try_into().unwrap(),
+                        nanos: ts.nanos.try_into().unwrap(),
+                    }
+                },
+                signature: signature.unwrap().into_bytes(),
+            },
+        }
+    }
+
+    pub fn tendermint_validator_info_to_validator(val: ::tendermint::validator::Info) -> Validator {
+        Validator {
+            address: val
+                .address
+                .as_bytes()
+                .try_into()
+                .expect("value is 20 bytes internally; should not fail; qed"),
+            pub_key: match val.pub_key {
+                ::tendermint::PublicKey::Ed25519(key) => PublicKey::Ed25519(key.as_bytes().into()),
+                ::tendermint::PublicKey::Bn254(key) => PublicKey::Bn254(key.to_vec()),
+                _ => todo!(),
+            },
+            voting_power: BoundedI64::new(val.power.value().try_into().unwrap()).unwrap(),
+            proposer_priority: val.proposer_priority.value(),
+        }
+    }
+
+    fn tendermint_hash_to_h256(hash: tendermint::Hash) -> H256 {
+        match hash {
+            tendermint::Hash::Sha256(hash) => hash.into(),
+            tendermint::Hash::None => panic!("empty hash???"),
+        }
+    }
+
+    pub fn tendermint_height_to_bounded_i64(
+        height: ::tendermint::block::Height,
+    ) -> BoundedI64<0, { i64::MAX }> {
+        i64::from(height).try_into().unwrap()
+    }
 }
