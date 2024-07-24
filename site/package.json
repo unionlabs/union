@@ -57,6 +57,8 @@
     "@astrojs/check": "^0.8.2",
     "@astrojs/language-server": "^2.12.1",
     "@astrojs/ts-plugin": "^1.9.0",
+    "@stackbit/cms-contentful": "^1.0.4",
+    "@stackbit/types": "^2.0.3",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/typography": "^0.5.13",
