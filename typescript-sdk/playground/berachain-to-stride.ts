@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
+import { fallback, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { berachainTestnetbArtio } from "viem/chains"
@@ -91,7 +91,7 @@ try {
   const transactionPayload = {
     amount: 1n,
     memo: pfmMemo,
-    approve: true,
+    approve: false,
     network: beraInfo.rpc_type,
     denomAddress: WBTC_CONTRACT_ADDRESS,
     sourceChannel: ucsConfiguration.channel_id,
@@ -112,11 +112,23 @@ try {
     process.exit(1)
   }
 
-  client.approveTransaction
+  const approval = await client.approveTransaction({
+    account: berachainAccount,
+    amount: transactionPayload.amount,
+    denomAddress: getAddress(transactionPayload.denomAddress),
+    relayContractAddress: getAddress(transactionPayload.relayContractAddress)
+  })
+
+  consola.info(`Approval: `, approval)
+
+  if (!approval.success) {
+    consola.info("Approval failed")
+    process.exit(1)
+  }
 
   const transfer = await client.transferAsset(transactionPayload)
 
-  consola.info(transfer)
+  consola.info(`Transfer: `, transfer)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   consola.error(errorMessage)
