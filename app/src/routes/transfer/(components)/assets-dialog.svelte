@@ -39,14 +39,13 @@ export let onAssetSelect: (asset: string) => void
   preventScroll={true}
 >
   <Dialog.Content
-    class="max-w-[90%] sm:max-w-[450px] h-[95%] px-0 pt-4 pb-2 flex flex-col items-start"
+    class="max-w-[90%] sm:max-w-[450px] max-h-[95%] px-0 pt-4 pb-2 flex flex-col items-start"
   >
     <Dialog.Header class="max-h-min h-8 p-2">
       <Dialog.Title class="px-2">Select Asset</Dialog.Title>
     </Dialog.Header>
-    <ScrollArea class="w-full">
-    <Dialog.Description class="size-full">
-      <ul class="h-full">
+    <div class="w-full overflow-scroll">
+      <ul>
           {#each assets as asset, index}
             {@const supportedAsset = getSupportedAsset(chain, asset.address)}
             {#if $showUnsupported || supportedAsset}
@@ -74,7 +73,6 @@ export let onAssetSelect: (asset: string) => void
             {/if}
           {/each}
       </ul>
-    </Dialog.Description>
-    </ScrollArea>
+    </div>
   </Dialog.Content>
 </Dialog.Root>
