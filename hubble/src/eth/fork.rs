@@ -23,6 +23,10 @@ pub struct Config {
     pub urls: Vec<Url>,
     #[serde(default = "default_interval")]
     pub interval: Duration,
+    #[serde(default)]
+    pub start_height: Option<i32>,
+    #[serde(default)]
+    pub chunk_size: Option<usize>,
 }
 
 fn default_interval() -> Duration {
@@ -34,6 +38,8 @@ pub struct Indexer {
     pool: PgPool,
     provider: RaceClient<Provider<Http>>,
     interval: Duration,
+    start_height: Option<i32>,
+    chunk_size: usize,
 }
 
 impl Config {
@@ -65,6 +71,8 @@ impl Config {
                 pool,
                 provider,
                 interval: self.interval,
+                start_height: self.start_height,
+                chunk_size: self.chunk_size.unwrap_or(32),
             })
         }
         .instrument(indexing_span)
@@ -100,7 +108,55 @@ impl Indexer {
                 }
                 Ok(None)
             }
+            // Re-indexes starting at from until reaching tip.
+            if let Some(mut height) = self.start_height {
+                loop {
+                    let logs: Vec<(String, i32)> = crate::postgres::get_n_logs_from(
+                        &self.pool,
+                        self.chain_id,
+                        height,
+                        self.chunk_size
+                            .try_into()
+                            .expect("chunk_size should not exceed i64 in size"),
+                    )?
+                    .try_collect()
+                    .await?;
 
+                    // We're caught up to the tip.
+                    if logs.is_empty() {
+                        break;
+                    }
+
+                    height = logs.last().unwrap().1;
+
+                    let blocks: Vec<BlockInsert> = futures::stream::iter(logs.into_iter())
+                        .map(Ok::<_, Report>)
+                        .try_filter_map(|(hash, height)| {
+                            fetch_and_compare_block(
+                                self.chain_id,
+                                hash,
+                                height,
+                                self.provider.clone(),
+                            )
+                        })
+                        .map(futures::future::ready)
+                        .buffered(self.chunk_size)
+                        .try_collect()
+                        .await?;
+
+                    if !blocks.is_empty() {
+                        let mut tx = self.pool.begin().await?;
+                        crate::postgres::update_batch_logs(
+                            &mut tx,
+                            blocks.into_iter().map(Into::into),
+                        )
+                        .await?;
+                        tx.commit().await?;
+                    }
+                }
+            }
+
+            // Re-indexes the tip.
             loop {
                 let logs = postgres::get_last_n_logs(&self.pool, self.chain_id, 32)?;
                 let blocks: Vec<BlockInsert> = logs
@@ -112,10 +168,14 @@ impl Indexer {
                     .buffered(32)
                     .try_collect()
                     .await?;
-                let mut tx = self.pool.begin().await?;
-                crate::postgres::update_batch_logs(&mut tx, blocks.into_iter().map(Into::into))
-                    .await?;
-                tx.commit().await?;
+
+                if !blocks.is_empty() {
+                    let mut tx = self.pool.begin().await?;
+                    crate::postgres::update_batch_logs(&mut tx, blocks.into_iter().map(Into::into))
+                        .await?;
+                    tx.commit().await?;
+                }
+
                 tokio::time::sleep(self.interval).await;
             }
         }

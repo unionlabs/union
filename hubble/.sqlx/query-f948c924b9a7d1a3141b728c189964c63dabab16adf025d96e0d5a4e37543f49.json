@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT block_hash, height from v0.logs where chain_id = $1 and height >= $2 ORDER BY height ASC LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "block_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "height",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f948c924b9a7d1a3141b728c189964c63dabab16adf025d96e0d5a4e37543f49"
+}
