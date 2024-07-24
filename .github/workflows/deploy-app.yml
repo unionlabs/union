@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - release/app
     paths:
       - 'app/**'
   pull_request:
