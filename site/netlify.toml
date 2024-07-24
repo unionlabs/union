@@ -1,0 +1,8 @@
+[build]
+base    = "site/"
+command = "npm_config_yes=true npx astro@latest build"
+ignore  = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ./site/"
+publish = "dist"
+
+[build.processing.html]
+  pretty_urls = true
