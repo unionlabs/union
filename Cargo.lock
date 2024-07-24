@@ -7808,6 +7808,7 @@ dependencies = [
  "near-primitives-core 0.23.0",
  "near-verifier",
  "num-bigint 0.4.4",
+ "prost 0.12.6",
  "protos",
  "serde",
  "serde_json",

@@ -20,6 +20,7 @@ borsh                             = { workspace = true, features = ["borsh-deriv
 cometbft-rpc             = { workspace = true }
 tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client", "default"] }
 chain-utils = { workspace = true }
+prost                    = { workspace = true }
 protos.workspace = true
 hex.workspace = true
 ibc-vm-rs.workspace = true

@@ -22,6 +22,7 @@ use near_primitives::{
     views::{BlockHeaderInnerLiteView, LightClientBlockView, QueryRequest},
 };
 use num_bigint::BigUint;
+use prost::Message;
 use protos::union::galois::api::v3::union_prover_api_client;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client as _, WebSocketClientUrl};
@@ -362,7 +363,27 @@ impl Union {
             .unwrap()
             .into_inner();
 
-        query_result.value
+        match ty {
+            AbciQueryType::State => query_result.value,
+            AbciQueryType::Proof => {
+                let proof = protos::ibc::core::commitment::v1::MerkleProof {
+                    proofs: query_result
+                        .proof_ops
+                        .unwrap()
+                        .ops
+                        .into_iter()
+                        .map(|op| {
+                            <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(
+                                op.data.as_slice(),
+                            )
+                            .unwrap()
+                        })
+                        .collect::<Vec<_>>(),
+                };
+
+                proof.encode_to_vec()
+            }
+        }
     }
 
     async fn connection_open_try<S: Into<protos::google::protobuf::Any>>(
@@ -422,6 +443,39 @@ impl Union {
                     .unwrap();
 
                 println!("[ + ] ConnectionOpenTry on Union: {tx_hash}");
+            })
+            .await;
+    }
+
+    async fn connection_open_confirm(
+        &self,
+        connection_id: &str,
+        proof_ack: Vec<u8>,
+        proof_height: u64,
+    ) {
+        self.union
+            .signers()
+            .with(|signer| async {
+                let msg = protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
+                    connection_id: connection_id.to_string(),
+                    proof_ack,
+                    proof_height: Some(
+                        Height {
+                            revision_number: 0,
+                            revision_height: proof_height,
+                        }
+                        .into(),
+                    ),
+                    signer: signer.to_string(),
+                };
+
+                let tx_hash = self
+                    .union
+                    .broadcast_tx_commit(signer, [mk_any(&msg)])
+                    .await
+                    .unwrap();
+
+                println!("[ + ] ConnectionOpenConfirm on Union: {tx_hash}");
             })
             .await;
     }
@@ -528,6 +582,33 @@ impl Near {
         };
 
         self.send_tx("connection_open_init", init).await;
+    }
+
+    async fn connection_open_ack(
+        &self,
+        connection_id: &str,
+        counterparty_connection_id: &str,
+        connection_end_proof: Vec<u8>,
+        proof_height: Height,
+    ) {
+        #[derive(serde::Serialize)]
+        pub struct ConnectionOpenAck {
+            pub connection_id: String,
+            pub version: Version,
+            pub counterparty_connection_id: String,
+            pub connection_end_proof: Vec<u8>,
+            pub proof_height: Height,
+        }
+
+        let ack = ConnectionOpenAck {
+            connection_id: connection_id.to_string(),
+            version: DEFAULT_IBC_VERSION[0].clone(),
+            counterparty_connection_id: counterparty_connection_id.to_string(),
+            connection_end_proof,
+            proof_height,
+        };
+
+        self.send_tx("connection_open_ack", ack).await;
     }
 
     async fn next_light_header(&self, trusted_height: u64) -> near::header::Header {
@@ -797,9 +878,10 @@ impl Near {
 
 #[tokio::main]
 async fn main() {
-    let near_lc = "08-wasm-1";
+    let near_lc = "08-wasm-0";
     let cometbls_lc = "cometbls-1";
     let near_connection = "connection-1";
+    let union_connection = "connection-0";
     let near = Near::new();
     let union = Union::new().await;
 
@@ -814,54 +896,33 @@ async fn main() {
     .await;
 
     let cs = near.self_client_state().await;
-    // union
-    //     .create_client(
-    //         wasm::client_state::ClientState {
-    //             data: cs.clone(),
-    //             checksum: hex::decode(
-    //                 "88ec41b1142e2895fe8b1260897ed7734670412381322694e32b81348a441a94",
-    //             )
-    //             .unwrap()
-    //             .try_into()
-    //             .unwrap(),
-    //             latest_height: Height {
-    //                 revision_number: 0,
-    //                 revision_height: cs.latest_height,
-    //             },
-    //         },
-    //         wasm::consensus_state::ConsensusState {
-    //             data: near.self_consensus_state(cs.latest_height + 1).await,
-    //         },
-    //     )
-    //     .await;
-
-    // near.connection_open_init(cometbls_lc, near_lc).await;
-    let header = near.next_light_header(cs.latest_height).await;
-    // union.update_client(near_lc, header.clone()).await;
-
-    sleep(Duration::from_secs(3)).await;
-
-    let latest_height = union.union.query_latest_height().await.unwrap();
-    let light_header = union
-        .next_light_header(union_client_state.latest_height, latest_height)
+    union
+        .create_client(
+            wasm::client_state::ClientState {
+                data: cs.clone(),
+                checksum: hex::decode(
+                    "88ec41b1142e2895fe8b1260897ed7734670412381322694e32b81348a441a94",
+                )
+                .unwrap()
+                .try_into()
+                .unwrap(),
+                latest_height: Height {
+                    revision_number: 0,
+                    revision_height: cs.latest_height,
+                },
+            },
+            wasm::consensus_state::ConsensusState {
+                data: near.self_consensus_state(cs.latest_height + 1).await,
+            },
+        )
         .await;
 
-    near.update_client(cometbls_lc, light_header.clone()).await;
-    panic!();
+    near.connection_open_init(cometbls_lc, near_lc).await;
+    let header = near.next_light_header(cs.latest_height).await;
+    let current_near_lc_height = header.new_state.inner_lite.height;
+    union.update_client(near_lc, header.clone()).await;
 
-    sleep(Duration::from_secs(2)).await;
-
-    // let latest_height = union.union.query_latest_height().await.unwrap();
-    // let client_state =
-    //     Any::<wasm::client_state::ClientState<near::client_state::ClientState>>::decode_as::<Proto>(
-    //         &union
-    //             .fetch_abci_query(
-    //                 latest_height.revision_height,
-    //                 AbciQueryType::State,
-    //                 format!("clients/{near_lc}/clientState").as_str(),
-    //             )
-    //             .await,
-    //     ).unwrap();
+    sleep(Duration::from_secs(3)).await;
 
     let (proof_init, _) = near
         .state_proof(
@@ -906,12 +967,52 @@ async fn main() {
         )
         .await;
 
+    sleep(Duration::from_secs(6)).await;
+
     let latest_height = union.union.query_latest_height().await.unwrap();
     let light_header = union
         .next_light_header(union_client_state.latest_height, latest_height)
         .await;
 
     near.update_client(cometbls_lc, light_header.clone()).await;
+
+    let proof_try = union
+        .fetch_abci_query(
+            light_header.signed_header.height.inner() as u64,
+            AbciQueryType::Proof,
+            &format!("connections/{union_connection}"),
+        )
+        .await;
+
+    near.connection_open_ack(
+        near_connection,
+        union_connection,
+        proof_try,
+        Height {
+            revision_number: 1,
+            revision_height: light_header.signed_header.height.inner() as u64,
+        },
+    )
+    .await;
+
+    sleep(Duration::from_secs(2)).await;
+    let header = near.next_light_header(current_near_lc_height).await;
+    union.update_client(near_lc, header.clone()).await;
+
+    let (proof_ack, _) = near
+        .state_proof(
+            header.new_state.inner_lite.height - 1,
+            &format!("connections/{}", near_connection),
+        )
+        .await;
+
+    union
+        .connection_open_confirm(
+            union_connection,
+            proof_ack,
+            header.new_state.inner_lite.height - 1,
+        )
+        .await;
 }
 
 pub fn convert_block_producers(
