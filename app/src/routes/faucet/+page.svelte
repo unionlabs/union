@@ -48,7 +48,10 @@ const fetchFromFaucet = async () => {
       return
     }
 
-    if (typeof window.grecaptcha === 'undefined' || typeof window.grecaptcha.execute !== 'function') {
+    if (
+      typeof window.grecaptcha === "undefined" ||
+      typeof window.grecaptcha.execute !== "function"
+    ) {
       console.error("Recaptcha execute function not available")
       faucetState.set({ kind: "RESULT_ERR", error: "Recaptcha execute function not available" })
       return
