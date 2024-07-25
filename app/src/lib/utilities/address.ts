@@ -1,6 +1,14 @@
 import type { Chain, UserAddresses } from "$lib/types"
 import { bech32 } from "bech32"
 
+export function convertCosmosAddress({
+  address,
+  toPrefix
+}: { address: string; toPrefix: string }): string {
+  const words = bech32.decode(address).words
+  return bech32.encode(toPrefix, words)
+}
+
 export const rawToHex = (raw: Uint8Array): string =>
   `${Array.from(raw)
     .map(i => i.toString(16).padStart(2, "0"))
@@ -31,3 +39,6 @@ export const userAddrOnChain = (userAddr: UserAddresses, chain: Chain | null): s
   console.log("userAddrOnChain got no evm address")
   return null
 }
+
+export const createCosmosSdkAddressRegex = ({ prefix }: { prefix: string }) =>
+  new RegExp(`^${prefix}[a-z0-9]{39}$`)
