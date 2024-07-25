@@ -127,7 +127,7 @@ const fetchFromFaucet = async () => {
                     autocapitalize="none"
                     autocomplete="off"
                     autocorrect="off"
-                    bind:value={address}
+                    value={address}
                     id="address"
                     pattern={unionAddressRegex.source}
                     placeholder="union14ea6..."
