@@ -92,11 +92,9 @@ const { width, height } = coverFields.file.details.image as {
           {blogPost.fields.author}
         </p>
       </div>
-      <Image
-        {width}
-        {height}
+      <img
         class="my-3"
-        src={`https://ipx.up.railway.app/f_png,s_1344x706/${imageUrl}`}
+        src={`${imageUrl}?fit=fill&f=center&fm=avif&w=1344&h=706`}
         loading="eager"
         alt={coverFields.title}
         data-contentful-field-id="cover"
@@ -389,7 +387,7 @@ const { width, height } = coverFields.file.details.image as {
             const dataFields = asset.data.target.fields
             const imageUrl = imageWithProtocol(dataFields.file.url)
             const { width, height } = dataFields.file.details.image
-            return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
+            return `<img src="${imageUrl}?fm=avif&w=1366" alt="${dataFields.title}"></img>`
           },
           [INLINES["HYPERLINK"]]: (params) => /* html */ `
                   <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
