@@ -30,3 +30,6 @@ If applicable, add screenshots to help explain your problem.
 
 **Additional context**
 Add any other context about the problem here.
+
+**Link to user report**
+If this issue was reported by a user, paste a link (X, Discord, Telegram, Slack, etc) to the original message here, such that we can reply when it is resolved.
