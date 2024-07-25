@@ -29,7 +29,7 @@ export let assets: Array<{
   symbol: string
 }>
 
-export let onAssetSelect: (data: {address: string, symbol: string}) => void
+export let onAssetSelect: (data: { address: string; symbol: string }) => void
 </script>
 
 <Dialog.Root
