@@ -2,7 +2,7 @@ use chain_utils::GetChain;
 use futures::Future;
 use macros::apply;
 use queue_msg::{queue_msg, HandleEffect, Op, QueueError, QueueMessage};
-use tracing::instrument;
+use tracing::{error, info, instrument};
 use unionlabs::{
     ibc::core::{
         channel::{
@@ -20,7 +20,10 @@ use unionlabs::{
         },
     },
     id::ConnectionId,
-    traits::{ClientIdOf, ClientStateOf, ConsensusStateOf, HeaderOf, HeightOf},
+    traits::{
+        ClientIdOf, ClientState, ClientStateOf, ConsensusState, ConsensusStateOf, Header, HeaderOf,
+        HeightOf,
+    },
     MaybeRecoverableError,
 };
 
@@ -175,3 +178,155 @@ pub struct MsgUpdateClientData<Hc: ChainExt, Tr: ChainExt>(
 #[queue_msg]
 #[debug(bound())] // break cyclic debug bounds
 pub struct BatchMsg<Hc: ChainExt, Tr: ChainExt>(pub Vec<Effect<Hc, Tr>>);
+
+pub fn log_msg<Hc: ChainExt, Tr: ChainExt>(effect: Effect<Hc, Tr>) {
+    match effect.clone() {
+        Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
+            info!(
+                client_id = %data.client_id,
+                counterparty.client_id = %data.counterparty.client_id,
+                counterparty.connection_id = %data.counterparty.connection_id,
+                counterparty.prefix.key_prefix = %::serde_utils::to_hex(data.counterparty.prefix.key_prefix),
+                version.identifier = %data.version.identifier,
+                version.features = %data.version.features.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+                delay_period = %data.delay_period,
+            )
+        }
+        Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => {
+            info!(
+                client_id = %data.client_id.to_string(),
+                client_state.height = %data.client_state.height(),
+                counterparty.client_id = %data.counterparty.client_id,
+                counterparty.connection_id = %data.counterparty.connection_id,
+                counterparty.prefix.key_prefix = %::serde_utils::to_hex(data.counterparty.prefix.key_prefix),
+                delay_period = %data.delay_period,
+                // counterparty_versions = %data
+                //     .counterparty_versions
+                //     .into_iter()
+                //     .map(Into::into)
+                //     .collect(),
+                proof_height = %data.proof_height,
+                consensus_height = %data.consensus_height,
+            )
+        }
+        Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
+            info!(
+                client_state.height = %data.client_state.height(),
+                proof_height = %data.proof_height,
+                consensus_height = %data.consensus_height,
+                connection_id = %data.connection_id,
+                counterparty_connection_id = %data.counterparty_connection_id,
+                version.identifier = %data.version.identifier,
+                version.features = %data.version.features.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+            )
+        }
+        Effect::ConnectionOpenConfirm(MsgConnectionOpenConfirmData { msg, __marker }) => {
+            info!(
+                connection_id = %msg.connection_id,
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::ChannelOpenInit(MsgChannelOpenInitData { msg, __marker }) => {
+            info!(
+                port_id = %msg.port_id,
+
+                channel.state = %msg.channel.state,
+                channel.ordering = %msg.channel.ordering,
+                channel.counterparty.port_id = %msg.channel.counterparty.port_id,
+                channel.counterparty.channel_id = %msg.channel.counterparty.channel_id,
+                channel.connection_hops = %msg.channel.connection_hops.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+                channel.version = %msg.channel.version,
+            )
+        }
+        Effect::ChannelOpenTry(MsgChannelOpenTryData { msg, __marker }) => {
+            info!(
+                port_id = %msg.port_id.to_string(),
+
+                channel.state = %msg.channel.state,
+                channel.ordering = %msg.channel.ordering,
+                channel.counterparty.port_id = %msg.channel.counterparty.port_id,
+                channel.counterparty.channel_id = %msg.channel.counterparty.channel_id,
+                channel.connection_hops = %msg.channel.connection_hops.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+                channel.version = %msg.channel.version,
+
+                counterparty_version = %msg.counterparty_version,
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::ChannelOpenAck(MsgChannelOpenAckData { msg, __marker }) => {
+            info!(
+                port_id = %msg.port_id,
+                channel_id = %msg.channel_id,
+                counterparty_version = %msg.counterparty_version,
+                counterparty_channel_id = %msg.counterparty_channel_id,
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::ChannelOpenConfirm(MsgChannelOpenConfirmData { msg, __marker }) => {
+            info!(
+                port_id = %msg.port_id,
+                channel_id = %msg.channel_id,
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::RecvPacket(MsgRecvPacketData { msg, __marker }) => {
+            info!(
+                sequence = %msg.packet.sequence,
+                source_port = %msg.packet.source_port,
+                source_channel = %msg.packet.source_channel,
+                destination_port = %msg.packet.destination_port,
+                destination_channel = %msg.packet.destination_channel,
+                data = %::serde_utils::to_hex(msg.packet.data),
+                timeout_height = %msg.packet.timeout_height,
+                timeout_timestamp = %msg.packet.timeout_timestamp,
+
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::AckPacket(MsgAckPacketData { msg, __marker }) => {
+            info!(
+                sequence = %msg.packet.sequence,
+                source_port = %msg.packet.source_port,
+                source_channel = %msg.packet.source_channel,
+                destination_port = %msg.packet.destination_port,
+                destination_channel = %msg.packet.destination_channel,
+                data = %::serde_utils::to_hex(msg.packet.data),
+                timeout_height = %msg.packet.timeout_height,
+                timeout_timestamp = %msg.packet.timeout_timestamp,
+
+                data = %::serde_utils::to_hex(msg.acknowledgement),
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::TimeoutPacket(MsgTimeoutData { msg, __marker }) => {
+            info!(
+                sequence = %msg.packet.sequence,
+                source_port = %msg.packet.source_port,
+                source_channel = %msg.packet.source_channel,
+                destination_port = %msg.packet.destination_port,
+                destination_channel = %msg.packet.destination_channel,
+                data = %::serde_utils::to_hex(msg.packet.data),
+                timeout_height = %msg.packet.timeout_height,
+                timeout_timestamp = %msg.packet.timeout_timestamp,
+
+                proof_height = %msg.proof_height,
+                next_sequence_recv = %msg.next_sequence_recv.get(),
+            )
+        }
+        Effect::CreateClient(MsgCreateClientData { msg, config }) => {
+            info!(
+                config_json = %::serde_json::to_string(&config).expect("serialization is infallible"),
+                client_state.height = %msg.client_state.height(),
+                client_state.chain_id = %msg.client_state.chain_id(),
+                consensus_state.timestamp = %msg.consensus_state.timestamp(),
+            )
+        }
+        Effect::UpdateClient(MsgUpdateClientData(msg)) => {
+            info!(
+                client_id = %msg.client_id.to_string(),
+                header.trusted_height = %msg.client_message.trusted_height(),
+            )
+        }
+        Effect::Batch(BatchMsg(_msgs)) => error!("attempted to log a batch tx???"),
+    }
+}
