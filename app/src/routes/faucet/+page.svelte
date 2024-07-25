@@ -31,7 +31,7 @@ type FaucetState = DiscriminatedUnion<
   }
 >
 
-let address: string = ""
+let address = ""
 
 onMount(() => {
   address = $cosmosStore.address ?? ""
