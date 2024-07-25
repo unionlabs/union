@@ -1,8 +1,9 @@
 <script lang="ts">
+import { slide } from "svelte/transition"
 import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
-import { UnionClient, createCosmosSdkClient, cosmosHttp } from "@union/client"
+import { UnionClient } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"
@@ -20,7 +21,7 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import { type Address, parseUnits, toHex, formatUnits, fallback, http } from "viem"
+import { type Address, parseUnits, toHex, formatUnits, type Chain as ViemChain } from "viem"
 import Stepper from "$lib/components/stepper.svelte"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -32,18 +33,26 @@ import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
 import { config } from "$lib/wallet/evm/config"
 import {
+  strideKeplrChainInfo,
+  unionKeplrChainInfo,
+  unionLeapChainInfo
+} from "$lib/wallet/cosmos/chain-info.ts"
+import {
   writeContract,
   simulateContract,
   waitForTransactionReceipt,
   getConnectorClient,
-  switchChain,
-  getConnections,
-  getAccount,
-  unstable_connector,
-  injected
+  switchChain
 } from "@wagmi/core"
-import { sepolia } from "viem/chains"
-import { KEY } from "$lib/constants/keys"
+import { sepolia, berachainTestnetbArtio } from "viem/chains"
+
+function getChainById(chainId: number): ViemChain | null {
+  const chains: { [key: number]: ViemChain } = {
+    11155111: sepolia,
+    80084: berachainTestnetbArtio
+  }
+  return chains[chainId] || null
+}
 
 export let chains: Array<Chain>
 export let userAddr: UserAddresses
@@ -55,9 +64,7 @@ let fromChainId = writable("")
 let toChainId = writable("")
 let assetSymbol = writable("")
 
-let transferState: Writable<TransferState> = writable({
-  kind: "PRE_TRANSFER"
-})
+let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 let amount = ""
 $: amountLargerThanZero = Number.parseFloat(amount) > 0
@@ -154,7 +161,11 @@ let ucs01Configuration = derived(
         hopChainId = foundHopChainId
         ucs1_configuration = $fromChain.ucs1_configurations[hopChainId]
         let forwardConfig = ucs1_configuration.forward[$toChainId]
-        pfmMemo = generatePfmMemo(forwardConfig.channel_id, forwardConfig.port, $recipient.slice(2))
+        pfmMemo = generatePfmMemo(
+          forwardConfig.channel_id,
+          forwardConfig.port,
+          $toChain?.rpc_type === "evm" ? $recipient.slice(2) : $recipient
+        )
         break
       }
     }
@@ -184,71 +195,12 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
-async function windowEthereumSwitchChain() {
+async function windowEthereumSwitchChain(id: number) {
   if (!window?.ethereum?.request) return
   return await window.ethereum?.request({
     method: "wallet_switchEthereumChain",
-    params: [{ chainId: toHex(Number($fromChainId)) }]
+    params: [{ chainId: toHex(id) }]
   })
-}
-
-const transfer2 = async () => {
-  const cosmosOfflineSigner = (
-    $cosmosStore.connectedWallet === "keplr"
-      ? window?.keplr?.getOfflineSigner($fromChainId, {
-          disableBalanceCheck: false
-        })
-      : window.leap
-        ? window.leap.getOfflineSigner($fromChainId, {
-            disableBalanceCheck: false
-          })
-        : undefined
-  ) as OfflineSigner
-  const evmClient = await getConnectorClient(config)
-  const client = createCosmosSdkClient({
-    evm: {
-      chain: sepolia,
-      account: evmClient.account,
-      transport: fallback([http(sepolia?.rpcUrls.default.http.at(0))])
-    },
-    cosmos: {
-      account: cosmosOfflineSigner,
-      gasPrice: { amount: "0.0025", denom: "uatom" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
-    }
-  })
-  if (!($fromChain && $toChain)) return
-
-  const ucsConfiguration = $ucs01Configuration?.ucs1_configuration
-  const denomAddress = $asset?.address
-  if (!(ucsConfiguration && denomAddress)) return
-
-  const gasEstimationResponse = await client.simulateTransaction({
-    amount: 1n,
-    evmSigner: evmClient.account,
-    recipient: `${$recipient}`,
-    network: $fromChain.rpc_type,
-    denomAddress: `${$asset.address}`,
-    sourceChannel: ucsConfiguration.channel_id,
-    path: [$fromChain?.chain_id, $toChain?.chain_id],
-    relayContractAddress: ucsConfiguration.contract_address
-  })
-
-  console.info(gasEstimationResponse)
-  const gasAmount = BigInt(gasEstimationResponse.data)
-
-  const transfer = await client.transferAsset({
-    amount: 1n,
-    evmSigner: evmClient.account,
-    recipient: `${$recipient}`,
-    network: $fromChain.rpc_type,
-    denomAddress: `${$asset.address}`,
-    sourceChannel: ucsConfiguration.channel_id,
-    path: [$fromChain?.chain_id, $toChain?.chain_id],
-    relayContractAddress: ucsConfiguration.contract_address
-  })
-
-  console.info(transfer)
 }
 
 const transfer = async () => {
@@ -263,40 +215,10 @@ const transfer = async () => {
   if ($fromChain.rpc_type === "cosmos" && !userAddr.cosmos)
     return toast.error("No cosmos wallet connected")
   if (!$recipient) return toast.error("Invalid recipient")
-  if (!$ucs01Configuration) {
+  if (!$ucs01Configuration)
     return toast.error(
       `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
     )
-  }
-
-  const cosmosOfflineSigner = (
-    $cosmosStore.connectedWallet === "keplr"
-      ? window?.keplr?.getOfflineSigner($fromChainId, {
-          disableBalanceCheck: false
-        })
-      : window.leap
-        ? window.leap.getOfflineSigner($fromChainId, {
-            disableBalanceCheck: false
-          })
-        : undefined
-  ) as OfflineSigner
-  const evmClient = await getConnectorClient(config)
-  const client = createCosmosSdkClient({
-    evm: {
-      chain: sepolia,
-      account: evmClient.account,
-      transport: fallback([http(sepolia?.rpcUrls.default.http.at(0))])
-    },
-    cosmos: {
-      account: cosmosOfflineSigner,
-      gasPrice: { amount: "0.0025", denom: "uatom" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
-    }
-  })
-  if (!($fromChain && $toChain)) return
-  const ucsConfiguration = $ucs01Configuration?.ucs1_configuration
-  const denomAddress = $asset?.address
-  if (!(ucsConfiguration && denomAddress)) return
 
   let supported = getSupportedAsset($fromChain, $asset.address)
   let decimals = supported?.decimals ?? 0
@@ -305,10 +227,49 @@ const transfer = async () => {
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
     // @ts-ignore
-    transferState.set({ kind: "CONFIRMING_TRANSFER" })
+    transferState.set({ kind: "SWITCHING_TO_CHAIN" })
     const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
+
+    if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
+      // switch chain
+      // TODO: don't hardcode this.
+      const chainInfo =
+        $fromChainId === "union-testnet-8"
+          ? unionKeplrChainInfo
+          : $fromChainId === "stride-internal-1"
+            ? strideKeplrChainInfo
+            : null
+
+      if (chainInfo === null) {
+        transferState.set({
+          kind: "SWITCHING_TO_CHAIN",
+          warning: new Error("Failed to switch chain")
+        })
+        return
+      }
+
+      try {
+        await window?.keplr?.experimentalSuggestChain(chainInfo)
+        await window?.keplr?.enable([$fromChainId])
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({
+            kind: "SWITCHING_TO_CHAIN",
+            warning: error
+          })
+        } else {
+          transferState.set({
+            kind: "SWITCHING_TO_CHAIN",
+            warning: new Error("invalid error")
+          })
+        }
+        return
+      }
+      // @ts-ignore
+      transferState.set({ kind: "CONFIRMING_TRANSFER" })
+    }
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
@@ -323,29 +284,57 @@ const transfer = async () => {
                 })
               : undefined
         ) as OfflineSigner
-        // let cosmosClient = new UnionClient({
-        //   cosmosOfflineSigner,
-        //   evmSigner: undefined,
-        //   bech32Prefix: $fromChain.addr_prefix,
-        //   chainId: $fromChain.chain_id,
-        //   gas: { denom: $assetSymbol, amount: "0.0025" },
-        //   rpcUrl: `https://${rpcUrl}`
-        // })
+        let cosmosClient = new UnionClient({
+          cosmosOfflineSigner,
+          evmSigner: undefined,
+          bech32Prefix: $fromChain.addr_prefix,
+          chainId: $fromChain.chain_id,
+          gas: { denom: $assetSymbol, amount: "0.0025" },
+          rpcUrl: `https://${rpcUrl}`
+        })
 
-        const cosmosTransfer = await client.transferAsset({
-          amount: 1n,
-          evmSigner: evmClient.account,
-          recipient: `${$recipient}`,
-          network: $fromChain.rpc_type,
-          denomAddress: `${$asset.address}`,
-          sourceChannel: ucsConfiguration.channel_id,
-          path: [$fromChain?.chain_id, $toChain?.chain_id],
-          relayContractAddress: ucsConfiguration.contract_address
-        })
-        transferState.set({
-          kind: "TRANSFERRING",
-          transferHash: cosmosTransfer.data
-        })
+        let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
+        console.log({ ucs1_configuration })
+        if (ucs1_configuration.contract_address === "ics20") {
+          console.log({ $recipient })
+          transferAssetsMessage = {
+            kind: "ibc",
+            messageTransfers: [
+              {
+                sourcePort: "transfer",
+                sourceChannel: ucs1_configuration.channel_id,
+                token: { denom: $assetSymbol, amount: parsedAmount.toString() },
+                sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
+                receiver: $recipient,
+                memo: pfmMemo ?? "",
+                timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
+              }
+            ]
+          }
+        } else {
+          console.log("THIS SHOULD NOT HAPPEN")
+          transferAssetsMessage = {
+            kind: "cosmwasm",
+            instructions: [
+              {
+                contractAddress: ucs1_configuration.contract_address,
+                msg: {
+                  transfer: {
+                    channel: ucs1_configuration.channel_id,
+                    receiver: $toChain.rpc_type === "evm" ? $recipient?.slice(2) : $recipient,
+                    memo: pfmMemo ?? ""
+                  }
+                },
+                funds: [{ denom: $assetSymbol, amount: parsedAmount.toString() }]
+              }
+            ]
+          }
+        }
+
+        console.log({ transferAssetsMessage })
+
+        const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
+        transferState.set({ kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash })
       } catch (error) {
         if (error instanceof Error) {
           // @ts-ignore
@@ -356,8 +345,15 @@ const transfer = async () => {
     }
   } else if ($fromChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
-    if (connectorClient?.chain?.id !== Number($fromChainId)) {
-      await windowEthereumSwitchChain()
+    const selectedChain = getChainById(Number($fromChainId))
+
+    if (!selectedChain) {
+      toast.error("From chain not found or supported")
+      return
+    }
+
+    if (connectorClient?.chain?.id !== selectedChain.id) {
+      await windowEthereumSwitchChain(selectedChain.id)
       await sleep(1_500)
     }
 
@@ -378,7 +374,7 @@ const transfer = async () => {
       // ^ the user is continuing continuing after having seen the warning
 
       try {
-        await switchChain(config, { chainId: Number($fromChainId) })
+        await switchChain(config, { chainId: selectedChain.id })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({ kind: "SWITCHING_TO_CHAIN", warning: error })
@@ -392,16 +388,14 @@ const transfer = async () => {
       let hash: `0x${string}` | null = null
 
       try {
-        // hash = await writeContract(config, {
-        //   chain: sepolia,
-        //   account: userAddr.evm.canonical,
-        //   abi: erc20Abi,
-        //   address: $asset.address as Address,
-        //   functionName: "approve",
-        //   args: [ucs01address, parsedAmount]
-        // })
-        // const transfer = await client.
-        console.info("")
+        hash = await writeContract(config, {
+          chain: selectedChain,
+          account: userAddr.evm.canonical,
+          abi: erc20Abi,
+          address: $asset.address as Address,
+          functionName: "approve",
+          args: [ucs01address, parsedAmount]
+        })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({ kind: "APPROVING_ASSET", error })
@@ -432,7 +426,7 @@ const transfer = async () => {
       console.log("simulating transfer step")
 
       const contractRequest = {
-        chainId: Number($fromChainId),
+        chainId: selectedChain.id,
         abi: ucs01abi,
         account: userAddr.evm.canonical,
         functionName: "send",
@@ -440,17 +434,9 @@ const transfer = async () => {
         args: [
           ucs1_configuration.channel_id,
           pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
-          [
-            {
-              denom: $asset.address.toLowerCase() as Address,
-              amount: parsedAmount
-            }
-          ],
+          [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
           pfmMemo ?? "", // memo
-          {
-            revision_number: 9n,
-            revision_height: BigInt(999_999_999) + 100n
-          },
+          { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
           0n
         ]
       } as const
@@ -497,10 +483,7 @@ const transfer = async () => {
         await waitForTransactionReceipt(config, {
           hash: $transferState.transferHash
         })
-        transferState.set({
-          kind: "TRANSFERRING",
-          transferHash: $transferState.transferHash
-        })
+        transferState.set({ kind: "TRANSFERRING", transferHash: $transferState.transferHash })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({
@@ -544,7 +527,6 @@ const transfer = async () => {
     goto(`/explorer/transfers/${$transferState.transferHash}`)
   }
 }
-
 onMount(() => {
   const source = $page.url.searchParams.get("source")
   const asset = $page.url.searchParams.get("asset")
@@ -570,10 +552,7 @@ $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $user
     console.log("trying to send from cosmos but no balances fetched yet")
     return null
   }
-  return cosmosBalance.data.map(balance => ({
-    ...balance,
-    balance: BigInt(balance.balance)
-  }))
+  return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
 })
 
 function swapChainsClick(_event: MouseEvent) {
@@ -629,7 +608,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         ts => ({
           status: "ERROR",
           title: `Error switching to ${$fromChain.display_name}`,
-          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.error}`
+          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.warning}`
         }),
         () => ({
           status: "WARNING",
@@ -750,6 +729,27 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
     return [
       stateToStatus(
         $transferState,
+        "SWITCHING_TO_CHAIN",
+        `Switch to ${$fromChain.display_name}`,
+        `Switched to ${$fromChain.display_name}`,
+        ts => ({
+          status: "ERROR",
+          title: `Error switching to ${$fromChain.display_name}`,
+          description: `There was an issue switching to ${$fromChain.display_name} to your wallet. ${ts.warning}`
+        }),
+        () => ({
+          status: "WARNING",
+          title: `Could not automatically switch chain.`,
+          description: `Please make sure your wallet is connected to  ${$fromChain.display_name}`
+        }),
+        () => ({
+          status: "IN_PROGRESS",
+          title: `Switching to ${$fromChain.display_name}`,
+          description: `Click 'Approve' in wallet.`
+        })
+      ),
+      stateToStatus(
+        $transferState,
         "CONFIRMING_TRANSFER",
         "Confirm transfer",
         "Confirmed transfer",
@@ -805,59 +805,30 @@ const resetInput = () => {
 </script>
 
 <div
-  class={cn(
-    "size-full duration-1000 transition-colors dark:bg-muted",
-    $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : ""
-  )}
-></div>
+  class={cn("size-full duration-1000 transition-colors dark:bg-muted", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
 
 <div class="cube-scene" id="scene">
-  <button
-    on:click={async (event) => {
-      event.preventDefault()
-      await transfer2()
-    }}
-  >
-    transfer
-  </button>
-  <div
-    class={cn(
-      "cube ",
-      $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "no-transition"
-    )}
-  >
-    <div
-      class="cube-right font-bold flex items-center justify-center text-xl font-supermolot"
-    >
-      UNION TESTNET
-    </div>
-    <Card.Root
-      class={cn(
-        $transferState.kind === "PRE_TRANSFER" ? "no-transition" : "cube-front"
-      )}
-    >
+
+  <div class={cn("cube ",
+  $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "no-transition")}>
+    <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
+    <Card.Root class={cn($transferState.kind === "PRE_TRANSFER" ? "no-transition" : "cube-front")}>
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
-      <Card.Content class={cn("flex flex-col gap-4")}>
+      <Card.Content class={cn('flex flex-col gap-4')}>
         <section>
           <CardSectionHeading>From</CardSectionHeading>
-          <ChainButton
-            bind:dialogOpen={dialogOpenFromChain}
-            bind:selectedChainId={$fromChainId}
-          >
+          <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>
             {$fromChain?.display_name ?? "Select chain"}
           </ChainButton>
           <div class="flex flex-col items-center pt-4 -mb-6">
             <Button on:click={swapChainsClick} size="icon" variant="outline">
-              <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
+              <ArrowLeftRight class="size-5 dark:text-white rotate-90"/>
             </Button>
           </div>
           <CardSectionHeading>To</CardSectionHeading>
-          <ChainButton
-            bind:dialogOpen={dialogOpenToChain}
-            bind:selectedChainId={$toChainId}
-          >
+          <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>
             {$toChain?.display_name ?? "Select chain"}
           </ChainButton>
         </section>
@@ -865,141 +836,120 @@ const resetInput = () => {
           <CardSectionHeading>Asset</CardSectionHeading>
           {#if $sendableBalances !== undefined && $fromChainId}
             {#if $sendableBalances === null}
-              Failed to load sendable balances for <b
-                >{$fromChain?.display_name}</b
-              >.
+              Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
             {:else if $sendableBalances && $sendableBalances.length === 0}
-              You don't have sendable assets on <b>{$fromChain?.display_name}</b
-              >. You can get some from
-              <a class="underline font-bold" href="/faucet">the faucet</a>
+              You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some from <a
+              class="underline font-bold" href="/faucet">the faucet</a>
             {:else}
               <Button
                 class="w-full"
                 variant="outline"
                 on:click={() => (dialogOpenToken = !dialogOpenToken)}
               >
-                <div class="flex-1 text-left font-bold text-md">
-                  {truncate(
-                    supportedAsset
-                      ? supportedAsset.display_symbol
-                      : $assetSymbol
-                        ? $assetSymbol
-                        : "Select Asset",
-                    12
-                  )}
-                </div>
+                <div
+                  class="flex-1 text-left font-bold text-md">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol ? $assetSymbol : 'Select Asset', 12)}</div>
 
-                <Chevron />
+                <Chevron/>
               </Button>
             {/if}
           {:else}
             Select a chain to send from.
           {/if}
-          {#if $assetSymbol !== "" && $sendableBalances !== null && $asset?.address}
+          {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
             <div class="mt-4 text-xs text-muted-foreground">
-              <b
-                >{truncate(
-                  supportedAsset
-                    ? supportedAsset?.display_symbol
-                    : $assetSymbol,
-                  12
-                )}</b
-              >
-              balance on
+              <b>{truncate(supportedAsset ? supportedAsset?.display_symbol : $assetSymbol, 12)}</b> balance on
               <b>{$fromChain?.display_name}</b> is
-              {formatUnits(
-                BigInt($asset.balance),
-                supportedAsset?.decimals ?? 0
-              )}
+              {formatUnits(BigInt($asset.balance), supportedAsset?.decimals ?? 0)}
             </div>
           {/if}
         </section>
-
-        <section>
-          <CardSectionHeading>Amount</CardSectionHeading>
-          <Input
-            autocapitalize="none"
-            autocomplete="off"
-            autocorrect="off"
-            type="number"
-            inputmode="decimal"
-            bind:value={amount}
-            class={cn(
-              !balanceCoversAmount && amount ? "border-red-500" : "",
-              "focus:ring-0 focus-visible:ring-0 disabled:bg-black/30"
-            )}
-            disabled={!$asset}
-            maxlength={64}
-            minlength={1}
-            pattern="^[0-9]*[.,]?[0-9]*$"
-            placeholder="0.00"
-            spellcheck="false"
-          />
-        </section>
-        <section>
-          <CardSectionHeading>Recipient</CardSectionHeading>
-          <div class="flex items-start gap-2">
-            <div class="w-full">
-              <div class="relative w-full mb-2">
-                <Input
-                  autocapitalize="none"
-                  autocomplete="off"
-                  autocorrect="off"
-                  bind:value={address}
-                  class="disabled:bg-black/30"
-                  disabled={inputState === "locked"}
-                  id="address"
-                  on:input={handleInput}
-                  placeholder="Select chain"
-                  required={true}
-                  spellcheck="false"
-                  type="text"
-                />
+        
+          <section>
+            <CardSectionHeading>Amount</CardSectionHeading>
+            <Input
+              autocapitalize="none"
+              autocomplete="off"
+              autocorrect="off"
+              type="number"
+              inputmode="decimal"
+              bind:value={amount}
+              class={cn(
+                !balanceCoversAmount && amount ? 'border-red-500' : '',
+                'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
+              )}
+              disabled={!$asset}
+              maxlength={64}
+              minlength={1}
+              pattern="^[0-9]*[.,]?[0-9]*$"
+              placeholder="0.00"
+              spellcheck="false"
+            />
+          </section>
+          <section>
+            <CardSectionHeading>Recipient</CardSectionHeading>
+            <div class="flex items-start gap-2">
+              <div class="w-full">
+                <div class="relative w-full mb-2">
+                  <Input
+                    autocapitalize="none"
+                    autocomplete="off"
+                    autocorrect="off"
+                    bind:value={address}
+                    class="disabled:bg-black/30"
+                    disabled={inputState === 'locked'}
+                    id="address"
+                    on:input={handleInput}
+                    placeholder="Select chain"
+                    required={true}
+                    spellcheck="false"
+                    type="text"
+                  />
+                </div>
+                <div class="flex justify-between px-1">
+                  {#if userInput}
+                    <button
+                      type="button"
+                      on:click={resetInput}
+                      class="text-xs text-muted-foreground hover:text-primary transition"
+                    >
+                      Reset
+                    </button>
+                  {/if}
+                </div>
               </div>
-              <div class="flex justify-between px-1">
-                {#if userInput}
-                  <button
-                    type="button"
-                    on:click={resetInput}
-                    class="text-xs text-muted-foreground hover:text-primary transition"
-                  >
-                    Reset
-                  </button>
-                {/if}
-              </div>
+              <!--            <Button-->
+              <!--              aria-label="Toggle address lock"-->
+              <!--              class="px-3"-->
+              <!--              on:click={onLockClick}-->
+              <!--              variant="ghost"-->
+              <!--            >-->
+              <!--              {#if inputState === 'locked'}-->
+              <!--                <LockLockedIcon class="size-4.5"/>-->
+              <!--              {:else}-->
+              <!--                <LockOpenIcon class="size-4.5"/>-->
+              <!--              {/if}-->
+              <!--            </Button>-->
             </div>
-            <!--            <Button-->
-            <!--              aria-label="Toggle address lock"-->
-            <!--              class="px-3"-->
-            <!--              on:click={onLockClick}-->
-            <!--              variant="ghost"-->
-            <!--            >-->
-            <!--              {#if inputState === 'locked'}-->
-            <!--                <LockLockedIcon class="size-4.5"/>-->
-            <!--              {:else}-->
-            <!--                <LockOpenIcon class="size-4.5"/>-->
-            <!--              {/if}-->
-            <!--            </Button>-->
-          </div>
-        </section>
-      </Card.Content>
-      <Card.Footer class="flex flex-col gap-4 items-start">
-        <Button
-          disabled={!amount ||
-            !$asset ||
-            !$toChainId ||
-            !$recipient ||
-            !$assetSymbol ||
-            !$fromChainId ||
-            !amountLargerThanZero ||
-            // >= because need some sauce for gas
-            !balanceCoversAmount}
-          on:click={async (event) => {
-            event.preventDefault()
-            transferState.set({ kind: "FLIPPING" })
-            await sleep(1200)
-            transfer()
-          }}
+          </section>
+        </Card.Content>
+        <Card.Footer class="flex flex-col gap-4 items-start">
+          <Button
+            disabled={!amount ||
+          !$asset ||
+          !$toChainId ||
+          !$recipient ||
+          !$assetSymbol ||
+          !$fromChainId ||
+          !amountLargerThanZero ||
+          // >= because need some sauce for gas
+          !balanceCoversAmount
+          }
+          on:click={async event => {
+          event.preventDefault()
+          transferState.set({ kind: "FLIPPING" })
+          await sleep(1200)
+          transfer()
+        }}
           type="button"
         >
           {buttonText}
@@ -1008,13 +958,14 @@ const resetInput = () => {
     </Card.Root>
 
     {#if $transferState.kind !== "PRE_TRANSFER"}
-      <Card.Root class={cn("cube-back p-6")}>
+      <Card.Root
+        class={cn("cube-back p-6")}>
         {#if $fromChain}
           <Stepper
             steps={stepperSteps}
-            on:cancel={() => transferState.set({ kind: "PRE_TRANSFER" })}
+            on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}
             onRetry={() => {
-              transferState.update((ts) => {
+              transferState.update(ts => {
                 // @ts-ignore
                 ts.error = undefined
                 return ts
@@ -1024,117 +975,116 @@ const resetInput = () => {
           />
         {/if}
       </Card.Root>
-      <div
-        class="cube-left font-bold flex items-center justify-center text-xl font-supermolot"
-      >
-        UNION TESTNET
-      </div>
+      <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
     {/if}
   </div>
 </div>
 
+
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
   {chains}
-  {connected}
+  connected={connected}
   kind="from"
-  onChainSelect={(newSelectedChain) => {
+  onChainSelect={newSelectedChain => {
     fromChainId.set(newSelectedChain)
   }}
   selectedChain={$fromChainId}
-  {userAddr}
+  userAddr={userAddr}
 />
 
 <ChainDialog
   bind:dialogOpen={dialogOpenToChain}
   {chains}
-  {connected}
+  connected={connected}
   kind="to"
-  onChainSelect={(newSelectedChain) => {
+  onChainSelect={newSelectedChain => {
     toChainId.set(newSelectedChain)
   }}
   selectedChain={$toChainId}
-  {userAddr}
+  userAddr={userAddr}
 />
 
-{#if $sendableBalances !== null}
+{#if $sendableBalances !== null && $fromChain !== null}
   <AssetsDialog
     chain={$fromChain}
     assets={$sendableBalances}
-    onAssetSelect={(newSelectedAsset) => {
+    onAssetSelect={newSelectedAsset => {
       assetSymbol.set(newSelectedAsset)
     }}
     bind:dialogOpen={dialogOpenToken}
   />
 {/if}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
 
 <style global lang="postcss">
-  .cube-scene {
-    @apply absolute -my-6 py-6 z-20;
-    top: calc(50% - (var(--height) / 2));
-    --width: calc(min(500px, (100dvw - 32px)));
-    --height: calc(min(740px, (100dvh - 144px)));
-    --depth: 80px;
-    --speed: 2s;
-    width: var(--width);
-    height: var(--height);
-    perspective: 1000px;
-  }
 
-  .cube {
-    @apply relative;
-    width: var(--width);
-    height: var(--height);
-    transform-style: preserve-3d;
-    transition: transform var(--speed);
-    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
-  }
 
-  .cube--flipped {
-    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
-  }
+    .cube-scene {
+        @apply absolute -my-6 py-6 z-20;
+        top: calc(50% - (var(--height) / 2));
+        --width: calc(min(500px, (100dvw - 32px)));
+        --height: calc(min(740px, (100dvh - 144px)));
+        --depth: 80px;
+        --speed: 2s;
+        width: var(--width);
+        height: var(--height);
+        perspective: 1000px;
+    }
 
-  .cube-front,
-  .cube-back {
-    @apply absolute overflow-y-auto overflow-x-hidden;
+    .cube {
+        @apply relative;
+        width: var(--width);
+        height: var(--height);
+        transform-style: preserve-3d;
+        transition: transform var(--speed);
+        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
+    }
 
-    width: var(--width);
-    height: var(--height);
-  }
+    .cube--flipped {
+        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
+    }
 
-  .cube-left {
-    @apply absolute bg-card border;
-    width: var(--height);
-    height: var(--depth);
-    top: calc((var(--height) / 2) - (var(--depth) / 2));
-    right: calc((var(--width) / 2) - (var(--height) / 2));
-    transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5))
-      rotateX(-90deg);
-  }
+    .cube-front, .cube-back {
+        @apply absolute overflow-y-auto overflow-x-hidden;
 
-  .cube-right {
-    @apply absolute bg-card border;
-    width: var(--height);
-    height: var(--depth);
-    top: calc((var(--height) / 2) - (var(--depth) / 2));
-    left: calc((var(--width) / 2) - (var(--height) / 2));
-    transform: rotateZ(-90deg) translateY(calc(var(--width) * 0.5))
-      rotateX(-90deg);
-  }
+        width: var(--width);
+        height: var(--height);
+    }
 
-  .cube-front {
-    transform: translateZ(calc(var(--depth) * 0.5));
-  }
+    .cube-left {
+        @apply absolute bg-card border;
+        width: var(--height);
+        height: var(--depth);
+        top: calc((var(--height) / 2) - (var(--depth) / 2));
+        right: calc((var(--width) / 2) - (var(--height) / 2));
+        transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
+    }
 
-  .cube-back {
-    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
-  }
+    .cube-right {
+        @apply absolute bg-card border;
+        width: var(--height);
+        height: var(--depth);
+        top: calc((var(--height) / 2) - (var(--depth) / 2));
+        left: calc((var(--width) / 2) - (var(--height) / 2));
+        transform: rotateZ(-90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
+    }
 
-  .no-transition {
-    @apply overflow-y-auto overflow-x-hidden;
-    width: var(--width);
-    height: var(--height);
-    transition: none !important;
-  }
+    .cube-front {
+        transform: translateZ(calc(var(--depth) * 0.5));
+    }
+
+    .cube-back {
+        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
+    }
+
+    .no-transition {
+        @apply overflow-y-auto overflow-x-hidden;
+        width: var(--width);
+        height: var(--height);
+        transition: none !important;
+    }
+
+
 </style>
+
+

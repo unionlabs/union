@@ -42,7 +42,20 @@ const fetchFromFaucet = async () => {
   if ($faucetState.kind === "IDLE" || $faucetState.kind === "REQUESTING_TOKEN") {
     faucetState.set({ kind: "REQUESTING_TOKEN" })
 
-    if (!window?.__google_recaptcha_client) return console.error("Recaptcha not loaded")
+    if (!window?.__google_recaptcha_client) {
+      console.error("Recaptcha client not loaded")
+      faucetState.set({ kind: "RESULT_ERR", error: "Recaptcha client not loaded" })
+      return
+    }
+
+    if (
+      typeof window.grecaptcha === "undefined" ||
+      typeof window.grecaptcha.execute !== "function"
+    ) {
+      console.error("Recaptcha execute function not available")
+      faucetState.set({ kind: "RESULT_ERR", error: "Recaptcha execute function not available" })
+      return
+    }
 
     const captchaToken = await window.grecaptcha.execute(
       "6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow",

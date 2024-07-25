@@ -3,8 +3,10 @@ import { hexToUint8Array } from "uint8array-extras"
 import { fromBech32, toBech32 } from "@cosmjs/encoding"
 
 import type { CosmosAddress, EvmAddress } from "$lib/wallet/types.ts"
+import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 
 export function cosmosToEvmAddress(address: CosmosAddress): EvmAddress {
+  if (!isValidCosmosAddress(address)) throw new Error("Invalid Cosmos address")
   return bytesToHex(fromBech32(address).data)
 }
 
