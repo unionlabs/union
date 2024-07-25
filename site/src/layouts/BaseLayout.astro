@@ -67,17 +67,42 @@ const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
       extend={{
         link: [
           {
+            rel: "manifest",
+            href: "/manifest.webmanifest",
+            crossorigin: "use-credentials"
+          },
+          {
+            rel: "apple-touch-icon",
+            href: `${BASE_URL}/apple-touch-icon.png`,
+          },
+          {
             rel: "alternate",
             type: "application/rss+xml",
             title: "Union",
             href: `${Astro.site}rss.xml`
           },
-          { rel: "sitemap", href: "/sitemap-index.xml" },
           {
             rel: "icon",
-            href: `${BASE_URL}/favicon.svg`,
-            type: "image/svg+xml"
-          }
+            sizes: "16x16",
+            type: "image/png",
+            href: `${BASE_URL}/favicon-16x16.png`
+          },
+          {
+            rel: "icon",
+            sizes: "32x32",
+            type: "image/png",
+            href: `${BASE_URL}/favicon-32x32.png`
+          },
+          {
+            rel: "icon",
+            type: "image/svg+xml",
+            href: `${BASE_URL}/favicon.svg`
+          },
+          {
+            rel: "icon",
+            href: `${BASE_URL}/favicon.ico`
+          },
+          { rel: "sitemap", href: "/sitemap-index.xml" }
         ],
         meta: [
           { name: "robots", content: "index, follow" },
