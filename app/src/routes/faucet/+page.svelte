@@ -18,7 +18,7 @@ import { writable, type Writable } from "svelte/store"
 import Truncate from "$lib/components/truncate.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
-import { onMount } from "svelte";
+import { onDestroy, onMount } from "svelte"
 
 type FaucetState = DiscriminatedUnion<
   "kind",
@@ -31,11 +31,20 @@ type FaucetState = DiscriminatedUnion<
   }
 >
 
-
-let address: string
+let address: string = ""
 
 onMount(() => {
   address = $cosmosStore.address ?? ""
+})
+
+const unsubscribe = cosmosStore.subscribe(v => {
+  if (address !== v.address) {
+    address = v.address ?? ""
+  }
+})
+
+onDestroy(() => {
+  unsubscribe()
 })
 
 const resetInput = () => {
