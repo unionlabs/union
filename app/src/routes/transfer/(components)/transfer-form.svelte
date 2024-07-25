@@ -15,7 +15,7 @@ import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
 import { truncate } from "$lib/utilities/format.ts"
-import { type Writable, writable, derived } from "svelte/store"
+import { type Writable, writable, derived, get } from "svelte/store"
 import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
@@ -32,11 +32,7 @@ import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
 import { config } from "$lib/wallet/evm/config"
-import {
-  strideKeplrChainInfo,
-  unionKeplrChainInfo,
-  unionLeapChainInfo
-} from "$lib/wallet/cosmos/chain-info.ts"
+import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import {
   writeContract,
   simulateContract,
@@ -226,21 +222,34 @@ const transfer = async () => {
 
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
+    const { connectedWallet, connectionStatus } = get(cosmosStore)
+
+    if (connectionStatus !== "connected" || !connectedWallet) {
+      transferState.set({
+        kind: "SWITCHING_TO_CHAIN",
+        warning: new Error("No wallet connected")
+      })
+      return
+    }
+
+    const wallet = window[connectedWallet as "keplr" | "leap"]
+
+    if (!wallet) {
+      transferState.set({
+        kind: "SWITCHING_TO_CHAIN",
+        warning: new Error(`${connectedWallet} wallet not found`)
+      })
+      return
+    }
+
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
-    const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
 
+    const rpcUrl = $fromChain.rpcs.find(rpc => rpc.type === "rpc")?.url
     if (!rpcUrl) return toast.error(`no rpc available for ${$fromChain.display_name}`)
 
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
-      // switch chain
-      // TODO: don't hardcode this.
-      const chainInfo =
-        $fromChainId === "union-testnet-8"
-          ? unionKeplrChainInfo
-          : $fromChainId === "stride-internal-1"
-            ? strideKeplrChainInfo
-            : null
+      const chainInfo = getCosmosChainInfo($fromChainId, connectedWallet)
 
       if (chainInfo === null) {
         transferState.set({
@@ -251,8 +260,8 @@ const transfer = async () => {
       }
 
       try {
-        await window?.keplr?.experimentalSuggestChain(chainInfo)
-        await window?.keplr?.enable([$fromChainId])
+        await wallet.experimentalSuggestChain(chainInfo)
+        await wallet.enable([$fromChainId])
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({
