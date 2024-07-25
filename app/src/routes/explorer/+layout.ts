@@ -22,7 +22,7 @@ export const load = (loadEvent => ({
     {
       route: "transfers",
       icon: TransfersIcon,
-      description: "All UCS-01 transfers"
+      description: "All transfers"
     },
     // {
     //   route: "blocks",
