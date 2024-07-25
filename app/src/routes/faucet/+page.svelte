@@ -3,7 +3,7 @@ import request from "graphql-request"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { URLS } from "$lib/constants/index.ts"
 import { Label } from "$lib/components/ui/label"
-import { createQuery } from "@tanstack/svelte-query"
+import { writable, type Writable } from "svelte/store"
 import Truncate from "$lib/components/truncate.svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
@@ -14,9 +14,7 @@ import WalletGate from "$lib/components/wallet-gate.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import TokenBalance from "./(components)/token-balance.svelte"
-import { derived, writable, type Writable } from "svelte/store"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
-import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import { cosmosChainAddressTransfers } from "$lib/queries/transfers/cosmos"
@@ -123,110 +121,6 @@ const requestUnoFromFaucet = async () => {
     }
   }
 }
-
-type DydxFaucetState = DiscriminatedUnion<
-  "kind",
-  {
-    IDLE: {}
-    REQUESTING_TOKEN: {}
-    SUBMITTING: {}
-    RESULT_OK: { message: string }
-    RESULT_ERR: { error: string }
-  }
->
-
-let dydxAddress = derived(cosmosStore, $cosmosStore =>
-  $cosmosStore.address
-    ? convertCosmosAddress({
-        address: $cosmosStore.address,
-        toPrefix: "dydx"
-      })
-    : ""
-)
-
-let dydxFaucetState: Writable<DydxFaucetState> = writable({ kind: "IDLE" })
-
-const requestDydxFromFaucet = async () => {
-  if ($dydxFaucetState.kind === "IDLE" || $dydxFaucetState.kind === "REQUESTING_TOKEN") {
-    dydxFaucetState.set({ kind: "SUBMITTING" })
-  }
-
-  if ($dydxFaucetState.kind === "SUBMITTING") {
-    try {
-      const response = await fetch("https://faucet.v4testnet.dydx.exchange/faucet/native-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: $dydxAddress })
-      })
-      if (!response.ok) {
-        const error = (await response.json()) as { error: string }
-        dydxFaucetState.set({
-          kind: "RESULT_ERR",
-          error: error?.error?.includes("many")
-            ? "Rate limit exceeded"
-            : error?.error ?? "Unknown error"
-        })
-        return
-      }
-
-      dydxFaucetState.set({
-        kind: "RESULT_OK",
-        message: "success"
-      })
-      return true
-    } catch (error) {
-      dydxFaucetState.set({
-        kind: "RESULT_ERR",
-        error: `Faucet error: ${error}`
-      })
-      return
-    }
-  }
-}
-
-let dydxBalance = createQuery(
-  derived(dydxAddress, $dydxAddress => ({
-    queryKey: ["dydx-balance", $dydxAddress],
-    enabled: $dydxAddress?.indexOf("dydx") === 0,
-    refetchInterval: () => ($dydxAddress?.indexOf("dydx") === 0 ? 5_000 : false),
-    queryFn: async () =>
-      await getCosmosChainBalances({
-        walletAddress: `${$dydxAddress}`,
-        url: "https://dydx-testnet-api.polkachu.com"
-      }),
-    select: (data: AwaitedReturnType<typeof getCosmosChainBalances>) =>
-      data?.find(balance => balance?.symbol === "adv4tnt")
-  }))
-)
-
-let dydxAddressTransfers = createQuery(
-  derived(dydxAddress, $dydxAddress => ({
-    queryKey: ["dydx-address-transfers", $dydxAddress],
-    enabled: $dydxAddress?.indexOf("dydx") === 0,
-    refetchInterval: () => ($dydxAddress?.indexOf("dydx") === 0 ? 5_000 : false),
-    queryFn: async () =>
-      cosmosChainAddressTransfers({
-        address: $dydxAddress,
-        include: ["recipient"],
-        url: "https://dydx-testnet-api.polkachu.com"
-      }),
-    select: (data: AwaitedReturnType<typeof cosmosChainAddressTransfers>) =>
-      data?.tx_responses
-        .filter(
-          txResponse =>
-            txResponse.code === 0 &&
-            txResponse.tx.body.messages.some(
-              // faucet address
-              message =>
-                message.from_address === "dydx1g2ygh8ufgwwpg5clp2qh3tmcmlewuyt2z6px8k" &&
-                message.amount.at(0)?.denom === "adv4tnt"
-            )
-        )
-        .at(-1)
-  }))
-)
-
-$: console.info($dydxAddressTransfers?.data)
 </script>
 
 <svelte:head>

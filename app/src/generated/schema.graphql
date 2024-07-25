@@ -13,8 +13,6 @@ directive @cached(
   refresh: Boolean! = false
 ) on QUERY
 
-scalar Address
-
 """
 Boolean expression to compare columns of type "Boolean". All fields are combined with logical 'AND'.
 """
@@ -28,16 +26,6 @@ input Boolean_comparison_exp {
   _lte: Boolean
   _neq: Boolean
   _nin: [Boolean!]
-}
-
-type Configuration {
-  amountSend: Long!
-  chainId: String!
-  denom: String!
-  feeAmount: Long!
-  gasLimit: UInt64!
-  memo: String!
-  prefix: String!
 }
 
 """
@@ -55,15 +43,11 @@ input Int_comparison_exp {
   _nin: [Int!]
 }
 
-scalar Long
-
-type Mutation {
-  send(captchaToken: String!, toAddress: String!): String!
-}
-
-input SendInput {
-  captchaToken: String
-  toAddress: Address!
+type Request {
+  address: String!
+  id: Int!
+  time: String!
+  txHash: String
 }
 
 """
@@ -119,10 +103,6 @@ input String_comparison_exp {
   _similar: String
 }
 
-scalar UInt64
-
-scalar Void
-
 scalar bigint
 
 """
@@ -149,16 +129,24 @@ enum cursor_ordering {
   DESC
 }
 
+type dydx_faucetMutation {
+  send(captchaToken: String!, toAddress: String!): String!
+}
+
+type dydx_faucetQuery {
+  handledTransfers(limit: Int, offsetTime: String): [Request!]!
+  transfersForAddress(address: String!, limit: Int, offsetTime: String): [Request!]!
+  unhandledTransfers(limit: Int, offsetTime: String): [Request!]!
+}
+
+type faucet2Mutation {
+  send(captchaToken: String!, toAddress: String!): String!
+}
+
 type faucet2Query {
-  howdy: String!
-}
-
-type faucetMutation {
-  send(input: SendInput!): Void
-}
-
-type faucetQuery {
-  configuration: Configuration!
+  handledTransfers(limit: Int, offsetTime: String): [Request!]!
+  transfersForAddress(address: String!, limit: Int, offsetTime: String): [Request!]!
+  unhandledTransfers(limit: Int, offsetTime: String): [Request!]!
 }
 
 scalar json
@@ -202,8 +190,8 @@ input jsonb_comparison_exp {
 
 """mutation root"""
 type mutation_root {
-  faucet: faucetMutation
-  faucet2: Mutation
+  dydx_faucet: dydx_faucetMutation
+  faucet2: faucet2Mutation
 }
 
 scalar numeric
@@ -245,7 +233,7 @@ enum order_by {
 }
 
 type query_root {
-  faucet: faucetQuery
+  dydx_faucet: dydx_faucetQuery
   faucet2: faucet2Query
 
   """
@@ -418,6 +406,46 @@ type query_root {
   ): [v0_connections!]!
 
   """
+  fetch data from the table: "v0.daily_packets"
+  """
+  v0_daily_packets(
+    """distinct select on columns"""
+    distinct_on: [v0_daily_packets_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_daily_packets_order_by!]
+
+    """filter the rows returned"""
+    where: v0_daily_packets_bool_exp
+  ): [v0_daily_packets!]!
+
+  """
+  fetch data from the table: "v0.daily_transfers"
+  """
+  v0_daily_transfers(
+    """distinct select on columns"""
+    distinct_on: [v0_daily_transfers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_daily_transfers_order_by!]
+
+    """filter the rows returned"""
+    where: v0_daily_transfers_bool_exp
+  ): [v0_daily_transfers!]!
+
+  """
   fetch data from the table: "v0.explorers"
   """
   v0_explorers(
@@ -529,6 +557,66 @@ type query_root {
   ): [v0_packets!]!
 
   """
+  fetch aggregated fields from the table: "v0.packets"
+  """
+  v0_packets_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_packets_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_packets_order_by!]
+
+    """filter the rows returned"""
+    where: v0_packets_bool_exp
+  ): v0_packets_aggregate!
+
+  """
+  fetch data from the table: "v0.packets_mat"
+  """
+  v0_packets_mat(
+    """distinct select on columns"""
+    distinct_on: [v0_packets_mat_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_packets_mat_order_by!]
+
+    """filter the rows returned"""
+    where: v0_packets_mat_bool_exp
+  ): [v0_packets_mat!]!
+
+  """
+  fetch aggregated fields from the table: "v0.packets_mat"
+  """
+  v0_packets_mat_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_packets_mat_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_packets_mat_order_by!]
+
+    """filter the rows returned"""
+    where: v0_packets_mat_bool_exp
+  ): v0_packets_mat_aggregate!
+
+  """
   fetch data from the table: "v0.rpcs"
   """
   v0_rpcs(
@@ -633,6 +721,26 @@ type query_root {
     """filter the rows returned"""
     where: v0_transfers_bool_exp
   ): [v0_transfers!]!
+
+  """
+  fetch aggregated fields from the table: "v0.transfers"
+  """
+  v0_transfers_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_transfers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transfers_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transfers_bool_exp
+  ): v0_transfers_aggregate!
 
   """
   fetch data from the table: "v0.ucs1_configuration"
@@ -933,6 +1041,74 @@ type subscription_root {
   ): [v0_connections!]!
 
   """
+  fetch data from the table: "v0.daily_packets"
+  """
+  v0_daily_packets(
+    """distinct select on columns"""
+    distinct_on: [v0_daily_packets_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_daily_packets_order_by!]
+
+    """filter the rows returned"""
+    where: v0_daily_packets_bool_exp
+  ): [v0_daily_packets!]!
+
+  """
+  fetch data from the table in a streaming manner: "v0.daily_packets"
+  """
+  v0_daily_packets_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_daily_packets_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_daily_packets_bool_exp
+  ): [v0_daily_packets!]!
+
+  """
+  fetch data from the table: "v0.daily_transfers"
+  """
+  v0_daily_transfers(
+    """distinct select on columns"""
+    distinct_on: [v0_daily_transfers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_daily_transfers_order_by!]
+
+    """filter the rows returned"""
+    where: v0_daily_transfers_bool_exp
+  ): [v0_daily_transfers!]!
+
+  """
+  fetch data from the table in a streaming manner: "v0.daily_transfers"
+  """
+  v0_daily_transfers_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_daily_transfers_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_daily_transfers_bool_exp
+  ): [v0_daily_transfers!]!
+
+  """
   fetch data from the table: "v0.explorers"
   """
   v0_explorers(
@@ -1084,6 +1260,80 @@ type subscription_root {
     """filter the rows returned"""
     where: v0_packets_bool_exp
   ): [v0_packets!]!
+
+  """
+  fetch aggregated fields from the table: "v0.packets"
+  """
+  v0_packets_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_packets_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_packets_order_by!]
+
+    """filter the rows returned"""
+    where: v0_packets_bool_exp
+  ): v0_packets_aggregate!
+
+  """
+  fetch data from the table: "v0.packets_mat"
+  """
+  v0_packets_mat(
+    """distinct select on columns"""
+    distinct_on: [v0_packets_mat_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_packets_mat_order_by!]
+
+    """filter the rows returned"""
+    where: v0_packets_mat_bool_exp
+  ): [v0_packets_mat!]!
+
+  """
+  fetch aggregated fields from the table: "v0.packets_mat"
+  """
+  v0_packets_mat_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_packets_mat_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_packets_mat_order_by!]
+
+    """filter the rows returned"""
+    where: v0_packets_mat_bool_exp
+  ): v0_packets_mat_aggregate!
+
+  """
+  fetch data from the table in a streaming manner: "v0.packets_mat"
+  """
+  v0_packets_mat_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_packets_mat_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_packets_mat_bool_exp
+  ): [v0_packets_mat!]!
 
   """
   fetch data from the table in a streaming manner: "v0.packets"
@@ -1260,6 +1510,26 @@ type subscription_root {
     """filter the rows returned"""
     where: v0_transfers_bool_exp
   ): [v0_transfers!]!
+
+  """
+  fetch aggregated fields from the table: "v0.transfers"
+  """
+  v0_transfers_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v0_transfers_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_transfers_order_by!]
+
+    """filter the rows returned"""
+    where: v0_transfers_bool_exp
+  ): v0_transfers_aggregate!
 
   """
   fetch data from the table in a streaming manner: "v0.transfers"
@@ -2507,6 +2777,112 @@ input v0_connections_stream_cursor_value_input {
   status: String
 }
 
+"""
+columns and relationships of "v0.daily_packets"
+"""
+type v0_daily_packets {
+  count: bigint
+  day: timestamptz
+}
+
+"""
+Boolean expression to filter rows from the table "v0.daily_packets". All fields are combined with a logical 'AND'.
+"""
+input v0_daily_packets_bool_exp {
+  _and: [v0_daily_packets_bool_exp!]
+  _not: v0_daily_packets_bool_exp
+  _or: [v0_daily_packets_bool_exp!]
+  count: bigint_comparison_exp
+  day: timestamptz_comparison_exp
+}
+
+"""Ordering options when selecting data from "v0.daily_packets"."""
+input v0_daily_packets_order_by {
+  count: order_by
+  day: order_by
+}
+
+"""
+select columns of table "v0.daily_packets"
+"""
+enum v0_daily_packets_select_column {
+  """column name"""
+  count
+
+  """column name"""
+  day
+}
+
+"""
+Streaming cursor of the table "v0_daily_packets"
+"""
+input v0_daily_packets_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_daily_packets_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_daily_packets_stream_cursor_value_input {
+  count: bigint
+  day: timestamptz
+}
+
+"""
+columns and relationships of "v0.daily_transfers"
+"""
+type v0_daily_transfers {
+  count: bigint
+  day: timestamptz
+}
+
+"""
+Boolean expression to filter rows from the table "v0.daily_transfers". All fields are combined with a logical 'AND'.
+"""
+input v0_daily_transfers_bool_exp {
+  _and: [v0_daily_transfers_bool_exp!]
+  _not: v0_daily_transfers_bool_exp
+  _or: [v0_daily_transfers_bool_exp!]
+  count: bigint_comparison_exp
+  day: timestamptz_comparison_exp
+}
+
+"""Ordering options when selecting data from "v0.daily_transfers"."""
+input v0_daily_transfers_order_by {
+  count: order_by
+  day: order_by
+}
+
+"""
+select columns of table "v0.daily_transfers"
+"""
+enum v0_daily_transfers_select_column {
+  """column name"""
+  count
+
+  """column name"""
+  day
+}
+
+"""
+Streaming cursor of the table "v0_daily_transfers"
+"""
+input v0_daily_transfers_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_daily_transfers_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_daily_transfers_stream_cursor_value_input {
+  count: bigint
+  day: timestamptz
+}
+
 """Blockchain explorers and their info."""
 type v0_explorers {
   address_url: String!
@@ -3030,6 +3406,43 @@ type v0_packets {
 }
 
 """
+aggregated selection of "v0.packets"
+"""
+type v0_packets_aggregate {
+  aggregate: v0_packets_aggregate_fields
+  nodes: [v0_packets!]!
+}
+
+"""
+aggregate fields of "v0.packets"
+"""
+type v0_packets_aggregate_fields {
+  avg: v0_packets_avg_fields
+  count(columns: [v0_packets_select_column!], distinct: Boolean): Int!
+  max: v0_packets_max_fields
+  min: v0_packets_min_fields
+  stddev: v0_packets_stddev_fields
+  stddev_pop: v0_packets_stddev_pop_fields
+  stddev_samp: v0_packets_stddev_samp_fields
+  sum: v0_packets_sum_fields
+  var_pop: v0_packets_var_pop_fields
+  var_samp: v0_packets_var_samp_fields
+  variance: v0_packets_variance_fields
+}
+
+"""aggregate avg on columns"""
+type v0_packets_avg_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""
 Boolean expression to filter rows from the table "v0.packets". All fields are combined with a logical 'AND'.
 """
 input v0_packets_bool_exp {
@@ -3063,6 +3476,579 @@ input v0_packets_bool_exp {
   source_transaction_hash: String_comparison_exp
   source_transaction_index: String_comparison_exp
   status: String_comparison_exp
+}
+
+"""
+columns and relationships of "v0.packets_mat"
+"""
+type v0_packets_mat {
+  destination_block_hash: String
+  destination_chain_id: Int
+  destination_channel: String
+  destination_data: String
+  destination_height: Int
+  destination_json(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  destination_port: String
+  destination_sequence: numeric
+  destination_time: timestamptz
+  destination_timeout_timestamp: numeric
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  from_chain_id: String
+  from_channel_id: String
+  from_connection_id: String
+  from_id: Int
+  from_port_id: String
+  pfm_memo: String
+  source_block_hash: String
+  source_chain_id: Int
+  source_channel: String
+  source_data: String
+  source_height: Int
+  source_json(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  source_port: String
+  source_sequence: numeric
+  source_time: timestamptz
+  source_timeout_timestamp: numeric
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
+  to_chain_id: String
+  to_channel_id: String
+  to_connection_id: String
+  to_id: Int
+  to_port_id: String
+  version: String
+}
+
+"""
+aggregated selection of "v0.packets_mat"
+"""
+type v0_packets_mat_aggregate {
+  aggregate: v0_packets_mat_aggregate_fields
+  nodes: [v0_packets_mat!]!
+}
+
+"""
+aggregate fields of "v0.packets_mat"
+"""
+type v0_packets_mat_aggregate_fields {
+  avg: v0_packets_mat_avg_fields
+  count(columns: [v0_packets_mat_select_column!], distinct: Boolean): Int!
+  max: v0_packets_mat_max_fields
+  min: v0_packets_mat_min_fields
+  stddev: v0_packets_mat_stddev_fields
+  stddev_pop: v0_packets_mat_stddev_pop_fields
+  stddev_samp: v0_packets_mat_stddev_samp_fields
+  sum: v0_packets_mat_sum_fields
+  var_pop: v0_packets_mat_var_pop_fields
+  var_samp: v0_packets_mat_var_samp_fields
+  variance: v0_packets_mat_variance_fields
+}
+
+"""aggregate avg on columns"""
+type v0_packets_mat_avg_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  from_id: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+  to_id: Float
+}
+
+"""
+Boolean expression to filter rows from the table "v0.packets_mat". All fields are combined with a logical 'AND'.
+"""
+input v0_packets_mat_bool_exp {
+  _and: [v0_packets_mat_bool_exp!]
+  _not: v0_packets_mat_bool_exp
+  _or: [v0_packets_mat_bool_exp!]
+  destination_block_hash: String_comparison_exp
+  destination_chain_id: Int_comparison_exp
+  destination_channel: String_comparison_exp
+  destination_data: String_comparison_exp
+  destination_height: Int_comparison_exp
+  destination_json: jsonb_comparison_exp
+  destination_port: String_comparison_exp
+  destination_sequence: numeric_comparison_exp
+  destination_time: timestamptz_comparison_exp
+  destination_timeout_timestamp: numeric_comparison_exp
+  destination_transaction_hash: String_comparison_exp
+  destination_transaction_index: String_comparison_exp
+  from_chain_id: String_comparison_exp
+  from_channel_id: String_comparison_exp
+  from_connection_id: String_comparison_exp
+  from_id: Int_comparison_exp
+  from_port_id: String_comparison_exp
+  pfm_memo: String_comparison_exp
+  source_block_hash: String_comparison_exp
+  source_chain_id: Int_comparison_exp
+  source_channel: String_comparison_exp
+  source_data: String_comparison_exp
+  source_height: Int_comparison_exp
+  source_json: jsonb_comparison_exp
+  source_port: String_comparison_exp
+  source_sequence: numeric_comparison_exp
+  source_time: timestamptz_comparison_exp
+  source_timeout_timestamp: numeric_comparison_exp
+  source_transaction_hash: String_comparison_exp
+  source_transaction_index: String_comparison_exp
+  status: String_comparison_exp
+  to_chain_id: String_comparison_exp
+  to_channel_id: String_comparison_exp
+  to_connection_id: String_comparison_exp
+  to_id: Int_comparison_exp
+  to_port_id: String_comparison_exp
+  version: String_comparison_exp
+}
+
+"""aggregate max on columns"""
+type v0_packets_mat_max_fields {
+  destination_block_hash: String
+  destination_chain_id: Int
+  destination_channel: String
+  destination_data: String
+  destination_height: Int
+  destination_port: String
+  destination_sequence: numeric
+  destination_time: timestamptz
+  destination_timeout_timestamp: numeric
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  from_chain_id: String
+  from_channel_id: String
+  from_connection_id: String
+  from_id: Int
+  from_port_id: String
+  pfm_memo: String
+  source_block_hash: String
+  source_chain_id: Int
+  source_channel: String
+  source_data: String
+  source_height: Int
+  source_port: String
+  source_sequence: numeric
+  source_time: timestamptz
+  source_timeout_timestamp: numeric
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
+  to_chain_id: String
+  to_channel_id: String
+  to_connection_id: String
+  to_id: Int
+  to_port_id: String
+  version: String
+}
+
+"""aggregate min on columns"""
+type v0_packets_mat_min_fields {
+  destination_block_hash: String
+  destination_chain_id: Int
+  destination_channel: String
+  destination_data: String
+  destination_height: Int
+  destination_port: String
+  destination_sequence: numeric
+  destination_time: timestamptz
+  destination_timeout_timestamp: numeric
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  from_chain_id: String
+  from_channel_id: String
+  from_connection_id: String
+  from_id: Int
+  from_port_id: String
+  pfm_memo: String
+  source_block_hash: String
+  source_chain_id: Int
+  source_channel: String
+  source_data: String
+  source_height: Int
+  source_port: String
+  source_sequence: numeric
+  source_time: timestamptz
+  source_timeout_timestamp: numeric
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
+  to_chain_id: String
+  to_channel_id: String
+  to_connection_id: String
+  to_id: Int
+  to_port_id: String
+  version: String
+}
+
+"""Ordering options when selecting data from "v0.packets_mat"."""
+input v0_packets_mat_order_by {
+  destination_block_hash: order_by
+  destination_chain_id: order_by
+  destination_channel: order_by
+  destination_data: order_by
+  destination_height: order_by
+  destination_json: order_by
+  destination_port: order_by
+  destination_sequence: order_by
+  destination_time: order_by
+  destination_timeout_timestamp: order_by
+  destination_transaction_hash: order_by
+  destination_transaction_index: order_by
+  from_chain_id: order_by
+  from_channel_id: order_by
+  from_connection_id: order_by
+  from_id: order_by
+  from_port_id: order_by
+  pfm_memo: order_by
+  source_block_hash: order_by
+  source_chain_id: order_by
+  source_channel: order_by
+  source_data: order_by
+  source_height: order_by
+  source_json: order_by
+  source_port: order_by
+  source_sequence: order_by
+  source_time: order_by
+  source_timeout_timestamp: order_by
+  source_transaction_hash: order_by
+  source_transaction_index: order_by
+  status: order_by
+  to_chain_id: order_by
+  to_channel_id: order_by
+  to_connection_id: order_by
+  to_id: order_by
+  to_port_id: order_by
+  version: order_by
+}
+
+"""
+select columns of table "v0.packets_mat"
+"""
+enum v0_packets_mat_select_column {
+  """column name"""
+  destination_block_hash
+
+  """column name"""
+  destination_chain_id
+
+  """column name"""
+  destination_channel
+
+  """column name"""
+  destination_data
+
+  """column name"""
+  destination_height
+
+  """column name"""
+  destination_json
+
+  """column name"""
+  destination_port
+
+  """column name"""
+  destination_sequence
+
+  """column name"""
+  destination_time
+
+  """column name"""
+  destination_timeout_timestamp
+
+  """column name"""
+  destination_transaction_hash
+
+  """column name"""
+  destination_transaction_index
+
+  """column name"""
+  from_chain_id
+
+  """column name"""
+  from_channel_id
+
+  """column name"""
+  from_connection_id
+
+  """column name"""
+  from_id
+
+  """column name"""
+  from_port_id
+
+  """column name"""
+  pfm_memo
+
+  """column name"""
+  source_block_hash
+
+  """column name"""
+  source_chain_id
+
+  """column name"""
+  source_channel
+
+  """column name"""
+  source_data
+
+  """column name"""
+  source_height
+
+  """column name"""
+  source_json
+
+  """column name"""
+  source_port
+
+  """column name"""
+  source_sequence
+
+  """column name"""
+  source_time
+
+  """column name"""
+  source_timeout_timestamp
+
+  """column name"""
+  source_transaction_hash
+
+  """column name"""
+  source_transaction_index
+
+  """column name"""
+  status
+
+  """column name"""
+  to_chain_id
+
+  """column name"""
+  to_channel_id
+
+  """column name"""
+  to_connection_id
+
+  """column name"""
+  to_id
+
+  """column name"""
+  to_port_id
+
+  """column name"""
+  version
+}
+
+"""aggregate stddev on columns"""
+type v0_packets_mat_stddev_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  from_id: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+  to_id: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type v0_packets_mat_stddev_pop_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  from_id: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+  to_id: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type v0_packets_mat_stddev_samp_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  from_id: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+  to_id: Float
+}
+
+"""
+Streaming cursor of the table "v0_packets_mat"
+"""
+input v0_packets_mat_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_packets_mat_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_packets_mat_stream_cursor_value_input {
+  destination_block_hash: String
+  destination_chain_id: Int
+  destination_channel: String
+  destination_data: String
+  destination_height: Int
+  destination_json: jsonb
+  destination_port: String
+  destination_sequence: numeric
+  destination_time: timestamptz
+  destination_timeout_timestamp: numeric
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  from_chain_id: String
+  from_channel_id: String
+  from_connection_id: String
+  from_id: Int
+  from_port_id: String
+  pfm_memo: String
+  source_block_hash: String
+  source_chain_id: Int
+  source_channel: String
+  source_data: String
+  source_height: Int
+  source_json: jsonb
+  source_port: String
+  source_sequence: numeric
+  source_time: timestamptz
+  source_timeout_timestamp: numeric
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
+  to_chain_id: String
+  to_channel_id: String
+  to_connection_id: String
+  to_id: Int
+  to_port_id: String
+  version: String
+}
+
+"""aggregate sum on columns"""
+type v0_packets_mat_sum_fields {
+  destination_chain_id: Int
+  destination_height: Int
+  destination_sequence: numeric
+  destination_timeout_timestamp: numeric
+  from_id: Int
+  source_chain_id: Int
+  source_height: Int
+  source_sequence: numeric
+  source_timeout_timestamp: numeric
+  to_id: Int
+}
+
+"""aggregate var_pop on columns"""
+type v0_packets_mat_var_pop_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  from_id: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+  to_id: Float
+}
+
+"""aggregate var_samp on columns"""
+type v0_packets_mat_var_samp_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  from_id: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+  to_id: Float
+}
+
+"""aggregate variance on columns"""
+type v0_packets_mat_variance_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  from_id: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+  to_id: Float
+}
+
+"""aggregate max on columns"""
+type v0_packets_max_fields {
+  destination_block_hash: String
+  destination_chain_id: Int
+  destination_channel: String
+  destination_data: String
+  destination_height: Int
+  destination_port: String
+  destination_sequence: numeric
+  destination_time: timestamptz
+  destination_timeout_timestamp: numeric
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  source_block_hash: String
+  source_chain_id: Int
+  source_channel: String
+  source_data: String
+  source_height: Int
+  source_port: String
+  source_sequence: numeric
+  source_time: timestamptz
+  source_timeout_timestamp: numeric
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
+}
+
+"""aggregate min on columns"""
+type v0_packets_min_fields {
+  destination_block_hash: String
+  destination_chain_id: Int
+  destination_channel: String
+  destination_data: String
+  destination_height: Int
+  destination_port: String
+  destination_sequence: numeric
+  destination_time: timestamptz
+  destination_timeout_timestamp: numeric
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  source_block_hash: String
+  source_chain_id: Int
+  source_channel: String
+  source_data: String
+  source_height: Int
+  source_port: String
+  source_sequence: numeric
+  source_time: timestamptz
+  source_timeout_timestamp: numeric
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
 }
 
 """Ordering options when selecting data from "v0.packets"."""
@@ -3176,6 +4162,42 @@ enum v0_packets_select_column {
   status
 }
 
+"""aggregate stddev on columns"""
+type v0_packets_stddev_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type v0_packets_stddev_pop_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type v0_packets_stddev_samp_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
 """
 Streaming cursor of the table "v0_packets"
 """
@@ -3214,6 +4236,54 @@ input v0_packets_stream_cursor_value_input {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+}
+
+"""aggregate sum on columns"""
+type v0_packets_sum_fields {
+  destination_chain_id: Int
+  destination_height: Int
+  destination_sequence: numeric
+  destination_timeout_timestamp: numeric
+  source_chain_id: Int
+  source_height: Int
+  source_sequence: numeric
+  source_timeout_timestamp: numeric
+}
+
+"""aggregate var_pop on columns"""
+type v0_packets_var_pop_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""aggregate var_samp on columns"""
+type v0_packets_var_samp_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""aggregate variance on columns"""
+type v0_packets_variance_fields {
+  destination_chain_id: Float
+  destination_height: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  source_chain_id: Float
+  source_height: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
 }
 
 """Various RPC endpoints for the different networks that Union supports. """
@@ -4235,6 +5305,45 @@ type v0_transfers {
 }
 
 """
+aggregated selection of "v0.transfers"
+"""
+type v0_transfers_aggregate {
+  aggregate: v0_transfers_aggregate_fields
+  nodes: [v0_transfers!]!
+}
+
+"""
+aggregate fields of "v0.transfers"
+"""
+type v0_transfers_aggregate_fields {
+  avg: v0_transfers_avg_fields
+  count(columns: [v0_transfers_select_column!], distinct: Boolean): Int!
+  max: v0_transfers_max_fields
+  min: v0_transfers_min_fields
+  stddev: v0_transfers_stddev_fields
+  stddev_pop: v0_transfers_stddev_pop_fields
+  stddev_samp: v0_transfers_stddev_samp_fields
+  sum: v0_transfers_sum_fields
+  var_pop: v0_transfers_var_pop_fields
+  var_samp: v0_transfers_var_samp_fields
+  variance: v0_transfers_variance_fields
+}
+
+"""aggregate avg on columns"""
+type v0_transfers_avg_fields {
+  destination_height: Float
+  destination_id: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  pfm_recv_sequence: Float
+  pfm_sent_sequence: Float
+  source_height: Float
+  source_id: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""
 Boolean expression to filter rows from the table "v0.transfers". All fields are combined with a logical 'AND'.
 """
 input v0_transfers_bool_exp {
@@ -4290,6 +5399,90 @@ input v0_transfers_bool_exp {
   status: String_comparison_exp
   traces: v0_traces_bool_exp
   transaction_hash: String_comparison_exp
+}
+
+"""aggregate max on columns"""
+type v0_transfers_max_fields {
+  destination_block_hash: String
+  destination_chain_id: String
+  destination_channel_id: String
+  destination_connection_id: String
+  destination_data: String
+  destination_height: Int
+  destination_id: Int
+  destination_port: String
+  destination_sequence: numeric
+  destination_timeout_timestamp: numeric
+  destination_timestamp: timestamptz
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  normalized_receiver: String
+  normalized_sender: String
+  pfm_destination_channel: String
+  pfm_destination_port: String
+  pfm_recv_sequence: Int
+  pfm_sent_sequence: Int
+  pfm_source_channel: String
+  pfm_source_port: String
+  receiver: String
+  sender: String
+  source_block_hash: String
+  source_chain_id: String
+  source_channel_id: String
+  source_connection_id: String
+  source_data: String
+  source_height: Int
+  source_id: Int
+  source_port: String
+  source_sequence: numeric
+  source_timeout_timestamp: numeric
+  source_timestamp: timestamptz
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
+  transaction_hash: String
+}
+
+"""aggregate min on columns"""
+type v0_transfers_min_fields {
+  destination_block_hash: String
+  destination_chain_id: String
+  destination_channel_id: String
+  destination_connection_id: String
+  destination_data: String
+  destination_height: Int
+  destination_id: Int
+  destination_port: String
+  destination_sequence: numeric
+  destination_timeout_timestamp: numeric
+  destination_timestamp: timestamptz
+  destination_transaction_hash: String
+  destination_transaction_index: String
+  normalized_receiver: String
+  normalized_sender: String
+  pfm_destination_channel: String
+  pfm_destination_port: String
+  pfm_recv_sequence: Int
+  pfm_sent_sequence: Int
+  pfm_source_channel: String
+  pfm_source_port: String
+  receiver: String
+  sender: String
+  source_block_hash: String
+  source_chain_id: String
+  source_channel_id: String
+  source_connection_id: String
+  source_data: String
+  source_height: Int
+  source_id: Int
+  source_port: String
+  source_sequence: numeric
+  source_timeout_timestamp: numeric
+  source_timestamp: timestamptz
+  source_transaction_hash: String
+  source_transaction_index: String
+  status: String
+  transaction_hash: String
 }
 
 """Ordering options when selecting data from "v0.transfers"."""
@@ -4479,6 +5672,48 @@ enum v0_transfers_select_column {
   transaction_hash
 }
 
+"""aggregate stddev on columns"""
+type v0_transfers_stddev_fields {
+  destination_height: Float
+  destination_id: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  pfm_recv_sequence: Float
+  pfm_sent_sequence: Float
+  source_height: Float
+  source_id: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type v0_transfers_stddev_pop_fields {
+  destination_height: Float
+  destination_id: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  pfm_recv_sequence: Float
+  pfm_sent_sequence: Float
+  source_height: Float
+  source_id: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type v0_transfers_stddev_samp_fields {
+  destination_height: Float
+  destination_id: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  pfm_recv_sequence: Float
+  pfm_sent_sequence: Float
+  source_height: Float
+  source_id: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
 """
 Streaming cursor of the table "v0_transfers"
 """
@@ -4535,6 +5770,62 @@ input v0_transfers_stream_cursor_value_input {
   source_transaction_index: String
   status: String
   transaction_hash: String
+}
+
+"""aggregate sum on columns"""
+type v0_transfers_sum_fields {
+  destination_height: Int
+  destination_id: Int
+  destination_sequence: numeric
+  destination_timeout_timestamp: numeric
+  pfm_recv_sequence: Int
+  pfm_sent_sequence: Int
+  source_height: Int
+  source_id: Int
+  source_sequence: numeric
+  source_timeout_timestamp: numeric
+}
+
+"""aggregate var_pop on columns"""
+type v0_transfers_var_pop_fields {
+  destination_height: Float
+  destination_id: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  pfm_recv_sequence: Float
+  pfm_sent_sequence: Float
+  source_height: Float
+  source_id: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""aggregate var_samp on columns"""
+type v0_transfers_var_samp_fields {
+  destination_height: Float
+  destination_id: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  pfm_recv_sequence: Float
+  pfm_sent_sequence: Float
+  source_height: Float
+  source_id: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
+}
+
+"""aggregate variance on columns"""
+type v0_transfers_variance_fields {
+  destination_height: Float
+  destination_id: Float
+  destination_sequence: Float
+  destination_timeout_timestamp: Float
+  pfm_recv_sequence: Float
+  pfm_sent_sequence: Float
+  source_height: Float
+  source_id: Float
+  source_sequence: Float
+  source_timeout_timestamp: Float
 }
 
 """

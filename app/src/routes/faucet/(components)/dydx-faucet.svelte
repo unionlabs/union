@@ -1,5 +1,8 @@
 <script lang="ts">
-import { toast } from "svelte-sonner"
+import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
+import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
+import { URLS } from "$lib/constants"
+import request from "graphql-request"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { Label } from "$lib/components/ui/label"
 import { createQuery } from "@tanstack/svelte-query"
@@ -10,18 +13,16 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { derived, writable, type Writable } from "svelte/store"
+import { dydxFaucetMutation } from "$lib/graphql/documents/faucet"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
-import { cosmosChainAddressTransfers } from "$lib/queries/transfers/cosmos"
-import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
-import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 
 type DydxFaucetState = DiscriminatedUnion<
   "kind",
   {
     IDLE: {}
     REQUESTING_TOKEN: {}
-    SUBMITTING: {}
+    SUBMITTING: { captchaToken: string }
     RESULT_OK: { message: string }
     RESULT_ERR: { error: string }
   }
@@ -40,38 +41,71 @@ let dydxFaucetState: Writable<DydxFaucetState> = writable({ kind: "IDLE" })
 
 const requestDydxFromFaucet = async () => {
   if ($dydxFaucetState.kind === "IDLE" || $dydxFaucetState.kind === "REQUESTING_TOKEN") {
-    dydxFaucetState.set({ kind: "SUBMITTING" })
+    dydxFaucetState.set({ kind: "REQUESTING_TOKEN" })
+
+    if (!window?.__google_recaptcha_client) {
+      console.error("Recaptcha client not loaded")
+      dydxFaucetState.set({
+        kind: "RESULT_ERR",
+        error: "Recaptcha client not loaded"
+      })
+      return
+    }
+
+    if (
+      typeof window.grecaptcha === "undefined" ||
+      typeof window.grecaptcha.execute !== "function"
+    ) {
+      console.error("Recaptcha execute function not available")
+      dydxFaucetState.set({
+        kind: "RESULT_ERR",
+        error: "Recaptcha execute function not available"
+      })
+      return
+    }
+
+    const captchaToken = await window.grecaptcha.execute(
+      "6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow",
+      { action: "submit" }
+    )
+
+    dydxFaucetState.set({ kind: "SUBMITTING", captchaToken })
   }
 
   if ($dydxFaucetState.kind === "SUBMITTING") {
     try {
-      const response = await fetch("https://faucet.v4testnet.dydx.exchange/faucet/native-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: $dydxAddress })
+      const result = await request(URLS.GRAPHQL, dydxFaucetMutation, {
+        address: $dydxAddress,
+        captchaToken: $dydxFaucetState.captchaToken
       })
-      if (!response.ok) {
-        const error = (await response.json()) as { error: string }
+
+      if (!result.dydx_faucet) {
         dydxFaucetState.set({
           kind: "RESULT_ERR",
-          error: error?.error?.includes("many")
-            ? "Rate limit exceeded"
-            : error?.error ?? "Unknown error"
+          error: "Empty faucet response"
+        })
+        return
+      }
+
+      if (result.dydx_faucet.send.startsWith("ERROR")) {
+        console.error(result.dydx_faucet.send)
+        dydxFaucetState.set({
+          kind: "RESULT_ERR",
+          error: "Error from faucet"
         })
         return
       }
 
       dydxFaucetState.set({
         kind: "RESULT_OK",
-        message: "success"
+        message: result.dydx_faucet.send
       })
-      return true
     } catch (error) {
+      console.error(error)
       dydxFaucetState.set({
         kind: "RESULT_ERR",
         error: `Faucet error: ${error}`
       })
-      return
     }
   }
 }
@@ -90,48 +124,37 @@ let dydxBalance = createQuery(
       data?.find(balance => balance?.symbol === "adv4tnt")
   }))
 )
-
-let dydxAddressTransfers = createQuery(
-  derived(dydxAddress, $dydxAddress => ({
-    queryKey: ["dydx-address-transfers", $dydxAddress],
-    enabled: $dydxAddress?.indexOf("dydx") === 0,
-    refetchInterval: () => ($dydxAddress?.indexOf("dydx") === 0 ? 5_000 : false),
-    queryFn: async () =>
-      cosmosChainAddressTransfers({
-        address: $dydxAddress,
-        include: ["recipient"],
-        url: "https://dydx-testnet-api.polkachu.com"
-      }),
-    select: (data: AwaitedReturnType<typeof cosmosChainAddressTransfers>) =>
-      data?.tx_responses
-        .filter(
-          txResponse =>
-            txResponse.code === 0 &&
-            txResponse.tx.body.messages.some(
-              // faucet address
-              message =>
-                message.from_address === "dydx1g2ygh8ufgwwpg5clp2qh3tmcmlewuyt2z6px8k" &&
-                message.amount.at(0)?.denom === "adv4tnt"
-            )
-        )
-        .at(-1)
-  }))
-)
-
-$: console.info($dydxAddressTransfers?.data)
 </script>
 
 <!-- dydx faucet -->
 <Card.Root
-  class="w-full max-w-lg bg-[#181825] text-[#FFFFFF] rounded-lg font-sans bg-[url('https://dydx.exchange/dots.svg')]"
+  class={cn(
+    "w-full max-w-lg rounded-lg font-sans",
+    "bg-[url('https://dydx.exchange/dots.svg')]",
+    "bg-[#181825] text-[#FFFFFF] dark:bg-[#2D2D44]/50 dark:text-[#FFFFFF]"
+  )}
 >
   <Card.Header>
     <Card.Title class="flex justify-between select-none">
       <p class="flex gap-x-3">
-        <img src="https://dydx.exchange/logo.svg" alt="" class="w-14" />
+        <a
+          target="_blank"
+          class="mt-[4.5px]"
+          rel="noopener noreferrer"
+          href="https://dydx.exchange"
+        >
+          <img src="https://dydx.exchange/logo.svg" alt="" class="w-14" />
+        </a>
         Faucet
       </p>
-      <img alt="" src="https://dydx.exchange/icon.svg" class="w-6" />
+      <a
+        target="_blank"
+        class="mt-[4.5px]"
+        rel="noopener noreferrer"
+        href="https://dydx.exchange"
+      >
+        <img alt="" src="https://dydx.exchange/icon.svg" class="w-6" />
+      </a>
     </Card.Title>
   </Card.Header>
   <Card.Content>
@@ -183,7 +206,10 @@ $: console.info($dydxAddressTransfers?.data)
                   data-1p-ignore={true}
                   placeholder="dydx14ea6…"
                   name="dydx-wallet-address"
-                  class="disabled:opacity-100 disabled:bg-black/20 bg-[#2D2D44] text-[#ffffff] rounded-md"
+                  class={cn(
+                    "bg-[#2D2D44] text-[#ffffff] dark:bg-[#181825] dark:text-[#ffffff]",
+                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
+                  )}
                   pattern={createCosmosSdkAddressRegex({ prefix: "dydx" })
                     .source}
                 />
@@ -200,15 +226,6 @@ $: console.info($dydxAddressTransfers?.data)
                     {/if}
                   </p>
                 </div>
-                <!-- {#if dydxAddress !== convertCosmosAddress( { address: `${$cosmosStore.address}`, toPrefix: "dydx" } )}
-                    <button
-                      type="button"
-                      on:click={resetDydxInput}
-                      class="text-xs text-muted-foreground hover:text-primary transition"
-                    >
-                      Reset
-                    </button>
-                  {/if} -->
               </div>
             </div>
           </div>
@@ -216,32 +233,15 @@ $: console.info($dydxAddressTransfers?.data)
         <div class="flex flex-row items-center gap-4">
           <Button
             type="submit"
-            on:click={async (event) => {
+            on:click={(event) => {
               event.preventDefault()
-              const success = await requestDydxFromFaucet()
-              if (!success) {
-                toast.loading("Faucet request submitted", {
-                  class: "text-md",
-                  dismissable: true,
-                  duration: Number.POSITIVE_INFINITY,
-                  actionButtonStyle: "font-mono text-xl",
-                  description: "Waiting for transaction receipt",
-                  action: {
-                    label: "explorer  🔗",
-                    onClick: async (event) =>
-                      window.open(
-                        `https://mintscan.io/dydx-testnet/address/${$dydxAddress}`,
-                        "_blank",
-                        "noopener"
-                      )
-                  }
-                })
-              }
+              requestDydxFromFaucet()
             }}
             disabled={$dydxFaucetState.kind !== "IDLE" ||
               isValidCosmosAddress($dydxAddress, ["dydx"]) === false}
             class={cn(
-              "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 bg-[#6866FF] rounded-md"
+              "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
+              "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]"
             )}
           >
             Submit
