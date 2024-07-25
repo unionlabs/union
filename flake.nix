@@ -254,6 +254,7 @@
         ./uniond/proto.nix
         ./app/app.nix
         ./site/site.nix
+        ./site/openapi.nix
         ./near/near.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix

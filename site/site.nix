@@ -52,8 +52,8 @@
             text = ''
               ${ensureAtRepositoryRoot}
               cd site/
-
-              node_modules/.bin/astro check
+              
+              npm_config_yes=true npx astro check
             '';
           };
         };

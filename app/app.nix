@@ -50,12 +50,12 @@
             text = ''
               ${ensureAtRepositoryRoot}
               cd app/
-              node_modules/.bin/gql.tada generate-schema \
+              npm_config_yes=true npx gql.tada generate-schema \
                 --tsconfig ./tsconfig.json \
                 --output "./src/generated/schema.graphql" \
                 "https://noble-pika-27.hasura.app/v1/graphql"
 
-              node_modules/.bin/gql.tada generate-output \
+              npm_config_yes=true npx gql.tada generate-output \
                 --disable-preprocessing \
                 --tsconfig ./tsconfig.json \
                 --output ./src/generated/graphql-env.d.ts
@@ -72,8 +72,8 @@
               ${ensureAtRepositoryRoot}
               cd app/
               
-              node_modules/.bin/svelte-check sync
-              node_modules/.bin/svelte-check --tsconfig ./tsconfig.json
+              npm_config_yes=true npx svelte-check sync
+              npm_config_yes=true npx svelte-check --tsconfig ./tsconfig.json
             '';
           };
         };

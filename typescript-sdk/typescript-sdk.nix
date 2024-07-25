@@ -19,7 +19,7 @@
               ${ensureAtRepositoryRoot}
               cd typescript-sdk/
               
-              node_modules/.bin/tsc --project ./tsconfig.json
+              bunx tsc --project ./tsconfig.json --noEmit
             '';
           };
         };
