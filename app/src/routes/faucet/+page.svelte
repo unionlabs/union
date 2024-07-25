@@ -1,10 +1,11 @@
 <script lang="ts">
+import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
 import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 import request from "graphql-request"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { URLS } from "$lib/constants/index.ts"
 import { Label } from "$lib/components/ui/label"
-import { writable, type Writable } from "svelte/store"
+import { createQuery } from "@tanstack/svelte-query"
 import Truncate from "$lib/components/truncate.svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
@@ -14,10 +15,12 @@ import WalletGate from "$lib/components/wallet-gate.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import TokenBalance from "./(components)/token-balance.svelte"
-import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
+import { derived, writable, type Writable } from "svelte/store"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
+import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
+import { cosmosChainAddressTransfers } from "$lib/queries/transfers/cosmos"
 import { onDestroy, onMount } from "svelte"
 
 type FaucetState = DiscriminatedUnion<
@@ -131,18 +134,14 @@ type DydxFaucetState = DiscriminatedUnion<
   }
 >
 
-$: dydxAddress = $cosmosStore.address
-  ? convertCosmosAddress({ address: $cosmosStore.address, toPrefix: "dydx" })
-  : ""
-
-const resetDydxInput = () => {
-  dydxAddress = $cosmosStore.address
+let dydxAddress = derived(cosmosStore, $cosmosStore =>
+  $cosmosStore.address
     ? convertCosmosAddress({
         address: $cosmosStore.address,
         toPrefix: "dydx"
       })
     : ""
-}
+)
 
 let dydxFaucetState: Writable<DydxFaucetState> = writable({ kind: "IDLE" })
 
@@ -156,14 +155,15 @@ const requestDydxFromFaucet = async () => {
       const response = await fetch("https://faucet.v4testnet.dydx.exchange/faucet/native-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: dydxAddress })
+        body: JSON.stringify({ address: $dydxAddress })
       })
       if (!response.ok) {
-        console.info("eok")
         const error = (await response.json()) as { error: string }
         dydxFaucetState.set({
           kind: "RESULT_ERR",
-          error: error?.error ?? "Error from faucet"
+          error: error?.error?.includes("many")
+            ? "Rate limit exceeded"
+            : error?.error ?? "Unknown error"
         })
         return
       }
@@ -181,6 +181,50 @@ const requestDydxFromFaucet = async () => {
     }
   }
 }
+
+let dydxBalance = createQuery(
+  derived(dydxAddress, $dydxAddress => ({
+    queryKey: ["dydx-balance", $dydxAddress],
+    enabled: $dydxAddress?.indexOf("dydx") === 0,
+    refetchInterval: () => ($dydxAddress?.indexOf("dydx") === 0 ? 5_000 : false),
+    queryFn: async () =>
+      await getCosmosChainBalances({
+        walletAddress: `${$dydxAddress}`,
+        url: "https://dydx-testnet-api.polkachu.com"
+      }),
+    select: (data: AwaitedReturnType<typeof getCosmosChainBalances>) =>
+      data?.find(balance => balance?.symbol === "adv4tnt")
+  }))
+)
+
+let dydxAddressTransfers = createQuery(
+  derived(dydxAddress, $dydxAddress => ({
+    queryKey: ["dydx-address-transfers", $dydxAddress],
+    enabled: $dydxAddress?.indexOf("dydx") === 0,
+    refetchInterval: () => ($dydxAddress?.indexOf("dydx") === 0 ? 5_000 : false),
+    queryFn: async () =>
+      cosmosChainAddressTransfers({
+        address: $dydxAddress,
+        include: ["recipient"],
+        url: "https://dydx-testnet-api.polkachu.com"
+      }),
+    select: (data: AwaitedReturnType<typeof cosmosChainAddressTransfers>) =>
+      data?.tx_responses
+        .filter(
+          txResponse =>
+            txResponse.code === 0 &&
+            txResponse.tx.body.messages.some(
+              // faucet address
+              message =>
+                message.from_address === "dydx1g2ygh8ufgwwpg5clp2qh3tmcmlewuyt2z6px8k" &&
+                message.amount.at(0)?.denom === "adv4tnt"
+            )
+        )
+        .at(-1)
+  }))
+)
+
+$: console.info($dydxAddressTransfers?.data)
 </script>
 
 <svelte:head>
@@ -218,9 +262,9 @@ const requestDydxFromFaucet = async () => {
           Sorry, there was an error while using the faucet. Did you make sure
           that the address is correct?
         </p>
-        <Button on:click={() => unoFaucetState.set({ kind: "IDLE" })}
-          >Retry</Button
-        >
+        <Button on:click={() => unoFaucetState.set({ kind: "IDLE" })}>
+          Retry
+        </Button>
         <p class="mt-4 break-words text-xs">{$unoFaucetState.error}</p>
       {:else}
         <form
@@ -270,7 +314,7 @@ const requestDydxFromFaucet = async () => {
                               {chains}
                               {userAddr}
                               {connected}
-                              symbol="uno"
+                              symbol="muno"
                             />
                           {:else}
                             Connect cosmos wallet
@@ -315,12 +359,14 @@ const requestDydxFromFaucet = async () => {
             <div class="text-[10px]">
               This faucet is protected by reCAPTCHA and the Google <a
                 class="underline"
-                href="https://policies.google.com/privacy">Privacy Policy</a
+                href="https://policies.google.com/privacy"
               >
+                Privacy Policy
+              </a>
               and
-              <a class="underline" href="https://policies.google.com/terms"
-                >Terms of Service</a
-              > apply.
+              <a class="underline" href="https://policies.google.com/terms">
+                Terms of Service
+              </a> apply.
             </div>
           </div>
           <div
@@ -358,7 +404,6 @@ const requestDydxFromFaucet = async () => {
         <Button on:click={() => dydxFaucetState.set({ kind: "IDLE" })}>
           Retry
         </Button>
-        <p class="mt-4 break-words text-xs">{$dydxFaucetState.error}</p>
       {:else}
         <form
           action="?"
@@ -373,53 +418,39 @@ const requestDydxFromFaucet = async () => {
               <div class="w-full">
                 <div class="relative w-full mb-2">
                   <Input
-                    autocapitalize="none"
-                    autocomplete="off"
-                    autocorrect="off"
-                    bind:value={dydxAddress}
-                    id="address"
-                    pattern={createCosmosSdkAddressRegex({ prefix: "dydx" })
-                      .source}
-                    placeholder="dydx14ea6…"
-                    required={true}
+                    type="text"
                     minlength={44}
                     maxlength={44}
+                    readonly={true}
+                    required={true}
+                    autocorrect="off"
+                    id="dydx-address"
+                    autocomplete="off"
                     spellcheck="false"
-                    name="wallet-address"
-                    type="text"
-                    data-1p-ignore={true}
+                    autocapitalize="none"
+                    value={$dydxAddress}
                     data-lpignore={true}
+                    data-1p-ignore={true}
+                    placeholder="dydx14ea6…"
+                    name="dydx-wallet-address"
                     class="disabled:opacity-100 disabled:bg-black/20"
+                    pattern={createCosmosSdkAddressRegex({ prefix: "dydx" })
+                      .source}
                   />
                 </div>
                 <div class="flex justify-between px-1">
                   <div class="text-xs">
-                    <!-- 
-                      TODO: @cor i don't know if you want to show dydx balance. Please uncomment if you want to show it.
-                    -->
-                    <!-- <ChainsGate let:chains>
-                      <WalletGate
-                        let:userAddr
-                        let:connected
-                        let:cosmosConnected
-                      >
-                        <p>
-                          {#if cosmosConnected}
-                            <span class="text-muted-foreground">Balance: </span>
-                            <TokenBalance
-                              {chains}
-                              {userAddr}
-                              {connected}
-                              symbol="dydx"
-                            />
-                          {:else}
-                            Connect cosmos wallet
-                          {/if}
-                        </p>
-                      </WalletGate>
-                    </ChainsGate> -->
+                    <p>
+                      {#if $dydxAddress?.indexOf("dydx") === 0 && $dydxBalance.status === "success"}
+                        <span class="text-muted-foreground">Balance: </span>
+                        {$dydxBalance?.data?.balance ?? 0}
+                        adv4tnt
+                      {:else}
+                        Connect cosmos wallet
+                      {/if}
+                    </p>
                   </div>
-                  {#if dydxAddress !== convertCosmosAddress( { address: `${$cosmosStore.address}`, toPrefix: "dydx" } )}
+                  <!-- {#if dydxAddress !== convertCosmosAddress( { address: `${$cosmosStore.address}`, toPrefix: "dydx" } )}
                     <button
                       type="button"
                       on:click={resetDydxInput}
@@ -427,7 +458,7 @@ const requestDydxFromFaucet = async () => {
                     >
                       Reset
                     </button>
-                  {/if}
+                  {/if} -->
                 </div>
               </div>
             </div>
@@ -440,7 +471,7 @@ const requestDydxFromFaucet = async () => {
                 requestDydxFromFaucet()
               }}
               disabled={$dydxFaucetState.kind !== "IDLE" ||
-                isValidCosmosAddress(dydxAddress, ["dydx"]) === false}
+                isValidCosmosAddress($dydxAddress, ["dydx"]) === false}
               class={cn(
                 "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50"
               )}

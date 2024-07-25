@@ -1,10 +1,7 @@
-import type { Chain, UserAddresses } from "$lib/types"
 import { bech32 } from "bech32"
+import type { Chain, UserAddresses } from "$lib/types"
 
-export function convertCosmosAddress({
-  address,
-  toPrefix
-}: { address: string; toPrefix: string }): string {
+export function convertCosmosAddress({ address, toPrefix }: { address: string; toPrefix: string }) {
   const words = bech32.decode(address).words
   return bech32.encode(toPrefix, words)
 }
