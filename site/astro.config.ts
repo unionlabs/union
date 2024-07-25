@@ -26,7 +26,7 @@ export default defineConfig({
   },
   trailingSlash: "ignore",
   adapter: netlify({
-    imageCDN: false,
+    imageCDN: true,
     edgeMiddleware: false
   }),
   image: {
