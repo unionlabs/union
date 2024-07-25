@@ -290,7 +290,7 @@ pub fn verify_zkp(
 ) -> Result<(), Error> {
     let zkp = ZKP::try_from(zkp.into().as_ref())?;
 
-    let mut commitment_hash = hash_commitment(&zkp.proof_commitment)?;
+    let commitment_hash = hash_commitment(&zkp.proof_commitment)?;
 
     let mut inputs_hash = env::sha256_array(
         &vec![0u8; 32 - chain_id.len()]
@@ -327,7 +327,6 @@ pub fn verify_zkp(
     inputs_hash[0] = 0;
     inputs_hash.reverse();
 
-    // env::panic_str(&format!("commhash: {:?}", commitment_hash.0));
     let public_inputs = [Fq(inputs_hash), commitment_hash];
 
     let initial_point: G1Affine = borsh::from_slice(&env::alt_bn128_g1_sum(
@@ -398,12 +397,4 @@ fn hash_commitment(proof_commitment: &G1Affine) -> Result<Fq, Error> {
     let mut out = ((U256::from_be_bytes(hmac) % PRIME_R_MINUS_ONE) + U256::from(1)).to_be_bytes();
     out.reverse();
     Ok(Fq(out))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn convert() {}
 }

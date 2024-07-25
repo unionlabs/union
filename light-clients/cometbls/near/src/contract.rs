@@ -1,6 +1,5 @@
 use ibc_vm_rs::{IbcQuery, IbcResponse, Status};
 use ics23::ibc_api::SDK_SPECS;
-use near_primitives_core::hash::CryptoHash;
 use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     env, near_bindgen,
@@ -26,33 +25,49 @@ use unionlabs::{
 use crate::{error::Error, verifier::verify_zkp};
 
 #[near_bindgen]
-#[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    consensus_states: LookupMap<Height, ConsensusState>,
-    client_state: ClientState,
+    consensus_states: LookupMap<String, LookupMap<Height, ConsensusState>>,
+    client_states: LookupMap<String, ClientState>,
+}
+
+impl Default for Contract {
+    fn default() -> Self {
+        Self {
+            consensus_states: LookupMap::new(0),
+            client_states: LookupMap::new(1),
+        }
+    }
 }
 
 #[near_bindgen]
 impl Contract {
-    #[init]
-    pub fn initialize(
+    pub fn new(
+        &mut self,
         #[allow(unused)] client_id: ClientId,
         client_state: Vec<u8>,
         consensus_state: Vec<u8>,
-    ) -> Self {
+    ) {
         let client_state = ClientState::decode_as::<Proto>(&client_state).unwrap();
         let consensus_state = ConsensusState::decode_as::<Proto>(&consensus_state).unwrap();
 
-        let mut consensus_states: LookupMap<Height, ConsensusState> = LookupMap::new(b"c");
-        consensus_states.insert(client_state.latest_height, consensus_state);
-
-        Self {
-            client_state,
-            consensus_states,
+        if self.client_states.contains_key(&client_id.to_string()) {
+            env::panic_str("already have the client");
         }
+
+        // TODO(aeryz): we might wanna store a cursor for this to reduce storage
+        let mut inner_consensus_states: LookupMap<Height, ConsensusState> =
+            LookupMap::new(client_id.to_string().as_bytes());
+        inner_consensus_states.insert(client_state.latest_height, consensus_state);
+
+        self.consensus_states
+            .insert(client_id.to_string(), inner_consensus_states);
+
+        self.client_states
+            .insert(client_id.to_string(), client_state);
     }
 
-    pub fn query(&self, query: Vec<IbcQuery>) -> Vec<IbcResponse> {
+    pub fn query(&self, client_id: ClientId, query: Vec<IbcQuery>) -> Vec<IbcResponse> {
         query
             .into_iter()
             .map(|q| match q {
@@ -60,7 +75,7 @@ impl Contract {
                     status: self.status(),
                 },
                 IbcQuery::LatestHeight => IbcResponse::LatestHeight {
-                    height: self.latest_height(),
+                    height: self.latest_height(&client_id),
                 },
                 IbcQuery::VerifyMembership {
                     height,
@@ -71,6 +86,7 @@ impl Contract {
                     value,
                 } => IbcResponse::VerifyMembership {
                     valid: self.verify_membership(
+                        &client_id,
                         height,
                         delay_time_period,
                         delay_block_period,
@@ -80,7 +96,7 @@ impl Contract {
                     ),
                 },
                 IbcQuery::VerifyClientMessage(msg) => IbcResponse::VerifyClientMessage {
-                    valid: self.verify_client_message(msg),
+                    valid: self.verify_client_message(&client_id, msg),
                 },
                 IbcQuery::CheckForMisbehaviour(msg) => IbcResponse::CheckForMisbehaviour {
                     misbehaviour_found: self.check_for_misbehaviour(msg),
@@ -94,13 +110,14 @@ impl Contract {
         Status::Active
     }
 
-    pub fn latest_height(&self) -> Height {
-        self.client_state.latest_height
+    fn latest_height(&self, client_id: &str) -> Height {
+        self.client_states.get(client_id).unwrap().latest_height
     }
 
     #[allow(unused)]
-    pub fn verify_membership(
+    fn verify_membership(
         &self,
+        client_id: &str,
         height: Height,
         // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
         delay_time_period: u64,
@@ -112,6 +129,8 @@ impl Contract {
     ) -> bool {
         let Ok(consensus_state) = self
             .consensus_states
+            .get(client_id)
+            .unwrap()
             .get(&height)
             .ok_or(Error::ConsensusStateNotFound(height))
         else {
@@ -139,9 +158,11 @@ impl Contract {
     }
 
     // TODO(aeryz): client_msg can be Misbehaviour or Header
-    pub fn verify_client_message(&self, client_msg: Vec<u8>) -> bool {
+    fn verify_client_message(&self, client_id: &str, client_msg: Vec<u8>) -> bool {
         let header = Header::decode_as::<Proto>(&client_msg).unwrap();
-        let consensus_state = self.consensus_states.get(&header.trusted_height).unwrap();
+        let client_state = self.client_states.get(client_id).unwrap();
+        let consensus_states = self.consensus_states.get(client_id).unwrap();
+        let consensus_state = consensus_states.get(&header.trusted_height).unwrap();
 
         // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
         let untrusted_height_number = header.signed_header.height.inner() as u64;
@@ -171,7 +192,7 @@ impl Contract {
 
         if is_client_expired(
             untrusted_timestamp,
-            self.client_state.trusting_period,
+            client_state.trusting_period,
             env::block_timestamp(),
         ) {
             // return Err(InvalidHeaderError::HeaderExpired(consensus_state.data.timestamp).into());
@@ -179,7 +200,7 @@ impl Contract {
         }
 
         let max_clock_drift = env::block_timestamp()
-            .checked_add(self.client_state.max_clock_drift)
+            .checked_add(client_state.max_clock_drift)
             .unwrap();
         // .ok_or(Error::MathOverflow)?;
 
@@ -206,7 +227,7 @@ impl Contract {
         }
 
         verify_zkp(
-            &self.client_state.chain_id,
+            &client_state.chain_id,
             trusted_validators_hash,
             &header.signed_header,
             header.zero_knowledge_proof,
@@ -231,7 +252,11 @@ impl Contract {
         verify_zkp(&chain_id, trusted_validators_hash, &header, zkp).unwrap()
     }
 
-    pub fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>) {
+    pub fn update_client(
+        &mut self,
+        client_id: String,
+        client_msg: Vec<u8>,
+    ) -> (Vec<u8>, Vec<(Height, Vec<u8>)>) {
         let header = Header::decode_as::<Proto>(&client_msg).unwrap();
 
         let untrusted_height = Height {
@@ -239,8 +264,10 @@ impl Contract {
             revision_height: header.signed_header.height.inner() as u64,
         };
 
-        if untrusted_height > self.client_state.latest_height {
-            self.client_state.latest_height = untrusted_height;
+        let client_state = self.client_states.get_mut(&client_id).unwrap();
+
+        if untrusted_height > client_state.latest_height {
+            client_state.latest_height = untrusted_height;
         }
 
         let consensus_state = ConsensusState {
@@ -258,10 +285,12 @@ impl Contract {
         //     untrusted_height,
         // );
         self.consensus_states
+            .get_mut(&client_id)
+            .unwrap()
             .insert(untrusted_height, consensus_state.clone());
 
         (
-            self.client_state.clone().encode_as::<Proto>(),
+            client_state.clone().encode_as::<Proto>(),
             vec![(untrusted_height, consensus_state.encode_as::<Proto>())],
         )
     }
