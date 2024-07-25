@@ -36,7 +36,7 @@ let filterAndOrderAssets = (assets: Chain["assets"]): Chain["assets"] => {
         <section>
           <div class="flex items-center gap-2">
           <h3 class="font-supermolot font-bold text-xl">{assetWithFaucet.display_symbol}</h3>
-          {#if assetWithFaucet.denom === "native"}<div class="uppercase font-supermolot font-semibold font-condensed text-xs px-2 rounded-full bg-primary text-primary-foreground">gas token</div>{/if}
+          {#if assetWithFaucet.gas_token}<div class="uppercase font-supermolot font-semibold font-condensed text-xs px-2 rounded-full bg-primary text-primary-foreground">gas token</div>{/if}
           </div>
           <ul>
             {#each assetWithFaucet.faucets as faucet}
