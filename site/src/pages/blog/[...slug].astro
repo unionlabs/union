@@ -33,7 +33,10 @@ const {
 })
 
 // The browser should always check freshness
-Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
+Astro.response.headers.set(
+  "cache-control",
+  "public, max-age=0, must-revalidate"
+)
 
 // The CDN should cache for a year, but revalidate if the cache tag changes
 Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
@@ -72,18 +75,7 @@ const { width, height } = coverFields.file.details.image as {
           {blogPost.fields.title}
         </h1>
       </div>
-      <Image
-        {width}
-        {height}
-        class="my-3"
-        src={imageUrl}
-        loading="eager"
-        alt={coverFields.title}
-        data-contentful-field-id="cover"
-        data-contentful-entry-id={entryId}
-        {...ContentfulLivePreview.getProps({ entryId, fieldId: "cover" })}
-      />
-      <div class="flex gap-x-3">
+      <div class="flex gap-x-3 mt-1.5">
         <time
           class="text-lg text-gray-400"
           data-contentful-field-id="date"
@@ -103,6 +95,17 @@ const { width, height } = coverFields.file.details.image as {
           {blogPost.fields.author}
         </p>
       </div>
+      <Image
+        {width}
+        {height}
+        class="my-3"
+        src={imageUrl}
+        loading="eager"
+        alt={coverFields.title}
+        data-contentful-field-id="cover"
+        data-contentful-entry-id={entryId}
+        {...ContentfulLivePreview.getProps({ entryId, fieldId: "cover" })}
+      />
       <p>
         <em
           class="hidden"
