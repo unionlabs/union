@@ -28,6 +28,31 @@
         meta.mainProgram = "near-ibc-tests";
       };
 
+
+      test-circuit = pkgs.stdenv.mkDerivation {
+        name = "test-circuit";
+        buildInputs = [ pkgs.makeWrapper ];
+        src =
+          (crane.buildWorkspaceMember {
+            crateDirFromRoot = "near/test-circuit";
+            extraEnv = {
+              PROTOC = "${pkgs.protobuf}/bin/protoc";
+              LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+            };
+            extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+            extraNativeBuildInputs = [ pkgs.clang ];
+            extraEnv = { };
+          }).packages.test-circuit;
+        installPhase = ''
+          mkdir -p $out/bin
+          cp -r $src/bin/test-circuit $out/bin/test-circuit
+          wrapProgram $out/bin/test-circuit \
+            --set NEAR_SANDBOX_BIN_PATH "${near-sandbox}/bin/neard" \
+            --set VERIFIER "${self'.packages.cometbls-near}/lib/cometbls_near.wasm"
+        '';
+        meta.mainProgram = "test-circuit";
+      };
+
       cargo-near = craneLib.buildPackage rec {
         pname = "cargo-near";
         version = "v0.6.2";
@@ -201,7 +226,7 @@
     in
     {
       packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // cometbls-near.packages // near-ics08.packages // {
-        inherit near-ibc-tests near-sandbox cargo-near nearcore near-localnet;
+        inherit near-ibc-tests near-sandbox cargo-near nearcore near-localnet test-circuit;
       };
 
       checks = near-light-client.checks // near-ibc.checks;

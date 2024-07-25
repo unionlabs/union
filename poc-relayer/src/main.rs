@@ -941,7 +941,6 @@ async fn main() {
     let client_state = ClientState::decode_as::<Proto>(&client_state)
         .unwrap()
         .into_any();
-    println!("uinon latest height: {}", union_client_state.latest_height);
     let (proof_consensus, _) = near
         .state_proof(
             header.new_state.inner_lite.height - 1,

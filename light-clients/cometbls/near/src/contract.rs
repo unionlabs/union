@@ -23,7 +23,7 @@ use unionlabs::{
     id::ClientId,
 };
 
-use crate::error::Error;
+use crate::{error::Error, verifier::verify_zkp};
 
 #[near_bindgen]
 #[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]
@@ -205,13 +205,13 @@ impl Contract {
             return false;
         }
 
-        // cometbls_groth16_verifier::verify_zkp(
-        //     &self.client_state.chain_id,
-        //     trusted_validators_hash,
-        //     &header.signed_header,
-        //     header.zero_knowledge_proof,
-        // )
-        // .unwrap();
+        verify_zkp(
+            &self.client_state.chain_id,
+            trusted_validators_hash,
+            &header.signed_header,
+            header.zero_knowledge_proof,
+        )
+        .unwrap();
 
         true
     }
@@ -219,6 +219,16 @@ impl Contract {
     #[allow(unused)]
     pub fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool {
         false
+    }
+
+    pub fn test_circuit(
+        &self,
+        chain_id: String,
+        trusted_validators_hash: unionlabs::hash::H256,
+        header: unionlabs::ibc::lightclients::cometbls::light_header::LightHeader,
+        zkp: Vec<u8>,
+    ) {
+        verify_zkp(&chain_id, trusted_validators_hash, &header, zkp).unwrap()
     }
 
     pub fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>) {

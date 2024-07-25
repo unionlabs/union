@@ -40,4 +40,13 @@ pub enum Error {
 
     #[error("the chain id cannot be more than 31 bytes long to fit in the bn254 scalar field")]
     InvalidChainId,
+
+    #[error("invalid zkp length")]
+    InvalidZKPLength,
+
+    #[error("invalid height")]
+    InvalidHeight,
+
+    #[error("invalid timestamp")]
+    InvalidTimestamp,
 }

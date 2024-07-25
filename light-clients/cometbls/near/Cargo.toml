@@ -19,6 +19,8 @@ borsh = { workspace = true, features = [ "derive"] }
 thiserror = { workspace = true }
 ics23              = { workspace = true }
 cometbls-groth16-verifier = { workspace = true }
+hex-literal = {workspace = true }
+hex.workspace       = true
 
 [lints]
 workspace = true

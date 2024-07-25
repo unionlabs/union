@@ -1793,6 +1793,8 @@ version = "0.1.0"
 dependencies = [
  "borsh 1.5.1",
  "cometbls-groth16-verifier",
+ "hex",
+ "hex-literal",
  "ibc-vm-rs",
  "ics23",
  "near-contract-standards",
@@ -10448,6 +10450,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test-circuit"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.7",
+ "borsh 1.5.1",
+ "env_logger",
+ "hex",
+ "hex-literal",
+ "ibc-vm-rs",
+ "near-contract-standards",
+ "near-crypto 0.20.1",
+ "near-jsonrpc-client 0.8.0",
+ "near-jsonrpc-primitives 0.20.1",
+ "near-primitives 0.20.1",
+ "near-primitives-core 0.21.2",
+ "near-sdk",
+ "near-sdk-contract-tools",
+ "near-store",
+ "near-units",
+ "near-workspaces",
+ "serde",
+ "serde_json",
+ "sha2 0.10.8",
+ "time",
+ "tokio",
+ "unionlabs",
 ]
 
 [[package]]
