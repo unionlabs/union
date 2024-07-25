@@ -1,9 +1,9 @@
 ---
-name: Site Bug Report
-about: Report a bug on union.build (NOT app.union.build)
+name: App Bug Report
+about: Report a bug on app.union.build or staging.app.union.build (NOT union.build)
 title: ''
 labels: A-site, C-bug, P-high
-assignees: o-az
+assignees: swepool
 
 ---
 
