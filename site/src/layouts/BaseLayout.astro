@@ -26,6 +26,12 @@ const {
 } = Astro.props
 
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+
+/**
+ * og spec: 1200x630, .png
+ * docs: https://github.com/o-az/imageine
+ */
+const openGraphImage = `https://ipx.up.railway.app/f_png,1200x630/${image}`
 ---
 
 <!doctype html>
@@ -39,40 +45,44 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
         basic: {
           url,
           title,
-          image,
-          type: 'website',
+          image: openGraphImage,
+          type: "website"
         },
         optional: {
-          locale: 'en_US',
-          siteName: 'Union',
-          description,
+          locale: "en_US",
+          siteName: "Union",
+          description
         },
-        image: { url: image, alt: 'Union Logo' },
+        image: { url: openGraphImage, alt: "Union Logo" }
       }}
       twitter={{
         title,
-        image,
-        site: '@union_build',
+        image: openGraphImage,
+        site: "@union_build",
         description,
-        imageAlt: 'Union Logo',
-        creator: '@union_build',
-        card: 'summary_large_image',
+        imageAlt: "Union Logo",
+        creator: "@union_build",
+        card: "summary_large_image"
       }}
       extend={{
         link: [
           {
-            rel: 'alternate',
-            type: 'application/rss+xml',
-            title: 'Union',
-            href: `${Astro.site}rss.xml`,
+            rel: "alternate",
+            type: "application/rss+xml",
+            title: "Union",
+            href: `${Astro.site}rss.xml`
           },
-          { rel: 'sitemap', href: '/sitemap-index.xml' },
-          { rel: 'icon', href: `${BASE_URL}/favicon.svg`, type: 'image/svg+xml' },
+          { rel: "sitemap", href: "/sitemap-index.xml" },
+          {
+            rel: "icon",
+            href: `${BASE_URL}/favicon.svg`,
+            type: "image/svg+xml"
+          }
         ],
         meta: [
-          { name: 'robots', content: 'index, follow' },
-          { name: 'viewport', content: 'width=device-width, initial-scale=1.0' },
-        ],
+          { name: "robots", content: "index, follow" },
+          { name: "viewport", content: "width=device-width, initial-scale=1.0" }
+        ]
       }}
     />
     {
@@ -80,27 +90,27 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
         <AstroFont
           config={[
             {
-              name: 'Inter var',
-              src: fontWeights.map(weight => ({
-                path: '/fonts/InterVariable.woff2',
-                style: 'normal',
-                weight,
+              name: "Inter var",
+              src: fontWeights.map((weight) => ({
+                path: "/fonts/InterVariable.woff2",
+                style: "normal",
+                weight
               })),
               preload: true,
-              display: 'swap',
-              fallback: 'sans-serif',
+              display: "swap",
+              fallback: "sans-serif"
             },
             {
-              name: 'JetBrains Mono',
-              src: fontWeights.map(weight => ({
-                path: '/fonts/JetBrainsMono[wght].woff2',
-                style: 'normal',
-                weight,
+              name: "JetBrains Mono",
+              src: fontWeights.map((weight) => ({
+                path: "/fonts/JetBrainsMono[wght].woff2",
+                style: "normal",
+                weight
               })),
               preload: true,
-              display: 'swap',
-              fallback: 'sans-serif',
-            },
+              display: "swap",
+              fallback: "sans-serif"
+            }
           ]}
         />
       )
@@ -112,7 +122,7 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
     <slot />
     <style>
       .noise-bg {
-        background-image: url('/src/assets/images/backgrounds/200-30-6-monochrome.png');
+        background-image: url("/src/assets/images/backgrounds/200-30-6-monochrome.png");
       }
     </style>
   </body>
