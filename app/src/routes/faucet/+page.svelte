@@ -18,6 +18,7 @@ import { writable, type Writable } from "svelte/store"
 import Truncate from "$lib/components/truncate.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
+import { onMount } from "svelte";
 
 type FaucetState = DiscriminatedUnion<
   "kind",
@@ -30,7 +31,12 @@ type FaucetState = DiscriminatedUnion<
   }
 >
 
-$: address = $cosmosStore.address ?? ""
+
+let address: string
+
+onMount(() => {
+  address = $cosmosStore.address ?? ""
+})
 
 const resetInput = () => {
   address = $cosmosStore.address ?? ""
@@ -127,7 +133,7 @@ const fetchFromFaucet = async () => {
                     autocapitalize="none"
                     autocomplete="off"
                     autocorrect="off"
-                    value={address}
+                    bind:value={address}
                     id="address"
                     pattern={unionAddressRegex.source}
                     placeholder="union14ea6..."
@@ -157,7 +163,7 @@ const fetchFromFaucet = async () => {
                       </WalletGate>
                     </ChainsGate>
                   </div>
-                  {#if address !== $cosmosStore.address }
+                  {#if address !== $cosmosStore.address}
                     <button
                       type="button"
                       on:click={resetInput}
