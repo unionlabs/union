@@ -130,12 +130,12 @@ $: console.info($dydxAddressTransfers?.data)
   class="w-full max-w-lg bg-[#181825] text-[#FFFFFF] rounded-lg font-sans bg-[url('https://dydx.exchange/dots.svg')]"
 >
   <Card.Header>
-    <Card.Title class="flex justify-between">
+    <Card.Title class="flex justify-between select-none">
       <p class="flex gap-x-3">
         <img src="https://dydx.exchange/logo.svg" alt="" class="w-14" />
         Faucet
       </p>
-      <img alt="" src="https://dydx.exchange/icon.svg" class='w-6' />
+      <img alt="" src="https://dydx.exchange/icon.svg" class="w-6" />
     </Card.Title>
   </Card.Header>
   <Card.Content>
@@ -256,7 +256,8 @@ $: console.info($dydxAddressTransfers?.data)
             {/if}
           </Button>
           <p class="text-xs">
-            dydx faucet is provided by <a
+            dYdX faucet is provided by <a
+              class="text-[#9e9dff]"
               target="_blank"
               rel="noopener noreferrer"
               href="https://dydx.exchange/"
