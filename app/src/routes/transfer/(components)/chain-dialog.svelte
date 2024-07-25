@@ -19,11 +19,11 @@ $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 function selectChain(chain: { chain_id: string; display_name: string; rpc_type: string }) {
   if (!connected || (userAddr && !userAddr[chain.rpc_type])) {
     if (chain.rpc_type === "cosmos") {
-      toast.info(`Connect union wallet`)
+      toast.info(`Connect Cosmos wallet`)
     }
 
     if (chain.rpc_type === "evm") {
-      toast.info(`Connect evm wallet`)
+      toast.info(`Connect EVM wallet`)
     }
   } else {
     onChainSelect(chain.chain_id)
