@@ -3,6 +3,7 @@ use std::{collections::VecDeque, fmt::Debug, marker::PhantomData};
 use chain_utils::{cosmos::Cosmos, cosmos_sdk::BroadcastTxCommitError, wasm::Wraps};
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use frunk::{hlist_pat, HList};
+use futures::Future;
 use queue_msg::{
     aggregate,
     aggregation::{do_aggregate, UseAggregate},
@@ -70,10 +71,10 @@ where
     >,
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Self, Tr>)>,
 {
-    async fn msg(
+    fn msg(
         &self,
         msg: Effect<Cosmos, Tr>,
-    ) -> Result<Op<RelayMessage>, BroadcastTxCommitError> {
+    ) -> impl Future<Output = Result<Op<RelayMessage>, BroadcastTxCommitError>> + Send + '_ {
         do_msg(
             self,
             msg,
@@ -85,7 +86,6 @@ where
             },
             |client_message| client_message.into_any().into(),
         )
-        .await
     }
 }
 

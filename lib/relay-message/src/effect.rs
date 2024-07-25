@@ -1,4 +1,5 @@
 use chain_utils::GetChain;
+use futures::Future;
 use macros::apply;
 use queue_msg::{queue_msg, HandleEffect, Op, QueueError, QueueMessage};
 use tracing::instrument;
@@ -50,22 +51,28 @@ pub enum Effect<Hc: ChainExt, Tr: ChainExt> {
 
 impl HandleEffect<RelayMessage> for AnyLightClientIdentified<AnyEffect> {
     #[instrument(skip_all, fields(chain_id = %self.chain_id()))]
-    async fn handle(
+    #[allow(clippy::manual_async_fn)]
+    fn handle(
         self,
         store: &<RelayMessage as QueueMessage>::Store,
-    ) -> Result<Op<RelayMessage>, QueueError> {
-        let msg = self;
+    ) -> impl Future<Output = Result<Op<RelayMessage>, QueueError>> + Send {
+        async move {
+            let msg = self;
 
-        any_lc! {
-            |msg| {
-                store
-                .with_chain(
-                    &msg.chain_id,
-                    move |c| async move { msg.t.handle(&c).await },
-                )
-                .map_err(|e| QueueError::Fatal(Box::new(e)))?
-                .await
-                .map_err(|e: <Hc as ChainExt>::MsgError| if e.is_recoverable() {QueueError::Retry(Box::new(e))} else {QueueError::Fatal(Box::new(e))})
+            any_lc! {
+                |msg| {
+                    store
+                        .with_chain(&msg.chain_id, move |c| async move { msg.t.handle(&c).await })
+                        .map_err(|e| QueueError::Fatal(Box::new(e)))?
+                        .await
+                        .map_err(|e: <Hc as ChainExt>::MsgError| {
+                            if e.is_recoverable() {
+                                QueueError::Retry(Box::new(e))
+                            } else {
+                                QueueError::Fatal(Box::new(e))
+                            }
+                        })
+                }
             }
         }
     }
@@ -76,8 +83,11 @@ where
     Hc: ChainExt + DoMsg<Hc, Tr>,
     Tr: ChainExt,
 {
-    pub async fn handle(self, c: &Hc) -> Result<Op<RelayMessage>, Hc::MsgError> {
-        <Hc as DoMsg<Hc, Tr>>::msg(c, self).await
+    pub fn handle(
+        self,
+        c: &Hc,
+    ) -> impl Future<Output = Result<Op<RelayMessage>, Hc::MsgError>> + Send + '_ {
+        <Hc as DoMsg<Hc, Tr>>::msg(c, self)
     }
 }
 

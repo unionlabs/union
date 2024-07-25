@@ -47,7 +47,14 @@ pub trait ChainExt: Chain {
     type MsgError: Debug + MaybeRecoverableError;
 
     /// The config required to create a light client on this chain.
-    type Config: Debug + Clone + PartialEq + Serialize + for<'de> Deserialize<'de> + MaybeArbitrary;
+    type Config: Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>
+        + MaybeArbitrary
+        + Send
+        + Sync;
 }
 
 pub enum RelayMessage {}
@@ -488,7 +495,7 @@ pub trait DoMsg<Hc: ChainExt, Tr: ChainExt>: ChainExt {
     fn msg(
         &self,
         msg: Effect<Hc, Tr>,
-    ) -> impl Future<Output = Result<Op<RelayMessage>, Self::MsgError>> + '_;
+    ) -> impl Future<Output = Result<Op<RelayMessage>, Self::MsgError>> + Send + '_;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
