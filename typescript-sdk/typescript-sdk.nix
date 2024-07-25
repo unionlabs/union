@@ -7,7 +7,7 @@
       packageJSON = lib.importJSON ./package.json;
     in
     {
-      packages = {};
+      packages = { };
 
       apps = {
         typescript-sdk-check = {
