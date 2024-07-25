@@ -29,7 +29,7 @@ export let assets: Array<{
   symbol: string
 }>
 
-export let onAssetSelect: (asset: string) => void
+export let onAssetSelect: (data: {address: string, symbol: string}) => void
 </script>
 
 <Dialog.Root
@@ -58,7 +58,7 @@ export let onAssetSelect: (asset: string) => void
                   variant="ghost"
                   class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
                   on:click={() => {
-                onAssetSelect(asset.symbol)
+                onAssetSelect({address: asset.address, symbol : supportedAsset ? supportedAsset.display_symbol : asset.symbol})
                 dialogOpen = false
               }}
                 >

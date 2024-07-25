@@ -59,6 +59,7 @@ $: userBalances = userBalancesQuery({ chains, userAddr, connected })
 let fromChainId = writable("")
 let toChainId = writable("")
 let assetSymbol = writable("")
+let assetAddress = writable("")
 
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
@@ -99,16 +100,16 @@ let fromChain = derived(
 
 let prevAsset: string
 $: asset = derived(
-  [assetSymbol, fromChain, userBalances],
-  ([$assetSymbol, $fromChain, $userBalances]) => {
-    if ($assetSymbol === "" || $fromChain === null) return null
+  [fromChain, userBalances, assetAddress],
+  ([$fromChain, $userBalances, $assetAddress]) => {
+    if ($fromChain === null || $assetAddress === "") return null
 
     const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
     const userBalance = $userBalances[chainIndex]
     if (!userBalance.isSuccess) {
       return null
     }
-    let balance = userBalance.data.find(balance => balance.symbol === $assetSymbol)
+    let balance = userBalance.data.find(balance => balance.address === $assetAddress)
     if (!balance) {
       return null
     }
@@ -312,7 +313,7 @@ const transfer = async () => {
               {
                 sourcePort: "transfer",
                 sourceChannel: ucs1_configuration.channel_id,
-                token: { denom: $assetSymbol, amount: parsedAmount.toString() },
+                token: { denom: $assetAddress, amount: parsedAmount.toString() },
                 sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
                 receiver: $recipient,
                 memo: pfmMemo ?? "",
@@ -334,7 +335,7 @@ const transfer = async () => {
                     memo: pfmMemo ?? ""
                   }
                 },
-                funds: [{ denom: $assetSymbol, amount: parsedAmount.toString() }]
+                funds: [{ denom: $assetAddress, amount: parsedAmount.toString() }]
               }
             ]
           }
@@ -1018,8 +1019,10 @@ const resetInput = () => {
   <AssetsDialog
     chain={$fromChain}
     assets={$sendableBalances}
-    onAssetSelect={newSelectedAsset => {
-      assetSymbol.set(newSelectedAsset)
+    onAssetSelect={asset => {
+        console.log('Selected Asset: ', asset)
+      assetSymbol.set(asset.symbol)
+      assetAddress.set(asset.address)
     }}
     bind:dialogOpen={dialogOpenToken}
   />
