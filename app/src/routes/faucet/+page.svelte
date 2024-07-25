@@ -196,9 +196,9 @@ const requestDydxFromFaucet = async () => {
   <Card.Root class="w-full max-w-lg">
     <Card.Header>
       <Card.Title>UNO Drip Faucet</Card.Title>
-      <Card.Description
-        >Official faucet for Union's native gas token.</Card.Description
-      >
+      <Card.Description>
+        Official faucet for Union's native gas token.
+      </Card.Description>
     </Card.Header>
     <Card.Content>
       {#if $unoFaucetState.kind === "RESULT_OK"}
@@ -394,6 +394,9 @@ const requestDydxFromFaucet = async () => {
                 </div>
                 <div class="flex justify-between px-1">
                   <div class="text-xs">
+                    <!-- 
+                      TODO: @cor i don't know if you want to show dydx balance. Please uncomment if you want to show it.
+                    -->
                     <!-- <ChainsGate let:chains>
                       <WalletGate
                         let:userAddr
@@ -401,8 +404,8 @@ const requestDydxFromFaucet = async () => {
                         let:cosmosConnected
                       >
                         <p>
-                          <span class="text-muted-foreground">Balance: </span>
                           {#if cosmosConnected}
+                            <span class="text-muted-foreground">Balance: </span>
                             <TokenBalance
                               {chains}
                               {userAddr}
