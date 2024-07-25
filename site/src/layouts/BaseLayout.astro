@@ -18,14 +18,13 @@ interface Props {
 }
 
 const {
-  url,
+  url = "https://union.build",
   title = "Union",
   image = "/og.png",
   description = "The Modular ZK Interoperability Layer",
   loadFonts = true
 } = Astro.props
 
-const OPEN_GRAPH_IMAGE = `${BASE_URL}/${image.slice(1)}`
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 ---
 
@@ -40,7 +39,7 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
         basic: {
           url,
           title,
-          image: OPEN_GRAPH_IMAGE,
+          image,
           type: 'website',
         },
         optional: {
@@ -48,11 +47,11 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           siteName: 'Union',
           description,
         },
-        image: { url: OPEN_GRAPH_IMAGE, alt: 'Union Logo' },
+        image: { url: image, alt: 'Union Logo' },
       }}
       twitter={{
         title,
-        image: OPEN_GRAPH_IMAGE,
+        image,
         site: '@union_build',
         description,
         imageAlt: 'Union Logo',
