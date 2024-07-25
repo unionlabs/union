@@ -64,6 +64,21 @@
               options.chunk_size = mkOption { type = types.int; example = 1; default = 200; };
               options.until = mkOption { type = types.int; example = 1; default = 1000000000000; };
               options.harden = mkOption { type = types.bool; example = true; default = true; };
+              options.interval = mkOption {
+                example = { secs = 1; };
+                default = { secs = 12; nanos = 0; };
+                type = types.submodule {
+                  options = {
+                    secs = mkOption {
+                      type = types.int;
+                    };
+                    nanos = mkOption {
+                      type = types.int;
+                      default = 0;
+                    };
+                  };
+                };
+              };
             }
           );
         };
