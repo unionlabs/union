@@ -298,7 +298,7 @@ const transfer = async () => {
           evmSigner: undefined,
           bech32Prefix: $fromChain.addr_prefix,
           chainId: $fromChain.chain_id,
-          gas: { denom: $assetSymbol, amount: "0" },
+          gas: { denom: $assetSymbol, amount: "0.0025" },
           rpcUrl: `https://${rpcUrl}`
         })
 
