@@ -213,17 +213,21 @@ where
 {
     debug!("submitting prove request");
 
-    let response =
-        union_prover_api_client::UnionProverApiClient::connect(hc.inner().prover_endpoint.clone())
-            .await
-            .unwrap()
-            .poll(protos::union::galois::api::v3::PollRequest::from(
-                PollRequest {
-                    request: request.clone(),
-                },
-            ))
-            .await
-            .map(|x| x.into_inner().try_into().unwrap());
+    let prover_endpoint =
+        &hc.inner().prover_endpoints[usize::try_from(request.untrusted_header.height.inner())
+            .expect("never going to happen bro")
+            % hc.inner().prover_endpoints.len()];
+
+    let response = union_prover_api_client::UnionProverApiClient::connect(prover_endpoint.clone())
+        .await
+        .unwrap()
+        .poll(protos::union::galois::api::v3::PollRequest::from(
+            PollRequest {
+                request: request.clone(),
+            },
+        ))
+        .await
+        .map(|x| x.into_inner().try_into().unwrap());
 
     debug!("submitted prove request");
 
@@ -248,7 +252,7 @@ where
             panic!()
         }
         Ok(PollResponse::Done(ProveRequestDone { response })) => {
-            info!("proof generated");
+            info!(prover = %prover_endpoint, "proof generated");
 
             data(id::<Hc, Tr, _>(
                 hc.chain_id(),

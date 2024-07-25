@@ -73,7 +73,7 @@
         ]
       },
       "ws_url": "ws://localhost:26657/websocket",
-      "prover_endpoint": "http://localhost:9999",
+      "prover_endpoints": ["http://localhost:9999"],
       "grpc_url": "http://localhost:9090",
       "gas_config": {
         "gas_price": "1.0",
