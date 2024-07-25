@@ -57,5 +57,6 @@ export type Chain = {
       url: string
       display_name: string
     }>
+    gas_token: boolean
   }>
 }

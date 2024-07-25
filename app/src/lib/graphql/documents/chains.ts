@@ -41,6 +41,7 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
         url
         display_name
       }
+      gas_token
     }
   }
 }`)
