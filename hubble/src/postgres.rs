@@ -123,7 +123,7 @@ pub fn get_n_logs_from<'a>(
 }
 
 pub async fn update_batch_logs<C: ChainType, T: Serialize>(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
+    db: &PgPool,
     logs: impl IntoIterator<Item = Log<C, T>>,
 ) -> sqlx::Result<()>
 where
@@ -161,12 +161,12 @@ where
         ) as batch
         WHERE batch.height = v0.logs.height AND batch.chain_id = v0.logs.chain_id
         ", &chain_ids, &hashes, &data, &height, &time)
-    .execute(tx.as_mut()).await?;
+    .execute(db).await?;
     Ok(())
 }
 
 pub async fn insert_batch_logs<C: ChainType, T: Serialize>(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
+    db: &PgPool,
     logs: impl IntoIterator<Item = Log<C, T>>,
     mode: InsertMode,
 ) -> sqlx::Result<()>
@@ -198,7 +198,7 @@ where
             INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
             SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
             ", &chain_ids, &hashes, &data, &height, &time)
-        .execute(tx.as_mut()).await?;
+        .execute(db).await?;
     } else {
         sqlx::query!("
             INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
@@ -211,7 +211,7 @@ where
                 height = excluded.height,
                 time = excluded.time
             ", &chain_ids, &hashes, &data, &height, &time)
-        .execute(tx.as_mut()).await?;
+        .execute(db).await?;
     }
     Ok(())
 }

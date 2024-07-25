@@ -10,7 +10,7 @@ use ethers::{
 };
 use futures::{stream::FuturesOrdered, FutureExt, StreamExt, TryFutureExt};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Postgres};
+use sqlx::PgPool;
 use time::OffsetDateTime;
 use tracing::{debug, info, info_span, Instrument};
 use url::Url;
@@ -282,12 +282,9 @@ async fn index_blocks_by_chunk(
             };
             debug!(?height, "attempting to insert");
 
-            let mut tx = pool.begin().await.map_err(Report::from)?;
-
-            match block.execute(&mut tx, mode).await {
+            match block.execute(&pool, mode).await {
                 Err(err) => {
                     debug!(?err, "error executing block insert");
-                    tx.rollback().await?;
                     return Err(err.into());
                 }
                 Ok(info) => {
@@ -298,7 +295,6 @@ async fn index_blocks_by_chunk(
                         num_events = info.num_events,
                         "indexed block"
                     );
-                    tx.commit().await?;
                     metrics::BLOCK_COLLECTOR
                         .with_label_values(&[chain_id.canonical])
                         .inc();
@@ -516,11 +512,7 @@ impl BlockInsert {
     }
 
     /// Handles inserting the block data and transactions as a log.
-    async fn execute(
-        self,
-        tx: &mut sqlx::Transaction<'_, Postgres>,
-        mode: InsertMode,
-    ) -> Result<InsertInfo, Report> {
+    async fn execute(self, tx: &PgPool, mode: InsertMode) -> Result<InsertInfo, Report> {
         let num_tx = self.transactions.len();
         let num_events = self
             .transactions
