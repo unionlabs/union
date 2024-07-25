@@ -63,6 +63,16 @@ const { width, height } = coverFields.file.details.image as {
   <LanderSection gradient="to-t">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
       <div class="text-lg flex gap-x-3 h-min">
+        <h1
+          data-contentful-field-id="title"
+          data-contentful-entry-id={entryId}
+          class="text-3xl sm:text-4xl font-extrabold mb-0"
+          {...ContentfulLivePreview.getProps({ entryId, fieldId: "title" })}
+        >
+          {blogPost.fields.title}
+        </h1>
+      </div>
+      <div class="flex gap-x-3 mt-1.5">
         <time
           class="text-lg text-gray-400"
           data-contentful-field-id="date"
@@ -72,6 +82,7 @@ const { width, height } = coverFields.file.details.image as {
         >
           {saneDateTime(blogPost.fields.date)}
         </time>
+        -
         <p
           class="m-0"
           data-contentful-field-id="author"
@@ -81,14 +92,6 @@ const { width, height } = coverFields.file.details.image as {
           {blogPost.fields.author}
         </p>
       </div>
-      <h1
-        data-contentful-field-id="title"
-        data-contentful-entry-id={entryId}
-        class="text-3xl sm:text-4xl font-extrabold mb-0"
-        {...ContentfulLivePreview.getProps({ entryId, fieldId: "title" })}
-      >
-        {blogPost.fields.title}
-      </h1>
       <Image
         {width}
         {height}
@@ -102,6 +105,7 @@ const { width, height } = coverFields.file.details.image as {
       />
       <p>
         <em
+          class="hidden"
           data-contentful-entry-id={entryId}
           data-contentful-field-id="description"
           {...ContentfulLivePreview.getProps({
@@ -340,14 +344,27 @@ const { width, height } = coverFields.file.details.image as {
           [MARKS["SUPERSCRIPT"]]: (text) => `<sup>${text}</sup>`
         },
         renderNode: {
-          [BLOCKS["HEADING_1"]]: (node, next) =>
-            `<h1>${next(node.content)}</h1>`,
-          [BLOCKS["HEADING_2"]]: (node, next) =>
-            `<h2>${next(node.content)}</h2>`,
+          [BLOCKS["HEADING_1"]]: (node, next) => {
+            console.info(node)
+            return `<h1>${next(node.content)}</h1>`
+          },
+          [BLOCKS["HEADING_2"]]: (node, next) => `<h2>
+                <a href="#${next(node.content)}" id="${next(node.content)}">
+                  ${next(node.content)}
+                </a>
+              </h2>`,
           [BLOCKS["HEADING_3"]]: (node, next) =>
-            `<h3>${next(node.content)}</h3>`,
+            `<h3>
+                <a href="#${next(node.content)}" id="${next(node.content)}">
+                  ${next(node.content)}
+                </a>
+              </h3>`,
           [BLOCKS["HEADING_4"]]: (node, next) =>
-            `<h4>${next(node.content)}</h4>`,
+            `<h4>
+                <a href="#${next(node.content)}" id="${next(node.content)}">
+                  ${next(node.content)}
+                </a>
+              </h4>`,
           [BLOCKS["HEADING_5"]]: (node, next) =>
             `<h5>${next(node.content)}</h5>`,
           [BLOCKS["HEADING_6"]]: (node, next) =>
@@ -389,6 +406,11 @@ const { width, height } = coverFields.file.details.image as {
 <script is:inline type="module" src="/scripts/anchor-targets.js"></script>
 
 <style is:inline lang="postcss">
+  blockquote {
+    border-left: 2px solid #a0dbfdd3;
+    padding-left: 1.5rem;
+    margin-left: 0;
+  }
   h1 {
     color: white !important; 
   }

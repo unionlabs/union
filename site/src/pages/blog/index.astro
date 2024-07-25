@@ -19,6 +19,10 @@ const blogEntries = await contentfulClient.getEntries<BlogPost>({
   limit: 100 // max limit
 })
 
+const publishedBlogPosts = blogEntries.items.filter(entry =>
+  import.meta.env.MODE === "production" ? entry.fields.hidden !== true : true
+)
+
 // The browser should always check freshness
 Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
 
@@ -36,7 +40,7 @@ Astro.response.headers.set("netlify-cache-tag", "blog")
     </IntroHeading>
     <div class="flex flex-col md:grid grid-cols-2 gap-4 md:gap-6 flex-1">
       {
-        blogEntries.items.map((blogPostEntry) => (
+        publishedBlogPosts.map((blogPostEntry) => (
           <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
             <Card class="size-full" padded>
               <time
