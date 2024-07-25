@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{info_span, warn, Instrument};
 
 pub trait ChainKeyring {
-    type Address: Hash + Eq + Clone + Display;
+    type Address: Hash + Eq + Clone + Display + Send + Sync;
     type Signer;
 
     fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer>;

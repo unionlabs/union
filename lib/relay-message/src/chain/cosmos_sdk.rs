@@ -8,17 +8,19 @@ use chain_utils::{
     keyring::ChainKeyring,
 };
 use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
-use futures::{stream, FutureExt, StreamExt};
+use futures::{stream, Future, FutureExt, StreamExt};
 use queue_msg::{data, effect, fetch, noop, seq, wait, Op};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, info_span, warn};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Proto},
     google::protobuf::any::{mk_any, IntoAny},
     ibc::core::client::height::IsHeight,
     ics24::{ClientStatePath, Path},
     signer::CosmosSigner,
-    traits::{Chain, ClientStateOf, ConsensusStateOf, HeightOf},
-    TypeUrl,
+    traits::{
+        Chain, ClientState, ClientStateOf, ConsensusState, ConsensusStateOf, Header, HeightOf,
+    },
+    ErrorReporter, TypeUrl,
 };
 
 use crate::{
@@ -41,7 +43,8 @@ use crate::{
 
 pub trait CosmosSdkChainSealed: CosmosSdkChain + CosmosSdkChainIbcExt + ChainExt {}
 
-pub async fn do_msg<Hc, Tr>(
+#[allow(clippy::manual_async_fn)]
+pub fn do_msg<Hc, Tr>(
     hc: &Hc,
     msg: Effect<Hc, Tr>,
     // We need to be able to customize the encoding of the client/consensus states and client messages (header) since Wasm<_> needs to wrap them in wasm.v1.*; but since the rest of the logic is exactly the same, the following two functions are used as hooks to allow for the behaviour to be otherwise reused.
@@ -52,7 +55,7 @@ pub async fn do_msg<Hc, Tr>(
     )
         -> (protos::google::protobuf::Any, protos::google::protobuf::Any),
     mk_client_message: fn(Tr::Header) -> protos::google::protobuf::Any,
-) -> Result<Op<RelayMessage>, BroadcastTxCommitError>
+) -> impl Future<Output = Result<Op<RelayMessage>, BroadcastTxCommitError>> + Send + '_
 where
     Hc: ChainKeyring<Signer = CosmosSigner>
         + CosmosSdkChainSealed<
@@ -69,128 +72,301 @@ where
     >,
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Hc, Tr>)>,
 {
-    let res = hc
-        .keyring()
-        .with(|signer| {
-            let msg = msg.clone();
+    async move {
+        let res = hc
+            .keyring()
+            .with(|signer| {
+                let msg = msg.clone();
 
-            // TODO: Figure out a way to thread this value through
-            let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
+                async move {
+                    // TODO: Figure out a way to thread this value through
+                    let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
 
-            async move {
-                let mut msgs =
-                    process_msgs(msg, signer, mk_create_client_states, mk_client_message);
+                    let mut msgs =
+                        process_msgs(msg, signer, mk_create_client_states, mk_client_message);
 
-                let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
-                    .then(|(idx, msg)| {
-                        let type_url = msg.type_url.clone();
-                        hc.simulate_tx(signer, [msg], memo.clone())
-                            .map(move |res| (idx, type_url, res))
-                    })
-                    .collect::<Vec<(usize, String, Result<_, _>)>>()
-                    .await;
+                    let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
+                        .then(move |(idx, (effect, msg))| async move {
+                            let type_url = msg.type_url.clone();
 
-                // iterate backwards such that when we remove items from msgs, we don't shift the relative indices
-                for (idx, type_url, simulation_result) in simulation_results.into_iter().rev() {
-                    match simulation_result {
-                        Ok((_, _, gas_info)) => {
-                            info!(
-                                msg = %type_url,
-                                %idx,
-                                gas_wanted = %gas_info.gas_wanted,
-                                gas_used = %gas_info.gas_used,
-                                "individual message simulation successful"
+                            hc.simulate_tx(
+                                signer,
+                                [msg],
+                                format!("Voyager {}", env!("CARGO_PKG_VERSION"))
                             )
-                        }
-                        Err(error) => {
-                            if error.contains("account sequence mismatch") {
-                                warn!(
-                                    msg = %type_url,
-                                    %idx,
-                                    "account sequence mismatch on individual message simulation, treating this message as successful"
-                                );
-                            } else {
-                                error!(
-                                    %error,
-                                    msg = %type_url,
-                                    %idx,
-                                    "individual message simulation failed"
+                            .map(move |res| (idx, type_url, effect, res))
+                            .await
+                        })
+                        .collect::<Vec<(usize, String, _, Result<_, _>)>>()
+                        .await;
+
+                    // iterate backwards such that when we remove items from msgs, we don't shift the relative indices
+                    for (idx, type_url, msg, simulation_result) in simulation_results.into_iter().rev() {
+                        let _span = info_span!(
+                            "simulation result",
+                            msg = type_url,
+                            idx,
+                        )
+                        .entered();
+
+                        match simulation_result {
+                            Ok((_, _, gas_info)) => {
+                                info!(
+                                    gas_wanted = %gas_info.gas_wanted,
+                                    gas_used = %gas_info.gas_used,
+                                    "individual message simulation successful",
                                 );
 
-                                msgs.remove(idx);
+                                log_msg(msg);
+                            }
+                            Err(error) => {
+                                if error.contains("account sequence mismatch") {
+                                    warn!("account sequence mismatch on individual message simulation, treating this message as successful");
+                                    log_msg(msg);
+                                } else {
+                                    error!(
+                                        %error,
+                                        "individual message simulation failed"
+                                    );
+
+                                    log_msg(msg);
+
+                                    msgs.remove(idx);
+                                }
                             }
                         }
                     }
-                }
 
-                if msgs.is_empty() {
-                    info!(
-                        "no messages remaining to submit after filtering out failed transactions"
-                    );
-                    return Ok(());
-                }
-
-                let batch_size = msgs.len();
-                let msg_names = msgs.iter().map(|x| x.type_url.clone()).collect::<Vec<_>>();
-
-                match hc.broadcast_tx_commit(signer, msgs, memo).await {
-                    Ok((tx_hash, gas_used)) => {
+                    if msgs.is_empty() {
                         info!(
-                            %tx_hash,
-                            %gas_used,
-                            batch.size = %batch_size,
-                            "submitted cosmos transaction"
+                            "no messages remaining to submit after filtering out failed transactions"
                         );
-
-                        for msg in msg_names {
-                            info!(%tx_hash, %msg, "cosmos tx");
-                        }
-
-                        Ok(())
+                        return Ok(());
                     }
-                    Err(err) => match err {
-                        BroadcastTxCommitError::Tx(CosmosSdkError::ChannelError(
-                            ChannelError::ErrRedundantTx,
-                        )) => {
-                            info!("packet messages are redundant");
+
+                    let batch_size = msgs.len();
+                    let msg_names = msgs.iter().map(move |x| x.1.type_url.clone()).collect::<Vec<_>>();
+
+                    match hc.broadcast_tx_commit(
+                        signer,
+                        msgs.iter().map(move |x| x.1.clone()).collect::<Vec<_>>(),
+                        memo
+                    ).await {
+                        Ok((tx_hash, gas_used)) => {
+                            info!(
+                                %tx_hash,
+                                %gas_used,
+                                batch.size = %batch_size,
+                                "submitted cosmos transaction"
+                            );
+
+                            for msg in msg_names {
+                                info!(%tx_hash, %msg, "cosmos tx");
+                            }
+
                             Ok(())
                         }
-                        BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
-                            SdkError::ErrOutOfGas
-                        )) => {
-                            error!("out of gas");
-                            Err(BroadcastTxCommitError::OutOfGas)
-                        }
-                        BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
-                            SdkError::ErrWrongSequence
-                        )) => {
-                            warn!("account sequence mismatch on tx submission, message will be requeued and retried");
-                            Err(BroadcastTxCommitError::AccountSequenceMismatch(format!("{err}")))
-                        }
-                        BroadcastTxCommitError::SimulateTx(err) if err.contains("account sequence mismatch") => {
-                            warn!("account sequence mismatch on simulation, message will be requeued and retried");
-                            Err(BroadcastTxCommitError::AccountSequenceMismatch(err))
-                        }
-                        err => Err(err),
-                    },
+                        Err(err) => match err {
+                            BroadcastTxCommitError::Tx(CosmosSdkError::ChannelError(
+                                ChannelError::ErrRedundantTx,
+                            )) => {
+                                info!("packet messages are redundant");
+                                Ok(())
+                            }
+                            BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
+                                SdkError::ErrOutOfGas
+                            )) => {
+                                error!("out of gas");
+                                Err(BroadcastTxCommitError::OutOfGas)
+                            }
+                            BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
+                                SdkError::ErrWrongSequence
+                            )) => {
+                                warn!("account sequence mismatch on tx submission, message will be requeued and retried");
+                                Err(BroadcastTxCommitError::AccountSequenceMismatch(format!("{err}")))
+                            }
+                            BroadcastTxCommitError::SimulateTx(err) if err.contains("account sequence mismatch") => {
+                                warn!("account sequence mismatch on simulation, message will be requeued and retried");
+                                Err(BroadcastTxCommitError::AccountSequenceMismatch(err))
+                            }
+                            err => Err(err),
+                        },
+                    }
                 }
-            }
-        })
-        .await;
+            })
+            .await;
 
-    match res {
-        Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => {
-            Ok(effect(id(hc.chain_id(), msg)))
+        match res {
+            Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => {
+                Ok(effect(id(hc.chain_id(), msg)))
+            }
+            Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(effect(id(hc.chain_id(), msg))),
+            Some(Err(BroadcastTxCommitError::QueryLatestHeight(err))) => {
+                error!(error = %ErrorReporter(err), "error querying latest height");
+
+                Ok(effect(id(hc.chain_id(), msg)))
+            }
+            Some(res) => res.map(|()| noop()),
+            // None => Ok(seq([defer_relative(1), effect(id(hc.chain_id(), msg))])),
+            None => Ok(effect(id(hc.chain_id(), msg))),
         }
-        Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(effect(id(hc.chain_id(), msg))),
-        Some(res) => res.map(|()| noop()),
-        // None => Ok(seq([defer_relative(1), effect(id(hc.chain_id(), msg))])),
-        None => Ok(effect(id(hc.chain_id(), msg))),
+    }
+}
+
+fn log_msg<Hc: ChainExt, Tr: ChainExt>(effect: Effect<Hc, Tr>) {
+    match effect.clone() {
+        Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
+            info!(
+                client_id = %data.client_id,
+                counterparty.client_id = %data.counterparty.client_id,
+                counterparty.connection_id = %data.counterparty.connection_id,
+                counterparty.prefix.key_prefix = %::serde_utils::to_hex(data.counterparty.prefix.key_prefix),
+                version.identifier = %data.version.identifier,
+                version.features = %data.version.features.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+                delay_period = %data.delay_period,
+            )
+        }
+        Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => {
+            info!(
+                client_id = %data.client_id.to_string(),
+                client_state.height = %data.client_state.height(),
+                counterparty.client_id = %data.counterparty.client_id,
+                counterparty.connection_id = %data.counterparty.connection_id,
+                counterparty.prefix.key_prefix = %::serde_utils::to_hex(data.counterparty.prefix.key_prefix),
+                delay_period = %data.delay_period,
+                // counterparty_versions = %data
+                //     .counterparty_versions
+                //     .into_iter()
+                //     .map(Into::into)
+                //     .collect(),
+                proof_height = %data.proof_height,
+                consensus_height = %data.consensus_height,
+            )
+        }
+        Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
+            info!(
+                client_state.height = %data.client_state.height(),
+                proof_height = %data.proof_height,
+                consensus_height = %data.consensus_height,
+                connection_id = %data.connection_id,
+                counterparty_connection_id = %data.counterparty_connection_id,
+                version.identifier = %data.version.identifier,
+                version.features = %data.version.features.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+            )
+        }
+        Effect::ConnectionOpenConfirm(MsgConnectionOpenConfirmData { msg, __marker }) => {
+            info!(
+                connection_id = %msg.connection_id,
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::ChannelOpenInit(MsgChannelOpenInitData { msg, __marker }) => {
+            info!(
+                port_id = %msg.port_id,
+
+                channel.state = %msg.channel.state,
+                channel.ordering = %msg.channel.ordering,
+                channel.counterparty.port_id = %msg.channel.counterparty.port_id,
+                channel.counterparty.channel_id = %msg.channel.counterparty.channel_id,
+                channel.connection_hops = %msg.channel.connection_hops.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+                channel.version = %msg.channel.version,
+            )
+        }
+        Effect::ChannelOpenTry(MsgChannelOpenTryData { msg, __marker }) => {
+            info!(
+                port_id = %msg.port_id.to_string(),
+
+                channel.state = %msg.channel.state,
+                channel.ordering = %msg.channel.ordering,
+                channel.counterparty.port_id = %msg.channel.counterparty.port_id,
+                channel.counterparty.channel_id = %msg.channel.counterparty.channel_id,
+                channel.connection_hops = %msg.channel.connection_hops.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join(","),
+                channel.version = %msg.channel.version,
+
+                counterparty_version = %msg.counterparty_version,
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::ChannelOpenAck(MsgChannelOpenAckData { msg, __marker }) => {
+            info!(
+                port_id = %msg.port_id,
+                channel_id = %msg.channel_id,
+                counterparty_version = %msg.counterparty_version,
+                counterparty_channel_id = %msg.counterparty_channel_id,
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::ChannelOpenConfirm(MsgChannelOpenConfirmData { msg, __marker }) => {
+            info!(
+                port_id = %msg.port_id,
+                channel_id = %msg.channel_id,
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::RecvPacket(MsgRecvPacketData { msg, __marker }) => {
+            info!(
+                sequence = %msg.packet.sequence,
+                source_port = %msg.packet.source_port,
+                source_channel = %msg.packet.source_channel,
+                destination_port = %msg.packet.destination_port,
+                destination_channel = %msg.packet.destination_channel,
+                data = %::serde_utils::to_hex(msg.packet.data),
+                timeout_height = %msg.packet.timeout_height,
+                timeout_timestamp = %msg.packet.timeout_timestamp,
+
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::AckPacket(MsgAckPacketData { msg, __marker }) => {
+            info!(
+                sequence = %msg.packet.sequence,
+                source_port = %msg.packet.source_port,
+                source_channel = %msg.packet.source_channel,
+                destination_port = %msg.packet.destination_port,
+                destination_channel = %msg.packet.destination_channel,
+                data = %::serde_utils::to_hex(msg.packet.data),
+                timeout_height = %msg.packet.timeout_height,
+                timeout_timestamp = %msg.packet.timeout_timestamp,
+
+                data = %::serde_utils::to_hex(msg.acknowledgement),
+                proof_height = %msg.proof_height,
+            )
+        }
+        Effect::TimeoutPacket(MsgTimeoutData { msg, __marker }) => {
+            info!(
+                sequence = %msg.packet.sequence,
+                source_port = %msg.packet.source_port,
+                source_channel = %msg.packet.source_channel,
+                destination_port = %msg.packet.destination_port,
+                destination_channel = %msg.packet.destination_channel,
+                data = %::serde_utils::to_hex(msg.packet.data),
+                timeout_height = %msg.packet.timeout_height,
+                timeout_timestamp = %msg.packet.timeout_timestamp,
+
+                proof_height = %msg.proof_height,
+                next_sequence_recv = %msg.next_sequence_recv.get(),
+            )
+        }
+        Effect::CreateClient(MsgCreateClientData { msg, config }) => {
+            info!(
+                config_json = %::serde_json::to_string(&config).expect("serialization is infallible"),
+                client_state.height = %msg.client_state.height(),
+                client_state.chain_id = %msg.client_state.chain_id(),
+                consensus_state.timestamp = %msg.consensus_state.timestamp(),
+            )
+        }
+        Effect::UpdateClient(MsgUpdateClientData(msg)) => {
+            info!(
+                client_id = %msg.client_id.to_string(),
+                header.trusted_height = %msg.client_message.trusted_height(),
+            )
+        }
+        Effect::Batch(BatchMsg(_msgs)) => error!("attempted to log a batch tx???"),
     }
 }
 
 fn process_msgs<Hc, Tr>(
-    msg: Effect<Hc, Tr>,
+    effect: Effect<Hc, Tr>,
     signer: &CosmosSigner,
     mk_create_client_states: fn(
         Hc::Config,
@@ -199,7 +375,7 @@ fn process_msgs<Hc, Tr>(
     )
         -> (protos::google::protobuf::Any, protos::google::protobuf::Any),
     mk_client_message: fn(Tr::Header) -> protos::google::protobuf::Any,
-) -> Vec<protos::google::protobuf::Any>
+) -> Vec<(Effect<Hc, Tr>, protos::google::protobuf::Any)>
 where
     Hc: CosmosSdkChainSealed<
         MsgError = BroadcastTxCommitError,
@@ -214,21 +390,23 @@ where
         StateProof: Encode<Proto>,
     >,
 {
-    match msg {
+    match effect.clone() {
         Effect::ConnectionOpenInit(MsgConnectionOpenInitData(data)) => {
-            vec![mk_any(
-                &protos::ibc::core::connection::v1::MsgConnectionOpenInit {
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
                     client_id: data.client_id.to_string(),
                     counterparty: Some(data.counterparty.into()),
                     version: Some(data.version.into()),
                     signer: signer.to_string(),
                     delay_period: data.delay_period,
-                },
+                }),
             )]
         }
         Effect::ConnectionOpenTry(MsgConnectionOpenTryData(data)) => {
-            vec![mk_any(
-                &protos::ibc::core::connection::v1::MsgConnectionOpenTry {
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                     client_id: data.client_id.to_string(),
                     client_state: Some(data.client_state.into_any().into()),
                     counterparty: Some(data.counterparty.into()),
@@ -246,12 +424,13 @@ where
                     signer: signer.to_string(),
                     host_consensus_state_proof: vec![],
                     ..Default::default()
-                },
+                }),
             )]
         }
         Effect::ConnectionOpenAck(MsgConnectionOpenAckData(data)) => {
-            vec![mk_any(
-                &protos::ibc::core::connection::v1::MsgConnectionOpenAck {
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
                     client_state: Some(data.client_state.into_any().into()),
                     proof_height: Some(data.proof_height.into_height().into()),
                     proof_client: data.proof_client.encode(),
@@ -263,105 +442,129 @@ where
                     counterparty_connection_id: data.counterparty_connection_id.to_string(),
                     version: Some(data.version.into()),
                     proof_try: data.proof_try.encode(),
-                },
+                }),
             )]
         }
         Effect::ConnectionOpenConfirm(MsgConnectionOpenConfirmData { msg, __marker }) => {
-            vec![mk_any(
-                &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
-                    connection_id: msg.connection_id.to_string(),
-                    proof_ack: msg.proof_ack.encode(),
-                    proof_height: Some(msg.proof_height.into_height().into()),
-                    signer: signer.to_string(),
-                },
+            vec![(
+                effect,
+                mk_any(
+                    &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
+                        connection_id: msg.connection_id.to_string(),
+                        proof_ack: msg.proof_ack.encode(),
+                        proof_height: Some(msg.proof_height.into_height().into()),
+                        signer: signer.to_string(),
+                    },
+                ),
             )]
         }
         Effect::ChannelOpenInit(MsgChannelOpenInitData { msg, __marker }) => {
-            vec![mk_any(
-                &protos::ibc::core::channel::v1::MsgChannelOpenInit {
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
                     port_id: msg.port_id.to_string(),
                     channel: Some(msg.channel.into()),
                     signer: signer.to_string(),
-                },
+                }),
             )]
         }
         Effect::ChannelOpenTry(MsgChannelOpenTryData { msg, __marker }) => {
-            vec![mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
-                port_id: msg.port_id.to_string(),
-                channel: Some(msg.channel.into()),
-                counterparty_version: msg.counterparty_version,
-                proof_init: msg.proof_init.encode(),
-                proof_height: Some(msg.proof_height.into()),
-                signer: signer.to_string(),
-                ..Default::default()
-            })]
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
+                    port_id: msg.port_id.to_string(),
+                    channel: Some(msg.channel.into()),
+                    counterparty_version: msg.counterparty_version,
+                    proof_init: msg.proof_init.encode(),
+                    proof_height: Some(msg.proof_height.into()),
+                    signer: signer.to_string(),
+                    ..Default::default()
+                }),
+            )]
         }
         Effect::ChannelOpenAck(MsgChannelOpenAckData { msg, __marker }) => {
-            vec![mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
-                port_id: msg.port_id.to_string(),
-                channel_id: msg.channel_id.to_string(),
-                counterparty_version: msg.counterparty_version,
-                counterparty_channel_id: msg.counterparty_channel_id.to_string(),
-                proof_try: msg.proof_try.encode(),
-                proof_height: Some(msg.proof_height.into_height().into()),
-                signer: signer.to_string(),
-            })]
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
+                    port_id: msg.port_id.to_string(),
+                    channel_id: msg.channel_id.to_string(),
+                    counterparty_version: msg.counterparty_version,
+                    counterparty_channel_id: msg.counterparty_channel_id.to_string(),
+                    proof_try: msg.proof_try.encode(),
+                    proof_height: Some(msg.proof_height.into_height().into()),
+                    signer: signer.to_string(),
+                }),
+            )]
         }
         Effect::ChannelOpenConfirm(MsgChannelOpenConfirmData { msg, __marker }) => {
-            vec![mk_any(
-                &protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
                     port_id: msg.port_id.to_string(),
                     channel_id: msg.channel_id.to_string(),
                     proof_height: Some(msg.proof_height.into_height().into()),
                     signer: signer.to_string(),
                     proof_ack: msg.proof_ack.encode(),
-                },
+                }),
             )]
         }
         Effect::RecvPacket(MsgRecvPacketData { msg, __marker }) => {
-            vec![mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
-                packet: Some(msg.packet.into()),
-                proof_height: Some(msg.proof_height.into_height().into()),
-                signer: signer.to_string(),
-                proof_commitment: msg.proof_commitment.encode(),
-            })]
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
+                    packet: Some(msg.packet.into()),
+                    proof_height: Some(msg.proof_height.into_height().into()),
+                    signer: signer.to_string(),
+                    proof_commitment: msg.proof_commitment.encode(),
+                }),
+            )]
         }
         Effect::AckPacket(MsgAckPacketData { msg, __marker }) => {
-            vec![mk_any(
-                &protos::ibc::core::channel::v1::MsgAcknowledgement {
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                     packet: Some(msg.packet.into()),
                     acknowledgement: msg.acknowledgement,
                     proof_acked: msg.proof_acked.encode(),
                     proof_height: Some(msg.proof_height.into_height().into()),
                     signer: signer.to_string(),
-                },
+                }),
             )]
         }
         Effect::TimeoutPacket(MsgTimeoutData { msg, __marker }) => {
-            vec![mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
-                packet: Some(msg.packet.into()),
-                proof_unreceived: msg.proof_unreceived.encode(),
-                proof_height: Some(msg.proof_height.into_height().into()),
-                next_sequence_recv: msg.next_sequence_recv.get(),
-                signer: signer.to_string(),
-            })]
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
+                    packet: Some(msg.packet.into()),
+                    proof_unreceived: msg.proof_unreceived.encode(),
+                    proof_height: Some(msg.proof_height.into_height().into()),
+                    next_sequence_recv: msg.next_sequence_recv.get(),
+                    signer: signer.to_string(),
+                }),
+            )]
         }
         Effect::CreateClient(MsgCreateClientData { msg, config }) => {
             let (client_state, consensus_state) =
                 mk_create_client_states(config, msg.client_state, msg.consensus_state);
 
-            vec![mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
-                client_state: Some(client_state),
-                consensus_state: Some(consensus_state),
-                signer: signer.to_string(),
-            })]
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
+                    client_state: Some(client_state),
+                    consensus_state: Some(consensus_state),
+                    signer: signer.to_string(),
+                }),
+            )]
         }
         Effect::UpdateClient(MsgUpdateClientData(msg)) => {
-            vec![mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
-                signer: signer.to_string(),
-                client_id: msg.client_id.to_string(),
-                client_message: Some(mk_client_message(msg.client_message)),
-            })]
+            vec![(
+                effect,
+                mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
+                    signer: signer.to_string(),
+                    client_id: msg.client_id.to_string(),
+                    client_message: Some(mk_client_message(msg.client_message)),
+                }),
+            )]
         }
         Effect::Batch(BatchMsg(msgs)) => msgs
             .into_iter()
@@ -1317,10 +1520,13 @@ pub mod wasm {
         >,
         AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Wasm<Hc>, Tr>)>,
     {
-        async fn msg(&self, msg: Effect<Wasm<Hc>, Tr>) -> Result<Op<RelayMessage>, Self::MsgError> {
+        async fn msg(
+            &self,
+            effect: Effect<Wasm<Hc>, Tr>,
+        ) -> Result<Op<RelayMessage>, Self::MsgError> {
             do_msg(
                 self,
-                msg,
+                effect,
                 |config, client_state, consensus_state| {
                     (
                         Any(wasm::client_state::ClientState {
