@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
 import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
+import { toast } from "svelte-sonner"
 import request from "graphql-request"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { URLS } from "$lib/constants/index.ts"
@@ -9,6 +10,7 @@ import { createQuery } from "@tanstack/svelte-query"
 import Truncate from "$lib/components/truncate.svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
+import DydxFaucet from "./(components)/dydx-faucet.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import WalletGate from "$lib/components/wallet-gate.svelte"
@@ -172,6 +174,7 @@ const requestDydxFromFaucet = async () => {
         kind: "RESULT_OK",
         message: "success"
       })
+      return true
     } catch (error) {
       dydxFaucetState.set({
         kind: "RESULT_ERR",
@@ -380,114 +383,7 @@ $: console.info($dydxAddressTransfers?.data)
     </Card.Content>
   </Card.Root>
   <!-- dydx faucet -->
-  <Card.Root class="w-full max-w-lg">
-    <Card.Header>
-      <Card.Title>dydx Faucet</Card.Title>
-    </Card.Header>
-    <Card.Content>
-      {#if $dydxFaucetState.kind === "RESULT_OK"}
-        <p>
-          Tokens sent: <a
-            href={`https://www.mintscan.io/dydx-testnet/tx/${$dydxFaucetState.message}`}
-          >
-            <Truncate
-              class="underline"
-              value={$dydxFaucetState.message}
-              type="hash"
-            />
-          </a>
-        </p>
-      {:else if $dydxFaucetState.kind === "RESULT_ERR"}
-        <p class="mb-4">
-          {$dydxFaucetState.error}
-        </p>
-        <Button on:click={() => dydxFaucetState.set({ kind: "IDLE" })}>
-          Retry
-        </Button>
-      {:else}
-        <form
-          action="?"
-          method="POST"
-          name="faucet-form"
-          class="flex flex-col w-full gap-4"
-          on:submit|preventDefault|once={requestDydxFromFaucet}
-        >
-          <div>
-            <Label for="address">Address</Label>
-            <div class="flex items-start gap-2">
-              <div class="w-full">
-                <div class="relative w-full mb-2">
-                  <Input
-                    type="text"
-                    minlength={44}
-                    maxlength={44}
-                    readonly={true}
-                    required={true}
-                    autocorrect="off"
-                    id="dydx-address"
-                    autocomplete="off"
-                    spellcheck="false"
-                    autocapitalize="none"
-                    value={$dydxAddress}
-                    data-lpignore={true}
-                    data-1p-ignore={true}
-                    placeholder="dydx14ea6…"
-                    name="dydx-wallet-address"
-                    class="disabled:opacity-100 disabled:bg-black/20"
-                    pattern={createCosmosSdkAddressRegex({ prefix: "dydx" })
-                      .source}
-                  />
-                </div>
-                <div class="flex justify-between px-1">
-                  <div class="text-xs">
-                    <p>
-                      {#if $dydxAddress?.indexOf("dydx") === 0 && $dydxBalance.status === "success"}
-                        <span class="text-muted-foreground">Balance: </span>
-                        {$dydxBalance?.data?.balance ?? 0}
-                        adv4tnt
-                      {:else}
-                        Connect cosmos wallet
-                      {/if}
-                    </p>
-                  </div>
-                  <!-- {#if dydxAddress !== convertCosmosAddress( { address: `${$cosmosStore.address}`, toPrefix: "dydx" } )}
-                    <button
-                      type="button"
-                      on:click={resetDydxInput}
-                      class="text-xs text-muted-foreground hover:text-primary transition"
-                    >
-                      Reset
-                    </button>
-                  {/if} -->
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="flex flex-row items-center gap-4">
-            <Button
-              type="submit"
-              on:click={(event) => {
-                event.preventDefault()
-                requestDydxFromFaucet()
-              }}
-              disabled={$dydxFaucetState.kind !== "IDLE" ||
-                isValidCosmosAddress($dydxAddress, ["dydx"]) === false}
-              class={cn(
-                "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50"
-              )}
-            >
-              Submit
-              {#if $dydxFaucetState.kind !== "IDLE"}
-                <span class="ml-2">
-                  <SpinnerSVG className="w-4 h-4" />
-                </span>
-              {/if}
-            </Button>
-          </div>
-        </form>
-      {/if}
-    </Card.Content>
-  </Card.Root>
+  <DydxFaucet />
   <ChainsGate let:chains>
     <ExternalFaucets {chains} />
   </ChainsGate>
