@@ -2,13 +2,11 @@ import { bech32 } from "@scure/base"
 import { getAddress, isHex } from "viem"
 import { raise } from "./utilities/index.ts"
 import type { Bech32Address, HexAddress } from "./types.ts"
-import { isValidBech32Address } from "./utilities/address.ts"
 
 /**
  * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)
  */
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
-  if (!isValidBech32Address(address)) raise("Invalid bech32 address")
   const { words } = bech32.decode(address)
   return getAddress(`0x${Buffer.from(bech32.fromWords(words)).toString("hex")}`)
 }
@@ -24,6 +22,14 @@ export function hexAddressToBech32({
   const words = bech32.toWords(Buffer.from(address.slice(2), "hex"))
   return bech32.encode(bech32Prefix, words)
 }
+
+export function bech32ToBech32Address<ToPrefix extends string>({
+  address,
+  toPrefix
+}: { address: string; toPrefix: ToPrefix }): Bech32Address<ToPrefix> {
+  return bech32.encode(toPrefix, bech32.decode(address).words) as Bech32Address<ToPrefix>
+}
+
 /**
  * @credit https://stackoverflow.com/a/78013306/10605502
  */

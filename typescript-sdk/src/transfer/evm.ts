@@ -4,14 +4,25 @@ import {
   type Address,
   type Account,
   type WalletClient,
-  type PublicActions,
-  type ContractFunctionRevertedErrorType
+  type PublicActions
 } from "viem"
 import { ucs01RelayAbi } from "../abi/ucs-01.ts"
 import { timestamp } from "../utilities/index.ts"
 import { bech32AddressToHex } from "../convert.ts"
 import type { TransactionResponse } from "../types.ts"
 import { simulateTransaction } from "../query/offchain/tenderly.ts"
+
+export type TransferAssetFromEvmParams = {
+  memo?: string
+  amount: bigint
+  account?: Account
+  recipient: string
+  approve?: boolean
+  simulate?: boolean
+  denomAddress: Address
+  sourceChannel: string
+  relayContractAddress: Address
+}
 
 /**
  * TODO:
@@ -26,18 +37,10 @@ export async function transferAssetFromEvm(
     recipient,
     denomAddress,
     sourceChannel,
+    approve = false,
     simulate = true,
     relayContractAddress
-  }: {
-    memo?: string
-    amount: bigint
-    account?: Account
-    recipient: string
-    simulate?: boolean
-    denomAddress: Address
-    sourceChannel: string
-    relayContractAddress: Address
-  }
+  }: TransferAssetFromEvmParams
 ): Promise<TransactionResponse> {
   try {
     account ||= client.account
@@ -47,23 +50,16 @@ export async function transferAssetFromEvm(
     /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
     relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
 
-    const approveWriteContractParameters = {
-      account,
-      abi: erc20Abi,
-      chain: client.chain,
-      address: denomAddress,
-      functionName: "approve",
-      args: [relayContractAddress, amount]
-    } as const
-
-    const { request: approveRequest } = await client.simulateContract(
-      approveWriteContractParameters
-    )
-    const approveHash = await client.writeContract(approveRequest)
-
-    if (!approveHash) return { success: false, data: "Approval failed" }
-    const receipt = await client.waitForTransactionReceipt({ hash: approveHash })
-    console.info(`[transferAssetFromEvm] Approval transaction hash: ${receipt.transactionHash}`)
+    if (approve) {
+      const approveResponse = await approveTransferAssetFromEvm(client, {
+        amount,
+        account,
+        denomAddress,
+        relayContractAddress
+      })
+      if (!approveResponse.success) return approveResponse
+      console.info(`[transferAssetFromEvm] Approval transaction hash: ${approveResponse.data}`)
+    }
 
     memo ||= timestamp()
 
@@ -107,7 +103,61 @@ export async function transferAssetFromEvm(
 
     return { success: true, data: hash }
   } catch (error) {
-    const castedError = error as ContractFunctionRevertedErrorType
+    console.error(JSON.stringify(error, undefined, 2))
+    return {
+      success: false,
+      data: error instanceof Error ? error.message : "Unknown error"
+    }
+  }
+}
+
+export type ApproveTransferAssetFromEvmParams = Pick<
+  TransferAssetFromEvmParams,
+  "amount" | "account" | "simulate" | "denomAddress" | "relayContractAddress"
+>
+
+export async function approveTransferAssetFromEvm(
+  client: WalletClient & PublicActions,
+  {
+    amount,
+    account,
+    denomAddress,
+    simulate = true,
+    relayContractAddress
+  }: ApproveTransferAssetFromEvmParams
+): Promise<TransactionResponse> {
+  try {
+    account ||= client.account
+    if (!account) return { success: false, data: "No account found" }
+
+    denomAddress = getAddress(denomAddress)
+    /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
+    relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
+
+    const approveWriteContractParameters = {
+      account,
+      abi: erc20Abi,
+      chain: client.chain,
+      address: denomAddress,
+      functionName: "approve",
+      args: [relayContractAddress, amount]
+    } as const
+
+    if (!simulate) {
+      const { request: approveRequest } = await client.simulateContract(
+        approveWriteContractParameters
+      )
+      const approveHash = await client.writeContract(approveRequest)
+      return { success: true, data: approveHash }
+    }
+
+    const approveHash = await client.writeContract(approveWriteContractParameters)
+
+    if (!approveHash) return { success: false, data: "Approval failed" }
+    const receipt = await client.waitForTransactionReceipt({ hash: approveHash })
+
+    return { success: true, data: approveHash }
+  } catch (error) {
     console.error(JSON.stringify(error, undefined, 2))
     return {
       success: false,
@@ -148,10 +198,10 @@ export async function transferAssetFromEvmSimulate(
     const gasEstimation = await simulateTransaction({
       memo,
       amount,
-      account,
       recipient,
       denomAddress,
       sourceChannel,
+      account: account,
       relayContractAddress
     })
     return { success: true, data: gasEstimation.toString() }

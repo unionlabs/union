@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
-import { fallback, http } from "viem"
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
+import { fallback, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
+import type { ApproveTransferAssetFromEvmParams } from "#transfer/evm.js"
 
 /* `bun playground/sepolia-to-union.ts --private-key "..."` --estimate-gas */
 
@@ -91,25 +92,41 @@ try {
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
   if (!gasEstimationResponse.success) {
-    console.info("Transaction simulation failed")
+    consola.info("Transaction simulation failed")
+    process.exit(1)
+  }
+
+  const approvalParams = {
+    amount: 1n,
+    simulate: true,
+    account: evmAccount,
+    denomAddress: LINK_CONTRACT_ADDRESS,
+    relayContractAddress: getAddress(contract_address)
+  } satisfies ApproveTransferAssetFromEvmParams
+
+  const approvalTransfer = await client.approveTransaction(approvalParams)
+
+  consola.box("Approval transaction:", approvalTransfer)
+
+  if (!approvalTransfer.success) {
+    consola.info("Approval transaction failed")
     process.exit(1)
   }
 
   const transfer = await client.transferAsset({
-    amount: 1n,
+    approve: false,
     sourceChannel: channel_id,
     network: sepoliaInfo.rpc_type,
-    denomAddress: LINK_CONTRACT_ADDRESS,
-    relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    path: [source_chain.chain_id, destination_chain.chain_id]
+    path: [source_chain.chain_id, destination_chain.chain_id],
+    ...approvalParams
   })
 
-  console.info(transfer)
+  consola.info(transfer)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
-  console.error(errorMessage)
+  consola.error(errorMessage)
 } finally {
   process.exit(0)
 }
