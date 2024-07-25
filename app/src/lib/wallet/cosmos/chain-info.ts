@@ -173,3 +173,78 @@ export const strideKeplrChainInfo: KeplrChainInfo = {
   ],
   features: []
 }
+
+export const strideLeapChainInfo: LeapExtendedInfo = {
+  chainId: "stride-internal-1",
+  chainName: "Stride Testnet",
+  rpc: "https://stride.testnet-1.stridenet.co",
+  rest: "https://stride.testnet-1.stridenet.co/api",
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "stride",
+    bech32PrefixAccPub: "stridepub",
+    bech32PrefixValAddr: "stridevaloper",
+    bech32PrefixValPub: "stridevaloperpub",
+    bech32PrefixConsAddr: "stridevalcons",
+    bech32PrefixConsPub: "stridevalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "STRD",
+      coinMinimalDenom: "ustrd",
+      coinDecimals: 6,
+      coinGeckoId: "stride"
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "STRD",
+      coinMinimalDenom: "ustrd",
+      coinDecimals: 6,
+      coinGeckoId: "stride"
+    },
+    {
+      coinDenom: "TIA",
+      coinMinimalDenom: "ibc/1A7653323C1A9E267FF7BEBF40B3EEA8065E8F069F47F2493ABC3E0B621BF793",
+      coinDecimals: 6,
+      coinGeckoId: "celestia"
+    }
+  ],
+  gasPriceStep: {
+    low: 0.0005,
+    average: 0.005,
+    high: 0.05
+  },
+  stakeCurrency: {
+    coinDenom: "STRD",
+    coinMinimalDenom: "ustrd",
+    coinDecimals: 6,
+    coinGeckoId: "stride"
+  },
+  theme: {
+    primaryColor: "#E91179",
+    gradient: "linear-gradient(180deg, rgba(233, 17, 121, 0.32) 0%, rgba(233, 17, 121, 0) 100%)"
+  },
+  image:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/chain.png"
+}
+
+const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
+  "union-testnet-8": unionKeplrChainInfo,
+  "stride-internal-1": strideKeplrChainInfo
+}
+
+const leapChainInfoMap: Record<string, LeapChainInfo> = {
+  "union-testnet-8": unionLeapChainInfo,
+  "stride-internal-1": strideLeapChainInfo
+}
+
+export function getCosmosChainInfo(
+  chainId: string,
+  connectedWallet: string | undefined
+): LeapChainInfo | KeplrChainInfo | null {
+  const chainInfoMap = connectedWallet === "leap" ? leapChainInfoMap : keplrChainInfoMap
+  return chainInfoMap[chainId] || null
+}
