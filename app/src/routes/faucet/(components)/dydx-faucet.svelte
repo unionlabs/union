@@ -1,9 +1,6 @@
 <script lang="ts">
-import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
-import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 import { toast } from "svelte-sonner"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { URLS } from "$lib/constants/index.ts"
 import { Label } from "$lib/components/ui/label"
 import { createQuery } from "@tanstack/svelte-query"
 import Truncate from "$lib/components/truncate.svelte"
@@ -11,14 +8,13 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
-import WalletGate from "$lib/components/wallet-gate.svelte"
-import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { derived, writable, type Writable } from "svelte/store"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
-import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import { cosmosChainAddressTransfers } from "$lib/queries/transfers/cosmos"
+import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
+import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 
 type DydxFaucetState = DiscriminatedUnion<
   "kind",
