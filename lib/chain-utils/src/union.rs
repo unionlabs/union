@@ -29,7 +29,7 @@ pub struct Union {
     pub keyring: CosmosKeyring,
     pub tm_client: WebSocketClient,
     pub chain_revision: u64,
-    pub prover_endpoint: String,
+    pub prover_endpoints: Vec<String>,
     pub grpc_url: String,
 
     pub checksum_cache: Arc<dashmap::DashMap<H256, WasmClientType>>,
@@ -40,7 +40,7 @@ pub struct Union {
 pub struct Config {
     pub keyring: KeyringConfig,
     pub ws_url: WebSocketClientUrl,
-    pub prover_endpoint: String,
+    pub prover_endpoints: Vec<String>,
     pub grpc_url: String,
     pub gas_config: GasConfig,
 }
@@ -260,7 +260,7 @@ impl Union {
             tm_client,
             chain_id,
             chain_revision,
-            prover_endpoint: config.prover_endpoint,
+            prover_endpoints: config.prover_endpoints,
             grpc_url: config.grpc_url,
             checksum_cache: Arc::new(DashMap::default()),
             gas_config: config.gas_config,
