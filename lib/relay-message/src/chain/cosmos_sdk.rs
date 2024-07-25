@@ -20,7 +20,7 @@ use unionlabs::{
     traits::{
         Chain, ClientState, ClientStateOf, ConsensusState, ConsensusStateOf, Header, HeightOf,
     },
-    TypeUrl,
+    ErrorReporter, TypeUrl,
 };
 
 use crate::{
@@ -201,6 +201,11 @@ where
                 Ok(effect(id(hc.chain_id(), msg)))
             }
             Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(effect(id(hc.chain_id(), msg))),
+            Some(Err(BroadcastTxCommitError::QueryLatestHeight(err))) => {
+                error!(error = %ErrorReporter(err), "error querying latest height");
+
+                Ok(effect(id(hc.chain_id(), msg)))
+            }
             Some(res) => res.map(|()| noop()),
             // None => Ok(seq([defer_relative(1), effect(id(hc.chain_id(), msg))])),
             None => Ok(effect(id(hc.chain_id(), msg))),
