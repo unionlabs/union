@@ -1475,6 +1475,7 @@ dependencies = [
  "tendermint-rpc",
  "thiserror",
  "tokio",
+ "tonic 0.10.2",
  "tracing",
  "tracing-subscriber",
  "typenum",

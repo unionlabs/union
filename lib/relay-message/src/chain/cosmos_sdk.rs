@@ -118,7 +118,7 @@ where
                                 log_msg(msg);
                             }
                             Err(error) => {
-                                if error.contains("account sequence mismatch") {
+                                if error.message().contains("account sequence mismatch") {
                                     warn!("account sequence mismatch on individual message simulation, treating this message as successful");
                                     log_msg(msg);
                                 } else {
@@ -181,11 +181,11 @@ where
                                 SdkError::ErrWrongSequence
                             )) => {
                                 warn!("account sequence mismatch on tx submission, message will be requeued and retried");
-                                Err(BroadcastTxCommitError::AccountSequenceMismatch(format!("{err}")))
+                                Err(BroadcastTxCommitError::AccountSequenceMismatch(None))
                             }
-                            BroadcastTxCommitError::SimulateTx(err) if err.contains("account sequence mismatch") => {
+                            BroadcastTxCommitError::SimulateTx(err) if err.message().contains("account sequence mismatch") => {
                                 warn!("account sequence mismatch on simulation, message will be requeued and retried");
-                                Err(BroadcastTxCommitError::AccountSequenceMismatch(err))
+                                Err(BroadcastTxCommitError::AccountSequenceMismatch(Some(err)))
                             }
                             err => Err(err),
                         },
@@ -199,6 +199,14 @@ where
                 Ok(effect(id(hc.chain_id(), msg)))
             }
             Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(effect(id(hc.chain_id(), msg))),
+            Some(Err(BroadcastTxCommitError::SimulateTx(err))) => {
+                error!(
+                    error = %ErrorReporter(err),
+                    "transaction simulation failed, message will be requeued and retried"
+                );
+
+                Ok(effect(id(hc.chain_id(), msg)))
+            }
             Some(Err(BroadcastTxCommitError::QueryLatestHeight(err))) => {
                 error!(error = %ErrorReporter(err), "error querying latest height");
 

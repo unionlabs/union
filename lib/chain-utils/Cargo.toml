@@ -39,6 +39,7 @@ sha2                     = { workspace = true }
 tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client", "default"] }
 thiserror                = { workspace = true }
 tokio                    = { workspace = true }
+tonic                    = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 

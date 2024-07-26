@@ -23,7 +23,7 @@ use unionlabs::{
     parse_wasm_client_type,
     signer::CosmosSigner,
     traits::Chain,
-    MaybeRecoverableError, WasmClientType,
+    ErrorReporter, MaybeRecoverableError, WasmClientType,
 };
 
 use crate::{
@@ -362,7 +362,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
         signer: &CosmosSigner,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
         memo: String,
-    ) -> Result<(TxBody, AuthInfo, GasInfo), String> {
+    ) -> Result<(TxBody, AuthInfo, GasInfo), tonic::Status> {
         use protos::cosmos::tx;
 
         let account = self.account_info(&signer.to_string()).await;
@@ -428,8 +428,8 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
                     .into(),
             )),
             Err(err) => {
-                info!(error = %err, "tx simulation failed");
-                Err(err.to_string())
+                info!(error = %ErrorReporter(&err), "tx simulation failed");
+                Err(err)
             }
         }
     }
@@ -525,10 +525,10 @@ pub enum BroadcastTxCommitError {
     Inclusion(#[source] tendermint_rpc::Error),
     #[error("tx failed: {0:?}")]
     Tx(CosmosSdkError),
-    #[error("tx simulation failed: {0}")]
-    SimulateTx(String),
-    #[error("account sequence mismatch: {0}")]
-    AccountSequenceMismatch(String),
+    #[error("tx simulation failed")]
+    SimulateTx(#[source] tonic::Status),
+    #[error("account sequence mismatch")]
+    AccountSequenceMismatch(#[source] Option<tonic::Status>),
     #[error("out of gas")]
     OutOfGas,
 }
