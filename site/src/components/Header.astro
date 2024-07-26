@@ -1,5 +1,6 @@
 ---
 import unionLogo from "#/assets/union-logo/logo.svg"
+// @ts-ignore
 import { Icon } from "@astrojs/starlight/components"
 
 const menuItems = [
@@ -21,47 +22,233 @@ const menuItems = [
 <script>
   let menuOpen = false
 
-  let overlay = document.getElementById('overlay')
-  let menuButton = document.getElementById('menu-button')
-  let menuItemsList = document.getElementById('menu-items-list')
+  let overlay = document.getElementById("overlay")
+  let menuButton = document.getElementById("menu-button")
+  let menuItemsList = document.getElementById("menu-items-list")
 
-  menuButton?.addEventListener('click', () => {
+  menuButton?.addEventListener("click", () => {
     menuOpen = !menuOpen
     if (!menuItemsList || !overlay) return
-    menuItemsList.style.display = menuOpen ? 'flex' : 'none'
-    menuItemsList.style.maxHeight = menuOpen ? menuItemsList.scrollHeight + 'px' : '0'
+    menuItemsList.style.display = menuOpen ? "flex" : "none"
+    menuItemsList.style.maxHeight = menuOpen
+      ? menuItemsList.scrollHeight + "px"
+      : "0"
 
     if (menuOpen) {
-      overlay.classList.add('show')
-      overlay.style.visibility = 'visible'
+      overlay.classList.add("show")
+      overlay.style.visibility = "visible"
     } else {
-      overlay.classList.remove('show')
-      overlay.style.visibility = 'hidden'
+      overlay.classList.remove("show")
+      overlay.style.visibility = "hidden"
     }
   })
 
-  overlay?.addEventListener('click', () => {
+  overlay?.addEventListener("click", () => {
     menuOpen = false
     if (!menuItemsList || !overlay) return
-    menuItemsList.style.display = 'none'
-    menuItemsList.style.maxHeight = '0'
+    menuItemsList.style.display = "none"
+    menuItemsList.style.maxHeight = "0"
 
-    overlay.classList.toggle('show', menuOpen)
+    overlay.classList.toggle("show", menuOpen)
   })
+</script>
+
+<script>
+  const logoAnchorElement = document.querySelector("a#union-logo")
+  const popoverElement = document.querySelector("div#logo-popover")
+
+  logoAnchorElement?.addEventListener(
+    "contextmenu",
+    (event) => {
+      event.preventDefault()
+      console.info("contextmenu")
+      popoverElement?.showPopover()
+    },
+
+  )
 </script>
 
 <header
   class="z-[100] w-full bg-black/60 backdrop-blur-md flex justify-around pt-3 px-4 sticky top-0 py-3"
 >
-  <div class="max-w-6xl flex flex-1 items-center">
+  <div class="max-w-6xl flex flex-1 items-center select-none">
     <a
       href="/"
+      type="button"
       id="union-logo"
       class="flex items-center gap-2 decoration-transparent visited:text-white"
     >
-      <img class="w-8 h-8 my-auto object-contain" src={unionLogo.src} alt="Union Logo" />
+      <img
+        class="w-8 h-8 my-auto object-contain"
+        src={unionLogo.src}
+        alt="Union Logo"
+      />
       <p class="font-semibold text-3xl py-0 my-0 mb-0.5 text-white">Union</p>
     </a>
+    <div
+      popover
+      id="logo-popover"
+      class:list={[
+        "bg-[#1C1C1C] w-60 h-44 z-99999",
+        "absolute top-14 left-8 rounded-lg border border-1 border-[rgb(52_52_52)]",
+        "py-4",
+        "divide-y divide-[#343434] divide-"
+      ]}
+    >
+      <ul class="px-2 list-none space-y-3 text-[#9c9c9c] font-semibold">
+        <li>
+          <button
+            class="bg-transparent text-[#9C9C9C] relative select-none rounded-sm px-2 py-1.5 text-xs outline-none transition-colors focus:bg-overlay-hover focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer w-full flex justify-between gap-2 items-center !p-2 group/menu-item text-left"
+            role="menuitem"
+            tabindex="-1"
+            data-orientation="vertical"
+            data-radix-collection-item=""
+          >
+            <span class="text-foreground-lighter">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 512 512"
+              >
+                <path
+                  fill="currentColor"
+                  d="M300.522 431.304L512 80.696H211.478L0 431.304z"
+                >
+                </path>
+              </svg>
+            </span>
+            <span class="grow">Copy logo as SVG</span>
+            <span
+              class="w-4 opacity-0 flex items-center justify-center group-hover/menu-item:opacity-100 group-focus/menu-item:opacity-100 group-focus-visible/menu-item:opacity-100"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1"
+                stroke="currentColor"
+                aria-hidden="true"
+                class="h-3 transition-opacity duration-300 opacity-100"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                ></path>
+              </svg>
+            </span>
+          </button>
+        </li>
+        <li>
+          <a
+            download=""
+            class="relative select-none rounded-sm px-2 py-1.5 text-xs outline-none transition-colors focus:bg-overlay-hover focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer w-full flex justify-between gap-2 items-center !p-2 group/menu-item text-left"
+            role="menuitem"
+            tabindex="-1"
+            data-orientation="vertical"
+            data-radix-collection-item=""
+            href="/todo"
+          >
+            <span class="text-foreground-lighter">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M14 10V12.6667C14 13.0203 13.8595 13.3594 13.6095 13.6095C13.3594 13.8595 13.0203 14 12.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V10"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                </path>
+                <path
+                  d="M4.66669 6.66675L8.00002 10.0001L11.3334 6.66675"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                </path>
+                <path
+                  d="M8 10V2"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                </path>
+              </svg>
+            </span>
+            <span class="grow">Download wordmark</span></a
+          >
+        </li>
+        <li>
+          <a
+            download=""
+            class="relative select-none rounded-sm px-2 py-1.5 text-xs outline-none transition-colors focus:bg-overlay-hover focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer w-full flex justify-between gap-2 items-center !p-2 group/menu-item text-left"
+            role="menuitem"
+            tabindex="-1"
+            data-orientation="vertical"
+            data-radix-collection-item=""
+            href="/union-logo.zip"
+          >
+            <span class="text-foreground-lighter">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M14 10V12.6667C14 13.0203 13.8595 13.3594 13.6095 13.6095C13.3594 13.8595 13.0203 14 12.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V10"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                </path>
+                <path
+                  d="M4.66669 6.66675L8.00002 10.0001L11.3334 6.66675"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                </path>
+                <path
+                  d="M8 10V2"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                </path>
+              </svg>
+            </span>
+            <span class="grow">Download brand assets</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="mt-2 p-2">
+        <a
+          class="relative select-none rounded-sm px-2 py-1.5 text-xs outline-none transition-colors focus:bg-overlay-hover focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer w-full flex justify-between gap-2 items-center !p-2 group/menu-item text-left"
+          role="menuitem"
+          tabindex="-1"
+          data-orientation="vertical"
+          data-radix-collection-item=""
+          href="/brand-kit"
+        >
+          <span class="grow">Brand Assets</span>
+        </a>
+      </div>
+    </div>
 
     <div
       id="overlay"
@@ -75,9 +262,12 @@ const menuItems = [
         class="flex flex-row gap-4 justify-end items-center left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle text-white"
       >
         {
-          menuItems.map(menuItem => (
+          menuItems.map((menuItem) => (
             <li>
-              <a href={menuItem.url} class="text-white !text-lg text-normal flex flex-col flex-1">
+              <a
+                href={menuItem.url}
+                class="text-white !text-lg text-normal flex flex-col flex-1"
+              >
                 {menuItem.name}
               </a>
             </li>
@@ -124,9 +314,12 @@ const menuItems = [
         class="absolute w-screen max-w-full flex-col bg-black left-0 top-[62px] border-y border-[#1F1F1F] shadow-3xl divide-y divide-[#1F1F1F] p-0 m-0 font-normal list-none sm:align-middle"
       >
         {
-          menuItems.map(menuItem => (
+          menuItems.map((menuItem) => (
             <li class="py-2 px-4">
-              <a href={menuItem.url} class="text-white !text-lg text-normal flex flex-col flex-1">
+              <a
+                href={menuItem.url}
+                class="text-white !text-lg text-normal flex flex-col flex-1"
+              >
                 {menuItem.name}
               </a>
             </li>
@@ -161,7 +354,7 @@ const menuItems = [
 
 <style is:inline>
   header::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
