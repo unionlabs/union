@@ -22,7 +22,7 @@ export const packetCountQuery = () =>
   createQuery({
     queryKey: ["packet-count"],
     queryFn: async () =>
-      (await request(URLS.GRAPHQL, packetCountQueryDocument, {})).v0_packets_mat_aggregate,
+      (await request(URLS.GRAPHQL, packetCountQueryDocument, {})).v0_packets_aggregate,
     enabled: true,
     refetchInterval: 6_000,
     refetchOnWindowFocus: false
