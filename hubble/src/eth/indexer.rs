@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use std::{collections::HashSet, ops::Range, sync::Arc, time::Duration};
+use std::{ops::Range, sync::Arc, time::Duration};
 
 use backon::{ConstantBuilder, Retryable};
 use color_eyre::Report;
@@ -57,7 +57,7 @@ pub struct Indexer {
     provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
-    contracts: HashSet<Address>,
+    contracts: Vec<Address>,
 }
 
 impl Config {
@@ -114,7 +114,7 @@ impl Config {
                 self.mode
             };
 
-            let contracts: HashSet<Address> = rows
+            let contracts = rows
                 .into_iter()
                 .map(|row| {
                     row.address
@@ -198,7 +198,7 @@ async fn index_blocks(
     provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
-    filter: HashSet<Address>,
+    filter: Vec<Address>,
 ) -> Result<(), Report> {
     let filter = Arc::new(filter);
     let err = match index_blocks_by_chunk(
@@ -252,7 +252,7 @@ async fn index_blocks_by_chunk(
     provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
-    filter: Arc<HashSet<Address>>,
+    filter: Arc<Vec<Address>>,
 ) -> Result<(), IndexBlockError> {
     let mut chunks = futures::stream::iter(range.into_iter()).chunks(chunk_size);
 
@@ -408,7 +408,7 @@ impl BlockInsert {
         chain_id: ChainId,
         id: T,
         provider: RaceClient<Provider<Http>>,
-        filter: impl Into<Option<Arc<HashSet<Address>>>>,
+        filter: impl Into<Option<Arc<Vec<Address>>>>,
     ) -> Result<Option<Self>, FromProviderError> {
         let filter = filter.into();
         let id = id.into();
@@ -427,44 +427,84 @@ impl BlockInsert {
         chain_id: ChainId,
         id: T,
         provider: RaceClient<Provider<Http>>,
-        filter: Option<Arc<HashSet<Address>>>,
+        filter: Option<Arc<Vec<Address>>>,
     ) -> Result<Option<Self>, FromProviderError> {
+        use std::collections::HashMap;
+
+        let id = id.into();
+
+        use ethers::{
+            core::{abi::ethabi::ethereum_types::BloomInput, types::Filter},
+            types::Log,
+        };
+
         let block = provider
             .get_block(id)
             .await?
             .ok_or(FromProviderError::BlockNotFound)?;
-        let mut receipts = provider
-            .get_block_receipts(block.number.unwrap())
-            .await
-            .map_err(FromProviderError::DataNotFound)?;
 
-        // TODO: with receipt.bloom, we can precheck to avoid a lot of
-        // checks.
-        if let Some(filter) = filter {
-            let relevant = receipts
+        // We check for a potential log match, which potentially avoids querying
+        // eth_getLogs.
+        if let (Some(bloom), Some(filter)) = (block.logs_bloom, &filter) {
+            if !filter
                 .iter()
-                .any(|receipt| receipt.logs.iter().any(|log| filter.contains(&log.address)));
-            if !relevant {
+                .any(|address| bloom.contains_input(BloomInput::Raw(address.as_bytes())))
+            {
                 return Ok(None);
             }
         }
+
+        // We know now there is a potential match, we still apply a Filter to only
+        // get the logs we want.
+        let log_filer = Filter::new().select(block.hash.unwrap());
+
+        let log_filer = if let Some(filter) = filter {
+            let addresses: Vec<_> = filter.iter().cloned().collect();
+            log_filer.address(addresses)
+        } else {
+            log_filer
+        };
+
+        let logs = provider
+            .get_logs(&log_filer)
+            .await
+            .map_err(FromProviderError::DataNotFound)?;
+
+        // The bloom filter returned a false positive, and we don't actually have matching logs.
+        if logs.is_empty() {
+            return Ok(None);
+        }
+
+        let partitioned = {
+            let mut map: HashMap<(_, _), Vec<Log>> = HashMap::with_capacity(logs.len());
+            for log in logs {
+                if log.removed.unwrap_or_default() {
+                    continue;
+                }
+
+                map.entry((
+                    log.transaction_hash.unwrap(),
+                    log.transaction_index.unwrap(),
+                ))
+                .and_modify(|logs| logs.push(log.clone()))
+                .or_insert(vec![log]);
+            }
+            map
+        };
 
         let result: Result<Option<Self>, Report> = try {
             let ts = block.time().unwrap_or_default().timestamp();
             let time = OffsetDateTime::from_unix_timestamp(ts)?;
             let block_hash = block.hash.unwrap().to_lower_hex();
             let height: i32 = block.number.unwrap().as_u32().try_into()?;
-            receipts.sort_by(|a, b| a.transaction_index.cmp(&b.transaction_index));
 
-            let transactions = receipts
+            let transactions = partitioned
                 .into_iter()
-                .map(|receipt| {
-                    let transaction_hash = receipt.transaction_hash.to_lower_hex();
-                    let transaction_index = receipt.transaction_index.as_u32() as i32;
+                .map(|((transaction_hash, transaction_index), logs)| {
+                    let transaction_hash = transaction_hash.to_lower_hex();
+                    let transaction_index = transaction_index.as_u32() as i32;
 
-                    let events = receipt
-                        .clone()
-                        .logs
+                    let events = logs
                         .into_iter()
                         .enumerate()
                         .map(|(transaction_log_index, log)| {
@@ -478,7 +518,6 @@ impl BlockInsert {
                         .collect();
                     TransactionInsert {
                         hash: transaction_hash,
-                        data: receipt,
                         index: transaction_index,
                         events,
                     }
@@ -526,7 +565,6 @@ impl BlockInsert {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionInsert {
     hash: String,
-    data: ethers::types::TransactionReceipt,
     index: i32,
     events: Vec<EventInsert>,
 }
