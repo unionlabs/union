@@ -1,16 +1,18 @@
 use core::fmt::Debug;
-use std::{ops::Range, time::Duration};
+use std::{collections::HashSet, ops::Range, sync::Arc, time::Duration};
 
 use backon::{ConstantBuilder, Retryable};
 use color_eyre::Report;
+use const_hex::ToHexExt;
 use ethers::{
+    abi::ethereum_types::Address,
     core::types::BlockId,
     providers::{Http, Provider},
     types::H256,
 };
 use futures::{stream::FuturesOrdered, FutureExt, StreamExt, TryFutureExt};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::{debug, info, info_span, Instrument};
 use url::Url;
@@ -29,17 +31,8 @@ pub struct Config {
 
     pub urls: Vec<Url>,
 
-    /// The height from which we start indexing
-    pub start_height: Option<i32>,
-
     /// How many blocks to fetch at the same time
     pub chunk_size: Option<usize>,
-
-    /// Attempt to retry and fix bad states. This makes the process less responsive, as any call may take longer
-    /// since retries are happening. Best for systemd services and long-running jobs.
-    #[allow(dead_code)]
-    #[serde(default)]
-    pub harden: bool,
 
     #[serde(default)]
     pub mode: InsertMode,
@@ -64,6 +57,7 @@ pub struct Indexer {
     provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
+    contracts: HashSet<Address>,
 }
 
 impl Config {
@@ -90,30 +84,46 @@ impl Config {
                 .await?
                 .get_inner_logged();
 
-            let current = sqlx::query!(
-                r#"SELECT MAX(height) height FROM "v0"."logs" WHERE chain_id = $1"#,
+            let rows = sqlx::query!(
+                r#"SELECT address, indexed_height from v0.contracts where chain_id = $1"#,
                 chain_id.db
             )
-            .fetch_optional(&pool)
-            .await?
-            .map(|block| {
-                if block.height.unwrap_or(0) == 0 {
-                    info!(
-                        self.start_height,
-                        "no block found, starting at configured start height, or 0 if not defined"
-                    );
-                    self.start_height.unwrap_or_default()
-                } else {
-                    info!(
-                        self.start_height,
-                        block.height, "block found, starting max(start_height, block_height + 1)"
-                    );
-                    (block.height.unwrap_or(0) + 1).max(self.start_height.unwrap_or_default())
-                }
-            })
-            .unwrap_or(self.start_height.unwrap_or_default()) as u64;
+            .fetch_all(&pool)
+            .await?;
 
-            let range = current..u64::MAX;
+            let lowest = rows
+                .iter()
+                .map(|row| row.indexed_height)
+                .min()
+                .expect("contracts should exist in the db")
+                .try_into()
+                .expect("indexed_height should be positive");
+
+            let highest: u64 = rows
+                .iter()
+                .map(|row| row.indexed_height)
+                .max()
+                .expect("contracts should exist in the db")
+                .try_into()
+                .expect("indexed_height should be positive");
+
+            let mode = if lowest != highest {
+                info!("detected new contract. using upsert mode.");
+                postgres::InsertMode::Upsert
+            } else {
+                self.mode
+            };
+
+            let contracts: HashSet<Address> = rows
+                .into_iter()
+                .map(|row| {
+                    row.address
+                        .parse()
+                        .expect("database should contain valid addresses")
+                })
+                .collect();
+
+            let range = lowest..u64::MAX;
 
             Ok(Indexer {
                 range,
@@ -122,7 +132,8 @@ impl Config {
                 pool,
                 provider,
                 chunk_size: self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
-                mode: self.mode,
+                mode,
+                contracts,
             })
         }
         .instrument(indexing_span)
@@ -150,15 +161,10 @@ impl Indexer {
                     self.provider.clone(),
                     self.chunk_size,
                     self.mode,
+                    self.contracts,
                 )
                 .in_current_span(),
             );
-
-            // debug!("spawning fork indexing routine");
-            // self.tasks.spawn(
-            //     reindex_blocks(self.pool.clone(), self.chain_id, self.provider.clone())
-            //         .in_current_span(),
-            // );
 
             self.tasks
                 .join_next()
@@ -192,7 +198,9 @@ async fn index_blocks(
     provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
+    filter: HashSet<Address>,
 ) -> Result<(), Report> {
+    let filter = Arc::new(filter);
     let err = match index_blocks_by_chunk(
         pool.clone(),
         range.clone(),
@@ -200,6 +208,7 @@ async fn index_blocks(
         provider.clone(),
         chunk_size,
         mode,
+        filter.clone(),
     )
     .await
     {
@@ -221,6 +230,7 @@ async fn index_blocks(
                 provider.clone(),
                 1,
                 mode,
+                filter.clone(),
             )
             .inspect_err(|e| {
                 debug!(
@@ -242,6 +252,7 @@ async fn index_blocks_by_chunk(
     provider: RaceClient<Provider<Http>>,
     chunk_size: usize,
     mode: InsertMode,
+    filter: Arc<HashSet<Address>>,
 ) -> Result<(), IndexBlockError> {
     let mut chunks = futures::stream::iter(range.into_iter()).chunks(chunk_size);
 
@@ -258,14 +269,22 @@ async fn index_blocks_by_chunk(
 
         let mut inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
             let provider_clone = provider.clone();
-            (move || BlockInsert::from_provider_retried(chain_id, height, provider_clone.clone()))
-                .retry(
-                    &ConstantBuilder::default()
-                        .with_delay(Duration::from_secs(1))
-                        .with_max_times(30),
+            let filter_clone = filter.clone();
+            (move || {
+                BlockInsert::from_provider_retried_filtered(
+                    chain_id,
+                    height,
+                    provider_clone.clone(),
+                    filter_clone.clone(),
                 )
-                .when(|_| chunk_size == 1)
-                .map(move |res| (height, res))
+            })
+            .retry(
+                &ConstantBuilder::default()
+                    .with_delay(Duration::from_secs(1))
+                    .with_max_times(30),
+            )
+            .when(|_| chunk_size == 1)
+            .map(move |res| (height, res))
         }));
 
         while let Some((height, block)) = inserts.next().await {
@@ -278,16 +297,28 @@ async fn index_blocks_by_chunk(
                     debug!(?height, "provider error found on insert");
                     return Err(IndexBlockError::Retryable { height, err });
                 }
-                Ok(block) => block,
+                Ok(Some(block)) => block,
+                Ok(None) => continue,
             };
             debug!(?height, "attempting to insert");
 
-            match block.execute(&pool, mode).await {
+            let mut tx = pool.begin().await?;
+
+            match block.execute(&mut tx, mode).await {
                 Err(err) => {
                     debug!(?err, "error executing block insert");
                     return Err(err.into());
                 }
                 Ok(info) => {
+                    postgres::update_contracts_indexed_heights(
+                        &mut tx,
+                        filter.iter().map(|addr| addr.encode_hex()).collect(),
+                        filter.iter().map(|_| info.height.into()).collect(),
+                        chain_id,
+                    )
+                    .await?;
+
+                    tx.commit().await?;
                     debug!(
                         height = info.height,
                         hash = info.hash,
@@ -310,65 +341,6 @@ async fn index_blocks_by_chunk(
     }
     panic!("end of index_blocks_by_chunk should not occur");
 }
-
-// /// A worker routine which continuously re-indexes the last 20 blocks into `PgLogs`.
-// async fn reindex_blocks(
-//     pool: PgPool,
-//     chain_id: ChainId,
-//     provider: Provider<Http>,
-// ) -> Result<(), Report> {
-//     loop {
-//         // Set start to the current height so we can continue re-indexing.
-//         let current = fetch_latest_height(&pool, chain_id).await?;
-//         let latest = provider
-//             .get_block(BlockNumber::Latest)
-//             .await?
-//             .expect("provider should have latest block");
-//         if latest.number.unwrap().as_u32() - current as u32 > 32 {
-//             tokio::time::sleep(Duration::from_secs(12 * 32)).await;
-//             continue;
-//         }
-
-//         let tx = pool.begin().await?;
-//         let chunk = (current - 20)..current;
-//         let inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
-//             BlockInsert::from_provider_retried(chain_id, height as u64, provider.clone())
-//                 .map_err(Report::from)
-//         }));
-//         inserts
-//             .try_fold(tx, |mut tx, block| async move {
-//                 let log = PgLog {
-//                     chain_id: block.chain_id,
-//                     block_hash: block.hash.clone(),
-//                     height: block.height,
-//                     time: block.time,
-//                     data: LogData {
-//                         header: block.header,
-//                         transactions: block.transactions,
-//                     },
-//                 };
-//                 postgres::upsert_log(&mut tx, log).await?;
-//                 Ok(tx)
-//             })
-//             .await?;
-//     }
-// }
-
-// async fn fetch_latest_height(pool: &PgPool, chain_id: ChainId) -> Result<i32, sqlx::Error> {
-//     let latest = sqlx::query!(
-//         "SELECT height FROM \"v0\".logs
-//         WHERE chain_id = $1
-//         ORDER BY height DESC
-//         NULLS LAST
-//         LIMIT 1",
-//         chain_id.db
-//     )
-//     .fetch_optional(pool)
-//     .await?
-//     .map(|block| block.height)
-//     .unwrap_or_default();
-//     Ok(latest)
-// }
 
 pub struct InsertInfo {
     height: i32,
@@ -432,15 +404,17 @@ impl From<BlockInsert> for PgLog<LogData> {
 }
 
 impl BlockInsert {
-    pub async fn from_provider_retried<T: Into<BlockId> + Send + Sync + Debug + Clone>(
+    pub async fn from_provider_retried_filtered<T: Into<BlockId> + Send + Sync + Debug + Clone>(
         chain_id: ChainId,
         id: T,
         provider: RaceClient<Provider<Http>>,
-    ) -> Result<Self, FromProviderError> {
+        filter: impl Into<Option<Arc<HashSet<Address>>>>,
+    ) -> Result<Option<Self>, FromProviderError> {
+        let filter = filter.into();
         let id = id.into();
         debug!(?id, "fetching block from provider");
         (move || {
-            Self::from_provider(chain_id, id, provider.clone())
+            Self::from_provider_filtered(chain_id, id, provider.clone(), filter.clone())
                 .inspect_err(move |e| debug!(?e, ?id, "error fetching block from provider"))
         })
         .retry(&crate::expo_backoff())
@@ -449,11 +423,12 @@ impl BlockInsert {
         .map_err(Into::into)
     }
 
-    async fn from_provider<T: Into<BlockId> + Send + Sync + Debug>(
+    async fn from_provider_filtered<T: Into<BlockId> + Send + Sync + Debug>(
         chain_id: ChainId,
         id: T,
         provider: RaceClient<Provider<Http>>,
-    ) -> Result<Self, FromProviderError> {
+        filter: Option<Arc<HashSet<Address>>>,
+    ) -> Result<Option<Self>, FromProviderError> {
         let block = provider
             .get_block(id)
             .await?
@@ -463,7 +438,18 @@ impl BlockInsert {
             .await
             .map_err(FromProviderError::DataNotFound)?;
 
-        let result: Result<Self, Report> = try {
+        // TODO: with receipt.bloom, we can precheck to avoid a lot of
+        // checks.
+        if let Some(filter) = filter {
+            let relevant = receipts
+                .iter()
+                .any(|receipt| receipt.logs.iter().any(|log| filter.contains(&log.address)));
+            if !relevant {
+                return Ok(None);
+            }
+        }
+
+        let result: Result<Option<Self>, Report> = try {
             let ts = block.time().unwrap_or_default().timestamp();
             let time = OffsetDateTime::from_unix_timestamp(ts)?;
             let block_hash = block.hash.unwrap().to_lower_hex();
@@ -499,20 +485,24 @@ impl BlockInsert {
                 })
                 .collect();
 
-            BlockInsert {
+            Some(BlockInsert {
                 chain_id,
                 hash: block_hash,
                 header: block,
                 height,
                 time,
                 transactions,
-            }
+            })
         };
         result.map_err(Into::into)
     }
 
     /// Handles inserting the block data and transactions as a log.
-    async fn execute(self, tx: &PgPool, mode: InsertMode) -> Result<InsertInfo, Report> {
+    async fn execute(
+        self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        mode: InsertMode,
+    ) -> Result<InsertInfo, Report> {
         let num_tx = self.transactions.len();
         let num_events = self
             .transactions

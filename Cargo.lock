@@ -1808,9 +1808,9 @@ dependencies = [
 
 [[package]]
 name = "const-hex"
-version = "1.11.3"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ba00838774b4ab0233e355d26710fbfc8327a05c017f6dc4873f876d1f79f78"
+checksum = "94fb8a24a26d37e1ffd45343323dc9fe6654ceea44c12f2fcb3d7ac29e610bc6"
 dependencies = [
  "cfg-if 1.0.0",
  "cpufeatures",
@@ -4487,6 +4487,7 @@ dependencies = [
  "clap 4.5.4",
  "color-eyre",
  "cometbft-rpc",
+ "const-hex",
  "contracts",
  "ethers",
  "futures",
