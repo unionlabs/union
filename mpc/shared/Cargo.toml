@@ -1,0 +1,8 @@
+[package]
+edition = { workspace = true }
+name    = "mpc-shared"
+version = "0.1.0"
+
+[dependencies]
+rocket    = { version = "0.5.1", features = ["json", "msgpack", "uuid"] }
+thiserror = { workspace = true }

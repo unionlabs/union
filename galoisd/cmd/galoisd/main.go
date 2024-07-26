@@ -1,3 +1,6 @@
+//go:build binary
+// +build binary
+
 package main
 
 import (
@@ -13,5 +16,12 @@ func main() {
 	rootCmd.AddCommand(cmd.ExampleVerifyCmd())
 	rootCmd.AddCommand(cmd.QueryStats())
 	rootCmd.AddCommand(cmd.QueryStatsHealth())
+	rootCmd.AddCommand(
+		cmd.Phase1InitCmd(),
+		cmd.Phase2InitCmd(),
+		cmd.Phase2ContributeCmd(),
+		cmd.Phase2VerifyCmd(),
+		cmd.Phase2ExtractCmd(),
+	)
 	rootCmd.Execute()
 }

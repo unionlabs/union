@@ -211,6 +211,7 @@
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
+        ./mpc/mpc.nix
         ./lib/ics23/ics23.nix
         ./lib/ssz/ssz.nix
         ./lib/unionlabs/unionlabs.nix

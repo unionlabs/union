@@ -1,6 +1,8 @@
-package nonadjacent
+package cmd
 
 import (
+	"github.com/spf13/cobra"
+
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -11,12 +13,34 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc/bn254"
 	"github.com/consensys/gnark-crypto/ecc/bn254/fp"
+	mpc "github.com/consensys/gnark/backend/groth16/bn254/mpcsetup"
 )
+
+func Phase1InitCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Short: "Initialize the phase 1 of the groth16 multi-party computation.",
+		Use:   "mpc-phase1-init [ptau] [phase1FinalOutput]",
+		Args:  cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ptauPath := args[0]
+			ptau, err := ReadPtau(ptauPath)
+			if err != nil {
+				return err
+			}
+			srs1, err := convertPtauToPhase1(ptau)
+			if err != nil {
+				return err
+			}
+			phase1FinalPath := args[1]
+			return saveTo(phase1FinalPath, &srs1)
+		},
+	}
+	return cmd
+}
 
 ///////////////////////////////////////////////////////////////////
 ///                             PTAU                            ///
 ///////////////////////////////////////////////////////////////////
-
 // Format
 // Taken from the iden3/snarkjs repo powersoftau_new.js file
 // https://github.com/iden3/snarkjs/blob/master/src/powersoftau_new.js
@@ -109,8 +133,6 @@ func InitPtau(path string) (*PtauFile, error) {
 	var ptauStr = make([]byte, 4)
 	_, err = reader.Read(ptauStr)
 
-	fmt.Printf("zkeyStr: %s \n", string(ptauStr))
-
 	// version
 	_, err = readULE32(reader)
 
@@ -118,7 +140,6 @@ func InitPtau(path string) (*PtauFile, error) {
 	_, err = readULE32(reader)
 
 	numSections := uint32(7)
-	fmt.Printf("num sections: %v \n", numSections)
 
 	// in practice, all sections have only one segment, but who knows...
 	// 1-based indexing, so we need to allocate one more than the number of sections
@@ -126,8 +147,6 @@ func InitPtau(path string) (*PtauFile, error) {
 	for i := uint32(0); i < numSections; i++ {
 		ht, _ := readULE32(reader)
 		hl, _ := readULE64(reader)
-		fmt.Printf("ht: %v \n", ht)
-		fmt.Printf("hl: %v \n", hl)
 		if sections[ht] == nil {
 			sections[ht] = make([]SectionSegment, 0)
 		}
@@ -135,8 +154,6 @@ func InitPtau(path string) (*PtauFile, error) {
 		sections[ht] = append(sections[ht], SectionSegment{pos: uint64(pos), size: hl})
 		reader.Seek(int64(hl), io.SeekCurrent)
 	}
-
-	fmt.Printf("sections: %v \n", sections)
 
 	// section size
 	_, err = readBigInt(reader, 8)
@@ -174,7 +191,6 @@ func (ptauFile *PtauFile) readG1s(out chan bn254.G1Affine, count int) error {
 		y := bytesToElement(g1[1].Bytes())
 		g1Affine.Y = y
 		if !g1Affine.IsOnCurve() {
-			fmt.Printf("readG1s: \n index: %v g1Affine.X: %v \n g1Affine.Y: %v \n", i, g1Affine.X.String(), g1Affine.Y.String())
 			panic("g1Affine is not on curve")
 		}
 		out <- g1Affine
@@ -198,7 +214,6 @@ func (ptauFile *PtauFile) readG2() (bn254.G2Affine, error) {
 	g2Affine.Y.A1 = y1
 	if !g2Affine.IsOnCurve() {
 
-		fmt.Printf("readG2s: \n, g2Affine.X.A0: %v \n g2Affine.X.A1: %v \n g2Affine.Y.A0: %v \n g2Affine.Y.A1 %v \n", g2Affine.X.A0.String(), g2Affine.X.A1.String(), g2Affine.Y.A0.String(), g2Affine.Y.A1.String())
 		panic("g2Affine is not on curve")
 	}
 	return g2Affine, nil
@@ -219,7 +234,6 @@ func (ptauFile *PtauFile) ReadTauG1(out chan bn254.G1Affine) error {
 	defer close(out)
 	seekToUniqueSection(ptauFile.Reader, ptauFile.Sections, 2)
 	numPoints := ptauFile.DomainSize()*2 - 1
-	fmt.Printf("tauG1 numPoints: %v \n", numPoints)
 	ptauFile.readG1s(out, numPoints)
 	return nil
 }
@@ -228,7 +242,6 @@ func (ptauFile *PtauFile) ReadTauG2(out chan bn254.G2Affine) error {
 	defer close(out)
 	seekToUniqueSection(ptauFile.Reader, ptauFile.Sections, 3)
 	numPoints := ptauFile.DomainSize()
-	fmt.Printf("tauG2 numPoints: %v \n", numPoints)
 	ptauFile.readG2s(out, numPoints)
 	return nil
 }
@@ -237,7 +250,6 @@ func (ptauFile *PtauFile) ReadAlphaTauG1(out chan bn254.G1Affine) error {
 	defer close(out)
 	seekToUniqueSection(ptauFile.Reader, ptauFile.Sections, 4)
 	numPoints := ptauFile.DomainSize()
-	fmt.Printf("alphaTauG1 numPoints: %v \n", numPoints)
 	ptauFile.readG1s(out, numPoints)
 	return nil
 }
@@ -246,13 +258,11 @@ func (ptauFile *PtauFile) ReadBetaTauG1(out chan bn254.G1Affine) error {
 	defer close(out)
 	seekToUniqueSection(ptauFile.Reader, ptauFile.Sections, 5)
 	numPoints := ptauFile.DomainSize()
-	fmt.Printf("betaTauG1 numPoints: %v \n", numPoints)
 	ptauFile.readG1s(out, numPoints)
 	return nil
 }
 
 func (ptauFile *PtauFile) ReadBetaG2() (bn254.G2Affine, error) {
-	fmt.Printf("betaG2: \n")
 	seekToUniqueSection(ptauFile.Reader, ptauFile.Sections, 6)
 	return ptauFile.readG2()
 }
@@ -269,8 +279,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	var ptauStr = make([]byte, 4)
 	_, err = reader.Read(ptauStr)
 
-	fmt.Printf("zkeyStr: %s \n", string(ptauStr))
-
 	// version
 	_, err = readULE32(reader)
 
@@ -278,7 +286,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	_, err = readULE32(reader)
 
 	numSections := uint32(7)
-	fmt.Printf("num sections: %v \n", numSections)
 
 	// in practice, all sections have only one segment, but who knows...
 	// 1-based indexing, so we need to allocate one more than the number of sections
@@ -286,8 +293,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	for i := uint32(0); i < numSections; i++ {
 		ht, _ := readULE32(reader)
 		hl, _ := readULE64(reader)
-		fmt.Printf("ht: %v \n", ht)
-		fmt.Printf("hl: %v \n", hl)
 		if sections[ht] == nil {
 			sections[ht] = make([]SectionSegment, 0)
 		}
@@ -295,8 +300,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 		sections[ht] = append(sections[ht], SectionSegment{pos: uint64(pos), size: hl})
 		reader.Seek(int64(hl), io.SeekCurrent)
 	}
-
-	fmt.Printf("sections: %v \n", sections)
 
 	// section size
 	_, err = readBigInt(reader, 8)
@@ -318,8 +321,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 
 	twoToPower := uint32(1 << header.Power)
 
-	fmt.Printf("tauG1: \n")
-
 	PtauPubKey.TauG1, err = readG1Array(reader, twoToPower*2-1)
 
 	if err != nil {
@@ -328,8 +329,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 
 	// TauG2 (3)
 	seekToUniqueSection(reader, sections, 3)
-
-	fmt.Printf("tauG2: \n")
 
 	PtauPubKey.TauG2, err = readG2Array(reader, twoToPower)
 
@@ -340,8 +339,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	// AlphaTauG1 (4)
 	seekToUniqueSection(reader, sections, 4)
 
-	fmt.Printf("alphaTauG1: \n")
-
 	PtauPubKey.AlphaTauG1, err = readG1Array(reader, twoToPower)
 
 	if err != nil {
@@ -351,8 +348,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	// BetaTauG1 (5)
 	seekToUniqueSection(reader, sections, 5)
 
-	fmt.Printf("betaTauG1: \n")
-
 	PtauPubKey.BetaTauG1, err = readG1Array(reader, twoToPower)
 
 	if err != nil {
@@ -361,8 +356,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 
 	// BetaG2 (6)
 	seekToUniqueSection(reader, sections, 6)
-
-	fmt.Printf("betaG2: \n")
 
 	PtauPubKey.BetaG2, err = readG2(reader)
 
@@ -650,14 +643,12 @@ func ReadZkey(zkeyPath string) (Zkey, error) {
 	// zkey
 	var zkeyStr = make([]byte, 4)
 	_, err = reader.Read(zkeyStr)
-	fmt.Printf("zkeyStr: %s \n", string(zkeyStr))
 
 	// version
 	_, err = readULE32(reader)
 
 	// number of sections
 	numSections, err := readULE32(reader)
-	fmt.Printf("num sections: %v \n", numSections)
 
 	// in practice, all sections have only one segment, but who knows...
 	// 1-based indexing, so we need to allocate one more than the number of sections
@@ -665,8 +656,6 @@ func ReadZkey(zkeyPath string) (Zkey, error) {
 	for i := uint32(0); i < numSections; i++ {
 		ht, _ := readULE32(reader)
 		hl, _ := readULE64(reader)
-		fmt.Printf("ht: %v \n", ht)
-		fmt.Printf("hl: %v \n", hl)
 		if sections[ht] == nil {
 			sections[ht] = make([]SectionSegment, 0)
 		}
@@ -674,8 +663,6 @@ func ReadZkey(zkeyPath string) (Zkey, error) {
 		sections[ht] = append(sections[ht], SectionSegment{pos: uint64(pos), size: hl})
 		reader.Seek(int64(hl), io.SeekCurrent)
 	}
-
-	fmt.Printf("sections: %v \n", sections)
 
 	// section size
 	_, err = readBigInt(reader, 8)
@@ -734,8 +721,6 @@ func readHeaderGroth16(reader io.ReadSeeker) (HeaderGroth, error) {
 
 	n8q, err := readULE32(reader)
 
-	fmt.Printf("n8q is: %v \n", n8q)
-
 	if err != nil {
 		return header, err
 	}
@@ -783,4 +768,95 @@ func readHeaderGroth16(reader io.ReadSeeker) (HeaderGroth, error) {
 	header = HeaderGroth{n8q: n8q, q: q, n8r: n8r, r: r, nVars: nVars, nPublic: nPublic, domainSize: domainSize, power: power_int}
 
 	return header, nil
+}
+
+func convertPtauToPhase1(ptau Ptau) (phase1 mpc.Phase1, err error) {
+	tauG1 := make([]bn254.G1Affine, len(ptau.PTauPubKey.TauG1))
+	for i, g1 := range ptau.PTauPubKey.TauG1 {
+		g1Affine := bn254.G1Affine{}
+		x := bytesToElement(g1[0].Bytes())
+		g1Affine.X = x
+		y := bytesToElement(g1[1].Bytes())
+		g1Affine.Y = y
+		if !g1Affine.IsOnCurve() {
+			fmt.Printf("tauG1: \n index: %v g1Affine.X: %v \n g1Affine.Y: %v \n", i, g1Affine.X.String(), g1Affine.Y.String())
+			panic("g1Affine is not on curve")
+		}
+		tauG1[i] = g1Affine
+	}
+
+	alphaTauG1 := make([]bn254.G1Affine, len(ptau.PTauPubKey.AlphaTauG1))
+	for i, g1 := range ptau.PTauPubKey.AlphaTauG1 {
+		g1Affine := bn254.G1Affine{}
+		x := bytesToElement(g1[0].Bytes())
+		g1Affine.X = x
+		y := bytesToElement(g1[1].Bytes())
+		g1Affine.Y = y
+		if !g1Affine.IsOnCurve() {
+			fmt.Printf("alphaTauG1: \n index: %v g1Affine.X: %v \n g1Affine.Y: %v \n", i, g1Affine.X.String(), g1Affine.Y.String())
+			panic("g1Affine is not on curve")
+		}
+		alphaTauG1[i] = g1Affine
+	}
+	// fmt.Printf("alphaTauG1: %v \n", alphaTauG1)
+
+	betaTauG1 := make([]bn254.G1Affine, len(ptau.PTauPubKey.BetaTauG1))
+
+	for i, g1 := range ptau.PTauPubKey.BetaTauG1 {
+		g1Affine := bn254.G1Affine{}
+		x := bytesToElement(g1[0].Bytes())
+		g1Affine.X = x
+		y := bytesToElement(g1[1].Bytes())
+		g1Affine.Y = y
+		if !g1Affine.IsOnCurve() {
+			fmt.Printf("betaTauG1: \n index: %v, g1Affine.X: %v \n g1Affine.Y: %v \n", i, g1Affine.X.String(), g1Affine.Y.String())
+			panic("g1Affine is not on curve")
+		}
+		betaTauG1[i] = g1Affine
+	}
+	tauG2 := make([]bn254.G2Affine, len(ptau.PTauPubKey.TauG2))
+	for i, g2 := range ptau.PTauPubKey.TauG2 {
+		g2Affine := bn254.G2Affine{}
+		x0 := bytesToElement(g2[0].Bytes())
+		x1 := bytesToElement(g2[1].Bytes())
+		g2Affine.X.A0 = x0
+		g2Affine.X.A1 = x1
+		y0 := bytesToElement(g2[2].Bytes())
+		y1 := bytesToElement(g2[3].Bytes())
+		g2Affine.Y.A0 = y0
+		g2Affine.Y.A1 = y1
+		if !g2Affine.IsOnCurve() {
+			fmt.Printf("tauG2: \n index: %v, g2Affine.X.A0: %v \n g2Affine.X.A1: %v \n g2Affine.Y.A0: %v \n g2Affine.Y.A1 %v \n", i, g2Affine.X.A0.String(), g2Affine.X.A1.String(), g2Affine.Y.A0.String(), g2Affine.Y.A1.String())
+			panic("g2Affine is not on curve")
+		}
+		tauG2[i] = g2Affine
+	}
+
+	betaG2 := bn254.G2Affine{}
+	{
+		g2 := ptau.PTauPubKey.BetaG2
+
+		x0 := bytesToElement(g2[0].Bytes())
+		x1 := bytesToElement(g2[1].Bytes())
+		betaG2.X.A0 = x0
+		betaG2.X.A1 = x1
+		y0 := bytesToElement(g2[2].Bytes())
+		y1 := bytesToElement(g2[3].Bytes())
+		betaG2.Y.A0 = y0
+		betaG2.Y.A1 = y1
+
+		if !betaG2.IsOnCurve() {
+			fmt.Printf("g2Affine.X.A0: %v \n g2Affine.X.A1: %v \n g2Affine.Y.A0: %v \n g2Affine.Y.A1 %v \n", betaG2.X.A0.String(), betaG2.X.String(), betaG2.Y.A0.String(), betaG2.Y.A1.String())
+			panic("g2Affine is not on curve")
+		}
+	}
+
+	phase1.Parameters.G1.Tau = tauG1
+	phase1.Parameters.G1.AlphaTau = alphaTauG1
+	phase1.Parameters.G1.BetaTau = betaTauG1
+
+	phase1.Parameters.G2.Tau = tauG2
+	phase1.Parameters.G2.Beta = betaG2
+
+	return phase1, nil
 }

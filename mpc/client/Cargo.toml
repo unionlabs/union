@@ -1,0 +1,17 @@
+[package]
+edition = { workspace = true }
+name    = "mpc-client"
+version = "0.1.0"
+
+[dependencies]
+clap       = { version = "4.5", features = ["derive"] }
+crossterm  = "0.27.0"
+mpc-shared = { workspace = true }
+rand       = "0.8.5"
+ratatui    = "0.27.0"
+reqwest    = { workspace = true, features = ["json"] }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+sha2       = { workspace = true }
+thiserror  = { workspace = true }
+tokio      = { workspace = true, features = ["full"] }
