@@ -202,7 +202,7 @@ where
             Some(Err(BroadcastTxCommitError::SimulateTx(err))) => {
                 error!(
                     error = %ErrorReporter(err),
-                    "transaction simulation failed, message will be requeud and retried"
+                    "transaction simulation failed, message will be requeued and retried"
                 );
 
                 Ok(effect(id(hc.chain_id(), msg)))
