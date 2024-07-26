@@ -1,33 +1,33 @@
 [package]
-name = "poc-relayer"
-version = "0.1.0"
-edition.workspace = true
+edition.workspace      = true
 license-file.workspace = true
-repository.workspace = true
+name                   = "poc-relayer"
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
-tokio = { workspace = true, features = [ "full" ] }
-near-primitives = "0.23.0"
+base64                  = { workspace = true }
+borsh                   = { workspace = true, features = ["borsh-derive"] }
+chain-utils             = { workspace = true }
+cometbft-rpc            = { workspace = true }
+hex.workspace           = true
+ibc-vm-rs.workspace     = true
 near-crypto             = "0.23"
-base64      = { workspace = true }
-serde_json  = { workspace = true }
-near-jsonrpc-client = "0.10.1"
+near-jsonrpc-client     = "0.10.1"
 near-jsonrpc-primitives = "0.23"
-unionlabs          = { workspace = true, features = [ "near" ] }
-near-primitives-core = { version = "0.23" }
-serde.workspace = true
-borsh                             = { workspace = true, features = ["borsh-derive"] }
-cometbft-rpc             = { workspace = true }
-tendermint-rpc           = { workspace = true, features = ["http-client", "websocket-client", "default"] }
-chain-utils = { workspace = true }
-prost                    = { workspace = true }
-protos.workspace = true
-hex.workspace = true
-ibc-vm-rs.workspace = true
-near-verifier = { workspace = true }
-tendermint               = { workspace = true }
-num-bigint               = { workspace = true }
-tendermint-proto         = { workspace = true }
+near-primitives         = "0.23.0"
+near-primitives-core    = { version = "0.23" }
+near-verifier           = { workspace = true }
+num-bigint              = { workspace = true }
+prost                   = { workspace = true }
+protos.workspace        = true
+serde.workspace         = true
+serde_json              = { workspace = true }
+tendermint              = { workspace = true }
+tendermint-proto        = { workspace = true }
+tendermint-rpc          = { workspace = true, features = ["http-client", "websocket-client", "default"] }
+tokio                   = { workspace = true, features = ["full"] }
+unionlabs               = { workspace = true, features = ["near"] }
 
 [lints]
 workspace = true

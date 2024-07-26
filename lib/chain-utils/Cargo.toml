@@ -26,6 +26,9 @@ frame-support-procedural = { workspace = true }
 futures                  = { workspace = true }
 hex                      = { workspace = true }
 ics23                    = { workspace = true }
+near-jsonrpc-client      = "0.10.1"
+near-primitives          = "0.23.0"
+near-primitives-core     = "0.23.0"
 num-rational             = "0.4.2"
 num_enum                 = "0.7.0"
 prost                    = { workspace = true }
@@ -41,9 +44,6 @@ thiserror                = { workspace = true }
 tokio                    = { workspace = true }
 tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
-near-jsonrpc-client = "0.10.1"
-near-primitives = "0.23.0"
-near-primitives-core = "0.23.0"
 
 [features]
 arbitrary = ["dep:arbitrary"]

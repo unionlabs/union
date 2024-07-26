@@ -1,20 +1,20 @@
 [package]
-name = "near-verifier"
-version = "0.1.0"
-edition.workspace = true
-license-file.workspace = true
-repository.workspace = true
 authors                = ["Union Labs"]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "near-verifier"
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
-unionlabs          = { workspace = true, features = [ "near" ] }
+borsh                = { workspace = true }
+near-account-id      = { workspace = true }
 near-primitives-core = { version = "0.23" }
-thiserror       = { workspace = true }
-sha2            = { workspace = true }
-serde = { workspace = true }
-near-account-id = { workspace = true }
-borsh = { workspace = true }
+serde                = { workspace = true }
 serde_json.workspace = true
+sha2                 = { workspace = true }
+thiserror            = { workspace = true }
+unionlabs            = { workspace = true, features = ["near"] }
 
 [lints]
 workspace = true

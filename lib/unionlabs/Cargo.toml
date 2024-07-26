@@ -55,8 +55,8 @@ wasmparser               = { version = "0.113" }
 
 borsh                = { workspace = true, features = ["derive"] }
 bs58                 = "0.4"
+near-account-id      = { workspace = true }
 near-primitives-core = { version = "0.23" }
-near-account-id = { workspace = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]

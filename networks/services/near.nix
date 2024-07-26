@@ -2,10 +2,10 @@
 {
   image = {
     enableRecommendedContents = true;
-      contents = [
-        pkgs.coreutils
-        near-localnet
-      ];
+    contents = [
+      pkgs.coreutils
+      near-localnet
+    ];
   };
   service = {
     tty = true;

@@ -75,7 +75,11 @@ members = [
 
   "drip",
   "near/near-ibc-tests",
-  "light-clients/near/ics08-near", "lib/near-verifier", "light-clients/cometbls/near", "poc-relayer", "near/test-circuit",
+  "light-clients/near/ics08-near",
+  "lib/near-verifier",
+  "light-clients/cometbls/near",
+  "poc-relayer",
+  "near/test-circuit",
 ]
 
 [workspace.package]
@@ -103,7 +107,6 @@ cometbls-groth16-verifier = { path = "lib/cometbls-groth16-verifier", default-fe
 contracts                 = { path = "generated/rust/contracts", default-features = false }
 ethereum-light-client     = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-verifier         = { path = "lib/ethereum-verifier", default-features = false }
-near-verifier         = { path = "lib/near-verifier", default-features = false }
 gnark-key-parser          = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                = { path = "lib/gnark-mimc", default-features = false }
 ibc-vm-rs                 = { path = "lib/ibc-vm-rs", default-features = false }
@@ -112,6 +115,7 @@ ics23                     = { path = "lib/ics23", default-features = false }
 linea-verifier            = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie              = { path = "lib/linea-zktrie", default-features = false }
 macros                    = { path = "lib/macros", default-features = false }
+near-verifier             = { path = "lib/near-verifier", default-features = false }
 pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs", default-features = false }
 protos                    = { path = "generated/rust/protos", default-features = false }
@@ -174,9 +178,9 @@ go-parse-duration        = { version = "0.1.1", default-features = false }
 hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }
 lazy_static              = { version = "1.4.0", default-features = false }
+near-account-id          = { version = "1.0.0", default-features = false }
 near-contract-standards  = { version = "5.1.0", default-features = false }
 near-sdk                 = { version = "5.1.0", default-features = false }
-near-account-id          = { version = "1.0.0", default-features = false }
 near-sdk-contract-tools  = { version = "3.0.2", default-features = false }
 num-bigint               = { version = "0.4", default-features = false }
 primitive-types          = { version = "0.12.1", default-features = false }

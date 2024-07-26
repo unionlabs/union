@@ -10,10 +10,10 @@ near-contract-standards = { workspace = true }
 near-primitives-core    = { version = "0.21" }
 near-sdk                = { workspace = true, features = ["wee_alloc"] }
 near-sdk-contract-tools = { workspace = true }
+near-verifier           = { workspace = true }
 serde                   = { workspace = true }
 serde_json              = { workspace = true }
 unionlabs               = { workspace = true, features = ["near"] }
-near-verifier = { workspace = true }
 
 [dev-dependencies]
 anyhow     = "1.0"

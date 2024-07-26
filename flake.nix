@@ -535,15 +535,17 @@
               nodePackages_latest.typescript-language-server
               nodePackages_latest.vscode-langservers-extracted
             ]) ++
-                (with pkgs; [
-                  go
-                  gopls
-                  go-tools
-                  gotools
-                ])
-                ++ [(python.withPackages (py-pkgs: [
-                  py-pkgs.nearup
-                ]))]
+              (with pkgs; [
+                go
+                gopls
+                go-tools
+                gotools
+              ])
+              ++ [
+              (python.withPackages (py-pkgs: [
+                py-pkgs.nearup
+              ]))
+            ]
 
               ++ (with goPkgs; [
               go

@@ -1,26 +1,26 @@
 [package]
-name = "cometbls-near"
-version = "0.1.0"
-edition.workspace = true
+edition.workspace      = true
 license-file.workspace = true
-repository.workspace = true
+name                   = "cometbls-near"
+repository.workspace   = true
+version                = "0.1.0"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-near-sdk                = { workspace = true, features = ["wee_alloc"] }
-near-sdk-contract-tools = { workspace = true }
-ibc-vm-rs               = { workspace = true }
-unionlabs               = { workspace = true, features = [ "near" ] }
-near-contract-standards = { workspace = true }
-near-primitives-core    = { version = "0.21" }
-borsh = { workspace = true, features = [ "derive"] }
-thiserror = { workspace = true }
-ics23              = { workspace = true }
+borsh                     = { workspace = true, features = ["derive"] }
 cometbls-groth16-verifier = { workspace = true }
-hex-literal = {workspace = true }
-hex.workspace       = true
+hex-literal               = { workspace = true }
+hex.workspace             = true
+ibc-vm-rs                 = { workspace = true }
+ics23                     = { workspace = true }
+near-contract-standards   = { workspace = true }
+near-primitives-core      = { version = "0.21" }
+near-sdk                  = { workspace = true, features = ["wee_alloc"] }
+near-sdk-contract-tools   = { workspace = true }
+thiserror                 = { workspace = true }
+unionlabs                 = { workspace = true, features = ["near"] }
 
 [lints]
 workspace = true

@@ -13,9 +13,9 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
     propagatedBuildInputs = [
       self."botocore"
       self."jmespath"
@@ -31,9 +31,9 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
     propagatedBuildInputs = [
       self."jmespath"
       self."python-dateutil"
@@ -49,10 +49,10 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
-    propagatedBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
+    propagatedBuildInputs = [ ];
   };
   "jmespath" = super.buildPythonPackage rec {
     pname = "jmespath";
@@ -63,10 +63,10 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
-    propagatedBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
+    propagatedBuildInputs = [ ];
   };
   "nearup" = super.buildPythonPackage rec {
     pname = "nearup";
@@ -77,9 +77,9 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
     propagatedBuildInputs = [
       self."boto3"
       self."click"
@@ -95,10 +95,10 @@ self: super: {
     };
     format = "setuptools";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
-    propagatedBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
+    propagatedBuildInputs = [ ];
   };
   "python-dateutil" = super.buildPythonPackage rec {
     pname = "python-dateutil";
@@ -109,9 +109,9 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
     propagatedBuildInputs = [
       self."six"
     ];
@@ -125,9 +125,9 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
     propagatedBuildInputs = [
       self."botocore"
     ];
@@ -141,10 +141,10 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
-    propagatedBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
+    propagatedBuildInputs = [ ];
   };
   "urllib3" = super.buildPythonPackage rec {
     pname = "urllib3";
@@ -155,9 +155,9 @@ self: super: {
     };
     format = "wheel";
     doCheck = false;
-    buildInputs = [];
-    checkInputs = [];
-    nativeBuildInputs = [];
-    propagatedBuildInputs = [];
+    buildInputs = [ ];
+    checkInputs = [ ];
+    nativeBuildInputs = [ ];
+    propagatedBuildInputs = [ ];
   };
 }

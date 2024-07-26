@@ -175,9 +175,11 @@
       near-localnet = pkgs.writeShellApplication {
         name = "near-localnet";
         # runtimeInputs = [ nearup ];
-        runtimeInputs = [(python.withPackages (py-pkgs: [
-          py-pkgs.nearup
-        ]))] ++ [ pkgs.strace pkgs.iproute pkgs.busybox unstablePkgs.nodePackages_latest.near-cli ];
+        runtimeInputs = [
+          (python.withPackages (py-pkgs: [
+            py-pkgs.nearup
+          ]))
+        ] ++ [ pkgs.strace pkgs.iproute pkgs.busybox unstablePkgs.nodePackages_latest.near-cli ];
         text = ''
           mkdir /tmp
           export TMPDIR=/tmp
