@@ -56,6 +56,12 @@
           type = types.listOf (
             types.submodule {
               options.label = mkOption { type = types.str; example = "something-custom"; };
+              options.filter = mkOption {
+                type = types.nullOr types.str;
+                description = "A regex which if matches, removes the event from the insertion";
+                example = "coin_received";
+                default = null;
+              };
               options.urls = mkOption { type = types.listOf types.str; example = [ "https://rpc.example.com" ]; };
               options.chain_id = mkOption { type = types.nullOr types.str; example = "union-testnet-8"; default = null; };
               options.grpc_url = mkOption { type = types.nullOr types.str; example = "https://grpc.example.com"; default = null; };

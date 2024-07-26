@@ -1,6 +1,7 @@
 use backon::Retryable;
 use color_eyre::eyre::{bail, eyre, Report};
 use futures::{stream, stream::TryStreamExt, TryFutureExt};
+use regex::Regex;
 use sqlx::{Acquire, Postgres};
 use tendermint::block::Height;
 use tendermint_rpc::{
@@ -29,6 +30,9 @@ pub struct Config {
 
     /// The height from which we start indexing
     pub start_height: Option<u32>,
+
+    #[serde(default)]
+    pub filter: Option<String>,
 
     /// Attempt to retry and fix bad states. This makes the process less responsive, as any call may take longer
     /// since retries are happening. Best for systemd services and long-running jobs.
@@ -68,6 +72,10 @@ impl Config {
                 .collect(),
         );
 
+        let filter = self
+            .filter
+            .map(|filter| Regex::new(&filter).expect("should get valid regex"));
+
         let mode = self.mode;
         let (chain_id, height) = if self.harden {
             (|| fetch_meta(&client, &pool).inspect_err(|e| debug!(?e, "error fetching meta")))
@@ -77,6 +85,7 @@ impl Config {
             fetch_meta(&client, &pool).await?
         };
         let indexing_span = info_span!("indexer", chain_id = chain_id.canonical);
+
         async move {
             // Determine from which height we should start indexing if we haven't
             // indexed any blocks yet. If start_height > current_height, we jump to the new start height
@@ -102,7 +111,7 @@ impl Config {
                         "fast syncing for batch: {}..{}", height, batch_end
                     );
                     let mut tx = pool.begin().await?;
-                    let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height, mode).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
+                    let next_height = fetch_and_insert_blocks(&client, &mut tx, chain_id, Self::BATCH_SIZE, height, mode, filter.as_ref()).await?.expect("batch sync with batch > 1 should error or succeed, but never reach head of chain");
                     tx.commit().await?;
                     info!(
                         "indexed blocks {}..{}",
@@ -120,7 +129,7 @@ impl Config {
                 // Regular sync protocol. This fetches blocks one-by-one.
                 retry_count += 1;
                 let mut tx = pool.begin().await?;
-                match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height, mode).await? {
+                match fetch_and_insert_blocks(&client, &mut tx, chain_id, 1, height, mode, filter.as_ref()).await? {
                     Some(h) => {
                         info!("indexed block {}", &height);
                         height = h;
@@ -238,6 +247,7 @@ async fn fetch_and_insert_blocks(
     batch_size: u32,
     from: Height,
     mode: postgres::InsertMode,
+    filter: Option<&Regex>,
 ) -> Result<Option<Height>, Report> {
     use itertools::Either;
 
@@ -323,59 +333,61 @@ async fn fetch_and_insert_blocks(
     // Initial capacity is a bit of an estimate, but shouldn't need to resize too often.
     let mut events = Vec::with_capacity(block_results.len() * 4 * 10);
 
-    let transactions =
-        block_results.into_iter().flat_map(|(header, block, txs)| {
-            let block_height: i32 = block.height.value().try_into().unwrap();
-            let block_hash = header.hash().to_string();
-            let time: OffsetDateTime = header.time.into();
-            let mut block_index = 0;
-            let finalize_block_events = block.events(chain_id, block_hash.clone(), time);
+    let transactions = block_results.into_iter().flat_map(|(header, block, txs)| {
+        let block_height: i32 = block.height.value().try_into().unwrap();
+        let block_hash = header.hash().to_string();
+        let time: OffsetDateTime = header.time.into();
+        let mut block_index = 0;
+        let finalize_block_events = block.events(chain_id, block_hash.clone(), time);
 
-            let txs =
-                txs.into_iter()
-                    .map(|tx| {
-                        let transaction_hash = tx.hash.to_string();
-                        let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
-                        events.extend(tx.tx_result.events.into_iter().enumerate().map(
-                            |(i, event)| {
-                                let event = PgEvent {
-                                    chain_id,
-                                    block_hash: block_hash.clone(),
-                                    block_height,
-                                    time,
-                                    data: serde_json::to_value(event)
-                                        .unwrap()
-                                        .replace_escape_chars(),
-                                    transaction_hash: Some(transaction_hash.clone()),
-                                    transaction_index: Some(i.try_into().unwrap()),
-                                    block_index,
-                                };
-                                block_index += 1;
-                                event
-                            },
-                        ));
-                        PgTransaction {
+        let txs = txs
+            .into_iter()
+            .map(|tx| {
+                let transaction_hash = tx.hash.to_string();
+                let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
+                events.extend(tx.tx_result.events.into_iter().enumerate().filter_map(
+                    |(i, event)| {
+                        block_index += 1;
+
+                        if filter.is_some_and(|filter| filter.is_match(event.kind.as_str())) {
+                            return None;
+                        }
+
+                        let event = PgEvent {
                             chain_id,
                             block_hash: block_hash.clone(),
                             block_height,
                             time,
-                            data,
-                            hash: transaction_hash,
-                            index: tx.index.try_into().unwrap(),
-                        }
-                    })
-                    .collect::<Vec<_>>();
-            events.extend(
-                finalize_block_events
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, e)| PgEvent {
-                        block_index: i as i32 + block_index,
-                        ..e
-                    }),
-            );
-            txs
-        });
+                            data: serde_json::to_value(event).unwrap().replace_escape_chars(),
+                            transaction_hash: Some(transaction_hash.clone()),
+                            transaction_index: Some(i.try_into().unwrap()),
+                            block_index,
+                        };
+                        Some(event)
+                    },
+                ));
+                PgTransaction {
+                    chain_id,
+                    block_hash: block_hash.clone(),
+                    block_height,
+                    time,
+                    data,
+                    hash: transaction_hash,
+                    index: tx.index.try_into().unwrap(),
+                }
+            })
+            .collect::<Vec<_>>();
+        events.extend(
+            finalize_block_events
+                .into_iter()
+                .enumerate()
+                .map(|(i, e)| PgEvent {
+                    block_index: i as i32 + block_index,
+                    ..e
+                }),
+        );
+        txs
+    });
     postgres::insert_batch_transactions(tx, transactions, mode).await?;
     postgres::insert_batch_events(tx, events, mode).await?;
     Ok(Some((from.value() as u32 + headers.len() as u32).into()))
