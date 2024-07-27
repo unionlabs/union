@@ -456,17 +456,17 @@ impl BlockInsert {
 
         // We know now there is a potential match, we still apply a Filter to only
         // get the logs we want.
-        let log_filer = Filter::new().select(block.hash.unwrap());
+        let log_filter = Filter::new().select(block.hash.unwrap());
 
-        let log_filer = if let Some(filter) = filter {
+        let log_filter = if let Some(filter) = filter {
             let addresses: Vec<_> = filter.iter().cloned().collect();
-            log_filer.address(addresses)
+            log_filter.address(addresses)
         } else {
-            log_filer
+            log_filter
         };
 
         let logs = provider
-            .get_logs(&log_filer)
+            .get_logs(&log_filter)
             .await
             .map_err(FromProviderError::DataNotFound)?;
 
