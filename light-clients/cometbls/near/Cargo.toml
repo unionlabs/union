@@ -10,7 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 borsh                     = { workspace = true, features = ["derive"] }
-cometbls-groth16-verifier = { workspace = true }
 hex-literal               = { workspace = true }
 hex.workspace             = true
 ibc-vm-rs                 = { workspace = true }

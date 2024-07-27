@@ -1,6 +1,5 @@
 use near_account_id::AccountId;
 use near_primitives_core::hash::CryptoHash;
-use unionlabs::near::raw_state_proof::RawStateProof;
 
 #[derive(thiserror::Error, Debug, PartialEq, Eq, Clone)]
 pub enum Error {

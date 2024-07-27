@@ -1,9 +1,11 @@
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
+    hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-        lightclients::cometbls,
+        lightclients::cometbls::{self, header::TryFromHeaderError},
     },
+    TryFromProtoBytesError,
 };
 
 #[derive(thiserror::Error, Debug, PartialEq)]
@@ -20,11 +22,11 @@ pub enum Error {
     #[error("unable to decode client state")]
     ClientStateDecode(#[source] DecodeErrorOf<Proto, cometbls::client_state::ClientState>),
 
+    #[error("client not found")]
+    ClientNotFound(String),
+
     #[error("Client state not found")]
     ClientStateNotFound,
-
-    #[error("Invalid ZKP: {0:?}")]
-    InvalidZKP(cometbls_groth16_verifier::Error),
 
     #[error("Consensus state not found for {0}")]
     ConsensusStateNotFound(Height),
@@ -49,4 +51,33 @@ pub enum Error {
 
     #[error("invalid timestamp")]
     InvalidTimestamp,
+
+    #[error(
+        "trusted validators hash ({expected:?}) does not match the given header's hash ({actual})"
+    )]
+    InvalidValidatorsHash { expected: H256, actual: H256 },
+
+    #[error("signed header ({signed_timestamp}) exceeds the max clock drift ({max_clock_drift})")]
+    SignedHeaderCannotExceedMaxClockDrift {
+        signed_timestamp: u64,
+        max_clock_drift: u64,
+    },
+
+    #[error("header with timestamp ({0}) is expired")]
+    HeaderExpired(u64),
+
+    #[error("signed header with timestamp ({signed_timestamp}) must be more recent than the trusted one ({trusted_timestamp})")]
+    SignedHeaderTimestampMustBeMoreRecent {
+        signed_timestamp: u64,
+        trusted_timestamp: u64,
+    },
+
+    #[error("signed header with height ({signed_height}) must be more recent than the trusted one ({trusted_height})")]
+    SignedHeaderHeightMustBeMoreRecent {
+        signed_height: u64,
+        trusted_height: u64,
+    },
+
+    #[error("header decode failed {0}")]
+    HeaderDecode(#[from] TryFromProtoBytesError<TryFromHeaderError>),
 }

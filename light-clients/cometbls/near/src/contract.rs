@@ -4,7 +4,6 @@ use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     env, near_bindgen,
     store::LookupMap,
-    PanicOnDefault,
 };
 use unionlabs::{
     encoding::{DecodeAs, EncodeAs as _, Proto},
@@ -96,7 +95,10 @@ impl Contract {
                     ),
                 },
                 IbcQuery::VerifyClientMessage(msg) => IbcResponse::VerifyClientMessage {
-                    valid: self.verify_client_message(&client_id, msg),
+                    error: self
+                        .verify_client_message(&client_id, msg)
+                        .map_err(|e| e.to_string())
+                        .err(),
                 },
                 IbcQuery::CheckForMisbehaviour(msg) => IbcResponse::CheckForMisbehaviour {
                     misbehaviour_found: self.check_for_misbehaviour(msg),
@@ -106,7 +108,7 @@ impl Contract {
             .collect()
     }
 
-    pub fn status(&self) -> Status {
+    fn status(&self) -> Status {
         Status::Active
     }
 
@@ -126,7 +128,7 @@ impl Contract {
         path: MerklePath,
         value: Vec<u8>,
         // TODO(aeryz): make this a proper error type this is stupid
-    ) -> bool {
+    ) -> Result<(), Error> {
         let Ok(consensus_state) = self
             .consensus_states
             .get(client_id)
@@ -158,23 +160,30 @@ impl Contract {
     }
 
     // TODO(aeryz): client_msg can be Misbehaviour or Header
-    fn verify_client_message(&self, client_id: &str, client_msg: Vec<u8>) -> bool {
-        let header = Header::decode_as::<Proto>(&client_msg).unwrap();
-        let client_state = self.client_states.get(client_id).unwrap();
-        let consensus_states = self.consensus_states.get(client_id).unwrap();
-        let consensus_state = consensus_states.get(&header.trusted_height).unwrap();
+    fn verify_client_message(&self, client_id: &str, client_msg: Vec<u8>) -> Result<(), Error> {
+        let header = Header::decode_as::<Proto>(&client_msg)?;
+        let client_state = self
+            .client_states
+            .get(client_id)
+            .ok_or(Error::ClientNotFound(client_id.to_string()))?;
+        let consensus_states = self
+            .consensus_states
+            .get(client_id)
+            .ok_or(Error::ClientNotFound(client_id.to_string()))?;
+
+        let consensus_state = consensus_states
+            .get(&header.trusted_height)
+            .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
 
         // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
         let untrusted_height_number = header.signed_header.height.inner() as u64;
         let trusted_height_number = header.trusted_height.revision_height;
 
         if untrusted_height_number <= trusted_height_number {
-            // return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
-            //     signed_height: untrusted_height_number,
-            //     trusted_height: trusted_height_number,
-            // }
-            // .into());
-            return false;
+            return Err(Error::SignedHeaderHeightMustBeMoreRecent {
+                signed_height: untrusted_height_number,
+                trusted_height: trusted_height_number,
+            });
         }
 
         let trusted_timestamp = consensus_state.timestamp;
@@ -182,12 +191,10 @@ impl Contract {
         let untrusted_timestamp = header.signed_header.time.as_unix_nanos();
 
         if untrusted_timestamp <= trusted_timestamp {
-            // return Err(InvalidHeaderError::SignedHeaderTimestampMustBeMoreRecent {
-            //     signed_timestamp: untrusted_timestamp,
-            //     trusted_timestamp,
-            // }
-            // .into());
-            return false;
+            return Err(Error::SignedHeaderTimestampMustBeMoreRecent {
+                signed_timestamp: untrusted_timestamp,
+                trusted_timestamp,
+            });
         }
 
         if is_client_expired(
@@ -195,22 +202,18 @@ impl Contract {
             client_state.trusting_period,
             env::block_timestamp(),
         ) {
-            // return Err(InvalidHeaderError::HeaderExpired(consensus_state.data.timestamp).into());
-            return false;
+            return Err(Error::HeaderExpired(consensus_state.timestamp));
         }
 
         let max_clock_drift = env::block_timestamp()
             .checked_add(client_state.max_clock_drift)
-            .unwrap();
-        // .ok_or(Error::MathOverflow)?;
+            .ok_or(Error::MathOverflow)?;
 
         if untrusted_timestamp >= max_clock_drift {
-            // return Err(InvalidHeaderError::SignedHeaderCannotExceedMaxClockDrift {
-            //     signed_timestamp: untrusted_timestamp,
-            //     max_clock_drift,
-            // }
-            // .into());
-            return false;
+            return Err(Error::SignedHeaderCannotExceedMaxClockDrift {
+                signed_timestamp: untrusted_timestamp,
+                max_clock_drift,
+            });
         }
 
         let trusted_validators_hash = consensus_state.next_validators_hash;
@@ -218,12 +221,10 @@ impl Contract {
         if untrusted_height_number == trusted_height_number + 1
             && header.signed_header.validators_hash != trusted_validators_hash
         {
-            // return Err(InvalidHeaderError::InvalidValidatorsHash {
-            //     expected: trusted_validators_hash,
-            //     actual: header.signed_header.validators_hash,
-            // }
-            // .into());
-            return false;
+            return Err(Error::InvalidValidatorsHash {
+                expected: trusted_validators_hash,
+                actual: header.signed_header.validators_hash,
+            });
         }
 
         verify_zkp(
@@ -232,13 +233,10 @@ impl Contract {
             &header.signed_header,
             header.zero_knowledge_proof,
         )
-        .unwrap();
-
-        true
     }
 
     #[allow(unused)]
-    pub fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool {
+    fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool {
         false
     }
 

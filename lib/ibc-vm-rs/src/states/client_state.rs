@@ -67,14 +67,16 @@ impl<T: IbcHost> Runnable<T> for UpdateClient {
                     client_id,
                     client_msg,
                 },
-                &[IbcResponse::Status { status }, IbcResponse::VerifyClientMessage { valid }, IbcResponse::CheckForMisbehaviour { misbehaviour_found }],
+                &[IbcResponse::Status { status }, IbcResponse::VerifyClientMessage { error }, IbcResponse::CheckForMisbehaviour { misbehaviour_found }],
             ) => {
                 if *status != Status::Active {
                     return Err(IbcError::NotActive(client_id, *status).into());
                 }
-                if !valid {
-                    return Err(IbcError::ClientMessageVerificationFailed.into());
+
+                if let Some(error) = error {
+                    return Err(IbcError::ClientMessageVerificationFailed(error.clone()).into());
                 }
+
                 if *misbehaviour_found {
                     Either::Left((
                         Self::UpdatedStateOnMisbehaviour {

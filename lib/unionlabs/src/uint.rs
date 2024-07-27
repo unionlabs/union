@@ -8,7 +8,6 @@ use core::{
     str::FromStr,
 };
 
-use borsh::BorshSerialize;
 use serde::{Deserialize, Serialize};
 use serde_utils::HEX_ENCODING_PREFIX;
 

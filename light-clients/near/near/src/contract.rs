@@ -80,7 +80,7 @@ impl Contract {
                     ),
                 },
                 IbcQuery::VerifyClientMessage(msg) => IbcResponse::VerifyClientMessage {
-                    valid: self.verify_client_message(msg),
+                    error: self.verify_client_message(msg),
                 },
                 IbcQuery::CheckForMisbehaviour(msg) => IbcResponse::CheckForMisbehaviour {
                     misbehaviour_found: self.check_for_misbehaviour(msg),

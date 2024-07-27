@@ -1,17 +1,10 @@
-use std::{
-    collections::HashMap,
-    str::FromStr,
-    time::{self, Duration},
-};
+use std::{collections::HashMap, str::FromStr, time::Duration};
 
 use chain_utils::{
-    cosmos_sdk::{CosmosSdkChain, CosmosSdkChainExt, CosmosSdkChainRpcs as _, GasConfig},
-    private_key::PrivateKey,
+    cosmos_sdk::{CosmosSdkChainExt, CosmosSdkChainRpcs as _, GasConfig},
+    keyring::{ChainKeyring, KeyringConfig},
 };
-use ibc_vm_rs::{
-    states::connection_handshake::{self, ConnectionEnd},
-    IbcEvent, DEFAULT_IBC_VERSION,
-};
+use ibc_vm_rs::{states::connection_handshake, DEFAULT_IBC_VERSION};
 use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_primitives::{
@@ -30,23 +23,20 @@ use tokio::time::sleep;
 use unionlabs::{
     bounded::BoundedI64,
     cometbls::types::canonical_vote::CanonicalVote,
-    encoding::{DecodeAs, Encode, EncodeAs, Proto},
-    google::protobuf::any::{mk_any, Any, IntoAny},
-    hash::H256,
+    encoding::{DecodeAs, Encode, Proto},
+    google::protobuf::any::{mk_any, IntoAny},
     ibc::{
         core::{
-            channel::{self, packet::Packet},
             client::height::{Height, IsHeight as _},
-            commitment::{merkle_prefix::MerklePrefix, merkle_root::MerkleRoot},
+            commitment::merkle_prefix::MerklePrefix,
             connection::version::Version,
         },
         lightclients::{
-            cometbls::{self, client_state::ClientState, consensus_state::ConsensusState},
+            cometbls::{self, client_state::ClientState},
             near, wasm,
         },
     },
     ics24::ClientConsensusStatePath,
-    id::{ChannelId, ConnectionId, PortId},
     near::{
         raw_state_proof::RawStateProof,
         types::{self, MerklePathItem},
@@ -60,10 +50,7 @@ use unionlabs::{
     },
     traits::Chain,
     union::galois::{
-        poll_request::PollRequest,
-        poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
-        prove_request::ProveRequest,
-        prove_response::ProveResponse,
+        prove_request::ProveRequest, prove_response::ProveResponse,
         validator_set_commit::ValidatorSetCommit,
     },
     validated::ValidateT as _,
@@ -122,14 +109,15 @@ impl Union {
     async fn new() -> Self {
         Union {
             union: chain_utils::union::Union::new(chain_utils::union::Config {
-                signers: vec![
-                    serde_json::from_str(
-                        r#"{ "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f" }"#,
-                    )
-                    .unwrap(),
-                ],
+                keyring: KeyringConfig {
+                    name: "alice".to_string(),
+                    keys: vec![
+                        serde_json::from_str(
+                        r#"{ "raw": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f" }"#
+                            ).unwrap()
+                    ],
+                },
                 ws_url: WebSocketClientUrl::from_str("ws://localhost:26657/websocket").unwrap(),
-                prover_endpoint: "http://localhost:9999".to_string(),
                 grpc_url: "http://localhost:9090".to_string(),
                 gas_config: GasConfig {
                     gas_price: 1.0,
@@ -137,6 +125,7 @@ impl Union {
                     gas_multiplier: 1.1,
                     max_gas: 400000,
                 },
+                prover_endpoints: vec!["http://localhost:9999".to_string()],
             })
             .await
             .unwrap(),
@@ -173,7 +162,7 @@ impl Union {
 
     async fn fetch_prove_request(&self, request: ProveRequest) -> ProveResponse {
         let response = union_prover_api_client::UnionProverApiClient::connect(
-            self.union.prover_endpoint.clone(),
+            self.union.prover_endpoints[0].clone(),
         )
         .await
         .unwrap()
@@ -321,7 +310,7 @@ impl Union {
 
     async fn create_client<A: IntoAny, B: IntoAny>(&self, client_state: A, consensus_state: B) {
         self.union
-            .signers()
+            .keyring()
             .with(|signer| async {
                 let msg = protos::ibc::core::client::v1::MsgCreateClient {
                     client_state: Some(client_state.into_any().into()),
@@ -329,9 +318,9 @@ impl Union {
                     signer: signer.to_string(),
                 };
 
-                let tx_hash = self
+                let (tx_hash, _) = self
                     .union
-                    .broadcast_tx_commit(signer, [mk_any(&msg)])
+                    .broadcast_tx_commit(signer, [mk_any(&msg)], "".to_string())
                     .await
                     .unwrap();
 
@@ -399,7 +388,7 @@ impl Union {
         consensus_height: Height,
     ) {
         self.union
-            .signers()
+            .keyring()
             .with(|signer| async {
                 let msg = protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                     client_id: client_id.to_string(),
@@ -436,9 +425,9 @@ impl Union {
                     previous_connection_id: "".to_string(),
                 };
 
-                let tx_hash = self
+                let (tx_hash, _) = self
                     .union
-                    .broadcast_tx_commit(signer, [mk_any(&msg)])
+                    .broadcast_tx_commit(signer, [mk_any(&msg)], "".to_string())
                     .await
                     .unwrap();
 
@@ -454,7 +443,7 @@ impl Union {
         proof_height: u64,
     ) {
         self.union
-            .signers()
+            .keyring()
             .with(|signer| async {
                 let msg = protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                     connection_id: connection_id.to_string(),
@@ -469,9 +458,9 @@ impl Union {
                     signer: signer.to_string(),
                 };
 
-                let tx_hash = self
+                let (tx_hash, _) = self
                     .union
-                    .broadcast_tx_commit(signer, [mk_any(&msg)])
+                    .broadcast_tx_commit(signer, [mk_any(&msg)], "".to_string())
                     .await
                     .unwrap();
 
@@ -482,7 +471,7 @@ impl Union {
 
     async fn update_client<T: Encode<Proto>>(&self, client_id: &str, header: T) {
         self.union
-            .signers()
+            .keyring()
             .with(|signer| async {
                 let msg = protos::ibc::lightclients::wasm::v1::ClientMessage {
                     data: header.encode(),
@@ -494,9 +483,9 @@ impl Union {
                     signer: signer.to_string(),
                 };
 
-                let tx_hash = self
+                let (tx_hash, _) = self
                     .union
-                    .broadcast_tx_commit(signer, [mk_any(&msg)])
+                    .broadcast_tx_commit(signer, [mk_any(&msg)], "".to_string())
                     .await
                     .unwrap();
 
