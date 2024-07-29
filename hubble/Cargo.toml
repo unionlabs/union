@@ -25,6 +25,7 @@ chain-utils         = { workspace = true }
 clap                = { workspace = true, features = ["derive", "env", "error-context"] }
 color-eyre          = { workspace = true, features = ["default"] }
 cometbft-rpc        = { workspace = true }
+const-hex           = "1.12.0"
 contracts.workspace = true
 ethers              = { workspace = true, features = ["default", "std"] }
 futures             = { workspace = true, features = ["async-await"] }

@@ -92,12 +92,14 @@ impl Indexer {
                 height: i32,
                 provider: RaceClient<Provider<Http>>,
             ) -> Result<Option<BlockInsert>, Report> {
-                let block = BlockInsert::from_provider_retried(
+                let block = BlockInsert::from_provider_retried_filtered(
                     chain_id,
                     BlockId::Number(height.into()),
                     provider,
+                    None,
                 )
-                .await?;
+                .await?
+                .expect("with filter None a block should always be returned");
 
                 if block.hash != hash {
                     info!(

@@ -166,7 +166,7 @@ where
 }
 
 pub async fn insert_batch_logs<C: ChainType, T: Serialize>(
-    db: &PgPool,
+    tx: &mut sqlx::Transaction<'_, Postgres>,
     logs: impl IntoIterator<Item = Log<C, T>>,
     mode: InsertMode,
 ) -> sqlx::Result<()>
@@ -198,7 +198,7 @@ where
             INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
             SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
             ", &chain_ids, &hashes, &data, &height, &time)
-        .execute(db).await?;
+        .execute(tx.as_mut()).await?;
     } else {
         sqlx::query!("
             INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
@@ -211,7 +211,7 @@ where
                 height = excluded.height,
                 time = excluded.time
             ", &chain_ids, &hashes, &data, &height, &time)
-        .execute(db).await?;
+        .execute(tx.as_mut()).await?;
     }
     Ok(())
 }
@@ -487,6 +487,30 @@ pub async fn insert_mapped_execution_heights<'a, A: Acquire<'a, Database = Postg
         &execution_heights,
     )
     .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
+pub async fn update_contracts_indexed_heights<'a>(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    contracts: Vec<String>,
+    heights: Vec<i64>,
+    chain_id: ChainId,
+) -> sqlx::Result<()> {
+    sqlx::query!(
+        "
+        UPDATE v0.contracts 
+        SET indexed_height = data.height
+        FROM (
+            SELECT unnest($1::bigint[]) as height, unnest($2::text[]) as address
+        ) as data
+        WHERE v0.contracts.address = data.address AND chain_id = $3
+        ",
+        &heights,
+        &contracts,
+        &chain_id.db,
+    )
+    .execute(tx.as_mut())
     .await?;
     Ok(())
 }
