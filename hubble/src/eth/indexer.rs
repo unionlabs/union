@@ -14,7 +14,7 @@ use futures::{stream::FuturesOrdered, FutureExt, StreamExt, TryFutureExt};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres};
 use time::OffsetDateTime;
-use tracing::{debug, info, info_span, Instrument};
+use tracing::{debug, info, info_span, warn, Instrument};
 use url::Url;
 
 use crate::{
@@ -84,12 +84,21 @@ impl Config {
                 .await?
                 .get_inner_logged();
 
-            let rows = sqlx::query!(
-                r#"SELECT address, indexed_height from v0.contracts where chain_id = $1"#,
-                chain_id.db
-            )
-            .fetch_all(&pool)
-            .await?;
+            let rows = loop {
+                let rows = sqlx::query!(
+                    r#"SELECT address, indexed_height from v0.contracts where chain_id = $1"#,
+                    chain_id.db
+                )
+                .fetch_all(&pool)
+                .await?;
+
+                if rows.is_empty() {
+                    warn!("no contracts found to track, retrying in 20 seconds");
+                    tokio::time::sleep(Duration::from_secs(20)).await;
+                    continue;
+                }
+                break rows;
+            };
 
             let lowest: u64 = rows
                 .iter()
