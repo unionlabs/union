@@ -1,5 +1,6 @@
 <script lang="ts">
 import request from "graphql-request"
+import { onDestroy, onMount } from "svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { URLS } from "$lib/constants/index.ts"
 import { Label } from "$lib/components/ui/label"
@@ -14,13 +15,11 @@ import WalletGate from "$lib/components/wallet-gate.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import TokenBalance from "./(components)/token-balance.svelte"
+import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
-import { cosmosChainAddressTransfers } from "$lib/queries/transfers/cosmos"
-import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
-import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
-import { onDestroy, onMount } from "svelte"
+import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 
 type FaucetState = DiscriminatedUnion<
   "kind",
