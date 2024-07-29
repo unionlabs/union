@@ -1,8 +1,6 @@
 mod client;
 mod contract;
 mod errors;
-mod sparse_merkle_proof;
-mod types;
 
 // use aptos_types::{proof::TransactionInfoWithProof, state_proof::StateProof};
 // use aptos_crypto::{hash::CryptoHash, HashValue};

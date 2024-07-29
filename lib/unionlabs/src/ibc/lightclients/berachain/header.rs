@@ -4,10 +4,7 @@ use crate::{
     berachain::BerachainChainSpec,
     errors::{required, MissingField},
     ibc::{
-        core::{
-            client::height::Height,
-            commitment::merkle_proof::{MerkleProof, TryFromMerkleProofError},
-        },
+        core::commitment::merkle_proof::{MerkleProof, TryFromMerkleProofError},
         lightclients::{
             ethereum::{
                 account_proof::{AccountProof, TryFromAccountProofError},
@@ -18,7 +15,6 @@ use crate::{
             tendermint,
         },
     },
-    traits,
 };
 
 #[model(proto(
@@ -31,16 +27,6 @@ pub struct Header {
     pub execution_header: ExecutionPayloadHeader<BerachainChainSpec>,
     pub execution_header_proof: MerkleProof,
     pub account_proof: AccountProof,
-}
-
-impl traits::Header for Header {
-    fn trusted_height(&self) -> Height {
-        Height {
-            // TODO: Change to `ETHEREUM_REVISION_NUMBER` once that has been moved into this crate
-            revision_number: 0,
-            revision_height: self.execution_header.block_number,
-        }
-    }
 }
 
 impl From<Header> for protos::union::ibc::lightclients::berachain::v1::Header {

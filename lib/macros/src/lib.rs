@@ -2,16 +2,16 @@ use std::{collections::HashMap, convert};
 
 use proc_macro::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
 use proc_macro2::{Literal, Span};
-use quote::{format_ident, quote, ToTokens};
+use quote::{format_ident, quote, quote_spanned, ToTokens};
 use syn::{
     fold::Fold,
     parenthesized,
-    parse::{discouraged::Speculative, Parse, ParseStream},
+    parse::{Parse, ParseStream},
     parse_macro_input, parse_quote, parse_quote_spanned,
     punctuated::Punctuated,
     spanned::Spanned,
     Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
-    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Variant,
+    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type, Variant,
     WhereClause, WherePredicate,
 };
 
@@ -34,9 +34,7 @@ pub fn apply(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(Debug, attributes(debug))]
 pub fn debug(ts: TokenStream) -> TokenStream {
-    let di = parse_macro_input!(ts as DeriveInput);
-
-    derive_debug(di)
+    derive_debug(parse_macro_input!(ts as DeriveInput))
         // .inspect(|x| println!("{x}"))
         .map_err(|e| e.into_compile_error())
         .unwrap_or_else(convert::identity)
@@ -143,7 +141,7 @@ fn derive_debug(
                                 }
                             }
 
-                            DebugAsDisplay(format!(#lit, #(#exprs)*))
+                            DebugAsDisplay(format!(#lit, #(#exprs,)*))
                         }}
                     }
                     Some(DebugMetaFmt::Wrap(path)) => {
@@ -205,7 +203,10 @@ fn derive_debug(
             })
         }
         (Data::Enum(e), None) => {
-            let variant_debugs = e
+            if e.variants.is_empty() {
+                Ok(quote!(unreachable!()))
+            } else {
+                let variant_debugs = e
                 .variants
                 .iter()
                 .map(
@@ -263,14 +264,15 @@ fn derive_debug(
                 )
                 .collect::<Result<Vec<_>, _>>()?;
 
-            Ok(quote! {
-                match self {
-                    #(#variant_debugs)*
-                }
-            })
+                Ok(quote! {
+                    match self {
+                        #(#variant_debugs)*
+                    }
+                })
+            }
         }
         (Data::Struct(_) | Data::Enum(_), Some(DebugMetaFmt::Format(lit, exprs))) => Ok(quote! {
-            write!(f, #lit, #(#exprs)*)
+            write!(f, #lit, #(#exprs,)*)
         }),
         (Data::Struct(_) | Data::Enum(_), Some(DebugMetaFmt::Wrap(path))) => Ok(quote! {
             ::core::fmt::Debug::fmt((#path)(self), f)
@@ -455,14 +457,9 @@ impl DebugMeta {
 
             let fmt: LitStr = input.parse()?;
 
-            let ahead = input.fork();
-            ahead.parse::<Option<Token![,]>>()?;
-            let args = if ahead.is_empty() {
-                input.advance_to(&ahead);
-                Punctuated::default()
-            } else {
-                input.advance_to(&ahead);
-                Punctuated::<Expr, Token![,]>::parse_terminated(input)?
+            let args = match input.parse::<Option<Token![,]>>()? {
+                Some(_token) => Punctuated::<Expr, Token![,]>::parse_terminated(input)?,
+                None => Punctuated::default(),
             };
 
             let prev = debug_meta
@@ -702,8 +699,8 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     #debug_derive_crate::Debug,
                     ::core::clone::Clone,
                     ::core::cmp::PartialEq,
+                    ::core::cmp::Eq,
                 )]
-                #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
                 #serde
             }
         }
@@ -731,8 +728,8 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     #debug_derive_crate::Debug,
                     ::core::clone::Clone,
                     ::core::cmp::PartialEq,
+                    ::core::cmp::Eq,
                 )]
-                #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
                 #serde
             }
         }
@@ -916,12 +913,11 @@ impl Parse for FromRawAttrs {
     }
 }
 
+/// NOTE: Doesn't support generics. Generics this low in the stack is a dark path I do not wish to explore again
 #[proc_macro_attribute]
 pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
     let item_struct = parse_macro_input!(ts as ItemStruct);
-    let path = parse_macro_input!(meta as LitStr);
-
-    let (impl_generics, ty_generics, where_clause) = item_struct.generics.split_for_impl();
+    let IbcPathMeta { path, comma: _, ty } = parse_macro_input!(meta as IbcPathMeta);
 
     let segments = parse_ibc_path(path.clone());
 
@@ -984,7 +980,7 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
         .iter()
         .map(|x| match x {
             Segment::Static(_) => quote! {},
-            Segment::Variable(variable_seg) => quote! {
+            Segment::Variable(variable_seg) => quote_spanned! {fields_map[variable_seg].span()=>
                 let #variable_seg = &self.#variable_seg;
             },
         })
@@ -992,26 +988,20 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
     let field_pat = segments.iter().filter_map(|seg| match seg {
         Segment::Static(_) => None,
-        Segment::Variable(var) => Some(var),
+        // use the span of the input tokens
+        Segment::Variable(variable_seg) => Some(fields_map.get_key_value(variable_seg).unwrap().0),
     });
 
     let ident = &item_struct.ident;
 
-    let serde_ser_bound = item_struct.generics.params.to_token_stream().to_string();
-    let serde_de_bound = item_struct.generics.params.to_token_stream().to_string();
-
     quote! {
-        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ::clap::Args)]
-        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-        #[serde(bound(
-            serialize = #serde_ser_bound,
-            deserialize = #serde_de_bound,
-        ))]
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, ::clap::Args)]
+        #[serde(deny_unknown_fields)]
         #item_struct
 
         const _: () = {
             #[automatically_derived]
-            impl #impl_generics ::core::fmt::Display for #ident #ty_generics #where_clause {
+            impl ::core::fmt::Display for #ident {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     #display_body
 
@@ -1022,7 +1012,7 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
         const _: () = {
             #[automatically_derived]
-            impl #impl_generics ::core::str::FromStr for #ident #ty_generics #where_clause {
+            impl ::core::str::FromStr for #ident {
                 type Err = PathParseError;
 
                 fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
@@ -1038,8 +1028,31 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
                 }
             }
         };
+
+        const _: () = {
+            impl IbcPath for #ident {
+                type Value = #ty;
+            }
+        };
     }
     .into()
+}
+
+struct IbcPathMeta {
+    path: LitStr,
+    #[allow(unused)]
+    comma: Token![,],
+    ty: Type,
+}
+
+impl Parse for IbcPathMeta {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            path: input.parse()?,
+            comma: input.parse()?,
+            ty: input.parse()?,
+        })
+    }
 }
 
 enum Segment {

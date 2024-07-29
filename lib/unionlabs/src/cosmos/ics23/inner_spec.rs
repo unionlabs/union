@@ -12,13 +12,11 @@ pub type PositiveI32AsUsize = BoundedUsize<0, { i32::MAX as usize }>;
 
 #[model(proto(raw(protos::cosmos::ics23::v1::InnerSpec), into, from))]
 pub struct InnerSpec {
-    #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub child_order: Cow<'static, [PositiveI32AsUsize]>,
     pub child_size: PositiveI32AsUsize,
     pub min_prefix_length: PositiveI32AsUsize,
     pub max_prefix_length: PositiveI32AsUsize,
     #[serde(with = "::serde_utils::hex_string")]
-    #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub empty_child: Cow<'static, [u8]>,
     pub hash: HashOp,
 }

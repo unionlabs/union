@@ -14,7 +14,6 @@ protos      = { workspace = true, features = ["default", "client"] }
 serde-utils = { workspace = true }
 unionlabs   = { workspace = true, features = ["default"] }
 
-arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 chrono                   = { workspace = true, features = ["alloc"] }
 cometbft-rpc             = { workspace = true }
@@ -44,7 +43,6 @@ tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 
 [features]
-arbitrary = ["dep:arbitrary"]
 
 [dev-dependencies]
 hex-literal        = { workspace = true }

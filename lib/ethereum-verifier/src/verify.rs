@@ -94,10 +94,21 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
     )?;
 
     ensure(
-        current_slot >= update.signature_slot
-            && update.signature_slot > update_attested_slot
+        current_slot >= update.signature_slot,
+        Error::UpdateMoreRecentThanCurrentSlot {
+            current_slot,
+            update_signature_slot: update.signature_slot,
+        },
+    )?;
+
+    ensure(
+        update.signature_slot > update_attested_slot
             && update_attested_slot >= update_finalized_slot,
-        Error::InvalidSlots,
+        Error::InvalidSlots {
+            update_signature_slot: update.signature_slot,
+            update_attested_slot,
+            update_finalized_slot,
+        },
     )?;
 
     // Let's say N is the signature period of the header we store, we can only do updates with
@@ -143,7 +154,14 @@ pub fn validate_light_client_update<Ctx: LightClientContext, V: BlsVerify>(
             || (update_attested_period == stored_period
                 && update.next_sync_committee.is_some()
                 && ctx.next_sync_committee().is_none()),
-        Error::IrrelevantUpdate,
+        Error::IrrelevantUpdate {
+            update_attested_slot,
+            trusted_finalized_slot: ctx.finalized_slot(),
+            update_attested_period,
+            stored_period,
+            update_sync_committee_is_set: update.next_sync_committee.is_some(),
+            trusted_next_sync_committee_is_set: ctx.next_sync_committee().is_some(),
+        },
     )?;
 
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
@@ -557,10 +575,13 @@ mod tests {
         let mut update = correct_update.clone();
         update.signature_slot = u64::MAX;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidSlots)
-        );
+            Err(Error::UpdateMoreRecentThanCurrentSlot {
+                current_slot: 3577248,
+                update_signature_slot: u64::MAX,
+            })
+        ));
 
         // attested slot can't be bigger than the signature slot
         let mut update = correct_update.clone();
@@ -569,19 +590,19 @@ mod tests {
             SEPOLIA.fork_parameters.deneb.epoch * (SEPOLIA.preset.SLOTS_PER_EPOCH as u64) - 1;
         update.finalized_header.beacon.slot = before_deneb - 100;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidSlots)
-        );
+            Err(Error::InvalidSlots { .. })
+        ));
 
         // finalized slot can't be bigger than the attested slot
         let mut update = correct_update;
         update.finalized_header.beacon.slot = before_deneb;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(&ctx, update),
-            Err(Error::InvalidSlots)
-        );
+            Err(Error::InvalidSlots { .. })
+        ));
     }
 
     #[test]
@@ -617,16 +638,16 @@ mod tests {
         update.next_sync_committee = None;
         ctx.finalized_slot = update.attested_header.beacon.slot;
 
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(&ctx, update),
-            Err(Error::IrrelevantUpdate)
-        );
+            Err(Error::IrrelevantUpdate { .. })
+        ));
 
         // Expected stored next sync committee to be None
-        assert_eq!(
+        assert!(matches!(
             do_validate_light_client_update(&ctx, correct_update),
-            Err(Error::IrrelevantUpdate)
-        );
+            Err(Error::IrrelevantUpdate { .. })
+        ));
     }
 
     #[test]

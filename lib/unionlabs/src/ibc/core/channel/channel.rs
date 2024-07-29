@@ -42,13 +42,18 @@ impl From<Channel> for protos::ibc::core::channel::v1::Channel {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromChannelError {
-    MissingField(MissingField),
-    State(UnknownEnumVariant<i32>),
-    Counterparty(TryFromChannelCounterpartyError),
-    Ordering(UnknownEnumVariant<i32>),
-    ConnectionHops(<ConnectionIdValidator as Validate<String>>::Error),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid state")]
+    State(#[source] UnknownEnumVariant<i32>),
+    #[error("invalid counterparty")]
+    Counterparty(#[from] TryFromChannelCounterpartyError),
+    #[error("invalid ordering")]
+    Ordering(#[source] UnknownEnumVariant<i32>),
+    #[error("invalid connection_hops")]
+    ConnectionHops(#[from] <ConnectionIdValidator as Validate<String>>::Error),
 }
 
 impl TryFrom<protos::ibc::core::channel::v1::Channel> for Channel {

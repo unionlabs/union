@@ -226,13 +226,13 @@ contract IBCConnectionHandlerTests is TestPlus {
 
     function preAckInvalidConnectionStateProof() public {
         client.reset();
-        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCConnectionLib.ErrInvalidConnectionProof.selector);
     }
 
     function preAckInvalidClientStateProof() public {
         client.reset();
         client.pushValidMembership(0);
-        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCConnectionLib.ErrInvalidClientStateProof.selector);
     }
 
     function preTryValidProofs() public {
@@ -243,13 +243,13 @@ contract IBCConnectionHandlerTests is TestPlus {
 
     function preTryInvalidConnectionStateProof() public {
         client.reset();
-        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCConnectionLib.ErrInvalidConnectionProof.selector);
     }
 
     function preTryInvalidClientStateProof() public {
         client.reset();
         client.pushValidMembership(0);
-        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCConnectionLib.ErrInvalidClientStateProof.selector);
     }
 
     function preConfirmValidProofs() public {
@@ -258,7 +258,11 @@ contract IBCConnectionHandlerTests is TestPlus {
     }
 
     function preConfirmInvalidConnectionState() public {
-        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCConnectionLib.ErrInvalidConnectionProof.selector);
+    }
+
+    function preConfirmInvalidClientState() public {
+        vm.expectRevert(IBCConnectionLib.ErrInvalidClientStateProof.selector);
     }
 
     function test_handshake_init_ack_ok(uint64 proofHeight) public {
@@ -597,7 +601,7 @@ contract IBCConnectionHandlerTests is TestPlus {
 
         IBCMsgs.MsgConnectionOpenConfirm memory msg_confirm =
             MsgMocks.connectionOpenConfirm(clientId, connId, proofHeight);
-        preConfirmInvalidConnectionState();
+        preConfirmInvalidClientState();
         handler.connectionOpenConfirm(msg_confirm);
     }
 

@@ -1,3 +1,4 @@
+use frame_support_procedural::DebugNoBound;
 use macros::model;
 
 use crate::encoding::{Decode, DecodeErrorOf, Encode, Proto};
@@ -22,9 +23,10 @@ impl<Data: Encode<Proto>> From<ClientMessage<Data>>
     }
 }
 
-#[derive(Debug)]
+#[derive(DebugNoBound, thiserror::Error)]
 pub enum TryFromClientMessageError<Data: Decode<Proto>> {
-    Data(DecodeErrorOf<Proto, Data>),
+    #[error("error decoding `data`")]
+    Data(#[source] DecodeErrorOf<Proto, Data>),
 }
 
 impl<Data: Decode<Proto>> TryFrom<protos::ibc::lightclients::wasm::v1::ClientMessage>

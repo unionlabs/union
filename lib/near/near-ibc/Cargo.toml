@@ -12,9 +12,9 @@ near-contract-standards = { workspace = true }
 near-sdk                = { workspace = true }
 near-sdk-contract-tools = { workspace = true }
 schemars                = { workspace = true, features = ["derive"], optional = true }
-serde.workspace         = true
-serde_json.workspace    = true
-thiserror.workspace     = true
+serde                   = { workspace = true }
+serde_json              = { workspace = true }
+thiserror               = { workspace = true }
 unionlabs               = { workspace = true, features = ["near"] }
 
 [lib]

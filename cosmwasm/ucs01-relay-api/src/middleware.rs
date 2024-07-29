@@ -169,10 +169,20 @@ mod tests {
     #[test]
     fn serde_parses_memo() {
         // let memo = "\"balls\": \"string\"";
-        let memo = "{\"forward\": {\"receiver\": \"[eth_addr]\",\"port\": \"[union-eth port]\",\"channel\": \"[union-eth channel]\",\"timeout\": \"1000000\",\"retries\": 0}}";
+        let memo = r#"{"forward": {"receiver": "[eth_addr]","port": "[union-eth port]","channel": "[union-eth channel]","timeout": "1000000","retries": 0}}"#;
 
         let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
 
         dbg!(parsed);
+    }
+
+    #[test]
+    fn serde_parses_memo_without_port_as_none() {
+        // let memo = "\"balls\": \"string\"";
+        let memo = r#"{"forward":{"channel":"channel-201","receiver":"2C96e52fCE14BAa13868CA8182f8A7903e4e76E0"}}"#;
+
+        let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
+
+        assert_eq!(parsed, Memo::None {})
     }
 }

@@ -12,6 +12,11 @@ macro_rules! bounded_int {
                 pub const fn inner(self) -> $ty {
                     self.0
                 }
+
+                #[must_use]
+                pub fn add(&self, other: &$ty) -> Self {
+                    Self::new(self.inner() + other).expect("arithmetic overflow")
+                }
             }
 
             impl<const MIN: $ty, const MAX: $ty> core::fmt::Debug for $Struct<MIN, MAX> {
@@ -62,7 +67,7 @@ macro_rules! bounded_int {
 
             impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
                 pub const fn new(n: $ty) -> Result<Self, BoundedIntError<$ty>> {
-                    const {MIN < MAX};
+                    const { assert!(MIN < MAX) };
 
                     if n >= MIN && n <= MAX {
                         Ok(Self(n))
@@ -73,17 +78,6 @@ macro_rules! bounded_int {
                             found: n,
                         })
                     }
-                }
-            }
-
-            #[cfg(feature = "arbitrary")]
-            impl<'a, const MIN: $ty, const MAX: $ty> arbitrary::Arbitrary<'a> for $Struct<MIN, MAX> {
-                fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-
-                    let inner: $ty = u.int_in_range(MIN..=MAX)?;
-
-                    Ok(Self::new(inner).expect("value is within bounds"))
-
                 }
             }
 

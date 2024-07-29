@@ -875,7 +875,7 @@ pub mod glue {
             fallback: false,
         }
     }
-    ///The parsed JSON ABI of the contract.
+    /// The parsed JSON ABI of the contract.
     #[cfg(feature = "providers")]
     pub static GLUE_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(__abi);
@@ -975,7 +975,7 @@ pub mod glue {
             let deployer = ::ethers::contract::ContractDeployer::new(deployer);
             Ok(deployer)
         }
-        ///Calls the contract's `typesTelescope` (0x4652dc1f) function
+        /// Calls the contract's `typesTelescope` (0x4652dc1f) function
         pub fn types_telescope(
             &self,
             p0: IbcCoreConnectionV1ConnectionEndData,
@@ -1007,7 +1007,7 @@ pub mod glue {
             Self::new(contract.address(), contract.client())
         }
     }
-    ///Container type for all input parameters for the `typesTelescope` function with signature `typesTelescope((string,uint64,uint64,uint64,(uint64,uint64),(uint64,uint64)),(uint64,(bytes),bytes),((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes),((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes),(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[]),(uint64,uint64),(uint64,bytes32,bytes32),(uint256,uint256),(uint8,int64,int64,(bytes,(uint32,bytes)),string),(string,(uint64,uint64),(int64,int32),(int64,int32),(int64,int32),(uint64,uint64),(uint64,uint64),((uint8,uint8,uint8,uint8,bytes),(int32[],int32,int32,int32,bytes,uint8),int32,int32)[],string[],bool,bool),((int64,int64),(bytes),bytes),((((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes),(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[])),((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64),(uint64,uint64),((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64)),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))[]),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))[],(uint8,bytes,bytes)[]))[]),(string,(string,string[])[],uint8,(string,string,(bytes)),uint64))` and selector `0x4652dc1f`
+    /// Container type for all input parameters for the `typesTelescope` function with signature `typesTelescope((string,uint64,uint64,uint64,(uint64,uint64),(uint64,uint64)),(uint64,(bytes),bytes),((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes),((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes),(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[]),(uint64,uint64),(uint64,bytes32,bytes32),(uint256,uint256),(uint8,int64,int64,(bytes,(uint32,bytes)),string),(string,(uint64,uint64),(int64,int32),(int64,int32),(int64,int32),(uint64,uint64),(uint64,uint64),((uint8,uint8,uint8,uint8,bytes),(int32[],int32,int32,int32,bytes,uint8),int32,int32)[],string[],bool,bool),((int64,int64),(bytes),bytes),((((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes),(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[])),((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64),(uint64,uint64),((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64)),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))[]),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))[],(uint8,bytes,bytes)[]))[]),(string,(string,string[])[],uint8,(string,string,(bytes)),uint64))` and selector `0x4652dc1f`
     #[derive(Clone, ::ethers::contract::EthCall, ::ethers::contract::EthDisplay)]
     #[ethcall(
         name = "typesTelescope",
@@ -1029,7 +1029,7 @@ pub mod glue {
         pub IbcCoreConnectionV1ConnectionEndData,
         pub IbcCoreConnectionV1ConnectionEndData,
     );
-    ///`CosmosIcs23V1BatchEntryData((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))`
+    /// `CosmosIcs23V1BatchEntryData((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1044,7 +1044,7 @@ pub mod glue {
         pub exist: CosmosIcs23V1ExistenceProofData,
         pub nonexist: CosmosIcs23V1NonExistenceProofData,
     }
-    ///`CosmosIcs23V1BatchProofData(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))[])`
+    /// `CosmosIcs23V1BatchProofData(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))[])`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1058,7 +1058,7 @@ pub mod glue {
     pub struct CosmosIcs23V1BatchProofData {
         pub entries: ::std::vec::Vec<CosmosIcs23V1BatchEntryData>,
     }
-    ///`CosmosIcs23V1CommitmentProofData((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))[]),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))[],(uint8,bytes,bytes)[]))`
+    /// `CosmosIcs23V1CommitmentProofData((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))[]),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))[],(uint8,bytes,bytes)[]))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1075,7 +1075,7 @@ pub mod glue {
         pub batch: CosmosIcs23V1BatchProofData,
         pub compressed: CosmosIcs23V1CompressedBatchProofData,
     }
-    ///`CosmosIcs23V1CompressedBatchEntryData((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))`
+    /// `CosmosIcs23V1CompressedBatchEntryData((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1090,7 +1090,7 @@ pub mod glue {
         pub exist: CosmosIcs23V1CompressedExistenceProofData,
         pub nonexist: CosmosIcs23V1CompressedNonExistenceProofData,
     }
-    ///`CosmosIcs23V1CompressedBatchProofData(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))[],(uint8,bytes,bytes)[])`
+    /// `CosmosIcs23V1CompressedBatchProofData(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))[],(uint8,bytes,bytes)[])`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1105,7 +1105,7 @@ pub mod glue {
         pub entries: ::std::vec::Vec<CosmosIcs23V1CompressedBatchEntryData>,
         pub lookup_inners: ::std::vec::Vec<CosmosIcs23V1InnerOpData>,
     }
-    ///`CosmosIcs23V1CompressedExistenceProofData(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])`
+    /// `CosmosIcs23V1CompressedExistenceProofData(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1122,7 +1122,7 @@ pub mod glue {
         pub leaf: CosmosIcs23V1LeafOpData,
         pub path: ::std::vec::Vec<i32>,
     }
-    ///`CosmosIcs23V1CompressedNonExistenceProofData(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]))`
+    /// `CosmosIcs23V1CompressedNonExistenceProofData(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1138,7 +1138,7 @@ pub mod glue {
         pub left: CosmosIcs23V1CompressedExistenceProofData,
         pub right: CosmosIcs23V1CompressedExistenceProofData,
     }
-    ///`CosmosIcs23V1ExistenceProofData(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])`
+    /// `CosmosIcs23V1ExistenceProofData(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1155,7 +1155,7 @@ pub mod glue {
         pub leaf: CosmosIcs23V1LeafOpData,
         pub path: ::std::vec::Vec<CosmosIcs23V1InnerOpData>,
     }
-    ///`CosmosIcs23V1InnerOpData(uint8,bytes,bytes)`
+    /// `CosmosIcs23V1InnerOpData(uint8,bytes,bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1171,7 +1171,7 @@ pub mod glue {
         pub prefix: ::ethers::core::types::Bytes,
         pub suffix: ::ethers::core::types::Bytes,
     }
-    ///`CosmosIcs23V1InnerSpecData(int32[],int32,int32,int32,bytes,uint8)`
+    /// `CosmosIcs23V1InnerSpecData(int32[],int32,int32,int32,bytes,uint8)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1190,7 +1190,7 @@ pub mod glue {
         pub empty_child: ::ethers::core::types::Bytes,
         pub hash: u8,
     }
-    ///`CosmosIcs23V1LeafOpData(uint8,uint8,uint8,uint8,bytes)`
+    /// `CosmosIcs23V1LeafOpData(uint8,uint8,uint8,uint8,bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1208,7 +1208,7 @@ pub mod glue {
         pub length: u8,
         pub prefix: ::ethers::core::types::Bytes,
     }
-    ///`CosmosIcs23V1NonExistenceProofData(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]))`
+    /// `CosmosIcs23V1NonExistenceProofData(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1224,7 +1224,7 @@ pub mod glue {
         pub left: CosmosIcs23V1ExistenceProofData,
         pub right: CosmosIcs23V1ExistenceProofData,
     }
-    ///`CosmosIcs23V1ProofSpecData((uint8,uint8,uint8,uint8,bytes),(int32[],int32,int32,int32,bytes,uint8),int32,int32)`
+    /// `CosmosIcs23V1ProofSpecData((uint8,uint8,uint8,uint8,bytes),(int32[],int32,int32,int32,bytes,uint8),int32,int32)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1241,7 +1241,7 @@ pub mod glue {
         pub max_depth: i32,
         pub min_depth: i32,
     }
-    ///`GoogleProtobufDurationData(int64,int32)`
+    /// `GoogleProtobufDurationData(int64,int32)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1256,7 +1256,7 @@ pub mod glue {
         pub seconds: i64,
         pub nanos: i32,
     }
-    ///`IbcCoreCommitmentV1MerkleProofData(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))[]),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))[],(uint8,bytes,bytes)[]))[])`
+    /// `IbcCoreCommitmentV1MerkleProofData(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),(uint8,bytes,bytes)[])))[]),(((bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[]),(bytes,bytes,(uint8,uint8,uint8,uint8,bytes),int32[])))[],(uint8,bytes,bytes)[]))[])`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1270,7 +1270,7 @@ pub mod glue {
     pub struct IbcCoreCommitmentV1MerkleProofData {
         pub proofs: ::std::vec::Vec<CosmosIcs23V1CommitmentProofData>,
     }
-    ///`IbcCoreCommitmentV1MerkleRootData(bytes)`
+    /// `IbcCoreCommitmentV1MerkleRootData(bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1284,7 +1284,7 @@ pub mod glue {
     pub struct IbcCoreCommitmentV1MerkleRootData {
         pub hash: ::ethers::core::types::Bytes,
     }
-    ///`IbcLightclientsTendermintV1ClientStateData(string,(uint64,uint64),(int64,int32),(int64,int32),(int64,int32),(uint64,uint64),(uint64,uint64),((uint8,uint8,uint8,uint8,bytes),(int32[],int32,int32,int32,bytes,uint8),int32,int32)[],string[],bool,bool)`
+    /// `IbcLightclientsTendermintV1ClientStateData(string,(uint64,uint64),(int64,int32),(int64,int32),(int64,int32),(uint64,uint64),(uint64,uint64),((uint8,uint8,uint8,uint8,bytes),(int32[],int32,int32,int32,bytes,uint8),int32,int32)[],string[],bool,bool)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1308,7 +1308,7 @@ pub mod glue {
         pub allow_update_after_expiry: bool,
         pub allow_update_after_misbehaviour: bool,
     }
-    ///`IbcLightclientsTendermintV1ConsensusStateData((int64,int64),(bytes),bytes)`
+    /// `IbcLightclientsTendermintV1ConsensusStateData((int64,int64),(bytes),bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1324,7 +1324,7 @@ pub mod glue {
         pub root: IbcCoreCommitmentV1MerkleRootData,
         pub next_validators_hash: ::ethers::core::types::Bytes,
     }
-    ///`IbcLightclientsTendermintV1FractionData(uint64,uint64)`
+    /// `IbcLightclientsTendermintV1FractionData(uint64,uint64)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1339,7 +1339,7 @@ pub mod glue {
         pub numerator: u64,
         pub denominator: u64,
     }
-    ///`IbcLightclientsTendermintV1HeaderData((((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes),(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[])),((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64),(uint64,uint64),((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64))`
+    /// `IbcLightclientsTendermintV1HeaderData((((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes),(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[])),((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64),(uint64,uint64),((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1356,7 +1356,7 @@ pub mod glue {
         pub trusted_height: IbcCoreClientV1HeightData,
         pub trusted_validators: TendermintTypesValidatorSetData,
     }
-    ///`OptimizedConsensusState(uint64,bytes32,bytes32)`
+    /// `OptimizedConsensusState(uint64,bytes32,bytes32)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1372,7 +1372,7 @@ pub mod glue {
         pub app_hash: [u8; 32],
         pub next_validators_hash: [u8; 32],
     }
-    ///`ProcessedMoment(uint256,uint256)`
+    /// `ProcessedMoment(uint256,uint256)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1387,7 +1387,7 @@ pub mod glue {
         pub timestamp: ::ethers::core::types::U256,
         pub height: ::ethers::core::types::U256,
     }
-    ///`TendermintCryptoPublicKeyData(bytes,bytes,bytes)`
+    /// `TendermintCryptoPublicKeyData(bytes,bytes,bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1403,7 +1403,7 @@ pub mod glue {
         pub secp_25_6k_1: ::ethers::core::types::Bytes,
         pub bn_254: ::ethers::core::types::Bytes,
     }
-    ///`TendermintTypesBlockIDData(bytes,(uint32,bytes))`
+    /// `TendermintTypesBlockIDData(bytes,(uint32,bytes))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1418,7 +1418,7 @@ pub mod glue {
         pub hash: ::ethers::core::types::Bytes,
         pub part_set_header: TendermintTypesPartSetHeaderData,
     }
-    ///`TendermintTypesCanonicalBlockIDData(bytes,(uint32,bytes))`
+    /// `TendermintTypesCanonicalBlockIDData(bytes,(uint32,bytes))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1433,7 +1433,7 @@ pub mod glue {
         pub hash: ::ethers::core::types::Bytes,
         pub part_set_header: TendermintTypesCanonicalPartSetHeaderData,
     }
-    ///`TendermintTypesCanonicalPartSetHeaderData(uint32,bytes)`
+    /// `TendermintTypesCanonicalPartSetHeaderData(uint32,bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1448,7 +1448,7 @@ pub mod glue {
         pub total: u32,
         pub hash: ::ethers::core::types::Bytes,
     }
-    ///`TendermintTypesCanonicalVoteData(uint8,int64,int64,(bytes,(uint32,bytes)),string)`
+    /// `TendermintTypesCanonicalVoteData(uint8,int64,int64,(bytes,(uint32,bytes)),string)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1466,7 +1466,7 @@ pub mod glue {
         pub block_id: TendermintTypesCanonicalBlockIDData,
         pub chain_id: ::std::string::String,
     }
-    ///`TendermintTypesCommitData(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[])`
+    /// `TendermintTypesCommitData(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[])`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1483,7 +1483,7 @@ pub mod glue {
         pub block_id: TendermintTypesBlockIDData,
         pub signatures: ::std::vec::Vec<TendermintTypesCommitSigData>,
     }
-    ///`TendermintTypesCommitSigData(uint8,bytes,(int64,int64),bytes)`
+    /// `TendermintTypesCommitSigData(uint8,bytes,(int64,int64),bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1500,7 +1500,7 @@ pub mod glue {
         pub timestamp: GoogleProtobufTimestampData,
         pub signature: ::ethers::core::types::Bytes,
     }
-    ///`TendermintTypesHeaderData((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes)`
+    /// `TendermintTypesHeaderData((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1527,7 +1527,7 @@ pub mod glue {
         pub evidence_hash: ::ethers::core::types::Bytes,
         pub proposer_address: ::ethers::core::types::Bytes,
     }
-    ///`TendermintTypesPartSetHeaderData(uint32,bytes)`
+    /// `TendermintTypesPartSetHeaderData(uint32,bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1542,7 +1542,7 @@ pub mod glue {
         pub total: u32,
         pub hash: ::ethers::core::types::Bytes,
     }
-    ///`TendermintTypesSignedHeaderData(((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes),(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[]))`
+    /// `TendermintTypesSignedHeaderData(((uint64,uint64),string,int64,(int64,int64),(bytes,(uint32,bytes)),bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes,bytes),(int64,int32,(bytes,(uint32,bytes)),(uint8,bytes,(int64,int64),bytes)[]))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1557,7 +1557,7 @@ pub mod glue {
         pub header: TendermintTypesHeaderData,
         pub commit: TendermintTypesCommitData,
     }
-    ///`Data(bytes,(bytes,bytes,bytes),int64,int64)`
+    /// `Data(bytes,(bytes,bytes,bytes),int64,int64)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1574,7 +1574,7 @@ pub mod glue {
         pub voting_power: i64,
         pub proposer_priority: i64,
     }
-    ///`TendermintTypesValidatorSetData((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64)`
+    /// `TendermintTypesValidatorSetData((bytes,(bytes,bytes,bytes),int64,int64)[],(bytes,(bytes,bytes,bytes),int64,int64),int64)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1590,7 +1590,7 @@ pub mod glue {
         pub proposer: Data,
         pub total_voting_power: i64,
     }
-    ///`TendermintVersionConsensusData(uint64,uint64)`
+    /// `TendermintVersionConsensusData(uint64,uint64)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1605,7 +1605,7 @@ pub mod glue {
         pub block: u64,
         pub app: u64,
     }
-    ///`UnionIbcLightclientsCometblsV1ClientStateData(string,uint64,uint64,uint64,(uint64,uint64),(uint64,uint64))`
+    /// `UnionIbcLightclientsCometblsV1ClientStateData(string,uint64,uint64,uint64,(uint64,uint64),(uint64,uint64))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1624,7 +1624,7 @@ pub mod glue {
         pub frozen_height: IbcCoreClientV1HeightData,
         pub latest_height: IbcCoreClientV1HeightData,
     }
-    ///`UnionIbcLightclientsCometblsV1ConsensusStateData(uint64,(bytes),bytes)`
+    /// `UnionIbcLightclientsCometblsV1ConsensusStateData(uint64,(bytes),bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

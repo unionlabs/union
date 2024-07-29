@@ -188,6 +188,7 @@
           # serde_flatten = ''#[cfg_attr(feature = "serde", serde(flatten))]'';
           serde_string = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]'';
           serde_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]'';
+          # serde_base64_opt = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt"))]'';
           serde_base64_opt_default = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]'';
           serde_inner_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]'';
           serde_hex_upper_unprefixed = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]'';
@@ -199,64 +200,84 @@
         {
           type_attribute = {
             ".google.protobuf.Any" = [ serde ];
-            ".google.protobuf.Timestamp" = [ serde ];
             ".google.protobuf.Duration" = [ serde ];
+            ".google.protobuf.Timestamp" = [ serde ];
+
             ".ibc.core.client.v1" = [ serde ];
             ".ibc.core.client.v1.Height" = [ ];
+
             ".ibc.core.commitment.v1" = [ serde ];
-            ".ibc.core.commitment.v1.MerkleRoot" = [ ];
             ".ibc.core.commitment.v1.MerklePrefix" = [ ];
+            ".ibc.core.commitment.v1.MerkleRoot" = [ ];
+
             ".ibc.core.channel.v1" = [ serde ];
             ".ibc.core.channel.v1.Channel" = [ ];
             ".ibc.core.channel.v1.Counterparty" = [ ];
+
             ".ibc.core.connection.v1" = [ serde ];
             ".ibc.core.connection.v1.ConnectionEnd" = [ ];
             ".ibc.core.connection.v1.Counterparty" = [ ];
             ".ibc.core.connection.v1.Version" = [ ];
+
             ".ibc.core.types.v1" = [ serde ];
+
+            ".ibc.applications.interchain_accounts.controller.v1" = [ serde ];
+            ".ibc.applications.interchain_accounts.v1" = [ serde ];
+
             ".ibc.applications.transfer.v1" = [ serde ];
             ".ibc.applications.transfer.v2" = [ serde ];
-            ".ibc.applications.interchain_accounts.v1" = [ serde ];
-            ".ibc.applications.interchain_accounts.controller.v1" = [ serde ];
+
             ".ibc.lightclients.wasm.v1" = [ serde ];
+
             ".ibc.lightclients.tendermint.v1.Fraction" = [ serde ];
+
             ".union.ibc.lightclients.ethereum.v1" = [ serde ];
+
             ".cosmos.ics23.v1" = [ serde ];
-            ".cosmos.ics23.v1.LeafOp" = [ ];
             ".cosmos.ics23.v1.InnerOp" = [ ];
-            ".cosmos.ics23.v1.ProofSpec" = [ ];
             ".cosmos.ics23.v1.InnerSpec" = [ ];
+            ".cosmos.ics23.v1.LeafOp" = [ ];
+            ".cosmos.ics23.v1.ProofSpec" = [ ];
+
             ".cosmos.auth.v1beta1" = [ serde ];
+
             ".cosmos.upgrade.v1beta1" = [ serde ];
+
             ".cosmos.base.v1beta1" = [ serde ];
             ".cosmos.base.query.v1beta1" = [ serde ];
+
             ".cosmos.bank.v1beta1" = [ serde ];
 
-            ".tendermint.types.SignedHeader" = [ serde ];
-            ".tendermint.types.Vote" = [ serde ];
-            ".tendermint.types.Validator" = [ serde ];
-            ".tendermint.types.ValidatorSet" = [ serde ];
-            ".tendermint.types.Header" = [ serde ];
+            ".tendermint.types.Block" = [ serde ];
+            ".tendermint.types.BlockID" = [ serde ];
             ".tendermint.types.Commit" = [ serde ];
             ".tendermint.types.CommitSig" = [ serde ];
-            ".tendermint.types.BlockID" = [ serde ];
-            ".tendermint.types.PartSetHeader" = [ serde ];
-            ".tendermint.types.Block" = [ serde ];
-            ".tendermint.types.Evidence" = [ serde ];
             ".tendermint.types.Data" = [ serde ];
-            ".tendermint.types.EvidenceList" = [ serde ];
-            ".tendermint.types.LightClientAttackEvidence" = [ serde ];
             ".tendermint.types.DuplicateVoteEvidence" = [ serde ];
+            ".tendermint.types.Evidence" = [ serde ];
+            ".tendermint.types.EvidenceList" = [ serde ];
+            ".tendermint.types.Header" = [ serde ];
             ".tendermint.types.LightBlock" = [ serde ];
+            ".tendermint.types.LightClientAttackEvidence" = [ serde ];
+            ".tendermint.types.PartSetHeader" = [ serde ];
+            ".tendermint.types.SignedHeader" = [ serde ];
+            ".tendermint.types.TxProof" = [ serde ];
+            ".tendermint.types.Validator" = [ serde ];
+            ".tendermint.types.ValidatorSet" = [ serde ];
+            ".tendermint.types.Vote" = [ serde ];
 
             ".tendermint.version.Consensus" = [ serde ];
 
+            ".tendermint.abci.ExecTxResult" = [ serde ];
+            ".tendermint.abci.Event" = [ serde ];
+            ".tendermint.abci.EventAttribute" = [ serde ];
             ".tendermint.abci.ResponseQuery" = [ serde ];
 
             ".tendermint.crypto.PublicKey" = [ serde ];
             # ".tendermint.crypto.PublicKey.sum" = [ serde ];
             ".tendermint.crypto.ProofOps" = [ serde ];
             ".tendermint.crypto.ProofOp" = [ serde ];
+            ".tendermint.crypto.Proof" = [ serde ];
 
             ".tendermint.p2p.DefaultNodeInfo" = [ serde ];
             ".tendermint.p2p.DefaultNodeInfoOther" = [ serde ];
@@ -370,6 +391,11 @@
             ".tendermint.crypto.ProofOp.key" = [ serde_base64 ];
             ".tendermint.crypto.ProofOp.data" = [ serde_base64 ];
 
+            ".tendermint.crypto.Proof.total" = [ serde_string ];
+            ".tendermint.crypto.Proof.index" = [ serde_string ];
+            ".tendermint.crypto.Proof.leaf_hash" = [ serde_base64 ];
+            ".tendermint.crypto.Proof.aunts" = [ serde_inner_base64 ];
+
             ".tendermint.p2p.DefaultNodeInfo.channels" = [ serde_hex_upper_unprefixed ];
             ".tendermint.p2p.DefaultNodeInfo.default_node_id" = [ (serde_alias "id") ];
 
@@ -388,6 +414,14 @@
             ".tendermint.types.Vote.signature" = [ serde_base64 ];
             ".tendermint.types.Vote.extension" = [ serde_base64_opt_default ];
             ".tendermint.types.Vote.extension_signature" = [ serde_base64_opt_default ];
+
+            ".tendermint.types.TxProof.root_hash" = [ serde_hex_upper_unprefixed ];
+            ".tendermint.types.TxProof.data" = [ serde_base64 ];
+
+            ".tendermint.abci.ExecTxResult.data" = [ serde_base64_opt_default ];
+            ".tendermint.abci.ExecTxResult.gas_wanted" = [ serde_string ];
+            ".tendermint.abci.ExecTxResult.gas_used" = [ serde_string ];
+
             # ".tendermint.types.Vote.timestamp" = [
             #   ''#[cfg_attr(
             #       feature = "serde",

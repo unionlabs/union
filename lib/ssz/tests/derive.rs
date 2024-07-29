@@ -14,14 +14,6 @@ fn assert_encode_decode<T: Ssz + PartialEq + Debug>(item: &T, bytes: &[u8]) {
     assert_eq!(T::from_ssz_bytes(bytes).unwrap(), *item);
 }
 
-// #[derive(PartialEq, Debug, Ssz)]
-// #[ssz(tag)]
-// enum TagEnum {
-//     A,
-//     B,
-//     C,
-// }
-
 #[derive(PartialEq, Debug, Ssz)]
 #[ssz(union)]
 enum TwoFixedUnion {
@@ -58,18 +50,6 @@ struct VariableB {
     b: u8,
 }
 
-// #[derive(PartialEq, Debug, Ssz)]
-// #[ssz(transparent)]
-// enum TwoVariableTrans {
-//     A(VariableA),
-//     B(VariableB),
-// }
-
-// #[derive(PartialEq, Debug, Ssz)]
-// struct TwoVariableTransStruct {
-//     a: TwoVariableTrans,
-// }
-
 #[derive(PartialEq, Debug, Ssz)]
 #[ssz(union)]
 enum TwoVariableUnion {
@@ -81,30 +61,6 @@ enum TwoVariableUnion {
 struct TwoVariableUnionStruct {
     a: TwoVariableUnion,
 }
-
-// #[test]
-// fn two_variable_trans() {
-//     let trans_a = TwoVariableTrans::A(VariableA {
-//         a: 1,
-//         b: vec![2, 3].try_into().unwrap(),
-//     });
-//     let trans_b = TwoVariableTrans::B(VariableB {
-//         a: vec![1, 2].try_into().unwrap(),
-//         b: 3,
-//     });
-
-//     assert_encode(&trans_a, &[1, 5, 0, 0, 0, 2, 3]);
-//     assert_encode(&trans_b, &[5, 0, 0, 0, 3, 1, 2]);
-
-//     assert_encode(
-//         &TwoVariableTransStruct { a: trans_a },
-//         &[4, 0, 0, 0, 1, 5, 0, 0, 0, 2, 3],
-//     );
-//     assert_encode(
-//         &TwoVariableTransStruct { a: trans_b },
-//         &[4, 0, 0, 0, 5, 0, 0, 0, 3, 1, 2],
-//     );
-// }
 
 #[test]
 fn two_variable_union() {
@@ -129,13 +85,6 @@ fn two_variable_union() {
         &[4, 0, 0, 0, 1, 5, 0, 0, 0, 3, 1, 2],
     );
 }
-
-// #[test]
-// fn tag_enum() {
-//     assert_encode_decode(&TagEnum::A, &[0]);
-//     assert_encode_decode(&TagEnum::B, &[1]);
-//     assert_encode_decode(&TagEnum::C, &[2]);
-// }
 
 #[derive(PartialEq, Debug, Ssz)]
 #[ssz(union)]

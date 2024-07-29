@@ -58,7 +58,6 @@ impl BatchHeaderV3 {
     /// # Errors
     ///
     /// Fails if the length of the stream doesn't match the expected length.
-    ///
     pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, BatchHeaderV3DecodeError> {
         let bz = bz.as_ref();
 

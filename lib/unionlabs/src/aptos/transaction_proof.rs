@@ -1,11 +1,10 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
-use super::{
-    hash_value::HashValue,
-    transaction_info::{TransactionInfo, TryFromTransactionInfoError},
+use crate::{
+    aptos::transaction_info::{TransactionInfo, TryFromTransactionInfoError},
+    errors::{required, InvalidLength, MissingField},
+    hash::H256,
 };
-use crate::errors::{required, InvalidLength, MissingField};
 
 /// `TransactionInfo` and a `TransactionAccumulatorProof` connecting it to the ledger root.
 #[model(proto(
@@ -22,9 +21,9 @@ pub struct TransactionInfoWithProof {
     pub transaction_info: TransactionInfo,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[model]
 pub struct TransactionAccumulatorProof {
-    pub siblings: Vec<HashValue>,
+    pub siblings: Vec<H256>,
 }
 
 impl From<TransactionInfoWithProof>

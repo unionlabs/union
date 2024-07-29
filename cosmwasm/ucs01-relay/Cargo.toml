@@ -38,7 +38,7 @@ sha2               = { workspace = true }
 thiserror          = { workspace = true }
 token-factory-api  = { workspace = true }
 tracing            = { workspace = true }
-tracing-subscriber = { workspace = true, default-features = false, features = ["fmt", "ansi"] }
+tracing-subscriber = { workspace = true }
 ucs01-relay-api    = { workspace = true }
 unionlabs          = { workspace = true }
 

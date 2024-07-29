@@ -4,14 +4,14 @@ use macros::apply;
 
 use crate::{
     ibc::core::{channel::order::Order, client::height::Height},
-    id::{ChannelId, ConnectionId, PortId},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
 };
 
 macro_rules! event {
     (
-        pub enum $Enum:ident$(<$($generics:ident),+>)? {
+        pub enum $Enum:ident {
             $(
-                #[event($(generics($($struct_generics:ident),*),)? tag = $tag:literal $(, deprecated($($dep:literal),+)$(,)?)?)]
+                #[event(tag = $tag:literal $(, deprecated($($dep:literal),+)$(,)?)?)]
                 $Struct:ident {
                     $(
                         $(#[doc = $doc:literal])*
@@ -24,23 +24,15 @@ macro_rules! event {
             )+
         }
     ) => {
-        #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+        #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, enumorph::Enumorph)]
         #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
-        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-        pub enum $Enum$(<$($generics),*>)? {
+        pub enum $Enum {
             $(
-                $Struct($Struct$(<$($struct_generics),+>)?),
+                $Struct($Struct),
             )+
         }
 
-        impl$(<$($generics),+>)? IbcEvent$(<$($generics),+>)?
-        where
-            $(
-                $(
-                    $generics: FromStr<Err: std::error::Error>,
-                )+
-            )?
-        {
+        impl IbcEvent {
             #[must_use]
             pub fn try_from_tendermint_event(
                 event: crate::tendermint::abci::event::Event,
@@ -65,8 +57,7 @@ macro_rules! event {
         $(
             #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
             #[serde(deny_unknown_fields)]
-            #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-            pub struct $Struct$(<$($struct_generics),+>)? {
+            pub struct $Struct {
                 $(
                     $(#[doc = $doc])*
                     $(#[serde($serde)])?
@@ -76,14 +67,7 @@ macro_rules! event {
             }
 
 
-            impl$(<$($struct_generics),+>)? TryFrom<crate::tendermint::abci::event::Event> for $Struct$(<$($struct_generics),+>)?
-            where
-                $(
-                    $(
-                        $struct_generics: FromStr<Err: std::error::Error>,
-                    )+
-                )?
-            {
+            impl TryFrom<crate::tendermint::abci::event::Event> for $Struct {
                 type Error = TryFromTendermintEventError;
 
                 fn try_from(value: crate::tendermint::abci::event::Event) -> Result<Self, Self::Error> {
@@ -118,9 +102,9 @@ macro_rules! event {
                                                 #[allow(clippy::redundant_closure_call)]
                                                 (($parse)(&value))
                                                 .map_err(|err| {
-                                                    TryFromTendermintEventError::Parse {
+                                                    TryFromTendermintEventError::AttributeValueParse {
                                                         field: stringify!($field),
-                                                        error: err.to_string(),
+                                                        error: crate::ErrorReporter(err).to_string(),
                                                     }
                                                 })
                                             }))?
@@ -132,7 +116,7 @@ macro_rules! event {
                             "msg_index" => {}
                             key => {
                                 if !DEPRECATED.contains(&key) {
-                                    return Err(TryFromTendermintEventError::UnknownField(attr.key))
+                                    return Err(TryFromTendermintEventError::UnknownAttribute(attr.key))
                                 }
                             },
                         }
@@ -141,7 +125,7 @@ macro_rules! event {
                     Ok(Self {
                         $(
                             $field: $field
-                                .ok_or(TryFromTendermintEventError::MissingField(stringify!($field)))?
+                                .ok_or(TryFromTendermintEventError::MissingAttribute(stringify!($field)))?
                                 .1
                         ),+
                     })
@@ -151,20 +135,28 @@ macro_rules! event {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromTendermintEventError {
+    #[error("incorrect type, expected `{expected}` but found `{}`", found.ty)]
     IncorrectType {
         expected: &'static str,
         found: crate::tendermint::abci::event::Event,
     },
+    #[error(
+        "duplicate field `{key}` (first occurrence index {first_occurrence}, \
+        second occurrence index {second_occurrence})"
+    )]
     DuplicateField {
         key: String,
         first_occurrence: usize,
         second_occurrence: usize,
     },
-    MissingField(&'static str),
-    UnknownField(String),
-    Parse {
+    #[error("missing attribute `{0}`")]
+    MissingAttribute(&'static str),
+    #[error("missing attribute `{0}`")]
+    UnknownAttribute(String),
+    #[error("unable to parse value for attribute `{field}`: {error}")]
+    AttributeValueParse {
         field: &'static str,
         /// The stringified parse error.
         // NOTE: Basically just `Box<dyn Error + Send + Sync>` with `+ Clone + PartialEq`
@@ -174,37 +166,31 @@ pub enum TryFromTendermintEventError {
 
 // https://github.com/cosmos/ibc-go/blob/5c7f28634ecf9b6f275bfd5712778fedcf06d80d/docs/ibc/events.md
 #[apply(event)]
-pub enum IbcEvent<ClientId, ClientType, CounterpartyClientId> {
-    #[event(generics(ClientId, ClientType), tag = "create_client")]
+pub enum IbcEvent {
+    #[event(tag = "create_client")]
     CreateClient {
         #[parse(ClientId::from_str)]
         client_id: ClientId,
-        #[parse(ClientType::from_str)]
-        client_type: ClientType,
+        // TODO: Figure out if there's a better type we can use than string
+        client_type: String,
         #[parse(Height::from_str)]
         consensus_height: Height,
     },
 
-    #[event(
-        generics(ClientId, ClientType),
-        tag = "update_client",
-        deprecated("consensus_height", "header")
-    )]
+    #[event(tag = "update_client", deprecated("consensus_height", "header"))]
     UpdateClient {
         #[parse(ClientId::from_str)]
         client_id: ClientId,
-        #[parse(ClientType::from_str)]
-        client_type: ClientType,
+        client_type: String,
         #[parse(|s: &str| s.split(',').map(Height::from_str).collect::<Result<_, _>>())]
         consensus_heights: Vec<Height>,
     },
 
-    #[event(generics(ClientId, ClientType), tag = "client_misbehaviour")]
+    #[event(tag = "client_misbehaviour")]
     ClientMisbehaviour {
         #[parse(ClientId::from_str)]
         client_id: ClientId,
-        #[parse(ClientType::from_str)]
-        client_type: ClientType,
+        client_type: String,
         #[parse(Height::from_str)]
         consensus_height: Height,
     },
@@ -212,55 +198,48 @@ pub enum IbcEvent<ClientId, ClientType, CounterpartyClientId> {
     #[event(tag = "submit_evidence")]
     SubmitEvidence { evidence_hash: String },
 
-    #[event(
-        generics(ClientId, CounterpartyClientId),
-        tag = "connection_open_init",
-        deprecated("counterparty_connection_id")
-    )]
+    #[event(tag = "connection_open_init", deprecated("counterparty_connection_id"))]
     ConnectionOpenInit {
         #[parse(ConnectionId::from_str)]
         connection_id: ConnectionId,
         #[parse(ClientId::from_str)]
         client_id: ClientId,
-        #[parse(CounterpartyClientId::from_str)]
-        counterparty_client_id: CounterpartyClientId,
+        #[parse(ClientId::from_str)]
+        counterparty_client_id: ClientId,
     },
 
-    #[event(generics(ClientId, CounterpartyClientId), tag = "connection_open_try")]
+    #[event(tag = "connection_open_try")]
     ConnectionOpenTry {
         #[parse(ConnectionId::from_str)]
         connection_id: ConnectionId,
         #[parse(ClientId::from_str)]
         client_id: ClientId,
-        #[parse(CounterpartyClientId::from_str)]
-        counterparty_client_id: CounterpartyClientId,
+        #[parse(ClientId::from_str)]
+        counterparty_client_id: ClientId,
         #[parse(ConnectionId::from_str)]
         counterparty_connection_id: ConnectionId,
     },
 
-    #[event(generics(ClientId, CounterpartyClientId), tag = "connection_open_ack")]
+    #[event(tag = "connection_open_ack")]
     ConnectionOpenAck {
         #[parse(ConnectionId::from_str)]
         connection_id: ConnectionId,
         #[parse(ClientId::from_str)]
         client_id: ClientId,
-        #[parse(CounterpartyClientId::from_str)]
-        counterparty_client_id: CounterpartyClientId,
+        #[parse(ClientId::from_str)]
+        counterparty_client_id: ClientId,
         #[parse(ConnectionId::from_str)]
         counterparty_connection_id: ConnectionId,
     },
 
-    #[event(
-        generics(ClientId, CounterpartyClientId),
-        tag = "connection_open_confirm"
-    )]
+    #[event(tag = "connection_open_confirm")]
     ConnectionOpenConfirm {
         #[parse(ConnectionId::from_str)]
         connection_id: ConnectionId,
         #[parse(ClientId::from_str)]
         client_id: ClientId,
-        #[parse(CounterpartyClientId::from_str)]
-        counterparty_client_id: CounterpartyClientId,
+        #[parse(ClientId::from_str)]
+        counterparty_client_id: ClientId,
         #[parse(ConnectionId::from_str)]
         counterparty_connection_id: ConnectionId,
     },
@@ -450,9 +429,8 @@ pub enum IbcEvent<ClientId, ClientType, CounterpartyClientId> {
     },
 }
 
-impl<ClientId, ClientType, CounterpartyClientId>
-    IbcEvent<ClientId, ClientType, CounterpartyClientId>
-{
+impl IbcEvent {
+    #[must_use]
     pub fn name(&self) -> &'static str {
         match self {
             IbcEvent::CreateClient(_) => "create_client",
@@ -517,8 +495,8 @@ mod tests {
                 }),
                 Ok(ConnectionOpenConfirm {
                     connection_id: "connection-11".parse().unwrap(),
-                    client_id: "08-wasm-1".to_string(),
-                    counterparty_client_id: "cometbls-new-0".to_string(),
+                    client_id: "08-wasm-1".parse().unwrap(),
+                    counterparty_client_id: "cometbls-new-0".parse().unwrap(),
                     counterparty_connection_id: "connection-6".parse().unwrap(),
                 })
             );
@@ -556,7 +534,7 @@ mod tests {
             };
 
             let expected_event = UpdateClient {
-                client_id: "client_id".to_string(),
+                client_id: "client_id".parse().unwrap(),
                 client_type: "client_type".to_string(),
                 consensus_heights: vec![Height {
                     revision_number: 1,
@@ -584,7 +562,7 @@ mod tests {
         #[test]
         fn parse() {
             assert_eq!(
-                UpdateClient::<String, String>::try_from(Event {
+                UpdateClient::try_from(Event {
                     ty: "update_client".to_string(),
                     attributes: vec![
                         EventAttribute {
@@ -609,7 +587,7 @@ mod tests {
                         },
                     ],
                 }),
-                Err(TryFromTendermintEventError::Parse {
+                Err(TryFromTendermintEventError::AttributeValueParse {
                     field: "consensus_heights",
                     error: HeightFromStrError::Invalid.to_string(),
                 })
@@ -619,7 +597,7 @@ mod tests {
         #[test]
         fn missing_field() {
             assert_eq!(
-                ConnectionOpenConfirm::<String, String>::try_from(Event {
+                ConnectionOpenConfirm::try_from(Event {
                     ty: "connection_open_confirm".to_string(),
                     attributes: vec![
                         EventAttribute {
@@ -639,7 +617,7 @@ mod tests {
                         },
                     ],
                 }),
-                Err(TryFromTendermintEventError::MissingField("client_id"))
+                Err(TryFromTendermintEventError::MissingAttribute("client_id"))
             );
         }
 
@@ -651,7 +629,7 @@ mod tests {
             };
 
             assert_eq!(
-                ConnectionOpenConfirm::<String, String>::try_from(event.clone()),
+                ConnectionOpenConfirm::try_from(event.clone()),
                 Err(TryFromTendermintEventError::IncorrectType {
                     expected: "connection_open_confirm",
                     found: event,
@@ -662,7 +640,7 @@ mod tests {
         #[test]
         fn unknown_field() {
             assert_eq!(
-                ConnectionOpenConfirm::<String, String>::try_from(Event {
+                ConnectionOpenConfirm::try_from(Event {
                     ty: "connection_open_confirm".to_string(),
                     attributes: vec![EventAttribute {
                         key: "abracadabra".to_string(),
@@ -670,7 +648,7 @@ mod tests {
                         index: true,
                     },],
                 }),
-                Err(TryFromTendermintEventError::UnknownField(
+                Err(TryFromTendermintEventError::UnknownAttribute(
                     "abracadabra".to_string()
                 ))
             );
@@ -710,9 +688,9 @@ mod tests {
             };
 
             assert_eq!(
-                CreateClient::<String, String>::try_from(create_client_event).unwrap(),
+                CreateClient::try_from(create_client_event).unwrap(),
                 CreateClient {
-                    client_id: client_id.to_owned(),
+                    client_id: client_id.parse().unwrap(),
                     client_type: client_type.to_owned(),
                     consensus_height: consensus_height.parse().unwrap(),
                 }

@@ -1,5 +1,4 @@
 use beacon_api::client::{BeaconApiClient, BlockId};
-use unionlabs::ethereum::config::Mainnet;
 
 #[tokio::main]
 async fn main() {
@@ -9,13 +8,13 @@ async fn main() {
 }
 
 async fn do_main() {
-    let client =
-        BeaconApiClient::<Mainnet>::new("https://lodestar-sepolia.chainsafe.io".to_string())
-            .await
-            .unwrap();
+    let client = BeaconApiClient::new("https://lodestar-sepolia.chainsafe.io".to_string())
+        .await
+        .unwrap();
 
     // genesis
     let block = client.block(BlockId::Slot(5772606)).await.unwrap();
+
     dbg!(block);
 
     // client.header(BlockId::Genesis).await.unwrap();

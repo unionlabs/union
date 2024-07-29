@@ -5,8 +5,12 @@ use crate::{
     ethereum::config::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES, SYNC_COMMITTEE_SIZE},
     ibc::lightclients::ethereum::{
         account_update::{AccountUpdate, TryFromAccountUpdateError},
-        light_client_update::{LightClientUpdate, TryFromLightClientUpdateError},
-        trusted_sync_committee::{TrustedSyncCommittee, TryFromTrustedSyncCommitteeError},
+        light_client_update::{
+            LightClientUpdate, TryFromLightClientUpdateError, UnboundedLightClientUpdate,
+        },
+        trusted_sync_committee::{
+            TrustedSyncCommittee, TryFromTrustedSyncCommitteeError, UnboundedTrustedSyncCommittee,
+        },
     },
 };
 
@@ -34,12 +38,16 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromHeaderError {
+    #[error(transparent)]
     MissingField(MissingField),
-    TrustedSyncCommittee(TryFromTrustedSyncCommitteeError),
-    ConsensusUpdate(TryFromLightClientUpdateError),
-    AccountUpdate(TryFromAccountUpdateError),
+    #[error("invalid `trusted_sync_committee`")]
+    TrustedSyncCommittee(#[from] TryFromTrustedSyncCommitteeError),
+    #[error("invalid `consensus_update`")]
+    ConsensusUpdate(#[from] TryFromLightClientUpdateError),
+    #[error("invalid `account_update`")]
+    AccountUpdate(#[from] TryFromAccountUpdateError),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
@@ -61,5 +69,22 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                 .try_into()
                 .map_err(TryFromHeaderError::AccountUpdate)?,
         })
+    }
+}
+
+#[model(proto(raw(protos::union::ibc::lightclients::ethereum::v1::Header), from))]
+pub struct UnboundedHeader {
+    pub trusted_sync_committee: UnboundedTrustedSyncCommittee,
+    pub consensus_update: UnboundedLightClientUpdate,
+    pub account_update: AccountUpdate,
+}
+
+impl From<UnboundedHeader> for protos::union::ibc::lightclients::ethereum::v1::Header {
+    fn from(value: UnboundedHeader) -> Self {
+        Self {
+            trusted_sync_committee: Some(value.trusted_sync_committee.into()),
+            consensus_update: Some(value.consensus_update.into()),
+            account_update: Some(value.account_update.into()),
+        }
     }
 }

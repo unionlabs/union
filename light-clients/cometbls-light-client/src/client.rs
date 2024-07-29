@@ -24,7 +24,6 @@ use unionlabs::{
             client_state::ClientState, consensus_state::ConsensusState, header::Header,
         },
     },
-    traits::ClientState as _,
 };
 
 use crate::{
@@ -170,7 +169,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         }
 
         T::verify_zkp(
-            &client_state.chain_id(),
+            &client_state.data.chain_id,
             trusted_validators_hash,
             &header.signed_header,
             &header.zero_knowledge_proof,

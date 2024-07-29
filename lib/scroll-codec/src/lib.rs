@@ -65,7 +65,6 @@ pub enum HashBatchError {
 /// # Errors
 ///
 /// Fails if the batch header can't be decoded.
-///
 pub fn hash_batch(batch_header: Vec<u8>) -> Result<H256, HashBatchError> {
     let batch_header = BatchHeaderV3::decode(batch_header)?;
     Ok(batch_header.compute_batch_hash())

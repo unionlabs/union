@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[model(proto(raw(protos::ibc::core::commitment::v1::MerkleProof), into, from))]
+// TODO: Rename to optimized merkle proof
 pub enum MerkleProof {
     Membership(ExistenceProof, ExistenceProof),
     NonMembership(NonExistenceProof, ExistenceProof),

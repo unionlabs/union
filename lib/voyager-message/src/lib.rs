@@ -1,1235 +1,460 @@
-#![feature(min_exhaustive_patterns)]
-#![allow(clippy::large_enum_variant)]
-#![warn(clippy::large_futures)]
+#![feature(trait_alias)]
 
-use std::{collections::VecDeque, fmt::Debug, str::FromStr};
+use std::{env::VarError, fmt::Debug, marker::PhantomData, time::Duration};
 
-use block_message::BlockMessage;
-use chain_utils::{
-    arbitrum::Arbitrum, berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll,
-    union::Union, wasm::Wasm, Chains,
-};
-use futures::TryFutureExt;
-use queue_msg::{
-    event, noop, queue_msg, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
-    HandleWait, Op, QueueError, QueueMessage,
-};
-use relay_message::{AnyLightClientIdentified, RelayMessage};
-use tracing::{info_span, Instrument};
-use unionlabs::{
-    ethereum::config::{Mainnet, Minimal},
-    events::{
-        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
-        ClientMisbehaviour, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
-        TimeoutPacket, UpdateClient, WriteAcknowledgement,
-    },
-    traits::{ChainIdOf, ClientIdOf, ClientTypeOf, HeightOf},
-    ClientType, WasmClientType,
+use chain_utils::BoxDynError;
+use jsonrpsee::types::{error::METHOD_NOT_FOUND_CODE, ErrorObject};
+use macros::apply;
+use queue_msg::{aggregation::SubsetOf, queue_msg, QueueError, QueueMessage};
+use reth_ipc::client::IpcClientBuilder;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::Value;
+use tracing::{debug, debug_span, error, info, trace, Instrument};
+use unionlabs::{never::Never, traits::Member, ErrorReporter};
+
+use crate::{
+    call::Call,
+    callback::Callback,
+    context::{Context, INVALID_CONFIG_EXIT_CODE, STARTUP_ERROR_EXIT_CODE},
+    data::Data,
+    module::{IModuleKindInfo, IntoRpc, ModuleInfo, ModuleKindInfo},
 };
 
-pub enum VoyagerMessage {}
+pub mod call;
+pub mod callback;
+pub mod data;
 
-impl QueueMessage for VoyagerMessage {
-    type Event = VoyagerEvent;
-    type Data = VoyagerData;
-    type Fetch = VoyagerFetch;
-    type Effect = VoyagerEffect;
-    type Wait = VoyagerWait;
-    type Aggregate = VoyagerAggregate;
+pub mod context;
+pub mod module;
+pub mod pass;
 
-    type Store = Chains;
+pub mod rpc;
+
+pub use reconnecting_jsonrpc_ws_client;
+pub use reth_ipc;
+
+pub struct VoyagerMessage<D = Value, F = Value, A = Value> {
+    #[allow(clippy::type_complexity)] // it's a phantom data bro fight me
+    __marker: PhantomData<fn() -> (D, F, A)>,
+    __unconstructable: Never,
 }
 
-pub trait FromOp<T: QueueMessage>: QueueMessage + Sized {
-    fn from_op(value: Op<T>) -> Op<Self>;
+impl<D: Member, C: Member, Cb: Member> QueueMessage for VoyagerMessage<D, C, Cb> {
+    type Call = Call<C>;
+    type Data = Data<D>;
+    type Callback = Callback<Cb>;
+
+    type Context = Context;
 }
 
-impl FromOp<RelayMessage> for VoyagerMessage {
-    fn from_op(value: Op<RelayMessage>) -> Op<Self> {
-        match value {
-            Op::Event(event) => Op::Event(VoyagerEvent::Relay(event)),
-            Op::Data(data) => Op::Data(VoyagerData::Relay(data)),
-            Op::Fetch(fetch) => Op::Fetch(VoyagerFetch::Relay(fetch)),
-            Op::Effect(msg) => Op::Effect(VoyagerEffect::Relay(msg)),
-            Op::Wait(wait) => Op::Wait(VoyagerWait::Relay(wait)),
-            Op::Defer(defer) => Op::Defer(defer),
-            Op::Repeat { times, msg } => Op::Repeat {
-                times,
-                msg: Box::new(Self::from_op(*msg)),
-            },
-            Op::Timeout {
-                timeout_timestamp,
-                msg,
-            } => Op::Timeout {
-                timeout_timestamp,
-                msg: Box::new(Self::from_op(*msg)),
-            },
-            Op::Seq(seq) => Op::Seq(seq.into_iter().map(Self::from_op).collect()),
-            Op::Conc(seq) => Op::Conc(seq.into_iter().map(Self::from_op).collect()),
-            Op::Retry { remaining, msg } => Op::Retry {
-                remaining,
-                msg: Box::new(Self::from_op(*msg)),
-            },
-            Op::Aggregate {
-                queue,
-                data,
-                receiver,
-            } => Op::Aggregate {
-                queue: queue.into_iter().map(Self::from_op).collect(),
-                data: data.into_iter().map(VoyagerData::Relay).collect(),
-                receiver: VoyagerAggregate::Relay(receiver),
-            },
-            Op::Race(seq) => Op::Race(seq.into_iter().map(Self::from_op).collect()),
-            Op::Void(msg) => Op::Void(Box::new(Self::from_op(*msg))),
-            Op::Noop => noop(),
-        }
+/// Error code for fatal errors. If a plugin responds with this error code, it will be treated as failed and not retried.
+pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
+
+pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> QueueError {
+    match error {
+        jsonrpsee::core::client::Error::Call(error) => error_object_to_queue_error(error),
+        value => QueueError::Retry(Box::new(value)),
     }
 }
 
-impl FromOp<BlockMessage> for VoyagerMessage {
-    fn from_op(value: Op<BlockMessage>) -> Op<Self> {
-        match value {
-            Op::Data(data) => Op::Data(VoyagerData::Block(data)),
-            Op::Fetch(fetch) => Op::Fetch(VoyagerFetch::Block(fetch)),
-            Op::Wait(wait) => Op::Wait(VoyagerWait::Block(wait)),
-            Op::Defer(defer) => Op::Defer(defer),
-            Op::Repeat { times, msg } => Op::Repeat {
-                times,
-                msg: Box::new(Self::from_op(*msg)),
-            },
-            Op::Timeout {
-                timeout_timestamp,
-                msg,
-            } => Op::Timeout {
-                timeout_timestamp,
-                msg: Box::new(Self::from_op(*msg)),
-            },
-            Op::Seq(seq) => Op::Seq(seq.into_iter().map(Self::from_op).collect()),
-            Op::Conc(seq) => Op::Conc(seq.into_iter().map(Self::from_op).collect()),
-            Op::Race(seq) => Op::Race(seq.into_iter().map(Self::from_op).collect()),
-            Op::Retry { remaining, msg } => Op::Retry {
-                remaining,
-                msg: Box::new(Self::from_op(*msg)),
-            },
-            Op::Aggregate {
-                queue,
-                data,
-                receiver,
-            } => Op::Aggregate {
-                queue: queue.into_iter().map(Self::from_op).collect(),
-                data: data.into_iter().map(VoyagerData::Block).collect(),
-                receiver: VoyagerAggregate::Block(receiver),
-            },
-            Op::Void(msg) => Op::Void(Box::new(Self::from_op(*msg))),
-            Op::Noop => noop(),
-        }
+pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
+    if error.code() == FATAL_JSONRPC_ERROR_CODE || error.code() == METHOD_NOT_FOUND_CODE {
+        QueueError::Fatal(Box::new(error.into_owned()))
+    } else {
+        QueueError::Retry(Box::new(error.into_owned()))
     }
 }
 
-#[queue_msg]
-pub enum VoyagerEffect {
-    Block(<BlockMessage as QueueMessage>::Effect),
-    Relay(<RelayMessage as QueueMessage>::Effect),
-}
+macro_rules! str_newtype {
+    (
+        $(#[doc = $doc:literal])+
+        $vis:vis struct $Struct:ident;
+    ) => {
+        #[derive(macros::Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        // I tested this and apparently it's not required (newtype is automatically transparent?) but
+        // keeping it here for clarity
+        #[serde(transparent)]
+        #[debug("{}({:?})", stringify!($Struct), self.0)]
+        $vis struct $Struct<'a>(#[doc(hidden)] ::std::borrow::Cow<'a, str>);
 
-impl HandleEffect<VoyagerMessage> for VoyagerEffect {
-    async fn handle(
-        self,
-        store: &<VoyagerMessage as QueueMessage>::Store,
-    ) -> Result<Op<VoyagerMessage>, QueueError> {
-        Ok(match self {
-            Self::Relay(msg) => {
-                Box::pin(msg.handle(store))
-                    .map_ok(VoyagerMessage::from_op)
-                    .instrument(info_span!("relay"))
-                    .await?
-            }
-        })
-    }
-}
-
-#[queue_msg]
-pub enum VoyagerWait {
-    Block(<BlockMessage as QueueMessage>::Wait),
-    Relay(<RelayMessage as QueueMessage>::Wait),
-}
-
-impl HandleWait<VoyagerMessage> for VoyagerWait {
-    async fn handle(
-        self,
-        store: &<VoyagerMessage as QueueMessage>::Store,
-    ) -> Result<Op<VoyagerMessage>, QueueError> {
-        Ok(match self {
-            Self::Block(msg) => {
-                Box::pin(HandleWait::<BlockMessage>::handle(msg, store))
-                    .map_ok(VoyagerMessage::from_op)
-                    .instrument(info_span!("block"))
-                    .await?
-            }
-            Self::Relay(msg) => {
-                Box::pin(HandleWait::<RelayMessage>::handle(msg, store))
-                    .map_ok(VoyagerMessage::from_op)
-                    .instrument(info_span!("relay"))
-                    .await?
-            }
-        })
-    }
-}
-
-#[queue_msg]
-pub enum VoyagerAggregate {
-    Block(<BlockMessage as QueueMessage>::Aggregate),
-    Relay(<RelayMessage as QueueMessage>::Aggregate),
-}
-
-impl HandleAggregate<VoyagerMessage> for VoyagerAggregate {
-    fn handle(
-        self,
-        data: VecDeque<<VoyagerMessage as QueueMessage>::Data>,
-    ) -> Result<Op<VoyagerMessage>, QueueError> {
-        match self {
-            Self::Block(aggregate) => {
-                let _span = info_span!("block").entered();
-                aggregate
-                    .handle(
-                        data.into_iter()
-                            .map(|d| match d {
-                                VoyagerData::Block(d) => d,
-                                VoyagerData::Relay(_) => {
-                                    panic!("found relay message in data of block message aggregate")
-                                }
-                            })
-                            .collect(),
-                    )
-                    .map(VoyagerMessage::from_op)
-            }
-            Self::Relay(aggregate) => {
-                let _span = info_span!("relay").entered();
-                aggregate
-                    .handle(
-                        data.into_iter()
-                            .map(|d| match d {
-                                VoyagerData::Block(_) => {
-                                    panic!("found block message in data of relay message aggregate")
-                                }
-                                VoyagerData::Relay(d) => d,
-                            })
-                            .collect(),
-                    )
-                    .map(VoyagerMessage::from_op)
+        impl<'a> ::core::fmt::Display for $Struct<'a> {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                ::core::fmt::Display::fmt(&self.0, f)
             }
         }
-    }
-}
 
-#[queue_msg]
-pub enum VoyagerEvent {
-    Block(<BlockMessage as QueueMessage>::Event),
-    Relay(<RelayMessage as QueueMessage>::Event),
-}
-
-impl HandleEvent<VoyagerMessage> for VoyagerEvent {
-    fn handle(
-        self,
-        store: &<VoyagerMessage as QueueMessage>::Store,
-    ) -> Result<Op<VoyagerMessage>, QueueError> {
-        match self {
-            Self::Relay(event) => {
-                let _span = info_span!("relay").entered();
-                HandleEvent::handle(event, store).map(VoyagerMessage::from_op)
+        #[allow(unused)]
+        impl $Struct<'static> {
+            pub const fn new_static(ibc_interface: &'static str) -> Self {
+                Self(::std::borrow::Cow::Borrowed(ibc_interface))
             }
         }
-    }
-}
 
-#[queue_msg]
-pub enum VoyagerData {
-    Block(<BlockMessage as QueueMessage>::Data),
-    Relay(<RelayMessage as QueueMessage>::Data),
-}
 
-impl HandleData<VoyagerMessage> for VoyagerData {
-    fn handle(
-        self,
-        store: &<VoyagerMessage as QueueMessage>::Store,
-    ) -> Result<Op<VoyagerMessage>, QueueError> {
-        Ok(match self {
-            Self::Block(data) => {
-                macro_rules! block_data_to_relay_event {
-                    ($($Variant:ident => {$(
-                        $ClientType:pat => ($Hc:ty, $BlockHc:ty, $Tr:ty),
-                    )*})*) => {
-                        match data.handle(store)? {
-                            $(Op::Data(block_message::AnyChainIdentified::$Variant(
-                                block_message::Identified {
-                                    chain_id,
-                                    t: block_message::data::Data::IbcEvent(ibc_event),
-                                },
-                            )) => <VoyagerMessage as FromOp<RelayMessage>>::from_op(
-                                match ibc_event.client_type {
-                                    $($ClientType => {
-                                        mk_relay_event::<$Hc, $BlockHc, $Tr>(chain_id, ibc_event)
-                                    })*
-                                    _ => unimplemented!(),
-                                },
-                            ),)*
-                            msg => VoyagerMessage::from_op(msg),
-                        }
-                    };
+        #[allow(unused)]
+        impl<'a> $Struct<'a> {
+            pub fn new(s: impl Into<::std::borrow::Cow<'a, str>>) -> Self {
+                Self(s.into())
+            }
+
+            pub fn into_static(self) -> $Struct<'static> {
+                $Struct(match self.0 {
+                    ::std::borrow::Cow::Borrowed(x) => ::std::borrow::Cow::Owned(x.to_owned()),
+                    ::std::borrow::Cow::Owned(x) => ::std::borrow::Cow::Owned(x),
+                })
+            }
+
+            pub fn as_str(&self) -> &str {
+                self.0.as_ref()
+            }
+
+
+            /// Borrow this [`
+            #[doc = stringify!($Struct)]
+            /// `], returning a new owned value pointing to the same data.
+            ///
+            /// ```
+            #[doc = concat!("let t = ", stringify!($Struct), "::new_static(\"static\");")]
+            ///
+            /// takes_ownership(t.borrow());
+            /// takes_ownership(t);
+            ///
+            #[doc = concat!("fn takes_ownership<'a>(c: ", stringify!($Struct), "<'a>) {}")]
+            /// ```
+            pub fn borrow<'b>(&'a self) -> $Struct<'b>
+            where
+                'a: 'b,
+            {
+                use std::borrow::Cow;
+
+                match self.0 {
+                    Cow::Borrowed(s) => Self(Cow::Borrowed(s)),
+                    Cow::Owned(ref s) => Self(Cow::Borrowed(s.as_str())),
                 }
-
-                let _span = info_span!("block").entered();
-
-                block_data_to_relay_event!(
-                    Cosmos => {
-                        ClientType::Wasm(WasmClientType::Cometbls)        => (Wasm<Cosmos>, Cosmos, Union),
-                        ClientType::Tendermint                            => (Cosmos, Cosmos, Cosmos),
-                        ClientType::_11Cometbls                           => (Cosmos, Cosmos, Union),
-                    }
-                    Union => {
-                        ClientType::Wasm(WasmClientType::EthereumMinimal) => (Wasm<Union>, Union, Ethereum<Minimal>),
-                        ClientType::Wasm(WasmClientType::EthereumMainnet) => (Wasm<Union>, Union, Ethereum<Mainnet>),
-                        ClientType::Wasm(WasmClientType::Scroll)          => (Wasm<Union>, Union, Scroll),
-                        ClientType::Wasm(WasmClientType::Arbitrum)        => (Wasm<Union>, Union, Arbitrum),
-                        ClientType::Wasm(WasmClientType::Berachain)       => (Wasm<Union>, Union, Berachain),
-                        ClientType::Tendermint                            => (Union, Union, Wasm<Cosmos>),
-                    }
-                    EthMainnet => {
-                        ClientType::Cometbls                              => (Ethereum<Mainnet>, Ethereum<Mainnet>, Wasm<Union>),
-                    }
-                    EthMinimal => {
-                        ClientType::Cometbls                              => (Ethereum<Minimal>, Ethereum<Minimal>, Wasm<Union>),
-                    }
-                    Scroll => {
-                        ClientType::Cometbls                              => (Scroll, Scroll, Wasm<Union>),
-                    }
-                    Arbitrum => {
-                        ClientType::Cometbls                              => (Arbitrum, Arbitrum, Wasm<Union>),
-                    }
-                    Berachain => {
-                        ClientType::Cometbls                              => (Berachain, Berachain, Wasm<Union>),
-                    }
-                )
             }
-            Self::Relay(data) => {
-                let _span = info_span!("relay").entered();
-                VoyagerMessage::from_op(data.handle(store)?)
-            }
-        })
-    }
+        }
+    };
 }
+
+/// Represents the IBC interface of a chain. Since multiple chains with
+/// different consensus mechanisms can have the same execution environment, this
+/// value is used to describe how the IBC state is stored on-chain and how the
+/// IBC stack is to be interacted with.
+#[apply(str_newtype)]
+pub struct IbcInterface;
+
+/// Well-known IBC interfaces, defined as constants for reusability and to allow
+/// for pattern matching.
+impl IbcInterface<'static> {
+    /// Native light clients in ibc-go, through the client v1 router. This
+    /// entrypoint uses protobuf [`Any`] wrapping to route to the correct
+    /// module, such as "/ibc.lightclients.tendermint.v1.ClientState" for native
+    /// 07-tendermint clients.
+    ///
+    /// [`Any`]: https://protobuf.dev/programming-guides/proto3/#any
+    pub const IBC_GO_V8_NATIVE: &'static str = "ibc-go-v8/native";
+
+    /// 08-wasm light clients in ibc-go, through the client v1 router. Similar
+    /// to the ibc-go-v8/native entrypoint, this module also uses [`Any`]
+    /// wrapping for client routing, however, there is another level of
+    /// indirection, since the `Any` routing only routes to the wasm module. All
+    /// state for wasm clients is [wrapped](wasm-protos), with the internal
+    /// state being opaque bytes to be interpreted by the light client.
+    ///
+    /// [`Any`]: https://protobuf.dev/programming-guides/proto3/#any
+    /// [wasm-protos]: https://github.com/cosmos/ibc-go/blob/release/v8.4.x/proto/ibc/lightclients/wasm/v1/wasm.proto
+    pub const IBC_GO_V8_08_WASM: &'static str = "ibc-go-v8/08-wasm";
+
+    /// Solidity light clients, run via Union's IBC solidity stack. This stack
+    /// is fully virtualized in the EVM, and as such can be run on any chain
+    /// running the EVM as part of their execution layer (ethereum, ethereum
+    /// L2s, berachain, etc).
+    pub const IBC_SOLIDITY: &'static str = "ibc-solidity";
+
+    pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
+
+    // lots more to come - near, fuel - stay tuned
+}
+
+/// Newtype for client types. Clients of the same type have the same client
+/// state, consensus state, and header (client update) types.
+#[apply(str_newtype)]
+pub struct ClientType;
+
+/// Well-known client types, defined as constants for reusability and to allow
+/// for pattern matching.
+impl ClientType<'static> {
+    /// A client tracking CometBLS consensus.
+    pub const COMETBLS: &'static str = "cometbls";
+
+    /// A client tracking vanilla Tendermint (CometBFT).
+    pub const TENDERMINT: &'static str = "tendermint";
+
+    /// A client tracking the Ethereum beacon chain consensus, with the mainnet
+    /// configuration.
+    pub const ETHEREUM_MAINNET: &'static str = "ethereum-mainnet";
+
+    /// A client tracking the Ethereum beacon chain consensus, with the minimal
+    /// configuration.
+    pub const ETHEREUM_MINIMAL: &'static str = "ethereum-minimal";
+
+    /// A client tracking the state of the Scroll zkevm L2, settling on
+    /// Ethereum.
+    pub const SCROLL: &'static str = "scroll";
+
+    /// A client tracking the state of the Arbitrum optimistic L2, settling on
+    /// Ethereum.
+    pub const ARBITRUM: &'static str = "arbitrum";
+
+    /// A client tracking the state of a BeaconKit chain.
+    pub const BEACON_KIT: &'static str = "beacon-kit";
+
+    /// A client tracking the state of a Movement chain.
+    pub const MOVEMENT: &'static str = "movement";
+
+    // lots more to come - near, linea, polygon - stay tuned
+}
+
+/// Identifier used to uniquely identify the chain, as provided by the chain itself.
+///
+/// # Examples
+///
+/// 1 -> ethereum mainnet
+/// 11155111 -> ethereum sepolia testnet
+/// union-testnet-8 -> union testnet
+/// stargaze-1 -> stargaze mainnet
+#[apply(str_newtype)]
+pub struct ChainId;
 
 #[queue_msg]
-pub enum VoyagerFetch {
-    Block(<BlockMessage as QueueMessage>::Fetch),
-    Relay(<RelayMessage as QueueMessage>::Fetch),
+pub struct PluginMessage<T = serde_json::Value> {
+    pub plugin: String,
+    pub message: T,
 }
 
-impl HandleFetch<VoyagerMessage> for VoyagerFetch {
-    async fn handle(
-        self,
-        store: &<VoyagerMessage as QueueMessage>::Store,
-    ) -> Result<Op<VoyagerMessage>, QueueError> {
-        match self {
-            Self::Block(fetch) => {
-                fetch
-                    .handle(store)
-                    .map_ok(VoyagerMessage::from_op)
-                    .instrument(info_span!("block"))
-                    .await
+impl<T, U> SubsetOf<Data<T>> for PluginMessage<U>
+where
+    U: SubsetOf<T>,
+{
+    fn try_from_super(data: Data<T>) -> Result<Self, Data<T>> {
+        match data {
+            Data::Plugin(PluginMessage { plugin, message }) => match U::try_from_super(message) {
+                Ok(message) => Ok(PluginMessage { plugin, message }),
+                Err(message) => Err(Data::plugin(plugin, message)),
+            },
+            data => Err(data),
+        }
+    }
+
+    fn into_super(self) -> Data<T> {
+        Data::<T>::plugin(self.plugin, self.message.into_super())
+    }
+}
+
+macro_rules! top_level_identifiable_enum {
+    (
+        $(#[$meta:meta])*
+        pub enum $Enum:ident$(<$Inner:ident = serde_json::Value>)? {
+            $(
+                $(#[$inner_meta:meta])*
+                $Variant:ident($VariantInner:ty$(,)?),
+            )*
+        }
+    ) => {
+        $(#[$meta])*
+        pub enum $Enum$(<$Inner = serde_json::Value>)? {
+            $(
+                $(#[$inner_meta])*
+                $Variant($VariantInner),
+            )*
+        }
+
+        $(
+            impl<$Inner> $Enum<$Inner> {
+                pub fn plugin(plugin: impl Into<String>, message: impl Into<$Inner>) -> $Enum<$Inner> {
+                    Self::Plugin(PluginMessage { plugin: plugin.into(), message: message.into() }).into()
+                }
             }
-            Self::Relay(fetch) => {
-                Box::pin(fetch.handle(store))
-                    .map_ok(VoyagerMessage::from_op)
-                    .instrument(info_span!("relay"))
-                    .await
-            }
+        )*
+    };
+}
+pub(crate) use top_level_identifiable_enum;
+
+#[derive(clap::Subcommand)]
+pub enum DefaultCmd {}
+
+pub async fn default_subcommand_handler<T>(_: T, cmd: DefaultCmd) -> Result<(), Never> {
+    match cmd {}
+}
+
+pub fn init_log() {
+    enum LogFormat {
+        Text,
+        Json,
+    }
+
+    let format = match std::env::var("RUST_LOG_FORMAT").as_deref() {
+        Err(VarError::NotPresent) | Ok("text") => LogFormat::Text,
+        Ok("json") => LogFormat::Json,
+        Err(VarError::NotUnicode(invalid)) => {
+            eprintln!("invalid non-utf8 log format {invalid:?}, defaulting to text");
+            LogFormat::Text
+        }
+        Ok(invalid) => {
+            eprintln!("invalid log format {invalid}, defaulting to text");
+            LogFormat::Text
+        }
+    };
+
+    match format {
+        LogFormat::Text => {
+            tracing_subscriber::fmt()
+                .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+                // .with_span_events(FmtSpan::CLOSE)
+                .init();
+        }
+        LogFormat::Json => {
+            tracing_subscriber::fmt()
+                .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+                // .with_span_events(FmtSpan::CLOSE)
+                .json()
+                .init();
         }
     }
 }
 
-fn mk_relay_event<Hc, BlockHc, Tr>(
-    chain_id: ChainIdOf<Hc>,
-    ibc_event: block_message::data::ChainEvent<BlockHc>,
-) -> Op<RelayMessage>
-where
-    Hc: relay_message::ChainExt<
-        Height = HeightOf<BlockHc>,
-        ClientId = ClientIdOf<BlockHc>,
-        ClientType = ClientTypeOf<BlockHc>,
-    >,
-    BlockHc: block_message::ChainExt,
-    Tr: relay_message::ChainExt<ClientId: FromStr<Err: Debug>>,
+#[allow(async_fn_in_trait)]
+pub trait ModuleContext: Sized {
+    type Config: DeserializeOwned + Clone;
+    type Cmd: clap::Subcommand;
+    type Info: IModuleKindInfo;
 
-    AnyLightClientIdentified<relay_message::event::AnyEvent>:
-        From<relay_message::Identified<Hc, Tr, relay_message::event::Event<Hc, Tr>>>,
-{
-    event::<RelayMessage>(relay_message::id::<Hc, Tr, _>(
-        chain_id,
-        relay_message::event::IbcEvent {
-            tx_hash: ibc_event.tx_hash,
-            height: ibc_event.height,
-            event: chain_event_to_lc_event::<Hc, Tr>(ibc_event.event),
-        },
-    ))
+    async fn new(config: Self::Config) -> Result<Self, BoxDynError>;
+
+    fn info(config: Self::Config) -> ModuleInfo<Self::Info>;
+
+    async fn cmd(config: Self::Config, cmd: Self::Cmd);
 }
 
-// poor man's monad
-fn chain_event_to_lc_event<Hc, Tr>(
-    event: IbcEvent<Hc::ClientId, Hc::ClientType, String>,
-) -> IbcEvent<Hc::ClientId, Hc::ClientType, Tr::ClientId>
+#[derive(Debug, Clone)]
+pub struct ModuleServer<Ctx: ModuleContext> {
+    pub voyager_rpc_client: reconnecting_jsonrpc_ws_client::Client,
+    pub ctx: Ctx,
+}
+
+#[derive(clap::Parser)]
+enum App<Cmd: clap::Subcommand> {
+    Run {
+        socket: String,
+        voyager_socket: String,
+        config: String,
+    },
+    Info {
+        config: String,
+    },
+    Cmd {
+        #[command(subcommand)]
+        cmd: Cmd,
+        #[arg(long)]
+        config: String,
+    },
+}
+
+pub async fn run_module_server<T, D: Member, C: Member, Cb: Member>()
 where
-    Hc: relay_message::ChainExt,
-    Tr: relay_message::ChainExt<ClientId: FromStr<Err: Debug>>,
+    T: ModuleContext,
+    (T::Info, T): IntoRpc<D, C, Cb, RpcModule = ModuleServer<T>>,
 {
-    match event {
-        IbcEvent::CreateClient(CreateClient {
-            client_id,
-            client_type,
-            consensus_height,
-        }) => IbcEvent::CreateClient(CreateClient {
-            client_id,
-            client_type,
-            consensus_height,
-        }),
-        IbcEvent::UpdateClient(UpdateClient {
-            client_id,
-            client_type,
-            consensus_heights,
-        }) => IbcEvent::UpdateClient(UpdateClient {
-            client_id,
-            client_type,
-            consensus_heights,
-        }),
-        IbcEvent::ClientMisbehaviour(ClientMisbehaviour {
-            client_id,
-            client_type,
-            consensus_height,
-        }) => IbcEvent::ClientMisbehaviour(ClientMisbehaviour {
-            client_id,
-            client_type,
-            consensus_height,
-        }),
-        IbcEvent::SubmitEvidence(SubmitEvidence { evidence_hash }) => {
-            IbcEvent::SubmitEvidence(SubmitEvidence { evidence_hash })
+    init_log();
+
+    let app = <App<T::Cmd> as clap::Parser>::parse();
+
+    let parse_config = |config_str| match serde_json::from_str::<T::Config>(config_str) {
+        Ok(ok) => ok,
+        Err(err) => {
+            error!("invalid config: {}", ErrorReporter(err));
+            std::process::exit(INVALID_CONFIG_EXIT_CODE as i32);
         }
-        IbcEvent::ConnectionOpenInit(ConnectionOpenInit {
-            connection_id,
-            client_id,
-            counterparty_client_id,
-        }) => IbcEvent::ConnectionOpenInit(ConnectionOpenInit {
-            connection_id,
-            client_id,
-            counterparty_client_id: counterparty_client_id.parse().unwrap(),
-        }),
-        IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-            connection_id,
-            client_id,
-            counterparty_client_id,
-            counterparty_connection_id,
-        }) => IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-            connection_id,
-            client_id,
-            counterparty_client_id: counterparty_client_id.parse().unwrap(),
-            counterparty_connection_id,
-        }),
-        IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
-            connection_id,
-            client_id,
-            counterparty_client_id,
-            counterparty_connection_id,
-        }) => IbcEvent::ConnectionOpenAck(ConnectionOpenAck {
-            connection_id,
-            client_id,
-            counterparty_client_id: counterparty_client_id.parse().unwrap(),
-            counterparty_connection_id,
-        }),
-        IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
-            connection_id,
-            client_id,
-            counterparty_client_id,
-            counterparty_connection_id,
-        }) => IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
-            connection_id,
-            client_id,
-            counterparty_client_id: counterparty_client_id.parse().unwrap(),
-            counterparty_connection_id,
-        }),
-        IbcEvent::ChannelOpenInit(ChannelOpenInit {
-            port_id,
-            channel_id,
-            counterparty_port_id,
-            connection_id,
-            version,
-        }) => IbcEvent::ChannelOpenInit(ChannelOpenInit {
-            port_id,
-            channel_id,
-            counterparty_port_id,
-            connection_id,
-            version,
-        }),
-        IbcEvent::ChannelOpenTry(ChannelOpenTry {
-            port_id,
-            channel_id,
-            counterparty_port_id,
-            counterparty_channel_id,
-            connection_id,
-            version,
-        }) => IbcEvent::ChannelOpenTry(ChannelOpenTry {
-            port_id,
-            channel_id,
-            counterparty_port_id,
-            counterparty_channel_id,
-            connection_id,
-            version,
-        }),
-        IbcEvent::ChannelOpenAck(ChannelOpenAck {
-            port_id,
-            channel_id,
-            counterparty_port_id,
-            counterparty_channel_id,
-            connection_id,
-        }) => IbcEvent::ChannelOpenAck(ChannelOpenAck {
-            port_id,
-            channel_id,
-            counterparty_port_id,
-            counterparty_channel_id,
-            connection_id,
-        }),
-        IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
-            port_id,
-            channel_id,
-            counterparty_port_id,
-            counterparty_channel_id,
-            connection_id,
-        }) => IbcEvent::ChannelOpenConfirm(ChannelOpenConfirm {
-            port_id,
-            channel_id,
-            counterparty_port_id,
-            counterparty_channel_id,
-            connection_id,
-        }),
-        IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-            packet_data_hex,
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_ack_hex,
-            connection_id,
-        }) => IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-            packet_data_hex,
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_ack_hex,
-            connection_id,
-        }),
-        IbcEvent::RecvPacket(RecvPacket {
-            packet_data_hex,
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_channel_ordering,
-            connection_id,
-        }) => IbcEvent::RecvPacket(RecvPacket {
-            packet_data_hex,
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_channel_ordering,
-            connection_id,
-        }),
-        IbcEvent::SendPacket(SendPacket {
-            packet_data_hex,
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_channel_ordering,
-            connection_id,
-        }) => IbcEvent::SendPacket(SendPacket {
-            packet_data_hex,
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_channel_ordering,
-            connection_id,
-        }),
-        IbcEvent::AcknowledgePacket(AcknowledgePacket {
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_channel_ordering,
-            connection_id,
-        }) => IbcEvent::AcknowledgePacket(AcknowledgePacket {
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_channel_ordering,
-            connection_id,
-        }),
-        IbcEvent::TimeoutPacket(TimeoutPacket {
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_channel_ordering,
-            connection_id,
-        }) => IbcEvent::TimeoutPacket(TimeoutPacket {
-            packet_timeout_height,
-            packet_timeout_timestamp,
-            packet_sequence,
-            packet_src_port,
-            packet_src_channel,
-            packet_dst_port,
-            packet_dst_channel,
-            packet_channel_ordering,
-            connection_id,
-        }),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::marker::PhantomData;
-
-    use block_message::BlockMessage;
-    use chain_utils::{
-        berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll, union::Union,
-        wasm::Wasm,
-    };
-    use hex_literal::hex;
-    use queue_msg::{
-        aggregate, defer_relative, effect, event, fetch, repeat, seq, Op, QueueMessage,
-    };
-    use relay_message::{
-        aggregate::AggregateMsgCreateClient,
-        chain::{
-            cosmos_sdk::{
-                fetch::{AbciQueryType, FetchAbciQuery},
-                wasm::WasmConfig,
-            },
-            ethereum::EthereumConfig,
-        },
-        effect::{MsgChannelOpenInitData, MsgConnectionOpenInitData},
-        event::IbcEvent,
-        fetch::{FetchSelfClientState, FetchSelfConsensusState},
-        RelayMessage,
-    };
-    use unionlabs::{
-        ethereum::config::Minimal,
-        events::ConnectionOpenTry,
-        hash::H256,
-        ibc::core::{
-            channel::{
-                self, channel::Channel, msg_channel_open_init::MsgChannelOpenInit, order::Order,
-            },
-            commitment::merkle_prefix::MerklePrefix,
-            connection::{self, msg_connection_open_init::MsgConnectionOpenInit, version::Version},
-        },
-        ics24,
-        uint::U256,
-        QueryHeight, DELAY_PERIOD,
     };
 
-    use crate::{FromOp, VoyagerMessage};
+    match app {
+        App::Run {
+            socket,
+            voyager_socket,
+            config,
+        } => {
+            let config = parse_config(&config);
 
-    macro_rules! parse {
-        ($expr:expr) => {
-            $expr.parse().unwrap()
-        };
-    }
+            let ModuleInfo { name, kind: _ } = T::info(config.clone());
 
-    #[test]
-    fn msg_serde() {
-        let union_chain_id: String = parse!("union-devnet-1");
-        let eth_chain_id: U256 = parse!("32382");
-        let simd_chain_id: String = parse!("simd-devnet-1");
-        let scroll_chain_id: U256 = parse!("534351");
-        let stargaze_chain_id: String = parse!("stargaze-devnet-1");
-        let osmosis_chain_id: String = parse!("osmosis-devnet-1");
+            let name_ = name.clone();
+            async move {
+                let voyager_rpc_client = reconnecting_jsonrpc_ws_client::Client::new({
+                    let voyager_socket: &'static str = voyager_socket.leak();
+                    let name_ = name_.clone();
+                    move || {
+                        async move {
+                            debug!("connecting to socket at {voyager_socket}");
+                            IpcClientBuilder::default().build(voyager_socket).await
+                        }
+                        .instrument(debug_span!("voyager_ipc_client", name = %name_))
+                    }
+                });
 
-        println!("---------------------------------------");
-        println!("Union - Eth (Sending to Union) Connection Open: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(effect(
-            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-                union_chain_id.clone(),
-                MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                    client_id: parse!("08-wasm-0"),
-                    counterparty: connection::counterparty::Counterparty {
-                        client_id: parse!("cometbls-0"),
-                        connection_id: parse!(""),
-                        prefix: MerklePrefix {
-                            key_prefix: b"ibc".to_vec(),
-                        },
+                if let Err(err) = voyager_rpc_client
+                    .wait_until_connected(Duration::from_millis(500))
+                    .await
+                {
+                    error!("unable to connect to voyager socket: {err}");
+                    std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
+                };
+
+                info!("connected to voyager socket");
+
+                let module_server = match T::new(config).await {
+                    Ok(ctx) => ModuleServer {
+                        voyager_rpc_client,
+                        ctx,
                     },
-                    version: Version {
-                        identifier: "1".into(),
-                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                    },
-                    delay_period: DELAY_PERIOD,
-                }),
-            ),
-        ));
+                    Err(err) => {
+                        error!("startup error: {err:?}");
+                        std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
+                    }
+                };
 
-        println!("---------------------------------------");
-        println!("Fetch Client State: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(fetch(
-            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-                union_chain_id.clone(),
-                relay_message::fetch::Fetch::specific(FetchAbciQuery {
-                    path: ics24::Path::ClientState(ics24::ClientStatePath {
-                        client_id: parse!("client-id"),
-                    }),
-                    height: parse!("123-456"),
-                    ty: AbciQueryType::State,
-                }),
-            ),
-        ));
+                let ipc_server = reth_ipc::server::Builder::default().build(socket);
 
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Union) Channel Open: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(effect(
-            relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-                union_chain_id.clone(),
-                MsgChannelOpenInitData {
-                    msg: MsgChannelOpenInit {
-                        port_id: parse!("WASM_PORT_ID"),
-                        channel: Channel {
-                            state: channel::state::State::Init,
-                            ordering: channel::order::Order::Unordered,
-                            counterparty: channel::counterparty::Counterparty {
-                                port_id: parse!("ucs01-relay"),
-                                channel_id: parse!(""),
-                            },
-                            connection_hops: vec![parse!("connection-8")],
-                            version: "ucs01-0".to_string(),
-                        },
-                    },
-                    __marker: PhantomData,
-                },
-            ),
-        ));
+                let addr = ipc_server.endpoint();
 
-        println!("---------------------------------------");
-        println!("Eth - Union (Starting on Union) Channel Open: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(effect(
-            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-                eth_chain_id,
-                MsgChannelOpenInitData {
-                    msg: MsgChannelOpenInit {
-                        port_id: parse!("ucs01-relay"),
-                        channel: Channel {
-                            state: channel::state::State::Init,
-                            ordering: channel::order::Order::Ordered,
-                            counterparty: channel::counterparty::Counterparty {
-                                port_id: parse!("ucs01-relay"),
-                                channel_id: parse!(""),
-                            },
-                            connection_hops: vec![parse!("connection-8")],
-                            version: "ucs001-pingpong".to_string(),
-                        },
-                    },
-                    __marker: PhantomData,
-                },
-            ),
-        ));
+                let rpcs = <(T::Info, T)>::into_rpc(module_server);
 
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Eth) Connection Open: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(effect(
-            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-                eth_chain_id,
-                MsgConnectionOpenInitData(MsgConnectionOpenInit {
-                    client_id: parse!("cometbls-0"),
-                    counterparty: connection::counterparty::Counterparty {
-                        client_id: parse!("08-wasm-0"),
-                        connection_id: parse!(""),
-                        prefix: MerklePrefix {
-                            key_prefix: b"ibc".to_vec(),
-                        },
-                    },
-                    version: Version {
-                        identifier: "1".into(),
-                        features: [Order::Ordered, Order::Unordered].into_iter().collect(),
-                    },
-                    delay_period: DELAY_PERIOD,
-                }),
-            ),
-        ));
+                trace!(methods = ?*rpcs, "registered methods");
 
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Eth) Connection Try: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(event(
-            relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-                eth_chain_id,
-                IbcEvent {
-                    tx_hash: H256([0; 32]),
-                    height: parse!("0-2941"),
-                    event: unionlabs::events::IbcEvent::ConnectionOpenTry(ConnectionOpenTry {
-                        connection_id: parse!("connection-0"),
-                        client_id: parse!("cometbls-0"),
-                        counterparty_client_id: parse!("08-wasm-1"),
-                        counterparty_connection_id: parse!("connection-14"),
-                    }),
-                },
-            ),
-        ));
+                let server_handle = ipc_server.start(rpcs).await.unwrap();
 
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Eth) Update Client: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(repeat(
-            None,
-            seq([
-                event(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-                    eth_chain_id,
-                    relay_message::event::Command::UpdateClient {
-                        client_id: parse!("cometbls-0"),
-                        __marker: PhantomData,
-                    },
-                )),
-                defer_relative(10),
-            ]),
-        ));
+                info!("listening on {addr}");
 
-        println!("---------------------------------------");
-        println!("Eth - Union (Sending to Union) Update Client: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(repeat(
-            None,
-            seq([
-                event(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-                    union_chain_id.clone(),
-                    relay_message::event::Command::UpdateClient {
-                        client_id: parse!("08-wasm-0"),
-                        __marker: PhantomData,
-                    },
-                )),
-                defer_relative(10),
-            ]),
-        ));
+                tokio::spawn(
+                    server_handle
+                        .stopped()
+                        .instrument(debug_span!("module_server", name = %name_)),
+                )
+                .await
+                .unwrap();
+            }
+            .instrument(debug_span!("run_module_server", %name))
+            .await
+        }
+        App::Info { config } => {
+            let info = T::info(parse_config(&config));
 
-        println!("---------------------------------------");
-        println!("Cosmos - Union (Sending to Cosmos) Update Client: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(repeat(
-            None,
-            seq([
-                event(relay_message::id::<Wasm<Cosmos>, Union, _>(
-                    simd_chain_id.clone(),
-                    relay_message::event::Command::UpdateClient {
-                        client_id: parse!("08-wasm-0"),
-                        __marker: PhantomData,
-                    },
-                )),
-                defer_relative(10),
-            ]),
-        ));
+            let info = ModuleInfo::<ModuleKindInfo> {
+                name: info.name,
+                kind: info.kind.into(),
+            };
 
-        println!("---------------------------------------");
-        println!("Cosmos - Union (Sending to Union) Update Client: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(repeat(
-            None,
-            seq([
-                event(relay_message::id::<Union, Wasm<Cosmos>, _>(
-                    union_chain_id.clone(),
-                    relay_message::event::Command::UpdateClient {
-                        client_id: parse!("07-tendermint-0"),
-                        __marker: PhantomData,
-                    },
-                )),
-                defer_relative(10),
-            ]),
-        ));
-
-        println!("---------------------------------------");
-        println!("Scroll - Union (Sending to Union) Create Scroll lightclient on Union: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(aggregate(
-            [
-                fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
-                    scroll_chain_id,
-                    FetchSelfClientState {
-                        at: QueryHeight::Latest,
-                        __marker: PhantomData,
-                    },
-                )),
-                fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
-                    scroll_chain_id,
-                    FetchSelfConsensusState {
-                        at: QueryHeight::Latest,
-                        __marker: PhantomData,
-                    },
-                )),
-            ],
-            [],
-            relay_message::id::<Wasm<Union>, Scroll, _>(
-                union_chain_id.clone(),
-                AggregateMsgCreateClient {
-                    config: WasmConfig {
-                        checksum: H256(hex!(
-                            "c4c38c95b12a03dabe366dab1a19671193b5f8de7abf53eb3ecabbb946a4ac88"
-                        )),
-                    },
-                    __marker: PhantomData,
-                },
-            ),
-        ));
-
-        println!("---------------------------------------");
-        println!("Scroll - single update client");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(event(relay_message::id::<Scroll, Wasm<Union>, _>(
-            scroll_chain_id,
-            relay_message::event::Command::UpdateClient {
-                client_id: parse!("cometbls-0"),
-                __marker: PhantomData,
-            },
-        )));
-
-        println!("---------------------------------------");
-        println!("Union - Eth Create Both Clients: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(seq([
-            aggregate(
-                [
-                    fetch(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-                        union_chain_id.clone(),
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-                        union_chain_id.clone(),
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-                    eth_chain_id,
-                    AggregateMsgCreateClient {
-                        config: EthereumConfig {
-                            client_type: "cometbls".to_string(),
-                        },
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-            aggregate(
-                [
-                    fetch(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-                        eth_chain_id,
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(relay_message::id::<Ethereum<Minimal>, Wasm<Union>, _>(
-                        eth_chain_id,
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                relay_message::id::<Wasm<Union>, Ethereum<Minimal>, _>(
-                    union_chain_id.clone(),
-                    AggregateMsgCreateClient {
-                        config: WasmConfig {
-                            checksum: H256(hex!(
-                                "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
-                            )),
-                        },
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-        ]));
-
-        println!("---------------------------------------");
-        println!("Union - Cosmos Create Both Client: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(seq([
-            aggregate(
-                [
-                    fetch(relay_message::id::<Wasm<Cosmos>, Union, _>(
-                        simd_chain_id.clone(),
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(relay_message::id::<Wasm<Cosmos>, Union, _>(
-                        simd_chain_id.clone(),
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                relay_message::id::<Union, Wasm<Cosmos>, _>(
-                    union_chain_id.clone(),
-                    AggregateMsgCreateClient {
-                        config: (),
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-            aggregate(
-                [
-                    fetch(relay_message::id::<Union, Wasm<Cosmos>, _>(
-                        union_chain_id.clone(),
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(relay_message::id::<Union, Wasm<Cosmos>, _>(
-                        union_chain_id.clone(),
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                relay_message::id::<Wasm<Cosmos>, Union, _>(
-                    simd_chain_id,
-                    AggregateMsgCreateClient {
-                        config: WasmConfig {
-                            checksum: H256(hex!(
-                                "78266014ea77f3b785e45a33d1f8d3709444a076b3b38b2aeef265b39ad1e494"
-                            )),
-                        },
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-        ]));
-
-        println!("---------------------------------------");
-        println!("Cosmos - Cosmos Create Both Client: ");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(seq([
-            aggregate(
-                [
-                    fetch(relay_message::id::<Cosmos, Cosmos, _>(
-                        stargaze_chain_id.clone(),
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(relay_message::id::<Cosmos, Cosmos, _>(
-                        stargaze_chain_id.clone(),
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                relay_message::id::<Cosmos, Cosmos, _>(
-                    osmosis_chain_id.clone(),
-                    AggregateMsgCreateClient {
-                        config: (),
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-            aggregate(
-                [
-                    fetch(relay_message::id::<Cosmos, Cosmos, _>(
-                        osmosis_chain_id.clone(),
-                        FetchSelfClientState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(relay_message::id::<Cosmos, Cosmos, _>(
-                        osmosis_chain_id.clone(),
-                        FetchSelfConsensusState {
-                            at: QueryHeight::Latest,
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                relay_message::id::<Cosmos, Cosmos, _>(
-                    stargaze_chain_id.clone(),
-                    AggregateMsgCreateClient {
-                        config: (),
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-        ]));
-
-        println!("---------------------------------------");
-        println!("Scroll - single update client");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(event(relay_message::id::<Scroll, Wasm<Union>, _>(
-            scroll_chain_id,
-            relay_message::event::Command::UpdateClient {
-                client_id: parse!("cometbls-0"),
-                __marker: PhantomData,
-            },
-        )));
-
-        println!("---------------------------------------");
-        println!("Scroll - fetch update header");
-        println!("---------------------------------------");
-        print_json::<RelayMessage>(fetch(relay_message::id::<Scroll, Wasm<Union>, _>(
-            scroll_chain_id,
-            relay_message::fetch::Fetch::UpdateHeaders(relay_message::fetch::FetchUpdateHeaders {
-                counterparty_chain_id: union_chain_id.clone(),
-                counterparty_client_id: parse!("08-wasm-0"),
-                update_from: parse!("0-1"),
-                update_to: parse!("0-4846816"),
-            }),
-        )));
-
-        print_json::<BlockMessage>(fetch(block_message::id::<Cosmos, _>(
-            "simd-devnet-1".parse().unwrap(),
-            block_message::fetch::FetchBlock {
-                height: unionlabs::ibc::core::client::height::Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                },
-            },
-        )));
-
-        print_json::<BlockMessage>(fetch(block_message::id::<Union, _>(
-            "union-devnet-1".parse().unwrap(),
-            block_message::fetch::FetchBlock {
-                height: unionlabs::ibc::core::client::height::Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                },
-            },
-        )));
-
-        print_json::<RelayMessage>(fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
-            parse!("union-testnet-8"),
-            relay_message::fetch::FetchUpdateHeaders {
-                counterparty_client_id: parse!("cometbls-4"),
-                counterparty_chain_id: parse!("80084"),
-                update_from: parse!("8-969001"),
-                update_to: parse!("8-969002"),
-            },
-        )));
-
-        print_json::<RelayMessage>(seq([
-            aggregate(
-                [
-                    fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
-                        parse!("union-testnet-8"),
-                        FetchSelfClientState {
-                            at: parse!("8-968996"),
-                            __marker: PhantomData,
-                        },
-                    )),
-                    fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
-                        parse!("union-testnet-8"),
-                        FetchSelfConsensusState {
-                            at: parse!("8-968996"),
-                            __marker: PhantomData,
-                        },
-                    )),
-                ],
-                [],
-                relay_message::id::<Berachain, Wasm<Union>, _>(
-                    parse!("80084"),
-                    AggregateMsgCreateClient {
-                        config: EthereumConfig {
-                            client_type: "cometbls".to_owned(),
-                        },
-                        __marker: PhantomData,
-                    },
-                ),
-            ),
-            fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
-                parse!("union-testnet-8"),
-                relay_message::fetch::FetchUpdateHeaders {
-                    counterparty_client_id: parse!("cometbls-5"),
-                    counterparty_chain_id: parse!("80084"),
-                    update_from: parse!("8-968996"),
-                    update_to: parse!("8-969001"),
-                },
-            )),
-            fetch(relay_message::id::<Wasm<Union>, Berachain, _>(
-                parse!("union-testnet-8"),
-                relay_message::fetch::FetchUpdateHeaders {
-                    counterparty_client_id: parse!("cometbls-5"),
-                    counterparty_chain_id: parse!("80084"),
-                    update_from: parse!("8-969001"),
-                    update_to: parse!("8-969002"),
-                },
-            )),
-        ]));
-    }
-
-    fn print_json<T: QueueMessage>(msg: Op<T>)
-    where
-        VoyagerMessage: FromOp<T>,
-    {
-        let msg = VoyagerMessage::from_op(msg);
-
-        let json = serde_json::to_string(&msg).unwrap();
-
-        println!("{json}\n");
-
-        let from_json = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(&msg, &from_json, "json roundtrip failed");
+            print!("{}", serde_json::to_string(&info).unwrap())
+        }
+        App::Cmd { cmd, config } => T::cmd(parse_config(&config), cmd).await,
     }
 }

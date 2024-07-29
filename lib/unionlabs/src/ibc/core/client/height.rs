@@ -5,13 +5,13 @@ use core::{
 };
 
 use macros::model;
-use serde::{Deserialize, Serialize};
 use ssz::Ssz;
 
 #[derive(Ssz, Default, Copy)]
 #[model(proto(raw(protos::ibc::core::client::v1::Height), into, from))]
 #[debug("Height({self})")]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
+#[derive(Hash)]
 pub struct Height {
     // REVIEW: Why default?
     #[serde(default)]
@@ -21,11 +21,10 @@ pub struct Height {
 
 impl Height {
     #[must_use]
-    #[deprecated]
-    pub fn new(revision_number: u64, revision_height: u64) -> Self {
-        Height {
-            revision_number,
-            revision_height,
+    pub const fn increment(self) -> Self {
+        Self {
+            revision_number: self.revision_number,
+            revision_height: self.revision_height + 1,
         }
     }
 }
@@ -45,7 +44,7 @@ impl FromStr for Height {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum HeightFromStrError {
     ParseIntError(ParseIntError),
     Invalid,
@@ -89,11 +88,17 @@ impl From<Height> for protos::ibc::core::client::v1::Height {
 
 impl PartialOrd for Height {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(match self.revision_number.cmp(&other.revision_number) {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Height {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        match self.revision_number.cmp(&other.revision_number) {
             core::cmp::Ordering::Less => core::cmp::Ordering::Less,
             core::cmp::Ordering::Equal => self.revision_height.cmp(&other.revision_height),
             core::cmp::Ordering::Greater => core::cmp::Ordering::Greater,
-        })
+        }
     }
 }
 
@@ -123,79 +128,9 @@ impl From<contracts::shared_types::IbcCoreClientV1HeightData> for Height {
     }
 }
 
-pub trait IsHeight:
-    FromStr<Err = HeightFromStrError>
-    + Display
-    + Debug
-    + Copy
-    + PartialEq
-    + Serialize
-    + for<'de> Deserialize<'de>
-    + From<Height>
-    + Into<Height>
-    + Send
-    + Sync
-    + 'static
-{
-    fn into_height(self) -> Height {
-        Into::<Height>::into(self)
-    }
-
-    #[must_use]
-    fn increment(self) -> Self {
-        Height {
-            revision_number: self.revision_number(),
-            revision_height: self.revision_height() + 1,
-        }
-        .into()
-    }
-
-    #[must_use]
-    fn decrement(self) -> Self {
-        Height {
-            revision_number: self.revision_number(),
-            revision_height: self.revision_height() - 1,
-        }
-        .into()
-    }
-
-    fn revision_number(&self) -> u64 {
-        self.into_height().revision_number
-    }
-    fn revision_height(&self) -> u64 {
-        self.into_height().revision_height
-    }
-}
-
-impl<T> IsHeight for T where
-    T: FromStr<Err = HeightFromStrError>
-        + Display
-        + Debug
-        + Copy
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + From<Height>
-        + Into<Height>
-        + Send
-        + Sync
-        + 'static
-{
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn height_impls_is_height() {
-        fn f(_: impl IsHeight) {}
-
-        f(Height {
-            revision_number: 0,
-            revision_height: 0,
-        });
-    }
 
     #[test]
     fn debug() {

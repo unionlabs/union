@@ -5,22 +5,22 @@ name    = "near-ibc-tests"
 version = "0.1.0"
 
 [dependencies]
-anyhow                            = "1.0"
-borsh                             = { workspace = true, features = ["borsh-derive"] }
-ibc-vm-rs.workspace               = true
-near-contract-standards.workspace = true
-near-sdk                          = { workspace = true }
-near-sdk-contract-tools           = { workspace = true }
-near-units                        = "0.2.0"
-near-workspaces.workspace         = true
-serde.workspace                   = true
-serde_json.workspace              = true
-tokio                             = { workspace = true, features = ["full"] }
-unionlabs                         = { workspace = true, features = ["near"] }
+anyhow                  = "1.0"
+borsh                   = { workspace = true, features = ["borsh-derive"] }
+ibc-vm-rs               = { workspace = true }
+near-contract-standards = { workspace = true }
+near-sdk                = { workspace = true }
+near-sdk-contract-tools = { workspace = true }
+near-units              = "0.2.0"
+near-workspaces         = { workspace = true }
+serde                   = { workspace = true }
+serde_json              = { workspace = true }
+tokio                   = { workspace = true, features = ["full"] }
+unionlabs               = { workspace = true, features = ["near"] }
 # near-primitives = { git = "https://github.com/near/nearcore" }
 base64                  = { workspace = true }
-env_logger              = "0.9"
-hex.workspace           = true
+env_logger              = "0.11.5"
+hex                     = { workspace = true }
 near-crypto             = "0.20"
 near-jsonrpc-client     = "0.8"
 near-jsonrpc-primitives = "0.20"

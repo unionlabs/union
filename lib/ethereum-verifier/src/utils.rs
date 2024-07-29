@@ -3,11 +3,12 @@ use ssz::{types::BitVector, Ssz};
 use typenum::Unsigned;
 use unionlabs::{
     ethereum::{
+        beacon::{fork_data::ForkData, signing_data::SigningData},
         config::{
             EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
             SYNC_COMMITTEE_SIZE,
         },
-        Domain, DomainType, ForkData, SigningData, Version,
+        Domain, DomainType, Version,
     },
     hash::H256,
     ibc::lightclients::ethereum::fork_parameters::ForkParameters,
@@ -184,7 +185,10 @@ pub fn validate_merkle_branch<'a>(
 #[allow(clippy::redundant_clone)]
 mod tests {
 
-    use unionlabs::ethereum::config::{Minimal, SEPOLIA};
+    use unionlabs::ethereum::{
+        beacon::signing_data::SigningData,
+        config::{Minimal, SEPOLIA},
+    };
 
     use super::*;
 

@@ -17,6 +17,7 @@ pub mod part_set_header;
 pub mod signed_header;
 pub mod signed_msg_type;
 pub mod simple_validator;
+pub mod tx_proof;
 pub mod validator;
 pub mod validator_set;
 pub mod vote;

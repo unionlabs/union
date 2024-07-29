@@ -1,43 +1,76 @@
-use std::{fmt::Debug, num::NonZeroU64, sync::Arc};
+use core::fmt;
+use std::{
+    fmt::Debug,
+    num::{NonZeroU32, NonZeroU64, NonZeroU8},
+    time::Duration,
+};
 
+use ::serde::de::DeserializeOwned;
 use jsonrpsee::{
-    core::client::ClientT,
-    rpc_params,
-    ws_client::{WsClient, WsClientBuilder},
-};
-use serde::{de, Deserialize, Deserializer, Serialize};
-use tracing::debug;
-use unionlabs::{
-    bounded::BoundedU8,
-    google::protobuf::timestamp::Timestamp,
-    hash::{H160, H256},
-    option_unwrap, result_unwrap,
-    tendermint::{
-        abci::response_query::ResponseQuery,
-        crypto::public_key::PublicKey,
-        p2p::default_node_info::DefaultNodeInfo,
-        types::{
-            block::Block, block_id::BlockId, signed_header::SignedHeader, validator::Validator,
-        },
+    core::{
+        async_trait,
+        client::{BatchResponse, ClientT},
+        params::BatchRequestBuilder,
+        traits::ToRpcParams,
     },
+    http_client::{HttpClient, HttpClientBuilder},
+    rpc_params,
+    ws_client::{PingConfig, WsClientBuilder},
+};
+use tracing::{debug, debug_span, instrument, Instrument};
+use unionlabs::{
+    bounded::{BoundedI64, BoundedU8},
+    hash::H256,
+    option_unwrap, result_unwrap,
 };
 
-#[derive(Debug, Clone)]
-pub struct Client {
-    client: Arc<WsClient>,
-}
+use crate::types::{
+    AbciQueryResponse, AllValidatorsResponse, BlockResponse, BroadcastTxSyncResponse,
+    CommitResponse, Order, StatusResponse, TxResponse, TxSearchResponse,
+};
+
+pub mod serde;
+pub mod types;
 
 pub type JsonRpcError = jsonrpsee::core::client::Error;
 
+#[derive(Debug, Clone)]
+pub struct Client {
+    inner: ClientInner,
+}
+
 impl Client {
     pub async fn new(url: impl AsRef<str>) -> Result<Self, JsonRpcError> {
-        Ok(Self {
-            client: Arc::new(WsClientBuilder::default().build(url).await?),
-        })
+        let url = url.as_ref().to_owned();
+
+        let inner = match url.split_once("://") {
+            Some(("ws" | "wss", _)) => {
+                let client = reconnecting_jsonrpc_ws_client::Client::new(move || {
+                    WsClientBuilder::default()
+                        .enable_ws_ping(PingConfig::new())
+                        .build(url.clone())
+                        .instrument(debug_span!("cometbft_rpc_client", %url))
+                });
+
+                // TODO: Config
+                client
+                    .wait_until_connected(Duration::from_secs(5))
+                    .await
+                    .map_err(|e| JsonRpcError::Custom(e.to_string()))?;
+
+                ClientInner::Ws(client)
+            }
+            Some(("http" | "https", _)) => {
+                ClientInner::Http(HttpClientBuilder::default().build(url)?)
+            }
+            _ => return Err(JsonRpcError::Custom(format!("invalid url {url}"))),
+        };
+
+        Ok(Self { inner })
     }
 
     pub async fn commit(&self, height: Option<NonZeroU64>) -> Result<CommitResponse, JsonRpcError> {
-        self.client
+        self.inner
             .request("commit", (height.map(|x| x.to_string()),))
             .await
     }
@@ -45,9 +78,9 @@ impl Client {
     pub async fn validators(
         &self,
         height: Option<NonZeroU64>,
-        pagination: Option<ValidatorsPagination>,
-    ) -> Result<ValidatorsResponse, JsonRpcError> {
-        self.client
+        pagination: Option<types::ValidatorsPagination>,
+    ) -> Result<types::ValidatorsResponse, JsonRpcError> {
+        self.inner
             .request(
                 "validators",
                 (
@@ -71,7 +104,7 @@ impl Client {
         let mut out = vec![];
 
         loop {
-            let ValidatorsResponse {
+            let types::ValidatorsResponse {
                 block_height,
                 validators,
                 count: _,
@@ -79,7 +112,7 @@ impl Client {
             } = self
                 .validators(
                     height,
-                    Some(ValidatorsPagination {
+                    Some(types::ValidatorsPagination {
                         page,
                         per_page: Some(PER_PAGE),
                     }),
@@ -104,28 +137,36 @@ impl Client {
     }
 
     // would be cool to somehow have this be generic and do decoding automatically
+    #[instrument(
+        skip_all,
+        fields(
+            path = %path.as_ref(),
+            data = %::serde_utils::to_hex(data.as_ref()),
+            height = %height.map(|x| x.to_string()).as_deref().unwrap_or(""),
+            %prove,
+        )
+    )]
     pub async fn abci_query(
         &self,
         path: impl AsRef<str>,
         data: impl AsRef<[u8]>,
-        height: Option<NonZeroU64>,
+        height: Option<BoundedI64<1>>,
         prove: bool,
     ) -> Result<AbciQueryResponse, JsonRpcError> {
-        let path = path.as_ref();
-        let height = height.map(|x| x.to_string());
-
-        debug!(
-            %path,
-            data = %::serde_utils::to_hex(data.as_ref()),
-            height = %height.as_deref().unwrap_or(""),
-            %prove,
-            "fetching abci query"
-        );
+        debug!("fetching abci query");
 
         let res: AbciQueryResponse = self
-            .client
+            .inner
             // the rpc needs an un-prefixed hex string
-            .request("abci_query", (path, hex::encode(data), height, prove))
+            .request(
+                "abci_query",
+                (
+                    path.as_ref(),
+                    hex::encode(data),
+                    height.map(|x| x.to_string()),
+                    prove,
+                ),
+            )
             .await?;
 
         debug!(
@@ -143,133 +184,111 @@ impl Client {
         Ok(res)
     }
 
-    // would be cool to somehow have this be generic and do decoding automatically
     pub async fn status(&self) -> Result<StatusResponse, JsonRpcError> {
-        self.client.request("status", rpc_params!()).await
+        self.inner.request("status", rpc_params!()).await
     }
 
     pub async fn block(&self, height: Option<NonZeroU64>) -> Result<BlockResponse, JsonRpcError> {
-        self.client
+        self.inner
             .request("block", (height.map(|x| x.to_string()),))
             .await
     }
+
+    pub async fn tx_search(
+        &self,
+        query: impl AsRef<str>,
+        prove: bool,
+        page: NonZeroU32,
+        // REVIEW: Is this bounded in the same way as the validators pagination?
+        per_page: NonZeroU8,
+        // REVIEW: There is the enum `cosmos.tx.v1beta.OrderBy`, is that related to this?
+        order_by: Order,
+    ) -> Result<TxSearchResponse, JsonRpcError> {
+        self.inner
+            .request(
+                "tx_search",
+                rpc_params![
+                    query.as_ref(),
+                    prove,
+                    page.to_string(),
+                    per_page.to_string(),
+                    order_by
+                ],
+            )
+            .await
+    }
+
+    // TODO: support order_by
+    pub async fn tx(&self, hash: H256, prove: bool) -> Result<TxResponse, JsonRpcError> {
+        use base64::prelude::*;
+
+        self.inner
+            .request("tx", rpc_params![BASE64_STANDARD.encode(hash), prove])
+            .await
+    }
+
+    pub async fn broadcast_tx_sync(
+        &self,
+        tx: &[u8],
+    ) -> Result<BroadcastTxSyncResponse, JsonRpcError> {
+        use base64::prelude::*;
+
+        self.inner
+            .request("broadcast_tx_sync", rpc_params![BASE64_STANDARD.encode(tx)])
+            .await
+    }
+
+    // pub async fn block_results(
+    //     &self,
+    //     height: Option<BoundedI64<1>>,
+    // ) -> Result<TxSearchResponse, JsonRpcError> {
+    //     self.client
+    //         .request("block_results", rpc_params![height.map(|x| x.to_string())])
+    //         .await
+    // }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct BlockResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::BlockId, _>")]
-    pub block_id: BlockId,
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::Block, _>")]
-    pub block: Block,
+#[derive(Debug, Clone)]
+enum ClientInner {
+    Http(HttpClient),
+    Ws(reconnecting_jsonrpc_ws_client::Client),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct StatusResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::p2p::DefaultNodeInfo, _>")]
-    pub node_info: DefaultNodeInfo,
-    pub sync_info: SyncInfo,
-    pub validator_info: ValidatorInfo,
-}
+#[async_trait]
+impl ClientT for ClientInner {
+    async fn notification<Params>(&self, method: &str, params: Params) -> Result<(), JsonRpcError>
+    where
+        Params: ToRpcParams + Send,
+    {
+        match self {
+            ClientInner::Http(client) => client.notification(method, params).await,
+            ClientInner::Ws(client) => client.notification(method, params).await,
+        }
+    }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SyncInfo {
-    catching_up: bool,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    earliest_app_hash: H256,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    earliest_block_hash: H256,
-    #[serde(with = "::serde_utils::string")]
-    earliest_block_height: u64,
-    earliest_block_time: Timestamp,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    latest_app_hash: H256,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    latest_block_hash: H256,
-    #[serde(with = "::serde_utils::string")]
-    latest_block_height: u64,
-    latest_block_time: Timestamp,
-}
+    async fn request<R, Params>(&self, method: &str, params: Params) -> Result<R, JsonRpcError>
+    where
+        R: DeserializeOwned,
+        Params: ToRpcParams + Send,
+    {
+        match self {
+            ClientInner::Http(client) => client.request(method, params).await,
+            ClientInner::Ws(client) => client.request(method, params).await,
+        }
+    }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ValidatorInfo {
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub address: H160,
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::crypto::PublicKey, _>")]
-    pub pub_key: PublicKey,
-    // REVIEW: is this bounded the same way as Validator?
-    #[serde(with = "::serde_utils::string")]
-    pub voting_power: i64,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ValidatorsResponse {
-    #[serde(with = "::serde_utils::string")]
-    pub block_height: NonZeroU64,
-    #[serde(deserialize_with = "serde_as_list::<_, protos::tendermint::types::Validator, _>")]
-    pub validators: Vec<Validator>,
-    #[serde(with = "::serde_utils::string")]
-    pub count: u64,
-    #[serde(with = "::serde_utils::string")]
-    pub total: u64,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct AllValidatorsResponse {
-    pub block_height: NonZeroU64,
-    pub validators: Vec<Validator>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ValidatorsPagination {
-    page: NonZeroU64,
-    // :]
-    per_page: Option<BoundedU8<1, 100>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AbciQueryResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::abci::ResponseQuery, _>")]
-    pub response: ResponseQuery,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct CommitResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::SignedHeader, _>")]
-    pub signed_header: SignedHeader,
-    pub canonical: bool,
-}
-
-pub fn serde_as<'de, D, Src, Dst>(deserializer: D) -> Result<Dst, D::Error>
-where
-    D: Deserializer<'de>,
-    Src: Deserialize<'de>,
-    Src: TryInto<Dst, Error: Debug>,
-{
-    Src::deserialize(deserializer)?
-        .try_into()
-        .map_err(|e| de::Error::custom(format!("{e:?}")))
-}
-
-pub fn serde_as_list<'de, D, Src, Dst>(deserializer: D) -> Result<Vec<Dst>, D::Error>
-where
-    D: Deserializer<'de>,
-    Src: Deserialize<'de>,
-    Src: TryInto<Dst, Error: Debug>,
-{
-    <Vec<Src>>::deserialize(deserializer)?
-        .into_iter()
-        .map(|x| {
-            x.try_into()
-                .map_err(|e| de::Error::custom(format!("{e:?}")))
-        })
-        .collect()
+    async fn batch_request<'a, R>(
+        &self,
+        batch: BatchRequestBuilder<'a>,
+    ) -> Result<BatchResponse<'a, R>, JsonRpcError>
+    where
+        R: DeserializeOwned + fmt::Debug + 'a,
+    {
+        match self {
+            ClientInner::Http(client) => client.batch_request(batch).await,
+            ClientInner::Ws(client) => client.batch_request(batch).await,
+        }
+    }
 }
 
 // These tests are useful in testing and debugging, but should not be run in CI
@@ -277,9 +296,11 @@ where
 // mod tests {
 //     use std::time::Duration;
 
+//     use hex_literal::hex;
+
 //     use super::*;
 
-//     const UNION_TESTNET: &'static str = "wss://rpc.testnet.bonlulu.uno/websocket";
+//     const UNION_TESTNET: &'static str = "wss://rpc.testnet-8.union.build/websocket";
 //     const BERACHAIN_DEVNET: &'static str = "ws://localhost:26657/websocket";
 //     const BERACHAIN_TESTNET: &'static str = "wss://bartio-cosmos.berachain-devnet.com/websocket";
 //     const OSMOSIS_TESTNET: &'static str = "wss://osmosis-rpc.publicnode.com/websocket";
@@ -308,7 +329,7 @@ where
 //             )
 //             .await;
 
-//         dbg!(result);
+//         bg!(result);
 //     }
 
 //     #[tokio::test]
@@ -371,5 +392,22 @@ where
 
 //             tokio::time::sleep(Duration::from_millis(100)).await;
 //         }
+//     }
+
+//     #[tokio::test]
+//     async fn tx() {
+//         let _ = tracing_subscriber::fmt().try_init();
+
+//         let client = Client::new(UNION_TESTNET).await.unwrap();
+
+//         let result = client
+//             .tx(
+//                 hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
+//                 true,
+//             )
+//             .await
+//             .unwrap();
+
+//         dbg!(result);
 //     }
 // }

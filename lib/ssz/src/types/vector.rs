@@ -44,6 +44,7 @@ use crate::{
 #[derivative(
     Clone(bound = "T: ::core::clone::Clone"),
     PartialEq(bound = "T: ::core::cmp::PartialEq"),
+    Eq(bound = "T: ::core::cmp::Eq"),
     Hash(bound = "T: ::core::hash::Hash")
 )]
 #[serde(transparent)]
@@ -275,20 +276,6 @@ impl<T, N: Unsigned + NonZero> TryFromIter<T> for Vector<T, N> {
             found: invalid.len(),
             expected: N::USIZE,
         })
-    }
-}
-
-#[cfg(feature = "arbitrary")]
-impl<'a, T: arbitrary::Arbitrary<'a>, N: 'static + Unsigned + NonZero> arbitrary::Arbitrary<'a>
-    for Vector<T, N>
-{
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        let size = N::USIZE;
-        let mut vec: Vec<T> = Vec::with_capacity(size);
-        for _ in 0..size {
-            vec.push(<T>::arbitrary(u)?);
-        }
-        Ok(Self::new(vec).map_err(|_| arbitrary::Error::IncorrectFormat)?)
     }
 }
 

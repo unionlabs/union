@@ -1,4 +1,4 @@
-use cosmwasm_std::{Deps, Empty};
+use cosmwasm_std::Deps;
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
@@ -6,10 +6,10 @@ use ics008_wasm_client::{
     IbcClient, IbcClientError, StorageState,
 };
 use unionlabs::{
-    aptos::{account::AccountAddress, hash_value::HashValue, transaction_info::TransactionInfo},
+    aptos::{account::AccountAddress, transaction_info::TransactionInfo},
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::Proto,
-    hash::{H160, H256},
+    hash::H256,
     ibc::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::{
@@ -248,7 +248,7 @@ impl IbcClient for MovementLightClient {
 
 fn do_verify_membership(
     _path: String,
-    state_root: HashValue,
+    state_root: H256,
     _table_handle: AccountAddress,
     proof: Vec<u8>,
     value: Vec<u8>,
@@ -256,7 +256,7 @@ fn do_verify_membership(
     aptos_verifier::verify_existence_proof(
         &proof,
         state_root,
-        HashValue::default(),
+        H256::default(),
         value.try_into().unwrap(),
     )
     .unwrap();

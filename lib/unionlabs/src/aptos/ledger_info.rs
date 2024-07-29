@@ -2,10 +2,12 @@ use macros::model;
 
 use super::{
     block_info::{BlockInfo, TryFromBlockInfoError},
-    hash_value::HashValue,
     signature::{AggregateSignature, TryFromAggregateSignatureError},
 };
-use crate::errors::{required, ExpectedLength, InvalidLength, MissingField};
+use crate::{
+    errors::{required, InvalidLength, MissingField},
+    hash::H256,
+};
 
 /// Wrapper to support future upgrades, this is the data being persisted.
 #[model(proto(
@@ -40,7 +42,7 @@ pub struct LedgerInfo {
 
     /// Hash of consensus specific data that is opaque to all parts of the system other than
     /// consensus.
-    pub consensus_data_hash: HashValue,
+    pub consensus_data_hash: H256,
 }
 
 impl From<LedgerInfoWithSignatures>
@@ -107,18 +109,8 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::LedgerInfo> for Led
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             commit_info: required!(value.commit_info)?.try_into()?,
-            consensus_data_hash: HashValue::new(
-                value
-                    .consensus_data_hash
-                    .as_slice()
-                    .try_into()
-                    .map_err(|_| {
-                        TryFromLedgerInfo::ConsensusDataHash(InvalidLength {
-                            expected: ExpectedLength::Exact(HashValue::LENGTH),
-                            found: value.consensus_data_hash.len(),
-                        })
-                    })?,
-            ),
+            consensus_data_hash: H256::try_from(value.consensus_data_hash)
+                .map_err(TryFromLedgerInfo::ConsensusDataHash)?,
         })
     }
 }

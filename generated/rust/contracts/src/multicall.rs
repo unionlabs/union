@@ -77,7 +77,7 @@ pub mod multicall {
             fallback: false,
         }
     }
-    ///The parsed JSON ABI of the contract.
+    /// The parsed JSON ABI of the contract.
     #[cfg(feature = "providers")]
     pub static MULTICALL_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(__abi);
@@ -177,7 +177,7 @@ pub mod multicall {
             let deployer = ::ethers::contract::ContractDeployer::new(deployer);
             Ok(deployer)
         }
-        ///Calls the contract's `multicall` (0xe8bbf5d7) function
+        /// Calls the contract's `multicall` (0xe8bbf5d7) function
         pub fn multicall(
             &self,
             calls: ::std::vec::Vec<Call3>,
@@ -186,7 +186,7 @@ pub mod multicall {
                 .method_hash([232, 187, 245, 215], calls)
                 .expect("method not found (this should never happen)")
         }
-        ///Gets the contract's `MulticallResult` event
+        /// Gets the contract's `MulticallResult` event
         pub fn multicall_result_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, MulticallResultFilter>
@@ -220,7 +220,7 @@ pub mod multicall {
     )]
     #[ethevent(name = "MulticallResult", abi = "MulticallResult((bool,bytes)[])")]
     pub struct MulticallResultFilter(pub ::std::vec::Vec<Result>);
-    ///Container type for all input parameters for the `multicall` function with signature `multicall((address,bool,bytes)[])` and selector `0xe8bbf5d7`
+    /// Container type for all input parameters for the `multicall` function with signature `multicall((address,bool,bytes)[])` and selector `0xe8bbf5d7`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -235,7 +235,7 @@ pub mod multicall {
     pub struct MulticallCall {
         pub calls: ::std::vec::Vec<Call3>,
     }
-    ///Container type for all return fields from the `multicall` function with signature `multicall((address,bool,bytes)[])` and selector `0xe8bbf5d7`
+    /// Container type for all return fields from the `multicall` function with signature `multicall((address,bool,bytes)[])` and selector `0xe8bbf5d7`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -249,7 +249,7 @@ pub mod multicall {
     pub struct MulticallReturn {
         pub return_data: ::std::vec::Vec<Result>,
     }
-    ///`Call3(address,bool,bytes)`
+    /// `Call3(address,bool,bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -265,7 +265,7 @@ pub mod multicall {
         pub allow_failure: bool,
         pub call_data: ::ethers::core::types::Bytes,
     }
-    ///`Result(bool,bytes)`
+    /// `Result(bool,bytes)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

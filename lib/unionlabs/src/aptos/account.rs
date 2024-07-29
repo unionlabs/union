@@ -1,72 +1,55 @@
-use core::str::FromStr;
+//! Yoinked from <https://github.com/aptos-labs/aptos-core/blob/3b433805f5bd89d5c5b9942158efac1cc0077bf5/third_party/move/move-core/types/src/account_address.rs>
+///
+/// We only use the strict parsing and display functionality, and wrap our `H256` type instead of `[u8; 32]`.
+use core::{fmt, str::FromStr};
 
-use hex::FromHex;
 use serde::{de::Error as _, Deserialize, Serialize};
+
+use crate::hash::H256;
+
+#[derive(macros::Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[debug("AccountAddress({})", self)]
+pub struct AccountAddress(pub H256);
+
+impl AccountAddress {
+    /// Returns whether the address is a "special" address. Addresses are considered
+    /// special if the first 63 characters of the hex string are zero. In other words,
+    /// an address is special if the first 31 bytes are zero and the last byte is
+    /// smaller than than `0b10000` (16). In other words, special is defined as an address
+    /// that matches the following regex: `^0x0{63}[0-9a-f]$`. In short form this means
+    /// the addresses in the range from `0x0` to `0xf` (inclusive) are special.
+    ///
+    /// For more details see the v1 address standard defined as part of AIP-40:
+    /// <https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md>
+    #[must_use]
+    pub fn is_special(&self) -> bool {
+        (self.0).0[..H256::BYTES_LEN - 1].iter().all(|x| *x == 0)
+            && is_special_byte((self.0).0[H256::BYTES_LEN - 1])
+    }
+}
+
+const fn is_special_byte(b: u8) -> bool {
+    b < 0b10000
+}
 
 #[derive(thiserror::Error, Debug)]
 pub enum AccountAddressParseError {
-    #[error("AccountAddress data should be exactly 32 bytes long")]
-    IncorrectNumberOfBytes,
+    #[error("hex string must start with a leading 0x")]
+    Leading0XRequired,
 
-    #[error("Hex characters are invalid: {0}")]
-    InvalidHexChars(String),
-
-    #[error("Hex string is too short, must be 1 to 64 chars long, excluding the leading 0x")]
-    TooShort,
-
-    #[error("Hex string is too long, must be 1 to 64 chars long, excluding the leading 0x")]
-    TooLong,
-
-    #[error("Hex string must start with a leading 0x")]
-    LeadingZeroXRequired,
+    #[error(transparent)]
+    HexDecode(#[from] hex::FromHexError),
 
     #[error(
-        "The given hex string is not a special address, it must be represented as 0x + 64 chars"
+        "the given hex string is not a special address, it must be represented as 0x + 64 chars"
     )]
     LongFormRequiredUnlessSpecial,
 
-    #[error("The given hex string is a special address not in LONG form, it must be 0x0 to 0xf without padding zeroes")]
+    #[error("the given hex string is a special address not in long form, it must be 0x0 to 0xf without padding zeroes")]
     InvalidPaddingZeroes,
-}
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct AccountAddress(pub [u8; Self::LENGTH]);
-
-impl AccountAddress {
-    pub const LENGTH: usize = 32;
-
-    #[must_use]
-    pub const fn new(address: [u8; Self::LENGTH]) -> Self {
-        Self(address)
-    }
-
-    /// NOTE: Where possible use `from_str_strict` or `from_str` instead.
-    pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self, AccountAddressParseError> {
-        <[u8; Self::LENGTH]>::from_hex(hex)
-            .map_err(|e| AccountAddressParseError::InvalidHexChars(format!("{e:#}")))
-            .map(Self)
-    }
-
-    /// NOTE: Where possible use `from_str_strict` or `from_str` instead.
-    pub fn from_hex_literal(literal: &str) -> Result<Self, AccountAddressParseError> {
-        if !literal.starts_with("0x") {
-            return Err(AccountAddressParseError::LeadingZeroXRequired);
-        }
-
-        let hex_len = literal.len() - 2;
-
-        // If the string is too short, pad it
-        if hex_len < Self::LENGTH * 2 {
-            let mut hex_str = String::with_capacity(Self::LENGTH * 2);
-            for _ in 0..Self::LENGTH * 2 - hex_len {
-                hex_str.push('0');
-            }
-            hex_str.push_str(&literal[2..]);
-            AccountAddress::from_hex(hex_str)
-        } else {
-            AccountAddress::from_hex(&literal[2..])
-        }
-    }
+    #[error("invalid address length: {0}")]
+    InvalidLength(usize),
 }
 
 impl Serialize for AccountAddress {
@@ -97,10 +80,10 @@ impl<'de> Deserialize<'de> for AccountAddress {
             // as the original type.
             #[derive(::serde::Deserialize)]
             #[serde(rename = "AccountAddress")]
-            struct Value([u8; AccountAddress::LENGTH]);
+            struct Value([u8; H256::BYTES_LEN]);
 
             let value = Value::deserialize(deserializer)?;
-            Ok(AccountAddress::new(value.0))
+            Ok(AccountAddress(H256(value.0)))
         }
     }
 }
@@ -108,36 +91,70 @@ impl<'de> Deserialize<'de> for AccountAddress {
 impl FromStr for AccountAddress {
     type Err = AccountAddressParseError;
 
-    /// NOTE: This function has relaxed parsing behavior. For strict behavior, please use
-    /// the `from_str_strict` function. Where possible use `from_str_strict` rather than
-    /// this function.
+    /// NOTE: This function has strict parsing behavior. For relaxed behavior, please use
+    /// the `from_str` function. Where possible, prefer to use `from_str_strict`.
     ///
-    /// Create an instance of `AccountAddress` by parsing a hex string representation.
+    /// Create an instance of [`AccountAddress`] by parsing a hex string representation.
     ///
-    /// This function allows all formats defined by AIP-40. In short this means the
-    /// following formats are accepted:
+    /// This function allows only the strictest formats defined by AIP-40. In short this
+    /// means only the following formats are accepted:
     ///
-    /// - LONG, with or without leading 0x
-    /// - SHORT, with or without leading 0x
+    /// - LONG
+    /// - SHORT for special addresses
     ///
     /// Where:
     ///
-    /// - LONG is 64 hex characters.
-    /// - SHORT is 1 to 63 hex characters inclusive.
+    /// - LONG is defined as 0x + 64 hex characters.
+    /// - SHORT for special addresses is 0x0 to 0xf inclusive.
+    ///
+    /// This means the following are not accepted:
+    ///
+    /// - SHORT for non-special addresses.
+    /// - Any address without a leading 0x.
     ///
     /// Learn more about the different address formats by reading AIP-40:
     /// <https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md>.
     fn from_str(s: &str) -> Result<Self, AccountAddressParseError> {
-        if s.starts_with("0x") {
-            if s.len() == 2 {
-                return Err(AccountAddressParseError::TooShort);
+        // Assert the string starts with 0x.
+        if !s.starts_with("0x") {
+            return Err(AccountAddressParseError::Leading0XRequired);
+        }
+
+        let address = hex::decode(&s[2..])?;
+
+        // Check if the address is in LONG form. If it is not, this is only allowed for
+        // special addresses, in which case we check it is in proper SHORT form.
+        match address.len() {
+            H256::BYTES_LEN => Ok(Self(H256(address.try_into().unwrap()))),
+            1 => {
+                let b = address[0];
+
+                if is_special_byte(b) {
+                    return Err(AccountAddressParseError::LongFormRequiredUnlessSpecial);
+                }
+
+                // 0x + one hex char is the only valid SHORT form for special addresses.
+                if s.len() != 3 {
+                    return Err(AccountAddressParseError::InvalidPaddingZeroes);
+                }
+
+                let mut address = [0; H256::BYTES_LEN];
+
+                address[H256::BYTES_LEN - 1] = b;
+
+                Ok(Self(H256(address)))
             }
-            AccountAddress::from_hex_literal(s)
+            len => Err(AccountAddressParseError::InvalidLength(len)),
+        }
+    }
+}
+
+impl fmt::Display for AccountAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_special() {
+            f.write_fmt(format_args!("0x{:x}", self.0 .0[H256::BYTES_LEN - 1]))
         } else {
-            if s.is_empty() {
-                return Err(AccountAddressParseError::TooShort);
-            }
-            AccountAddress::from_hex_literal(&format!("0x{s}"))
+            self.0.fmt(f)
         }
     }
 }

@@ -13,7 +13,6 @@ use crate::{
         core::client::height::Height,
         lightclients::tendermint::fraction::{Fraction, TryFromFractionError},
     },
-    traits::{self},
     uint::U256,
 };
 
@@ -116,18 +115,5 @@ impl From<ClientState> for protos::union::ibc::lightclients::berachain::v1::Clie
             ibc_commitment_slot: value.ibc_commitment_slot.to_be_bytes().into(),
             ibc_contract_address: value.ibc_contract_address.into(),
         }
-    }
-}
-
-impl traits::ClientState for ClientState {
-    type ChainId = U256;
-    type Height = Height;
-
-    fn height(&self) -> Self::Height {
-        self.latest_height
-    }
-
-    fn chain_id(&self) -> Self::ChainId {
-        self.execution_chain_id
     }
 }

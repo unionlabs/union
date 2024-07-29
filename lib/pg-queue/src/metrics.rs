@@ -10,6 +10,7 @@ pub static ITEM_PROCESSING_DURATION: LazyLock<Histogram> = LazyLock::new(|| {
     .unwrap()
 });
 
+// TODO: Add tag to this
 pub static OPTIMIZE_PROCESSING_DURATION: LazyLock<Histogram> = LazyLock::new(|| {
     register_histogram!(
         "pg_queue_optimize_processing_duration_seconds",
@@ -18,6 +19,7 @@ pub static OPTIMIZE_PROCESSING_DURATION: LazyLock<Histogram> = LazyLock::new(|| 
     .unwrap()
 });
 
+// TODO: Add tag to this
 pub static OPTIMIZE_ITEM_COUNT: LazyLock<Histogram> = LazyLock::new(|| {
     register_histogram!(
         "pg_queue_optimize_item_count",

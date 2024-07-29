@@ -14,6 +14,9 @@ impl Encoding for Ssz {}
 pub enum Json {}
 impl Encoding for Json {}
 
+pub enum Bcs {}
+impl Encoding for Bcs {}
+
 impl<T> Encode<Json> for T
 where
     T: serde::Serialize,
@@ -36,6 +39,29 @@ where
 
 static_assertions::assert_impl_all!(u8: Encode<Json>);
 static_assertions::assert_impl_all!(&u8: Encode<Json>);
+
+impl<T> Encode<Bcs> for T
+where
+    T: serde::Serialize,
+{
+    fn encode(self) -> Vec<u8> {
+        bcs::to_bytes(&self).expect("json serialization should be infallible")
+    }
+}
+
+impl<T> Decode<Bcs> for T
+where
+    T: serde::de::DeserializeOwned,
+{
+    type Error = bcs::Error;
+
+    fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+        bcs::from_bytes(bytes)
+    }
+}
+
+static_assertions::assert_impl_all!(u8: Encode<Bcs>);
+static_assertions::assert_impl_all!(&u8: Encode<Bcs>);
 
 pub trait Encode<Enc: Encoding>: Sized {
     fn encode(self) -> Vec<u8>;

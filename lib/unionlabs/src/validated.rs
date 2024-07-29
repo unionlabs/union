@@ -1,4 +1,11 @@
-use core::{fmt::Display, marker::PhantomData, ops::Deref, str::FromStr};
+use core::{
+    cmp::Ordering,
+    fmt::Display,
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+    ops::Deref,
+    str::FromStr,
+};
 
 use either::Either;
 use serde::{Deserialize, Serialize};
@@ -15,6 +22,26 @@ pub struct Validated<T, V: Validate<T>>(
     PhantomData<fn() -> V>,
 );
 
+impl<T: Hash, V: Validate<T>> Hash for Validated<T, V> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
+
+impl<T: PartialOrd, V: Validate<T>> PartialOrd for Validated<T, V> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
+impl<T: Ord, V: Validate<T>> Ord for Validated<T, V> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl<T: Eq, V: Validate<T>> Eq for Validated<T, V> {}
+
 #[cfg(feature = "schemars")]
 impl<T: schemars::JsonSchema, V: Validate<T>> schemars::JsonSchema for Validated<T, V> {
     fn schema_name() -> String {
@@ -23,20 +50,6 @@ impl<T: schemars::JsonSchema, V: Validate<T>> schemars::JsonSchema for Validated
 
     fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
         T::json_schema(gen)
-    }
-}
-
-#[cfg(feature = "arbitrary")]
-impl<'a, T: arbitrary::Arbitrary<'a>, V: ValidateExt<T>> arbitrary::Arbitrary<'a>
-    for Validated<T, V>
-where
-    V::Error: Debug,
-{
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        // NOTE: This is super inefficient and practically always produces an error, figure out a way for V to guide the input
-        T::arbitrary(u).and_then(|t| {
-            V::restrict(t, u).map(|t| t.validate().expect("restricted data is valid"))
-        })
     }
 }
 
@@ -116,12 +129,6 @@ pub trait Validate<T>: Sized {
     fn validate(t: T) -> Result<T, Self::Error>;
 }
 
-#[cfg(feature = "arbitrary")]
-pub trait ValidateExt<T>: Validate<T> + Sized {
-    // Given a value of the inner validated type `T`, restrict it such that it fits within the validation of `Self`.
-    fn restrict(t: T, u: &mut arbitrary::Unstructured) -> arbitrary::Result<T>;
-}
-
 impl<T, V1: Validate<T>, V2: Validate<T>> Validate<T> for (V1, V2) {
     type Error = Either<V1::Error, V2::Error>;
 
@@ -134,30 +141,10 @@ impl<T, V1: Validate<T>, V2: Validate<T>> Validate<T> for (V1, V2) {
     }
 }
 
-#[cfg(feature = "arbitrary")]
-impl<T, V1: ValidateExt<T>, V2: ValidateExt<T>> ValidateExt<T> for (V1, V2) {
-    fn restrict(t: T, u: &mut arbitrary::Unstructured) -> arbitrary::Result<T> {
-        if u.arbitrary()? {
-            // V2::restrict(V1::restrict(V2::restrict(V1::restrict(t, u)?, u)?, u)?, u)
-            V2::restrict(V1::restrict(t, u)?, u)
-        } else {
-            // V1::restrict(V2::restrict(V1::restrict(V2::restrict(t, u)?, u)?, u)?, u)
-            V1::restrict(V2::restrict(t, u)?, u)
-        }
-    }
-}
-
 impl<T> Validate<T> for () {
     type Error = ();
 
     fn validate(t: T) -> Result<T, Self::Error> {
-        Ok(t)
-    }
-}
-
-#[cfg(feature = "arbitrary")]
-impl<T> ValidateExt<T> for () {
-    fn restrict(t: T, _: &mut arbitrary::Unstructured) -> arbitrary::Result<T> {
         Ok(t)
     }
 }
@@ -261,10 +248,4 @@ mod tests {
             Ok(Validated(9, PhantomData))
         );
     }
-
-    // const _: fn() = || {
-    //     fn assert_impl_all<T: for<'a> arbitrary::Arbitrary<'a>>() {}
-
-    //     assert_impl_all::<Validated<u8, (NotEight, (NonMax, NonZero))>>();
-    // };
 }

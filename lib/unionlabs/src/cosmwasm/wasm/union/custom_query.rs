@@ -14,10 +14,7 @@ pub enum Error {
     #[error("invalid public key is returned from `aggregate_public_key`")]
     InvalidAggregatePublicKey,
     #[error("abci query for {path} failed: {err}")]
-    ABCI {
-        path: Path<String, Height>,
-        err: String,
-    },
+    ABCI { path: Path, err: String },
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -77,7 +74,6 @@ use {
         encoding::{Decode, DecodeAs, Proto},
         google::protobuf::any::Any,
         ics24::{ClientConsensusStatePath, ClientStatePath},
-        traits::Id,
     },
     cosmwasm_std::{to_json_vec, ContractResult, Env, SystemResult},
     prost::Message,
@@ -86,11 +82,7 @@ use {
 
 #[allow(clippy::missing_panics_doc)]
 #[cfg(feature = "stargate")]
-pub fn query_ibc_abci<T>(
-    deps: Deps<UnionCustomQuery>,
-    env: &Env,
-    path: Path<String, Height>,
-) -> Result<T, Error>
+pub fn query_ibc_abci<T>(deps: Deps<UnionCustomQuery>, env: &Env, path: Path) -> Result<T, Error>
 where
     Any<T>: Decode<Proto>,
 {
@@ -149,10 +141,15 @@ pub fn query_consensus_state<T>(
 where
     Any<T>: Decode<Proto>,
 {
+    use crate::validated::ValidateT;
+
     query_ibc_abci::<T>(
         deps,
         env,
-        Path::ClientConsensusState(ClientConsensusStatePath { client_id, height }),
+        Path::ClientConsensusState(ClientConsensusStatePath {
+            client_id: client_id.validate().expect("invalid client id"),
+            height,
+        }),
     )
 }
 
@@ -167,5 +164,13 @@ pub fn query_client_state<T>(
 where
     Any<T>: Decode<Proto>,
 {
-    query_ibc_abci::<T>(deps, env, Path::ClientState(ClientStatePath { client_id }))
+    use crate::validated::ValidateT;
+
+    query_ibc_abci::<T>(
+        deps,
+        env,
+        Path::ClientState(ClientStatePath {
+            client_id: client_id.validate().expect("invalid client id"),
+        }),
+    )
 }

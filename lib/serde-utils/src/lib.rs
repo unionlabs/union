@@ -12,6 +12,7 @@ use alloc::{
 use core::fmt::Debug;
 
 use hex::FromHexError;
+use serde::{Deserialize, Serialize};
 
 pub const HEX_ENCODING_PREFIX: &str = "0x";
 
@@ -357,6 +358,41 @@ pub mod hex_allow_unprefixed {
     }
 }
 
+pub mod hex_allow_unprefixed_maybe_empty {
+    use alloc::{format, string::String, vec::Vec};
+    use core::fmt::Debug;
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S, T: AsRef<[u8]>>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match data {
+            Some(data) => crate::hex_string::serialize(data, serializer),
+            None => serializer.serialize_str(""),
+        }
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let s = s.strip_prefix("0x").unwrap_or(&s);
+
+        if s.is_empty() {
+            return Ok(None);
+        }
+
+        let bz = hex::decode(s).map_err(de::Error::custom)?;
+        bz.try_into()
+            .map(Some)
+            .map_err(|y: <T as TryFrom<Vec<u8>>>::Error| de::Error::custom(format!("{y:?}")))
+    }
+}
+
 pub mod hex_string_list {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
@@ -389,6 +425,7 @@ pub mod hex_string_list {
     }
 }
 
+// TODO: Check if human readable
 pub mod string {
     use alloc::string::String;
     use core::{fmt::Display, str::FromStr};
@@ -414,6 +451,41 @@ pub mod string {
                 // FromStr::Err has no bounds
                 .map_err(|_| serde::de::Error::custom("failure to parse string data"))
         })
+    }
+}
+
+pub mod string_list {
+    use alloc::{format, string::String, vec::Vec};
+    use core::{fmt::Debug, str::FromStr};
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    use crate::alloc::string::ToString;
+
+    pub fn serialize<S, T, C>(list: &C, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: core::fmt::Display,
+        for<'a> &'a C: IntoIterator<Item = &'a T>,
+    {
+        serializer.collect_seq(list.into_iter().map(|t| t.to_string()))
+    }
+
+    pub fn deserialize<'de, D, T, C>(deserializer: D) -> Result<C, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: FromStr<Err: Debug + 'static>,
+        C: TryFrom<Vec<T>, Error: Debug>,
+    {
+        Vec::<String>::deserialize(deserializer)?
+            .into_iter()
+            .map(|s| {
+                s.parse()
+                    .map_err(|err| de::Error::custom(format!("{err:?}")))
+            })
+            .collect::<Result<Vec<_>, D::Error>>()?
+            .try_into()
+            .map_err(|err| de::Error::custom(format!("failed to collect list: {err:#?}")))
     }
 }
 
@@ -677,6 +749,19 @@ pub mod fmt {
 
             Ok(())
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[serde(bound(
+    serialize = "T: AsRef<[u8]>",
+    deserialize = "T: TryFrom<Vec<u8>, Error: Debug + 'static>",
+))]
+pub struct Hex<T>(#[serde(with = "crate::hex_string")] pub T);
+
+impl<T: AsRef<[u8]>> core::fmt::Display for Hex<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&to_hex(&self.0))
     }
 }
 

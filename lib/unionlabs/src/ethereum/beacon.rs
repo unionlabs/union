@@ -1,270 +1,28 @@
-use macros::model;
-use serde::{Deserialize, Serialize};
-use ssz::{
-    types::{List, Vector},
-    Ssz,
-};
-use typenum::U;
-
-use super::{config::MAX_BLOB_COMMITMENTS_PER_BLOCK, KZGCommitment};
-use crate::{
-    bls::{BlsPublicKey, BlsSignature},
-    ethereum::{
-        config::{
-            consts::{floorlog2, CURRENT_SYNC_COMMITTEE_INDEX, FINALIZED_ROOT_INDEX},
-            BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,
-            MAX_ATTESTER_SLASHINGS, MAX_BLS_TO_EXECUTION_CHANGES, MAX_BYTES_PER_TRANSACTION,
-            MAX_DEPOSITS, MAX_EXTRA_DATA_BYTES, MAX_PROPOSER_SLASHINGS,
-            MAX_TRANSACTIONS_PER_PAYLOAD, MAX_VALIDATORS_PER_COMMITTEE, MAX_VOLUNTARY_EXITS,
-            MAX_WITHDRAWALS_PER_PAYLOAD, SYNC_COMMITTEE_SIZE,
-        },
-        Attestation, AttesterSlashing, Deposit, Eth1Data, ProposerSlashing, SignedVoluntaryExit,
-        Version,
-    },
-    hash::{H160, H256},
-    ibc::lightclients::ethereum::{
-        beacon_block_header::BeaconBlockHeader, execution_payload_header::ExecutionPayloadHeader,
-        light_client_header::LightClientHeader, sync_aggregate::SyncAggregate,
-        sync_committee::SyncCommittee,
-    },
-    uint::U256,
-};
-
-/// <https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblock>
-#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct BeaconBlock<
-    C: MAX_PROPOSER_SLASHINGS
-        + MAX_VALIDATORS_PER_COMMITTEE
-        + MAX_ATTESTER_SLASHINGS
-        + MAX_ATTESTATIONS
-        + DEPOSIT_CONTRACT_TREE_DEPTH
-        + MAX_DEPOSITS
-        + MAX_VOLUNTARY_EXITS
-        + BYTES_PER_LOGS_BLOOM
-        + MAX_EXTRA_DATA_BYTES
-        + MAX_BYTES_PER_TRANSACTION
-        + MAX_TRANSACTIONS_PER_PAYLOAD
-        + MAX_WITHDRAWALS_PER_PAYLOAD
-        + MAX_BLS_TO_EXECUTION_CHANGES
-        + MAX_BLOB_COMMITMENTS_PER_BLOCK
-        + SYNC_COMMITTEE_SIZE,
-> {
-    #[serde(with = "::serde_utils::string")]
-    pub slot: u64,
-    #[serde(with = "::serde_utils::string")]
-    pub proposer_index: u64,
-    pub parent_root: H256,
-    pub state_root: H256,
-    pub body: BeaconBlockBody<C>,
-}
-
-impl<
-        C: MAX_PROPOSER_SLASHINGS
-            + MAX_VALIDATORS_PER_COMMITTEE
-            + MAX_ATTESTER_SLASHINGS
-            + MAX_ATTESTATIONS
-            + DEPOSIT_CONTRACT_TREE_DEPTH
-            + MAX_DEPOSITS
-            + MAX_VOLUNTARY_EXITS
-            + BYTES_PER_LOGS_BLOOM
-            + MAX_EXTRA_DATA_BYTES
-            + MAX_BYTES_PER_TRANSACTION
-            + MAX_TRANSACTIONS_PER_PAYLOAD
-            + MAX_WITHDRAWALS_PER_PAYLOAD
-            + MAX_BLS_TO_EXECUTION_CHANGES
-            + MAX_BLOB_COMMITMENTS_PER_BLOCK
-            + SYNC_COMMITTEE_SIZE,
-    > BeaconBlock<C>
-{
-    #[must_use]
-    pub fn to_header(self) -> BeaconBlockHeader {
-        BeaconBlockHeader {
-            slot: self.slot,
-            proposer_index: self.proposer_index,
-            parent_root: self.parent_root,
-            state_root: self.state_root,
-            body_root: self.body.tree_hash_root().into(),
-        }
-    }
-}
-
-/// <https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#beaconblockbody>
-#[derive(Ssz)]
-#[model]
-#[serde(bound(serialize = "", deserialize = ""))]
-pub struct BeaconBlockBody<
-    C: MAX_PROPOSER_SLASHINGS
-        + MAX_VALIDATORS_PER_COMMITTEE
-        + MAX_ATTESTER_SLASHINGS
-        + MAX_ATTESTATIONS
-        + DEPOSIT_CONTRACT_TREE_DEPTH
-        + MAX_DEPOSITS
-        + MAX_VOLUNTARY_EXITS
-        + BYTES_PER_LOGS_BLOOM
-        + MAX_EXTRA_DATA_BYTES
-        + MAX_BYTES_PER_TRANSACTION
-        + MAX_TRANSACTIONS_PER_PAYLOAD
-        + MAX_WITHDRAWALS_PER_PAYLOAD
-        + MAX_BLS_TO_EXECUTION_CHANGES
-        + MAX_BLOB_COMMITMENTS_PER_BLOCK
-        + SYNC_COMMITTEE_SIZE,
-> {
-    pub randao_reveal: BlsSignature,
-    pub eth1_data: Eth1Data,
-    pub graffiti: H256,
-    pub proposer_slashings: List<ProposerSlashing, C::MAX_PROPOSER_SLASHINGS>,
-    pub attester_slashings: List<AttesterSlashing<C>, C::MAX_ATTESTER_SLASHINGS>,
-    pub attestations: List<Attestation<C>, C::MAX_ATTESTATIONS>,
-    pub deposits: List<Deposit<C>, C::MAX_DEPOSITS>,
-    pub voluntary_exits: List<SignedVoluntaryExit, C::MAX_VOLUNTARY_EXITS>,
-    pub sync_aggregate: SyncAggregate<C>,
-    pub execution_payload: ExecutionPayload<C>,
-    pub bls_to_execution_changes: List<SignedBlsToExecutionChange, C::MAX_BLS_TO_EXECUTION_CHANGES>,
-    pub blob_kzg_commitments: List<KZGCommitment, C::MAX_BLOB_COMMITMENTS_PER_BLOCK>,
-}
-
-#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
-pub struct BlsToExecutionChange {
-    #[serde(with = "::serde_utils::string")]
-    pub validator_index: u64,
-    pub from_bls_pubkey: BlsPublicKey,
-    pub to_execution_address: H160,
-}
-
-#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
-pub struct SignedBlsToExecutionChange {
-    message: BlsToExecutionChange,
-    signature: BlsSignature,
-}
-
-/// <https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#executionpayload>
-#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
-pub struct ExecutionPayload<
-    C: BYTES_PER_LOGS_BLOOM
-        + MAX_EXTRA_DATA_BYTES
-        + MAX_BYTES_PER_TRANSACTION
-        + MAX_TRANSACTIONS_PER_PAYLOAD
-        + MAX_WITHDRAWALS_PER_PAYLOAD,
-> {
-    /// Execution block header fields
-    pub parent_hash: H256,
-    pub fee_recipient: H160,
-    pub state_root: H256,
-    pub receipts_root: H256,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub logs_bloom: Vector<u8, C::BYTES_PER_LOGS_BLOOM>,
-    /// 'difficulty' in the yellow paper
-    pub prev_randao: H256,
-    /// 'number' in the yellow paper
-    #[serde(with = "::serde_utils::string")]
-    pub block_number: u64,
-    #[serde(with = "::serde_utils::string")]
-    pub gas_limit: u64,
-    #[serde(with = "::serde_utils::string")]
-    pub gas_used: u64,
-    #[serde(with = "::serde_utils::string")]
-    pub timestamp: u64,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub extra_data: List<u8, C::MAX_EXTRA_DATA_BYTES>,
-    pub base_fee_per_gas: U256,
-    /// Extra payload fields
-    /// Hash of execution block
-    pub block_hash: H256,
-    #[serde(with = "::serde_utils::hex_string_list")]
-    pub transactions: List<List<u8, C::MAX_BYTES_PER_TRANSACTION>, C::MAX_TRANSACTIONS_PER_PAYLOAD>,
-    pub withdrawals: List<Withdrawal, C::MAX_WITHDRAWALS_PER_PAYLOAD>,
-    // blob_gas_used: uint64  # [New in Deneb:EIP4844]
-    #[serde(default, with = "::serde_utils::string")]
-    pub blob_gas_used: u64,
-    // excess_blob_gas: uint64  # [New in Deneb:EIP4844]
-    #[serde(default, with = "::serde_utils::string")]
-    pub excess_blob_gas: u64,
-}
-
-impl<
-        C: BYTES_PER_LOGS_BLOOM
-            + MAX_EXTRA_DATA_BYTES
-            + MAX_BYTES_PER_TRANSACTION
-            + MAX_TRANSACTIONS_PER_PAYLOAD
-            + MAX_WITHDRAWALS_PER_PAYLOAD,
-    > ExecutionPayload<C>
-{
-    #[must_use]
-    pub fn to_header(self) -> ExecutionPayloadHeader<C> {
-        ExecutionPayloadHeader {
-            parent_hash: self.parent_hash,
-            fee_recipient: self.fee_recipient,
-            state_root: self.state_root,
-            receipts_root: self.receipts_root,
-            logs_bloom: self.logs_bloom,
-            prev_randao: self.prev_randao,
-            block_number: self.block_number,
-            gas_limit: self.gas_limit,
-            gas_used: self.gas_used,
-            timestamp: self.timestamp,
-            extra_data: self.extra_data,
-            base_fee_per_gas: self.base_fee_per_gas,
-            block_hash: self.block_hash,
-            transactions_root: self.transactions.tree_hash_root().into(),
-            withdrawals_root: self.withdrawals.tree_hash_root().into(),
-            blob_gas_used: self.blob_gas_used,
-            excess_blob_gas: self.excess_blob_gas,
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
-pub struct Withdrawal {
-    #[serde(with = "::serde_utils::string")]
-    pub index: u64,
-    #[serde(with = "::serde_utils::string")]
-    pub validator_index: u64,
-    pub address: H160,
-    #[serde(with = "::serde_utils::string")]
-    pub amount: u64,
-}
-
-/// <https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#lightclientbootstrap>
-#[derive(Clone, Debug, PartialEq, Ssz, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct LightClientBootstrap<
-    C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES,
-> {
-    pub header: LightClientHeader<C>,
-    /// Current sync committee corresponding to `beacon_header.state_root`
-    pub current_sync_committee: SyncCommittee<C>,
-    // TODO: Update tree_hash to support const generic arrays
-    pub current_sync_committee_branch: Vector<H256, U<{ floorlog2(CURRENT_SYNC_COMMITTEE_INDEX) }>>,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct LightClientFinalityUpdate<
-    C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES,
-> {
-    /// Header attested to by the sync committee
-    pub attested_header: LightClientHeader<C>,
-    /// Finalized header corresponding to `attested_header.state_root`
-    pub finalized_header: LightClientHeader<C>,
-    pub finality_branch: [H256; floorlog2(FINALIZED_ROOT_INDEX)],
-    /// Sync committee aggregate signature
-    pub sync_aggregate: SyncAggregate<C>,
-    /// Slot at which the aggregate signature was created (untrusted)
-    #[serde(with = "::serde_utils::string")]
-    pub signature_slot: u64,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-pub struct GenesisData {
-    pub genesis_validators_root: H256,
-    #[serde(with = "::serde_utils::string")]
-    pub genesis_time: u64,
-    pub genesis_fork_version: Version,
-}
+pub mod attestation;
+pub mod attestation_data;
+pub mod attester_slashing;
+pub mod beacon_block;
+pub mod beacon_block_body;
+pub mod bls_to_execution_change;
+pub mod checkpoint;
+pub mod deposit;
+pub mod deposit_data;
+pub mod eth1_data;
+pub mod execution_payload;
+pub mod fork_data;
+pub mod genesis_data;
+pub mod indexed_attestation;
+pub mod kzg_commitment;
+pub mod light_client_bootstrap;
+pub mod light_client_finality_update;
+pub mod proposer_slashing;
+pub mod signed_beacon_block;
+pub mod signed_beacon_block_header;
+pub mod signed_bls_to_execution_change;
+pub mod signed_voluntary_exit;
+pub mod signing_data;
+pub mod voluntary_exit;
+pub mod withdrawal;
 
 #[cfg(test)]
 mod tests {
@@ -273,7 +31,9 @@ mod tests {
     use super::*;
     use crate::{
         ethereum::config::Minimal,
+        ibc::lightclients::ethereum::sync_aggregate::SyncAggregate,
         test_utils::{assert_json_roundtrip, assert_proto_roundtrip},
+        uint::U256,
     };
 
     #[test]
@@ -358,8 +118,10 @@ mod tests {
   "signature_slot": "281"
 }"#;
 
-        let finality_update =
-            serde_json::from_str::<LightClientFinalityUpdate<Minimal>>(JSON).unwrap();
+        let finality_update = serde_json::from_str::<
+            light_client_finality_update::LightClientFinalityUpdate<Minimal>,
+        >(JSON)
+        .unwrap();
 
         dbg!(&finality_update);
 

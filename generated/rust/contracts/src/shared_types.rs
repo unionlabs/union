@@ -1,4 +1,4 @@
-///`ConsensusStateUpdate(bytes32,(uint64,uint64))`
+/// `ConsensusStateUpdate(bytes32,(uint64,uint64))`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -13,7 +13,7 @@ pub struct ConsensusStateUpdate {
     pub consensus_state_commitment: [u8; 32],
     pub height: IbcCoreClientV1HeightData,
 }
-///`GoogleProtobufTimestampData(int64,int64)`
+/// `GoogleProtobufTimestampData(int64,int64)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -28,7 +28,7 @@ pub struct GoogleProtobufTimestampData {
     pub secs: i64,
     pub nanos: i64,
 }
-///`MsgChannelCloseConfirm(string,string,bytes,(uint64,uint64),address)`
+/// `MsgChannelCloseConfirm(string,string,bytes,(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -46,7 +46,7 @@ pub struct MsgChannelCloseConfirm {
     pub proof_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgChannelCloseInit(string,string,address)`
+/// `MsgChannelCloseInit(string,string,address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -62,7 +62,7 @@ pub struct MsgChannelCloseInit {
     pub channel_id: ::std::string::String,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgChannelOpenAck(string,string,string,string,bytes,(uint64,uint64),address)`
+/// `MsgChannelOpenAck(string,string,string,string,bytes,(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -82,7 +82,7 @@ pub struct MsgChannelOpenAck {
     pub proof_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgChannelOpenConfirm(string,string,bytes,(uint64,uint64),address)`
+/// `MsgChannelOpenConfirm(string,string,bytes,(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -100,7 +100,7 @@ pub struct MsgChannelOpenConfirm {
     pub proof_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgChannelOpenInit(string,(uint8,uint8,(string,string),string[],string),address)`
+/// `MsgChannelOpenInit(string,(uint8,uint8,(string,string),string[],string),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -116,7 +116,7 @@ pub struct MsgChannelOpenInit {
     pub channel: IbcCoreChannelV1ChannelData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgChannelOpenTry(string,(uint8,uint8,(string,string),string[],string),string,bytes,(uint64,uint64),address)`
+/// `MsgChannelOpenTry(string,(uint8,uint8,(string,string),string[],string),string,bytes,(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -135,7 +135,7 @@ pub struct MsgChannelOpenTry {
     pub proof_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgConnectionOpenAck(string,bytes,(string,string[]),string,bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address)`
+/// `MsgConnectionOpenAck(string,bytes,(string,string[]),string,bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -158,7 +158,7 @@ pub struct MsgConnectionOpenAck {
     pub consensus_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgConnectionOpenConfirm(string,bytes,(uint64,uint64),address)`
+/// `MsgConnectionOpenConfirm(string,bytes,(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -175,7 +175,7 @@ pub struct MsgConnectionOpenConfirm {
     pub proof_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgConnectionOpenInit(string,(string,string[]),(string,string,(bytes)),uint64,address)`
+/// `MsgConnectionOpenInit(string,(string,string[]),(string,string,(bytes)),uint64,address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -193,7 +193,7 @@ pub struct MsgConnectionOpenInit {
     pub delay_period: u64,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgConnectionOpenTry((string,string,(bytes)),uint64,string,bytes,(string,string[])[],bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address)`
+/// `MsgConnectionOpenTry((string,string,(bytes)),uint64,string,bytes,(string,string[])[],bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -217,7 +217,7 @@ pub struct MsgConnectionOpenTry {
     pub consensus_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgCreateClient(string,bytes,bytes,address)`
+/// `MsgCreateClient(string,bytes,bytes,address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -234,7 +234,7 @@ pub struct MsgCreateClient {
     pub consensus_state_bytes: ::ethers::core::types::Bytes,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgPacketAcknowledgement((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,bytes,(uint64,uint64),address)`
+/// `MsgPacketAcknowledgement((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,bytes,(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -252,7 +252,7 @@ pub struct MsgPacketAcknowledgement {
     pub proof_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgPacketRecv((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64),address)`
+/// `MsgPacketRecv((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64),address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -269,7 +269,7 @@ pub struct MsgPacketRecv {
     pub proof_height: IbcCoreClientV1HeightData,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgPacketTimeout((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64),uint64,address)`
+/// `MsgPacketTimeout((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,(uint64,uint64),uint64,address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -287,7 +287,7 @@ pub struct MsgPacketTimeout {
     pub next_sequence_recv: u64,
     pub relayer: ::ethers::core::types::Address,
 }
-///`MsgUpdateClient(string,bytes,address)`
+/// `MsgUpdateClient(string,bytes,address)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -303,7 +303,7 @@ pub struct MsgUpdateClient {
     pub client_message: ::ethers::core::types::Bytes,
     pub relayer: ::ethers::core::types::Address,
 }
-///`IbcCoreChannelV1ChannelData(uint8,uint8,(string,string),string[],string)`
+/// `IbcCoreChannelV1ChannelData(uint8,uint8,(string,string),string[],string)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -321,7 +321,7 @@ pub struct IbcCoreChannelV1ChannelData {
     pub connection_hops: ::std::vec::Vec<::std::string::String>,
     pub version: ::std::string::String,
 }
-///`IbcCoreChannelV1CounterpartyData(string,string)`
+/// `IbcCoreChannelV1CounterpartyData(string,string)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -336,7 +336,7 @@ pub struct IbcCoreChannelV1CounterpartyData {
     pub port_id: ::std::string::String,
     pub channel_id: ::std::string::String,
 }
-///`IbcCoreChannelV1PacketData(uint64,string,string,string,string,bytes,(uint64,uint64),uint64)`
+/// `IbcCoreChannelV1PacketData(uint64,string,string,string,string,bytes,(uint64,uint64),uint64)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -359,7 +359,7 @@ pub struct IbcCoreChannelV1PacketData {
     pub timeout_height: IbcCoreClientV1HeightData,
     pub timeout_timestamp: u64,
 }
-///`IbcCoreClientV1HeightData(uint64,uint64)`
+/// `IbcCoreClientV1HeightData(uint64,uint64)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -376,7 +376,7 @@ pub struct IbcCoreClientV1HeightData {
     pub revision_number: u64,
     pub revision_height: u64,
 }
-///`IbcCoreCommitmentV1MerklePrefixData(bytes)`
+/// `IbcCoreCommitmentV1MerklePrefixData(bytes)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -390,7 +390,7 @@ pub struct IbcCoreClientV1HeightData {
 pub struct IbcCoreCommitmentV1MerklePrefixData {
     pub key_prefix: ::ethers::core::types::Bytes,
 }
-///`IbcCoreConnectionV1ConnectionEndData(string,(string,string[])[],uint8,(string,string,(bytes)),uint64)`
+/// `IbcCoreConnectionV1ConnectionEndData(string,(string,string[])[],uint8,(string,string,(bytes)),uint64)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -408,7 +408,7 @@ pub struct IbcCoreConnectionV1ConnectionEndData {
     pub counterparty: IbcCoreConnectionV1CounterpartyData,
     pub delay_period: u64,
 }
-///`IbcCoreConnectionV1CounterpartyData(string,string,(bytes))`
+/// `IbcCoreConnectionV1CounterpartyData(string,string,(bytes))`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -424,7 +424,7 @@ pub struct IbcCoreConnectionV1CounterpartyData {
     pub connection_id: ::std::string::String,
     pub prefix: IbcCoreCommitmentV1MerklePrefixData,
 }
-///`IbcCoreConnectionV1VersionData(string,string[])`
+/// `IbcCoreConnectionV1VersionData(string,string[])`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -439,7 +439,7 @@ pub struct IbcCoreConnectionV1VersionData {
     pub identifier: ::std::string::String,
     pub features: ::std::vec::Vec<::std::string::String>,
 }
-///`UnionIbcLightclientsCometblsV1HeaderData((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes)`
+/// `UnionIbcLightclientsCometblsV1HeaderData((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,
@@ -455,7 +455,7 @@ pub struct UnionIbcLightclientsCometblsV1HeaderData {
     pub trusted_height: IbcCoreClientV1HeightData,
     pub zero_knowledge_proof: ::ethers::core::types::Bytes,
 }
-///`UnionIbcLightclientsCometblsV1LightHeaderData(int64,(int64,int64),bytes,bytes,bytes)`
+/// `UnionIbcLightclientsCometblsV1LightHeaderData(int64,(int64,int64),bytes,bytes,bytes)`
 #[derive(
     Clone,
     ::ethers::contract::EthAbiType,

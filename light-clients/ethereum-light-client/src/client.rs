@@ -40,7 +40,6 @@ use unionlabs::{
         },
     },
     ics24::Path,
-    id::ClientId,
     uint::U256,
 };
 
@@ -495,12 +494,15 @@ pub fn do_verify_membership(
     .map_err(Error::VerifyStorageProof)
 }
 
+// this is required because ibc-go requires the client state to be a protobuf Any, even though
+// the counterparty (ethereum in this case) stores it as raw bytes. this will no longer be
+// required with ibc-go v9.
 pub fn canonicalize_stored_value(
     path: String,
     raw_value: Vec<u8>,
 ) -> Result<Vec<u8>, CanonicalizeStoredValueError> {
     let path = path
-        .parse::<Path<ClientId, Height>>()
+        .parse::<Path>()
         .map_err(|_| CanonicalizeStoredValueError::UnknownIbcPath(path))?;
 
     let canonical_value = match path {
@@ -578,7 +580,6 @@ mod test {
         encoding::Encode,
         ethereum::config::Mainnet,
         ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
-        id::ClientId,
     };
 
     use super::*;
@@ -925,18 +926,14 @@ mod test {
 
     #[test]
     fn membership_verification_works_for_connection_end() {
-        do_membership_test::<ConnectionEnd<ClientId, ClientId>>(
-            "src/test/memberships/valid_connection_end.json",
-        )
-        .expect("Membership verification of client state failed");
+        do_membership_test::<ConnectionEnd>("src/test/memberships/valid_connection_end.json")
+            .expect("Membership verification of client state failed");
     }
 
     #[test]
     fn membership_verification_fails_for_incorrect_proofs() {
         let (mut proof, commitment_path, slot, storage_root, connection_end) =
-            membership_data::<ConnectionEnd<ClientId, ClientId>>(
-                "src/test/memberships/valid_connection_end.json",
-            );
+            membership_data::<ConnectionEnd>("src/test/memberships/valid_connection_end.json");
 
         let proofs = vec![
             {
@@ -965,9 +962,7 @@ mod test {
     #[test]
     fn membership_verification_fails_for_incorrect_storage_root() {
         let (proof, commitment_path, slot, mut storage_root, connection_end) =
-            membership_data::<ConnectionEnd<ClientId, ClientId>>(
-                "src/test/memberships/valid_connection_end.json",
-            );
+            membership_data::<ConnectionEnd>("src/test/memberships/valid_connection_end.json");
 
         storage_root.0[10] ^= u8::MAX;
 
@@ -984,9 +979,7 @@ mod test {
     #[test]
     fn membership_verification_fails_for_incorrect_data() {
         let (proof, commitment_path, slot, storage_root, mut connection_end) =
-            membership_data::<ConnectionEnd<ClientId, ClientId>>(
-                "src/test/memberships/valid_connection_end.json",
-            );
+            membership_data::<ConnectionEnd>("src/test/memberships/valid_connection_end.json");
 
         connection_end.client_id =
             unionlabs::validated::Validated::new("08-client-1".into()).unwrap();
@@ -1013,9 +1006,7 @@ mod test {
     #[test]
     fn non_membership_verification_fails_when_value_not_empty() {
         let (proof, commitment_path, slot, storage_root, _) =
-            membership_data::<ConnectionEnd<ClientId, ClientId>>(
-                "src/test/memberships/valid_connection_end.json",
-            );
+            membership_data::<ConnectionEnd>("src/test/memberships/valid_connection_end.json");
         assert_eq!(
             do_verify_non_membership(commitment_path, storage_root, slot, proof),
             Err(Error::CounterpartyStorageNotNil)

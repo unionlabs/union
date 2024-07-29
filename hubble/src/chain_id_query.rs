@@ -13,9 +13,7 @@ use tendermint_rpc::{Client, HttpClient};
 use tracing::warn;
 use unionlabs::{
     encoding::{DecodeAs, EthAbi, Proto},
-    parse_wasm_client_type,
-    traits::ClientState,
-    WasmClientType,
+    parse_wasm_client_type, WasmClientType,
 };
 sol! {
     contract IbcHandler {
@@ -129,7 +127,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                             continue;
                                         }
                                     };
-                                    cs.chain_id().to_string()
+                                    cs.chain_id.to_string()
                                 }
                                 WasmClientType::Cometbls => {
                                     let cs = match unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<Proto>(&cs.data) {
@@ -140,7 +138,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                         }
                                     };
 
-                                    cs.chain_id().to_string()
+                                    cs.chain_id
                                 }
                                 WasmClientType::Tendermint => {
                                     let cs = match unionlabs::ibc::lightclients::tendermint::client_state::ClientState::decode_as::<Proto>(&cs.data) {
@@ -151,7 +149,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                         }
                                     };
 
-                                    cs.chain_id().to_string()
+                                    cs.chain_id
                                 }
                                 WasmClientType::Scroll => {
                                     let cs = match unionlabs::ibc::lightclients::scroll::client_state::ClientState::decode_as::<Proto>(&cs.data) {
@@ -162,7 +160,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                         }
                                     };
 
-                                    cs.chain_id().to_string()
+                                    cs.chain_id.to_string()
                                 }
                                 WasmClientType::Arbitrum => {
                                     let cs = match unionlabs::ibc::lightclients::arbitrum::client_state::ClientState::decode_as::<Proto>(&cs.data) {
@@ -173,7 +171,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                         }
                                     };
 
-                                    cs.chain_id().to_string()
+                                    cs.chain_id.to_string()
                                 }
                                 WasmClientType::Linea => todo!("We still need to add linea"),
                                 WasmClientType::Berachain => {
@@ -186,7 +184,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                         }
                                     };
 
-                                    cs.chain_id().to_string()
+                                    cs.execution_chain_id.to_string()
                                 }
                                 WasmClientType::EvmInCosmos => {
                                     todo!()
