@@ -58,12 +58,12 @@ export let onAssetSelect: (data: { address: string; symbol: string }) => void
                   variant="ghost"
                   class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
                   on:click={() => {
-                onAssetSelect({address: asset.address, symbol : supportedAsset ? supportedAsset.display_symbol : asset.symbol})
+                onAssetSelect({address: asset.address, symbol : (supportedAsset && supportedAsset.display_symbol) || (asset && asset.symbol) || 'Unknown symbol' })
                 dialogOpen = false
               }}
                 >
                   <div class="size-full flex flex-col items-start" class:opacity-30={!supportedAsset}>
-                    {truncate(supportedAsset ? supportedAsset.display_symbol : asset.symbol, 6)}
+                    {truncate((supportedAsset && supportedAsset.display_symbol) || (asset && asset.symbol) || '', 6) || 'Unknown symbol'}
                   </div>
                   <p class="mb-auto text-lg font-black" class:opacity-30={!supportedAsset}>
                     {formatUnits(asset.balance, supportedAsset?.decimals ?? 0)}
