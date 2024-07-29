@@ -1,0 +1,18 @@
+{
+  "@type": "fetch",
+  "@value": {
+    "@type": "make_msg_create_client",
+    "@value": {
+      "chain_id": "union-devnet-1",
+      "height": {
+        "revision_number": 1,
+        "revision_height": 3360
+      },
+      "metadata": {
+        "checksum": "0x385508e942f153320442e5bd94237f530597ac947ecabeab4c99d375fd036f22"
+      },
+      "counterparty_chain_id": "32382",
+      "ibc_interface": "ibc-go-v8/08-wasm"
+    }
+  }
+}

@@ -448,3 +448,18 @@ macro_rules! iter {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! assert_all_eq (
+    ($a:expr, $b:expr) => {
+        assert_eq!($a, $b);
+    };
+    ($a:expr, $b:expr, $c:expr) => {
+        assert_eq!($a, $b);
+        assert_eq!($b, $c);
+    };
+    ($a:expr, $b:expr, $c:expr, $($rest:expr),*$(,)?) => {
+        assert_eq!($a, $b);
+        assert_all_eq!($b, $c, $($rest),*);
+    }
+);

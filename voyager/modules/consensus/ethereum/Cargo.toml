@@ -1,0 +1,28 @@
+[package]
+edition = "2021"
+name    = "voyager-consensus-module-ethereum"
+version = "0.1.0"
+
+[dependencies]
+beacon-api         = { workspace = true }
+bitvec.workspace   = true
+voyager-message      = { workspace = true }
+chain-utils        = { workspace = true }
+enumorph.workspace = true
+ethereum-verifier  = { workspace = true }
+ethers             = { workspace = true, features = ["rustls", "ws"] }
+frunk.workspace    = true
+futures.workspace  = true
+jsonrpsee          = { version = "0.24.1", features = ["macros", "server", "tracing"] }
+macros.workspace   = true
+num-bigint         = "0.4.6"
+prost.workspace    = true
+protos.workspace   = true
+queue-msg          = { workspace = true }
+serde              = { workspace = true, features = ["derive"] }
+serde_json         = { workspace = true }
+thiserror          = { workspace = true }
+tokio              = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+unionlabs          = { workspace = true }

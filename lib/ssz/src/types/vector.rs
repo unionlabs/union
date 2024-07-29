@@ -44,6 +44,7 @@ use crate::{
 #[derivative(
     Clone(bound = "T: ::core::clone::Clone"),
     PartialEq(bound = "T: ::core::cmp::PartialEq"),
+    Eq(bound = "T: ::core::cmp::Eq"),
     Hash(bound = "T: ::core::hash::Hash")
 )]
 #[serde(transparent)]

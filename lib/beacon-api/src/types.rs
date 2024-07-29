@@ -137,26 +137,23 @@ pub struct BeaconHeaderSignature {
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bls::BlsSignature,
-    ethereum::{
-        config::{ChainSpec, PresetBaseKind},
-        Version,
-    },
+    ethereum::{config::PresetBaseKind, Version},
     hash::H256,
     ibc::lightclients::ethereum::{
         beacon_block_header::BeaconBlockHeader, fork::Fork, fork_parameters::ForkParameters,
-        light_client_update::LightClientUpdate,
+        light_client_update::UnboundedLightClientUpdate,
     },
 };
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct LightClientUpdatesResponse<C: ChainSpec>(pub Vec<LightClientUpdateResponse<C>>);
+pub struct LightClientUpdatesResponse(pub Vec<LightClientUpdateResponse>);
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-pub struct LightClientUpdateResponse<C: ChainSpec> {
+pub struct LightClientUpdateResponse {
     pub version: String,
-    pub data: LightClientUpdate<C>,
+    pub data: UnboundedLightClientUpdate,
 }
 
 // #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -204,7 +201,7 @@ pub struct LightClientUpdateResponse<C: ChainSpec> {
 //     }
 // }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct Spec {
     pub preset_base: PresetBaseKind,
@@ -277,8 +274,10 @@ pub struct Spec {
     // MAX_ATTESTATIONS: 128,
     // MAX_DEPOSITS: 16,
     // MAX_VOLUNTARY_EXITS: 16,
-    // SYNC_COMMITTEE_SIZE: 512,
-    // EPOCHS_PER_SYNC_COMMITTEE_PERIOD: 256,
+    #[serde(with = "::serde_utils::string")]
+    pub sync_committee_size: u64,
+    #[serde(with = "::serde_utils::string")]
+    pub epochs_per_sync_committee_period: u64,
     // INACTIVITY_PENALTY_QUOTIENT_ALTAIR: 50331648,
     // MIN_SLASHING_PENALTY_QUOTIENT_ALTAIR: 64,
     // PROPORTIONAL_SLASHING_MULTIPLIER_ALTAIR: 2,
@@ -297,7 +296,7 @@ pub struct Spec {
     // FIELD_ELEMENTS_PER_BLOB: 4096,
     // MAX_BLOBS_PER_BLOCK: 4,
     #[serde(with = "::serde_utils::string")]
-    genesis_slot: u64,
+    pub genesis_slot: u64,
     // GENESIS_EPOCH: 0,
     // FAR_FUTURE_EPOCH: 18446744073709551615,
     // BASE_REWARDS_PER_EPOCH: 4,
@@ -338,7 +337,7 @@ pub struct Spec {
 }
 
 impl Spec {
-    pub fn into_fork_parameters(self) -> ForkParameters {
+    pub fn to_fork_parameters(&self) -> ForkParameters {
         ForkParameters {
             genesis_fork_version: self.genesis_fork_version,
             genesis_slot: self.genesis_slot,
@@ -359,5 +358,9 @@ impl Spec {
                 epoch: self.deneb_fork_epoch,
             },
         }
+    }
+
+    pub fn period(&self) -> u64 {
+        self.epochs_per_sync_committee_period * self.slots_per_epoch
     }
 }

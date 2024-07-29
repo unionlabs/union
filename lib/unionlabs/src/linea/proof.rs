@@ -9,7 +9,7 @@ pub enum TryFromMerkleProofError {
     MissingField(#[from] MissingField),
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MerklePath {
     #[serde(with = "::serde_utils::hex_string")]

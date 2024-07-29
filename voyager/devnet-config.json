@@ -1,0 +1,139 @@
+{
+  "plugins": [
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-cosmos-sdk",
+      "config": {
+        "ws_url": "ws://localhost:26657/websocket",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-ethereum",
+      "config": {
+        "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+        "eth_rpc_api": "ws://localhost:8546",
+        "eth_beacon_rpc_api": "http://localhost:9596"
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-cometbls",
+      "config": {}
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-consensus-module-cometbls",
+      "config": {
+        "ws_url": "ws://localhost:26657/websocket",
+        "grpc_url": "http://localhost:9090",
+        "prover_endpoints": ["http://localhost:9999"]
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-consensus-module-ethereum",
+      "config": {
+        "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+        "eth_rpc_api": "ws://localhost:8546",
+        "eth_beacon_rpc_api": "http://localhost:9596"
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-ethereum",
+      "config": {}
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-transaction-module-cosmos-sdk",
+      "config": {
+        "keyring": {
+          "name": "union-devnet",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "alice",
+              "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+            }
+          ]
+        },
+        "gas_config": {
+          "gas_price": "1.0",
+          "gas_denom": "muno",
+          "gas_multiplier": "1.1",
+          "max_gas": 60000000
+        },
+        "ws_url": "ws://localhost:26657/websocket",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-transaction-module-ethereum",
+      "config": {
+        "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+        "multicall_address": "0x9fd9D9528c8373D990a1380B9414bDE179007A35",
+        "keyring": {
+          "name": "ethereum-devnet",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "dev-key0",
+              "key": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+            },
+            {
+              "type": "raw",
+              "name": "dev-key1",
+              "key": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+            },
+            {
+              "type": "raw",
+              "name": "eth-key-2",
+              "key": "0x0a917066d306f09670e47729bfd4384f4afcac98493c65b9733870a434d71f29"
+            },
+            {
+              "type": "raw",
+              "name": "eth-key-3",
+              "key": "0xff45ae2a6c4899294e898a171e15de8a4d2557852378364f8684c6a1520ccd7d"
+            },
+            {
+              "type": "raw",
+              "name": "eth-key-4",
+              "key": "0x27ae0c7b8d7c698e41b173265490a4c64b4e39ae78599166e003f868f12140fd"
+            }
+          ]
+        },
+        "eth_rpc_api": "ws://localhost:8546"
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-packet-filter",
+      "config": {    
+        "connection_event_filters": [{}],
+        "channel_event_filters": [{}],
+        "packet_event_filters": [{}]
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
+      "config": {
+        "chain_id": "union-devnet-1",
+        "max_batch_size": 1
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
+      "config": {
+        "chain_id": "32382",
+        "max_batch_size": 1
+      }
+    }
+  ],
+  "voyager": {
+    "num_workers": 1,
+    "laddr": "0.0.0.0:65534",
+    "queue": {
+      "type": "pg-queue",
+      "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
+      "max_connections": 20,
+      "min_connections": 20,
+      "idle_timeout": null,
+      "max_lifetime": null
+    },
+    "optimizer_delay_milliseconds": 100
+  }
+}

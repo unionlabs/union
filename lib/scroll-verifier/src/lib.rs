@@ -29,13 +29,11 @@ pub enum Error {
     HashBatch(#[from] HashBatchError),
 }
 
-/*
-   1. rollupContractOnL1 ∈ L1Stateroot
-   2. lastBatchIndex ≡ rollupContractOnL1.lastBatchIndex
-   3. L2stateRoot ≡ rollupContractOnL1.finalized[lastBatchIndex]
-   4. batchHash ≡ rollupContractOnL1.batchHashes[lastBatchIndex]
-   5. ibcContractOnL2 ∈ L2StateRoot
-*/
+// 1. rollupContractOnL1 ∈ L1Stateroot
+// 2. lastBatchIndex ≡ rollupContractOnL1.lastBatchIndex
+// 3. L2stateRoot ≡ rollupContractOnL1.finalized[lastBatchIndex]
+// 4. batchHash ≡ rollupContractOnL1.batchHashes[lastBatchIndex]
+// 5. ibcContractOnL2 ∈ L2StateRoot
 pub fn verify_header(
     client_state: ClientState,
     header: Header,

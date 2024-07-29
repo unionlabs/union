@@ -265,7 +265,6 @@ impl<'a> SszDecoderBuilder<'a> {
 ///
 ///     assert_eq!(foo, decoded_foo);
 /// }
-///
 /// ```
 pub struct SszDecoder<'a> {
     items: SmallVec8<&'a [u8]>,

@@ -1,15 +1,12 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
-use crate::ibc::core::{channel::packet::Packet, client::height::IsHeight};
+use crate::ibc::core::{channel::packet::Packet, client::height::Height};
 
 #[model(proto(raw(protos::ibc::core::channel::v1::MsgRecvPacket)))]
-#[serde(bound(
-    serialize = "ProofCommitment: Serialize",
-    deserialize = "ProofCommitment: for<'d> Deserialize<'d>",
-))]
-pub struct MsgRecvPacket<ProofCommitment, ProofHeight: IsHeight> {
+pub struct MsgRecvPacket {
     pub packet: Packet,
-    pub proof_commitment: ProofCommitment,
-    pub proof_height: ProofHeight,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_commitment: Vec<u8>,
+    pub proof_height: Height,
 }

@@ -1,0 +1,17 @@
+          {
+            "chain_id": "union-testnet-8",
+            "connection_id": ".*",
+            "source_port_id": "^wasm.union1tw2y3uk7fwcjeh208gdwaqd3utkuzmnp2fyvqve00jg8vtyhuhfqnzhevp$",
+            "source_channel_id": "^channel-102$",
+            "destination_port_id": "^0x9aeb75f1af78413197f49cd15f7141877a0742c7$",
+            "destination_channel_id": "^channel-109$"
+          },
+          {
+            "chain_id": "11155111",
+            "connection_id": ".*",
+            "source_port_id": "^0x9aeb75f1af78413197f49cd15f7141877a0742c7$",
+            "source_channel_id": "^channel-109$",
+            "destination_port_id": "^wasm.union1tw2y3uk7fwcjeh208gdwaqd3utkuzmnp2fyvqve00jg8vtyhuhfqnzhevp$",
+            "destination_channel_id": "^channel-102$"
+          }
+

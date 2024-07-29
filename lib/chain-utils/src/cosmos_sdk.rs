@@ -372,7 +372,8 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
             .unwrap();
 
         let tx_body = TxBody {
-            messages: messages.clone().into_iter().collect(),
+            // TODO: Use RawAny in the signature of this function and broadcast_tx_commit
+            messages: messages.clone().into_iter().map(Into::into).collect(),
             memo,
             timeout_height: 0,
             extension_options: vec![],

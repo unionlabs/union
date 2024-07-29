@@ -3,12 +3,12 @@ use ssz::{types::BitVector, Ssz};
 
 use crate::{bls::BlsSignature, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
-#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::SyncAggregate),
     into,
     from
 ))]
+#[derive(Ssz)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
     // TODO: Change debug print for this type in ssz::types
@@ -16,17 +16,6 @@ pub struct SyncAggregate<C: SYNC_COMMITTEE_SIZE> {
     pub sync_committee_bits: BitVector<C::SYNC_COMMITTEE_SIZE>,
     pub sync_committee_signature: BlsSignature,
 }
-
-// pub fn bit_vector_debug<N: Unsigned + Clone>(
-//     bv: &BitVector<N>,
-//     f: &mut fmt::Formatter,
-// ) -> fmt::Result {
-//     for b in bv.iter() {
-//         write!(f, "BitVector({})", if b { '1' } else { '0' })?;
-//     }
-
-//     Ok(())
-// }
 
 impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
     for protos::union::ibc::lightclients::ethereum::v1::SyncAggregate
@@ -39,10 +28,12 @@ impl<C: SYNC_COMMITTEE_SIZE> From<SyncAggregate<C>>
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromSyncAggregateError {
-    Bits(ssz::types::bitfield::BitlistFromBytesError),
-    Signature(InvalidLength),
+    #[error("invalid `sync_committee_bits`")]
+    SyncCommitteeBits(#[from] ssz::types::bitfield::BitlistFromBytesError),
+    #[error("invalid `sync_committee_signature`")]
+    SyncCommitteeSignature(#[from] InvalidLength),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE> TryFrom<protos::union::ibc::lightclients::ethereum::v1::SyncAggregate>
@@ -56,11 +47,32 @@ impl<C: SYNC_COMMITTEE_SIZE> TryFrom<protos::union::ibc::lightclients::ethereum:
         Ok(Self {
             // REVIEW: This might not be the correct conversion
             sync_committee_bits: BitVector::from_bytes(value.sync_committee_bits.into())
-                .map_err(TryFromSyncAggregateError::Bits)?,
+                .map_err(TryFromSyncAggregateError::SyncCommitteeBits)?,
             sync_committee_signature: value
                 .sync_committee_signature
                 .try_into()
-                .map_err(TryFromSyncAggregateError::Signature)?,
+                .map_err(TryFromSyncAggregateError::SyncCommitteeSignature)?,
         })
+    }
+}
+
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::SyncAggregate),
+    from
+))]
+pub struct UnboundedSyncAggregate {
+    #[serde(with = "::serde_utils::hex_string")]
+    pub sync_committee_bits: Vec<u8>,
+    pub sync_committee_signature: BlsSignature,
+}
+
+impl From<UnboundedSyncAggregate>
+    for protos::union::ibc::lightclients::ethereum::v1::SyncAggregate
+{
+    fn from(value: UnboundedSyncAggregate) -> Self {
+        Self {
+            sync_committee_bits: value.sync_committee_bits,
+            sync_committee_signature: value.sync_committee_signature.into_bytes().into(),
+        }
     }
 }

@@ -2,25 +2,21 @@ use core::{fmt::Display, num::NonZeroU64, str::FromStr};
 
 use macros::ibc_path;
 use serde::{Deserialize, Serialize};
+use serde_utils::Hex;
 
 use crate::{
     hash::H256,
     ibc::core::{
-        channel::channel::Channel, client::height::IsHeight,
+        channel::channel::Channel, client::height::Height,
         connection::connection_end::ConnectionEnd,
     },
-    id::{ChannelId, ConnectionId, PortId},
-    traits::{self, Chain, ClientIdOf, HeightOf, Member},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
+    traits::Member,
 };
 
 /// `IbcPath` represents the path to a light client's ibc storage. The values stored at each path
 /// are strongly typed, i.e. `connections/{connection_id}` always stores a [`ConnectionEnd`].
-pub trait IbcPath<Hc: Chain, Tr: Chain>:
-    Member
-    + Display
-    + TryFrom<Path<ClientIdOf<Hc>, HeightOf<Tr>>, Error = Path<ClientIdOf<Hc>, HeightOf<Tr>>>
-    + Into<Path<ClientIdOf<Hc>, HeightOf<Tr>>>
-{
+pub trait IbcPath: Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
     type Value: Member;
 }
 
@@ -45,11 +41,11 @@ pub trait IbcPath<Hc: Chain, Tr: Chain>:
     rename_all = "snake_case",
     deny_unknown_fields
 )]
-pub enum Path<ClientId: traits::Id, Height: IsHeight> {
+pub enum Path {
     #[display(fmt = "{_0}")]
-    ClientState(ClientStatePath<ClientId>),
+    ClientState(ClientStatePath),
     #[display(fmt = "{_0}")]
-    ClientConsensusState(ClientConsensusStatePath<ClientId, Height>),
+    ClientConsensusState(ClientConsensusStatePath),
     #[display(fmt = "{_0}")]
     Connection(ConnectionPath),
     #[display(fmt = "{_0}")]
@@ -72,7 +68,7 @@ pub enum Path<ClientId: traits::Id, Height: IsHeight> {
     NextClientSequence(NextClientSequencePath),
 }
 
-impl<ClientId: traits::Id, Height: IsHeight> FromStr for Path<ClientId, Height> {
+impl FromStr for Path {
     type Err = PathParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -92,22 +88,22 @@ impl<ClientId: traits::Id, Height: IsHeight> FromStr for Path<ClientId, Height> 
 }
 
 #[ibc_path("clients/{client_id}/clientState")]
-pub struct ClientStatePath<ClientId: traits::Id> {
+pub struct ClientStatePath {
     pub client_id: ClientId,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientStatePath<Hc::ClientId> {
-    type Value = Hc::StoredClientState<Tr>;
+impl IbcPath for ClientStatePath {
+    type Value = Hex<Vec<u8>>;
 }
 
 #[ibc_path("clients/{client_id}/consensusStates/{height}")]
-pub struct ClientConsensusStatePath<ClientId: traits::Id, Height: IsHeight> {
+pub struct ClientConsensusStatePath {
     pub client_id: ClientId,
     pub height: Height,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ClientConsensusStatePath<Hc::ClientId, Tr::Height> {
-    type Value = Hc::StoredConsensusState<Tr>;
+impl IbcPath for ClientConsensusStatePath {
+    type Value = Hex<Vec<u8>>;
 }
 
 #[ibc_path("connections/{connection_id}")]
@@ -115,8 +111,9 @@ pub struct ConnectionPath {
     pub connection_id: ConnectionId,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ConnectionPath {
-    type Value = ConnectionEnd<Hc::ClientId, Tr::ClientId, String>;
+impl IbcPath for ConnectionPath {
+    // TODO: This is really `Either<ClientId, EmptyString>`
+    type Value = ConnectionEnd;
 }
 
 #[ibc_path("channelEnds/ports/{port_id}/channels/{channel_id}")]
@@ -125,7 +122,7 @@ pub struct ChannelEndPath {
     pub channel_id: ChannelId,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ChannelEndPath {
+impl IbcPath for ChannelEndPath {
     type Value = Channel;
 }
 
@@ -136,7 +133,7 @@ pub struct CommitmentPath {
     pub sequence: NonZeroU64,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for CommitmentPath {
+impl IbcPath for CommitmentPath {
     type Value = H256;
 }
 
@@ -147,7 +144,7 @@ pub struct AcknowledgementPath {
     pub sequence: NonZeroU64,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for AcknowledgementPath {
+impl IbcPath for AcknowledgementPath {
     type Value = H256;
 }
 
@@ -158,7 +155,7 @@ pub struct ReceiptPath {
     pub sequence: NonZeroU64,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for ReceiptPath {
+impl IbcPath for ReceiptPath {
     type Value = bool;
 }
 
@@ -168,7 +165,7 @@ pub struct NextSequenceSendPath {
     pub channel_id: ChannelId,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextSequenceSendPath {
+impl IbcPath for NextSequenceSendPath {
     type Value = u64;
 }
 
@@ -178,7 +175,7 @@ pub struct NextSequenceRecvPath {
     pub channel_id: ChannelId,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextSequenceRecvPath {
+impl IbcPath for NextSequenceRecvPath {
     type Value = u64;
 }
 
@@ -188,21 +185,21 @@ pub struct NextSequenceAckPath {
     pub channel_id: ChannelId,
 }
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextSequenceAckPath {
+impl IbcPath for NextSequenceAckPath {
     type Value = u64;
 }
 
 #[ibc_path("nextConnectionSequence")]
 pub struct NextConnectionSequencePath {}
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextConnectionSequencePath {
+impl IbcPath for NextConnectionSequencePath {
     type Value = u64;
 }
 
 #[ibc_path("nextClientSequence")]
 pub struct NextClientSequencePath {}
 
-impl<Hc: Chain, Tr: Chain> IbcPath<Hc, Tr> for NextClientSequencePath {
+impl IbcPath for NextClientSequencePath {
     type Value = u64;
 }
 
@@ -232,11 +229,11 @@ mod tests {
 
     #[test]
     fn parse_ibc_paths_from_str() {
-        type PathT = Path<String, Height>;
+        type PathT = Path;
         assert_eq!(
             "clients/08-wasm-0/clientState".parse::<PathT>().unwrap(),
             Path::ClientState(ClientStatePath {
-                client_id: "08-wasm-0".to_string()
+                client_id: "08-wasm-0".to_string().validate().unwrap()
             })
         );
         assert_eq!(
@@ -244,7 +241,7 @@ mod tests {
                 .parse::<PathT>()
                 .unwrap(),
             Path::ClientConsensusState(ClientConsensusStatePath {
-                client_id: "08-wasm-0".to_string(),
+                client_id: "08-wasm-0".to_string().validate().unwrap(),
                 height: Height {
                     revision_number: 0,
                     revision_height: 1
@@ -303,7 +300,7 @@ mod tests {
     //     pub(crate) fn parse() {
     //         arbtest::builder().budget_ms(4000).minimize().run(|u| {
     //             // we don't care if it succeeds (it probably won't), we just want to ensure it doesn't panic
-    //             let _ = String::arbitrary(u)?.parse::<Path<ClientId, Height>>();
+    //             let _ = String::arbitrary(u)?.parse::<Path>();
     //             Ok(())
     //         });
     //     }
@@ -321,7 +318,7 @@ mod tests {
     //                     break;
     //                 }
 
-    //                 if let Ok(ok) = <Path<ClientId, Height>>::arbitrary(u) {
+    //                 if let Ok(ok) = <Path>::arbitrary(u) {
     //                     oks += 1;
     //                     assert_json_roundtrip(&ok);
     //                     assert_string_roundtrip(&ok);
@@ -344,6 +341,6 @@ mod tests {
     // const _: fn() = || {
     //     fn assert_impl_all<T: for<'a> Arbitrary<'a>>() {}
 
-    //     assert_impl_all::<Path<ClientId, Height>>();
+    //     assert_impl_all::<Path>();
     // };
 }

@@ -1,4 +1,8 @@
-use std::{fmt::Debug, num::NonZeroU64, sync::Arc};
+use std::{
+    fmt::Debug,
+    num::{NonZeroU32, NonZeroU64, NonZeroU8},
+    sync::Arc,
+};
 
 use jsonrpsee::{
     core::client::ClientT,
@@ -6,18 +10,19 @@ use jsonrpsee::{
     ws_client::{WsClient, WsClientBuilder},
 };
 use serde::{de, Deserialize, Deserializer, Serialize};
-use tracing::debug;
+use tracing::{debug, instrument};
 use unionlabs::{
-    bounded::BoundedU8,
+    bounded::{BoundedI64, BoundedU8},
     google::protobuf::timestamp::Timestamp,
     hash::{H160, H256},
     option_unwrap, result_unwrap,
     tendermint::{
-        abci::response_query::ResponseQuery,
+        abci::{exec_tx_result::ExecTxResult, response_query::ResponseQuery},
         crypto::public_key::PublicKey,
         p2p::default_node_info::DefaultNodeInfo,
         types::{
-            block::Block, block_id::BlockId, signed_header::SignedHeader, validator::Validator,
+            block::Block, block_id::BlockId, signed_header::SignedHeader, tx_proof::TxProof,
+            validator::Validator,
         },
     },
 };
@@ -104,28 +109,36 @@ impl Client {
     }
 
     // would be cool to somehow have this be generic and do decoding automatically
+    #[instrument(
+        skip_all,
+        fields(
+            path = %path.as_ref(),
+            data = %::serde_utils::to_hex(data.as_ref()),
+            height = %height.map(|x| x.to_string()).as_deref().unwrap_or(""),
+            %prove,
+        )
+    )]
     pub async fn abci_query(
         &self,
         path: impl AsRef<str>,
         data: impl AsRef<[u8]>,
-        height: Option<NonZeroU64>,
+        height: Option<BoundedI64<1>>,
         prove: bool,
     ) -> Result<AbciQueryResponse, JsonRpcError> {
-        let path = path.as_ref();
-        let height = height.map(|x| x.to_string());
-
-        debug!(
-            %path,
-            data = %::serde_utils::to_hex(data.as_ref()),
-            height = %height.as_deref().unwrap_or(""),
-            %prove,
-            "fetching abci query"
-        );
+        debug!("fetching abci query");
 
         let res: AbciQueryResponse = self
             .client
             // the rpc needs an un-prefixed hex string
-            .request("abci_query", (path, hex::encode(data), height, prove))
+            .request(
+                "abci_query",
+                (
+                    path.as_ref(),
+                    hex::encode(data),
+                    height.map(|x| x.to_string()),
+                    prove,
+                ),
+            )
             .await?;
 
         debug!(
@@ -143,7 +156,6 @@ impl Client {
         Ok(res)
     }
 
-    // would be cool to somehow have this be generic and do decoding automatically
     pub async fn status(&self) -> Result<StatusResponse, JsonRpcError> {
         self.client.request("status", rpc_params!()).await
     }
@@ -153,6 +165,57 @@ impl Client {
             .request("block", (height.map(|x| x.to_string()),))
             .await
     }
+
+    pub async fn tx_search(
+        &self,
+        query: impl AsRef<str>,
+        prove: bool,
+        page: NonZeroU32,
+        // REVIEW: Is this bounded in the same way as the validators pagination?
+        per_page: NonZeroU8,
+        // REVIEW: There is the enum `cosmos.tx.v1beta.OrderBy`, is that related to this?
+        order_by: Order,
+    ) -> Result<TxSearchResponse, JsonRpcError> {
+        self.client
+            .request(
+                "tx_search",
+                rpc_params![
+                    query.as_ref(),
+                    prove,
+                    page.to_string(),
+                    per_page.to_string(),
+                    order_by
+                ],
+            )
+            .await
+    }
+
+    // TODO: support order_by
+    pub async fn tx(&self, hash: H256, prove: bool) -> Result<TxResponse, JsonRpcError> {
+        use base64::prelude::*;
+
+        self.client
+            .request("tx", rpc_params![BASE64_STANDARD.encode(hash), prove])
+            .await
+    }
+
+    pub async fn broadcast_tx_sync(
+        &self,
+        tx: &[u8],
+    ) -> Result<TxBroadcastSyncResponse, JsonRpcError> {
+        use base64::prelude::*;
+
+        self.client
+            .request("broadcast_tx_sync", rpc_params![BASE64_STANDARD.encode(tx)])
+            .await
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum Order {
+    Asc,
+    Desc,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -177,10 +240,10 @@ pub struct StatusResponse {
 #[serde(deny_unknown_fields)]
 pub struct SyncInfo {
     catching_up: bool,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    earliest_app_hash: H256,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    earliest_block_hash: H256,
+    #[serde(with = "::serde_utils::hex_allow_unprefixed_maybe_empty")]
+    earliest_app_hash: Option<H256>,
+    #[serde(with = "::serde_utils::hex_allow_unprefixed_maybe_empty")]
+    earliest_block_hash: Option<H256>,
     #[serde(with = "::serde_utils::string")]
     earliest_block_height: u64,
     earliest_block_time: Timestamp,
@@ -246,6 +309,52 @@ pub struct CommitResponse {
     pub canonical: bool,
 }
 
+#[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TxResponse {
+    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
+    pub hash: H256,
+    // review: is this really optional?
+    #[serde(with = "::serde_utils::string_opt")]
+    pub height: Option<NonZeroU64>,
+    pub index: u32,
+    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::abci::ExecTxResult, _>")]
+    pub tx_result: ExecTxResult,
+    #[serde(with = "::serde_utils::base64")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub tx: Vec<u8>,
+    #[serde(
+        default,
+        deserialize_with = "serde_as_opt::<_, protos::tendermint::types::TxProof, _>"
+    )]
+    pub proof: Option<TxProof>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TxSearchResponse {
+    pub txs: Vec<TxResponse>,
+    #[serde(with = "::serde_utils::string")]
+    pub total_count: u32,
+}
+
+#[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TxBroadcastSyncResponse {
+    pub codespace: String,
+
+    pub code: u32,
+
+    #[serde(with = "::serde_utils::base64")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub data: Vec<u8>,
+
+    pub log: String,
+
+    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
+    pub hash: H256,
+}
+
 pub fn serde_as<'de, D, Src, Dst>(deserializer: D) -> Result<Dst, D::Error>
 where
     D: Deserializer<'de>,
@@ -255,6 +364,20 @@ where
     Src::deserialize(deserializer)?
         .try_into()
         .map_err(|e| de::Error::custom(format!("{e:?}")))
+}
+
+pub fn serde_as_opt<'de, D, Src, Dst>(deserializer: D) -> Result<Option<Dst>, D::Error>
+where
+    D: Deserializer<'de>,
+    Src: Deserialize<'de>,
+    Src: TryInto<Dst, Error: Debug>,
+{
+    <Option<Src>>::deserialize(deserializer)?
+        .map(|src| {
+            src.try_into()
+                .map_err(|e| de::Error::custom(format!("{e:?}")))
+        })
+        .transpose()
 }
 
 pub fn serde_as_list<'de, D, Src, Dst>(deserializer: D) -> Result<Vec<Dst>, D::Error>
@@ -277,9 +400,11 @@ where
 // mod tests {
 //     use std::time::Duration;
 
+//     use hex_literal::hex;
+
 //     use super::*;
 
-//     const UNION_TESTNET: &'static str = "wss://rpc.testnet.bonlulu.uno/websocket";
+//     const UNION_TESTNET: &'static str = "wss://rpc.testnet-8.union.build/websocket";
 //     const BERACHAIN_DEVNET: &'static str = "ws://localhost:26657/websocket";
 //     const BERACHAIN_TESTNET: &'static str = "wss://bartio-cosmos.berachain-devnet.com/websocket";
 //     const OSMOSIS_TESTNET: &'static str = "wss://osmosis-rpc.publicnode.com/websocket";
@@ -308,7 +433,7 @@ where
 //             )
 //             .await;
 
-//         dbg!(result);
+//         bg!(result);
 //     }
 
 //     #[tokio::test]
@@ -371,5 +496,22 @@ where
 
 //             tokio::time::sleep(Duration::from_millis(100)).await;
 //         }
+//     }
+
+//     #[tokio::test]
+//     async fn tx() {
+//         let _ = tracing_subscriber::fmt().try_init();
+
+//         let client = Client::new(UNION_TESTNET).await.unwrap();
+
+//         let result = client
+//             .tx(
+//                 hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
+//                 true,
+//             )
+//             .await
+//             .unwrap();
+
+//         dbg!(result);
 //     }
 // }

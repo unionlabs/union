@@ -46,6 +46,7 @@ pub enum Error {
     )]
     IrrelevantUpdate,
     #[error("the order of the slots in the update data and stored data is not correct")]
+    // TODO: Add context here
     InvalidSlots,
     #[error(
         "signature period ({signature_period}) must be equal to `store_period` \

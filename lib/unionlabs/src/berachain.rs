@@ -12,7 +12,7 @@ const BERACHAIN_CHAIN_SPEC: Preset = Preset {
 pub const LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX: u8 = 17;
 pub const LATEST_BEACON_BLOCK_HEADER_PREFIX: u8 = 0x0b;
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct BerachainChainSpec;
 

@@ -1194,19 +1194,6 @@ try_from_relayer_msg! {
 
 #[queue_msg]
 #[derive(enumorph::Enumorph)]
-pub enum EthereumFetchMsg<C: ChainSpec, Tr: ChainExt> {
-    FetchFinalityUpdate(FetchFinalityUpdate),
-    FetchLightClientUpdates(FetchLightClientUpdates),
-    FetchLightClientUpdate(FetchLightClientUpdate),
-    FetchBootstrap(FetchBootstrap),
-    FetchAccountUpdate(FetchAccountUpdate),
-    FetchBeaconGenesis(FetchBeaconGenesis),
-    FetchGetProof(GetProof<Ethereum<C>, Tr>),
-    FetchIbcState(FetchIbcState<Ethereum<C>, Tr>),
-}
-
-#[queue_msg]
-#[derive(enumorph::Enumorph)]
 pub enum EthereumDataMsg<C: ChainSpec, Tr: ChainExt> {
     FinalityUpdate(FinalityUpdate<C, Tr>),
     LightClientUpdates(LightClientUpdates<C, Tr>),
@@ -1374,6 +1361,19 @@ pub fn mk_function_call<Call: EthCall, M: Middleware>(
 
 pub trait EthereumChainExt =
     ChainExt + chain_utils::ethereum::EthereumIbcChainExt + chain_utils::ethereum::EthereumChain;
+
+#[queue_msg]
+#[derive(enumorph::Enumorph)]
+pub enum EthereumFetchMsg<C: ChainSpec, Tr: ChainExt> {
+    FetchFinalityUpdate(FetchFinalityUpdate),
+    FetchLightClientUpdates(FetchLightClientUpdates),
+    FetchLightClientUpdate(FetchLightClientUpdate),
+    FetchBootstrap(FetchBootstrap),
+    FetchAccountUpdate(FetchAccountUpdate),
+    FetchBeaconGenesis(FetchBeaconGenesis),
+    FetchGetProof(GetProof<Ethereum<C>, Tr>),
+    FetchIbcState(FetchIbcState<Ethereum<C>, Tr>),
+}
 
 #[queue_msg]
 pub struct GetProof<Hc: EthereumChainExt, Tr: ChainExt> {

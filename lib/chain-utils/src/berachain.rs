@@ -36,8 +36,8 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, balance_of_signers, EthereumConsensusChain, EthereumIbcChain,
-        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite,
+        balance_of_signers, EthereumConsensusChain, EthereumIbcChain, EthereumSignerMiddleware,
+        EthereumSignersConfig, ReadWrite,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, SignerBalance},
 };
@@ -261,8 +261,9 @@ impl EthereumConsensusChain for Berachain {
             .block_number
     }
 
-    async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {
-        ethereum::get_proof(self, address, location, block).await
+    async fn get_proof(&self, _address: H160, _location: U256, _block: u64) -> StorageProof {
+        todo!()
+        // ethereum::get_proof(self, address, location, block).await
     }
 }
 
@@ -362,7 +363,7 @@ impl Berachain {
             .abci_query(
                 "store/beacon/key",
                 data,
-                Some((slot - 1).try_into().unwrap()),
+                Some((slot as i64 - 1).try_into().unwrap()),
                 prove,
             )
             .await

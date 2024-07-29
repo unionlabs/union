@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    events::{self},
+    events,
     ibc::core::{
         channel::{self, channel::Channel, order::Order, packet::Packet},
         client::height::Height,
         commitment::merkle_path::MerklePath,
-        connection,
+        connection::{self, connection_end::ConnectionEnd},
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, CommitmentPath, ConnectionPath, NextSequenceSendPath,
@@ -15,7 +15,6 @@ use unionlabs::{
     validated::ValidateT,
 };
 
-use super::connection_handshake::ConnectionEnd;
 use crate::{
     Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, IbcVmResponse,
     Runnable, Status,

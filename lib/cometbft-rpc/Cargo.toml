@@ -9,6 +9,7 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
+base64.workspace    = true
 hex.workspace       = true
 jsonrpsee           = { version = "0.22.3", features = ["tracing", "ws-client"] }
 macros              = { workspace = true }
@@ -21,5 +22,6 @@ tracing.workspace   = true
 unionlabs           = { workspace = true }
 
 [dev-dependencies]
-serde_json = "1.0.114"
-tokio      = { workspace = true, features = ["macros"] }
+hex-literal = "0.4.1"
+serde_json  = "1.0.114"
+tokio       = { workspace = true, features = ["macros"] }

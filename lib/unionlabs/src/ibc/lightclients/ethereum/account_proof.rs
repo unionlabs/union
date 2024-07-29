@@ -16,9 +16,9 @@ pub struct AccountProof {
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromAccountProofError {
-    #[error("invalid contract address")]
+    #[error("invalid `contract_address`")]
     ContractAddress(#[source] InvalidLength),
-    #[error("invalid storage root")]
+    #[error("invalid `storage_root`")]
     StorageRoot(#[source] InvalidLength),
 }
 

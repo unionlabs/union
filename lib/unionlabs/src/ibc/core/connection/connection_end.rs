@@ -12,60 +12,33 @@ use crate::{
         state::State,
         version::Version,
     },
-    id,
-    traits::Id,
+    id::ClientId,
 };
 
 #[model(
     proto(raw(protos::ibc::core::connection::v1::ConnectionEnd), into, from),
     ethabi(raw(contracts::glue::IbcCoreConnectionV1ConnectionEndData), into, from)
 )]
-#[serde(bound(
-    serialize = "
-        ClientId: Id,
-        CounterpartyClientId: Id,
-        CounterpartyConnectionId: Id,
-    ",
-    deserialize = "
-        ClientId: Id,
-        CounterpartyClientId: Id,
-        CounterpartyConnectionId: Id,
-    ",
-))]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
-pub struct ConnectionEnd<
-    ClientId: Id,
-    CounterpartyClientId: Id,
-    CounterpartyConnectionId: Id = id::ConnectionId,
-> {
+pub struct ConnectionEnd {
     pub client_id: ClientId,
     pub versions: Vec<Version>,
     pub state: State,
-    pub counterparty: Counterparty<CounterpartyClientId, CounterpartyConnectionId>,
+    pub counterparty: Counterparty,
     pub delay_period: u64,
 }
 
 #[derive(DebugNoBound)]
-pub enum TryFromConnectionEndError<
-    ClientId: Id,
-    CounterpartyClientId: Id,
-    CounterpartyConnectionId: Id,
-> {
+pub enum TryFromConnectionEndError {
     ClientId(<ClientId as FromStr>::Err),
     Version(UnknownEnumVariant<String>),
     State(UnknownEnumVariant<i32>),
-    Counterparty(
-        TryFromConnectionCounterpartyError<CounterpartyClientId, CounterpartyConnectionId>,
-    ),
+    Counterparty(TryFromConnectionCounterpartyError),
     MissingField(MissingField),
 }
 
-impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
-    TryFrom<protos::ibc::core::connection::v1::ConnectionEnd>
-    for ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>
-{
-    type Error =
-        TryFromConnectionEndError<ClientId, CounterpartyClientId, CounterpartyConnectionId>;
+impl TryFrom<protos::ibc::core::connection::v1::ConnectionEnd> for ConnectionEnd {
+    type Error = TryFromConnectionEndError;
 
     fn try_from(
         val: protos::ibc::core::connection::v1::ConnectionEnd,
@@ -92,11 +65,8 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
     }
 }
 
-impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
-    From<ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>>
-    for protos::ibc::core::connection::v1::ConnectionEnd
-{
-    fn from(val: ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>) -> Self {
+impl From<ConnectionEnd> for protos::ibc::core::connection::v1::ConnectionEnd {
+    fn from(val: ConnectionEnd) -> Self {
         Self {
             client_id: val.client_id.to_string(),
             versions: val.versions.into_iter().map(Into::into).collect(),
@@ -109,26 +79,16 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
 
 #[derive(Debug)]
 #[cfg(feature = "ethabi")]
-pub enum TryFromEthAbiConnectionEndError<
-    ClientId: Id,
-    CounterpartyClientId: Id,
-    CounterpartyConnectionId: Id,
-> {
+pub enum TryFromEthAbiConnectionEndError {
     ClientId(<ClientId as FromStr>::Err),
     Version(UnknownEnumVariant<String>),
     State(UnknownEnumVariant<u8>),
-    Counterparty(
-        TryFromEthAbiConnectionCounterpartyError<CounterpartyClientId, CounterpartyConnectionId>,
-    ),
+    Counterparty(TryFromEthAbiConnectionCounterpartyError),
 }
 
 #[cfg(feature = "ethabi")]
-impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
-    TryFrom<contracts::glue::IbcCoreConnectionV1ConnectionEndData>
-    for ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>
-{
-    type Error =
-        TryFromEthAbiConnectionEndError<ClientId, CounterpartyClientId, CounterpartyConnectionId>;
+impl TryFrom<contracts::glue::IbcCoreConnectionV1ConnectionEndData> for ConnectionEnd {
+    type Error = TryFromEthAbiConnectionEndError;
 
     fn try_from(
         val: contracts::glue::IbcCoreConnectionV1ConnectionEndData,
@@ -160,11 +120,8 @@ impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
 }
 
 #[cfg(feature = "ethabi")]
-impl<ClientId: Id, CounterpartyClientId: Id, CounterpartyConnectionId: Id>
-    From<ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>>
-    for contracts::glue::IbcCoreConnectionV1ConnectionEndData
-{
-    fn from(val: ConnectionEnd<ClientId, CounterpartyClientId, CounterpartyConnectionId>) -> Self {
+impl From<ConnectionEnd> for contracts::glue::IbcCoreConnectionV1ConnectionEndData {
+    fn from(val: ConnectionEnd) -> Self {
         Self {
             client_id: val.client_id.to_string(),
             versions: val.versions.into_iter().map(Into::into).collect(),

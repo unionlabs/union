@@ -14,6 +14,7 @@ use crate::id::PortId;
 )]
 pub struct Counterparty {
     pub port_id: PortId,
+    // TODO: Option<ChannelId>, same as connection counterparty
     pub channel_id: String,
 }
 

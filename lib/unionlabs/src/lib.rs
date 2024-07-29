@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 pub use typenum;
 
 use crate::{
-    ibc::core::client::height::{HeightFromStrError, IsHeight},
+    ibc::core::client::height::{Height, HeightFromStrError},
     id::Bounded,
     validated::Validated,
 };
@@ -119,9 +119,11 @@ pub trait TypeUrl {
 }
 
 #[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TryFromEthAbiBytesError<E> {
-    TryFromEthAbi(E),
+    #[error("unable to convert from the raw ethers type")]
+    TryFromEthAbi(#[source] E),
+    #[error("unable to decode from raw ethabi bytes")]
     Decode(ethers_core::abi::AbiError),
 }
 
@@ -158,6 +160,7 @@ pub enum WasmClientType {
     Scroll,
     Arbitrum,
     Linea,
+    // TODO: Rename to beacon-kit
     Berachain,
     EvmInCosmos,
     Movement,
@@ -265,19 +268,16 @@ pub fn parse_wasm_client_type(
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    try_from = "&str",
-    into = "String",
-    bound(serialize = "", deserialize = "")
-)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 // REVIEW: Add a variant "greater than" to indicate that any height >= H is valid? Might help with optimization passes
-pub enum QueryHeight<H: IsHeight> {
+pub enum QueryHeight {
+    #[serde(rename = "latest")]
     Latest,
-    Specific(H),
+    #[serde(untagged)]
+    Specific(Height),
 }
 
-impl<H: IsHeight> Display for QueryHeight<H> {
+impl Display for QueryHeight {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             QueryHeight::Latest => f.write_str("latest"),
@@ -286,13 +286,7 @@ impl<H: IsHeight> Display for QueryHeight<H> {
     }
 }
 
-impl<H: IsHeight> From<QueryHeight<H>> for String {
-    fn from(val: QueryHeight<H>) -> Self {
-        val.to_string()
-    }
-}
-
-impl<H: IsHeight> FromStr for QueryHeight<H> {
+impl FromStr for QueryHeight {
     type Err = HeightFromStrError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -300,14 +294,6 @@ impl<H: IsHeight> FromStr for QueryHeight<H> {
             "latest" => Ok(Self::Latest),
             _ => s.parse().map(Self::Specific),
         }
-    }
-}
-
-impl<H: IsHeight> TryFrom<&'_ str> for QueryHeight<H> {
-    type Error = HeightFromStrError;
-
-    fn try_from(value: &'_ str) -> Result<Self, Self::Error> {
-        value.parse()
     }
 }
 

@@ -926,6 +926,7 @@ impl ::prost::Name for ExtendedCommitInfo {
 /// Event allows application developers to attach additional information to
 /// ResponseFinalizeBlock and ResponseCheckTx.
 /// Later, transactions may be queried using these events.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Event {
@@ -942,6 +943,7 @@ impl ::prost::Name for Event {
     }
 }
 /// EventAttribute is a single key-value pair, associated with an event.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventAttribute {
@@ -963,12 +965,14 @@ impl ::prost::Name for EventAttribute {
 /// ExecTxResult contains results of executing one individual transaction.
 ///
 /// * Its structure is equivalent to #ResponseDeliverTx which will be deprecated/deleted
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExecTxResult {
     #[prost(uint32, tag = "1")]
     pub code: u32,
     #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
     /// nondeterministic
     #[prost(string, tag = "3")]
@@ -977,8 +981,10 @@ pub struct ExecTxResult {
     #[prost(string, tag = "4")]
     pub info: ::prost::alloc::string::String,
     #[prost(int64, tag = "5")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub gas_wanted: i64,
     #[prost(int64, tag = "6")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub gas_used: i64,
     /// nondeterministic
     #[prost(message, repeated, tag = "7")]

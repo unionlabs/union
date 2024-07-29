@@ -8,8 +8,7 @@
 CREATE TABLE queue(
     id BIGSERIAL PRIMARY KEY,
     item JSONB NOT NULL,
-    -- Can't have foreign key relations to hypertables, so recreate the constraints as best as possible
-    parents BIGINT[] DEFAULT '{}' CHECK (0 < ALL (parents)),
+    parents BIGINT[] DEFAULT '{}',
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -17,16 +16,15 @@ CREATE TABLE optimize(
     -- TODO: Figure out how to do this properly
     id BIGINT PRIMARY KEY DEFAULT nextval('queue_id_seq'::regclass),
     item JSONB NOT NULL,
-    -- Can't have foreign key relations to hypertables, so recreate the constraints as best as possible
-    parents BIGINT[] DEFAULT '{}' CHECK (0 < ALL (parents)),
+    tag text NOT NULL,
+    parents BIGINT[] DEFAULT '{}',
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE done(
     id BIGINT,
     item JSONB NOT NULL,
-    -- Can't have foreign key relations to hypertables, so recreate the constraints as best as possible
-    parents BIGINT[] DEFAULT '{}' CHECK (0 < ALL (parents)),
+    parents BIGINT[] DEFAULT '{}',
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (id, created_at)
 );
@@ -34,8 +32,7 @@ CREATE TABLE done(
 CREATE TABLE failed(
     id BIGINT PRIMARY KEY,
     item JSONB NOT NULL,
-    -- Can't have foreign key relations to hypertables, so recreate the constraints as best as possible
-    parents BIGINT[] DEFAULT '{}' CHECK (0 < ALL (parents)),
+    parents BIGINT[] DEFAULT '{}',
     message TEXT,
     created_at timestamptz NOT NULL DEFAULT now()
 );

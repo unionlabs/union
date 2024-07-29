@@ -3,7 +3,7 @@ mod utils;
 
 use std::{env, thread::sleep, time::Duration};
 
-use ibc_vm_rs::{states::connection_handshake, IbcEvent, DEFAULT_IBC_VERSION};
+use ibc_vm_rs::DEFAULT_IBC_VERSION;
 use msgs::{ChannelOpenTry, RecvPacket};
 use near_primitives_core::hash::CryptoHash;
 use near_workspaces::{
@@ -13,10 +13,12 @@ use near_workspaces::{
     Account, AccountId, Contract, Worker,
 };
 use unionlabs::{
+    events::IbcEvent,
     ibc::core::{
         channel::{self, packet::Packet},
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
+        connection,
     },
     near::types::HeaderUpdate,
     validated::ValidateT,
@@ -139,9 +141,9 @@ async fn connection_open_init(
 ) {
     let open_init = ConnectionOpenInit {
         client_id: client_id.to_string(),
-        counterparty: connection_handshake::Counterparty {
+        counterparty: connection::counterparty::Counterparty {
             client_id: counterparty_client_id.to_string().validate().unwrap(),
-            connection_id: "".into(),
+            connection_id: None,
             prefix: MerklePrefix {
                 key_prefix: b"ibc".into(),
             },
@@ -182,9 +184,9 @@ async fn connection_open_try(
 
     let open_try = ConnectionOpenTry {
         client_id: client_id.to_string(),
-        counterparty: connection_handshake::Counterparty {
+        counterparty: connection::counterparty::Counterparty {
             client_id: counterparty_client_id.to_string().validate().unwrap(),
-            connection_id: counterparty_connection_id.to_string(),
+            connection_id: Some(counterparty_connection_id.parse().unwrap()),
             prefix: MerklePrefix {
                 key_prefix: b"ibc".into(),
             },

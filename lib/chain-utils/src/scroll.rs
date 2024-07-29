@@ -18,8 +18,7 @@ use unionlabs::{
 use crate::{
     ethereum::{
         self, balance_of_signers, Ethereum, EthereumConsensusChain, EthereumIbcChain,
-        EthereumInitError, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
-        ReadWrite, Readonly,
+        EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite, Readonly,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
     union::Union,
@@ -148,8 +147,8 @@ impl EthereumConsensusChain for Scroll {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ScrollInitError {
-    #[error("unable to initialize L1")]
-    Ethereum(#[from] EthereumInitError),
+    // #[error("unable to initialize L1")]
+    // Ethereum(#[from] EthereumInitError),
     #[error("unable to connect to websocket")]
     Ws(#[from] WsClientError),
     #[error("provider error")]
@@ -176,7 +175,8 @@ impl Scroll {
             multicall_address: config.multicall_address,
             provider: Arc::new(provider),
             scroll_api_client: ScrollClient::new(config.scroll_api),
-            l1: Ethereum::new(config.l1).await?,
+            l1: todo!(),
+            // l1: Ethereum::new(config.l1).await?,
             rollup_contract_address: config.rollup_contract_address,
             rollup_finalized_state_roots_slot: config.rollup_finalized_state_roots_slot,
             rollup_last_finalized_batch_index_slot: config.rollup_last_finalized_batch_index_slot,
@@ -280,13 +280,15 @@ impl Chain for Scroll {
         .ok_or("client state missing???")?;
 
         // don't worry about it
-        let Any(l1_client_state) =
+        let Any(_l1_client_state) =
             <<Wasm<Union> as Chain>::StoredClientState<Ethereum<Mainnet>>>::try_from(
                 l1_client_state,
             )
             .unwrap();
 
-        Ok(self.l1.make_height(l1_client_state.data.latest_slot))
+        // Ok(self.l1.make_height(l1_client_state.data.latest_slot))
+
+        todo!()
     }
 
     async fn query_latest_height_as_destination(&self) -> Result<Self::Height, Self::Error> {

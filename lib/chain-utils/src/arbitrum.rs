@@ -25,9 +25,9 @@ use unionlabs::{
 
 use crate::{
     ethereum::{
-        self, balance_of_signers, get_proof, AnyEthereum, AnyEthereumError, Ethereum,
-        EthereumConsensusChain, EthereumIbcChain, EthereumKeyring, EthereumSignerMiddleware,
-        EthereumSignersConfig, ReadWrite, Readonly,
+        self, balance_of_signers, AnyEthereum, AnyEthereumError, Ethereum, EthereumConsensusChain,
+        EthereumIbcChain, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
+        ReadWrite, Readonly,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
     union::Union,
@@ -228,8 +228,9 @@ impl EthereumConsensusChain for Arbitrum {
         block.number.unwrap().0[0]
     }
 
-    async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {
-        get_proof(self, address, location, block).await
+    async fn get_proof(&self, _address: H160, _location: U256, _block: u64) -> StorageProof {
+        todo!()
+        // get_proof(self, address, location, block).await
     }
 }
 
@@ -350,16 +351,18 @@ impl Chain for Arbitrum {
         .ok_or("client state missing???")?;
 
         // don't worry about it
-        let Any(l1_client_state) =
+        let Any(_l1_client_state) =
             <<Wasm<Union> as Chain>::StoredClientState<Ethereum<Mainnet>>>::try_from(
                 l1_client_state,
             )
             .unwrap();
 
-        Ok(match &self.l1 {
-            AnyEthereum::Mainnet(eth) => eth.make_height(l1_client_state.data.latest_slot),
-            AnyEthereum::Minimal(eth) => eth.make_height(l1_client_state.data.latest_slot),
-        })
+        // Ok(match &self.l1 {
+        //     AnyEthereum::Mainnet(eth) => eth.make_height(l1_client_state.data.latest_slot),
+        //     AnyEthereum::Minimal(eth) => eth.make_height(l1_client_state.data.latest_slot),
+        // })
+
+        todo!()
     }
 
     async fn query_latest_height_as_destination(&self) -> Result<Self::Height, Self::Error> {

@@ -18,10 +18,10 @@ use std::{
 use either::Either;
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{
-    stream::{self, try_unfold},
-    Stream, StreamExt, TryStreamExt,
+    stream::{self},
+    FutureExt, Stream, StreamExt, TryStreamExt,
 };
-pub use queue_msg_macro::queue_msg;
+pub use queue_msg_macro::{queue_msg, SubsetOf};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use tracing::{debug, error, info, info_span, trace, warn, Instrument};
@@ -33,6 +33,7 @@ use crate::{
 };
 
 pub mod aggregation;
+pub mod normalize;
 pub mod optimize;
 
 pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static {
@@ -60,29 +61,39 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
         &'a self,
         pre_reenqueue_passes: &'a O,
         f: F,
-    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
+    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + Captures<'a>
     where
-        F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
+        F: (FnOnce(Op<T>) -> Fut) + Send + Captures<'a>,
+        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
         O: PurePass<T>;
 
     fn optimize<'a, O: Pass<T>>(
         &'a self,
+        tag: &'a str,
         optimizer: &'a O,
     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a;
 }
 
-#[queue_msg]
+#[derive(
+    ::macros::Debug,
+    ::frame_support_procedural::CloneNoBound,
+    ::frame_support_procedural::PartialEqNoBound,
+    ::serde::Serialize,
+    ::serde::Deserialize,
+)]
+#[serde(
+    tag = "@type",
+    content = "@value",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = ""),
+    deny_unknown_fields
+)]
 #[debug(bound())]
 // TODO: Merge "event" and "data", and "fetch", "effect", and "wait"
 // essentially what we want is "pure custom message" and "impure custom message"
 // all other logic can be built with aggregations
 pub enum Op<T: QueueMessage> {
-    /// An external event. This could be something like an IBC event, an external command, or
-    /// anything else that occurs outside of the state machine. Can also be thought of as an "entry
-    /// point".
-    Event(T::Event),
     /// Inert data that will either be used in an aggregation or bubbled up to the top and sent as
     /// an output.
     Data(T::Data),
@@ -229,12 +240,6 @@ pub fn wait<T: QueueMessage>(t: impl Into<T::Wait>) -> Op<T> {
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn event<T: QueueMessage>(t: impl Into<T::Event>) -> Op<T> {
-    Op::Event(t.into())
-}
-
-#[inline]
-#[must_use = "constructing an instruction has no effect"]
 pub fn aggregate<T: QueueMessage>(
     queue: impl IntoIterator<Item = Op<T>>,
     data: impl IntoIterator<Item = T::Data>,
@@ -276,15 +281,16 @@ pub trait OpT = Debug
     + MaybeArbitrary;
 
 pub trait QueueMessage: Sized + 'static {
-    type Event: HandleEvent<Self> + OpT;
     type Data: HandleData<Self> + OpT;
     type Fetch: HandleFetch<Self> + OpT;
     type Effect: HandleEffect<Self> + OpT;
     type Wait: HandleWait<Self> + OpT;
 
+    // TODO: This is more like a "callback" - it should be renamed accordingly
     type Aggregate: HandleAggregate<Self> + OpT;
 
-    type Store: Debug + Send + Sync;
+    // TODO: Rename to `Context`
+    type Store: Send + Sync;
 }
 
 impl<T: QueueMessage> Op<T> {
@@ -295,11 +301,10 @@ impl<T: QueueMessage> Op<T> {
         store: &'a T::Store,
         depth: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Option<Op<T>>, QueueError>> + Send + 'a>> {
-        debug!(depth, "handling message");
+        trace!(%depth, "handling message");
 
         let fut = async move {
             match self {
-                Self::Event(event) => event.handle(store).map(Some),
                 Self::Data(data) => data.handle(store).map(Some),
 
                 Self::Fetch(fetch) => fetch.handle(store).await.map(Some),
@@ -413,7 +418,7 @@ impl<T: QueueMessage> Op<T> {
                         Ok(Some(aggregate(queue, data, receiver)))
                     } else {
                         // queue is empty, handle msg
-                        receiver.handle(data).map(Some)
+                        receiver.handle(store, data).await.map(Some)
                     }
                 }
                 Self::Repeat { times: None, msg } => {
@@ -463,15 +468,11 @@ impl<T: QueueMessage> Op<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::optimize::{
-        passes::{ExtractData, FlattenConc, FlattenSeq},
-        PurePass,
-    };
+    use crate::normalize::{flatten_seq, normalize};
 
     enum UnitMessage {}
 
     impl QueueMessage for UnitMessage {
-        type Event = ();
         type Data = ();
         type Fetch = ();
         type Effect = ();
@@ -484,12 +485,6 @@ mod tests {
 
     impl HandleEffect<UnitMessage> for () {
         async fn handle(self, _: &()) -> Result<Op<UnitMessage>, QueueError> {
-            Ok(noop())
-        }
-    }
-
-    impl HandleEvent<UnitMessage> for () {
-        fn handle(self, _: &()) -> Result<Op<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
@@ -513,7 +508,7 @@ mod tests {
     }
 
     impl HandleAggregate<UnitMessage> for () {
-        fn handle(self, _: VecDeque<()>) -> Result<Op<UnitMessage>, QueueError> {
+        async fn handle(self, _: &(), _: VecDeque<()>) -> Result<Op<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
@@ -558,7 +553,7 @@ mod tests {
             defer_absolute(5),
         ]);
         assert_eq!(
-            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
+            flatten_seq(vec![msg]),
             vec![(
                 vec![0],
                 seq([
@@ -572,40 +567,22 @@ mod tests {
         );
 
         let msg = seq::<UnitMessage>([defer_absolute(1)]);
-        assert_eq!(
-            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
-            vec![(vec![0], defer_absolute(1))]
-        );
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer_absolute(1))]);
 
         let msg = conc::<UnitMessage>([defer_absolute(1)]);
-        assert_eq!(
-            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
-            vec![(vec![0], conc([defer_absolute(1)]))]
-        );
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer_absolute(1))]);
 
         let msg = conc::<UnitMessage>([seq([defer_absolute(1)])]);
-        assert_eq!(
-            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
-            vec![(vec![0], conc([defer_absolute(1)]))]
-        );
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer_absolute(1))]);
 
         let msg = seq::<UnitMessage>([noop()]);
-        assert_eq!(
-            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
-            vec![(vec![0], noop())]
-        );
+        assert_eq!(normalize(vec![msg]), vec![]);
 
         let msg = conc::<UnitMessage>([seq([noop()])]);
-        assert_eq!(
-            FlattenSeq.run_pass_pure(vec![msg]).optimize_further,
-            vec![(vec![0], conc([noop()]))]
-        );
+        assert_eq!(normalize(vec![msg]), vec![]);
 
         let msg = conc::<UnitMessage>([conc([conc([noop()])])]);
-        assert_eq!(
-            FlattenConc.run_pass_pure(vec![msg]).optimize_further,
-            vec![(vec![0], noop())]
-        );
+        assert_eq!(normalize(vec![msg]), vec![]);
     }
 
     #[test]
@@ -614,57 +591,30 @@ mod tests {
         // (conc, seq)
 
         let msg = conc::<UnitMessage>([seq([conc([noop()])])]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg])
-                .optimize_further,
-            vec![(vec![0], noop())]
-        );
+        assert_eq!(normalize(vec![msg]), vec![]);
 
         let msg = conc::<UnitMessage>([seq([conc([seq([conc([seq([conc([noop()])])])])])])]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg])
-                .optimize_further,
-            vec![(vec![0], noop())]
-        );
+        assert_eq!(normalize(vec![msg]), vec![]);
 
         let msg =
             conc::<UnitMessage>([seq([conc([seq([conc([seq([conc([seq([conc([
-                noop(),
+                data(()),
             ])])])])])])])])]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg])
-                .optimize_further,
-            vec![(vec![0], noop())]
-        );
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], data(()))]);
 
-        let msg = seq::<UnitMessage>([conc([seq([conc([noop()])])])]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg])
-                .optimize_further,
-            vec![(vec![0], noop())]
-        );
+        let msg = seq::<UnitMessage>([conc([seq([conc([data(())])])])]);
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], data(()))]);
 
-        let msg = seq::<UnitMessage>([conc([seq([conc([seq([conc([seq([conc([noop()])])])])])])])]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg])
-                .optimize_further,
-            vec![(vec![0], noop())]
-        );
+        let msg =
+            seq::<UnitMessage>([conc([seq([conc([seq([conc([seq([conc([
+                data(()),
+            ])])])])])])])]);
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], data(()))]);
 
         let msg = seq::<UnitMessage>([conc([seq([conc([seq([conc([seq([conc([seq([
-            conc([noop()]),
+            conc([data(())]),
         ])])])])])])])])]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg])
-                .optimize_further,
-            vec![(vec![0], noop())]
-        );
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], data(()))]);
     }
 
     #[test]
@@ -675,18 +625,8 @@ mod tests {
             conc([defer_absolute(1), defer_absolute(2)]),
             defer_absolute(3),
         ]);
-        assert_eq!(
-            (FlattenConc, FlattenSeq)
-                .run_pass_pure(vec![msg.clone()])
-                .optimize_further,
-            vec![(vec![0], msg.clone())]
-        );
-        assert_eq!(
-            (FlattenSeq, FlattenConc)
-                .run_pass_pure(vec![msg.clone()])
-                .optimize_further,
-            vec![(vec![0], msg)]
-        );
+        assert_eq!(normalize(vec![msg.clone()]), vec![(vec![0], msg.clone())]);
+        assert_eq!(normalize(vec![msg.clone()]), vec![(vec![0], msg)]);
     }
 
     #[test]
@@ -698,14 +638,13 @@ mod tests {
             data(()),
         ]);
         assert_eq!(
-            ExtractData.run_pass_pure(vec![msg]).optimize_further,
+            normalize(vec![msg]),
             vec![
                 (vec![0], data(())),
                 (vec![0], data(())),
                 (vec![0], data(())),
                 (vec![0], data(())),
                 (vec![0], data(())),
-                (vec![0], seq([seq([seq([])]), seq([])])),
             ],
         );
     }
@@ -721,7 +660,7 @@ mod tests {
             data(()),
         ]);
         assert_eq!(
-            ExtractData.run_pass_pure(vec![msg]).optimize_further,
+            normalize(vec![msg]),
             vec![
                 (vec![0], data(())),
                 (vec![0], data(())),
@@ -730,12 +669,7 @@ mod tests {
                 (vec![0], data(())),
                 (
                     vec![0],
-                    seq([
-                        effect(()),
-                        seq([fetch(()), seq([])]),
-                        effect(()),
-                        seq([effect(())])
-                    ])
+                    seq([effect(()), fetch(()), effect(()), effect(())])
                 ),
             ],
         );
@@ -906,16 +840,16 @@ pub trait HandleWait<T: QueueMessage> {
     fn handle(self, store: &T::Store) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }
 
-pub trait HandleEvent<T: QueueMessage> {
-    fn handle(self, store: &T::Store) -> Result<Op<T>, QueueError>;
-}
-
 pub trait HandleEffect<T: QueueMessage> {
     fn handle(self, store: &T::Store) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }
 
 pub trait HandleAggregate<T: QueueMessage> {
-    fn handle(self, data: VecDeque<T::Data>) -> Result<Op<T>, QueueError>;
+    fn handle(
+        self,
+        ctx: &T::Store,
+        data: VecDeque<T::Data>,
+    ) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }
 
 impl<T: QueueMessage> HandleFetch<T> for Never {
@@ -926,12 +860,6 @@ impl<T: QueueMessage> HandleFetch<T> for Never {
 
 impl<T: QueueMessage> HandleWait<T> for Never {
     async fn handle(self, _: &<T as QueueMessage>::Store) -> Result<Op<T>, QueueError> {
-        match self {}
-    }
-}
-
-impl<T: QueueMessage> HandleEvent<T> for Never {
-    fn handle(self, _: &<T as QueueMessage>::Store) -> Result<Op<T>, QueueError> {
         match self {}
     }
 }
@@ -950,80 +878,75 @@ pub fn now() -> u64 {
         .as_secs()
 }
 
-#[derive(DebugNoBound, CloneNoBound)]
-pub struct Engine<T: QueueMessage> {
-    store: Arc<T::Store>,
+// #[derive(CloneNoBound)]
+pub struct Engine<'a, T: QueueMessage, Q: Queue<T>, O: PurePass<T>> {
+    store: &'a T::Store,
+    queue: &'a Q,
+    optimizer: &'a O,
 }
 
 pub type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
-impl<T: QueueMessage> Engine<T> {
-    pub fn new(store: Arc<T::Store>) -> Self {
-        Self { store }
+pub trait Captures<'a> {}
+impl<T: ?Sized> Captures<'_> for T {}
+
+impl<'a, T: QueueMessage, Q: Queue<T>, O: PurePass<T>> Engine<'a, T, Q, O> {
+    pub fn new(store: &'a T::Store, queue: &'a Q, optimizer: &'a O) -> Self {
+        Self {
+            store,
+            queue,
+            optimizer,
+        }
     }
 
-    pub fn run<'a, Q, O>(
-        &'a self,
-        q: &'a Q,
-        o: &'a O,
-    ) -> impl Stream<Item = Result<T::Data, BoxDynError>> + Send + 'a
-    where
-        Q: Queue<T>,
-        O: PurePass<T>,
-    {
-        try_unfold::<_, _, _, Option<T::Data>>((), move |()| async move {
-            // trace!("stepping");
-
-            // dbg!(&q);
-
-            // sleep(Duration::from_secs(1)).await;
-
-            self.step(q, o)
-                .await
-                .map(|step_result| step_result.map(|maybe_data| (maybe_data, ())))
+    pub fn run(self) -> impl Stream<Item = Result<T::Data, BoxDynError>> + Send + Captures<'a> {
+        futures::stream::try_unfold(self, |this| async move {
+            sleep(Duration::from_millis(10)).await;
+            let res = this.step().await;
+            res.map(move |x| x.map(|x| (x, this)))
         })
         .flat_map(|x| stream::iter(x.transpose()))
     }
 
-    pub(crate) async fn step<'a, Q: Queue<T>, O: PurePass<T>>(
-        &'a self,
-        q: &'a Q,
-        o: &'a O,
-    ) -> Result<Option<Option<T::Data>>, BoxDynError> {
-        // yield back to the runtime
-        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+    pub(crate) fn step<'b>(
+        &'b self,
+    ) -> impl Future<Output = Result<Option<Option<T::Data>>, BoxDynError>>
+           + Captures<'a>
+           + Captures<'b>
+           + Send {
+        // yield back to the runtime and throttle a bit, prevents 100% cpu usage while still allowing for a fast spin-loop
+        sleep(Duration::from_millis(10)).then(|()| {
+            self.queue
+                .process::<_, _, Option<T::Data>, O>(self.optimizer, |msg| {
+                    msg.handle(self.store, 0).map(|res| match res {
+                        // Ok(Some(Op::Data(d))) => {
+                        //     // TODO: push data to a separate queue
+                        //     let data_output = d.clone().handle(self.store).unwrap();
 
-        let s = self.store.clone();
-
-        let data = q
-            .process::<_, _, Option<T::Data>, O>(o, move |msg| async move {
-                match msg.handle(&*s, 0).await {
-                    // TODO: Make this an optimization pass
-                    Ok(Some(Op::Data(d))) => {
-                        let data_output = d.clone().handle(&s).unwrap();
-
-                        // run to a fixed point
-                        if data_output != data(d.clone()) {
-                            (None, Ok(vec![data_output]))
-                        } else {
-                            (Some(d), Ok(vec![]))
+                        //     // run to a fixed point
+                        //     if data_output != data(d.clone()) {
+                        //         (None, Ok(vec![data_output]))
+                        //     } else {
+                        //         (Some(d), Ok(vec![]))
+                        //     }
+                        // }
+                        Ok(msg) => (None, Ok(msg.into_iter().collect())),
+                        Err(QueueError::Fatal(fatal)) => {
+                            let full_err = ErrorReporter(&*fatal);
+                            error!(error = %full_err, "unrecoverable error");
+                            (None, Err(full_err.to_string()))
                         }
-                    }
-                    Ok(msg) => (None, Ok(msg.into_iter().collect())),
-                    Err(QueueError::Fatal(fatal)) => {
-                        let full_err = ErrorReporter(&*fatal);
-                        error!(error = %full_err, "unrecoverable error");
-                        (None, Err(full_err.to_string()))
-                    }
-                    Err(QueueError::Retry(retry)) => panic!("{retry:?}"),
-                }
-            })
-            .await;
-
-        match data {
-            Ok(data) => Ok(Some(data.flatten())),
-            Err(err) => Err(err.into()),
-        }
+                        Err(QueueError::Retry(retry)) => {
+                            error!("{retry:?}");
+                            panic!("{retry:?}")
+                        }
+                    })
+                })
+                .map(|data| match data {
+                    Ok(data) => Ok(Some(data.flatten())),
+                    Err(err) => Err(err.into()),
+                })
+        })
     }
 }
 
@@ -1036,7 +959,7 @@ pub async fn run_to_completion<
     PostPass: Pass<T>,
 >(
     a: A,
-    store: Arc<T::Store>,
+    store: T::Store,
     queue_config: Q::Config,
     msgs: impl IntoIterator<Item = Op<T>>,
     pre_pass_optimizer: PrePass,
@@ -1054,28 +977,29 @@ pub async fn run_to_completion<
         let queue = queue.clone();
 
         async move {
-            loop {
-                info!("optimizing");
+            // loop {
+            //     trace!("optimizing");
 
-                let res = queue.optimize(&post_pass_optimizer).await.map_err(|e| {
-                    e.map_either::<_, _, BoxDynError, BoxDynError>(|x| Box::new(x), |x| Box::new(x))
-                        .into_inner()
-                });
+            //     let res = queue.optimize(&post_pass_optimizer).await.map_err(|e| {
+            //         e.map_either::<_, _, BoxDynError, BoxDynError>(|x| Box::new(x), |x| Box::new(x))
+            //             .into_inner()
+            //     });
 
-                sleep(Duration::from_millis(100)).await;
+            //     sleep(Duration::from_millis(100)).await;
 
-                match res {
-                    Ok(()) => {}
-                    Err(err) => break Err::<(), _>(err),
-                }
-            }
+            //     match res {
+            //         Ok(()) => {}
+            //         Err(err) => break Err::<(), _>(err),
+            //     }
+            // }
+            todo!()
         }
     });
 
     debug!("running");
 
-    let output = Engine::new(store)
-        .run(&queue, &pre_pass_optimizer)
+    let output = Engine::new(&store, &queue, &pre_pass_optimizer)
+        .run()
         .take(A::AggregatedData::LEN)
         .try_collect()
         .await
@@ -1103,7 +1027,8 @@ pub struct InMemoryQueue<T: QueueMessage> {
     idx: Arc<AtomicU32>,
     ready: Arc<Mutex<BTreeMap<u32, Item<T>>>>,
     done: Arc<Mutex<BTreeMap<u32, Item<T>>>>,
-    optimizer_queue: Arc<Mutex<BTreeMap<u32, Item<T>>>>,
+    #[allow(clippy::type_complexity)]
+    optimizer_queue: Arc<Mutex<BTreeMap<String, BTreeMap<u32, Item<T>>>>>,
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
@@ -1133,7 +1058,31 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
         debug!(?item, "enqueueing new item");
 
-        let res = pre_enqueue_passes.run_pass_pure(vec![item]);
+        let (parent_idxs, normalized) = normalize::normalize(vec![item])
+            .into_iter()
+            .unzip::<_, _, Vec<_>, Vec<_>>();
+
+        let res = {
+            let mut res = pre_enqueue_passes.run_pass_pure(normalized);
+
+            for (parents, _) in &mut res.ready {
+                *parents = parents
+                    .iter()
+                    .flat_map(|p| &parent_idxs[*p])
+                    .copied()
+                    .collect();
+            }
+
+            for (parents, _, _) in &mut res.optimize_further {
+                *parents = parents
+                    .iter()
+                    .flat_map(|p| &parent_idxs[*p])
+                    .copied()
+                    .collect();
+            }
+
+            res
+        };
 
         let mut optimizer_queue = self.optimizer_queue.lock().expect("mutex is poisoned");
         let mut ready = self.ready.lock().expect("mutex is poisoned");
@@ -1160,8 +1109,8 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         f: F,
     ) -> Result<Option<R>, Self::Error>
     where
-        F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
-        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
+        F: (FnOnce(Op<T>) -> Fut) + Send + Captures<'a>,
+        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
         O: PurePass<T>,
     {
@@ -1221,45 +1170,54 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         }
     }
 
-    async fn optimize<'a, O: Pass<T>>(
+    #[allow(clippy::manual_async_fn)]
+    fn optimize<'a, O: Pass<T>>(
         &'a self,
+        tag: &'a str,
         optimizer: &'a O,
-    ) -> Result<(), Either<Self::Error, O::Error>> {
-        let msgs = {
-            let lock = self.optimizer_queue.lock().unwrap();
-            let msgs = lock.clone();
-            drop(lock);
-            msgs
-        };
+    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
+        async move {
+            let tagged_optimizer_queue = {
+                let mut optimizer_queue = self.optimizer_queue.lock().unwrap();
+                let Some(tagged_optimizer_queue) = optimizer_queue.remove(tag) else {
+                    warn!(%tag, "no items with tag");
+                    return Ok(());
+                };
 
-        let (ids, msgs): (Vec<_>, Vec<_>) = msgs.into_iter().unzip();
+                drop(optimizer_queue);
 
-        let res = optimizer
-            .run_pass(msgs.into_iter().map(|item| item.msg).collect())
-            .await
-            .map_err(Either::Right)?;
+                tagged_optimizer_queue
+            };
 
-        // dbg!(&res, std::any::type_name::<O>());
+            let (ids, msgs): (Vec<_>, Vec<_>) = tagged_optimizer_queue.clone().into_iter().unzip();
 
-        let mut ready = self.ready.lock().unwrap();
-        let mut optimizer_queue = self.optimizer_queue.lock().unwrap();
-        let mut done = self.done.lock().unwrap();
+            let res = optimizer
+                .run_pass(msgs.into_iter().map(|item| item.msg).collect())
+                .await
+                .map_err(Either::Right)?;
 
-        done.append(&mut optimizer_queue);
+            // dbg!(&res, std::any::type_name::<O>());
 
-        self.requeue(
-            res,
-            &mut optimizer_queue,
-            &mut ready,
-            |parent_idxs: Vec<usize>| {
-                ids.iter()
-                    .enumerate()
-                    .filter_map(|(idx, id)| parent_idxs.contains(&idx).then_some(*id))
-                    .collect::<Vec<_>>()
-            },
-        );
+            let mut optimizer_queue = self.optimizer_queue.lock().unwrap();
+            let mut ready = self.ready.lock().unwrap();
+            let mut done = self.done.lock().unwrap();
 
-        Ok(())
+            done.append(&mut tagged_optimizer_queue.clone());
+
+            self.requeue(
+                res,
+                &mut optimizer_queue,
+                &mut ready,
+                |parent_idxs: Vec<usize>| {
+                    ids.iter()
+                        .enumerate()
+                        .filter_map(|(idx, id)| parent_idxs.contains(&idx).then_some(*id))
+                        .collect::<Vec<_>>()
+                },
+            );
+
+            Ok(())
+        }
     }
 }
 
@@ -1267,12 +1225,12 @@ impl<T: QueueMessage> InMemoryQueue<T> {
     fn requeue(
         &self,
         res: OptimizationResult<T>,
-        optimizer_queue: &mut BTreeMap<u32, Item<T>>,
+        optimizer_queue: &mut BTreeMap<String, BTreeMap<u32, Item<T>>>,
         ready: &mut BTreeMap<u32, Item<T>>,
         get_parent_ids: impl Fn(Vec<usize>) -> Vec<u32>,
     ) {
-        for (parent_idxs, new_msg) in res.optimize_further {
-            optimizer_queue.insert(
+        for (parent_idxs, new_msg, tag) in res.optimize_further {
+            optimizer_queue.entry(tag).or_default().insert(
                 self.idx.fetch_add(1, Ordering::SeqCst),
                 Item {
                     parents: get_parent_ids(parent_idxs),
@@ -1299,18 +1257,17 @@ pub mod test_utils {
 
     use enumorph::Enumorph;
     use frunk::{hlist_pat, HList};
-    use queue_msg_macro::queue_msg;
+    use queue_msg_macro::{queue_msg, SubsetOf};
 
     use crate::{
         aggregation::{do_aggregate, UseAggregate},
-        data, effect, noop, HandleAggregate, HandleData, HandleEffect, HandleEvent, HandleFetch,
-        HandleWait, Op, QueueError, QueueMessage,
+        data, effect, noop, HandleAggregate, HandleData, HandleEffect, HandleFetch, HandleWait, Op,
+        QueueError, QueueMessage,
     };
 
     pub enum SimpleMessage {}
 
     impl QueueMessage for SimpleMessage {
-        type Event = SimpleEvent;
         type Data = SimpleData;
         type Fetch = SimpleFetch;
         type Effect = SimpleEffect;
@@ -1323,12 +1280,6 @@ pub mod test_utils {
 
     impl HandleEffect<SimpleMessage> for SimpleEffect {
         async fn handle(self, _: &()) -> Result<Op<SimpleMessage>, QueueError> {
-            Ok(noop())
-        }
-    }
-
-    impl HandleEvent<SimpleMessage> for SimpleEvent {
-        fn handle(self, _: &()) -> Result<Op<SimpleMessage>, QueueError> {
             Ok(noop())
         }
     }
@@ -1358,18 +1309,27 @@ pub mod test_utils {
     }
 
     impl HandleAggregate<SimpleMessage> for SimpleAggregate {
-        fn handle(self, data: VecDeque<SimpleData>) -> Result<Op<SimpleMessage>, QueueError> {
+        async fn handle(
+            self,
+            _: &(),
+            data: VecDeque<SimpleData>,
+        ) -> Result<Op<SimpleMessage>, QueueError> {
             Ok(match self {
                 Self::AggregatePrintAbc(agg) => do_aggregate(agg, data),
             })
         }
     }
 
+    // for macros
+    pub mod queue_msg {
+        pub use crate::*;
+    }
+
     #[queue_msg]
     pub struct SimpleEvent {}
 
     #[queue_msg]
-    #[derive(Enumorph)]
+    #[derive(Enumorph, SubsetOf)]
     pub enum SimpleData {
         A(DataA),
         B(DataB),
@@ -1389,7 +1349,7 @@ pub mod test_utils {
     pub struct DataE {}
 
     #[queue_msg]
-    #[derive(Enumorph)]
+    #[derive(Enumorph, SubsetOf)]
     pub enum SimpleFetch {
         A(FetchA),
         B(FetchB),
@@ -1409,7 +1369,7 @@ pub mod test_utils {
     pub struct FetchE {}
 
     #[queue_msg]
-    #[derive(Enumorph)]
+    #[derive(Enumorph, SubsetOf)]
     pub enum SimpleEffect {
         PrintAbc(PrintAbc),
     }

@@ -22,10 +22,12 @@ impl From<AccountUpdate> for protos::union::ibc::lightclients::ethereum::v1::Acc
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromAccountUpdateError {
+    #[error(transparent)]
     MissingField(MissingField),
-    AccountProof(TryFromAccountProofError),
+    #[error("invalid `account_proof`")]
+    AccountProof(#[from] TryFromAccountProofError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::AccountUpdate> for AccountUpdate {
@@ -35,9 +37,7 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::AccountUpdate> for 
         value: protos::union::ibc::lightclients::ethereum::v1::AccountUpdate,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            account_proof: required!(value.account_proof)?
-                .try_into()
-                .map_err(TryFromAccountUpdateError::AccountProof)?,
+            account_proof: required!(value.account_proof)?.try_into()?,
         })
     }
 }

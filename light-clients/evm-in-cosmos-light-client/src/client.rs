@@ -112,7 +112,7 @@ impl IbcClient for EvmInCosmosLightClient {
         )
         .map_err(Error::CustomQuery)?;
         let client_consensus_state_path = Path::ClientConsensusState(ClientConsensusStatePath {
-            client_id: client_state.data.l2_client_id,
+            client_id: client_state.data.l2_client_id.parse().unwrap(),
             height: Height {
                 revision_number: 0,
                 revision_height: header.l2_slot,

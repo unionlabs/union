@@ -1,4 +1,10 @@
-use core::{fmt::Display, marker::PhantomData, ops::Deref, str::FromStr};
+use core::{
+    fmt::Display,
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+    ops::Deref,
+    str::FromStr,
+};
 
 use either::Either;
 use serde::{Deserialize, Serialize};
@@ -14,6 +20,14 @@ pub struct Validated<T, V: Validate<T>>(
     #[debug(skip)]
     PhantomData<fn() -> V>,
 );
+
+impl<T: Hash, V: Validate<T>> Hash for Validated<T, V> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
+
+impl<T: Eq, V: Validate<T>> Eq for Validated<T, V> {}
 
 #[cfg(feature = "schemars")]
 impl<T: schemars::JsonSchema, V: Validate<T>> schemars::JsonSchema for Validated<T, V> {

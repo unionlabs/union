@@ -168,6 +168,7 @@ mod tests {
         ibc::core::commitment::{
             merkle_path::MerklePath, merkle_proof::MerkleProof, merkle_root::MerkleRoot,
         },
+        ics24::ConnectionPath,
     };
 
     use super::{verify_membership, verify_non_membership, VerifyMembershipError, SDK_SPECS};
@@ -334,5 +335,18 @@ mod tests {
             ),
             Ok(())
         );
+    }
+
+    #[test]
+    fn try_proof() {
+        let proof= serde_json::from_str::<MerkleProof>(r#"{"proofs":[{"@type":"exist","@value":{"key":"0x636f6e6e656374696f6e732f636f6e6e656374696f6e2d32","leaf":{"hash":"sha256","length":"var_proto","prefix":"0x0002c005","prehash_key":"no_hash","prehash_value":"sha256"},"path":[{"hash":"sha256","prefix":"0x0204c00520f3c95230594f910cfcda0f08040272de9ff25ebdc362fa2984fe04372b5c56fb20","suffix":"0x0"},{"hash":"sha256","prefix":"0x0408c00520d4c306fc76462b92c3888a22f78962e742022a4fa4b272947acf199993820a0720","suffix":"0x0"},{"hash":"sha256","prefix":"0x0610c00520","suffix":"0x2002a35cfb0a1fe5aec25e1d915887411f67741f9c511b3befa22eb95bc709792d"},{"hash":"sha256","prefix":"0x0a22c0052008808333ca466e463fd6174d936b7e9ae0153af98f42fd848b7c7cb53580de2b20","suffix":"0x0"}],"value":"0x0a0930382d7761736d2d3112140a0131120f4f524445525f554e4f524445524544180122130a0a636f6d6574626c732d301a050a03696263"}},{"@type":"exist","@value":{"key":"0x696263","leaf":{"hash":"sha256","length":"var_proto","prefix":"0x00","prehash_key":"no_hash","prehash_value":"sha256"},"path":[{"hash":"sha256","prefix":"0x01","suffix":"0x2cd8b50700950546180ad979135a8708c2ea2098fff6ade31b7e40eb5dcf7c05"},{"hash":"sha256","prefix":"0x012cf3feea58fcdb48b73c2cdd1b018c90c4078f924385675a0e9457168cd47ff1","suffix":"0x0"},{"hash":"sha256","prefix":"0x01373d3c4151d1fbe9641325af4682f5c936b22ddd6f27693369920ec5db527eb5","suffix":"0x0"},{"hash":"sha256","prefix":"0x01b0b8ee671be7e2122d443854cee9939a9a8b323d535db88124e99490b975b87e","suffix":"0x0"},{"hash":"sha256","prefix":"0x01","suffix":"0x40c17eb6aef68c760f6d7eb72e33e09610e5523f7eb6e9416a2e0ea0cc9fc171"}],"value":"0xfa6e73dfa59c3977f62f4f14ec1a1c1b4b8c90e644cb274cb938b484f3310e7d"}}]}"#).unwrap();
+
+        verify_membership(
+            &proof,
+            &SDK_SPECS,
+            &MerkleRoot { hash: hex!("F7ED1D182E325EA21817DC6048C7043056F76AB044642504CE57DDC5C1B47CD3").into() },
+            &[b"ibc".to_vec(), ConnectionPath { connection_id: "connection-2".parse().unwrap() }.to_string().into_bytes()],
+            hex!("0a0930382d7761736d2d3112140a0131120f4f524445525f554e4f524445524544180122130a0a636f6d6574626c732d301a050a03696263").into()
+        ).unwrap();
     }
 }

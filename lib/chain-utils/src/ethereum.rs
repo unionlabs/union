@@ -11,26 +11,27 @@ use contracts::{
     ibc_packet::{IBCPacketErrors, IBCPacketEvents},
 };
 use ethers::{
-    abi::{AbiDecode, AbiEncode},
+    abi::AbiDecode,
     contract::{ContractError, EthLogDecode},
     core::k256::ecdsa,
     middleware::{NonceManagerMiddleware, SignerMiddleware},
-    providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
+    providers::{Middleware, Provider, Ws},
     signers::{LocalWallet, Wallet},
-    utils::{keccak256, secret_key_to_address},
+    utils::secret_key_to_address,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::Future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use tracing::debug;
+use serde_utils::Hex;
+use tracing::{debug, instrument};
 use typenum::Unsigned;
 use unionlabs::{
-    encoding::{Decode, EthAbi},
+    encoding::EthAbi,
     ethereum::{
         config::{ChainSpec, Mainnet, Minimal},
-        IBC_HANDLER_COMMITMENTS_SLOT,
+        ibc_commitment_key, IBC_HANDLER_COMMITMENTS_SLOT,
     },
-    hash::{H160, H256},
+    hash::H160,
     ibc::{
         core::client::height::{Height, IsHeight},
         lightclients::ethereum::{self, storage_proof::StorageProof},
@@ -38,11 +39,12 @@ use unionlabs::{
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath, NextClientSequencePath,
-        NextConnectionSequencePath, NextSequenceRecvPath, ReceiptPath,
+        NextConnectionSequencePath, NextSequenceAckPath, NextSequenceRecvPath,
+        NextSequenceSendPath, ReceiptPath,
     },
     id::ClientId,
     iter,
-    traits::{Chain, ClientIdOf, ClientState, FromStrExact, HeightOf},
+    traits::{Chain, ClientState, FromStrExact},
     uint::U256,
 };
 
@@ -113,8 +115,9 @@ impl<C: ChainSpec, S: EthereumSignersConfig> EthereumConsensusChain for Ethereum
         execution_height
     }
 
-    async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {
-        get_proof(self, address, location, block).await
+    async fn get_proof(&self, _address: H160, _location: U256, _block: u64) -> StorageProof {
+        todo!()
+        // get_proof(self, address, location, block).await
     }
 }
 
@@ -129,8 +132,9 @@ pub struct Ethereum<C: ChainSpec, S: EthereumSignersConfig = ReadWrite> {
 
     pub keyring: S::Out,
     pub provider: Arc<Provider<Ws>>,
-    pub beacon_api_client: BeaconApiClient<C>,
+    pub beacon_api_client: BeaconApiClient,
     pub max_gas_price: Option<U256>,
+    __marker: PhantomData<fn() -> C>,
 }
 
 #[derive(DebugNoBound, CloneNoBound, enumorph::Enumorph)]
@@ -172,35 +176,37 @@ impl<S: EthereumSignersConfig> EthereumConsensusChain for AnyEthereum<S> {
 }
 
 impl<S: EthereumSignersConfig> AnyEthereum<S> {
-    pub async fn new(config: Config<S>) -> Result<Self, AnyEthereumError> {
-        match Ethereum::<Mainnet, S>::new(config.clone()).await {
-            Ok(eth) => return Ok(eth.into()),
-            Err(EthereumInitError::Beacon(beacon_api::client::NewError::IncorrectChainSpec)) => {}
-            Err(err) => {
-                return Err(AnyEthereumError::Mainnet(err));
-            }
-        }
+    pub async fn new(_config: Config<S>) -> Result<Self, AnyEthereumError> {
+        // match Ethereum::<Mainnet, S>::new(config.clone()).await {
+        //     Ok(eth) => return Ok(eth.into()),
+        //     Err(EthereumInitError::Beacon(beacon_api::client::NewError::IncorrectChainSpec)) => {}
+        //     Err(err) => {
+        //         return Err(AnyEthereumError::Mainnet(err));
+        //     }
+        // }
 
-        match Ethereum::<Minimal, S>::new(config).await {
-            Ok(eth) => return Ok(eth.into()),
-            Err(EthereumInitError::Beacon(beacon_api::client::NewError::IncorrectChainSpec)) => {}
-            Err(err) => {
-                return Err(AnyEthereumError::Minimal(err));
-            }
-        }
+        // match Ethereum::<Minimal, S>::new(config).await {
+        //     Ok(eth) => return Ok(eth.into()),
+        //     Err(EthereumInitError::Beacon(beacon_api::client::NewError::IncorrectChainSpec)) => {}
+        //     Err(err) => {
+        //         return Err(AnyEthereumError::Minimal(err));
+        //     }
+        // }
 
-        Err(AnyEthereumError::UnknownChainSpec)
+        // Err(AnyEthereumError::UnknownChainSpec)
+
+        todo!()
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum AnyEthereumError {
-    #[error("error creating minimal beacon client")]
-    Minimal(#[source] EthereumInitError),
-    #[error("error creating mainnet beacon client")]
-    Mainnet(#[source] EthereumInitError),
-    #[error("unknown chain spec")]
-    UnknownChainSpec,
+    // #[error("error creating minimal beacon client")]
+    // Minimal(#[source] EthereumInitError),
+    // #[error("error creating mainnet beacon client")]
+    // Mainnet(#[source] EthereumInitError),
+    // #[error("unknown chain spec")]
+    // UnknownChainSpec,
 }
 
 #[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
@@ -436,7 +442,7 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
 
     type Height = Height;
 
-    type ClientId = EthereumClientId;
+    type ClientId = ClientId;
 
     type IbcStateEncoding = EthAbi;
 
@@ -451,74 +457,27 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
     }
 
     async fn query_latest_height(&self) -> Result<Height, Self::Error> {
-        self.beacon_api_client
-            .finality_update()
-            .await
-            .map(|response| self.make_height(response.data.attested_header.beacon.slot))
+        todo!()
     }
 
     async fn query_latest_height_as_destination(&self) -> Result<Height, Self::Error> {
-        let height = self
-            .beacon_api_client
-            .block(beacon_api::client::BlockId::Head)
-            .await?
-            .data
-            .message
-            .slot;
-
-        // HACK: we introduced this because we were using alchemy for the
-        // execution endpoint and our custom beacon endpoint that rely on
-        // its own execution chain. Alchemy was a bit delayed and the
-        // execution height for the beacon head wasn't existing for few
-        // secs. We wait for an extra beacon head to let alchemy catch up.
-        // We should be able to remove that once we rely on an execution
-        // endpoint that is itself used by the beacon endpoint (no different
-        // POV).
-        loop {
-            let next_height = self
-                .beacon_api_client
-                .block(beacon_api::client::BlockId::Head)
-                .await?
-                .data
-                .message
-                .slot;
-            if next_height > height {
-                break;
-            }
-
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        }
-
-        Ok(self.make_height(height))
+        todo!()
     }
 
     async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
-        Ok(self
-            .beacon_api_client
-            .finality_update()
-            .await?
-            .data
-            .attested_header
-            .execution
-            .timestamp
-            .try_into()
-            .unwrap())
+        todo!()
     }
 
     async fn self_client_state(&self, beacon_height: Height) -> Self::SelfClientState {
         let genesis = self.beacon_api_client.genesis().await.unwrap().data;
 
+        let spec = self.beacon_api_client.spec().await.unwrap().data;
+
         ethereum::client_state::ClientState {
             chain_id: self.chain_id,
             genesis_validators_root: genesis.genesis_validators_root,
             genesis_time: genesis.genesis_time,
-            fork_parameters: self
-                .beacon_api_client
-                .spec()
-                .await
-                .unwrap()
-                .data
-                .into_fork_parameters(),
+            fork_parameters: spec.to_fork_parameters(),
             // REVIEW: Is this a preset config param? Or a per-chain config?
             seconds_per_slot: C::SECONDS_PER_SLOT::U64,
             slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
@@ -597,160 +556,30 @@ impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum EthereumInitError {
-    #[error("unable to connect to websocket")]
-    Ws(#[from] WsClientError),
-    #[error("provider error")]
-    Provider(#[from] ProviderError),
-    #[error("beacon error")]
-    Beacon(#[from] beacon_api::client::NewError),
-}
-
-impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
-    pub async fn new(config: Config<S>) -> Result<Self, EthereumInitError> {
-        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
-
-        let chain_id = provider.get_chainid().await?;
-
-        Ok(Self {
-            chain_id: U256(chain_id),
-            keyring: S::new(
-                config.keyring,
-                config.ibc_handler_address,
-                chain_id.as_u64(),
-                provider.clone(),
-            ),
-            ibc_handler_address: config.ibc_handler_address,
-            multicall_address: config.multicall_address,
-            provider: Arc::new(provider),
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
-            max_gas_price: config.max_gas_price,
-        })
-    }
-}
-
-/// Fetch an eth_getProof call on an Ethereum-based chain that has the exact same response type as Ethereum.
-pub async fn get_proof<Hc: EthereumIbcChain>(
-    hc: &Hc,
-    address: H160,
-    location: U256,
-    block: u64,
-) -> StorageProof {
-    let proof = hc
-        .provider()
-        .get_proof(
-            ethers::types::H160::from(address),
-            vec![location.to_be_bytes().into()],
-            Some(block.into()),
-        )
-        .await
-        .unwrap();
-
-    let proof = match <[_; 1]>::try_from(proof.storage_proof) {
-        Ok([proof]) => proof,
-        Err(invalid) => {
-            panic!("received invalid response from eth_getProof, expected length of 1 but got `{invalid:#?}`");
-        }
-    };
-
-    StorageProof {
-        key: U256::from_be_bytes(proof.key.to_fixed_bytes()),
-        value: proof.value.into(),
-        proof: proof
-            .proof
-            .into_iter()
-            .map(|bytes| bytes.to_vec())
-            .collect(),
-    }
-}
-
-impl<C: ChainSpec, S: EthereumSignersConfig> Ethereum<C, S> {
-    pub fn make_height(&self, height: impl Into<u64>) -> Height {
-        // REVIEW: Consider using the fork revision?
-        {
-            Height {
-                revision_number: ETHEREUM_REVISION_NUMBER,
-                revision_height: height.into(),
-            }
-        }
-    }
-}
-
 pub trait IbcHandlerExt<M: Middleware> {
-    fn ibc_state_read<P, Hc, Tr>(
+    fn ibc_state_read<P>(
         &self,
         execution_block_number: u64,
         path: P,
     ) -> impl Future<Output = Result<P::Value, ContractError<M>>> + Send
     where
-        P: EthereumStateRead<Hc, Tr> + 'static,
-        Hc: EthereumChain + EthereumIbcChain,
-        Tr: Chain;
-
-    fn get_client_state<Hc, ClientState>(
-        &self,
-        client_id: ClientIdOf<Hc>,
-        execution_block_number: u64,
-    ) -> impl Future<Output = ClientState>
-    where
-        Hc: EthereumChain + EthereumIbcChain,
-        ClientState: Decode<EthAbi>;
+        P: EthereumStateRead + 'static;
 }
 
 impl<M: Middleware> IbcHandlerExt<M> for IBCHandler<M> {
-    async fn ibc_state_read<P, Hc, Tr>(
+    async fn ibc_state_read<P>(
         &self,
         execution_block_number: u64,
         path: P,
     ) -> Result<P::Value, ContractError<M>>
     where
-        P: EthereumStateRead<Hc, Tr> + 'static,
-        Hc: EthereumChain + EthereumIbcChain,
-        Tr: Chain,
+        P: EthereumStateRead + 'static,
     {
         Ok(path.read(self, execution_block_number).await)
     }
-
-    async fn get_client_state<Hc, ClientState>(
-        &self,
-        client_id: ClientIdOf<Hc>,
-        execution_block_number: u64,
-    ) -> ClientState
-    where
-        Hc: EthereumChain + EthereumIbcChain,
-        ClientState: Decode<EthAbi>,
-    {
-        let client_address = self
-            .get_client(client_id.to_string())
-            .block(execution_block_number)
-            .call()
-            .await
-            .unwrap();
-
-        let bytes = ILightClient::new(client_address, self.client())
-            .get_client_state(client_id.to_string())
-            .block(execution_block_number)
-            .call()
-            .await
-            .unwrap();
-
-        <ClientState as Decode<EthAbi>>::decode(&bytes).unwrap()
-    }
 }
 
-pub type EthereumClientId = ClientId;
-
-pub fn next_epoch_timestamp<C: ChainSpec>(slot: u64, genesis_timestamp: u64) -> u64 {
-    let next_epoch_slot = slot + (C::SLOTS_PER_EPOCH::U64 - (slot % C::SLOTS_PER_EPOCH::U64));
-    genesis_timestamp + (next_epoch_slot * C::SECONDS_PER_SLOT::U64)
-}
-
-pub trait EthereumStateRead<Hc, Tr>: IbcPath<Hc, Tr>
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+pub trait EthereumStateRead: IbcPath {
     fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -758,29 +587,7 @@ where
     ) -> impl Future<Output = Self::Value> + Send + '_;
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientStatePath<ClientIdOf<Hc>>
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-    Self::Value: Decode<Hc::IbcStateEncoding>,
-{
-    async fn read<M: Middleware>(
-        self,
-        ibc_handler: &IBCHandler<M>,
-        execution_block_number: u64,
-    ) -> Self::Value {
-        ibc_handler
-            .get_client_state::<Hc, Self::Value>(self.client_id, execution_block_number)
-            .await
-    }
-}
-
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ClientConsensusStatePath<ClientIdOf<Hc>, HeightOf<Tr>>
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-    Self::Value: Decode<EthAbi>,
-{
+impl EthereumStateRead for ClientStatePath {
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -793,22 +600,40 @@ where
             .await
             .unwrap();
 
-        let bytes = ILightClient::new(client_address, ibc_handler.client())
-            .get_consensus_state(self.client_id.to_string(), self.height.into_height().into())
+        Hex(ILightClient::new(client_address, ibc_handler.client())
+            .get_client_state(self.client_id.to_string())
+            .block(execution_block_number)
+            .call()
+            .await
+            .unwrap()
+            .to_vec())
+    }
+}
+
+impl EthereumStateRead for ClientConsensusStatePath {
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        let client_address = ibc_handler
+            .get_client(self.client_id.to_string())
             .block(execution_block_number)
             .call()
             .await
             .unwrap();
 
-        <Self::Value as Decode<EthAbi>>::decode(&bytes).unwrap()
+        Hex(ILightClient::new(client_address, ibc_handler.client())
+            .get_consensus_state(self.client_id.to_string(), self.height.into_height().into())
+            .block(execution_block_number)
+            .call()
+            .await
+            .unwrap()
+            .to_vec())
     }
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ConnectionPath
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+impl EthereumStateRead for ConnectionPath {
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -825,16 +650,23 @@ where
     }
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ChannelEndPath
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+impl EthereumStateRead for ChannelEndPath {
+    #[instrument(
+        skip_all,
+        fields(
+            port_id = %self.port_id,
+            channel_id = %self.channel_id,
+            %execution_block_number,
+            ibc_handler_address = %H160::from(ibc_handler.address()),
+        )
+    )]
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
         execution_block_number: u64,
     ) -> Self::Value {
+        debug!("fetching channel");
+
         let raw = ibc_handler
             .get_channel(self.port_id.to_string(), self.channel_id.to_string())
             .block(execution_block_number)
@@ -842,15 +674,13 @@ where
             .await
             .unwrap();
 
+        debug!(?raw);
+
         raw.try_into().unwrap()
     }
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for CommitmentPath
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+impl EthereumStateRead for CommitmentPath {
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -860,7 +690,9 @@ where
             .client()
             .get_storage_at(
                 ibc_handler.address(),
-                commitment_key::<Hc, Tr>(self).into(),
+                ibc_commitment_key(&self.to_string(), IBC_HANDLER_COMMITMENTS_SLOT)
+                    .to_be_bytes()
+                    .into(),
                 Some(execution_block_number.into()),
             )
             .await
@@ -869,11 +701,7 @@ where
     }
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for AcknowledgementPath
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+impl EthereumStateRead for AcknowledgementPath {
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -883,7 +711,9 @@ where
             .client()
             .get_storage_at(
                 ibc_handler.address(),
-                commitment_key::<Hc, Tr>(self).into(),
+                ibc_commitment_key(&self.to_string(), IBC_HANDLER_COMMITMENTS_SLOT)
+                    .to_be_bytes()
+                    .into(),
                 Some(execution_block_number.into()),
             )
             .await
@@ -892,11 +722,7 @@ where
     }
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for NextConnectionSequencePath
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+impl EthereumStateRead for NextConnectionSequencePath {
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -907,7 +733,9 @@ where
                 .client()
                 .get_storage_at(
                     ibc_handler.address(),
-                    commitment_key::<Hc, Tr>(self).into(),
+                    ibc_commitment_key(&self.to_string(), IBC_HANDLER_COMMITMENTS_SLOT)
+                        .to_be_bytes()
+                        .into(),
                     Some(execution_block_number.into()),
                 )
                 .await
@@ -919,11 +747,7 @@ where
     }
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for NextClientSequencePath
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+impl EthereumStateRead for NextClientSequencePath {
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -934,7 +758,9 @@ where
                 .client()
                 .get_storage_at(
                     ibc_handler.address(),
-                    commitment_key::<Hc, Tr>(self).into(),
+                    ibc_commitment_key(&self.to_string(), IBC_HANDLER_COMMITMENTS_SLOT)
+                        .to_be_bytes()
+                        .into(),
                     Some(execution_block_number.into()),
                 )
                 .await
@@ -946,11 +772,7 @@ where
     }
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for ReceiptPath
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+impl EthereumStateRead for ReceiptPath {
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -961,7 +783,9 @@ where
                 .client()
                 .get_storage_at(
                     ibc_handler.address(),
-                    commitment_key::<Hc, Tr>(self).into(),
+                    ibc_commitment_key(&self.to_string(), IBC_HANDLER_COMMITMENTS_SLOT)
+                        .to_be_bytes()
+                        .into(),
                     Some(execution_block_number.into()),
                 )
                 .await
@@ -977,11 +801,7 @@ where
     }
 }
 
-impl<Hc, Tr> EthereumStateRead<Hc, Tr> for NextSequenceRecvPath
-where
-    Hc: EthereumChain + EthereumIbcChain,
-    Tr: Chain,
-{
+impl EthereumStateRead for NextSequenceRecvPath {
     async fn read<M: Middleware>(
         self,
         ibc_handler: &IBCHandler<M>,
@@ -992,7 +812,9 @@ where
                 .client()
                 .get_storage_at(
                     ibc_handler.address(),
-                    commitment_key::<Hc, Tr>(self).into(),
+                    ibc_commitment_key(&self.to_string(), IBC_HANDLER_COMMITMENTS_SLOT)
+                        .to_be_bytes()
+                        .into(),
                     Some(execution_block_number.into()),
                 )
                 .await
@@ -1003,25 +825,50 @@ where
     }
 }
 
-#[test]
-fn eth_chain_type() {
-    assert_eq!(
-        <<Ethereum<unionlabs::ethereum::config::Mainnet> as Chain>::ChainType as FromStrExact>::EXPECTING,
-        "eth-mainnet",
-    );
-    assert_eq!(
-        <<Ethereum<unionlabs::ethereum::config::Minimal> as Chain>::ChainType as FromStrExact>::EXPECTING,
-        "eth-minimal",
-    );
+impl EthereumStateRead for NextSequenceSendPath {
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        u64::try_from(U256::from_be_bytes(
+            ibc_handler
+                .client()
+                .get_storage_at(
+                    ibc_handler.address(),
+                    ibc_commitment_key(&self.to_string(), IBC_HANDLER_COMMITMENTS_SLOT)
+                        .to_be_bytes()
+                        .into(),
+                    Some(execution_block_number.into()),
+                )
+                .await
+                .unwrap()
+                .0,
+        ))
+        .unwrap()
+    }
 }
 
-// TODO: Remove this in favor of the one in unionlabs
-pub fn commitment_key<Hc: Chain, Tr: Chain>(path: impl IbcPath<Hc, Tr>) -> H256 {
-    keccak256(
-        keccak256(path.to_string())
-            .into_iter()
-            .chain(AbiEncode::encode(IBC_HANDLER_COMMITMENTS_SLOT))
-            .collect::<Vec<_>>(),
-    )
-    .into()
+impl EthereumStateRead for NextSequenceAckPath {
+    async fn read<M: Middleware>(
+        self,
+        ibc_handler: &IBCHandler<M>,
+        execution_block_number: u64,
+    ) -> Self::Value {
+        u64::try_from(U256::from_be_bytes(
+            ibc_handler
+                .client()
+                .get_storage_at(
+                    ibc_handler.address(),
+                    ibc_commitment_key(&self.to_string(), IBC_HANDLER_COMMITMENTS_SLOT)
+                        .to_be_bytes()
+                        .into(),
+                    Some(execution_block_number.into()),
+                )
+                .await
+                .unwrap()
+                .0,
+        ))
+        .unwrap()
+    }
 }

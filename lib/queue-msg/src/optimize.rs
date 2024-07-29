@@ -1,8 +1,9 @@
 use std::{convert::Infallible, error::Error, fmt::Debug};
 
 use either::Either;
-use frame_support_procedural::{CloneNoBound, DebugNoBound};
+use frame_support_procedural::{CloneNoBound, DebugNoBound, DefaultNoBound};
 use futures::Future;
+use serde::{Deserialize, Serialize};
 
 use crate::{Op, QueueMessage};
 
@@ -10,7 +11,7 @@ pub mod passes;
 
 /// An optimization pass over the queue. This is an "impure" pass, in that it can access the
 /// external environment and it is fallible.
-pub trait Pass<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static {
+pub trait Pass<T: QueueMessage>: Send + Sync + Sized {
     type Error: Error + Send + Sync + 'static;
 
     fn run_pass(
@@ -31,7 +32,8 @@ pub trait PurePass<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'stat
 /// The result of running an optimization pass. Both `optimize_further` and `ready` are lists of
 /// `(parents, msg)`, allowing for correlating new messages with multiple parents (i.e. combining
 /// messages).
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive(DebugNoBound, CloneNoBound, DefaultNoBound, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct OptimizationResult<T: QueueMessage> {
     /// Messages that are considered incomplete by this optimization pass and are to be optimized
     /// further.
@@ -39,7 +41,7 @@ pub struct OptimizationResult<T: QueueMessage> {
     /// For pure passes, it is recommended to return all messages here after being processed so
     /// that subsequent passes can run on them as well. In fact, all of the passes defined in
     /// [`passes`] work this way, with [`FinalPass`] requeueing everything under `ready`.
-    pub optimize_further: Vec<(Vec<usize>, Op<T>)>,
+    pub optimize_further: Vec<(Vec<usize>, Op<T>, String)>,
     /// Messages that are considered complete by this optimization pass. No more passes will be run
     /// on these messages, and they will be requeued as "ready" in the queue.
     pub ready: Vec<(Vec<usize>, Op<T>)>,
@@ -64,8 +66,14 @@ impl<T: QueueMessage, A: Pass<T>, B: Pass<T>> Pass<T> for (A, B) {
 
     async fn run_pass(&self, msgs: Vec<Op<T>>) -> Result<OptimizationResult<T>, Self::Error> {
         let res_a = self.0.run_pass(msgs).await.map_err(Either::Left)?;
-        let (pass_a_optimize_further_parent_ids, pass_1_optimize_further): (Vec<_>, Vec<_>) =
-            res_a.optimize_further.into_iter().unzip();
+        let (pass_a_optimize_further_parent_ids, (pass_1_optimize_further, _)): (
+            Vec<_>,
+            (Vec<_>, Vec<_>),
+        ) = res_a
+            .optimize_further
+            .into_iter()
+            .map(|(a, b, c)| (a, (b, c)))
+            .unzip();
 
         let res_b = self
             .1
@@ -84,8 +92,14 @@ impl<T: QueueMessage, A: Pass<T>, B: Pass<T>> Pass<T> for (A, B) {
 impl<T: QueueMessage, A: PurePass<T>, B: PurePass<T>> PurePass<T> for (A, B) {
     fn run_pass_pure(&self, msgs: Vec<Op<T>>) -> OptimizationResult<T> {
         let res_a = self.0.run_pass_pure(msgs);
-        let (pass_a_optimize_further_parent_ids, pass_1_optimize_further): (Vec<_>, Vec<_>) =
-            res_a.optimize_further.into_iter().unzip();
+        let (pass_a_optimize_further_parent_ids, (pass_1_optimize_further, _)): (
+            Vec<_>,
+            (Vec<_>, Vec<_>),
+        ) = res_a
+            .optimize_further
+            .into_iter()
+            .map(|(a, b, c)| (a, (b, c)))
+            .unzip();
 
         let res_b = self.1.run_pass_pure(pass_1_optimize_further);
 
@@ -106,7 +120,7 @@ fn combine_optimization_results<T: QueueMessage>(
             .collect();
     }
 
-    for (parents, _) in &mut res_b.optimize_further {
+    for (parents, _, _) in &mut res_b.optimize_further {
         *parents = parents
             .iter()
             .flat_map(|p| &pass_a_optimize_further_parent_ids[*p])

@@ -10,12 +10,12 @@ use crate::{
 };
 
 /// Minimal config.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Minimal;
 
 /// Mainnet config.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Mainnet;
 
@@ -46,33 +46,6 @@ impl FromStrExact for Mainnet {
     const EXPECTING: &'static str = "mainnet";
 }
 
-/// A way to emulate HKTs in the context of [`ChainSpec`]s.
-///
-/// # Example
-///
-/// ```rs
-/// struct Foo<C: ChainSpec>(PhantomData<C>);
-///
-/// struct AnyFoo;
-///
-/// impl ChainSpecParameterizable for AnyFoo {
-///     type T<C: ChainSpec> = Foo<C>;
-/// }
-///
-/// struct Bar {
-///     foo: AnyChainSpec<AnyFoo>,
-/// }
-/// ```
-pub trait ChainSpecParameterizable {
-    type Inner<C: ChainSpec>;
-}
-
-// generic_enum! {
-pub enum AnyChainSpec<T: ChainSpecParameterizable> {
-    Mainnet(T::Inner<Mainnet>),
-    Minimal(T::Inner<Minimal>),
-}
-
 // https://github.com/rust-lang/rust/issues/35853#issuecomment-415993963
 macro_rules! with_dollar_sign {
     ($($body:tt)*) => {
@@ -88,11 +61,11 @@ macro_rules! consts_traits {
             pub trait $CONST: Send + Sync + Unpin + 'static {
                 // Extra traits are required because the builtin derives bound all generic
                 // types unconditionally
-                type $CONST: Unsigned + NonZero + Debug + Clone + PartialEq + Send + Sync + Unpin;
+                type $CONST: Unsigned + NonZero + Debug + Clone + PartialEq + Eq + Send + Sync + Unpin;
             }
         )+
 
-        pub trait ChainSpec: 'static + crate::MaybeArbitrary + FromStrExact + Debug + Clone + PartialEq + Default + Send + Sync + Unpin + $($CONST+)+ {
+        pub trait ChainSpec: 'static + crate::MaybeArbitrary + FromStrExact + Debug + Clone + PartialEq + Eq + Default + Send + Sync + Unpin + $($CONST+)+ {
             const PRESET: preset::Preset;
             // const PRESET_BASE_KIND: PresetBaseKind;
 

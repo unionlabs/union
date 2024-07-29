@@ -62,7 +62,7 @@ impl Bera {
                 "store/beacon/key",
                 data,
                 Some(
-                    (slot - 1)
+                    (slot as i64 - 1)
                         .try_into()
                         .expect("converting slot to abci_query slot"),
                 ),

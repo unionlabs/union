@@ -18,7 +18,7 @@ use crate::{
     arbitrum::{Arbitrum, ArbitrumInitError},
     berachain::{Berachain, BerachainInitError},
     cosmos::{Cosmos, CosmosInitError},
-    ethereum::{Ethereum, EthereumInitError},
+    ethereum::Ethereum,
     keyring::KeyringConfig,
     scroll::{Scroll, ScrollInitError},
     union::{Union, UnionInitError},
@@ -278,8 +278,8 @@ pub enum AnyChainTryFromConfigError {
     Union(#[from] UnionInitError),
     #[error("error initializing a cosmos chain")]
     Cosmos(#[from] CosmosInitError),
-    #[error("error initializing an ethereum chain")]
-    Ethereum(#[from] EthereumInitError),
+    // #[error("error initializing an ethereum chain")]
+    // Ethereum(#[from] EthereumInitError),
     #[error("error initializing a scroll chain")]
     Scroll(#[from] ScrollInitError),
     #[error("error initializing an arbitrum chain")]
@@ -295,23 +295,24 @@ impl AnyChain {
         Ok(match config {
             ChainConfigType::Union(union) => Self::Union(Union::new(union).await?),
             ChainConfigType::Cosmos(cosmos) => Self::Cosmos(Cosmos::new(cosmos).await?),
-            ChainConfigType::Ethereum(ethereum) => {
-                let config = crate::ethereum::Config {
-                    ibc_handler_address: ethereum.ibc_handler_address,
-                    multicall_address: ethereum.multicall_address,
-                    keyring: ethereum.keyring,
-                    eth_rpc_api: ethereum.eth_rpc_api,
-                    eth_beacon_rpc_api: ethereum.eth_beacon_rpc_api,
-                    max_gas_price: ethereum.max_gas_price,
-                };
-                match ethereum.preset_base {
-                    PresetBaseKind::Minimal => {
-                        Self::EthereumMinimal(Ethereum::<Minimal>::new(config).await?)
-                    }
-                    PresetBaseKind::Mainnet => {
-                        Self::EthereumMainnet(Ethereum::<Mainnet>::new(config).await?)
-                    }
-                }
+            ChainConfigType::Ethereum(_ethereum) => {
+                // let config = crate::ethereum::Config {
+                //     ibc_handler_address: ethereum.ibc_handler_address,
+                //     multicall_address: ethereum.multicall_address,
+                //     keyring: ethereum.keyring,
+                //     eth_rpc_api: ethereum.eth_rpc_api,
+                //     eth_beacon_rpc_api: ethereum.eth_beacon_rpc_api,
+                //     max_gas_price: ethereum.max_gas_price,
+                // };
+                todo!()
+                // match ethereum.preset_base {
+                //     PresetBaseKind::Minimal => {
+                //         Self::EthereumMinimal(Ethereum::<Minimal>::new(config).await?)
+                //     }
+                //     PresetBaseKind::Mainnet => {
+                //         Self::EthereumMainnet(Ethereum::<Mainnet>::new(config).await?)
+                //     }
+                // }
             }
             ChainConfigType::Scroll(scroll) => Self::Scroll(Scroll::new(scroll).await?),
             ChainConfigType::Arbitrum(arbitrum) => Self::Arbitrum(Arbitrum::new(arbitrum).await?),

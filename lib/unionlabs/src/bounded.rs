@@ -12,6 +12,11 @@ macro_rules! bounded_int {
                 pub const fn inner(self) -> $ty {
                     self.0
                 }
+
+                #[must_use]
+                pub fn add(&self, other: &$ty) -> Self {
+                    Self::new(self.inner() + other).expect("arithmetic overflow")
+                }
             }
 
             impl<const MIN: $ty, const MAX: $ty> core::fmt::Debug for $Struct<MIN, MAX> {

@@ -57,10 +57,10 @@
           };
         };
         lightClients = [
-          self'.packages.ethereum-light-client-minimal
+          # self'.packages.ethereum-light-client-minimal
           # self'.packages.ethereum-light-client-mainnet
           # self'.packages.scroll-light-client
-          self'.packages.arbitrum-light-client
+          # self'.packages.arbitrum-light-client
           # self'.packages.berachain-light-client
           self'.packages.ics08-movement
         ];

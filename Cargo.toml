@@ -17,7 +17,6 @@ members = [
   "hubble",
 
   "lib/beacon-api",
-  "lib/block-message",
   "lib/chain-utils",
   "lib/cometbft-rpc",
   "lib/gnark-key-parser",
@@ -32,7 +31,6 @@ members = [
   "lib/poseidon-rs",
   "lib/queue-msg",
   "lib/queue-msg-macro",
-  "lib/relay-message",
   "lib/scroll-api",
   "lib/scroll-codec",
   "lib/scroll-rpc",
@@ -41,7 +39,6 @@ members = [
   "lib/ssz/tests-generator",
   "lib/ssz-derive",
   "lib/unionlabs",
-  "lib/voyager-message",
   "lib/zktrie-rs",
 
   "lib/near/near-ibc",
@@ -71,7 +68,22 @@ members = [
 
   "ucli",
   "unionvisor",
+
   "voyager",
+  "voyager/modules/chain/cosmos-sdk",
+  "voyager/modules/chain/ethereum",
+
+  "voyager/modules/client/cometbls",
+  "voyager/modules/client/ethereum",
+
+  "voyager/modules/consensus/cometbls",
+  "voyager/modules/consensus/ethereum",
+
+  "voyager/modules/transaction/cosmos-sdk",
+  "voyager/modules/transaction/ethereum",
+
+  "voyager/plugins/packet-filter",
+  "voyager/plugins/transaction-batch",
 
   "drip",
   "light-clients/movement/ics08-movement",

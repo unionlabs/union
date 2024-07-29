@@ -12,6 +12,7 @@ use alloc::{
 use core::fmt::Debug;
 
 use hex::FromHexError;
+use serde::{Deserialize, Serialize};
 
 pub const HEX_ENCODING_PREFIX: &str = "0x";
 
@@ -357,6 +358,41 @@ pub mod hex_allow_unprefixed {
     }
 }
 
+pub mod hex_allow_unprefixed_maybe_empty {
+    use alloc::{format, string::String, vec::Vec};
+    use core::fmt::Debug;
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S, T: AsRef<[u8]>>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match data {
+            Some(data) => crate::hex_string::serialize(data, serializer),
+            None => serializer.serialize_str(""),
+        }
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let s = s.strip_prefix("0x").unwrap_or(&s);
+
+        if s.is_empty() {
+            return Ok(None);
+        }
+
+        let bz = hex::decode(s).map_err(de::Error::custom)?;
+        bz.try_into()
+            .map(Some)
+            .map_err(|y: <T as TryFrom<Vec<u8>>>::Error| de::Error::custom(format!("{y:?}")))
+    }
+}
+
 pub mod hex_string_list {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
@@ -677,6 +713,19 @@ pub mod fmt {
 
             Ok(())
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[serde(bound(
+    serialize = "T: AsRef<[u8]>",
+    deserialize = "T: TryFrom<Vec<u8>, Error: Debug + 'static>",
+))]
+pub struct Hex<T>(#[serde(with = "crate::hex_string")] pub T);
+
+impl<T: AsRef<[u8]>> core::fmt::Display for Hex<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&to_hex(&self.0))
     }
 }
 

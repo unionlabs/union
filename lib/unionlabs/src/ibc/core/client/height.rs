@@ -45,7 +45,7 @@ impl FromStr for Height {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum HeightFromStrError {
     ParseIntError(ParseIntError),
     Invalid,
@@ -89,11 +89,17 @@ impl From<Height> for protos::ibc::core::client::v1::Height {
 
 impl PartialOrd for Height {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(match self.revision_number.cmp(&other.revision_number) {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Height {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        match self.revision_number.cmp(&other.revision_number) {
             core::cmp::Ordering::Less => core::cmp::Ordering::Less,
             core::cmp::Ordering::Equal => self.revision_height.cmp(&other.revision_height),
             core::cmp::Ordering::Greater => core::cmp::Ordering::Greater,
-        })
+        }
     }
 }
 

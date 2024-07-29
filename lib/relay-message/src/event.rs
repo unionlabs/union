@@ -604,13 +604,13 @@ impl<Hc: ChainExt, Tr: ChainExt> Event<Hc, Tr> {
 pub struct IbcEvent<Hc: ChainExt, Tr: ChainExt> {
     pub tx_hash: H256,
     pub height: HeightOf<Hc>,
-    pub event: unionlabs::events::IbcEvent<ClientIdOf<Hc>, ClientTypeOf<Hc>, ClientIdOf<Tr>>,
+    pub event: unionlabs::events::IbcEvent<ClientId, ClientTypeOf<Hc>, ClientId>,
 }
 
 #[queue_msg]
 pub enum Command<Hc: ChainExt, Tr: ChainExt> {
     UpdateClient {
-        client_id: ClientIdOf<Hc>,
+        client_id: ClientId,
         #[serde(skip)]
         __marker: PhantomData<fn() -> Tr>,
     },

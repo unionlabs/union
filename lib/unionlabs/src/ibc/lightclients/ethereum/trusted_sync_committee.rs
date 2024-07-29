@@ -6,7 +6,9 @@ use crate::{
     ethereum::config::SYNC_COMMITTEE_SIZE,
     ibc::{
         core::client::height::Height,
-        lightclients::ethereum::sync_committee::{SyncCommittee, TryFromSyncCommitteeError},
+        lightclients::ethereum::sync_committee::{
+            SyncCommittee, TryFromSyncCommitteeError, UnboundedSyncCommittee,
+        },
     },
 };
 
@@ -43,12 +45,12 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
     }
 }
 
-#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee),
     into,
     from
 ))]
+#[derive(Ssz)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct TrustedSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub trusted_height: Height,
@@ -74,9 +76,11 @@ impl<C: SYNC_COMMITTEE_SIZE> From<TrustedSyncCommittee<C>>
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromTrustedSyncCommitteeError {
+    #[error(transparent)]
     MissingField(MissingField),
+    #[error("invalid sync committee")]
     SyncCommittee(TryFromSyncCommitteeError),
 }
 
@@ -109,5 +113,39 @@ impl<C: SYNC_COMMITTEE_SIZE>
                 ),
             },
         })
+    }
+}
+
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee),
+    from
+))]
+pub struct UnboundedTrustedSyncCommittee {
+    pub trusted_height: Height,
+    pub sync_committee: UnboundedActiveSyncCommittee,
+}
+
+#[model]
+pub enum UnboundedActiveSyncCommittee {
+    Current(UnboundedSyncCommittee),
+    Next(UnboundedSyncCommittee),
+}
+
+impl From<UnboundedTrustedSyncCommittee>
+    for protos::union::ibc::lightclients::ethereum::v1::TrustedSyncCommittee
+{
+    fn from(value: UnboundedTrustedSyncCommittee) -> Self {
+        match value.sync_committee {
+            UnboundedActiveSyncCommittee::Current(committee) => Self {
+                trusted_height: Some(value.trusted_height.into()),
+                current_sync_committee: Some(committee.into()),
+                next_sync_committee: None,
+            },
+            UnboundedActiveSyncCommittee::Next(committee) => Self {
+                trusted_height: Some(value.trusted_height.into()),
+                current_sync_committee: None,
+                next_sync_committee: Some(committee.into()),
+            },
+        }
     }
 }

@@ -121,7 +121,6 @@ impl HalfNode {
 ///        / \ / \
 ///       L  L L  L
 /// ```
-///
 pub struct MerkleHasher {
     /// Stores the nodes that are half-complete and awaiting a right node.
     ///

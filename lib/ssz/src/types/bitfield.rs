@@ -90,7 +90,6 @@ pub type BitVector<N> = Bitfield<Fixed<N>>;
 /// assert_eq!(bitvector.len(), 8); // `BitVector` length is fixed at the type-level.
 /// assert!(bitvector.set(7, true).is_ok()); // Setting inside the capacity is permitted.
 /// assert!(bitvector.set(9, true).is_err()); // Setting outside the capacity is not.
-///
 /// ```
 ///
 /// ## Note

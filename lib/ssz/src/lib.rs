@@ -29,7 +29,6 @@
 //!
 //!     assert_eq!(foo, decoded_foo);
 //! }
-//!
 //! ```
 
 pub mod decode;

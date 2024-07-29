@@ -814,7 +814,7 @@ pub mod ibc_channel_handshake {
             fallback: false,
         }
     }
-    ///The parsed JSON ABI of the contract.
+    /// The parsed JSON ABI of the contract.
     #[cfg(feature = "providers")]
     pub static IBCCHANNELHANDSHAKE_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(__abi);
@@ -914,7 +914,7 @@ pub mod ibc_channel_handshake {
             let deployer = ::ethers::contract::ContractDeployer::new(deployer);
             Ok(deployer)
         }
-        ///Calls the contract's `COMMITMENT_PREFIX` (0xa9550dac) function
+        /// Calls the contract's `COMMITMENT_PREFIX` (0xa9550dac) function
         pub fn commitment_prefix(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
@@ -922,7 +922,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([169, 85, 13, 172], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `capabilities` (0x5717bcf5) function
+        /// Calls the contract's `capabilities` (0x5717bcf5) function
         pub fn capabilities(
             &self,
             p0: ::std::string::String,
@@ -931,7 +931,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([87, 23, 188, 245], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channelCapabilityPath` (0x3bc3339f) function
+        /// Calls the contract's `channelCapabilityPath` (0x3bc3339f) function
         pub fn channel_capability_path(
             &self,
             port_id: ::std::string::String,
@@ -941,7 +941,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([59, 195, 51, 159], (port_id, channel_id))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channelCloseConfirm` (0x6e92edaf) function
+        /// Calls the contract's `channelCloseConfirm` (0x6e92edaf) function
         pub fn channel_close_confirm(
             &self,
             msg: MsgChannelCloseConfirm,
@@ -950,7 +950,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([110, 146, 237, 175], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channelCloseInit` (0x96549d92) function
+        /// Calls the contract's `channelCloseInit` (0x96549d92) function
         pub fn channel_close_init(
             &self,
             msg: MsgChannelCloseInit,
@@ -959,7 +959,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([150, 84, 157, 146], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channelOpenAck` (0xdeff27b9) function
+        /// Calls the contract's `channelOpenAck` (0xdeff27b9) function
         pub fn channel_open_ack(
             &self,
             msg: MsgChannelOpenAck,
@@ -968,7 +968,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([222, 255, 39, 185], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channelOpenConfirm` (0xf52deded) function
+        /// Calls the contract's `channelOpenConfirm` (0xf52deded) function
         pub fn channel_open_confirm(
             &self,
             msg: MsgChannelOpenConfirm,
@@ -977,7 +977,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([245, 45, 237, 237], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channelOpenInit` (0x25035747) function
+        /// Calls the contract's `channelOpenInit` (0x25035747) function
         pub fn channel_open_init(
             &self,
             msg: MsgChannelOpenInit,
@@ -986,7 +986,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([37, 3, 87, 71], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channelOpenTry` (0x8b627bca) function
+        /// Calls the contract's `channelOpenTry` (0x8b627bca) function
         pub fn channel_open_try(
             &self,
             msg: MsgChannelOpenTry,
@@ -995,7 +995,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([139, 98, 123, 202], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channels` (0x5b3de260) function
+        /// Calls the contract's `channels` (0x5b3de260) function
         pub fn channels(
             &self,
             p0: ::std::string::String,
@@ -1013,7 +1013,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([91, 61, 226, 96], (p0, p1))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `clientImpls` (0xd1297b8d) function
+        /// Calls the contract's `clientImpls` (0xd1297b8d) function
         pub fn client_impls(
             &self,
             p0: ::std::string::String,
@@ -1022,7 +1022,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([209, 41, 123, 141], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `clientRegistry` (0x990491a5) function
+        /// Calls the contract's `clientRegistry` (0x990491a5) function
         pub fn client_registry(
             &self,
             p0: ::std::string::String,
@@ -1031,7 +1031,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([153, 4, 145, 165], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `clientTypes` (0xc2380105) function
+        /// Calls the contract's `clientTypes` (0xc2380105) function
         pub fn client_types(
             &self,
             p0: ::std::string::String,
@@ -1040,7 +1040,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([194, 56, 1, 5], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `commitments` (0x839df945) function
+        /// Calls the contract's `commitments` (0x839df945) function
         pub fn commitments(
             &self,
             p0: [u8; 32],
@@ -1049,7 +1049,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([131, 157, 249, 69], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `connections` (0x31973f00) function
+        /// Calls the contract's `connections` (0x31973f00) function
         pub fn connections(
             &self,
             p0: ::std::string::String,
@@ -1066,7 +1066,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([49, 151, 63, 0], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getClient` (0x7eb78932) function
+        /// Calls the contract's `getClient` (0x7eb78932) function
         pub fn get_client(
             &self,
             client_id: ::std::string::String,
@@ -1075,7 +1075,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([126, 183, 137, 50], client_id)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `nextChannelSequencePath` (0x8669fd15) function
+        /// Calls the contract's `nextChannelSequencePath` (0x8669fd15) function
         pub fn next_channel_sequence_path(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, [u8; 32]> {
@@ -1083,7 +1083,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([134, 105, 253, 21], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `nextClientSequencePath` (0x990c3888) function
+        /// Calls the contract's `nextClientSequencePath` (0x990c3888) function
         pub fn next_client_sequence_path(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, [u8; 32]> {
@@ -1091,7 +1091,7 @@ pub mod ibc_channel_handshake {
                 .method_hash([153, 12, 56, 136], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `nextConnectionSequencePath` (0x46807086) function
+        /// Calls the contract's `nextConnectionSequencePath` (0x46807086) function
         pub fn next_connection_sequence_path(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, [u8; 32]> {
@@ -1099,42 +1099,42 @@ pub mod ibc_channel_handshake {
                 .method_hash([70, 128, 112, 134], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Gets the contract's `ChannelCloseConfirm` event
+        /// Gets the contract's `ChannelCloseConfirm` event
         pub fn channel_close_confirm_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ChannelCloseConfirmFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `ChannelCloseInit` event
+        /// Gets the contract's `ChannelCloseInit` event
         pub fn channel_close_init_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ChannelCloseInitFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `ChannelOpenAck` event
+        /// Gets the contract's `ChannelOpenAck` event
         pub fn channel_open_ack_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ChannelOpenAckFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `ChannelOpenConfirm` event
+        /// Gets the contract's `ChannelOpenConfirm` event
         pub fn channel_open_confirm_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ChannelOpenConfirmFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `ChannelOpenInit` event
+        /// Gets the contract's `ChannelOpenInit` event
         pub fn channel_open_init_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ChannelOpenInitFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `ChannelOpenTry` event
+        /// Gets the contract's `ChannelOpenTry` event
         pub fn channel_open_try_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ChannelOpenTryFilter>
@@ -1158,7 +1158,7 @@ pub mod ibc_channel_handshake {
             Self::new(contract.address(), contract.client())
         }
     }
-    ///Custom Error type `ErrCapabilityAlreadyClaimed` with signature `ErrCapabilityAlreadyClaimed()` and selector `0x463eec90`
+    /// Custom Error type `ErrCapabilityAlreadyClaimed` with signature `ErrCapabilityAlreadyClaimed()` and selector `0x463eec90`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1174,7 +1174,7 @@ pub mod ibc_channel_handshake {
         abi = "ErrCapabilityAlreadyClaimed()"
     )]
     pub struct ErrCapabilityAlreadyClaimed;
-    ///Custom Error type `ErrClientNotFound` with signature `ErrClientNotFound()` and selector `0xb6c71f7d`
+    /// Custom Error type `ErrClientNotFound` with signature `ErrClientNotFound()` and selector `0xb6c71f7d`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1187,7 +1187,7 @@ pub mod ibc_channel_handshake {
     )]
     #[etherror(name = "ErrClientNotFound", abi = "ErrClientNotFound()")]
     pub struct ErrClientNotFound;
-    ///Custom Error type `ErrConnNotSingleHop` with signature `ErrConnNotSingleHop()` and selector `0xd4377a90`
+    /// Custom Error type `ErrConnNotSingleHop` with signature `ErrConnNotSingleHop()` and selector `0xd4377a90`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1200,7 +1200,7 @@ pub mod ibc_channel_handshake {
     )]
     #[etherror(name = "ErrConnNotSingleHop", abi = "ErrConnNotSingleHop()")]
     pub struct ErrConnNotSingleHop;
-    ///Custom Error type `ErrConnNotSingleVersion` with signature `ErrConnNotSingleVersion()` and selector `0xcc6fef24`
+    /// Custom Error type `ErrConnNotSingleVersion` with signature `ErrConnNotSingleVersion()` and selector `0xcc6fef24`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1213,7 +1213,7 @@ pub mod ibc_channel_handshake {
     )]
     #[etherror(name = "ErrConnNotSingleVersion", abi = "ErrConnNotSingleVersion()")]
     pub struct ErrConnNotSingleVersion;
-    ///Custom Error type `ErrCounterpartyChannelNotEmpty` with signature `ErrCounterpartyChannelNotEmpty()` and selector `0x32699362`
+    /// Custom Error type `ErrCounterpartyChannelNotEmpty` with signature `ErrCounterpartyChannelNotEmpty()` and selector `0x32699362`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1229,7 +1229,7 @@ pub mod ibc_channel_handshake {
         abi = "ErrCounterpartyChannelNotEmpty()"
     )]
     pub struct ErrCounterpartyChannelNotEmpty;
-    ///Custom Error type `ErrInvalidChannelState` with signature `ErrInvalidChannelState()` and selector `0x96d09146`
+    /// Custom Error type `ErrInvalidChannelState` with signature `ErrInvalidChannelState()` and selector `0x96d09146`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1242,7 +1242,7 @@ pub mod ibc_channel_handshake {
     )]
     #[etherror(name = "ErrInvalidChannelState", abi = "ErrInvalidChannelState()")]
     pub struct ErrInvalidChannelState;
-    ///Custom Error type `ErrInvalidConnectionState` with signature `ErrInvalidConnectionState()` and selector `0x8ca98990`
+    /// Custom Error type `ErrInvalidConnectionState` with signature `ErrInvalidConnectionState()` and selector `0x8ca98990`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1258,7 +1258,7 @@ pub mod ibc_channel_handshake {
         abi = "ErrInvalidConnectionState()"
     )]
     pub struct ErrInvalidConnectionState;
-    ///Custom Error type `ErrInvalidHexAddress` with signature `ErrInvalidHexAddress()` and selector `0xfe6f1570`
+    /// Custom Error type `ErrInvalidHexAddress` with signature `ErrInvalidHexAddress()` and selector `0xfe6f1570`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1271,7 +1271,7 @@ pub mod ibc_channel_handshake {
     )]
     #[etherror(name = "ErrInvalidHexAddress", abi = "ErrInvalidHexAddress()")]
     pub struct ErrInvalidHexAddress;
-    ///Custom Error type `ErrInvalidProof` with signature `ErrInvalidProof()` and selector `0x14209932`
+    /// Custom Error type `ErrInvalidProof` with signature `ErrInvalidProof()` and selector `0x14209932`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1284,7 +1284,7 @@ pub mod ibc_channel_handshake {
     )]
     #[etherror(name = "ErrInvalidProof", abi = "ErrInvalidProof()")]
     pub struct ErrInvalidProof;
-    ///Custom Error type `ErrUnsupportedFeature` with signature `ErrUnsupportedFeature()` and selector `0x5d191fae`
+    /// Custom Error type `ErrUnsupportedFeature` with signature `ErrUnsupportedFeature()` and selector `0x5d191fae`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1297,7 +1297,7 @@ pub mod ibc_channel_handshake {
     )]
     #[etherror(name = "ErrUnsupportedFeature", abi = "ErrUnsupportedFeature()")]
     pub struct ErrUnsupportedFeature;
-    ///Container type for all of the contract's custom errors
+    /// Container type for all of the contract's custom errors
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum IBCChannelHandshakeErrors {
         ErrCapabilityAlreadyClaimed(ErrCapabilityAlreadyClaimed),
@@ -1538,6 +1538,8 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelCloseConfirm",
@@ -1571,6 +1573,8 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelOpenAck",
@@ -1592,6 +1596,8 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelOpenConfirm",
@@ -1613,6 +1619,8 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelOpenInit",
@@ -1634,6 +1642,8 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ChannelOpenTry",
@@ -1647,7 +1657,7 @@ pub mod ibc_channel_handshake {
         pub connection_id: ::std::string::String,
         pub version: ::std::string::String,
     }
-    ///Container type for all of the contract's events
+    /// Container type for all of the contract's events
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum IBCChannelHandshakeEvents {
         ChannelCloseConfirmFilter(ChannelCloseConfirmFilter),
@@ -1726,7 +1736,7 @@ pub mod ibc_channel_handshake {
             Self::ChannelOpenTryFilter(value)
         }
     }
-    ///Container type for all input parameters for the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
+    /// Container type for all input parameters for the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1739,7 +1749,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "COMMITMENT_PREFIX", abi = "COMMITMENT_PREFIX()")]
     pub struct CommitmentPrefixCall;
-    ///Container type for all input parameters for the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
+    /// Container type for all input parameters for the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1752,7 +1762,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "capabilities", abi = "capabilities(string)")]
     pub struct CapabilitiesCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `channelCapabilityPath` function with signature `channelCapabilityPath(string,string)` and selector `0x3bc3339f`
+    /// Container type for all input parameters for the `channelCapabilityPath` function with signature `channelCapabilityPath(string,string)` and selector `0x3bc3339f`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1771,7 +1781,7 @@ pub mod ibc_channel_handshake {
         pub port_id: ::std::string::String,
         pub channel_id: ::std::string::String,
     }
-    ///Container type for all input parameters for the `channelCloseConfirm` function with signature `channelCloseConfirm((string,string,bytes,(uint64,uint64),address))` and selector `0x6e92edaf`
+    /// Container type for all input parameters for the `channelCloseConfirm` function with signature `channelCloseConfirm((string,string,bytes,(uint64,uint64),address))` and selector `0x6e92edaf`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1789,7 +1799,7 @@ pub mod ibc_channel_handshake {
     pub struct ChannelCloseConfirmCall {
         pub msg: MsgChannelCloseConfirm,
     }
-    ///Container type for all input parameters for the `channelCloseInit` function with signature `channelCloseInit((string,string,address))` and selector `0x96549d92`
+    /// Container type for all input parameters for the `channelCloseInit` function with signature `channelCloseInit((string,string,address))` and selector `0x96549d92`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1807,7 +1817,7 @@ pub mod ibc_channel_handshake {
     pub struct ChannelCloseInitCall {
         pub msg: MsgChannelCloseInit,
     }
-    ///Container type for all input parameters for the `channelOpenAck` function with signature `channelOpenAck((string,string,string,string,bytes,(uint64,uint64),address))` and selector `0xdeff27b9`
+    /// Container type for all input parameters for the `channelOpenAck` function with signature `channelOpenAck((string,string,string,string,bytes,(uint64,uint64),address))` and selector `0xdeff27b9`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1825,7 +1835,7 @@ pub mod ibc_channel_handshake {
     pub struct ChannelOpenAckCall {
         pub msg: MsgChannelOpenAck,
     }
-    ///Container type for all input parameters for the `channelOpenConfirm` function with signature `channelOpenConfirm((string,string,bytes,(uint64,uint64),address))` and selector `0xf52deded`
+    /// Container type for all input parameters for the `channelOpenConfirm` function with signature `channelOpenConfirm((string,string,bytes,(uint64,uint64),address))` and selector `0xf52deded`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1843,7 +1853,7 @@ pub mod ibc_channel_handshake {
     pub struct ChannelOpenConfirmCall {
         pub msg: MsgChannelOpenConfirm,
     }
-    ///Container type for all input parameters for the `channelOpenInit` function with signature `channelOpenInit((string,(uint8,uint8,(string,string),string[],string),address))` and selector `0x25035747`
+    /// Container type for all input parameters for the `channelOpenInit` function with signature `channelOpenInit((string,(uint8,uint8,(string,string),string[],string),address))` and selector `0x25035747`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1861,7 +1871,7 @@ pub mod ibc_channel_handshake {
     pub struct ChannelOpenInitCall {
         pub msg: MsgChannelOpenInit,
     }
-    ///Container type for all input parameters for the `channelOpenTry` function with signature `channelOpenTry((string,(uint8,uint8,(string,string),string[],string),string,bytes,(uint64,uint64),address))` and selector `0x8b627bca`
+    /// Container type for all input parameters for the `channelOpenTry` function with signature `channelOpenTry((string,(uint8,uint8,(string,string),string[],string),string,bytes,(uint64,uint64),address))` and selector `0x8b627bca`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1879,7 +1889,7 @@ pub mod ibc_channel_handshake {
     pub struct ChannelOpenTryCall {
         pub msg: MsgChannelOpenTry,
     }
-    ///Container type for all input parameters for the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
+    /// Container type for all input parameters for the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1892,7 +1902,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "channels", abi = "channels(string,string)")]
     pub struct ChannelsCall(pub ::std::string::String, pub ::std::string::String);
-    ///Container type for all input parameters for the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`
+    /// Container type for all input parameters for the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1905,7 +1915,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "clientImpls", abi = "clientImpls(string)")]
     pub struct ClientImplsCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `clientRegistry` function with signature `clientRegistry(string)` and selector `0x990491a5`
+    /// Container type for all input parameters for the `clientRegistry` function with signature `clientRegistry(string)` and selector `0x990491a5`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1918,7 +1928,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "clientRegistry", abi = "clientRegistry(string)")]
     pub struct ClientRegistryCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `clientTypes` function with signature `clientTypes(string)` and selector `0xc2380105`
+    /// Container type for all input parameters for the `clientTypes` function with signature `clientTypes(string)` and selector `0xc2380105`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1931,7 +1941,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "clientTypes", abi = "clientTypes(string)")]
     pub struct ClientTypesCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `commitments` function with signature `commitments(bytes32)` and selector `0x839df945`
+    /// Container type for all input parameters for the `commitments` function with signature `commitments(bytes32)` and selector `0x839df945`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1944,7 +1954,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "commitments", abi = "commitments(bytes32)")]
     pub struct CommitmentsCall(pub [u8; 32]);
-    ///Container type for all input parameters for the `connections` function with signature `connections(string)` and selector `0x31973f00`
+    /// Container type for all input parameters for the `connections` function with signature `connections(string)` and selector `0x31973f00`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1957,7 +1967,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "connections", abi = "connections(string)")]
     pub struct ConnectionsCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
+    /// Container type for all input parameters for the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1972,7 +1982,7 @@ pub mod ibc_channel_handshake {
     pub struct GetClientCall {
         pub client_id: ::std::string::String,
     }
-    ///Container type for all input parameters for the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
+    /// Container type for all input parameters for the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1985,7 +1995,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "nextChannelSequencePath", abi = "nextChannelSequencePath()")]
     pub struct NextChannelSequencePathCall;
-    ///Container type for all input parameters for the `nextClientSequencePath` function with signature `nextClientSequencePath()` and selector `0x990c3888`
+    /// Container type for all input parameters for the `nextClientSequencePath` function with signature `nextClientSequencePath()` and selector `0x990c3888`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1998,7 +2008,7 @@ pub mod ibc_channel_handshake {
     )]
     #[ethcall(name = "nextClientSequencePath", abi = "nextClientSequencePath()")]
     pub struct NextClientSequencePathCall;
-    ///Container type for all input parameters for the `nextConnectionSequencePath` function with signature `nextConnectionSequencePath()` and selector `0x46807086`
+    /// Container type for all input parameters for the `nextConnectionSequencePath` function with signature `nextConnectionSequencePath()` and selector `0x46807086`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2014,7 +2024,7 @@ pub mod ibc_channel_handshake {
         abi = "nextConnectionSequencePath()"
     )]
     pub struct NextConnectionSequencePathCall;
-    ///Container type for all of the contract's call
+    /// Container type for all of the contract's call
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum IBCChannelHandshakeCalls {
         CommitmentPrefix(CommitmentPrefixCall),
@@ -2284,7 +2294,7 @@ pub mod ibc_channel_handshake {
             Self::NextConnectionSequencePath(value)
         }
     }
-    ///Container type for all return fields from the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
+    /// Container type for all return fields from the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2296,7 +2306,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct CommitmentPrefixReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
+    /// Container type for all return fields from the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2308,7 +2318,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct CapabilitiesReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `channelCapabilityPath` function with signature `channelCapabilityPath(string,string)` and selector `0x3bc3339f`
+    /// Container type for all return fields from the `channelCapabilityPath` function with signature `channelCapabilityPath(string,string)` and selector `0x3bc3339f`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2320,7 +2330,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct ChannelCapabilityPathReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `channelOpenInit` function with signature `channelOpenInit((string,(uint8,uint8,(string,string),string[],string),address))` and selector `0x25035747`
+    /// Container type for all return fields from the `channelOpenInit` function with signature `channelOpenInit((string,(uint8,uint8,(string,string),string[],string),address))` and selector `0x25035747`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2332,7 +2342,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct ChannelOpenInitReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `channelOpenTry` function with signature `channelOpenTry((string,(uint8,uint8,(string,string),string[],string),string,bytes,(uint64,uint64),address))` and selector `0x8b627bca`
+    /// Container type for all return fields from the `channelOpenTry` function with signature `channelOpenTry((string,(uint8,uint8,(string,string),string[],string),string,bytes,(uint64,uint64),address))` and selector `0x8b627bca`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2344,7 +2354,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct ChannelOpenTryReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
+    /// Container type for all return fields from the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2361,7 +2371,7 @@ pub mod ibc_channel_handshake {
         pub counterparty: IbcCoreChannelV1CounterpartyData,
         pub version: ::std::string::String,
     }
-    ///Container type for all return fields from the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`
+    /// Container type for all return fields from the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2373,7 +2383,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct ClientImplsReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `clientRegistry` function with signature `clientRegistry(string)` and selector `0x990491a5`
+    /// Container type for all return fields from the `clientRegistry` function with signature `clientRegistry(string)` and selector `0x990491a5`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2385,7 +2395,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct ClientRegistryReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `clientTypes` function with signature `clientTypes(string)` and selector `0xc2380105`
+    /// Container type for all return fields from the `clientTypes` function with signature `clientTypes(string)` and selector `0xc2380105`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2397,7 +2407,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct ClientTypesReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `commitments` function with signature `commitments(bytes32)` and selector `0x839df945`
+    /// Container type for all return fields from the `commitments` function with signature `commitments(bytes32)` and selector `0x839df945`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2409,7 +2419,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct CommitmentsReturn(pub [u8; 32]);
-    ///Container type for all return fields from the `connections` function with signature `connections(string)` and selector `0x31973f00`
+    /// Container type for all return fields from the `connections` function with signature `connections(string)` and selector `0x31973f00`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2426,7 +2436,7 @@ pub mod ibc_channel_handshake {
         pub counterparty: IbcCoreConnectionV1CounterpartyData,
         pub delay_period: u64,
     }
-    ///Container type for all return fields from the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
+    /// Container type for all return fields from the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2438,7 +2448,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct GetClientReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
+    /// Container type for all return fields from the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2450,7 +2460,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct NextChannelSequencePathReturn(pub [u8; 32]);
-    ///Container type for all return fields from the `nextClientSequencePath` function with signature `nextClientSequencePath()` and selector `0x990c3888`
+    /// Container type for all return fields from the `nextClientSequencePath` function with signature `nextClientSequencePath()` and selector `0x990c3888`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2462,7 +2472,7 @@ pub mod ibc_channel_handshake {
         Hash,
     )]
     pub struct NextClientSequencePathReturn(pub [u8; 32]);
-    ///Container type for all return fields from the `nextConnectionSequencePath` function with signature `nextConnectionSequencePath()` and selector `0x46807086`
+    /// Container type for all return fields from the `nextConnectionSequencePath` function with signature `nextConnectionSequencePath()` and selector `0x46807086`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

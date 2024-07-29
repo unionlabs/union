@@ -15,6 +15,74 @@ use syn::{
     WhereClause, WherePredicate,
 };
 
+// #[proc_macro_derive(AnyChainSpec, attributes(any_chain_spec))]
+// pub fn any_chain_spec(ts: TokenStream) -> TokenStream {
+//     let di = parse_macro_input!(ts as DeriveInput);
+
+//     derive_any_chain_spec(di)
+//         // .inspect(|x| println!("{x}"))
+//         .map_err(|e| e.into_compile_error())
+//         .unwrap_or_else(convert::identity)
+//         .into()
+// }
+
+// fn derive_any_chain_spec(
+//     DeriveInput {
+//         ident,
+//         generics,
+//         attrs,
+//         ..
+//     }: DeriveInput,
+// ) -> Result<proc_macro2::TokenStream, syn::Error> {
+//     if generics.params.len() != 1 {
+//         return Err(syn::Error::new_spanned(
+//             generics,
+//             "type must have one generic parameter",
+//         ));
+//     }
+
+//     let any_ident = format_ident!("Any{ident}");
+
+//     let crate_ = attrs
+//         .into_iter()
+//         .find_map(|attr| {
+//             attr.path()
+//                 .is_ident("any_chain_spec")
+//                 .then(|| {
+//                     attr.meta.require_list().ok().and_then(|list| {
+//                         let mut value = None;
+//                         list.parse_nested_meta(|meta| {
+//                             if meta.path.is_ident("crate") {
+//                                 if let Some(prev) = value.replace(meta.value()?.parse::<Path>()?) {
+//                                     Err(syn::Error::new_spanned(prev, "duplicate crate value"))
+//                                 } else {
+//                                     Ok(())
+//                                 }
+//                             } else {
+//                                 Err(meta.error("unsupported attribute value"))
+//                             }
+//                         })
+//                         .map(|()| value)
+//                         .transpose()
+//                     })
+//                 })
+//                 .flatten()
+//         })
+//         .transpose()?
+//         .unwrap_or(parse_quote!(::unionlabs));
+
+//     Ok(quote! {
+//         pub enum #any_ident {}
+
+//         const _: () = {
+//             #[automatically_derived]
+//             impl #crate_::ethereum::config::ChainSpecParameterizable for #any_ident {
+//                 type Inner<C: #crate_::ethereum::config::ChainSpec> = #ident<C>;
+//             }
+//         };
+//     })
+// }
+
 #[proc_macro_attribute]
 pub fn apply(meta: TokenStream, ts: TokenStream) -> TokenStream {
     let [ident @ TokenTree::Ident(_)]: [TokenTree; 1] =
@@ -205,7 +273,10 @@ fn derive_debug(
             })
         }
         (Data::Enum(e), None) => {
-            let variant_debugs = e
+            if e.variants.is_empty() {
+                Ok(quote!(unreachable!()))
+            } else {
+                let variant_debugs = e
                 .variants
                 .iter()
                 .map(
@@ -263,11 +334,12 @@ fn derive_debug(
                 )
                 .collect::<Result<Vec<_>, _>>()?;
 
-            Ok(quote! {
-                match self {
-                    #(#variant_debugs)*
-                }
-            })
+                Ok(quote! {
+                    match self {
+                        #(#variant_debugs)*
+                    }
+                })
+            }
         }
         (Data::Struct(_) | Data::Enum(_), Some(DebugMetaFmt::Format(lit, exprs))) => Ok(quote! {
             write!(f, #lit, #(#exprs)*)
@@ -702,6 +774,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     #debug_derive_crate::Debug,
                     ::core::clone::Clone,
                     ::core::cmp::PartialEq,
+                    ::core::cmp::Eq,
                 )]
                 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
                 #serde
@@ -731,6 +804,7 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     #debug_derive_crate::Debug,
                     ::core::clone::Clone,
                     ::core::cmp::PartialEq,
+                    ::core::cmp::Eq,
                 )]
                 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
                 #serde

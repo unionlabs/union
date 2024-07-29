@@ -1,14 +1,19 @@
 // @generated
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Proof {
     #[prost(int64, tag = "1")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub total: i64,
     #[prost(int64, tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub index: i64,
     #[prost(bytes = "vec", tag = "3")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub leaf_hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", repeated, tag = "4")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub aunts: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 impl ::prost::Name for Proof {

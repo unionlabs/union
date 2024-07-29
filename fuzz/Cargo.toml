@@ -1,0 +1,60 @@
+[package]
+edition  = "2021"
+name     = "fuzz"
+publish  = false
+resolver = "2"
+version  = "0.0.0"
+
+[lints]
+workspace = true
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+voyager-message = { workspace = true }
+libfuzzer-sys = "0.4"
+queue-msg     = { workspace = true }
+unionlabs = { workspace = true }
+
+[features]
+arbitrary = [
+  "queue-msg/arbitrary",
+  "unionlabs/fuzzing",
+  "voyager-message/arbitrary",
+]
+
+# [[bin]]
+# doc               = false
+# name              = "voyager_message_roundtrip"
+# path              = "../lib/relay-message/fuzz_targets/serde_roundtrip.rs"
+# required-features = ["arbitrary"]
+# test              = false
+
+[[bin]]
+doc               = false
+name              = "duration_roundtrip"
+path              = "../lib/unionlabs/fuzz_targets/duration/roundtrip.rs"
+required-features = ["arbitrary"]
+test              = false
+
+[[bin]]
+doc               = false
+name              = "duration_from_str"
+path              = "../lib/unionlabs/fuzz_targets/duration/from_str.rs"
+required-features = ["arbitrary"]
+test              = false
+
+[[bin]]
+doc               = false
+name              = "duration_checked_add"
+path              = "../lib/unionlabs/fuzz_targets/duration/checked_add.rs"
+required-features = ["arbitrary"]
+test              = false
+
+[[bin]]
+doc               = false
+name              = "timestamp_roundtrip"
+path              = "../lib/unionlabs/fuzz_targets/timestamp/roundtrip.rs"
+required-features = ["arbitrary"]
+test              = false
