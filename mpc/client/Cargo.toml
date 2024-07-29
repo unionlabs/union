@@ -4,14 +4,20 @@ name    = "mpc-client"
 version = "0.1.0"
 
 [dependencies]
-clap       = { version = "4.5", features = ["derive"] }
-crossterm  = "0.27.0"
-mpc-shared = { workspace = true }
-rand       = "0.8.5"
-ratatui    = "0.27.0"
-reqwest    = { workspace = true, features = ["json"] }
-serde      = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-sha2       = { workspace = true }
-thiserror  = { workspace = true }
-tokio      = { workspace = true, features = ["full"] }
+async-sqlite   = "0.2.2"
+base64         = { workspace = true }
+clap           = { version = "4.5", features = ["derive"] }
+crossterm      = "0.27.0"
+http-body-util = "0.1"
+httpdate       = "1.0"
+hyper          = { version = "1", features = ["full"] }
+hyper-util     = { version = "0.1", features = ["full"] }
+mpc-shared     = { workspace = true }
+postgrest      = "1.0"
+rand           = "0.8.5"
+ratatui        = "0.27.0"
+reqwest        = { workspace = true, features = ["json"] }
+serde          = { workspace = true, features = ["derive"] }
+serde_json     = { workspace = true }
+thiserror      = { workspace = true }
+tokio          = { workspace = true, features = ["full"] }

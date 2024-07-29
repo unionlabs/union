@@ -1,43 +1,17 @@
-pub mod fsm;
-
-use std::{
-    collections::{HashMap, HashSet},
-    io::Cursor,
-    marker::PhantomData,
-    sync::{
-        mpsc::{channel, Sender, TryRecvError},
-        Arc, RwLock,
-    },
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::{io::SeekFrom, str::FromStr};
 
 use clap::{Parser, Subcommand};
 use mpc_shared::{
-    phase2_verify, types::Contribution, CONTRIBUTION_CHUNKS, CONTRIBUTION_CHUNK_SIZE,
-    CONTRIBUTION_CHUNK_SIZE_FINAL,
+    phase2_verify,
+    types::{Contribution, ContributorId, PayloadId},
+    CONTRIBUTION_SIZE,
 };
-use priority_queue::PriorityQueue;
-use rocket::{
-    data::{Limits, ToByteUnit},
-    fs::TempFile,
-    get,
-    http::{
-        hyper::{header::AUTHORIZATION, HeaderValue},
-        ContentType, Cookie, CookieJar, Header, Status,
-    },
-    post,
-    request::{FromParam, FromRequest, Outcome, Request},
-    response::status::{self, Forbidden, NotFound, Unauthorized},
-    routes,
-    serde::{
-        json::{json, Json, Value},
-        Deserialize, Serialize,
-    },
-    Response, State,
-};
-use rocket_authorization::{AuthError, Authorization, Credential};
-use rocket_seek_stream::SeekStream;
-use sha2::Digest;
+use postgrest::Postgrest;
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_LENGTH, RANGE};
+use tokio::io::{AsyncSeekExt, AsyncWriteExt};
+
+const SUPABASE_PROJECT: &str = "https://bffcolwcakqrhlznyjns.supabase.co";
+const APIKEY: &str = "apikey";
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -50,355 +24,221 @@ struct Args {
 enum Command {
     Start {
         #[arg(short, long)]
-        phase2_payload_path: String,
+        jwt: String,
+        #[arg(short, long)]
+        api_key: String,
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
-#[serde(crate = "rocket::serde")]
-struct Contributor {
-    token: String,
+#[derive(thiserror::Error, Debug, Clone)]
+enum Error {
+    #[error("couldn't find expected header: {0}")]
+    HeaderNotFound(String),
+    #[error("current contributor not found.")]
+    ContributorNotFound,
+    #[error("current payload not found.")]
+    CurrentPayloadNotFound,
+    #[error("next payload not found.")]
+    NextPayloadNotFound,
 }
 
-#[derive(Debug)]
-struct AppState {
-    queue: PriorityQueue<Contributor, usize>,
-    processed: HashMap<Contributor, Contribution>,
-    payload: Vec<u8>,
-    payload_hash: Vec<u8>,
-    contributor: Contributor,
-    upload_index: Index,
-    contribution_payload: Vec<u8>,
-    machine: fsm::union_mpc::StateMachine,
+async fn get_state_file(path: &str) -> Vec<u8> {
+    if !tokio::fs::try_exists(path).await.unwrap() {
+        tokio::fs::write(path, []).await.unwrap();
+    }
+    tokio::fs::read(path).await.unwrap()
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum AppMessage {
-    Join {
-        token: String,
-    },
-    ContributePartial {
-        token: String,
-        index: Index,
-        payload_fraction: Vec<u8>,
-    },
-}
-
-struct Current;
-struct Any;
-struct AuthContributor<T>(String, PhantomData<T>);
-#[rocket::async_trait]
-impl Authorization for AuthContributor<Current> {
-    const KIND: &'static str = "Bearer";
-    async fn parse(_: &str, token: &str, request: &Request) -> Result<Self, AuthError> {
-        let app_state = request
-            .rocket()
-            .state::<Arc<RwLock<AppState>>>()
-            .unwrap()
-            .read()
-            .unwrap();
-        if app_state.machine.state() == &fsm::union_mpc::State::AwaitContribution
-            && app_state.contributor.token == token
-        {
-            Ok(Self(token.to_string(), PhantomData))
-        } else {
-            Err(AuthError::Unauthorized)
+async fn download_payload(
+    authorization_header: String,
+    payload_id: &str,
+    payload_output: &str,
+) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+    let current_payload_download_url = format!(
+        "{SUPABASE_PROJECT}/storage/v1/object/contributions/{}",
+        &payload_id
+    );
+    let client = reqwest::ClientBuilder::new()
+        .default_headers(HeaderMap::from_iter([(
+            AUTHORIZATION,
+            HeaderValue::from_str(&authorization_header)?,
+        )]))
+        .build()?;
+    println!("checking payload file...");
+    enum StateFileAction {
+        Download(usize),
+        Done(Vec<u8>),
+    }
+    let state_path = payload_output;
+    let action = match get_state_file(&state_path).await {
+        content if content.len() < CONTRIBUTION_SIZE => {
+            println!("partial download, continuing from {}...", content.len());
+            StateFileAction::Download(content.len())
         }
-    }
-}
-#[rocket::async_trait]
-impl Authorization for AuthContributor<Any> {
-    const KIND: &'static str = "Bearer";
-    async fn parse(_: &str, token: &str, request: &Request) -> Result<Self, AuthError> {
-        Ok(Self(token.to_string(), PhantomData))
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize)]
-#[serde(crate = "rocket::serde")]
-struct Index(u8);
-impl<'a> FromParam<'a> for Index {
-    type Error = ();
-    fn from_param(param: &'a str) -> Result<Self, Self::Error> {
-        let result = u8::from_param(param).map_err(|_| ())?;
-        if result as usize <= CONTRIBUTION_CHUNKS {
-            Ok(Index(result))
-        } else {
-            Err(())
+        content if content.len() == CONTRIBUTION_SIZE => {
+            println!("download complete.");
+            StateFileAction::Done(content)
         }
+        _ => {
+            println!("invalid size detected, redownloading...");
+            StateFileAction::Download(0)
+        }
+    };
+    match action {
+        StateFileAction::Download(start_position) => {
+            let mut response = client
+                .get(current_payload_download_url)
+                .header(RANGE, format!("bytes={}-", start_position))
+                .send()
+                .await?
+                .error_for_status()?;
+            let headers = response.headers();
+            let total_length = start_position
+                + u64::from_str(
+                    headers
+                        .get(CONTENT_LENGTH)
+                        .ok_or(Error::HeaderNotFound(CONTENT_LENGTH.as_str().into()))?
+                        .to_str()?,
+                )? as usize;
+            println!("state file length: {}", total_length);
+            assert!(
+                total_length == CONTRIBUTION_SIZE,
+                "contribution length mismatch."
+            );
+            let mut state_file = tokio::fs::OpenOptions::new()
+                .write(true)
+                .create(false)
+                .open(&state_path)
+                .await?;
+            state_file.set_len(start_position as u64).await?;
+            state_file
+                .seek(SeekFrom::Start(start_position as u64))
+                .await?;
+            let mut i = 0;
+            while let Some(chunk) = response.chunk().await? {
+                if i % 10 == 0 {
+                    println!("Eta: chunk {}.", i);
+                }
+                let written = state_file.write(&chunk).await?;
+                assert!(written == chunk.len(), "couldn't write chunk.");
+                state_file.sync_data().await?;
+                i += 1;
+            }
+            println!("download complete");
+            let final_content = tokio::fs::read(&state_path).await?;
+            Ok(final_content)
+        }
+        StateFileAction::Done(content) => Ok(content),
     }
 }
 
-#[get("/contribution")]
-async fn contribution(
-    c: Credential<AuthContributor<Any>>,
-    app_state: &State<Arc<RwLock<AppState>>>,
-) -> Result<Json<Contribution>, NotFound<()>> {
-    match app_state
-        .read()
-        .unwrap()
-        .processed
-        .get(&Contributor { token: c.0 .0 })
-    {
-        Some(contribution) => Ok(Json(contribution.clone())),
-        None => Err(NotFound(())),
-    }
-}
-
-#[post("/contribute/<index>", data = "<payload>")]
-async fn contribute(
-    c: Credential<AuthContributor<Current>>,
-    index: Index,
-    payload: Vec<u8>,
-    app_state: &State<Arc<RwLock<AppState>>>,
-    tx: &State<Sender<AppMessage>>,
-) -> Result<(), Forbidden<()>> {
-    tx.send(AppMessage::ContributePartial {
-        token: c.0 .0,
-        index,
-        payload_fraction: payload,
-    })
-    .unwrap();
-    Ok(())
-}
-
-#[get("/me")]
-async fn me(
-    c: Credential<AuthContributor<Current>>,
-    app_state: &State<Arc<RwLock<AppState>>>,
-) -> Result<Vec<u8>, Forbidden<()>> {
-    let hash = { app_state.read().unwrap().payload_hash.clone() };
-    Ok(hash)
-}
-
-#[get("/state")]
-async fn state<'a>(
-    c: Credential<AuthContributor<Current>>,
-    app_state: &State<Arc<RwLock<AppState>>>,
-) -> Result<SeekStream<'a>, Forbidden<()>> {
-    let bytes = { app_state.read().unwrap().payload.clone() };
-    let len = bytes.len() as u64;
-    Ok(SeekStream::with_opts(
-        Cursor::new(bytes),
-        len,
-        "application/octet-stream",
-    ))
-}
-
-#[post("/join")]
-async fn join(c: Credential<AuthContributor<Any>>, tx: &State<Sender<AppMessage>>) -> Status {
-    // TODO: verify token
-    tx.send(AppMessage::Join { token: c.0 .0 }).unwrap();
-    Status::Ok
-}
-
-#[get("/")]
-fn index() -> &'static str {
-    "
-      Bruh u ain't mess with the kraken
-    "
-}
-
-#[rocket::main]
-async fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args = Args::parse();
     match args.command {
-        Command::Start {
-            phase2_payload_path,
-        } => {
-            let payload = std::fs::read(phase2_payload_path).unwrap();
-            let payload_hash = sha2::Sha256::new()
-                .chain_update(&payload)
-                .finalize()
-                .to_vec();
-            let (tx, rx) = channel::<AppMessage>();
-            let initial_contributor = Contributor {
-                token: "union".into(),
-            };
-            let app_state = Arc::new(RwLock::new(AppState {
-                queue: PriorityQueue::with_capacity(4096),
-                processed: HashMap::with_capacity(4096),
-                contributor: initial_contributor,
-                payload,
-                payload_hash,
-                upload_index: Index(0),
-                contribution_payload: Vec::new(),
-                machine: fsm::union_mpc::StateMachine::new(),
-            }));
-            let app_state_clone = app_state.clone();
-            rocket::tokio::spawn(async move {
-                let figment = rocket::Config::figment()
-                    .merge(("limits", Limits::new().limit("bytes", 12.mebibytes())));
-                rocket::custom(figment)
-                    .manage(app_state_clone)
-                    .manage(tx)
-                    .mount(
-                        "/",
-                        routes![index, join, me, state, contribute, contribution],
-                    )
-                    .launch()
-                    .await
-                    .unwrap();
-            });
-            let (tx_verify, rx_verify) = channel::<(Vec<u8>, Vec<u8>)>();
-            let (tx_verify_result, rx_verify_result) = channel::<bool>();
-            rocket::tokio::spawn(async move {
-                loop {
-                    let (payload, contribution_payload) = rx_verify.recv().unwrap();
-                    println!("verifying contribution payloads");
-                    if phase2_verify(&payload, &contribution_payload).is_ok() {
-                        println!("valid");
-                        tx_verify_result.send(true).unwrap();
-                    } else {
-                        println!("invalid");
-                        tx_verify_result.send(false).unwrap();
-                    }
-                }
-            });
-
+        Command::Start { jwt, api_key } => {
+            let authorization_header = format!("Bearer {}", jwt);
+            let client = Postgrest::new(format!("{SUPABASE_PROJECT}/rest/v1"))
+                .insert_header(APIKEY, api_key)
+                .insert_header(AUTHORIZATION, authorization_header.clone());
             loop {
-                {
-                    let mut app_state = app_state.write().unwrap();
-                    let machine_state = *app_state.machine.state();
-                    let mut join = |token: String| {
-                        let new_contributor = Contributor { token };
-                        if app_state.queue.get(&new_contributor).is_none()
-                            && app_state.processed.get(&new_contributor).is_none()
-                            && app_state.contributor != new_contributor
-                        {
-                            let queue_len = app_state.queue.len();
-                            const BASE_PRORITY: usize = 1000000;
-                            let priority = BASE_PRORITY - queue_len;
-                            println!(
-                                "contributor joined: {} with priority {}",
-                                new_contributor.token, priority
-                            );
-                            app_state.queue.push(new_contributor, priority);
-                            app_state
-                                .machine
-                                .consume(&fsm::union_mpc::Input::Join)
-                                .unwrap();
+                let current_contributor = {
+                    let contributor = client
+                        .from("current_contributor_id")
+                        .select("id")
+                        .execute()
+                        .await?
+                        .json::<Vec<ContributorId>>()
+                        .await?
+                        .first()
+                        .cloned()
+                        .ok_or(Error::ContributorNotFound);
+                    match contributor {
+                        Ok(contributor) => contributor,
+                        Err(_) => {
+                            println!("no more contributor to process.");
+                            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                            continue;
                         }
-                    };
-                    match machine_state {
-                        fsm::union_mpc::State::InitContributor => {
-                            let input = match app_state.queue.pop() {
-                                Some((contributor, _)) => {
-                                    println!("new contributor slot");
-                                    app_state.contributor = contributor;
-                                    app_state.upload_index = Index(0);
-                                    app_state.contribution_payload.clear();
-                                    fsm::union_mpc::Input::ContributorSet
-                                }
-                                None => {
-                                    println!("no contributor");
-                                    fsm::union_mpc::Input::NoContributor
-                                }
-                            };
-                            app_state.machine.consume(&input).unwrap();
-                        }
-                        fsm::union_mpc::State::AwaitContributor => match rx.try_recv() {
-                            Ok(message) => match message {
-                                AppMessage::Join { token } => {
-                                    join(token);
-                                }
-                                _ => {}
-                            },
-                            Err(TryRecvError::Empty) => {}
-                            Err(e) => {
-                                println!("error in awaiting contributor {:?}", e);
-                                break;
-                            }
-                        },
-                        fsm::union_mpc::State::AwaitContribution => match rx.try_recv() {
-                            Ok(message) => match message {
-                                AppMessage::Join { token } => {
-                                    join(token);
-                                }
-                                AppMessage::ContributePartial {
-                                    token,
-                                    index: Index(index),
-                                    mut payload_fraction,
-                                } => {
-                                    if app_state.contributor.token == token
-                                        && app_state.upload_index == Index(index)
-                                    {
-                                        let expected_len = if (index as usize) < CONTRIBUTION_CHUNKS
-                                        {
-                                            CONTRIBUTION_CHUNK_SIZE
-                                        } else {
-                                            CONTRIBUTION_CHUNK_SIZE_FINAL
-                                        };
-                                        if payload_fraction.len() == expected_len {
-                                            println!("partial contribution chunk {}", index);
-                                            app_state.upload_index = Index(index + 1);
-                                            app_state
-                                                .contribution_payload
-                                                .append(&mut payload_fraction);
-                                            if index as usize == CONTRIBUTION_CHUNKS {
-                                                println!("contribution complete");
-                                                tx_verify
-                                                    .send((
-                                                        app_state.payload.clone(),
-                                                        app_state.contribution_payload.clone(),
-                                                    ))
-                                                    .unwrap();
-                                                app_state.payload =
-                                                    app_state.contribution_payload.clone();
-                                                app_state
-                                                    .machine
-                                                    .consume(&fsm::union_mpc::Input::Contribute)
-                                                    .unwrap();
-                                            }
-                                        } else {
-                                            println!("invalid chunk length {}", index);
-                                        }
-                                    }
-                                }
-                            },
-                            Err(TryRecvError::Empty) => {}
-                            Err(e) => {
-                                println!("error in await {:?}", e);
-                                break;
-                            }
-                        },
-                        fsm::union_mpc::State::Verify => match rx_verify_result.try_recv() {
-                            Ok(result) => {
-                                let timestamp = SystemTime::now()
-                                    .duration_since(UNIX_EPOCH)
-                                    .unwrap()
-                                    .as_secs();
-                                let contribution = Contribution {
-                                    success: result,
-                                    timestamp,
-                                };
-                                let contributor = app_state.contributor.clone();
-                                app_state.processed.insert(contributor, contribution);
-                                if result {
-                                    println!("verification succeeded.");
-                                    app_state
-                                        .machine
-                                        .consume(&fsm::union_mpc::Input::Valid)
-                                        .unwrap();
-                                } else {
-                                    println!("verification failed.");
-                                    app_state
-                                        .machine
-                                        .consume(&fsm::union_mpc::Input::Invalid)
-                                        .unwrap();
-                                }
-                            }
-                            Err(TryRecvError::Empty) => {}
-                            Err(e) => {
-                                println!("error in verify {:?}", e);
-                                break;
-                            }
-                        },
-                    };
+                    }
+                };
+                let current_payload = client
+                    .from("current_payload_id")
+                    .select("payload_id")
+                    .execute()
+                    .await?
+                    .json::<Vec<PayloadId>>()
+                    .await?
+                    .first()
+                    .cloned()
+                    .ok_or(Error::CurrentPayloadNotFound)?;
+                let payload_current = download_payload(
+                    authorization_header.clone(),
+                    &current_payload.id,
+                    &current_payload.id,
+                )
+                .await?;
+                println!("awaiting contribution of {}...", &current_contributor.id);
+                loop {
+                    if client
+                        .from("contribution_submitted")
+                        .eq("id", &current_contributor.id)
+                        .select("id")
+                        .execute()
+                        .await?
+                        .json::<Vec<ContributorId>>()
+                        .await?
+                        .len()
+                        == 1
+                    {
+                        break;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                 }
-                rocket::tokio::time::sleep(std::time::Duration::from_millis(1000 / 30)).await;
+                println!("contribution submitted!");
+                let next_payload = client
+                    .from("queue")
+                    .eq("id", &current_contributor.id)
+                    .select("payload_id")
+                    .execute()
+                    .await?
+                    .json::<Vec<PayloadId>>()
+                    .await?
+                    .first()
+                    .cloned()
+                    .ok_or(Error::NextPayloadNotFound)?;
+                let payload_next = download_payload(
+                    authorization_header.clone(),
+                    &next_payload.id,
+                    &next_payload.id,
+                )
+                .await?;
+                if phase2_verify(&payload_current, &payload_next).is_ok() {
+                    println!("verification succeeded.");
+                    client
+                        .from("contribution")
+                        .insert(serde_json::to_string(&Contribution {
+                            id: current_contributor.id.clone(),
+                            success: true,
+                        })?)
+                        .execute()
+                        .await?
+                        .error_for_status()?;
+                    tokio::fs::remove_file(&current_payload.id).await?;
+                } else {
+                    println!("verification failed.");
+                    client
+                        .from("contribution")
+                        .insert(serde_json::to_string(&Contribution {
+                            id: current_contributor.id.clone(),
+                            success: false,
+                        })?)
+                        .execute()
+                        .await?
+                        .error_for_status()?;
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             }
-            Ok(())
         }
     }
 }

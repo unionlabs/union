@@ -3,10 +3,6 @@ pub mod types;
 use std::ffi::{c_char, c_int};
 
 pub const CONTRIBUTION_SIZE: usize = 306032532;
-pub const CONTRIBUTION_CHUNKS: usize = 30;
-pub const CONTRIBUTION_CHUNK_SIZE: usize = CONTRIBUTION_SIZE / CONTRIBUTION_CHUNKS;
-pub const CONTRIBUTION_CHUNK_SIZE_FINAL: usize =
-    CONTRIBUTION_SIZE - (CONTRIBUTION_CHUNK_SIZE * CONTRIBUTION_CHUNKS);
 
 #[link(name = "galois")]
 extern "C" {

@@ -4,5 +4,5 @@ name    = "mpc-shared"
 version = "0.1.0"
 
 [dependencies]
-rocket    = { version = "0.5.1", features = ["json", "msgpack", "uuid"] }
+serde     = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }

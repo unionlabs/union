@@ -4,13 +4,12 @@ name    = "mpc-coordinator"
 version = "0.1.0"
 
 [dependencies]
-clap                 = { version = "4.5", features = ["derive"] }
-futures.workspace    = true
-mpc-shared           = { workspace = true }
-priority-queue       = "2.0.3"
-rocket               = { version = "0.5.1", features = ["json", "msgpack", "uuid"] }
-rocket-authorization = "1.0.0"
-rocket_seek_stream   = "0.2.6"
-rust-fsm             = { version = "0.7.0", features = ["diagram"] }
-sha2                 = { workspace = true }
-thiserror            = { workspace = true }
+async-sqlite      = "0.2.2"
+clap              = { version = "4.5", features = ["derive"] }
+futures.workspace = true
+mpc-shared        = { workspace = true }
+postgrest         = "1.0"
+reqwest           = { workspace = true, features = ["json"] }
+serde_json        = { workspace = true }
+thiserror         = { workspace = true }
+tokio             = { workspace = true, features = ["full"] }
