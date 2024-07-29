@@ -52,16 +52,16 @@ onNavigate(navigation => {
 
     <div class="flex flex-col flex-1 size-full">
       {#if $deviceWidth >= 888 && $page.route.id?.split('/').length !== 4}
-        <!-- <StatsBar /> -->
+        <StatsBar />
       {/if   }
       <div class="p-2 pt-0 sm:p-6 ">
-        <!-- <div class={cn($page.route.id?.split('/').length === 3 ? "" : "hidden")}>
+        <div class={cn($page.route.id?.split('/').length === 3 ? "" : "hidden")}>
           <h2
             class="text-2xl sm:text-4xl font-extrabold font-expanded sm:!font-extra-expanded uppercase font-supermolot pt-4 sm:pt-0">
             {explorerRoute?.replaceAll('-', ' ')}
           </h2>
           <p class="pb-4 -mt-1 text-muted-foreground">{'>'} {explorerPageDescription}</p>
-        </div> -->
+        </div>
         <slot/>
       </div>
     </div>
