@@ -91,7 +91,7 @@ impl Config {
             .fetch_all(&pool)
             .await?;
 
-            let lowest = rows
+            let lowest: u64 = rows
                 .iter()
                 .map(|row| row.indexed_height)
                 .min()
@@ -123,7 +123,7 @@ impl Config {
                 })
                 .collect();
 
-            let range = lowest..u64::MAX;
+            let range = (lowest + 1)..u64::MAX;
 
             Ok(Indexer {
                 range,
@@ -310,13 +310,23 @@ async fn index_blocks_by_chunk(
                     return Err(err.into());
                 }
                 Ok(info) => {
-                    postgres::update_contracts_indexed_heights(
+                    let updated = postgres::update_contracts_indexed_heights(
                         &mut tx,
-                        filter.iter().map(|addr| addr.encode_hex()).collect(),
+                        filter
+                            .iter()
+                            .map(|addr| format!("0x{}", addr.encode_hex()))
+                            .collect(),
                         filter.iter().map(|_| info.height.into()).collect(),
                         chain_id,
                     )
                     .await?;
+
+                    // Hacky way to force hubble to crash and restart everything, allowing for it to refetch the addresses.
+                    assert_eq!(
+                        updated,
+                        filter.len(),
+                        "no contracts should be removed while hubble is running"
+                    );
 
                     tx.commit().await?;
                     debug!(
@@ -458,7 +468,7 @@ impl BlockInsert {
         // get the logs we want.
         let log_filter = Filter::new().select(block.hash.unwrap());
 
-        let log_filter = if let Some(filter) = filter {
+        let log_filter = if let Some(ref filter) = filter {
             let addresses: Vec<_> = filter.iter().cloned().collect();
             log_filter.address(addresses)
         } else {
@@ -471,7 +481,7 @@ impl BlockInsert {
             .map_err(FromProviderError::DataNotFound)?;
 
         // The bloom filter returned a false positive, and we don't actually have matching logs.
-        if logs.is_empty() {
+        if logs.is_empty() && filter.is_some() {
             return Ok(None);
         }
 

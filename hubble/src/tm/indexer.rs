@@ -347,9 +347,8 @@ async fn fetch_and_insert_blocks(
                 let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
                 events.extend(tx.tx_result.events.into_iter().enumerate().filter_map(
                     |(i, event)| {
-                        block_index += 1;
-
                         if filter.is_some_and(|filter| filter.is_match(event.kind.as_str())) {
+                            block_index += 1;
                             return None;
                         }
 
@@ -363,6 +362,8 @@ async fn fetch_and_insert_blocks(
                             transaction_index: Some(i.try_into().unwrap()),
                             block_index,
                         };
+
+                        block_index += 1;
                         Some(event)
                     },
                 ));

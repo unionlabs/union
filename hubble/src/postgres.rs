@@ -496,8 +496,8 @@ pub async fn update_contracts_indexed_heights<'a>(
     contracts: Vec<String>,
     heights: Vec<i64>,
     chain_id: ChainId,
-) -> sqlx::Result<()> {
-    sqlx::query!(
+) -> sqlx::Result<usize> {
+    let rows_updated = sqlx::query!(
         "
         UPDATE v0.contracts 
         SET indexed_height = data.height
@@ -505,14 +505,17 @@ pub async fn update_contracts_indexed_heights<'a>(
             SELECT unnest($1::bigint[]) as height, unnest($2::text[]) as address
         ) as data
         WHERE v0.contracts.address = data.address AND chain_id = $3
+        RETURNING v0.contracts.address
         ",
         &heights,
         &contracts,
         &chain_id.db,
     )
-    .execute(tx.as_mut())
-    .await?;
-    Ok(())
+    .fetch_all(tx.as_mut())
+    .await?
+    .iter()
+    .count();
+    Ok(rows_updated)
 }
 
 pub async fn get_max_consensus_height<'a, A: Acquire<'a, Database = Postgres>>(
