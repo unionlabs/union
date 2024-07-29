@@ -14,10 +14,7 @@ import { toDisplayName } from "$lib/utilities/chains.ts"
 import type { Chain } from "$lib/types"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import { raise } from "$lib/utilities"
-import {
-  allTransfersQueryDocument,
-  transfersAfterTimestampQueryDocument
-} from "$lib/graphql/documents/transfers.ts"
+import { allTransfersQueryDocument } from "$lib/graphql/documents/transfers.ts"
 
 export let chains: Array<Chain>
 

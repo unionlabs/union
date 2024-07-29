@@ -15,11 +15,11 @@ export async function latestTransfers({ limit = 12 }: { limit?: number } = {}) {
   return {
     transfers: data.map(transfer => ({
       source: {
-        chain_display_name: transfer.source_chain?.display_name,
+        chainId: transfer.source_chain_id,
         address: transfer.sender || "unknown"
       },
       destination: {
-        chain_display_name: transfer.destination_chain?.display_name,
+        chainId: transfer.destination_chain_id,
         address: transfer.receiver || "unknown"
       },
       timestamp: transfer.source_timestamp,
@@ -90,11 +90,11 @@ export async function transfersAfterOrAtTimestamp({
   return {
     transfers: data.map(transfer => ({
       source: {
-        // chain_display_name: transfer.source_chain?.display_name,
+        chainId: transfer.source_chain_id,
         address: transfer.sender || "unknown"
       },
       destination: {
-        // chain_display_name: transfer.destination_chain?.display_name,
+        chainId: transfer.destination_chain_id,
         address: transfer.receiver || "unknown"
       },
       timestamp: transfer.source_timestamp,
@@ -123,11 +123,11 @@ export async function transfersBeforeOrAtTimestamp({
   return {
     transfers: data.map(transfer => ({
       source: {
-        // chain_display_name: transfer.source_chain?.display_name,
+        chainId: transfer.source_chain_id,
         address: transfer.sender || "unknown"
       },
       destination: {
-        // chain_display_name: transfer.destination_chain?.display_name,
+        chainId: transfer.destination_chain_id,
         address: transfer.receiver || "unknown"
       },
       timestamp: transfer.source_timestamp,

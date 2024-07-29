@@ -10,9 +10,14 @@ const EMPTY_CHAINS: Array<Chain> = []
 
 let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
   // this will never happen, but is needed to satisfy svelte's prop type checker
-  if ($chains.data === null || $chains.data === undefined || $chains.data === [])
+  if (
+    !$chains?.data ||
+    $chains.data === null ||
+    $chains.data === undefined ||
+    $chains.data.length === 0
+  ) {
     return EMPTY_CHAINS
-
+  }
   return $chains.data.map(chain => {
     let display_name = ""
 
@@ -77,9 +82,9 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 </script>
 
 {#if !!$chains.data}
-  <slot chains={$checkedChains}/>
+  <slot chains={$checkedChains} />
 {:else if $chains.isLoading}
-  <LoadingLogo class="size-16"/>
+  <LoadingLogo class="size-16" />
 {:else if $chains.isError}
   Error loading chains.
 {/if}

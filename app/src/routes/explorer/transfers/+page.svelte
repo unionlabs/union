@@ -32,6 +32,8 @@ import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../(components)/explorer-pagination/index.ts"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
+import { chainsQuery } from "$lib/queries/chains.ts"
+import type { Chain } from "$lib/types.ts"
 
 /**
  * the timestamp is the source of trust, used as query key and url search param
@@ -60,6 +62,9 @@ let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
 // })
 const queryClient = useQueryClient()
 
+$: {
+  // console.info(queryClient.getQueryData(['chains']))
+}
 /**
  * only happens when:
  *  1. it is the first query on initial page load,
@@ -130,10 +135,8 @@ let transfersDataStore = derived(
 )
 
 // $: console.info($transfersDataStore)
-
 // $: hasNewer = $transfers?.data?.hasNewer
 // $: hasOlder = $transfers?.data?.hasOlder
-
 // $: if (!hasNewer) {
 //   $REFETCH_ENABLED = true
 //   pagination.update(p => ({ ...p, pageIndex: 0 }))
@@ -165,11 +168,20 @@ let timestamps = derived(
 //     })
 //   }
 // })
-
 // const unsubscribeTimestamp = timestamp.subscribe(value => {
 //   if($page.url.searchParams.has('timestamp')) return
 //   goto(encodeTimestampSearchParam(value))
 // })
+
+let chains = chainsQuery()
+let chainsRecord = derived(chains, $chains => {
+  if (!$chains?.data) return {}
+  return $chains.data.reduce((acc, chain) => {
+    // @ts-expect-error
+    acc[chain.chain_id] = chain
+    return acc
+  }, {}) as Record<string, Chain>
+})
 
 const columns: Array<ColumnDef<DataRow>> = [
   {
@@ -178,7 +190,16 @@ const columns: Array<ColumnDef<DataRow>> = [
     size: 200,
     minSize: 200,
     maxSize: 200,
-    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
+    cell: info => {
+      // @ts-expect-error
+      const { chainId, address } = info.getValue()
+      return flexRender(CellOriginTransfer, {
+        value: {
+          address,
+          chain_display_name: $chainsRecord[chainId]?.display_name ?? "unknown chain"
+        }
+      })
+    }
   },
   {
     accessorKey: "destination",
@@ -186,7 +207,16 @@ const columns: Array<ColumnDef<DataRow>> = [
     size: 200,
     minSize: 200,
     maxSize: 200,
-    cell: info => flexRender(CellOriginTransfer, { value: info.getValue() })
+    cell: info => {
+      // @ts-expect-error
+      const { chainId, address } = info.getValue()
+      return flexRender(CellOriginTransfer, {
+        value: {
+          address,
+          chain_display_name: $chainsRecord[chainId]?.display_name ?? "unknown chain"
+        }
+      })
+    }
   },
   {
     accessorKey: "assets",

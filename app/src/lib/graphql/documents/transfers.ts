@@ -110,13 +110,15 @@ export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
       ],
     ) {
       sender
+      source_chain_id
       source_timestamp
       source_transaction_hash
-      source_chain { chain_id display_name }
+      # source_chain { chain_id display_name }
       receiver
+      destination_chain_id
       destination_timestamp
       destination_transaction_hash
-      destination_chain { chain_id display_name }
+      # destination_chain { chain_id display_name }
       assets
     }
   }  
