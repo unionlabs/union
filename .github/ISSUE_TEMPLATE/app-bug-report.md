@@ -2,7 +2,7 @@
 name: App Bug Report
 about: Report a bug on app.union.build or staging.app.union.build (NOT union.build)
 title: ''
-labels: A-site, C-bug, P-high
+labels: A-app, C-bug, P-high
 assignees: swepool
 
 ---
