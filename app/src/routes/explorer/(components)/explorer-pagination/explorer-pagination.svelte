@@ -1,25 +1,25 @@
 <script lang="ts">
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import ChevronLeft from 'virtual:icons/lucide/chevron-left'
-  import Button from '$lib/components/ui/button/button.svelte'
-  import ChevronRight from 'virtual:icons/lucide/chevron-right'
-  import * as Pagination from '$lib/components/ui/pagination/index.ts'
+import { cn } from "$lib/utilities/shadcn.ts"
+import ChevronLeft from "virtual:icons/lucide/chevron-left"
+import Button from "$lib/components/ui/button/button.svelte"
+import ChevronRight from "virtual:icons/lucide/chevron-right"
+import * as Pagination from "$lib/components/ui/pagination/index.ts"
 
-  export let rowsPerPage: number
-  export let totalTableRows: number
+export let rowsPerPage: number
+export let totalTableRows: number
 
-  export let status: 'pending' | 'done' = 'done'
+export let status: "pending" | "done" = "done"
 
-  export let currentPage = 1
+export let currentPage = 1
 
-  export let onOlderPage: (page: number) => void
-  export let olderDisabled = false
-  export let onNewerPage: (page: number) => void
-  export let newerDisabled = false
-  export let onCurrentClick: () => void
+export let onOlderPage: (page: number) => void
+export let olderDisabled = false
+export let onNewerPage: (page: number) => void
+export let newerDisabled = false
+export let onCurrentClick: () => void
 
-  export let className = ''
-  export { className as class }
+export let className = ""
+export { className as class }
 </script>
 
 <Pagination.Root

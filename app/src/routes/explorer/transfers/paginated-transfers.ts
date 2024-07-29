@@ -7,11 +7,7 @@ import {
   transfersAfterOrAtTimestampQueryDocument,
   transfersBeforeOrAtTimestampQueryDocument
 } from "$lib/graphql/documents/transfers.ts"
-import {
-  currentUtcTimestamp,
-  toPrettyDateTimeFormat,
-  currentUtcTimestampWithBuffer
-} from "$lib/utilities/date.ts"
+import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 
 export async function latestTransfers({ limit = 12 }: { limit?: number } = {}) {
   const { data } = await request(URLS.GRAPHQL, latestTransfersQueryDocument, { limit })
@@ -94,11 +90,11 @@ export async function transfersAfterOrAtTimestamp({
   return {
     transfers: data.map(transfer => ({
       source: {
-        chain_display_name: transfer.source_chain?.display_name,
+        // chain_display_name: transfer.source_chain?.display_name,
         address: transfer.sender || "unknown"
       },
       destination: {
-        chain_display_name: transfer.destination_chain?.display_name,
+        // chain_display_name: transfer.destination_chain?.display_name,
         address: transfer.receiver || "unknown"
       },
       timestamp: transfer.source_timestamp,
@@ -106,7 +102,7 @@ export async function transfersAfterOrAtTimestamp({
       assets: transfer.assets
     })),
     latestTimestamp: data.at(0)?.source_timestamp,
-    oldestTimestamp: data.at(-1)?.source_timestamp,
+    oldestTimestamp: data.at(-1)?.source_timestamp
     // hasNewer: false,
     // hasOlder: true
   }
@@ -127,11 +123,11 @@ export async function transfersBeforeOrAtTimestamp({
   return {
     transfers: data.map(transfer => ({
       source: {
-        chain_display_name: transfer.source_chain?.display_name,
+        // chain_display_name: transfer.source_chain?.display_name,
         address: transfer.sender || "unknown"
       },
       destination: {
-        chain_display_name: transfer.destination_chain?.display_name,
+        // chain_display_name: transfer.destination_chain?.display_name,
         address: transfer.receiver || "unknown"
       },
       timestamp: transfer.source_timestamp,
@@ -139,9 +135,7 @@ export async function transfersBeforeOrAtTimestamp({
       assets: transfer.assets
     })),
     latestTimestamp: data.at(0)?.source_timestamp,
-    oldestTimestamp: data.at(-1)?.source_timestamp,
-    // hasNewer: true,
-    // hasOlder: false
+    oldestTimestamp: data.at(-1)?.source_timestamp
   }
 }
 
