@@ -95,6 +95,7 @@ impl Config {
                 if rows.is_empty() {
                     warn!("no contracts found to track, retrying in 20 seconds");
                     tokio::time::sleep(Duration::from_secs(20)).await;
+                    continue;
                 }
                 break rows;
             };

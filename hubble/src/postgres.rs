@@ -514,7 +514,7 @@ pub async fn update_contracts_indexed_heights<'a>(
     .fetch_all(tx.as_mut())
     .await?
     .iter()
-    .count();
+    .len();
     Ok(rows_updated)
 }
 
