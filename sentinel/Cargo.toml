@@ -10,6 +10,7 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
+axum               = { workspace = true, features = ["macros", "tokio", "json"] }
 bech32             = "0.9.1"
 chain-utils        = { workspace = true }
 chrono             = { workspace = true, features = ["serde"] }

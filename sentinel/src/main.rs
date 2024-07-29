@@ -1,15 +1,18 @@
-use std::{ffi::OsString, fs};
+use std::{ffi::OsString, fs, net::SocketAddr};
 
+use axum::{extract::Extension, routing::get, Json, Router};
 use clap::Parser;
 use config::Config;
 use context::Context;
 use futures::future::try_join_all;
 use tokio::signal;
 use tracing_subscriber::EnvFilter;
-
 pub mod chains;
 pub mod config;
 pub mod context;
+use std::{collections::HashMap, sync::Arc};
+
+use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Default, clap::ValueEnum, derive_more::Display)]
 pub enum LogFormat {
@@ -47,10 +50,6 @@ pub struct AppArgs {
     #[arg(long, short = 'l', env, global = true, default_value_t = LogFormat::default())]
     pub log_format: LogFormat,
 
-    // Check balances
-    #[arg(long, global = true)]
-    pub check_balances: bool,
-
     // Perform token distribution before any other operations
     #[arg(long, global = true)]
     pub token_distribution: bool,
@@ -58,6 +57,24 @@ pub struct AppArgs {
     // Perform native token distribution before any other operations
     #[arg(long, global = true)]
     pub native_token_distribution: bool,
+
+    #[arg(
+        long,
+        global = true,
+        default_value = "0.0.0.0:65432",
+        value_parser = parse_socket_addr
+    )]
+    pub laddr: SocketAddr,
+}
+/// Custom parser function to ensure correct parsing of `SocketAddr`
+fn parse_socket_addr(addr: &str) -> Result<SocketAddr, std::net::AddrParseError> {
+    addr.parse()
+}
+
+async fn balances_handler(Extension(context): Extension<Context>) -> Json<HashMap<String, Value>> {
+    // Call the balances method on the context and return the result as JSON.
+    let balances = context.balances().await;
+    Json(balances)
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -80,6 +97,18 @@ async fn main() {
     }
 
     let context = Context::new(config.clone()).await.unwrap();
+
+    let router = Router::new()
+        .route("/balances", get(balances_handler))
+        .layer(Extension(context.clone())); // Pass the context as an extension
+
+    // Ensure this server starts running on the given address
+    tokio::spawn(async move {
+        axum::Server::bind(&args.laddr)
+            .serve(router.into_make_service())
+            .await
+            .unwrap();
+    });
 
     if args.token_distribution || args.native_token_distribution {
         if args.native_token_distribution {
@@ -127,10 +156,6 @@ async fn main() {
         } else {
             tracing::info!("Listen functionality disabled");
         }
-    }
-
-    if args.check_balances {
-        handles.extend(context.clone().check_balances().await);
     }
 
     // Await all handles and handle panics
