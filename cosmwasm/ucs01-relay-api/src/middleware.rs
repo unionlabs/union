@@ -183,6 +183,6 @@ mod tests {
 
         let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
 
-        assert_eq!(parsed, Memo::None {})
+        assert_eq!(parsed, Memo::None {});
     }
 }

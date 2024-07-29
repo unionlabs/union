@@ -141,6 +141,20 @@ pub struct BoundedIntError<T> {
     found: T,
 }
 
+impl<T> BoundedIntError<T> {
+    pub fn min(&self) -> &T {
+        &self.min
+    }
+
+    pub fn max(&self) -> &T {
+        &self.max
+    }
+
+    pub fn found(&self) -> &T {
+        &self.found
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum BoundedIntParseError<T> {
     #[error(transparent)]

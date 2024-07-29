@@ -1,14 +1,19 @@
 use macros::model;
+use serde::{Deserialize, Serialize};
 
 use crate::{errors::InvalidLength, hash::H256};
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
 /// transaction as well as the execution result of this transaction.
-#[model(proto(
-    raw(protos::union::ibc::lightclients::movement::v1::TransactionInfo),
-    into,
-    from
-))]
+#[model(
+    proto(
+        raw(protos::union::ibc::lightclients::movement::v1::TransactionInfo),
+        into,
+        from
+    ),
+    no_serde
+)]
+#[derive(Serialize, Deserialize)]
 pub enum TransactionInfo {
     V0(TransactionInfoV0),
 }
@@ -24,21 +29,26 @@ pub struct TransactionInfoV0 {
     pub status: ExecutionStatus,
 
     /// The hash of this transaction.
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub transaction_hash: H256,
 
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub event_root_hash: H256,
 
     /// The hash value summarizing all changes caused to the world state by this transaction.
     /// i.e. hash of the output write set.
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub state_change_hash: H256,
 
     /// The root hash of the Sparse Merkle Tree describing the world state at the end of this
     /// transaction. Depending on the protocol configuration, this can be generated periodical
     /// only, like per block.
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed_option")]
     pub state_checkpoint_hash: Option<H256>,
 
     /// Potentially summarizes all evicted items from state. Always `None` for now.
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed_option")]
     pub state_cemetery_hash: Option<H256>,
 }
 
@@ -55,8 +65,10 @@ pub struct TransactionInfoV0 {
 //     }
 // }
 
-#[model]
+#[model(no_serde)]
+#[derive(Serialize, Deserialize)]
 pub enum ExecutionStatus {
+    #[serde(rename = "Success")]
     Success,
 }
 

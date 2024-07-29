@@ -1,3 +1,6 @@
+pub use aptos_rest_client;
+pub use aptos_types;
+pub use bcs;
 pub use move_bindgen_derive::TypeTagged;
 pub use move_core_types;
 use move_core_types::{
@@ -5,11 +8,23 @@ use move_core_types::{
     ident_str,
     language_storage::{StructTag, TypeTag},
 };
+pub use serde;
+use serde::{Deserialize, Serialize};
+pub use serde_json;
+pub use tracing;
 
 pub trait TypeTagged {
     type Ctx;
 
     fn type_tag(ctx: Self::Ctx) -> TypeTag;
+}
+
+impl TypeTagged for bool {
+    type Ctx = ();
+
+    fn type_tag(_ctx: Self::Ctx) -> TypeTag {
+        TypeTag::Bool
+    }
 }
 
 impl TypeTagged for u8 {
@@ -96,6 +111,14 @@ impl<T: TypeTagged> TypeTagged for Vec<T> {
     }
 }
 
+impl TypeTagged for aptos_rest_client::aptos_api_types::HexEncodedBytes {
+    type Ctx = ();
+
+    fn type_tag(_ctx: Self::Ctx) -> TypeTag {
+        TypeTag::Vector(Box::new(TypeTag::U8))
+    }
+}
+
 impl<T: TypeTagged> TypeTagged for Option<T> {
     type Ctx = T::Ctx;
 
@@ -105,23 +128,6 @@ impl<T: TypeTagged> TypeTagged for Option<T> {
             module: ident_str!("option").into(),
             name: ident_str!("Option").into(),
             type_args: vec![T::type_tag(ctx)],
-        }))
-    }
-}
-
-pub struct Struct {
-    pub field: String,
-}
-
-impl TypeTagged for Struct {
-    type Ctx = AccountAddress;
-
-    fn type_tag(ctx: Self::Ctx) -> TypeTag {
-        TypeTag::Struct(Box::new(StructTag {
-            address: ctx,
-            module: ident_str!("struct_module").into(),
-            name: ident_str!("Struct").into(),
-            type_args: vec![],
         }))
     }
 }
@@ -136,8 +142,26 @@ impl<T: TypeTagged<Ctx = ()>> IntoTypeTagged<T> for T {
     }
 }
 
+impl IntoTypeTagged<Vec<u8>> for aptos_rest_client::aptos_api_types::HexEncodedBytes {
+    fn into_type_tagged(self) -> (Vec<u8>, ()) {
+        (self.into(), ())
+    }
+}
+
 impl<T: TypeTagged> IntoTypeTagged<T> for (T, T::Ctx) {
     fn into_type_tagged(self) -> (T, T::Ctx) {
         self
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MoveOption<T> {
+    // TODO: Add verification here that this only contains one item, maybe through a custom `SingleItemVec`?
+    pub vec: Vec<T>,
+}
+
+impl<T> MoveOption<T> {
+    pub fn into_option(mut self) -> Option<T> {
+        self.vec.pop()
     }
 }

@@ -84,3 +84,36 @@ impl TryFrom<contracts::glue::OptimizedConsensusState> for ConsensusState {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use super::*;
+    use crate::encoding::{Bcs, DecodeAs, EncodeAs};
+
+    #[test]
+    fn bcs() {
+        let consensus_state = ConsensusState {
+            timestamp: 42,
+            app_hash: MerkleRoot {
+                hash: hex!("0000000000000000000000000000000000000000000000000000000000000000")
+                    .into(),
+            },
+            next_validators_hash: hex!(
+                "0000000000000000000000000000000000000000000000000000000000000000"
+            )
+            .into(),
+        };
+
+        let bz = consensus_state.encode_as::<Bcs>();
+
+        dbg!(hex::encode(bz));
+
+        let bz = hex!("2a00000000000000200000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000");
+
+        let cs = ConsensusState::decode_as::<Bcs>(&bz).unwrap();
+
+        dbg!(cs);
+    }
+}

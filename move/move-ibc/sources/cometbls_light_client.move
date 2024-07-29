@@ -1,6 +1,5 @@
 module IBC::LightClient {
     use std::vector;
-    use std::from_bcs;
     use std::bcs;
     use std::string::{Self, String};
     use IBC::height::{Self, Height};
@@ -109,37 +108,37 @@ module IBC::LightClient {
         let trusted_height_number = height::get_revision_height(&header.trusted_height);
 
         if (untrusted_height_number <= trusted_height_number) {
-            return 1
+            return 2
         };
 
         let trusted_timestamp = consensus_state.timestamp;
         let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
         if (untrusted_timestamp <= trusted_timestamp) {
-            return 1  
+            return 3  
         };
 
         let current_time = timestamp::now_seconds() * 1_000_000_000;
         if (untrusted_timestamp> (current_time + state.client_state.trusting_period)) {
-            return 1  
+            return 4  
         };
 
         if (untrusted_timestamp >= current_time + state.client_state.max_clock_drift) {
-            return 1  
+            return 5  
         };
 
         if (untrusted_height_number == trusted_height_number + 1) {
             if (header.signed_header.validators_hash != consensus_state.next_validators_hash) {
-                return 1
+                return 6
             };
         };
 
-        if (groth16_verifier::verify_zkp(
+        if (!groth16_verifier::verify_zkp(
             &state.client_state.chain_id,
             &consensus_state.next_validators_hash,
             light_header_as_input_hash(&header.signed_header),
             &header.zero_knowledge_proof,
         )) {
-            return 1
+            return 7
         };
 
         0
@@ -149,12 +148,12 @@ module IBC::LightClient {
         client_id: String,
         client_msg: vector<u8>
     ): (vector<u8>, vector<vector<u8>>, vector<height::Height>, u64) acquires State {
-        let header = from_bcs::from_bytes<Header>(client_msg);
+        let header = decode_header(client_msg);
 
         let state = borrow_global_mut<State>(get_client_address(&client_id));
 
-        if (height::is_zero(&state.client_state.frozen_height)) {
-            return (vector::empty(), vector::empty(), vector::empty(), 1)
+        if (!height::is_zero(&state.client_state.frozen_height)) {
+            return (vector::empty(), vector::empty(), vector::empty(), 8)
         };
 
         let consensus_state = smart_table::borrow<height::Height, ConsensusState>(&state.consensus_states, header.trusted_height);
@@ -185,7 +184,7 @@ module IBC::LightClient {
 
         (
             bcs::to_bytes(&state.client_state),
-            vector<vector<u8>>[bcs::to_bytes(&new_consensus_state)],
+            vector<vector<u8>>[encode_consensus_state(&new_consensus_state)],
             vector<height::Height>[
                 new_height
             ],
@@ -204,7 +203,7 @@ module IBC::LightClient {
         let consensus_state = smart_table::borrow(&borrow_global<State>(get_client_address(&client_id)).consensus_states, height);
 
         ics23::verify_membership(
-            from_bcs::from_bytes<ics23::MembershipProof>(proof),
+            ics23::decode_membership_proof(proof),
             consensus_state.app_hash.hash,
             prefix,
             path,
@@ -230,7 +229,9 @@ module IBC::LightClient {
     }
 
     fun get_client_address(client_id: &string::String): address {
-        object::create_object_address(&@IBC, *string::bytes(client_id))
+        let vault_addr = object::create_object_address(&@IBC, b"IBC_VAULT_SEED");
+
+        object::create_object_address(&vault_addr, *string::bytes(client_id))
     }
 
     public fun new_client_state(
@@ -288,7 +289,7 @@ module IBC::LightClient {
     public fun get_consensus_state(client_id: String, height: Height): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(&client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
-        bcs::to_bytes(consensus_state)
+        encode_consensus_state(consensus_state)
     }
 
     fun decode_client_state(buf: vector<u8>): ClientState {
@@ -310,28 +311,49 @@ module IBC::LightClient {
         ConsensusState {
             timestamp: bcs_utils::peel_u64(&mut buf),
             app_hash: MerkleRoot {
-                hash: bcs_utils::peel_bytes(&mut buf),
+                hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
             },
-            next_validators_hash: bcs_utils::peel_bytes(&mut buf),
+            next_validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
         }
+    }
+
+    fun encode_consensus_state(cs: &ConsensusState): vector<u8> {
+        let buf = vector<u8>[];
+
+        vector::append(&mut buf, bcs::to_bytes(&cs.timestamp));
+        vector::append(&mut buf, cs.app_hash.hash);
+        vector::append(&mut buf, cs.next_validators_hash);
+
+        buf
     }
 
     fun decode_header(buf: vector<u8>): Header {
         let buf = bcs_utils::new(buf);
 
+        let height = bcs_utils::peel_u64(&mut buf);
+
+        let time = Timestamp {
+            seconds: bcs_utils::peel_u64(&mut buf),
+            nanos: bcs_utils::peel_u32(&mut buf),
+        };
+
+        let signed_header = LightHeader {
+            height,
+            time,
+            validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
+            next_validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
+            app_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
+        };
+
+        let trusted_height = height::decode_bcs(&mut buf);
+
+        let proof_bz = bcs_utils::peel_bytes(&mut buf);
+        let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
+
         Header {
-            signed_header: LightHeader {
-                height: bcs_utils::peel_u64(&mut buf),
-                time: Timestamp {
-                    seconds: bcs_utils::peel_u64(&mut buf),
-                    nanos: bcs_utils::peel_u32(&mut buf),
-                },
-                validators_hash: bcs_utils::peel_bytes(&mut buf),
-                next_validators_hash: bcs_utils::peel_bytes(&mut buf),
-                app_hash: bcs_utils::peel_bytes(&mut buf),
-            },
-            trusted_height: height::decode_bcs(&mut buf),
-            zero_knowledge_proof: groth16_verifier::parse_zkp(bcs_utils::peel_bytes(&mut buf)),
+            signed_header,
+            trusted_height,
+            zero_knowledge_proof,
         }
     }
 
@@ -369,13 +391,54 @@ module IBC::LightClient {
         let cs = decode_client_state(bcs::to_bytes(&client_state));
         std::debug::print(&cs);
     }
-    
-    #[test]
-    fun test_parse_zkp() {
-        let zkp = x"1c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
 
-        parse_zkp(zkp);
+    #[test]
+    fun parse_consensus_state() {
+        let consensus_state = ConsensusState {
+            timestamp: 42,
+            app_hash: MerkleRoot {
+                hash: x"0000000000000000000000000000000000000000000000000000000000000000",
+            },
+            next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000",
+        };
+
+        let cs_bytes = encode_consensus_state(&consensus_state);
+        std::debug::print(&cs_bytes);
+
+        let cs = decode_consensus_state(cs_bytes);
+        std::debug::print(&cs);
     }
+
+    #[test]
+    fun decode_client_state_bcs() {
+        let encoded = x"307830653735366536393666366532643634363537363665363537343264333130306330356262626138376130353030303030303762656232663732303630303030653039323635313730313030303030303030303030303030303030303030303030303030303030303030303030303031303030303030303030303030303061313263303030303030303030303030";
+
+        let cs = decode_client_state(encoded);
+        std::debug::print(&cs);
+    }
+
+    #[test]
+    fun decode_consensus_state_bcs() {
+        let encoded = vector[ 72, 31, 173, 233, 146, 25, 184, 242, 23, 80, 19, 246, 177, 68, 34, 205, 35, 75, 81, 37, 130, 13, 198, 171, 1, 22, 45, 1, 126, 231, 48, 211, 70, 129, 133, 154, 159, 121, 139, 101, 134, 47, 73, 117, 171, 126, 117, 166, 119, 244, 62, 254, 191, 83, 224, 236, 5, 70, 13, 44, 245, 85, 6, 173, 8, 214, 176, 82, 84, 249, 106, 80, 13, ];
+
+        let cs = decode_consensus_state(encoded);
+        std::debug::print(&cs);
+    }
+
+    #[test]
+    fun decode_header_bcs() {
+        let encoded = x"18190000000000007074df66000000002fa8cf362f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500daf1d4415ddfcb567803e347e72c84c6c1d82c34cce348550abbaa734055a2ae801000000000000000c19000000000000800322c7ea1ff4806e2c6f5bb451f1811d3ddf13169104b19d29d7069226265bf0d827e2684bde00a40919011d6dcaed7d532a9cbb75458529c4e70ecfad34339b01108b45a3f20303bb9fc06c7dc88fc0c7b3b7007210ddbe16c1d5e08e7a5700731156a4131427cc69d278abb3121d0a16dc2301e17714814eea0bfdcba8fcc4bd0a91ef8f43bae304a708532b9eeffee1bf45410b44b26e7b3a8be487580db2822cc971a1830bbe32ff21fa15ca968b89009097ea81af246a513226821e36072b02bb8d6be4e61fd1b97e9cf3d6ad6b778cfeadc4720ba00ef3ef302c070933ee134580bc7a30ee2c975302e1aeafb0a59500ccf066f4cdae31c1f8763409725f00d3fceab40f52a6ff8d2f3674cad1989f5035f39308abcbbf3fdd9dc127fef5203067d6849d52c80c7dea8a852980911df011b047a3ffec05990040858c03430148408f4398cba53b1820dcb87d7626a1ca0471fa142a7c1ac541fa826b13550c24643377da09dff003bcc37d79c22a72268f4b46e3e2d38f31c7c302d9b1e1";
+
+        let cs = decode_header(encoded);
+        std::debug::print(&cs);
+    }
+    
+    // #[test]
+    // fun test_parse_zkp() {
+    //     let zkp = x"1c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
+
+    //     parse_zkp(zkp);
+    // }
 
     #[test(ibc_signer = @IBC)]
     fun test_create_client(ibc_signer: &signer) acquires State {
@@ -391,13 +454,13 @@ module IBC::LightClient {
         let consensus_state = ConsensusState {  
             timestamp: 10000,
             app_hash: MerkleRoot {
-                hash: vector<u8>[]
+                hash: x"0000000000000000000000000000000000000000000000000000000000000000"
             },
-            next_validators_hash: vector<u8>[]
+            next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
         };
 
-        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client"), bcs::to_bytes(&client_state), bcs::to_bytes(&consensus_state));
-        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == bcs::to_bytes(&consensus_state), 1);
+        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client"), bcs::to_bytes(&client_state), encode_consensus_state(&consensus_state));
+        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == encode_consensus_state(&consensus_state), 1);
 
 
         let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
@@ -412,8 +475,11 @@ module IBC::LightClient {
         client_state.trusting_period = 2;
         consensus_state.timestamp = 20000;
 
-        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client-2"), bcs::to_bytes(&client_state), bcs::to_bytes(&consensus_state));
-        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == bcs::to_bytes(&consensus_state), 1);
+        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client-2"), bcs::to_bytes(&client_state), encode_consensus_state(&consensus_state));
+        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == encode_consensus_state(&consensus_state), 1);
+
+        let lh = latest_height(string::utf8(b"this_client-2"));
+        std::debug::print(&lh);
 
         // new client don't mess with this client's storage
         let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
@@ -433,5 +499,37 @@ module IBC::LightClient {
         assert!(
             smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
         );
+    }
+
+    #[test]
+    fun update_client_test() {
+        let update = x"1705000000000000cfc8e2660000000078205b1f2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2bb490808b70783385f7773eee98bc942db441fa4cd2abb54f3877c6572fabe80100000000000000ff04000000000000c0016a5b345f936d30d5b2b5f981fa73e832477e4d9cbfd85a3efd513d605e12050782f65ab2e337071edb3c421c1fa17351c70f316fd9affcf057b1054098d8071fe21cedf25cb125663a97982aa13a019e4575d5e2a22c4f273cb4f05231b84aaf604a92564aee7f5a98f06f6e9096b3fdd7235e9cb141dd63ac8058a1f76cbf0c8df091911f002984cc97202e635de899a0d61306f02218ffe8ae67d737f0fe97ceb1848c6812eed77fc56f8b536b20692eeac01ac030c21d136a1072f59bfa99";
+
+        let header = decode_header(update);
+
+        std::debug::print(&header);
+    }
+
+    #[test]
+    fun decode_cons_state() {
+        let client = x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000007beb2f72060000e09265170100000000000000000000000000000000000001000000000000008605000000000000";
+        let cons = x"88430614737af41719ef8a27d69c8953d2f36f7f3380a5e516752b36b66f15a1238594f019a7174e2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
+        let client = decode_client_state(client);
+        let cons = decode_consensus_state(cons);
+        let header = x"9905000000000000a1cbe26600000000b660372b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500dccd06a9736f4d00a1a981044332539d1affe3052dad73c836ecb178e2c0d14e501000000000000006d05000000000000c001f8aaffd288fa229cc96858d4c9675df9bdd3955e5324b2a57f1576e0099cf280f98f08e96afd770e4716b2b3425d993c9b9c60df37458aa3d7ca06de68a8e7188790db59291ef1ff610b10279f3500ff03c23b2ea6df49ca47099596ca61e91c401dbf641159608e23d272cd20f61dbb75ecdf206bd7138fb613eb1c473b60a3bcaaa29dc7bad1373277f391147481941bf9a65a4dede35fae022ba469ec6d93eda92784efb6c158cc76e32b8e5a801e189d111fac85d934d4fa7d614755a092";
+        let header = decode_header(header);
+
+        std::debug::print(&cons);
+        std::debug::print(&client);
+        std::debug::print(&header);
+
+        let res = groth16_verifier::verify_zkp(
+            &string::utf8(b"union-devnet-1"),
+            &cons.next_validators_hash,
+            light_header_as_input_hash(&header.signed_header),
+            &header.zero_knowledge_proof
+        );
+
+        std::debug::print(&res);
     }
 }

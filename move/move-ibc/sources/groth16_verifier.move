@@ -1,5 +1,5 @@
-module IBC::groth16_verifier {    
-    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr,FormatG1Compr, G2, Gt, FormatG2Compr};
+module IBC::groth16_verifier {
+    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr, FormatG1Compr, G2, Gt, FormatG2Compr};
     use std::crypto_algebra::{deserialize, serialize, zero, add, scalar_mul, multi_pairing, Element, eq};
     use std::option;
     use std::vector;
@@ -70,14 +70,8 @@ module IBC::groth16_verifier {
         let gamma_abc_2 = option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 1)));
         let gamma_abc_3 = option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 2)));
 
-        // TODO(aeryz): why is this unused?
-        let _res = serialize<Fr, FormatFrLsb>(&commitment_hash);
-
         let msm_inner = add(&add<G1>(&gamma_abc_1, &zkp.proof_commitment), &scalar_mul<G1, Fr>(&gamma_abc_2, &inputs_hash));
         let public_inputs_msm = add<G1>(&msm_inner, &scalar_mul<G1, Fr>(&gamma_abc_3, &commitment_hash));
-        let res = serialize<G1, FormatG1Uncompr>(&public_inputs_msm);
-        vector::reverse_slice(&mut res, 0, 32);
-        vector::reverse_slice(&mut res, 32, 64);
 
         let res = multi_pairing<G1, G2, Gt>(
             &vector<Element<G1>>[
@@ -141,6 +135,9 @@ module IBC::groth16_verifier {
 
     fun hash_commitment(proof_commitment: &Element<G1>): u256 {
         let buffer = serialize<G1, FormatG1Uncompr>(proof_commitment);
+        let mask = vector::borrow_mut(&mut buffer, 63);
+        *mask = *mask & 0x3f; // erase the mask (0x3f = 0b00111111)
+        
         vector::reverse_slice(&mut buffer, 0, 32);
         vector::reverse_slice(&mut buffer, 32, 64);
         let hmac = hmac_keccak(&buffer);
@@ -152,5 +149,19 @@ module IBC::groth16_verifier {
         (hmac % prime_r_minus_one) + 1
     }
     
+
+    #[test]
+    fun test_verify_zkp_ok() {
+        let zkp = parse_zkp(vector[182, 45, 6, 207, 148, 135, 217, 54, 117, 138, 138, 207, 38, 255, 85, 190, 238, 132, 244, 47, 117, 22, 101, 146, 207, 194, 213, 80, 167, 72, 74, 169, 246, 165, 153, 78, 96, 154, 235, 56, 127, 151, 155, 175, 8, 5, 20, 89, 168, 115, 208, 45, 210, 54, 93, 85, 134, 82, 203, 239, 77, 255, 247, 47, 67, 186, 201, 193, 137, 216, 93, 133, 119, 57, 224, 118, 172, 226, 5, 60, 156, 213, 39, 230, 252, 194, 253, 59, 76, 37, 204, 76, 224, 168, 184, 14, 195, 138, 89, 220, 217, 178, 116, 29, 75, 36, 245, 254, 131, 116, 240, 25, 125, 19, 134, 222, 239, 34, 17, 253, 116, 209, 179, 101, 103, 204, 117, 146, 64, 57, 108, 169, 217, 240, 192, 178, 192, 20, 145, 189, 30, 252, 229, 53, 30, 188, 117, 24, 192, 28, 130, 184, 137, 18, 183, 238, 98, 33, 173, 24, 10, 108, 233, 132, 185, 129, 54, 66, 128, 116, 227, 120, 228, 91, 88, 217, 52, 6, 207, 159, 57, 154, 165, 76, 142, 198, 160, 81, 127, 224, 177, 31]);        
+
+        let res = verify_zkp(
+            &std::string::utf8(b"union-devnet-1337"),
+            &x"1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8",
+            x"00000000000000000000000000000000000000000000000000000000cafebabe0000000000000000000000000000000000000000000000000000000065f87b2e000000000000000000000000000000000000000000000000000000001dc74c161b7ea0f1b3e574f8d50a12827ccea43cff858c2716ae05370cc40ae8ec521fd81b7ea0f1b3e574f8d50a12827ccea43cff858c2716ae05370cc40ae8ec521fd83a34fc963eefaae9b7c0d3dff89180d91f3e31073e654f732340ceedd77dd25b",
+            &zkp,
+        );
+
+        assert!(res, 1);
+    }
 
 }

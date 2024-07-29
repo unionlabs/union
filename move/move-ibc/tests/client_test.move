@@ -4,7 +4,7 @@
 //     use aptos_std::string;
 //     use aptos_std::any;
 //     use IBC::height;
-//     use IBC::Core;
+//     use IBC::ibc;
 //     use IBC::LightClient;
 
 //     const E_GENERATE_CLIENT_IDENTIFIER: u64 = 3001;
@@ -14,24 +14,24 @@
 
 //     #[test(alice = @IBC)]
 //     public fun test_generate_client_identifier(alice: &signer) {
-//         Core::create_ibc_store(alice);
+//         ibc::create_ibc_store(alice);
 
 //         let client_type = string::utf8(b"test_client");
 
 //         // Generate the first identifier
-//         let identifier1 = Core::generate_client_identifier(client_type);
+//         let identifier1 = ibc::generate_client_identifier(client_type);
 //         let expected_identifier1 = string::utf8(b"test_client-0"); 
 //         assert!(identifier1 == expected_identifier1, E_GENERATE_CLIENT_IDENTIFIER);
 
 //         // Generate the second identifier
-//         let identifier2 = Core::generate_client_identifier(client_type);
+//         let identifier2 = ibc::generate_client_identifier(client_type);
 //         let expected_identifier2 = string::utf8(b"test_client-1");
 //         assert!(identifier2 == expected_identifier2, E_GENERATE_CLIENT_IDENTIFIER);
 //     }
 
 //     #[test(alice = @IBC)]
 //     public fun test_create_client(alice: &signer) {
-//         Core::create_ibc_store(alice);
+//         ibc::create_ibc_store(alice);
 
 //         // Register the mock client type and address
 //         let client_type = string::utf8(b"mock_client");
@@ -54,7 +54,7 @@
 //         ));
 
 
-//         let client_id = Core::create_client(
+//         let client_id = ibc::create_client(
 //             client_type,
 //             client_state,
 //             consensus_state,
@@ -83,7 +83,7 @@
 //         ));
 
 
-//         let client_id2 = Core::create_client(
+//         let client_id2 = ibc::create_client(
 //             client_type2,
 //             client_state2,
 //             consensus_state2,

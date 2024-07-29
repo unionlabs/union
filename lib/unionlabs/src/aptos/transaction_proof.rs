@@ -23,8 +23,14 @@ pub struct TransactionInfoWithProof {
 
 #[model]
 pub struct TransactionAccumulatorProof {
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed_list")]
     pub siblings: Vec<H256>,
+    pub phantom: Null,
 }
+
+// idk man, it's in the json
+#[model]
+pub struct Null;
 
 impl From<TransactionInfoWithProof>
     for protos::union::ibc::lightclients::movement::v1::TransactionInfoWithProof
@@ -67,6 +73,7 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::TransactionInfoWith
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, _>>()?,
+                phantom: Null,
             },
             transaction_info: required!(value.transaction_info)?.try_into()?,
         })
