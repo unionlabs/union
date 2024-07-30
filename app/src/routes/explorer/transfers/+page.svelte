@@ -17,9 +17,11 @@ import {
 } from "./paginated-transfers.ts"
 import { onDestroy } from "svelte"
 import { page } from "$app/stores"
+import type { Chain } from "$lib/types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { goto, onNavigate } from "$app/navigation"
+import { chainsQuery } from "$lib/queries/chains.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
 import DevTools from "$lib/components/dev-tools.svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
@@ -32,8 +34,6 @@ import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../(components)/explorer-pagination/index.ts"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
-import { chainsQuery } from "$lib/queries/chains.ts"
-import type { Chain } from "$lib/types.ts"
 
 /**
  * the timestamp is the source of trust, used as query key and url search param
@@ -62,9 +62,6 @@ let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
 // })
 const queryClient = useQueryClient()
 
-$: {
-  // console.info(queryClient.getQueryData(['chains']))
-}
 /**
  * only happens when:
  *  1. it is the first query on initial page load,
@@ -90,12 +87,10 @@ let transfers = createQuery(
   derived([timestamp, REFETCH_ENABLED, CURSOR], ([$timestamp, $REFETCH_ENABLED, $CURSOR]) => ({
     queryKey: ["transfers", $timestamp],
     staleTime: Number.POSITIVE_INFINITY,
-    // staleTime: ($REFETCH_ENABLED ? REFRESH_INTERVAL : 0),
     refetchOnMount: false,
     refetchOnReconnect: false,
     enabled: () => $REFETCH_ENABLED === false,
     placeholderData: keepPreviousData,
-    // refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
     queryFn: async () => {
       console.info($timestamp, $CURSOR)
       return $CURSOR === "ON_OR_BEFORE"
@@ -133,14 +128,6 @@ let transfersDataStore = derived(
     return $transfers?.data?.transfers ?? []
   }
 )
-
-// $: console.info($transfersDataStore)
-// $: hasNewer = $transfers?.data?.hasNewer
-// $: hasOlder = $transfers?.data?.hasOlder
-// $: if (!hasNewer) {
-//   $REFETCH_ENABLED = true
-//   pagination.update(p => ({ ...p, pageIndex: 0 }))
-// }
 
 type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 
