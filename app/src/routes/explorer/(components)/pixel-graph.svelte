@@ -3,7 +3,7 @@ import * as Tooltip from "$lib/components/ui/tooltip"
 
 export let data: Array<{ count: number; day: Date }> = []
 
-$: minValue = data.length > 0 ? Math.min(...data.map(d => d.count)) : 0
+$: minValue = 0
 $: maxValue = data.length > 0 ? Math.max(...data.map(d => d.count)) : 0
 
 function normalize(
