@@ -1,6 +1,5 @@
 # Union
 
-[![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
 [![Nightly](https://github.com/unionlabs/union/actions/workflows/nightly.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/nightly.yml)
 [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
 
