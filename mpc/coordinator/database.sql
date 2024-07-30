@@ -22,12 +22,23 @@ CREATE POLICY view_all
       true
     );
 
+-- Materialized ?
 CREATE OR REPLACE VIEW current_queue_position AS
-  SELECT COUNT(*) AS position
-  FROM queue q
-  WHERE q.score > (
-    SELECT qq.score FROM queue qq WHERE qq.id = auth.uid()
-  ) AND NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = q.id);
+  SELECT
+  CASE WHEN (SELECT cci.id FROM current_contributor_id cci) = auth.uid() THEN
+      0
+  ELSE
+      (
+        SELECT COUNT(*) + 1
+        FROM queue q
+        WHERE
+        -- Better score
+        q.score > (SELECT qq.score FROM queue qq WHERE qq.id = auth.uid())
+        AND
+        -- Contribution round not started
+        NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = q.id)
+      )
+      END AS position;
 
 ALTER VIEW current_queue_position SET (security_invoker = on);
 
@@ -133,11 +144,7 @@ CREATE OR REPLACE VIEW current_contributor_id AS
     ) AND (
       EXISTS (SELECT cs.expire FROM contribution_status cs WHERE cs.id = qq.id AND cs.expire > now())
       OR
-      (
-        EXISTS (SELECT cs.expire FROM contribution_status cs WHERE cs.id = qq.id AND cs.expire <= now())
-        AND
-        EXISTS (SELECT cs.id FROM contribution_submitted cs WHERE cs.id = qq.id)
-      )
+      EXISTS (SELECT cs.id FROM contribution_submitted cs WHERE cs.id = qq.id)
     )
  );
 
