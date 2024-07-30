@@ -18,6 +18,12 @@ body {
   --font-size: 12px;
 }
 
+@media (max-width: 767px) {
+  #sentry-feedback {
+    --page-margin: 0 0.45rem 4.25rem 0;
+  }
+}
+
 
 html[data-theme='dark'], body[data-theme='dark'] {
   color-scheme: dark;

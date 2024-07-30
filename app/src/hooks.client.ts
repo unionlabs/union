@@ -7,17 +7,18 @@ Sentry.init({
   tracesSampleRate: 1,
   replaysOnErrorSampleRate: 1,
   replaysSessionSampleRate: 0.1,
-  enabled: import.meta.env.MODE === "production",
   integrations: [
     Sentry.replayIntegration(),
     Sentry.breadcrumbsIntegration(),
     Sentry.extraErrorDataIntegration(),
     Sentry.feedbackIntegration({
+      autoInject: true,
       showBranding: false,
       colorScheme: "system",
       submitButtonLabel: "Submit",
       formTitle: "Feedback / Bug Report",
       buttonLabel: "Feedback / Bug Report",
+      triggerLabel: "Feedback / Bug Report",
       messagePlaceholder:
         "Please describe the issue you encountered or provide feedback on how we can improve."
     })
