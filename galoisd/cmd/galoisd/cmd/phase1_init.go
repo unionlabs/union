@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/sha256"
+
 	"github.com/spf13/cobra"
 
 	"encoding/binary"
@@ -269,7 +271,6 @@ func (ptauFile *PtauFile) ReadBetaG2() (bn254.G2Affine, error) {
 
 func ReadPtau(zkeyPath string) (Ptau, error) {
 	reader, err := os.Open(zkeyPath)
-
 	if err != nil {
 		return Ptau{}, err
 	}
@@ -278,12 +279,21 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 
 	var ptauStr = make([]byte, 4)
 	_, err = reader.Read(ptauStr)
+	if err != nil {
+		return Ptau{}, err
+	}
 
 	// version
 	_, err = readULE32(reader)
+	if err != nil {
+		return Ptau{}, err
+	}
 
 	// number of sections
 	_, err = readULE32(reader)
+	if err != nil {
+		return Ptau{}, err
+	}
 
 	numSections := uint32(7)
 
@@ -291,25 +301,36 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	// 1-based indexing, so we need to allocate one more than the number of sections
 	sections := make([][]SectionSegment, numSections+1)
 	for i := uint32(0); i < numSections; i++ {
-		ht, _ := readULE32(reader)
-		hl, _ := readULE64(reader)
+		ht, err := readULE32(reader)
+		if err != nil {
+			return Ptau{}, err
+		}
+		hl, err := readULE64(reader)
+		if err != nil {
+			return Ptau{}, err
+		}
 		if sections[ht] == nil {
 			sections[ht] = make([]SectionSegment, 0)
 		}
-		pos, _ := reader.Seek(0, io.SeekCurrent)
+		pos, err := reader.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return Ptau{}, err
+		}
 		sections[ht] = append(sections[ht], SectionSegment{pos: uint64(pos), size: hl})
 		reader.Seek(int64(hl), io.SeekCurrent)
 	}
 
 	// section size
 	_, err = readBigInt(reader, 8)
+	if err != nil {
+		return Ptau{}, err
+	}
 
 	// Header (1)
 	seekToUniqueSection(reader, sections, 1)
 
 	// Read header
 	header, err := readPtauHeader(reader)
-
 	if err != nil {
 		return Ptau{}, err
 	}
@@ -322,7 +343,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	twoToPower := uint32(1 << header.Power)
 
 	PtauPubKey.TauG1, err = readG1Array(reader, twoToPower*2-1)
-
 	if err != nil {
 		return Ptau{}, err
 	}
@@ -331,7 +351,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	seekToUniqueSection(reader, sections, 3)
 
 	PtauPubKey.TauG2, err = readG2Array(reader, twoToPower)
-
 	if err != nil {
 		return Ptau{}, err
 	}
@@ -340,7 +359,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	seekToUniqueSection(reader, sections, 4)
 
 	PtauPubKey.AlphaTauG1, err = readG1Array(reader, twoToPower)
-
 	if err != nil {
 		return Ptau{}, err
 	}
@@ -349,7 +367,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	seekToUniqueSection(reader, sections, 5)
 
 	PtauPubKey.BetaTauG1, err = readG1Array(reader, twoToPower)
-
 	if err != nil {
 		return Ptau{}, err
 	}
@@ -358,7 +375,6 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 	seekToUniqueSection(reader, sections, 6)
 
 	PtauPubKey.BetaG2, err = readG2(reader)
-
 	if err != nil {
 		return Ptau{}, err
 	}
@@ -368,9 +384,7 @@ func ReadPtau(zkeyPath string) (Ptau, error) {
 
 func readPtauHeader(reader io.ReadSeeker) (PtauHeader, error) {
 	var header PtauHeader
-
 	n8, err := readULE32(reader)
-
 	if err != nil {
 		return PtauHeader{}, err
 	}
@@ -378,7 +392,6 @@ func readPtauHeader(reader io.ReadSeeker) (PtauHeader, error) {
 	header.N8 = n8
 
 	prime, err := readBigInt(reader, n8)
-
 	if err != nil {
 		return PtauHeader{}, err
 	}
@@ -386,13 +399,11 @@ func readPtauHeader(reader io.ReadSeeker) (PtauHeader, error) {
 	header.Prime = prime
 
 	power, err := readULE32(reader)
-
 	if err != nil {
 		return PtauHeader{}, err
 	}
 
 	header.Power = power
-
 	return header, nil
 }
 
@@ -400,7 +411,6 @@ func readG1Array(reader io.ReadSeeker, numPoints uint32) ([]G1, error) {
 	g1s := make([]G1, numPoints)
 	for i := uint32(0); i < numPoints; i++ {
 		g1, err := readG1(reader)
-
 		if err != nil {
 			return []G1{}, err
 		}
@@ -428,13 +438,11 @@ func readG2Array(reader io.ReadSeeker, numPoints uint32) ([]G2, error) {
 
 func readTauG2(reader io.ReadSeeker) ([]G2, error) {
 	tauG2_s, err := readG2(reader)
-
 	if err != nil {
 		return []G2{}, err
 	}
 
 	tauG2_sx, err := readG2(reader)
-
 	if err != nil {
 		return []G2{}, err
 	}
@@ -446,7 +454,6 @@ func readG1(reader io.ReadSeeker) (G1, error) {
 	var g1 G1
 
 	x, err := readBigInt(reader, BN254_FIELD_ELEMENT_SIZE)
-
 	if err != nil {
 		return G1{}, err
 	}
@@ -454,7 +461,6 @@ func readG1(reader io.ReadSeeker) (G1, error) {
 	g1[0] = x
 
 	y, err := readBigInt(reader, BN254_FIELD_ELEMENT_SIZE)
-
 	if err != nil {
 		return G1{}, err
 	}
@@ -468,7 +474,6 @@ func readG2(reader io.ReadSeeker) (G2, error) {
 	var g2 G2
 
 	x0, err := readBigInt(reader, BN254_FIELD_ELEMENT_SIZE)
-
 	if err != nil {
 		return G2{}, err
 	}
@@ -476,7 +481,6 @@ func readG2(reader io.ReadSeeker) (G2, error) {
 	g2[0] = x0
 
 	x1, err := readBigInt(reader, BN254_FIELD_ELEMENT_SIZE)
-
 	if err != nil {
 		return G2{}, err
 	}
@@ -484,7 +488,6 @@ func readG2(reader io.ReadSeeker) (G2, error) {
 	g2[1] = x1
 
 	y0, err := readBigInt(reader, BN254_FIELD_ELEMENT_SIZE)
-
 	if err != nil {
 		return G2{}, err
 	}
@@ -492,7 +495,6 @@ func readG2(reader io.ReadSeeker) (G2, error) {
 	g2[2] = y0
 
 	y1, err := readBigInt(reader, BN254_FIELD_ELEMENT_SIZE)
-
 	if err != nil {
 		return G2{}, err
 	}
@@ -506,7 +508,6 @@ func readULE32(reader io.Reader) (uint32, error) {
 	var buffer = make([]byte, 4)
 
 	_, err := reader.Read(buffer)
-
 	if err != nil {
 		return 0, err
 	}
@@ -518,7 +519,6 @@ func readULE64(reader io.Reader) (uint64, error) {
 	var buffer = make([]byte, 8)
 
 	_, err := reader.Read(buffer)
-
 	if err != nil {
 		return 0, err
 	}
@@ -643,9 +643,15 @@ func ReadZkey(zkeyPath string) (Zkey, error) {
 	// zkey
 	var zkeyStr = make([]byte, 4)
 	_, err = reader.Read(zkeyStr)
+	if err != nil {
+		return Zkey{}, err
+	}
 
 	// version
 	_, err = readULE32(reader)
+	if err != nil {
+		return Zkey{}, err
+	}
 
 	// number of sections
 	numSections, err := readULE32(reader)
@@ -666,10 +672,12 @@ func ReadZkey(zkeyPath string) (Zkey, error) {
 
 	// section size
 	_, err = readBigInt(reader, 8)
+	if err != nil {
+		return Zkey{}, err
+	}
 
 	seekToUniqueSection(reader, sections, 1)
 	header, err := readHeader(reader, sections)
-
 	if err != nil {
 		return Zkey{}, err
 	}
@@ -720,43 +728,36 @@ func readHeaderGroth16(reader io.ReadSeeker) (HeaderGroth, error) {
 	var header = HeaderGroth{}
 
 	n8q, err := readULE32(reader)
-
 	if err != nil {
 		return header, err
 	}
 
 	q, err := readBigInt(reader, n8q)
-
 	if err != nil {
 		return header, err
 	}
 
 	n8r, err := readULE32(reader)
-
 	if err != nil {
 		return header, err
 	}
 
 	r, err := readBigInt(reader, n8r)
-
 	if err != nil {
 		return header, err
 	}
 
 	nVars, err := readULE32(reader)
-
 	if err != nil {
 		return header, err
 	}
 
 	nPublic, err := readULE32(reader)
-
 	if err != nil {
 		return header, err
 	}
 
 	domainSize, err := readULE32(reader)
-
 	if err != nil {
 		return header, err
 	}
@@ -851,12 +852,18 @@ func convertPtauToPhase1(ptau Ptau) (phase1 mpc.Phase1, err error) {
 		}
 	}
 
+	phase1 = mpc.InitPhase1(int(ptau.Header.Power));
+
 	phase1.Parameters.G1.Tau = tauG1
 	phase1.Parameters.G1.AlphaTau = alphaTauG1
 	phase1.Parameters.G1.BetaTau = betaTauG1
 
 	phase1.Parameters.G2.Tau = tauG2
 	phase1.Parameters.G2.Beta = betaG2
+
+	sha := sha256.New()
+	phase1.WriteTo(sha)
+	phase1.Hash = sha.Sum(nil)
 
 	return phase1, nil
 }
