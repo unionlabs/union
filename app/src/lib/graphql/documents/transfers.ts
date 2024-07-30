@@ -4,7 +4,7 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
   query TransfersQueryTimestampFilter(
     $limit: Int!,
     $timestamp: timestamptz!
-  ) {
+  ) @cached(ttl: 1000) {
     newer: v0_transfers(
       limit: $limit,
       order_by: [
