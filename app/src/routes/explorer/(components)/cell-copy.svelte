@@ -1,9 +1,9 @@
 <script lang="ts">
-import { truncate } from "$lib/utilities/format.ts"
 import CopyIcon from "virtual:icons/lucide/copy"
-import { Button } from "$lib/components/ui/form"
-import { copyTextAction } from "$lib/actions/copy.ts"
+import { Button } from "$lib/components/ui/button"
 import CheckIcon from "virtual:icons/lucide/check"
+import { truncate } from "$lib/utilities/format.ts"
+import { copyTextAction } from "$lib/actions/copy.ts"
 
 export let value: string
 export let trunc = 0
