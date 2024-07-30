@@ -14,10 +14,12 @@ export let status: "pending" | "done" = "done"
 
 export let currentPage = 1
 
+export let live: boolean
 export let onOlderPage: (page: number) => void
 export let olderDisabled = false
 export let onNewerPage: (page: number) => void
 export let newerDisabled = false
+
 export let onCurrentClick: () => void
 
 export let className = ""
@@ -28,11 +30,11 @@ export { className as class }
   let:pages
   siblingCount={2000}
   perPage={rowsPerPage}
-  count={totalTableRows}
   class={cn(className)}
+  count={totalTableRows}
 >
   <Pagination.Content
-    class="py-2 text-md uppercase font-supermolot w-full flex"
+    class="py-2 text-md uppercase font-supermolot w-full flex gap-x-1"
   >
     <div class={cn("flex flex-row uppercase")}>
       <Button
@@ -41,20 +43,20 @@ export { className as class }
         on:click={(event) => {
           onCurrentClick()
         }}
-        title="Go to the first page"
-        disabled={status === "pending"}
+        disabled={status === "pending" || live}
+        title={live ? "Already on the newest page" : "Go to the first page"}
         class={cn(
           "hover:bg-accent hover:text-black",
           status === "pending" && "cursor-not-allowed"
         )}
       >
-        current
+        {live ? "live" : "current"}
       </Button>
     </div>
-
     <Pagination.Item>
       <Pagination.PrevButton
-        disabled={status === "pending" || newerDisabled}
+        disabled={status === "pending" || newerDisabled || live}
+        title={live ? "Already on the newest page" : "Go to the previous page"}
         on:click={(event) => {
           event.preventDefault()
           event.stopPropagation()
@@ -67,7 +69,9 @@ export { className as class }
         )}
       >
         <ChevronLeft class="size-6" />
-        <span class="text-md uppercase font-supermolot">Newer</span>
+        <span class="text-md uppercase font-supermolot">
+          {live ? "newest" : "Newer"}
+        </span>
       </Pagination.PrevButton>
     </Pagination.Item>
     <Label class="w-full">

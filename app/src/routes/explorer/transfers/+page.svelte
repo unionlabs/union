@@ -175,7 +175,7 @@ const columns: Array<ColumnDef<DataRow, TransferAddress>> = [
   },
   {
     accessorKey: "assets",
-    header: () => "Assets",
+    header: () => "Asset",
     size: 200,
     minSize: 200,
     maxSize: 200,
@@ -314,10 +314,11 @@ onNavigate(navigation => {
   class="flex sm:justify-start sm:flex-row flex-col justify-center gap-1 w-full"
 >
   <ExplorerPagination
-    class={cn("w-auto")}
     rowsPerPage={20}
     totalTableRows={20}
+    class={cn("w-auto")}
     status={queryStatus}
+    live={$REFETCH_ENABLED}
     onOlderPage={async (page) => {
       const stamp = $timestamps.oldestTimestamp
       timestamp.set(stamp)
