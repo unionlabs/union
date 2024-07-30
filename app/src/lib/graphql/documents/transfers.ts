@@ -11,18 +11,16 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
         { source_timestamp: asc },
         { source_transaction_hash: asc }
       ],
-      where: { source_timestamp: { _gt: $timestamp } },
+      where: { source_timestamp: { _gte: $timestamp } },
     ) {
       sender
       source_chain_id
       source_timestamp
       source_transaction_hash
-      source_chain { chain_id display_name }
       receiver
       destination_chain_id
       destination_timestamp
       destination_transaction_hash
-      destination_chain { chain_id display_name }
       assets
     }
     older: v0_transfers(
@@ -34,13 +32,13 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
       where: { source_timestamp: { _lt: $timestamp } },
     ) {
       sender
+      source_chain_id
       source_timestamp
       source_transaction_hash
-      source_chain { chain_id display_name }
       receiver
+      destination_chain_id
       destination_timestamp
       destination_transaction_hash
-      destination_chain { chain_id display_name }
       assets
     }
   }
