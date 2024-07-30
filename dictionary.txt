@@ -904,6 +904,8 @@ qxrx
 qypy
 rabby
 randao
+ratelimit
+ratelimited
 rawfile
 rclone
 rctx
