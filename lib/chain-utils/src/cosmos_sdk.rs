@@ -42,21 +42,24 @@ pub struct GasConfig {
     #[serde(with = "::serde_utils::string")]
     pub gas_multiplier: f64,
     pub max_gas: u64,
+    #[serde(default)]
+    pub min_gas: u64,
 }
 
 impl GasConfig {
     pub fn mk_fee(&self, gas: u64) -> Fee {
-        let gas_limit =
-            u64_mul_f64(gas, self.gas_price * self.gas_multiplier).clamp(0, self.max_gas);
+        // gas limit = provided gas * multiplier, clamped between min_gas and max_gas
+        let gas_limit = u128_mul_f64(gas.into(), self.gas_multiplier)
+            .clamp(self.min_gas.into(), self.max_gas.into());
 
-        let amount = u64_mul_f64(gas, self.gas_price).clamp(0, self.max_gas);
+        let amount = u128_mul_f64(gas.into(), self.gas_price);
 
         Fee {
             amount: vec![Coin {
-                amount: amount.into(),
+                amount,
                 denom: self.gas_denom.clone(),
             }],
-            gas_limit,
+            gas_limit: gas_limit.try_into().unwrap_or(u64::MAX),
             payer: String::new(),
             granter: String::new(),
         }
@@ -205,15 +208,12 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
             "tx simulation successful"
         );
 
-        let submission_gas = u64_mul_f64(
-            simulation_gas_info.gas_used,
-            self.gas_config().gas_multiplier,
-        );
+        auth_info.fee = self.gas_config().mk_fee(simulation_gas_info.gas_used);
 
-        auth_info.fee = self.gas_config().mk_fee(submission_gas);
+        // dbg!(&auth_info.fee);
 
         info!(
-            submission_gas,
+            fee = %auth_info.fee.amount[0].amount,
             gas_multiplier = %self.gas_config().gas_multiplier,
             "submitting transaction with gas"
         );
@@ -493,7 +493,7 @@ pub async fn fetch_balances(
     out_vec
 }
 
-fn u64_mul_f64(u: u64, f: f64) -> u64 {
+fn u128_mul_f64(u: u128, f: f64) -> u128 {
     (num_rational::BigRational::from_integer(u.into())
         * num_rational::BigRational::from_float(f).expect("finite"))
     .to_integer()
@@ -502,8 +502,8 @@ fn u64_mul_f64(u: u64, f: f64) -> u64 {
 }
 
 #[test]
-fn test_u64_mul_f64() {
-    let val = u64_mul_f64(100, 1.1);
+fn test_u128_mul_f64() {
+    let val = u128_mul_f64(100, 1.1);
 
     assert_eq!(val, 110);
 }
