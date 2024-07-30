@@ -12,9 +12,8 @@ export const noThrow = async <T>(x: Promise<T>): Promise<T | undefined> =>
 export const noThrowSync = <T>(callback: T): T | undefined => {
   try {
     return callback
-  } catch {
-    return undefined
-  }
+    // biome-ignore lint/suspicious/noEmptyBlockStatements: <explanation>
+  } catch {}
 }
 
 // remove duplicates from an array of objects by a key

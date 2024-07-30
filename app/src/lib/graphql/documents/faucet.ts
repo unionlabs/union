@@ -7,3 +7,11 @@ export const faucetUnoMutation2 = graphql(/* GraphQL */ `
     }
   }
 `)
+
+export const dydxFaucetMutation = graphql(/* GraphQL */ `
+  mutation DyDxFaucetMutation($address: String!, $captchaToken: String!) {
+    dydx_faucet {
+      send(toAddress: $address, captchaToken: $captchaToken)
+    }
+  }  
+`)

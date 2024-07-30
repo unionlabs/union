@@ -443,6 +443,7 @@ devnets
 devp
 devshell
 dirchange
+dismissable
 displaydoc
 distrkeeper
 distrtypes
@@ -641,6 +642,7 @@ jetbrains
 journalctl
 jsoncpp
 jsonrpsee
+jsons
 jsonschema
 jumpstart
 justif
@@ -1099,6 +1101,7 @@ tkey
 tkeys
 tmcfg
 tmcli
+tmcmlewuyt
 tmdb
 tmos
 tmpdir
@@ -1135,6 +1138,7 @@ typeof
 uatom
 ucli
 ucosm
+ufgwwpg
 uints
 ulidx
 umee

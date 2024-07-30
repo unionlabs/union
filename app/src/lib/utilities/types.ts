@@ -1,5 +1,11 @@
 import type { Readable } from "svelte/store"
 
+export type AwaitedReturnType<T extends (...args: any) => any> = ReturnType<T> extends Promise<
+  infer U
+>
+  ? U
+  : ReturnType<T>
+
 export type UnwrapReadable<T> = T extends Readable<infer U> ? U : never
 
 export type DiscriminatedUnion<K extends PropertyKey, T extends object> = {

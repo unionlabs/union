@@ -71,7 +71,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
   persistOptions={{ persister: localStoragePersister }}
 >
   <ModeWatcher defaultMode="system" />
-  <Toaster position="bottom-right" />
+  <Toaster position="bottom-right" expand richColors closeButton />
 
   <Header />
   <div class="flex flex-1 overflow-y-auto bg-background">
@@ -89,6 +89,9 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 </PersistQueryClientProvider>
 
 <style>
+  :global([data-close-button]) {
+    background-color: hsl(var(--card) / var(--tw-bg-opacity));
+  }
   :global(.grecaptcha-badge) {
       visibility: hidden;
       position: fixed;

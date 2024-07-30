@@ -8,7 +8,7 @@ import {
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
 
-export const transfersPerDayQuery = limit =>
+export const transfersPerDayQuery = (limit: number) =>
   createQuery({
     queryKey: ["transfer-per-day"],
     queryFn: async () =>
