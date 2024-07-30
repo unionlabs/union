@@ -1,6 +1,5 @@
 # Union
 
-[![Nightly](https://github.com/unionlabs/union/actions/workflows/nightly.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/nightly.yml)
 [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
 
 Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security, and usage in decentralized finance. It implements [IBC] for compatibility with Cosmos chains and connects to Ethereum.
