@@ -1,5 +1,4 @@
 use std::{
-    io::SeekFrom,
     net::SocketAddr,
     os::unix::fs::MetadataExt,
     str::FromStr,
@@ -16,18 +15,10 @@ use http_body_util::BodyExt;
 use httpdate::parse_http_date;
 use hyper::{body::Buf, service::service_fn, Method};
 use hyper_util::rt::TokioIo;
-use mpc_shared::{
-    phase2_contribute,
-    types::{ContributorId, PayloadId},
-    CONTRIBUTION_SIZE,
-};
-use postgrest::Postgrest;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_LENGTH, LOCATION, RANGE};
+use mpc_shared::{phase2_contribute, supabase::SupabaseMPCApi, CONTRIBUTION_SIZE};
+use reqwest::header::LOCATION;
 use serde::Deserialize;
-use tokio::{
-    io::{AsyncSeekExt, AsyncWriteExt},
-    net::TcpListener,
-};
+use tokio::net::TcpListener;
 
 #[derive(PartialEq, Eq, Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -53,13 +44,6 @@ enum Error {
     Phase2VerificationFailed(#[from] mpc_shared::Phase2VerificationError),
 }
 
-async fn get_state_file(path: &str) -> Vec<u8> {
-    if !tokio::fs::try_exists(path).await.unwrap() {
-        tokio::fs::write(path, []).await.unwrap();
-    }
-    tokio::fs::read(path).await.unwrap()
-}
-
 type BoxBody = http_body_util::combinators::BoxBody<hyper::body::Bytes, hyper::Error>;
 
 type DynError = Box<dyn std::error::Error + Send + Sync>;
@@ -74,111 +58,22 @@ async fn contribute(
     }: Contribute,
 ) -> Result<(), DynError> {
     const SUPABASE_PROJECT: &str = "https://bffcolwcakqrhlznyjns.supabase.co";
-    const APIKEY: &str = "apikey";
-    let authorization_header = format!("Bearer {}", jwt);
-    let client = Postgrest::new(format!("{SUPABASE_PROJECT}/rest/v1"))
-        .insert_header(APIKEY, api_key)
-        .insert_header(AUTHORIZATION, authorization_header.clone());
+    let client = SupabaseMPCApi::new(SUPABASE_PROJECT.into(), api_key, jwt);
     let current_contributor = client
-        .from("current_contributor_id")
-        .select("id")
-        .execute()
+        .current_contributor()
         .await?
-        .json::<Vec<ContributorId>>()
-        .await?
-        .first()
-        .cloned()
         .ok_or(Error::ContributorNotFound)?;
     assert!(
         current_contributor.id == contributor_id,
         "not current contributor."
     );
     let current_payload = client
-        .from("current_payload_id")
-        .select("payload_id")
-        .execute()
+        .current_payload()
         .await?
-        .json::<Vec<PayloadId>>()
-        .await?
-        .first()
-        .cloned()
         .ok_or(Error::PayloadNotFound)?;
-    let current_payload_download_url = format!(
-        "{SUPABASE_PROJECT}/storage/v1/object/contributions/{}",
-        &current_payload.id
-    );
-    let client = reqwest::ClientBuilder::new()
-        .default_headers(HeaderMap::from_iter([(
-            AUTHORIZATION,
-            HeaderValue::from_str(&authorization_header)?,
-        )]))
-        .build()?;
-    println!("checking payload file...");
-    enum StateFileAction {
-        Download(usize),
-        Done(Vec<u8>),
-    }
-    let state_path = current_payload.id;
-    let action = match get_state_file(&state_path).await {
-        content if content.len() < CONTRIBUTION_SIZE => {
-            println!("partial download, continuing from {}...", content.len());
-            StateFileAction::Download(content.len())
-        }
-        content if content.len() == CONTRIBUTION_SIZE => {
-            println!("download complete.");
-            StateFileAction::Done(content)
-        }
-        _ => {
-            println!("invalid size detected, redownloading...");
-            StateFileAction::Download(0)
-        }
-    };
-    let payload = match action {
-        StateFileAction::Download(start_position) => {
-            let mut response = client
-                .get(current_payload_download_url)
-                .header(RANGE, format!("bytes={}-", start_position))
-                .send()
-                .await?
-                .error_for_status()?;
-            let headers = response.headers();
-            let total_length = start_position
-                + u64::from_str(
-                    headers
-                        .get(CONTENT_LENGTH)
-                        .ok_or(Error::HeaderNotFound(CONTENT_LENGTH.as_str().into()))?
-                        .to_str()?,
-                )? as usize;
-            println!("state file length: {}", total_length);
-            assert!(
-                total_length == CONTRIBUTION_SIZE,
-                "contribution length mismatch."
-            );
-            let mut state_file = tokio::fs::OpenOptions::new()
-                .write(true)
-                .create(false)
-                .open(&state_path)
-                .await?;
-            state_file.set_len(start_position as u64).await?;
-            state_file
-                .seek(SeekFrom::Start(start_position as u64))
-                .await?;
-            let mut i = 0;
-            while let Some(chunk) = response.chunk().await? {
-                if i % 10 == 0 {
-                    println!("eta: chunk {}.", i);
-                }
-                let written = state_file.write(&chunk).await?;
-                assert!(written == chunk.len(), "couldn't write chunk.");
-                state_file.sync_data().await?;
-                i += 1;
-            }
-            println!("download complete");
-            let final_content = tokio::fs::read(&state_path).await?;
-            final_content
-        }
-        StateFileAction::Done(content) => content,
-    };
+    let payload = client
+        .download_payload(&current_payload.id, &current_payload.id)
+        .await?;
     let phase2_contribution = if let Ok(true) = tokio::fs::metadata(&payload_id)
         .await
         .map(|meta| meta.size() as usize == CONTRIBUTION_SIZE)
@@ -197,7 +92,6 @@ async fn contribute(
         .journal_mode(JournalMode::Wal)
         .open()
         .await?;
-
     pool.conn(|conn| {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS resumable_upload (
@@ -223,8 +117,9 @@ async fn contribute(
             }
         })
         .await?;
+    let upload_client = client.new_reqwest_builder()?.build()?;
     if let Some(ref location) = upload_location {
-        if client
+        if upload_client
             .head(location)
             .header("Tus-Resumable", "1.0.0")
             .send()
@@ -232,6 +127,7 @@ async fn contribute(
             .error_for_status()
             .is_err()
         {
+            println!("upload location expired, removing it...");
             upload_location = None;
         }
     }
@@ -245,7 +141,7 @@ async fn contribute(
             // =====================================================
             // https://tus.io/protocols/resumable-upload#creation ==
             // =====================================================
-            let response = client
+            let response = upload_client
                 .post(format!("{SUPABASE_PROJECT}/storage/v1/upload/resumable"))
                 .header("Tus-Resumable", "1.0.0")
                 .header("Upload-Length", CONTRIBUTION_SIZE.to_string())
@@ -292,7 +188,7 @@ async fn contribute(
     // =================================================
     // https://tus.io/protocols/resumable-upload#head ==
     // =================================================
-    let response = client
+    let response = upload_client
         .head(&upload_location)
         .header("Tus-Resumable", "1.0.0")
         .send()
@@ -319,7 +215,7 @@ async fn contribute(
         // ==================================================
         // https://tus.io/protocols/resumable-upload#patch ==
         // ==================================================
-        client
+        upload_client
             .patch(&upload_location)
             .header("Tus-Resumable", "1.0.0")
             .header("Content-Type", "application/offset+octet-stream")

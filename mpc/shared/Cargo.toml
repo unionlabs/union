@@ -6,3 +6,7 @@ version = "0.1.0"
 [dependencies]
 serde     = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
+postgrest         = "1.0"
+reqwest           = { workspace = true, features = ["json"] }
+serde_json        = { workspace = true }
+tokio             = { workspace = true, features = ["full"] }

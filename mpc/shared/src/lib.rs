@@ -1,4 +1,5 @@
 pub mod types;
+pub mod supabase;
 
 use std::ffi::{c_char, c_int};
 
