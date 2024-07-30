@@ -23,7 +23,7 @@
     "plugins": [
       {
         "template": "gql",
-        "name": "@0no-co/graphqlsp",
+        "name": "gql.tada/ts-plugin",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
           "url": "https://noble-pika-27.hasura.app/v1/graphql"

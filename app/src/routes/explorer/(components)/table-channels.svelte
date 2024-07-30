@@ -8,7 +8,7 @@ import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { derived } from "svelte/store"
 import CellOriginChannel from "../(components)/cell-origin-channel.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-import type { UnwrapReadable } from "$lib/types"
+import type { UnwrapReadable } from "$lib/utilities/types"
 
 let channels = createQuery({
   queryKey: ["channels"],

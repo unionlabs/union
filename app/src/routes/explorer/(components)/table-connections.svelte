@@ -9,7 +9,7 @@ import { derived } from "svelte/store"
 import CellOriginConnection from "../(components)/cell-origin-connection.svelte"
 import { raise } from "$lib/utilities"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-import type { UnwrapReadable } from "$lib/types"
+import type { UnwrapReadable } from "$lib/utilities/types.ts"
 
 let connections = createQuery({
   queryKey: ["connections"],

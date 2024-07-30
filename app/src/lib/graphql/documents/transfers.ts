@@ -1,4 +1,72 @@
-import { graphql } from "gql.tada"
+import { graphql } from "../index.ts"
+
+export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
+  query TransfersQueryTimestampFilter(
+    $limit: Int!,
+    $timestamp: timestamptz!
+  ) {
+    newer: v0_transfers(
+      limit: $limit,
+      order_by: [
+        { source_timestamp: asc },
+        { source_transaction_hash: asc }
+      ],
+      where: { source_timestamp: { _gte: $timestamp } },
+    ) {
+      sender
+      source_chain_id
+      source_timestamp
+      source_transaction_hash
+      receiver
+      destination_chain_id
+      destination_timestamp
+      destination_transaction_hash
+      assets
+    }
+    older: v0_transfers(
+      limit: $limit,
+      order_by: [
+        { source_timestamp: desc },
+        { source_transaction_hash: desc }
+      ],
+      where: { source_timestamp: { _lt: $timestamp } },
+    ) {
+      sender
+      source_chain_id
+      source_timestamp
+      source_transaction_hash
+      receiver
+      destination_chain_id
+      destination_timestamp
+      destination_transaction_hash
+      assets
+    }
+  }
+`)
+
+export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
+  query TransfersQuery(
+    $limit: Int! = 8,
+  ) {
+    data: v0_transfers(
+      limit: $limit,
+      order_by: [
+        { source_timestamp: desc },
+        { source_transaction_hash: desc }
+      ],
+    ) {
+      sender
+      source_chain_id
+      source_timestamp
+      source_transaction_hash
+      receiver
+      destination_chain_id
+      destination_timestamp
+      destination_transaction_hash
+      assets
+    }
+  }  
+`)
 
 export const allTransfersQueryDocument = graphql(/* GraphQL */ `
     query AllTransfersQuery @cached(ttl: 5) {

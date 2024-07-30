@@ -14,12 +14,11 @@ import { createQueryClient } from "$lib/query-client.ts"
 import Header from "$lib/components/header/header.svelte"
 import LoadingBar from "$lib/components/loading-bar.svelte"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
-import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 
-const { queryClient, localStoragePersister } = createQueryClient()
+const { queryClient, localStoragePersister, PersistQueryClientProvider } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
 onMount(() => {
@@ -51,13 +50,13 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
     trigger: [
       // easily hide tanstack devtools with ctrl + h
       {
-        key: 'h',
-        modifier: ['ctrl'],
+        key: "h",
+        modifier: ["ctrl"],
         callback: () => {
-          console.info('Hiding tanstack devtools')
-          const tanstackDevtoolsElement = document.querySelector('div.tsqd-transitions-container')
+          console.info("Hiding tanstack devtools")
+          const tanstackDevtoolsElement = document.querySelector("div.tsqd-transitions-container")
           if (!tanstackDevtoolsElement) return
-          tanstackDevtoolsElement.classList.toggle('hidden')
+          tanstackDevtoolsElement.classList.toggle("hidden")
         },
       },
     ],
