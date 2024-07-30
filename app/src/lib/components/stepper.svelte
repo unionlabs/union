@@ -15,7 +15,18 @@ const dispatch = createEventDispatcher()
 
 let stepsUpToError = derived(steps, $steps => {
   let errorIndex = $steps.findIndex(step => step.status === "ERROR" || step.status === "WARNING")
-  return errorIndex === -1 ? $steps : $steps.slice(0, errorIndex + 1)
+  let stepss = errorIndex === -1 ? $steps : $steps.slice(0, errorIndex + 1)
+
+  // patch gaps (see #2544)
+  for (const [index, step] of stepss.entries()) {
+    const gap = stepss.slice(index).find(step => step.status === "COMPLETED") !== undefined
+
+    if (gap && (step.status === "IN_PROGRESS" || step.status === "PENDING")) {
+      stepss[index].status = "COMPLETED"
+    }
+  }
+
+  return stepss
 })
 
 const cancel = () => {
