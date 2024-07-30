@@ -8,42 +8,58 @@ import {
   transfersBeforeOrAtTimestampQueryDocument
 } from "$lib/graphql/documents/transfers.ts"
 import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
+import { raise } from "$lib/utilities"
 
-export async function latestTransfers({ limit = 12 }: { limit?: number } = {}) {
+export interface TransferAddress {
+  chainId: string
+  address: string
+}
+export interface Transfer {
+  source: TransferAddress
+  destination: TransferAddress
+  hash: string
+  timestamp: string
+  assets: Array<any>
+}
+
+export interface PaginatedTransfers {
+  transfers: Array<Transfer>
+  latestTimestamp: string
+  oldestTimestamp: string
+}
+
+export async function latestTransfers({
+  limit = 12
+}: { limit?: number } = {}): Promise<PaginatedTransfers> {
   const { data } = await request(URLS.GRAPHQL, latestTransfersQueryDocument, { limit })
 
   return {
     transfers: data.map(transfer => ({
       source: {
-        chainId: transfer.source_chain_id,
+        chainId: transfer.source_chain_id ?? raise("source_chain_id is null"),
         address: transfer.sender || "unknown"
       },
       destination: {
-        chainId: transfer.destination_chain_id,
+        chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null"),
         address: transfer.receiver || "unknown"
       },
-      timestamp: transfer.source_timestamp,
-      hash: transfer.source_transaction_hash,
+      timestamp: `${transfer.source_timestamp}`,
+      hash: `${transfer.source_transaction_hash}`,
       assets: transfer.assets
     })),
-    latestTimestamp: data.at(0)?.source_timestamp,
-    oldestTimestamp: data.at(-1)?.source_timestamp,
-    hasNewer: false,
-    hasOlder: true
+    latestTimestamp: data.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
+    oldestTimestamp: data.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
   }
 }
 
 export async function paginatedTransfers({
   limit,
   timestamp
-}: { limit: number; timestamp: string }) {
+}: { limit: number; timestamp: string }): Promise<PaginatedTransfers> {
   const { older, newer } = await request(URLS.GRAPHQL, transfersTimestampFilterQueryDocument, {
     limit,
     timestamp
   })
-
-  console.info("older", older.length)
-  console.info("newer", newer.length)
 
   const allTransfers = [...newer.toReversed(), ...older]
   // .sort(
@@ -54,19 +70,19 @@ export async function paginatedTransfers({
   return {
     transfers: allTransfers.map(transfer => ({
       source: {
-        chainId: transfer.source_chain_id,
+        chainId: transfer.source_chain_id ?? raise("source_chain_id is null"),
         address: transfer.sender || "unknown"
       },
       destination: {
-        chainId: transfer.destination_chain_id,
+        chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null"),
         address: transfer.receiver || "unknown"
       },
-      timestamp: transfer.source_timestamp,
-      hash: transfer.source_transaction_hash,
+      timestamp: `${transfer.source_timestamp}`,
+      hash: `${transfer.source_transaction_hash}`,
       assets: transfer.assets
     })),
-    latestTimestamp: newer.at(-1)?.source_timestamp,
-    oldestTimestamp: older.at(-1)?.source_timestamp
+    latestTimestamp: allTransfers.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
+    oldestTimestamp: allTransfers.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
   }
 }
 
@@ -76,7 +92,7 @@ export async function transfersAfterOrAtTimestamp({
 }: {
   limit: number
   timestamp: string
-}) {
+}): Promise<PaginatedTransfers> {
   const { data } = await request(URLS.GRAPHQL, transfersAfterOrAtTimestampQueryDocument, {
     limit,
     timestamp
@@ -87,19 +103,19 @@ export async function transfersAfterOrAtTimestamp({
   return {
     transfers: data.map(transfer => ({
       source: {
-        chainId: transfer.source_chain_id,
+        chainId: transfer.source_chain_id ?? raise("source_chain_id is null"),
         address: transfer.sender || "unknown"
       },
       destination: {
-        chainId: transfer.destination_chain_id,
+        chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null"),
         address: transfer.receiver || "unknown"
       },
-      timestamp: transfer.source_timestamp,
-      hash: transfer.source_transaction_hash,
+      timestamp: `${transfer.source_timestamp}`,
+      hash: `${transfer.source_transaction_hash}`,
       assets: transfer.assets
     })),
-    latestTimestamp: data.at(0)?.source_timestamp,
-    oldestTimestamp: data.at(-1)?.source_timestamp
+    latestTimestamp: data.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
+    oldestTimestamp: data.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
   }
 }
 
@@ -109,7 +125,7 @@ export async function transfersBeforeOrAtTimestamp({
 }: {
   limit: number
   timestamp: string
-}) {
+}): Promise<PaginatedTransfers> {
   const { data } = await request(URLS.GRAPHQL, transfersBeforeOrAtTimestampQueryDocument, {
     limit,
     timestamp
@@ -118,19 +134,19 @@ export async function transfersBeforeOrAtTimestamp({
   return {
     transfers: data.map(transfer => ({
       source: {
-        chainId: transfer.source_chain_id,
+        chainId: transfer.source_chain_id ?? raise("source_chain_id is null"),
         address: transfer.sender || "unknown"
       },
       destination: {
-        chainId: transfer.destination_chain_id,
+        chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null"),
         address: transfer.receiver || "unknown"
       },
-      timestamp: transfer.source_timestamp,
-      hash: transfer.source_transaction_hash,
+      timestamp: `${transfer.source_timestamp}`,
+      hash: `${transfer.source_transaction_hash}`,
       assets: transfer.assets
     })),
-    latestTimestamp: data.at(0)?.source_timestamp,
-    oldestTimestamp: data.at(-1)?.source_timestamp
+    latestTimestamp: data.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
+    oldestTimestamp: data.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
   }
 }
 
