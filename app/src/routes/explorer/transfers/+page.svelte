@@ -239,50 +239,12 @@ onNavigate(navigation => {
 </script>
 
 <DevTools>
-
+  {JSON.stringify(
+    { idx: $pagination.pageIndex, $REFETCH_ENABLED },
+    undefined,
+    2
+  )}
 </DevTools>
-<!-- <div
-  class="flex sm:flex-row flex-col justify-end gap-1 w-full items-end"
-
->
-  <ExplorerPagination
-    rowsPerPage={20}
-    totalTableRows={20}
-    class={cn("w-auto")}
-    status={queryStatus}
-    live={$REFETCH_ENABLED}
-    onOlderPage={async (page) => {
-      const stamp = $timestamps.oldestTimestamp
-      timestamp.set(stamp)
-      goto(encodeTimestampSearchParam(stamp), {
-        replaceState: true,
-        state: { timestamp: stamp }
-      })
-      pagination.update((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))
-      $REFETCH_ENABLED = false
-      CURSOR.update((c) => "ON_OR_BEFORE")
-    }}
-    onCurrentClick={() => {
-      pagination.update((p) => ({ ...p, pageIndex: 0 }))
-      $REFETCH_ENABLED = true
-      goto("/explorer/transfers", { replaceState: true })
-    }}
-    onNewerPage={async (page) => {
-      const stamp = $timestamps.latestTimestamp
-      timestamp.set(stamp)
-      goto(encodeTimestampSearchParam(stamp), {
-        replaceState: true,
-        state: { timestamp: stamp }
-      })
-      pagination.update((p) => ({ ...p, pageIndex: p.pageIndex - 1 }))
-      $REFETCH_ENABLED = false
-      CURSOR.update((c) => "ON_OR_AFTER")
-    }}
-    timestamp={$timestamps.latestTimestamp
-      ? toPrettyDateTimeFormat($timestamps.latestTimestamp, { local: true })
-      : ""}
-  />
-</div> -->
 {#if $transfersDataStore?.length}
   <Card.Root>
     <Table.Root>

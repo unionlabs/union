@@ -15,7 +15,10 @@ export function createCube(
     return window.matchMedia?.("(prefers-color-scheme: dark)").matches
   }
 
-  const createTubeLine = (points, thickness) => {
+  const createTubeLine = (
+    points: Array<THREE.Vector3> | undefined,
+    thickness: number | undefined
+  ) => {
     const path = new THREE.CatmullRomCurve3(points)
     const geometry = new THREE.TubeGeometry(path, 20, thickness, 8, false)
     const material = new THREE.MeshBasicMaterial(
