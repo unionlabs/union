@@ -44,58 +44,6 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
   }
 `)
 
-export const transfersBeforeOrAtTimestampQueryDocument = graphql(/* GraphQL */ `
-  query TransfersBeforeOrAtTimestampQuery(
-    $limit: Int!,
-    $timestamp: timestamptz!
-  ) {
-    data: v0_transfers(
-      limit: $limit,
-      order_by: [
-        { source_timestamp: desc },
-        { source_transaction_hash: desc }
-      ],
-      where: { source_timestamp: { _lte: $timestamp } },
-    ) {
-      sender
-      source_chain_id
-      source_timestamp
-      source_transaction_hash
-      receiver
-      destination_chain_id
-      destination_timestamp
-      destination_transaction_hash
-      assets
-    }
-  }  
-`)
-
-export const transfersAfterOrAtTimestampQueryDocument = graphql(/* GraphQL */ `
-  query TransfersAfterOrAtTimestampQuery(
-    $limit: Int!,
-    $timestamp: timestamptz!
-  ) {
-    data: v0_transfers(
-      limit: $limit,
-      order_by: [
-        { source_timestamp: asc },
-        { source_transaction_hash: asc }
-      ],
-      where: { source_timestamp: { _gte: $timestamp } },
-    ) {
-      sender
-      source_chain_id
-      source_timestamp
-      source_transaction_hash
-      receiver
-      destination_chain_id
-      destination_timestamp
-      destination_transaction_hash
-      assets
-    }
-  }
-`)
-
 export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
   query TransfersQuery(
     $limit: Int! = 8,

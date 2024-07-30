@@ -3,23 +3,36 @@ import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import {
   latestTransfersQueryDocument,
-  transfersTimestampFilterQueryDocument,
-  transfersAfterOrAtTimestampQueryDocument,
-  transfersBeforeOrAtTimestampQueryDocument
+  transfersTimestampFilterQueryDocument
 } from "$lib/graphql/documents/transfers.ts"
+import { raise } from "$lib/utilities/index.ts"
 import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
-import { raise } from "$lib/utilities"
 
 export interface TransferAddress {
   chainId: string
   address: string
 }
+
+export interface TransferAsset {
+  [symbol: string]: {
+    amount: string
+    info: {
+      denom: string
+      chain_id: string
+      decimals: number
+      logo_uri: string | null
+      display_name: string | null
+      display_symbol: string | null
+    }
+  }
+}
+
 export interface Transfer {
   source: TransferAddress
   destination: TransferAddress
   hash: string
   timestamp: string
-  assets: Array<any>
+  assets: TransferAsset
 }
 
 export interface PaginatedTransfers {
@@ -83,70 +96,6 @@ export async function paginatedTransfers({
     })),
     latestTimestamp: allTransfers.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
     oldestTimestamp: allTransfers.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
-  }
-}
-
-export async function transfersAfterOrAtTimestamp({
-  limit,
-  timestamp
-}: {
-  limit: number
-  timestamp: string
-}): Promise<PaginatedTransfers> {
-  const { data } = await request(URLS.GRAPHQL, transfersAfterOrAtTimestampQueryDocument, {
-    limit,
-    timestamp
-  })
-
-  data.reverse()
-
-  return {
-    transfers: data.map(transfer => ({
-      source: {
-        chainId: transfer.source_chain_id ?? raise("source_chain_id is null"),
-        address: transfer.sender || "unknown"
-      },
-      destination: {
-        chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null"),
-        address: transfer.receiver || "unknown"
-      },
-      timestamp: `${transfer.source_timestamp}`,
-      hash: `${transfer.source_transaction_hash}`,
-      assets: transfer.assets
-    })),
-    latestTimestamp: data.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
-    oldestTimestamp: data.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
-  }
-}
-
-export async function transfersBeforeOrAtTimestamp({
-  limit,
-  timestamp
-}: {
-  limit: number
-  timestamp: string
-}): Promise<PaginatedTransfers> {
-  const { data } = await request(URLS.GRAPHQL, transfersBeforeOrAtTimestampQueryDocument, {
-    limit,
-    timestamp
-  })
-
-  return {
-    transfers: data.map(transfer => ({
-      source: {
-        chainId: transfer.source_chain_id ?? raise("source_chain_id is null"),
-        address: transfer.sender || "unknown"
-      },
-      destination: {
-        chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null"),
-        address: transfer.receiver || "unknown"
-      },
-      timestamp: `${transfer.source_timestamp}`,
-      hash: `${transfer.source_transaction_hash}`,
-      assets: transfer.assets
-    })),
-    latestTimestamp: data.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
-    oldestTimestamp: data.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
   }
 }
 
