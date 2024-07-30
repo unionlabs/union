@@ -1,5 +1,4 @@
 ---
-import { Image } from "astro:assets"
 import Layout from "#/layouts/Layout.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import LanderSection from "#/components/LanderSection.astro"
@@ -48,10 +47,6 @@ const entryId = blogPost.sys.id
 // @ts-expect-error
 const coverFields = blogPost.fields.cover.fields
 const imageUrl = imageWithProtocol(coverFields.file.url)
-const { width, height } = coverFields.file.details.image as {
-  width: number
-  height: number
-}
 ---
 
 <Layout
@@ -94,11 +89,11 @@ const { width, height } = coverFields.file.details.image as {
       </div>
       <img
         class="my-3"
-        src={`${imageUrl}?fit=fill&f=center&fm=avif&w=1344&h=706`}
         loading="eager"
         alt={coverFields.title}
         data-contentful-field-id="cover"
         data-contentful-entry-id={entryId}
+        src={`${imageUrl}?fit=fill&f=center&fm=avif&w=1344&h=706`}
         {...ContentfulLivePreview.getProps({ entryId, fieldId: "cover" })}
       />
       <p>
@@ -126,11 +121,10 @@ const { width, height } = coverFields.file.details.image as {
 </Layout>
 
 <script>
+  import * as contentful from "contentful"
   import { ContentfulLivePreview } from "@contentful/live-preview"
-  import { BLOCKS, INLINES, MARKS } from "@contentful/rich-text-types"
   import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
-  // @ts-expect-error
-  import * as contentful from "node_modules/contentful/dist/contentful.browser.min.js"
+  import { BLOCKS, INLINES, MARKS, type Document } from "@contentful/rich-text-types"
 
   type ConfigOptions = {
     locale: string
@@ -141,7 +135,6 @@ const { width, height } = coverFields.file.details.image as {
   }
 
   const subscriptions: Array<VoidFunction> = []
-  console.info("[initializeContentfulLivePreview]", subscriptions)
 
   document.addEventListener("DOMContentLoaded", () => {
     const emElement = document.querySelector("h1[data-contentful-entry-id]")
@@ -187,9 +180,7 @@ const { width, height } = coverFields.file.details.image as {
 
     contentfulClient
       .getEntry(entryId)
-      // @ts-expect-error
       .then((entry) => {
-        console.info("[initializeContentfulLivePreview.contentful]", entry)
         fields.forEach((fieldId) => {
           displayFieldData({ entry, fieldId, entryId })
           setupLivePreview({ entry, fieldId, entryId })
@@ -223,7 +214,9 @@ const { width, height } = coverFields.file.details.image as {
         console.info(updatedData.fields[fieldId].nodeType)
         // Check if the content is rich text
         if (updatedData.fields[fieldId].nodeType === "document") {
-          domElement.innerHTML = documentToHtmlString(entry.fields[fieldId], {
+          const document = updatedData.fields[fieldId]
+          if (!document) return
+          domElement.innerHTML = documentToHtmlString(document, {
             preserveWhitespace: true,
             renderMark: {
               [MARKS["ITALIC"]]: (text) => `<em>${text}</em>`,
@@ -326,11 +319,18 @@ const { width, height } = coverFields.file.details.image as {
 
     if (typeof document === "undefined") return
 
-    if (typeof entry.fields[fieldId] === "string") {
-      domElement.textContent = entry.fields[fieldId]
+    const field = entry.fields[fieldId]
+    if (!field) {
+      console.error(
+        `Field with ID "${fieldId}" not found in entry with ID "${entryId}".`
+      )
+      return
     }
-    if (entry.fields[fieldId]?.nodeType === "document") {
-      domElement.innerHTML = documentToHtmlString(entry.fields[fieldId], {
+    if (typeof field === "string") {
+      domElement.textContent = field
+    }
+    if ((field as Document)?.nodeType === "document") { 
+      domElement.innerHTML = documentToHtmlString(field as Document, {
         preserveWhitespace: true,
         renderMark: {
           [MARKS["ITALIC"]]: (text) => `<em>${text}</em>`,
