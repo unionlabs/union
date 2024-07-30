@@ -34,7 +34,7 @@ export { className as class }
   count={totalTableRows}
 >
   <Pagination.Content
-    class="py-2 text-md uppercase font-supermolot w-full flex gap-x-1"
+    class="py-2 text-sm uppercase font-supermolot w-full flex gap-x-1"
   >
     <div class={cn("flex flex-row uppercase")}>
       <Button
@@ -63,19 +63,20 @@ export { className as class }
           onNewerPage(Number(currentPage) - 1)
         }}
         class={cn(
+          "text-sm",
           status === "pending" || newerDisabled
             ? "cursor-not-allowed disabled"
             : ""
         )}
       >
         <ChevronLeft class="size-6" />
-        <span class="text-md uppercase font-supermolot">
+        <span class="text-sm uppercase font-supermolot">
           {live ? "newest" : "Newer"}
         </span>
       </Pagination.PrevButton>
     </Pagination.Item>
     <Label class="w-full">
-      <time class="font-normal text-md uppercase font-mono my-auto w-full">
+      <time class="font-normal text-sm uppercase font-mono my-auto w-full">
         {timestamp}
       </time>
     </Label>
@@ -86,10 +87,11 @@ export { className as class }
           onOlderPage(Number(currentPage) + 1)
         }}
         class={cn(
+          "pr-0",
           status === "pending" || olderDisabled ? "cursor-not-allowed" : ""
         )}
       >
-        <span class="text-md uppercase font-supermolot">Older</span>
+        <span class="text-sm uppercase font-supermolot">Older</span>
         <ChevronRight class="size-6" />
       </Pagination.NextButton>
     </Pagination.Item>
