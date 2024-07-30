@@ -1,6 +1,4 @@
 <script lang="ts">
-import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
-import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 import { URLS } from "$lib/constants"
 import request from "graphql-request"
 import { cn } from "$lib/utilities/shadcn.ts"
@@ -16,6 +14,8 @@ import { derived, writable, type Writable } from "svelte/store"
 import { dydxFaucetMutation } from "$lib/graphql/documents/faucet"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
+import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
+import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 
 type DydxFaucetState = DiscriminatedUnion<
   "kind",
@@ -91,7 +91,9 @@ const requestDydxFromFaucet = async () => {
         console.error(result.dydx_faucet.send)
         dydxFaucetState.set({
           kind: "RESULT_ERR",
-          error: "Error from faucet"
+          error: result.dydx_faucet.send.endsWith("ratelimited")
+            ? "You already got adv4tnt from the faucet today. Try again in 24 hours."
+            : "Error from faucet"
         })
         return
       }
@@ -210,7 +212,7 @@ let dydxBalance = createQuery(
                   name="dydx-wallet-address"
                   class={cn(
                     "bg-[#2D2D44] text-[#ffffff] dark:bg-[#181825] dark:text-[#ffffff]",
-                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
+                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0"
                   )}
                   pattern={createCosmosSdkAddressRegex({ prefix: "dydx" })
                     .source}
