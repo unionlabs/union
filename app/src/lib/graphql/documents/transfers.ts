@@ -68,28 +68,6 @@ export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
   }  
 `)
 
-export const allTransfersQueryDocument = graphql(/* GraphQL */ `
-    query AllTransfersQuery @cached(ttl: 5) {
-    v0_transfers(limit: 25, order_by: {source_timestamp: desc}) {
-      sender
-      source_chain_id
-      source_transaction_hash
-      receiver
-      destination_chain_id
-      assets
-      source_timestamp
-      forwards_2 {
-        chain {
-          chain_id
-        }
-        port
-        channel
-        receiver
-      }
-    }
-  }
-`)
-
 export const userTransfersQueryDocument = graphql(/* Graphql */ `
   query UserTransfersQuery($addr1: String!, $addr2: String!) @cached(ttl: 1) {
     v0_transfers(limit: 500, order_by: {source_timestamp: desc}, where: 

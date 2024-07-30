@@ -75,10 +75,6 @@ export async function paginatedTransfers({
   })
 
   const allTransfers = [...newer.toReversed(), ...older]
-  // .sort(
-  //   // @ts-expect-error
-  //   (a, b) => new Date(b.source_timestamp) - new Date(a.source_timestamp)
-  // )
 
   return {
     transfers: allTransfers.map(transfer => ({

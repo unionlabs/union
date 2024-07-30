@@ -10,14 +10,3 @@ export const cosmosBlocksQuery = graphql(/* GraphQL */ `
     }
   }
 `)
-
-export const cosmosBlocksSubscription = graphql(/* GraphQL */ `
-  subscription CosmosBlocksSubscription($limit: Int = 10) {
-    data: v0_blocks(order_by: { time: desc }, limit: $limit) {
-      chain_id
-      hash
-      height
-      time
-    }
-  }
-`)
