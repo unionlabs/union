@@ -161,6 +161,8 @@ let dydxBalance = createQuery(
     {#if $dydxFaucetState.kind === "RESULT_OK"}
       <p>
         Tokens sent: <a
+          target="_blank"
+          rel="noopener noreferrer"
           href={`https://www.mintscan.io/dydx-testnet/tx/${$dydxFaucetState.message}`}
         >
           <Truncate
