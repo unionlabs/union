@@ -2,7 +2,10 @@ use std::{ffi::OsString, fmt, fs::read_to_string, time::Duration};
 
 use async_graphql::{http::GraphiQLSource, *};
 use async_graphql_axum::GraphQL;
-use async_sqlite::{rusqlite::params, JournalMode, Pool, PoolBuilder};
+use async_sqlite::{
+    rusqlite::{params, OptionalExtension},
+    JournalMode, Pool, PoolBuilder,
+};
 use axum::{
     response::{self, IntoResponse},
     routing::get,
@@ -11,7 +14,7 @@ use axum::{
 use chain_utils::cosmos_sdk::{
     BroadcastTxCommitError, CosmosSdkChainExt, CosmosSdkChainRpcs, GasConfig,
 };
-use chrono::Utc;
+use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
@@ -20,6 +23,8 @@ use tokio::net::TcpListener;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
 use unionlabs::{hash::H256, signer::CosmosSigner, ErrorReporter};
+
+const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -80,14 +85,20 @@ async fn main() {
             .into_inner()
             .bech32_prefix;
 
-    let schema = Schema::build(Query, Mutation, EmptySubscription)
-        .data(pool.clone())
-        .data(MaxRequestPolls(config.max_request_polls))
-        .data(Bech32Prefix(prefix))
-        .data(config.bypass_secret.clone().map(CaptchaBypassSecret))
-        .data(MaxPaginatedResponses(max_paginated_responses))
-        .data(secret)
-        .finish();
+    let schema = Schema::build(
+        Query,
+        Mutation {
+            ratelimit_seconds: config.ratelimit_seconds,
+        },
+        EmptySubscription,
+    )
+    .data(pool.clone())
+    .data(MaxRequestPolls(config.max_request_polls))
+    .data(Bech32Prefix(prefix))
+    .data(config.bypass_secret.clone().map(CaptchaBypassSecret))
+    .data(MaxPaginatedResponses(max_paginated_responses))
+    .data(secret)
+    .finish();
 
     info!("spawning worker");
     let config = config.clone();
@@ -263,6 +274,8 @@ pub struct Config {
     pub amount: u64,
     pub max_request_polls: u32,
     pub memo: String,
+    #[serde(default)]
+    pub ratelimit_seconds: u32,
 }
 
 pub struct MaxRequestPolls(pub u32);
@@ -394,7 +407,10 @@ impl DripClient {
     }
 }
 
-struct Mutation;
+struct Mutation {
+    ratelimit_seconds: u32,
+}
+
 #[derive(Debug)]
 pub struct CaptchaSecret(pub String);
 
@@ -437,6 +453,47 @@ impl Mutation {
         };
 
         let db = ctx.data::<Pool>().unwrap();
+
+        let last_request_ts: Option<String> = db
+            .conn({
+                let to_address = to_address.clone();
+                move |conn| {
+                    let mut stmt = conn.prepare_cached(
+                        "select time from requests where address = ? order by id desc limit 1",
+                    )?;
+                    let id = stmt.query_row([&to_address], |row| row.get(0)).optional()?;
+                    Ok(id)
+                }
+            })
+            .await?;
+
+        match last_request_ts {
+            Some(ts) => {
+                let ts = NaiveDateTime::parse_from_str(&ts, DATETIME_FORMAT)
+                    .expect("invalid datetime present in database");
+
+                let now = Utc::now().naive_utc();
+
+                let delta = now - ts;
+                if delta.num_seconds() < 0 {
+                    error!(%now, %ts, %delta, "timestamp in the future?");
+                }
+                if delta.num_seconds() < self.ratelimit_seconds.into() {
+                    info!(
+                        %to_address,
+                        %delta,
+                        ratelimit_seconds = %self.ratelimit_seconds,
+                        "ratelimited"
+                    );
+
+                    return Ok("ERROR: ratelimited".to_string());
+                }
+            }
+            None => {
+                info!(%to_address, "new user");
+            }
+        }
+
         let id: i64 = db
             .conn(move |conn| {
                 let mut stmt = conn.prepare_cached(
@@ -496,12 +553,8 @@ impl Query {
         let db = ctx.data::<Pool>().unwrap();
         let max_paginated_responses = ctx.data::<MaxPaginatedResponses>().unwrap().0;
         let limit = limit.unwrap_or(10).min(max_paginated_responses);
-        let offset_time = offset_time.unwrap_or_else(|| {
-            Utc::now()
-                .naive_utc()
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string()
-        });
+        let offset_time = offset_time
+            .unwrap_or_else(|| Utc::now().naive_utc().format(DATETIME_FORMAT).to_string());
         let requests: Vec<Request> = db
             .conn(move |conn| {
                 let mut stmt = conn.prepare(
@@ -540,12 +593,8 @@ impl Query {
         let db = ctx.data::<Pool>().unwrap();
         let max_paginated_responses = ctx.data::<MaxPaginatedResponses>().unwrap().0;
         let limit = limit.unwrap_or(10).min(max_paginated_responses);
-        let offset_time = offset_time.unwrap_or_else(|| {
-            Utc::now()
-                .naive_utc()
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string()
-        });
+        let offset_time = offset_time
+            .unwrap_or_else(|| Utc::now().naive_utc().format(DATETIME_FORMAT).to_string());
         let requests: Vec<Request> = db
             .conn(move |conn| {
                 let mut stmt = conn.prepare(
@@ -582,12 +631,8 @@ impl Query {
         let db = ctx.data::<Pool>().unwrap();
         let max_paginated_responses = ctx.data::<MaxPaginatedResponses>().unwrap().0;
         let limit = limit.unwrap_or(10).min(max_paginated_responses);
-        let offset_time = offset_time.unwrap_or_else(|| {
-            Utc::now()
-                .naive_utc()
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string()
-        });
+        let offset_time = offset_time
+            .unwrap_or_else(|| Utc::now().naive_utc().format(DATETIME_FORMAT).to_string());
         let requests: Vec<Request> = db
             .conn(move |conn| {
                 let mut stmt = conn.prepare(
