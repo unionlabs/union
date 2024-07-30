@@ -39,7 +39,7 @@ import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/util
  * the timestamp is the source of trust, used as query key and url search param
  */
 
-const QUERY_LIMIT = 8
+const QUERY_LIMIT = 15
 const REFRESH_INTERVAL = 5_000 // 5 seconds
 
 // minus 1 to account for the 0-based index
@@ -48,18 +48,10 @@ let timestamp = writable(
     ? decodeTimestampSearchParam(`${$page.url.searchParams.get("timestamp")}`)
     : currentUtcTimestampWithBuffer()
 )
-// $: console.info($timestamp)
 
 let CURSOR: Writable<"ON_OR_BEFORE" | "ON_OR_AFTER"> = writable("ON_OR_BEFORE")
 let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
 
-// CURSOR.subscribe(value => {
-//   if (value === 'ON_OR_AFTER') {
-//     pagination.update(p => ({ ...p, pageIndex: 0 }))
-//   } else {
-//     pagination.update(p => ({ ...p, pageIndex: 0 }))
-//   }
-// })
 const queryClient = useQueryClient()
 
 /**
@@ -145,21 +137,6 @@ let timestamps = derived(
         }
 )
 
-// const unsubscribeTimestamps = timestamps.subscribe(value => {
-//   if ($REFETCH_ENABLED) return
-//   if (value.latestTimestamp) {
-//     goto(encodeTimestampSearchParam(value.latestTimestamp), {
-//       noScroll: true,
-//       keepFocus: true,
-//       replaceState: true,
-//     })
-//   }
-// })
-// const unsubscribeTimestamp = timestamp.subscribe(value => {
-//   if($page.url.searchParams.has('timestamp')) return
-//   goto(encodeTimestampSearchParam(value))
-// })
-
 let chains = chainsQuery()
 let chainsRecord = derived(chains, $chains => {
   if (!$chains?.data) return {}
@@ -219,8 +196,10 @@ const columns: Array<ColumnDef<DataRow>> = [
     size: 200,
     minSize: 200,
     maxSize: 200,
-    // @ts-ignore
-    cell: info => toPrettyDateTimeFormat(info.getValue(), { local: true })
+    cell: info => {
+      // @ts-ignore
+      return toPrettyDateTimeFormat(info.getValue(), { local: true })
+    }
   }
 ]
 
@@ -266,8 +245,8 @@ function hasInfoProperty(assets: Object) {
 $: if ($transfersDataStore) rerender()
 
 onDestroy(() => {
-  // unsubscribeTimestamp()
-  // unsubscribeTimestamps()
+  // console.info("unsubscribing")
+  // unsubscribe()
 })
 
 /**
@@ -282,7 +261,7 @@ onNavigate(navigation => {
 </script>
 
 <DevTools>
-  <pre>{JSON.stringify(
+  <!-- <pre>{JSON.stringify(
       {
         idx: $pagination.pageIndex,
         $REFETCH_ENABLED,
@@ -294,7 +273,7 @@ onNavigate(navigation => {
       },
       undefined,
       2
-    )}</pre>
+    )}</pre> -->
 </DevTools>
 {#if $transfersDataStore?.length}
   <Card.Root>
@@ -393,7 +372,7 @@ onNavigate(navigation => {
     class="font-normal text-md uppercase font-mono w-full my-auto sm:text-left text-center"
   >
     {$timestamps.latestTimestamp
-      ? toPrettyDateTimeFormat($timestamps.latestTimestamp)
+      ? toPrettyDateTimeFormat($timestamps.latestTimestamp, { local: true })
       : ""}
   </time>
 </div>

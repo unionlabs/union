@@ -83,7 +83,7 @@ export const transfersAfterOrAtTimestampQueryDocument = graphql(/* GraphQL */ `
         { source_timestamp: asc },
         { source_transaction_hash: asc }
       ],
-      where: { source_timestamp: { _gt: $timestamp } },
+      where: { source_timestamp: { _gte: $timestamp } },
     ) {
       sender
       source_chain_id

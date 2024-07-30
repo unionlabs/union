@@ -44,7 +44,14 @@ export const currentUtcTimestampWithBuffer = ({
 // yyyy-mm-dd hh:mm:ss
 export function toPrettyDateTimeFormat(timestamp: string, { local = false } = {}) {
   const date = new Date(timestamp)
-  return date.toISOString().replaceAll("T", " ").split(".").at(0)
+  return new Intl.DateTimeFormat("en-CA", {
+    hour12: false,
+    dateStyle: "short",
+    timeStyle: "medium",
+    timeZone: local ? undefined : "UTC"
+  })
+    .format(date)
+    .replaceAll(",", "")
 }
 
 // https://stackoverflow.com/a/17415677

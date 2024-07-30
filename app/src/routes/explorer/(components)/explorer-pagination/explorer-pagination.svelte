@@ -50,8 +50,6 @@ export { className as class }
           size="sm"
           variant="default"
           on:click={event => {
-            // event.preventDefault()
-            // event.stopPropagation()
             onCurrentClick()
           }}
           title="Go to the first page"
@@ -69,8 +67,6 @@ export { className as class }
       <Pagination.NextButton
         disabled={status === 'pending' || olderDisabled}
         on:click={event => {
-          // event.preventDefault()
-          // event.stopPropagation()
           onOlderPage(Number(currentPage) + 1)
         }}
         class={cn(status === 'pending' || olderDisabled ? 'cursor-not-allowed' : '')}
