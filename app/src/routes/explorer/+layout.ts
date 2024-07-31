@@ -1,12 +1,8 @@
 import type { LayoutLoad } from "./$types.ts"
 import { getCurrentISODateTime } from "$lib/utilities/date.ts"
-// @ts-expect-error
 import IndexIcon from "$lib/components/union-icons/color/icon-index-color.svelte"
-// @ts-expect-error
 import ChannelsIcon from "$lib/components/union-icons/color/icon-channel-color.svelte"
-// @ts-expect-error
 import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
-// @ts-expect-error
 import ConnectionIcon from "$lib/components/union-icons/color/icon-connection-color.svelte"
 
 const tables = [

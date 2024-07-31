@@ -4,6 +4,8 @@ import type { LayoutLoad } from "./$types.ts"
 import { sepoliaStore } from "$lib/wallet/evm/config.ts"
 import { cosmosStore } from "$lib/wallet/cosmos/config.ts"
 
+export const prerender = true
+
 const addressExplorerPagePath = "/explorer/address"
 
 export const load = (loadEvent => {
