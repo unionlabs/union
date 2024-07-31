@@ -1,5 +1,5 @@
 <script lang="ts">
-import GripVertical from "lucide-svelte/icons/grip-vertical"
+import GripVertical from "virtual:icons/lucide/grip-vertical"
 import * as ResizablePrimitive from "paneforge"
 import { cn } from "$lib/utilities/shadcn.js"
 
