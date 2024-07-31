@@ -78,7 +78,7 @@
 
         src = builtins.fetchGit {
           url = "https://github.com/aeryz/aptos-core";
-          ref = "main";
+          ref = "movement";
           rev = version;
         };
 
