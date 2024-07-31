@@ -9,19 +9,20 @@ export const cosmosWalletsInformation = [
     id: "leap",
     name: "leap",
     icon: "https://assets.leapwallet.io/logos/leap-cosmos-logo.svg",
-    download: "https://www.leapwallet.io/download"
+    // https://git-union69.web.val.run/app.union.build?svg=union.build/logo.svg&url=leapcosmoswallet.page.link/M3BmzUK5RRPsNyBe9?d=1
+    deepLink: "https://leapcosmoswallet.page.link/rXtQWTw1fSRuQCeZ8?d=1",
+    download: "https://leapwallet.io/download"
   },
   {
     id: "keplr",
     name: "keplr",
     icon: "https://assets-global.website-files.com/63eb7ddf41cf5b1c8fdfbc74/63fc1eaf76d6a3bd547b017c_Keplr_icon_ver.1.3_2.svg",
-    download: "https://www.keplr.app/download"
+    deepLink: "",
+    download: "https://keplr.app/download"
   }
 ] as const
 
 export type CosmosWalletId = (typeof cosmosWalletsInformation)[number]["id"]
-
-const stored = localStorage.getItem("cosmos-config") || "{}"
 
 function createCosmosStore(
   previousState: ChainWalletStore<"cosmos"> = {
@@ -48,7 +49,8 @@ function createCosmosStore(
       const walletApi = window[walletId]
       if (!walletApi) {
         const walletInfo = cosmosWalletsInformation.find(wallet => wallet.id === walletId)
-        if (walletInfo) window.open(walletInfo?.download, "_blank", "noopener noreferrer")
+        if (walletInfo)
+          window.open(walletInfo?.deepLink || walletInfo?.download, "_blank", "noopener noreferrer")
         return update(v => ({ ...v, connectionStatus: "disconnected" }))
       }
       const chainInfoMap = {

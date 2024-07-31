@@ -1,5 +1,19 @@
 import type { Address } from "viem"
 
+export interface TransferAsset {
+  [symbol: string]: {
+    amount: string
+    info: {
+      denom: string
+      chain_id: string
+      decimals: number
+      logo_uri: string | null
+      display_name: string | null
+      display_symbol: string | null
+    }
+  }
+}
+
 export type UserAddresses = {
   cosmos: UserAddressCosmos | null
   evm: UserAddressEvm | null

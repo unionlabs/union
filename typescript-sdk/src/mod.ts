@@ -52,6 +52,8 @@ export {
   pfm
 }
 
+export type * from "./types.ts"
+
 export interface EvmClientParameters extends WalletClientConfig {}
 
 export interface CosmosClientParameters {

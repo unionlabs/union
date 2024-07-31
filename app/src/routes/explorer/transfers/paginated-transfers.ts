@@ -6,25 +6,12 @@ import {
   transfersTimestampFilterQueryDocument
 } from "$lib/graphql/documents/transfers.ts"
 import { raise } from "$lib/utilities/index.ts"
+import type { TransferAsset } from "$lib/types.ts"
 import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 
 export interface TransferAddress {
   chainId: string
   address: string
-}
-
-export interface TransferAsset {
-  [symbol: string]: {
-    amount: string
-    info: {
-      denom: string
-      chain_id: string
-      decimals: number
-      logo_uri: string | null
-      display_name: string | null
-      display_symbol: string | null
-    }
-  }
 }
 
 export interface Transfer {

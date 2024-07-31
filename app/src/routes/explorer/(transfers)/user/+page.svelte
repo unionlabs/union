@@ -4,41 +4,42 @@ import {
   type ColumnDef,
   getCoreRowModel,
   type CellContext,
-  type TableOptions,
   createSvelteTable,
+  type TableOptions,
   getFilteredRowModel,
   getPaginationRowModel
 } from "@tanstack/svelte-table"
+import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
+import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import {
-  latestTransfers,
   paginatedTransfers,
   type TransferAddress,
+  latestAddressTransfers,
   decodeTimestampSearchParam,
   encodeTimestampSearchParam
 } from "./paginated-transfers.ts"
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { derived, writable } from "svelte/store"
 import * as Table from "$lib/components/ui/table"
 import { goto, onNavigate } from "$app/navigation"
 import { showUnsupported } from "$lib/stores/user.ts"
 import DevTools from "$lib/components/dev-tools.svelte"
-import type { Chain, TransferAsset } from "$lib/types.ts"
+import { sepoliaStore } from "$lib/wallet/evm/config.ts"
 import * as Card from "$lib/components/ui/card/index.ts"
-import CellAssets from "../(components)/cell-assets.svelte"
+import type { Chain, TransferAsset } from "$lib/types.ts"
+import { cosmosStore } from "$lib/wallet/cosmos/config.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
-import { derived, writable, type Writable } from "svelte/store"
-import CellOriginTransfer from "../(components)/cell-origin-transfer.svelte"
-import { ExplorerPagination } from "../(components)/explorer-pagination/index.ts"
-import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
-import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
+import CellAssets from "../../(components)/cell-assets.svelte"
+import CellTooltipIcon from "../../(components)/cell-icon-tooltip.svelte"
+import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
+import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
 
-/**
- * the timestamp is the source of truth, used as query key and url search param
- */
+// export let data: LayoutData
 
-const QUERY_LIMIT = 30
+const QUERY_LIMIT = 10
 const REFRESH_INTERVAL = 5_000 // 5 seconds
 
 let timestamp = writable(
@@ -58,33 +59,47 @@ const queryClient = useQueryClient()
  */
 let REFETCH_ENABLED = writable($page.url.searchParams.has("timestamp") ? false : true)
 
+// let addresses = data.addressArray.filter(Boolean)
+// const [addressOne, addressTwo] = data.addressArray
+let addresses = derived([sepoliaStore, cosmosStore], ([$sepoliaStore, $cosmosStore]) =>
+  [$sepoliaStore.address?.toLowerCase(), $cosmosStore.address?.toLowerCase()].filter(Boolean)
+)
+
 let liveTransfers = createQuery(
-  derived(REFETCH_ENABLED, $REFETCH_ENABLED => ({
-    queryKey: ["transfers", "live"],
+  derived([REFETCH_ENABLED, addresses], ([$REFETCH_ENABLED, $addresses]) => ({
+    queryKey: ["user-transfers", "live"],
     staleTime: Number.POSITIVE_INFINITY,
     enabled: $REFETCH_ENABLED,
     refetchOnMount: $REFETCH_ENABLED,
     placeholderData: keepPreviousData,
     refetchOnReconnect: $REFETCH_ENABLED,
     refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
-    queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT * 2 })
+    queryFn: async () =>
+      await latestAddressTransfers({
+        limit: QUERY_LIMIT,
+        addresses: $addresses
+      })
   }))
 )
 
 let transfers = createQuery(
-  derived([timestamp, REFETCH_ENABLED], ([$timestamp, $REFETCH_ENABLED]) => ({
-    queryKey: ["transfers", $timestamp],
-    staleTime: Number.POSITIVE_INFINITY,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    enabled: () => $REFETCH_ENABLED === false,
-    placeholderData: keepPreviousData,
-    queryFn: async () =>
-      await paginatedTransfers({
-        timestamp: $timestamp,
-        limit: QUERY_LIMIT
-      })
-  }))
+  derived(
+    [timestamp, addresses, REFETCH_ENABLED],
+    ([$timestamp, $addresses, $REFETCH_ENABLED]) => ({
+      queryKey: ["user-transfers", $timestamp],
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      placeholderData: keepPreviousData,
+      staleTime: Number.POSITIVE_INFINITY,
+      enabled: () => $REFETCH_ENABLED === false,
+      queryFn: async () =>
+        await paginatedTransfers({
+          limit: QUERY_LIMIT,
+          addresses: $addresses,
+          timestamp: $timestamp
+        })
+    })
+  )
 )
 
 let queryStatus: "pending" | "done" = $REFETCH_ENABLED
@@ -126,13 +141,47 @@ let timestamps = derived(
         }
 )
 
-const columns: Array<ColumnDef<DataRow, TransferAddress>> = [
+const columnDefaults = {
+  size: 200,
+  minSize: 200,
+  maxSize: 200
+}
+
+const columns: Array<ColumnDef<DataRow>> = [
+  {
+    size: 100,
+    minSize: 20,
+    maxSize: 100,
+
+    accessorKey: "hash",
+    header: _ => "Tx Hash",
+    accessorFn: (originalRow, _index) => originalRow.hash,
+    cell: info => {
+      const destinationRecord =
+        !info.row.original.destination.hash || info.row.original.destination.hash === "unknown"
+          ? undefined
+          : {
+              truncateSize: 12,
+              index: info.row.index,
+              label: "Destination Tx",
+              hash: info.row.original.destination.hash
+            }
+      return flexRender(CellTooltipIcon, {
+        records: [
+          {
+            truncateSize: 14,
+            label: "Source Tx",
+            hash: info.getValue(),
+            index: info.row.index
+          },
+          destinationRecord
+        ].filter(Boolean)
+      })
+    }
+  },
   {
     accessorKey: "source",
     header: () => "Source",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
     accessorFn: (originalRow, _index) => originalRow.source,
     cell: _info => {
       const info = _info as CellContext<DataRow, TransferAddress> & {
@@ -152,9 +201,6 @@ const columns: Array<ColumnDef<DataRow, TransferAddress>> = [
   {
     accessorKey: "destination",
     header: () => "Destination",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
     accessorFn: (originalRow, _index) => originalRow.destination,
     cell: _info => {
       const info = _info as CellContext<DataRow, TransferAddress> & {
@@ -174,17 +220,11 @@ const columns: Array<ColumnDef<DataRow, TransferAddress>> = [
   {
     accessorKey: "assets",
     header: () => "Asset",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
     cell: info => flexRender(CellAssets, { value: info.getValue() })
   },
   {
-    accessorKey: "timestamp",
     header: () => "Time",
-    size: 200,
-    minSize: 200,
-    maxSize: 200,
+    accessorKey: "timestamp",
     // @ts-expect-error
     cell: info => toPrettyDateTimeFormat(info.getValue(), { local: true })
   }
@@ -199,19 +239,22 @@ const options = writable<TableOptions<DataRow>>({
   autoResetPageIndex: true,
   enableColumnFilters: true,
   enableColumnResizing: true,
+  columnResizeMode: "onChange",
   enableMultiRowSelection: true,
   getCoreRowModel: getCoreRowModel(),
   rowCount: $transfersDataStore?.length,
   getFilteredRowModel: getFilteredRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
+  defaultColumn: { size: 200, minSize: 200, maxSize: 200 },
   state: { pagination: $pagination },
-  debugTable: import.meta.env.MODE === "development" && import.meta.env.DEBUG_TABLE === "true"
+  debugAll: import.meta.env.MODE === "development" && import.meta.env.DEBUG_TABLE === "true"
 })
 
 const rerender = () => {
   options.update(options => ({
     ...options,
-    data: $transfersDataStore
+    data: $transfersDataStore,
+    debugAll: import.meta.env.DEBUG_ALL === "true"
   }))
 }
 
@@ -230,86 +273,16 @@ $: if ($transfersDataStore) rerender()
  * it is only used to clear the cache when navigating away from the page `/explorer/transfers`
  */
 onNavigate(navigation => {
-  if (navigation.to?.route.id !== "/explorer/transfers") {
-    queryClient.removeQueries({ queryKey: ["transfers"] })
-  }
+  // if (navigation.to?.route.id !== "/explorer/user") {
+  //   queryClient.removeQueries({ queryKey: ["user-transfers"] })
+  // }
 })
 </script>
 
 <DevTools>
-  {JSON.stringify(
-    { idx: $pagination.pageIndex, $REFETCH_ENABLED },
-    undefined,
-    2
-  )}
 </DevTools>
-{#if $transfersDataStore?.length}
-  <Card.Root>
-    <Table.Root>
-      <Table.Header class="tabular-nums">
-        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row class="tabular-nums">
-            {#each headerGroup.headers as header (header.id)}
-              <Table.Head
-                colspan={header.colSpan}
-                rowspan={header.rowSpan}
-                class={cn(`whitespace-nowrap tabular-nums`)}
-              >
-                <svelte:component
-                  this={flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                />
-              </Table.Head>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Header>
-      <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
-        {#each $table.getRowModel().rows as row, index (row.index)}
-          {@const isSupported = assetHasInfoProperty(
-            $rows[row.index]?.original?.assets
-          )}
-          {@const showUnsupported = $showUnsupported}
-          {@const shouldShow = isSupported || showUnsupported}
-          <Table.Row
-            class={cn(
-              "cursor-pointer tabular-nums",
-              index % 2 === 0 ? "bg-secondary/10" : "bg-transparent",
-              isSupported ? "" : "opacity-50",
-              shouldShow ? "" : "hidden"
-            )}
-          >
-            {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              {@const hash = $rows[row.index].original.hash}
-              <Table.Cell class="tabular-nums" headers="header">
-                <a
-                  title={hash}
-                  href={`/explorer/transfers/${hash}`}
-                  class="size-full min-size-full w-full"
-                >
-                  <ChainsGate let:chains>
-                    <svelte:component
-                      this={flexRender(cell.column.columnDef.cell, {
-                        ...cell.getContext(),
-                        chains
-                      })}
-                    />
-                  </ChainsGate>
-                </a>
-              </Table.Cell>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Body>
-    </Table.Root>
-  </Card.Root>
-{:else if queryStatus === "pending"}
-  <LoadingLogo class="size-16" />
-{/if}
 <div
-  class="flex sm:justify-start sm:flex-row flex-col justify-center gap-1 w-full"
+  class="flex sm:justify-end sm:flex-row flex-col justify-end items-end gap-1 w-full"
 >
   <ExplorerPagination
     rowsPerPage={20}
@@ -347,3 +320,69 @@ onNavigate(navigation => {
       : ""}
   />
 </div>
+{#if $transfersDataStore?.length}
+  <Card.Root>
+    <Table.Root>
+      <Table.Header class="tabular-nums">
+        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
+          <Table.Row class="tabular-nums">
+            {#each headerGroup.headers as header, index (header.id)}
+              <Table.Head
+                colspan={header.colSpan}
+                class={cn(
+                  index === 0 ? "pl-5" : "",
+                  `w-[${header.getSize()}px]`,
+                  "whitespace-nowrap tabular-nums"
+                )}
+              >
+                <svelte:component
+                  this={flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                />
+              </Table.Head>
+            {/each}
+          </Table.Row>
+        {/each}
+      </Table.Header>
+      <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
+        {#each $table.getRowModel().rows as row, index (row.index)}
+          {@const isSupported = assetHasInfoProperty(
+            $rows[row.index]?.original?.assets
+          )}
+          {@const showUnsupported = $showUnsupported}
+          {@const shouldShow = isSupported || showUnsupported}
+          <Table.Row
+            class={cn(
+              "cursor-pointer tabular-nums",
+              index % 2 === 0 ? "bg-secondary/10" : "bg-transparent",
+              isSupported ? "" : "opacity-50",
+              shouldShow ? "" : "hidden"
+            )}
+          >
+            {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
+              {@const hash = $rows[row.index].original.hash}
+              <Table.Cell class={cn("tabular-nums h-12")} headers="header">
+                <a href={`/explorer/transfers/${hash}`} class="">
+                  <ChainsGate let:chains>
+                    <svelte:component
+                      this={flexRender(cell.column.columnDef.cell, {
+                        ...cell.getContext(),
+                        chains
+                      })}
+                    />
+                  </ChainsGate>
+                </a>
+              </Table.Cell>
+            {/each}
+          </Table.Row>
+        {/each}
+      </Table.Body>
+    </Table.Root>
+  </Card.Root>
+{:else if queryStatus === "pending"}
+  <LoadingLogo class="size-16" />
+{/if}
+
+<style lang="postcss"></style>

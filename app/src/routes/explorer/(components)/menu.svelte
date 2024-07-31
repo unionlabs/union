@@ -68,4 +68,20 @@ let alwaysCollapsed = innerWidth <= alwaysCollapsedWidth
       </Button>
     {/if}
   {/each}
+
+  <Button
+    title="my transfers"
+    variant="link"
+    href={`/explorer/user`}
+    class={cn(
+      "mb-2 w-full flex justify-start gap-x-1",
+      selectedTable.includes("user")
+        ? "bg-foreground text-primary-foreground"
+        : "bg-transparent"
+    )}
+  >
+    <span>[</span>
+    <div>my transfers</div>
+    <span>]</span>
+  </Button>
 </nav>

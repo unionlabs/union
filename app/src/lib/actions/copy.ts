@@ -56,7 +56,6 @@ export function copyTextAction<K extends keyof HTMLElementEventMap>(
   let { trigger, text, events, enabled, synthetic } = resolveConfiguration(node, parameters)
 
   const handle = async (event: HTMLElementEventMap[K]) => {
-    console.log(event)
     const _text = await text({ node, trigger, event })
     copyToClipboard(_text)
     const detail = { text: _text }

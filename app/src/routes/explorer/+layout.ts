@@ -8,9 +8,9 @@ import ConnectionIcon from "$lib/components/union-icons/color/icon-connection-co
 const tables = [
   //
   // "blocks",
+  "channels",
   "transfers",
   "connections",
-  "channels",
   "index-status"
 ] as const
 
