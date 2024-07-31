@@ -84,8 +84,6 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                             )
                             .unwrap();
 
-                            // dbg!(cs);
-
                             let mut client =
                                 protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
                                     grpc_url.clone(),
@@ -118,22 +116,46 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                     cs.chain_id().to_string()
                                 }
                                 WasmClientType::Cometbls => {
-                                    let cs = unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<Proto>(&cs.data).unwrap();
+                                    let cs = match unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                        Ok(cs) => cs,
+                                        Err(err) => {
+                                            warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                            continue
+                                        }
+                                    };
 
                                     cs.chain_id().to_string()
                                 }
                                 WasmClientType::Tendermint => {
-                                    let cs = unionlabs::ibc::lightclients::tendermint::client_state::ClientState::decode_as::<Proto>(&cs.data).unwrap();
+                                    let cs = match unionlabs::ibc::lightclients::tendermint::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                        Ok(cs) => cs,
+                                        Err(err) => {
+                                            warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                            continue
+                                        }
+                                    };
 
                                     cs.chain_id().to_string()
                                 }
                                 WasmClientType::Scroll => {
-                                    let cs = unionlabs::ibc::lightclients::scroll::client_state::ClientState::decode_as::<Proto>(&cs.data).unwrap();
+                                    let cs = match unionlabs::ibc::lightclients::scroll::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                        Ok(cs) => cs,
+                                        Err(err) => {
+                                            warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                            continue
+                                        }
+                                    };
 
                                     cs.chain_id().to_string()
                                 }
                                 WasmClientType::Arbitrum => {
-                                    let cs = unionlabs::ibc::lightclients::arbitrum::client_state::ClientState::decode_as::<Proto>(&cs.data).unwrap();
+                                    let cs = match unionlabs::ibc::lightclients::arbitrum::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                        Ok(cs) => cs,
+                                        Err(err) => {
+                                            warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                            continue
+                                        }
+                                    };
 
                                     cs.chain_id().to_string()
                                 }
@@ -247,7 +269,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
         }
     }
 
-    let res = sqlx::query!(
+    sqlx::query!(
         r#"
         INSERT INTO
             v0.clients (chain_id, client_id, counterparty_chain_id)
@@ -270,6 +292,4 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
     .execute(&db)
     .await
     .unwrap();
-
-    println!("rows affected: {}", res.rows_affected());
 }
