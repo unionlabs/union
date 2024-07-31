@@ -317,6 +317,7 @@ onNavigate(navigation => {
     class={cn("w-auto")}
     status={queryStatus}
     live={$REFETCH_ENABLED}
+    pageNumber={$pagination.pageIndex + 1}
     onOlderPage={async (page) => {
       const stamp = $timestamps.oldestTimestamp
       timestamp.set(stamp)

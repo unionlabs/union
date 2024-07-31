@@ -11,12 +11,12 @@ export { className as class }
 </script>
 
 <CommandPrimitive.Root
-  class={cn(
-    className,
-    'flex h-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground',
-  )}
-  bind:value
-  {...$$restProps}
+	class={cn(
+		"bg-popover text-popover-foreground flex h-full w-full flex-col overflow-hidden rounded-md",
+		className
+	)}
+	bind:value
+	{...$$restProps}
 >
-  <slot />
+	<slot />
 </CommandPrimitive.Root>

@@ -9,10 +9,10 @@ import * as Pagination from "$lib/components/ui/pagination/index.ts"
 export let rowsPerPage: number
 export let totalTableRows: number
 
-export let timestamp: string
+export let timestamp: string | undefined = undefined
 export let status: "pending" | "done" = "done"
 
-export let currentPage = 1
+export let pageNumber: number
 
 export let live: boolean
 export let onOlderPage: (page: number) => void
@@ -28,13 +28,14 @@ export { className as class }
 
 <Pagination.Root
   let:pages
-  siblingCount={2000}
+  let:currentPage
+  siblingCount={3}
   perPage={rowsPerPage}
   class={cn(className)}
   count={totalTableRows}
 >
   <Pagination.Content
-    class="py-2 text-sm uppercase font-supermolot w-full flex gap-x-1"
+    class="py-2 text-md uppercase font-supermolot w-full flex gap-x-1"
   >
     <div class={cn("flex flex-row uppercase")}>
       <Button
@@ -63,7 +64,7 @@ export { className as class }
           onNewerPage(Number(currentPage) - 1)
         }}
         class={cn(
-          "text-sm",
+          "text-sm dark:hover:text-black",
           status === "pending" || newerDisabled
             ? "cursor-not-allowed disabled"
             : ""
@@ -75,11 +76,31 @@ export { className as class }
         </span>
       </Pagination.PrevButton>
     </Pagination.Item>
-    <Label class="w-full">
-      <time class="font-normal text-sm uppercase font-mono my-auto w-full">
-        {timestamp}
-      </time>
-    </Label>
+    {#each pages as page (page.key)}
+      {@const isCurrentPage = pageNumber === page.value}
+      {#if page.type === "ellipsis"}
+        <Pagination.Item>
+          <Pagination.Ellipsis />
+        </Pagination.Item>
+      {:else}
+        <Pagination.Item
+          class={cn(
+            "text-md dark:hover:text-black",
+            isCurrentPage
+              ? "outline outline-2 outline-accent"
+              : "hover:bg-accent hover:text-black"
+          )}
+        >
+          <Pagination.Link
+            {page}
+            isActive={isCurrentPage}
+            class="text-md dark:hover:text-black"
+          >
+            {page.value}
+          </Pagination.Link>
+        </Pagination.Item>
+      {/if}
+    {/each}
     <Pagination.Item>
       <Pagination.NextButton
         disabled={status === "pending" || olderDisabled}
@@ -87,7 +108,7 @@ export { className as class }
           onOlderPage(Number(currentPage) + 1)
         }}
         class={cn(
-          "pr-0",
+          "pr-0 dark:hover:text-black",
           status === "pending" || olderDisabled ? "cursor-not-allowed" : ""
         )}
       >

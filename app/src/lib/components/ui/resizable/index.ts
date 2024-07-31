@@ -1,11 +1,8 @@
+import { Pane } from "paneforge"
 import Handle from "./resizable-handle.svelte"
 import PaneGroup from "./resizable-pane-group.svelte"
-import { Pane, type PaneProps, type PaneGroupProps, type PaneAPI } from "paneforge"
 
 export {
-  type PaneAPI,
-  type PaneProps,
-  type PaneGroupProps,
   PaneGroup,
   Pane,
   Handle,

@@ -48,7 +48,7 @@ let timestamp = writable(
     : currentUtcTimestampWithBuffer()
 )
 
-let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
+let pagination = writable({ pageIndex: 1, pageSize: QUERY_LIMIT })
 
 const queryClient = useQueryClient()
 
@@ -58,9 +58,6 @@ const queryClient = useQueryClient()
  *  2. the user clicks on the `current` button which resets to current and live data
  */
 let REFETCH_ENABLED = writable($page.url.searchParams.has("timestamp") ? false : true)
-
-// let addresses = data.addressArray.filter(Boolean)
-// const [addressOne, addressTwo] = data.addressArray
 let addresses = derived([sepoliaStore, cosmosStore], ([$sepoliaStore, $cosmosStore]) =>
   [$sepoliaStore.address?.toLowerCase(), $cosmosStore.address?.toLowerCase()].filter(Boolean)
 )
@@ -280,16 +277,22 @@ onNavigate(navigation => {
 </script>
 
 <DevTools>
+  {JSON.stringify(
+    { idx: $pagination.pageIndex, $REFETCH_ENABLED },
+    undefined,
+    2
+  )}
 </DevTools>
 <div
   class="flex sm:justify-end sm:flex-row flex-col justify-end items-end gap-1 w-full"
 >
   <ExplorerPagination
-    rowsPerPage={20}
-    totalTableRows={20}
     class={cn("w-auto")}
     status={queryStatus}
+    totalTableRows={420_69}
     live={$REFETCH_ENABLED}
+    rowsPerPage={QUERY_LIMIT * 2}
+    pageNumber={$pagination.pageIndex}
     onOlderPage={async (page) => {
       const stamp = $timestamps.oldestTimestamp
       timestamp.set(stamp)
@@ -301,9 +304,9 @@ onNavigate(navigation => {
       $REFETCH_ENABLED = false
     }}
     onCurrentClick={() => {
-      pagination.update((p) => ({ ...p, pageIndex: 0 }))
+      pagination.update((p) => ({ ...p, pageIndex: 1 }))
       $REFETCH_ENABLED = true
-      goto("/explorer/transfers", { replaceState: true })
+      goto("/explorer/user", { replaceState: true })
     }}
     onNewerPage={async (page) => {
       const stamp = $timestamps.latestTimestamp
