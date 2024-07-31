@@ -15,6 +15,7 @@ import {
   switchChain as _switchChain,
   createStorage as createWagmiStorage
 } from "@wagmi/core"
+import "./wallet-connect.ts"
 import { sleep } from "$lib/utilities"
 import { writable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"

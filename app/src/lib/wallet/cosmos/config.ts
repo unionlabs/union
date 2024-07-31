@@ -9,7 +9,12 @@ export const cosmosWalletsInformation = [
     id: "leap",
     name: "leap",
     icon: "https://assets.leapwallet.io/logos/leap-cosmos-logo.svg",
-    // https://git-union69.web.val.run/app.union.build?svg=union.build/logo.svg&url=leapcosmoswallet.page.link/M3BmzUK5RRPsNyBe9?d=1
+    /**
+     * reference links:
+     * - leap deep link generator: https://developers.leapwallet.io/deeplink-generator
+     * - qr code: https://git-union69.web.val.run/app.union.build?svg=union.build/logo.svg&url=leapcosmoswallet.page.link/M3BmzUK5RRPsNyBe9?d=1
+     */
+    //
     deepLink: "https://leapcosmoswallet.page.link/rXtQWTw1fSRuQCeZ8?d=1",
     download: "https://leapwallet.io/download"
   },
