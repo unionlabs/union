@@ -19,4 +19,18 @@ jobs:
       access-tokens: github.com=${{ secrets.github_token }}
       org_token: ${{ secrets.org_token }}
     with:
-      filter_builds: '((.top_attr == "checks") and (.system == "x86_64-linux") and (.attr == "virtualisation-works" or .attr == "ensure-blocks" or .attr == "sepolia-runs" or .attr == "union-runs" or .attr == "epoch-completes" or .attr == "forced-set-rotation" or .attr == "upgrade-from-genesis" or .attr == "upgrade-with-tokenfactory-state"))'
+      filter_builds: |
+        (
+          (.top_attr == "checks") and
+          (.system == "x86_64-linux") and
+          (
+            .attr == "virtualisation-works" or
+            .attr == "ensure-blocks" or
+            .attr == "sepolia-runs" or
+            .attr == "union-runs" or
+            .attr == "epoch-completes" or
+            .attr == "forced-set-rotation" or
+            .attr == "upgrade-from-genesis" or
+            .attr == "upgrade-with-tokenfactory-state"
+          )
+        )
