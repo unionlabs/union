@@ -118,9 +118,12 @@ fn ui(f: &mut Frame, state: &UiState, throbber_state: &mut ThrobberState) {
                 },
             );
         }
-        UiState::Contributing(_) => {
+        UiState::Contributing(started_at) => {
             let full = throbber_widgets_tui::Throbber::default()
-                .label("Your contribution is being computed, please be patient...")
+                .label(format!(
+                    "Your contribution is being computed, please be patient (may take a while)... ({}s)",
+                    started_at.elapsed().as_secs()
+                ))
                 .style(ratatui::style::Style::default().fg(ratatui::style::Color::White))
                 .throbber_style(
                     ratatui::style::Style::default().add_modifier(ratatui::style::Modifier::BOLD),
@@ -145,7 +148,7 @@ fn ui(f: &mut Frame, state: &UiState, throbber_state: &mut ThrobberState) {
         UiState::Successful => {
             // Set full with state
             let full = throbber_widgets_tui::Throbber::default()
-                .label("Contribution successfully upload...")
+                .label("Contribution successfully uploaded...")
                 .style(ratatui::style::Style::default().fg(ratatui::style::Color::Cyan))
                 .throbber_style(
                     ratatui::style::Style::default().add_modifier(ratatui::style::Modifier::BOLD),
@@ -231,7 +234,7 @@ pub async fn run_ui<B: Backend>(
                             start_time = Instant::now();
                             terminal.insert_before(1, |buf| {
                                 Paragraph::new(Line::from(vec![
-                                    Span::from("Started downloading"),
+                                    Span::from("Started downloading "),
                                     Span::styled(
                                         format!("checkpoint {}", &name),
                                         Style::default().add_modifier(Modifier::BOLD),
@@ -248,9 +251,9 @@ pub async fn run_ui<B: Backend>(
                         (Status::DownloadEnded(_), UiState::Downloading(name, _, started_at)) => {
                             terminal.insert_before(1, |buf| {
                                 Paragraph::new(Line::from(vec![
-                                    Span::from("Finished "),
+                                    Span::from("Finished downloading "),
                                     Span::styled(
-                                        format!("downloading checkpoint {}", &name),
+                                        format!("checkpoint {}", &name),
                                         Style::default().add_modifier(Modifier::BOLD),
                                     ),
                                     Span::from(format!(" in {}s", started_at.elapsed().as_secs())),
@@ -289,7 +292,7 @@ pub async fn run_ui<B: Backend>(
                         (Status::UploadStarted(name), _) => {
                             terminal.insert_before(1, |buf| {
                                 Paragraph::new(Line::from(vec![
-                                    Span::from("Started uploading"),
+                                    Span::from("Started uploading "),
                                     Span::styled(
                                         format!("contribution {}", &name),
                                         Style::default().add_modifier(Modifier::BOLD),
@@ -305,9 +308,9 @@ pub async fn run_ui<B: Backend>(
                         ) => {
                             terminal.insert_before(1, |buf| {
                                 Paragraph::new(Line::from(vec![
-                                    Span::from("Finished "),
+                                    Span::from("Finished uploading "),
                                     Span::styled(
-                                        format!("uploading contribution {}", &name),
+                                        format!("contribution {}", &name),
                                         Style::default().add_modifier(Modifier::BOLD),
                                     ),
                                     Span::from(format!(" in {}s", started_at.elapsed().as_secs())),
