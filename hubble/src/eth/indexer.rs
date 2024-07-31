@@ -299,15 +299,29 @@ async fn index_blocks_by_chunk(
         while let Some((height, block)) = inserts.next().await {
             let block = match block {
                 Err(FromProviderError::Other(err)) => {
-                    debug!(?height, "provider error found on insert");
                     return Err(IndexBlockError::Other(err));
                 }
                 Err(err) => {
-                    debug!(?height, "provider error found on insert");
                     return Err(IndexBlockError::Retryable { height, err });
                 }
                 Ok(Some(block)) => block,
-                Ok(None) => continue,
+                Ok(None) => {
+                    // No relevant data for the current filter in this block. We still update the
+                    // contracts.indexed_heights to avoid rechecking on crashes.
+                    let mut tx = pool.begin().await?;
+                    postgres::update_contracts_indexed_heights(
+                        &mut tx,
+                        filter
+                            .iter()
+                            .map(|addr| format!("0x{}", addr.encode_hex()))
+                            .collect(),
+                        filter.iter().map(|_| height.try_into().unwrap()).collect(),
+                        chain_id,
+                    )
+                    .await?;
+                    tx.commit().await?;
+                    continue;
+                }
             };
             debug!(?height, "attempting to insert");
 
