@@ -1,3 +1,8 @@
+BEGIN;
+
+-- Default bucket for contributions upload
+INSERT INTO storage.buckets(id, name, public) VALUES('contributions', 'contributions', false);
+
 -----------
 -- Queue --
 -----------
@@ -22,26 +27,6 @@ CREATE POLICY view_all
       true
     );
 
--- Materialized ?
-CREATE OR REPLACE VIEW current_queue_position AS
-  SELECT
-  CASE WHEN (SELECT cci.id FROM current_contributor_id cci) = auth.uid() THEN
-      0
-  ELSE
-      (
-        SELECT COUNT(*) + 1
-        FROM queue q
-        WHERE
-        -- Better score
-        q.score > (SELECT qq.score FROM queue qq WHERE qq.id = auth.uid())
-        AND
-        -- Contribution round not started
-        NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = q.id)
-      )
-  END AS position;
-
-ALTER VIEW current_queue_position SET (security_invoker = on);
-
 CREATE OR REPLACE FUNCTION min_score() RETURNS INTEGER AS $$
 BEGIN
   RETURN (SELECT COALESCE(MIN(score) - 1, 1000000) FROM queue);
@@ -55,7 +40,11 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER queue_set_initial_score BEFORE INSERT ON queue FOR EACH ROW EXECUTE FUNCTION set_initial_score_trigger();
+CREATE TRIGGER queue_set_initial_score
+BEFORE INSERT
+ON queue
+FOR EACH ROW
+EXECUTE FUNCTION set_initial_score_trigger();
 
 -------------------------
 -- Contribution Status --
@@ -66,7 +55,7 @@ CREATE TABLE contribution_status(
   expire timestamptz NOT NULL DEFAULT(now() + INTERVAL '30 minutes')
 );
 
-ALTER TABLE contribution ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contribution_status ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contribution_status ADD FOREIGN KEY (id) REFERENCES queue(id);
 CREATE UNIQUE INDEX idx_contribution_status_id_expire ON contribution_status(id, expire);
 
@@ -83,11 +72,13 @@ CREATE POLICY view_all
 ----------------------------
 CREATE TABLE contribution_submitted(
   id uuid PRIMARY KEY,
+  object_id uuid NOT NULL,
   created_at timestamptz NOT NULL DEFAULT(now())
 );
 
 ALTER TABLE contribution_submitted ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contribution_submitted ADD FOREIGN KEY (id) REFERENCES contribution_status(id);
+ALTER TABLE contribution_submitted ADD FOREIGN KEY (object_id) REFERENCES storage.objects(id);
 
 CREATE POLICY view_all
   ON contribution_submitted
@@ -129,7 +120,11 @@ END
 $$ LANGUAGE plpgsql;
 
 -- Rotate the current contributor whenever a contribution is done.
-CREATE TRIGGER contribution_added AFTER INSERT ON contribution FOR EACH ROW EXECUTE FUNCTION set_next_contributor_trigger();
+CREATE TRIGGER contribution_added
+AFTER INSERT
+ON contribution
+FOR EACH ROW
+EXECUTE FUNCTION set_next_contributor_trigger();
 
 -- Current contributor is the highest score in the queue with the contribution
 -- not done yet and it's status expired without payload submitted.
@@ -149,6 +144,26 @@ CREATE OR REPLACE VIEW current_contributor_id AS
  );
 
 ALTER VIEW current_contributor_id SET (security_invoker = on);
+
+-- Materialized ?
+CREATE OR REPLACE VIEW current_queue_position AS
+  SELECT
+  CASE WHEN (SELECT cci.id FROM current_contributor_id cci) = auth.uid() THEN
+      0
+  ELSE
+      (
+        SELECT COUNT(*) + 1
+        FROM queue q
+        WHERE
+        -- Better score
+        q.score > (SELECT qq.score FROM queue qq WHERE qq.id = auth.uid())
+        AND
+        -- Contribution round not started
+        NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = q.id)
+      )
+  END AS position;
+
+ALTER VIEW current_queue_position SET (security_invoker = on);
 
 -- The current payload is from the latest successfull contribution
 CREATE OR REPLACE VIEW current_payload_id AS
@@ -180,9 +195,6 @@ BEGIN
   END IF;
 END
 $$ LANGUAGE plpgsql;
-
--- On expiry, rotate the contributor
-SELECT cron.schedule('update-contributor', '10 seconds', 'CALL set_next_contributor()');
 
 CREATE OR REPLACE FUNCTION can_upload(name varchar) RETURNS BOOLEAN AS $$
 BEGIN
@@ -234,9 +246,9 @@ CREATE POLICY allow_authenticated_contributor_download
       can_download(name)
     );
 
-CREATE OR REPLACE PROCEDURE set_contribution_submitted(queue_id uuid) AS $$
+CREATE OR REPLACE PROCEDURE set_contribution_submitted(queue_id uuid, object_id uuid) AS $$
 BEGIN
-  INSERT INTO contribution_submitted(id) VALUES(queue_id);
+  INSERT INTO contribution_submitted(id, object_id) VALUES(queue_id, object_id);
 END
 $$ LANGUAGE plpgsql;
 
@@ -261,11 +273,12 @@ CREATE OR REPLACE FUNCTION set_contribution_submitted_trigger() RETURNS TRIGGER 
 DECLARE
   file_size integer;
 BEGIN
+  -- For some reason, supa pushes placeholder files.
   IF (NEW.metadata IS NOT NULL) THEN
     file_size := (NEW.metadata->>'size')::integer;
     CASE
       WHEN file_size = expected_payload_size()
-        THEN CALL set_contribution_submitted(uuid(NEW.owner_id));
+        THEN CALL set_contribution_submitted(uuid(NEW.owner_id), NEW.id);
       ELSE
         RAISE EXCEPTION 'invalid file size, name: %, got: %, expected: %, meta: %', NEW.name, file_size, expected_payload_size(), NEW.metadata;
     END CASE;
@@ -275,4 +288,13 @@ END
 $$ LANGUAGE plpgsql;
 
 -- Rotate the current contributor whenever a contribution is done.
-CREATE TRIGGER contribution_payload_uploaded AFTER INSERT OR UPDATE ON storage.objects FOR EACH ROW EXECUTE FUNCTION set_contribution_submitted_trigger();
+CREATE TRIGGER contribution_payload_uploaded
+AFTER INSERT OR UPDATE
+ON storage.objects
+FOR EACH ROW
+EXECUTE FUNCTION set_contribution_submitted_trigger();
+
+-- Will rotate the current contributor if the slot expired without any contribution submitted
+SELECT cron.schedule('update-contributor', '10 seconds', 'CALL set_next_contributor()');
+
+COMMIT;
