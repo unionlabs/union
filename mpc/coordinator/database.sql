@@ -87,7 +87,7 @@ CREATE TABLE contribution_submitted(
 );
 
 ALTER TABLE contribution_submitted ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contribution_submitted ADD FOREIGN KEY (id) REFERENCES queue(id);
+ALTER TABLE contribution_submitted ADD FOREIGN KEY (id) REFERENCES contribution_status(id);
 
 CREATE POLICY view_all
   ON contribution_submitted
@@ -108,7 +108,7 @@ CREATE TABLE contribution(
 );
 
 ALTER TABLE contribution ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contribution ADD FOREIGN KEY (id) REFERENCES queue(id);
+ALTER TABLE contribution ADD FOREIGN KEY (id) REFERENCES contribution_status(id);
 CREATE UNIQUE INDEX idx_contribution_seq ON contribution(seq);
 CREATE UNIQUE INDEX idx_contribution_seq_success ON contribution(success, seq);
 

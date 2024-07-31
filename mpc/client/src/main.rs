@@ -320,7 +320,7 @@ async fn handle(
                         tx_status.send(Status::Successful).expect("impossible")
                     }
                     Err(e) => tx_status
-                        .send(Status::Failed(format!("{:#?}", e)))
+                        .send(Status::Failed(format!("{:?}", e)))
                         .expect("impossible"),
                 }
             });
