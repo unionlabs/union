@@ -26,7 +26,8 @@ export const cosmosWalletsInformation = [
     id: "keplr",
     name: "keplr",
     icon: "https://assets-global.website-files.com/63eb7ddf41cf5b1c8fdfbc74/63fc1eaf76d6a3bd547b017c_Keplr_icon_ver.1.3_2.svg",
-    deepLink: "",
+    deepLink:
+      "https://deeplink.keplr.app?url=app.union.build#Intent;package=com.chainapsis.keplr;scheme=keplrwallet;end;",
     download: "https://keplr.app/download"
   }
 ] as const
@@ -57,8 +58,10 @@ function createCosmosStore(
       const walletApi = window[walletId]
       if (!walletApi) {
         const walletInfo = cosmosWalletsInformation.find(wallet => wallet.id === walletId)
-        if (walletInfo)
-          window.open(walletInfo?.deepLink || walletInfo?.download, "_blank", "noopener noreferrer")
+        if (walletInfo) {
+          const { deepLink, download } = walletInfo
+          window.open(deepLink || download, "_blank", "noopener noreferrer")
+        }
         return update(v => ({ ...v, connectionStatus: "disconnected" }))
       }
       const chainInfoMap = {
