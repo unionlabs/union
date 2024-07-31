@@ -1,4 +1,8 @@
+mod types;
+mod ui;
+
 use std::{
+    io,
     net::SocketAddr,
     os::unix::fs::MetadataExt,
     str::FromStr,
@@ -6,19 +10,35 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    time::UNIX_EPOCH,
+    time::{Duration, Instant, UNIX_EPOCH},
 };
 
 use async_sqlite::{JournalMode, PoolBuilder};
 use base64::{prelude::BASE64_STANDARD, Engine};
-use http_body_util::BodyExt;
+use crossterm::event;
+use http_body_util::{BodyExt, Full};
 use httpdate::parse_http_date;
-use hyper::{body::Buf, service::service_fn, Method};
-use hyper_util::rt::TokioIo;
+use hyper::{
+    body::{Buf, Bytes},
+    service::service_fn,
+    Method,
+};
+use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown};
 use mpc_shared::{phase2_contribute, supabase::SupabaseMPCApi, CONTRIBUTION_SIZE};
+use ratatui::{backend::CrosstermBackend, Terminal, Viewport};
 use reqwest::header::LOCATION;
 use serde::Deserialize;
-use tokio::net::TcpListener;
+use tokio::{
+    net::TcpListener,
+    sync::{
+        broadcast::{self, Receiver, Sender},
+        mpsc, oneshot, RwLock,
+    },
+};
+use types::Status;
+
+const SUPABASE_PROJECT: &str = "https://bffcolwcakqrhlznyjns.supabase.co";
+const ENDPOINT: &str = "/contribute";
 
 #[derive(PartialEq, Eq, Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +52,8 @@ struct Contribute {
 
 #[derive(thiserror::Error, Debug, Clone)]
 enum Error {
+    #[error("we are not the current contributor.")]
+    NotCurrentContributor,
     #[error("couldn't find expected header: {0}")]
     HeaderNotFound(String),
     #[error("current contributor not found.")]
@@ -44,11 +66,12 @@ enum Error {
     Phase2VerificationFailed(#[from] mpc_shared::Phase2VerificationError),
 }
 
-type BoxBody = http_body_util::combinators::BoxBody<hyper::body::Bytes, hyper::Error>;
+type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 
 type DynError = Box<dyn std::error::Error + Send + Sync>;
 
 async fn contribute(
+    tx_status: Sender<Status>,
     Contribute {
         bucket,
         jwt,
@@ -57,36 +80,58 @@ async fn contribute(
         payload_id,
     }: Contribute,
 ) -> Result<(), DynError> {
-    const SUPABASE_PROJECT: &str = "https://bffcolwcakqrhlznyjns.supabase.co";
     let client = SupabaseMPCApi::new(SUPABASE_PROJECT.into(), api_key, jwt);
     let current_contributor = client
         .current_contributor()
         .await?
         .ok_or(Error::ContributorNotFound)?;
-    assert!(
-        current_contributor.id == contributor_id,
-        "not current contributor."
-    );
+    if current_contributor.id != contributor_id {
+        return Err(Error::NotCurrentContributor.into());
+    }
     let current_payload = client
         .current_payload()
         .await?
         .ok_or(Error::PayloadNotFound)?;
+    tx_status
+        .send(Status::DownloadStarted(current_payload.id.clone()))
+        .expect("impossible");
     let payload = client
-        .download_payload(&current_payload.id, &current_payload.id)
+        .download_payload(&current_payload.id, &current_payload.id, |percent| {
+            let tx_status = tx_status.clone();
+            let current_payload_clone = current_payload.id.clone();
+            async move {
+                tx_status
+                    .send(Status::Downloading(current_payload_clone, percent as u8))
+                    .expect("impossible");
+            }
+        })
         .await?;
+    tx_status
+        .send(Status::DownloadEnded(current_payload.id.clone()))
+        .expect("impossible");
     let phase2_contribution = if let Ok(true) = tokio::fs::metadata(&payload_id)
         .await
         .map(|meta| meta.size() as usize == CONTRIBUTION_SIZE)
     {
-        println!("loading completed contribution...");
         tokio::fs::read(&payload_id).await?
     } else {
-        println!("generating contribution, may take some time...");
-        let phase2_contribution = phase2_contribute(&payload)?;
+        tx_status
+            .send(Status::ContributionStarted)
+            .expect("impossible");
+        let (tx_contrib, rx_contrib) = oneshot::channel();
+        let handle = tokio::task::spawn_blocking(move || {
+            tx_contrib
+                .send(phase2_contribute(&payload))
+                .expect("impossible");
+        });
+        let phase2_contribution = rx_contrib.await??;
+        handle.await?;
+        tx_status
+            .send(Status::ContributionEnded)
+            .expect("impossible");
         tokio::fs::write(&payload_id, &phase2_contribution).await?;
         phase2_contribution
     };
-    println!("uploading contribution...");
     let pool = PoolBuilder::new()
         .path("db.sqlite3")
         .journal_mode(JournalMode::Wal)
@@ -127,17 +172,12 @@ async fn contribute(
             .error_for_status()
             .is_err()
         {
-            println!("upload location expired, removing it...");
             upload_location = None;
         }
     }
     let upload_location = match upload_location {
-        Some(location) => {
-            println!("location already stored in db.");
-            location
-        }
+        Some(location) => location,
         None => {
-            println!("location not found, generating a new one...");
             // =====================================================
             // https://tus.io/protocols/resumable-upload#creation ==
             // =====================================================
@@ -182,9 +222,6 @@ async fn contribute(
             location
         }
     };
-
-    println!("upload location: {upload_location}");
-
     // =================================================
     // https://tus.io/protocols/resumable-upload#head ==
     // =================================================
@@ -209,9 +246,10 @@ async fn contribute(
             .to_str()?,
     )?;
     assert!(upload_length == CONTRIBUTION_SIZE, "invalid upload-length.");
-    println!("upload-offset: {}", upload_offset);
     if upload_offset < upload_length {
-        println!("uploading contribution...");
+        tx_status
+            .send(Status::UploadStarted(payload_id.clone()))
+            .expect("impossible");
         // ==================================================
         // https://tus.io/protocols/resumable-upload#patch ==
         // ==================================================
@@ -229,84 +267,202 @@ async fn contribute(
             .send()
             .await?
             .error_for_status()?;
+        tx_status
+            .send(Status::UploadEnded(payload_id.clone()))
+            .expect("impossible");
     }
-    println!("upload complete.");
     Ok(())
 }
 
+fn full<T: Into<Bytes>>(chunk: T) -> BoxBody {
+    Full::new(chunk.into())
+        .map_err(|never| match never {})
+        .boxed()
+}
+
 async fn handle(
-    handling: Arc<AtomicBool>,
+    lock: Arc<AtomicBool>,
+    tx_status: Sender<Status>,
+    latest_status: Arc<RwLock<Status>>,
     req: hyper::Request<hyper::body::Incoming>,
 ) -> Result<hyper::Response<BoxBody>, DynError> {
+    let response = |status, body| {
+        Ok(hyper::Response::builder()
+            .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+            .header(hyper::header::CONTENT_TYPE, "application/json")
+            .status(status)
+            .body(body)
+            .unwrap())
+    };
+    let response_empty = |status| response(status, BoxBody::default());
     match (req.method(), req.uri().path()) {
-        (&Method::POST, "/contribute")
-            if handling
+        (&Method::POST, ENDPOINT)
+            if lock
                 .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
                 .is_ok() =>
         {
-            let result = (|| async {
-                let whole_body = req.collect().await?.aggregate();
-                contribute(serde_json::from_reader(whole_body.reader())?).await?;
-                Ok::<_, DynError>(())
-            })()
-            .await;
-            handling
-                .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-                .expect("impossible");
-            result?;
-            Ok(hyper::Response::builder()
-                .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-                .header(hyper::header::CONTENT_TYPE, "application/json")
-                .status(hyper::StatusCode::OK)
-                .body(BoxBody::default())
-                .unwrap())
+            tx_status.send(Status::Initializing).expect("impossible");
+            tokio::spawn(async move {
+                let result = (|| async {
+                    let whole_body = req.collect().await?.aggregate();
+                    contribute(
+                        tx_status.clone(),
+                        serde_json::from_reader(whole_body.reader())?,
+                    )
+                    .await?;
+                    Ok::<_, DynError>(())
+                })()
+                .await;
+                match result {
+                    Ok(_) => {
+                        lock.compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+                            .expect("impossible");
+                        tx_status.send(Status::Successful).expect("impossible")
+                    }
+                    Err(e) => tx_status
+                        .send(Status::Failed(format!("{:#?}", e)))
+                        .expect("impossible"),
+                }
+            });
+            response_empty(hyper::StatusCode::ACCEPTED)
         }
-        // Busy building
-        (&Method::POST, "/contribute") => Ok(hyper::Response::builder()
-            .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-            .header(hyper::header::CONTENT_TYPE, "application/json")
-            .status(hyper::StatusCode::TOO_MANY_REQUESTS)
-            .body(BoxBody::default())
-            .unwrap()),
+        // FE must poll GET and dispatch accordingly.
+        (&Method::POST, ENDPOINT) => response_empty(hyper::StatusCode::SERVICE_UNAVAILABLE),
+        (&Method::GET, ENDPOINT) => match latest_status.read().await.clone() {
+            Status::Failed(e) => {
+                lock.compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+                    .expect("impossible");
+                // Only idle if the FE poll after a failure.
+                tx_status.send(Status::Idle).expect("impossible");
+                response(
+                    hyper::StatusCode::INTERNAL_SERVER_ERROR,
+                    full(serde_json::to_vec(&format!("{:#?}", e)).expect("impossible")),
+                )
+            }
+            x => response(
+                hyper::StatusCode::OK,
+                full(serde_json::to_vec(&x).expect("impossible")),
+            ),
+        },
         // CORS preflight request.
-        (&Method::OPTIONS, "/contribute") => Ok(hyper::Response::builder()
+        (&Method::OPTIONS, ENDPOINT) => Ok(hyper::Response::builder()
             .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
             .header(
                 hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
                 hyper::header::CONTENT_TYPE,
             )
-            .header(hyper::header::ACCESS_CONTROL_ALLOW_METHODS, "POST, OPTIONS")
+            .header(
+                hyper::header::ACCESS_CONTROL_ALLOW_METHODS,
+                format!(
+                    "{}, {}, {}",
+                    Method::OPTIONS.as_str(),
+                    Method::GET.as_str(),
+                    Method::POST.as_str()
+                ),
+            )
             .status(hyper::StatusCode::OK)
             .body(BoxBody::default())
             .unwrap()),
-        _ => Ok(hyper::Response::builder()
-            .status(hyper::StatusCode::NOT_FOUND)
-            .body(BoxBody::default())
-            .unwrap()),
+        _ => response_empty(hyper::StatusCode::NOT_FOUND),
     }
+}
+
+async fn input_and_status_handling(
+    latest_status: Arc<RwLock<Status>>,
+    mut rx_status: Receiver<Status>,
+    tx_ui: mpsc::UnboundedSender<ui::Event>,
+) {
+    let tx_ui_clone = tx_ui.clone();
+    tokio::spawn(async move {
+        while let Ok(status) = rx_status.recv().await {
+            *latest_status.write().await = status.clone();
+            tx_ui_clone
+                .send(ui::Event::NewStatus(status))
+                .expect("impossible");
+        }
+    });
+    tokio::spawn(async move {
+        let tick_rate = Duration::from_millis(1000 / 60);
+        let mut last_tick = Instant::now();
+        loop {
+            // poll for tick rate duration, if no events, sent tick event.
+            let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+            if event::poll(timeout).unwrap() {
+                match event::read().unwrap() {
+                    event::Event::Key(key) => tx_ui.send(ui::Event::Input(key)).unwrap(),
+                    event::Event::Resize(_, _) => tx_ui.send(ui::Event::Resize).unwrap(),
+                    _ => {}
+                };
+            }
+            if last_tick.elapsed() >= tick_rate {
+                if let Err(_) = tx_ui.send(ui::Event::Tick) {
+                    break;
+                }
+                last_tick = Instant::now();
+            }
+        }
+    });
 }
 
 #[tokio::main]
 async fn main() -> Result<(), DynError> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 0x1337));
-    let listener = TcpListener::bind(addr).await?;
-    let handling = Arc::new(AtomicBool::new(false));
-    loop {
-        let (stream, _) = listener.accept().await?;
-        let io = TokioIo::new(stream);
-        // TODO: can't we avoid the clone tower?
-        let handling_clone = handling.clone();
-        tokio::task::spawn(async move {
-            // Finally, we bind the incoming connection to our `hello` service
-            if let Err(err) = hyper::server::conn::http1::Builder::new()
-                .serve_connection(
-                    io,
-                    service_fn(move |req| handle(handling_clone.clone(), req)),
-                )
-                .await
-            {
-                eprintln!("Error serving connection: {:?}", err);
+    let status = Arc::new(RwLock::new(Status::Idle));
+    let lock = Arc::new(AtomicBool::new(false));
+    let (tx_status, rx_status) = broadcast::channel(64);
+    let graceful = GracefulShutdown::new();
+    let (tx_shutdown, mut rx_shutdown) = oneshot::channel::<()>();
+    let status_clone = status.clone();
+    let handle = tokio::spawn(async move {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 0x1337));
+        let listener = TcpListener::bind(addr).await.unwrap();
+        loop {
+            tokio::select! {
+                Ok((stream, _)) = listener.accept() => {
+                    let io = TokioIo::new(stream);
+                    let status_clone = status_clone.clone();
+                    let tx_status_clone = tx_status.clone();
+                    let lock_clone = lock.clone();
+                    let conn = hyper::server::conn::http1::Builder::new().serve_connection(
+                        io,
+                        service_fn(move |req| {
+                            handle(
+                                lock_clone.clone(),
+                                tx_status_clone.clone(),
+                                status_clone.clone(),
+                                req,
+                            )
+                        }),
+                    );
+                    let fut = graceful.watch(conn);
+                    tokio::task::spawn(async move {
+                        if let Err(err) = fut.await {
+                            eprintln!("error serving connection: {:?}", err);
+                        }
+                    });
+                }
+                _ = &mut rx_shutdown => {
+                    graceful.shutdown().await;
+                    break
+                }
             }
-        });
-    }
+        }
+    });
+    // Dispatch terminal
+    let (tx_ui, rx_ui) = mpsc::unbounded_channel();
+    crossterm::terminal::enable_raw_mode()?;
+    let stdout = io::stdout();
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::with_options(
+        backend,
+        ratatui::TerminalOptions {
+            viewport: Viewport::Inline(8),
+        },
+    )?;
+    input_and_status_handling(status, rx_status, tx_ui).await;
+    ui::run_ui(&mut terminal, rx_ui).await?;
+    crossterm::terminal::disable_raw_mode()?;
+    terminal.clear()?;
+    tx_shutdown.send(()).expect("impossible");
+    handle.await.expect("impossible");
+    Ok(())
 }

@@ -16,6 +16,7 @@ mpc-shared     = { workspace = true }
 postgrest      = "1.0"
 rand           = "0.8.5"
 ratatui        = "0.27.0"
+throbber-widgets-tui = "0.6"
 reqwest        = { workspace = true, features = ["json"] }
 serde          = { workspace = true, features = ["derive"] }
 serde_json     = { workspace = true }

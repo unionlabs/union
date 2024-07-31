@@ -38,7 +38,7 @@ CREATE OR REPLACE VIEW current_queue_position AS
         -- Contribution round not started
         NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = q.id)
       )
-      END AS position;
+  END AS position;
 
 ALTER VIEW current_queue_position SET (security_invoker = on);
 

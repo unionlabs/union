@@ -1,4 +1,4 @@
-use std::{io::SeekFrom, str::FromStr};
+use std::{future::Future, io::SeekFrom, str::FromStr};
 
 use postgrest::Postgrest;
 use reqwest::{
@@ -133,11 +133,15 @@ impl SupabaseMPCApi {
         Ok(())
     }
 
-    pub async fn download_payload(
+    pub async fn download_payload<F>(
         &self,
         payload_id: &str,
         payload_output: &str,
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+        mut progress: impl FnMut(f64) -> F,
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>>
+    where
+        F: Future<Output = ()>,
+    {
         let current_payload_download_url = format!(
             "{}/storage/v1/object/contributions/{}",
             &self.project_url, &payload_id
@@ -148,21 +152,13 @@ impl SupabaseMPCApi {
                 HeaderValue::from_str(&format!("Bearer {}", &self.jwt))?,
             )]))
             .build()?;
-        println!("checking payload file...");
         let state_path = payload_output;
         let action = match get_state_file(&state_path).await {
             content if content.len() < CONTRIBUTION_SIZE => {
-                println!("partial download, continuing from {}...", content.len());
                 StateFileAction::Download(content.len())
             }
-            content if content.len() == CONTRIBUTION_SIZE => {
-                println!("download complete.");
-                StateFileAction::Done(content)
-            }
-            _ => {
-                println!("invalid size detected, redownloading...");
-                StateFileAction::Download(0)
-            }
+            content if content.len() == CONTRIBUTION_SIZE => StateFileAction::Done(content),
+            _ => StateFileAction::Download(0),
         };
         match action {
             StateFileAction::Download(start_position) => {
@@ -180,7 +176,6 @@ impl SupabaseMPCApi {
                             .ok_or(Error::HeaderNotFound(CONTENT_LENGTH.as_str().into()))?
                             .to_str()?,
                     )? as usize;
-                println!("state file length: {}", total_length);
                 assert!(
                     total_length == CONTRIBUTION_SIZE,
                     "contribution length mismatch."
@@ -194,19 +189,19 @@ impl SupabaseMPCApi {
                 state_file
                     .seek(SeekFrom::Start(start_position as u64))
                     .await?;
-                let mut i = 0;
+                let mut i = start_position;
+                let mut freq = 0;
                 while let Some(chunk) = response.chunk().await? {
-                    let k = CONTRIBUTION_SIZE / i;
-                    if k > 10 {
-                        println!("downloaded: {}%", i);
-                        i = 0;
+                    let k = (i as f64 / CONTRIBUTION_SIZE as f64) * 100.;
+                    if freq % 200 == 0 {
+                        progress(k).await;
                     }
                     let written = state_file.write(&chunk).await?;
                     assert!(written == chunk.len(), "couldn't write chunk.");
-                    state_file.sync_data().await?;
                     i += written;
+                    freq += 1;
                 }
-                println!("download complete");
+                state_file.sync_data().await?;
                 let final_content = tokio::fs::read(&state_path).await?;
                 Ok(final_content)
             }
