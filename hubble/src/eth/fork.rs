@@ -110,6 +110,12 @@ impl Indexer {
                 }
                 Ok(None)
             }
+
+            let chunk_size = self
+                .chunk_size
+                .try_into()
+                .expect("chunk_size should not exceed i64 in size");
+
             // Re-indexes starting at from until reaching tip.
             if let Some(mut height) = self.start_height {
                 loop {
@@ -117,9 +123,7 @@ impl Indexer {
                         &self.pool,
                         self.chain_id,
                         height,
-                        self.chunk_size
-                            .try_into()
-                            .expect("chunk_size should not exceed i64 in size"),
+                        chunk_size,
                     )?
                     .try_collect()
                     .await?;
@@ -158,7 +162,7 @@ impl Indexer {
 
             // Re-indexes the tip.
             loop {
-                let logs = postgres::get_last_n_logs(&self.pool, self.chain_id, 32)?;
+                let logs = postgres::get_last_n_logs(&self.pool, self.chain_id, chunk_size)?;
                 let blocks: Vec<BlockInsert> = logs
                     .map_err(Report::from)
                     .try_filter_map(|(hash, height)| {
