@@ -98,10 +98,8 @@ module hello_blockchain::message {
        // std::debug::print<vector<u8>>(&inputs_hash);
         let inputs_hash = hash::sha2_256(inputs_hash);
 
-        // TODO(aeryz): how to do assignment lol
-        vector::insert(&mut inputs_hash, 0, 0);
-        vector::remove(&mut inputs_hash, 1);
-
+        let x = vector::borrow_mut(&mut inputs_hash, 0);
+        *x = 0;
        // std::debug::print<vector<u8>>(&inputs_hash);
 
         let inputs_hash = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&inputs_hash));
