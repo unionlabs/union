@@ -1,6 +1,6 @@
 <script lang="ts">
-import { truncate } from "$lib/utilities/format"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { truncate } from "$lib/utilities/format"
 import ExplorerPrecise from "$lib/components/explorer-precise.svelte"
 
 export let value: object

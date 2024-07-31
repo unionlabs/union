@@ -1,17 +1,21 @@
 import type { LayoutLoad } from "./$types.ts"
 import { getCurrentISODateTime } from "$lib/utilities/date.ts"
+// @ts-expect-error
 import IndexIcon from "$lib/components/union-icons/color/icon-index-color.svelte"
+// @ts-expect-error
 import ChannelsIcon from "$lib/components/union-icons/color/icon-channel-color.svelte"
+// @ts-expect-error
 import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
+// @ts-expect-error
 import ConnectionIcon from "$lib/components/union-icons/color/icon-connection-color.svelte"
 
 const tables = [
   //
-  // "blocks",
   "channels",
   "transfers",
   "connections",
-  "index-status"
+  "index-status",
+  "address"
 ] as const
 
 export interface Table {
@@ -29,11 +33,6 @@ export const load = (loadEvent => ({
       icon: TransfersIcon,
       description: "All transfers"
     },
-    // {
-    //   route: "blocks",
-    //   icon: BlocksIcon,
-    //   description: "Blocks from all chains indexed by Hubble"
-    // },
     {
       route: "connections",
       icon: ConnectionIcon,
@@ -48,6 +47,11 @@ export const load = (loadEvent => ({
       route: "index-status",
       icon: IndexIcon,
       description: "Statuses of Hubble indices for connected chains"
+    },
+    {
+      route: "address",
+      icon: TransfersIcon,
+      description: "My transfers"
     }
   ] satisfies Array<Table>
 })) satisfies LayoutLoad

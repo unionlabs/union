@@ -14,10 +14,14 @@ export const cosmosWalletsInformation = [
      * - leap deep link generator: https://developers.leapwallet.io/deeplink-generator
      * - qr code: https://git-union69.web.val.run/app.union.build?svg=union.build/logo.svg&url=leapcosmoswallet.page.link/M3BmzUK5RRPsNyBe9?d=1
      */
-    //
     deepLink: "https://leapcosmoswallet.page.link/rXtQWTw1fSRuQCeZ8?d=1",
     download: "https://leapwallet.io/download"
   },
+  /**
+   * reference links:
+   * - keplr link generator: https://chainapsis.notion.site/How-to-use-Deep-Link-on-Keplr-mobile-5593b89de65142278a6a7573c97ad0d4
+   * - qr code: https://git-union69.web.val.run/app.union.build?svg=union.build/logo.svg&url=leapcosmoswallet.page.link/M3BmzUK5RRPsNyBe9?d=1
+   */
   {
     id: "keplr",
     name: "keplr",
@@ -39,7 +43,6 @@ function createCosmosStore(
     connectionStatus: "disconnected"
   }
 ) {
-  console.log("[cosmosStore] previousState", previousState)
   const { subscribe, set, update } = persisted("cosmos-store", previousState, {
     syncTabs: true,
     storage: "session"

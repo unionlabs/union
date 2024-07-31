@@ -39,7 +39,7 @@ onNavigate(navigation => {
     <h2 class="sm:hidden ml-3 mt-6 mb-3 text-2xl font-bold font-supermolot">
       Explorer
     </h2>
-    <Menu isCollapsed={false} tableRoutes={data.tables} />
+    <Menu tableRoutes={data.tables} />
   </nav>
   <main
     class={cn(

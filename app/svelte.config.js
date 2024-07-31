@@ -1,5 +1,4 @@
 import path from "node:path"
-import childProcess from "node:child_process"
 import { sveltePreprocess } from "svelte-preprocess"
 import adapterStatic from "@sveltejs/adapter-static"
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte"
@@ -32,28 +31,11 @@ export default {
       assets: "build",
       fallback: "index.html"
     }),
-    version: {
-      // deterministic build version
-      name: getVersion({ short: true })
-    },
     /** @note `$` is a svelte path alias convention */
     alias: {
       $: path.resolve("./src/"),
       $styles: path.resolve("./src/styles"),
       "~static": path.resolve("./static/")
     }
-  }
-}
-
-function getVersion({ short = false } = {}) {
-  try {
-    const version = childProcess.execSync("git rev-parse HEAD").toString().trim()
-    return short ? version.slice(0, 7) : version
-  } catch (error) {
-    const timestamp = Date.now().toString()
-    console.error(
-      `could not get commit-hash to set a version id, falling back on timestamp ${timestamp}`
-    )
-    return timestamp
   }
 }

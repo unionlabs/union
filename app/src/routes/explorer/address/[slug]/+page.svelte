@@ -36,6 +36,7 @@ import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
+import type { PageData } from "./$types.ts"
 
 const QUERY_LIMIT = 10
 const REFRESH_INTERVAL = 5_000 // 5 seconds

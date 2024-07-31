@@ -92,7 +92,6 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    <button class="" id="open-connect-modal">ccc</button>
     <Separator class={cn("px-0 bg-border -mt-5")} />
     <Connection
       address={$cosmosStore.address}
