@@ -299,11 +299,9 @@ async fn index_blocks_by_chunk(
         while let Some((height, block)) = inserts.next().await {
             let block = match block {
                 Err(FromProviderError::Other(err)) => {
-                    debug!(?height, "provider error found on insert");
                     return Err(IndexBlockError::Other(err));
                 }
                 Err(err) => {
-                    debug!(?height, "provider error found on insert");
                     return Err(IndexBlockError::Retryable { height, err });
                 }
                 Ok(Some(block)) => block,
