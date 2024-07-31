@@ -10,7 +10,6 @@ Although IBC originated from the Cosmos ecosystem, we have extended it to Ethere
 
 Union is designed to be completely decentralized. The upgradability of contracts on other chains, connections, token configurations, and evolution of the protocol will all be controlled by decentralized governance, aligning the priorities of Union with its users, validators, and operators.
 
-## Components
 
 This repository hosts a few core components of Union.
 
