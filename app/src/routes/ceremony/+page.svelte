@@ -3,9 +3,9 @@
     import { createClient, type Provider } from "@supabase/supabase-js";
 
     const apiKey =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZmNvbHdjYWtxcmhsem55am5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjIwOTc5OTgsImV4cCI6MjAzNzY3Mzk5OH0.9dVeafP8atsYqwdtPVYmzIhqMr_DEkHKdfoN3eqxjC0";
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3cXB5bGJyY3ByaXlhcXVnenNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjI0MzMyMjQsImV4cCI6MjAzODAwOTIyNH0.UQOmQ-wE63O32lyrLDO7ryowrM5LNA2UILHDA7hTH8E";
     const supabase = createClient(
-        "https://bffcolwcakqrhlznyjns.supabase.co",
+        "https://wwqpylbrcpriyaqugzsi.supabase.co",
         apiKey,
     );
 

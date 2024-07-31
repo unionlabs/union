@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use mpc_shared::{phase2_verify, supabase::SupabaseMPCApi};
 
-const SUPABASE_PROJECT: &str = "https://bffcolwcakqrhlznyjns.supabase.co";
+const SUPABASE_PROJECT: &str = "https://wwqpylbrcpriyaqugzsi.supabase.co";
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

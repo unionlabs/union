@@ -35,9 +35,10 @@ use tokio::{
         mpsc, oneshot, RwLock,
     },
 };
+use tokio_util::sync::CancellationToken;
 use types::Status;
 
-const SUPABASE_PROJECT: &str = "https://bffcolwcakqrhlznyjns.supabase.co";
+const SUPABASE_PROJECT: &str = "https://wwqpylbrcpriyaqugzsi.supabase.co";
 const ENDPOINT: &str = "/contribute";
 
 #[derive(PartialEq, Eq, Debug, Clone, Deserialize)]
@@ -376,9 +377,9 @@ async fn input_and_status_handling(
     tokio::spawn(async move {
         while let Ok(status) = rx_status.recv().await {
             *latest_status.write().await = status.clone();
-            tx_ui_clone
-                .send(ui::Event::NewStatus(status))
-                .expect("impossible");
+            if let Err(_) = tx_ui_clone.send(ui::Event::NewStatus(status)) {
+                break;
+            }
         }
     });
     tokio::spawn(async move {
@@ -410,8 +411,9 @@ async fn main() -> Result<(), DynError> {
     let lock = Arc::new(AtomicBool::new(false));
     let (tx_status, rx_status) = broadcast::channel(64);
     let graceful = GracefulShutdown::new();
-    let (tx_shutdown, mut rx_shutdown) = oneshot::channel::<()>();
     let status_clone = status.clone();
+    let token = CancellationToken::new();
+    let token_clone = token.clone();
     let handle = tokio::spawn(async move {
         let addr = SocketAddr::from(([127, 0, 0, 1], 0x1337));
         let listener = TcpListener::bind(addr).await.unwrap();
@@ -440,12 +442,12 @@ async fn main() -> Result<(), DynError> {
                         }
                     });
                 }
-                _ = &mut rx_shutdown => {
-                    graceful.shutdown().await;
-                    break
+                _ = token_clone.cancelled() => {
+                    break;
                 }
             }
         }
+        graceful.shutdown().await;
     });
     // Dispatch terminal
     let (tx_ui, rx_ui) = mpsc::unbounded_channel();
@@ -462,7 +464,7 @@ async fn main() -> Result<(), DynError> {
     ui::run_ui(&mut terminal, rx_ui).await?;
     crossterm::terminal::disable_raw_mode()?;
     terminal.clear()?;
-    tx_shutdown.send(()).expect("impossible");
+    token.cancel();
     handle.await.expect("impossible");
-    Ok(())
+    std::process::exit(0);
 }
