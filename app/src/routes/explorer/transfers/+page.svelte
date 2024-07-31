@@ -89,6 +89,10 @@ let transfers = createQuery(
   }))
 )
 
+$: {
+  console.info(JSON.stringify($transfers?.data?.transfers, undefined, 2))
+}
+
 let queryStatus: "pending" | "done" = $REFETCH_ENABLED
   ? $liveTransfers.status === "pending" || $liveTransfers.fetchStatus === "fetching"
     ? "pending"

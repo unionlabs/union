@@ -22,6 +22,13 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
       destination_timestamp
       destination_transaction_hash
       assets
+
+      forwards {
+        port
+        channel
+        receiver
+        chain { chain_id }
+      }
     }
     older: v0_transfers(
       limit: $limit,
@@ -40,6 +47,13 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
       destination_timestamp
       destination_transaction_hash
       assets
+
+      forwards {
+        port
+        channel
+        receiver
+        chain { chain_id }
+      }
     }
   }
 `)
@@ -64,6 +78,13 @@ export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
       destination_timestamp
       destination_transaction_hash
       assets
+
+      forwards {
+        port
+        channel
+        receiver
+        chain { chain_id }
+      }
     }
   }  
 `)
