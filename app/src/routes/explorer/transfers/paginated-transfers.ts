@@ -82,8 +82,6 @@ export async function paginatedTransfers({
 
   const allTransfers = [...newer.toReversed(), ...older]
 
-  console.info(JSON.stringify(allTransfers, undefined, 2))
-
   return {
     transfers: allTransfers.map(transfer => {
       const lastForward = transfer.forwards?.at(-1)
