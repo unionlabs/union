@@ -9,8 +9,6 @@ import {
   getFilteredRowModel,
   getPaginationRowModel
 } from "@tanstack/svelte-table"
-import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
-import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import {
   paginatedTransfers,
   type TransferAddress,
@@ -36,8 +34,8 @@ import CellAssets from "../../(components)/cell-assets.svelte"
 import CellTooltipIcon from "../../(components)/cell-icon-tooltip.svelte"
 import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
-
-// export let data: LayoutData
+import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
+import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
 
 const QUERY_LIMIT = 10
 const REFRESH_INTERVAL = 5_000 // 5 seconds
@@ -137,12 +135,6 @@ let timestamps = derived(
           latestTimestamp: $transfers?.data?.latestTimestamp ?? ""
         }
 )
-
-const columnDefaults = {
-  size: 200,
-  minSize: 200,
-  maxSize: 200
-}
 
 const columns: Array<ColumnDef<DataRow>> = [
   {
@@ -283,46 +275,7 @@ onNavigate(navigation => {
     2
   )}
 </DevTools>
-<div
-  class="flex sm:justify-end sm:flex-row flex-col justify-end items-end gap-1 w-full"
->
-  <ExplorerPagination
-    class={cn("w-auto")}
-    status={queryStatus}
-    totalTableRows={420_69}
-    live={$REFETCH_ENABLED}
-    rowsPerPage={QUERY_LIMIT * 2}
-    pageNumber={$pagination.pageIndex}
-    onOlderPage={async (page) => {
-      const stamp = $timestamps.oldestTimestamp
-      timestamp.set(stamp)
-      goto(encodeTimestampSearchParam(stamp), {
-        replaceState: true,
-        state: { timestamp: stamp }
-      })
-      pagination.update((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))
-      $REFETCH_ENABLED = false
-    }}
-    onCurrentClick={() => {
-      pagination.update((p) => ({ ...p, pageIndex: 1 }))
-      $REFETCH_ENABLED = true
-      goto("/explorer/user", { replaceState: true })
-    }}
-    onNewerPage={async (page) => {
-      const stamp = $timestamps.latestTimestamp
-      timestamp.set(stamp)
-      goto(encodeTimestampSearchParam(stamp), {
-        replaceState: true,
-        state: { timestamp: stamp }
-      })
-      pagination.update((p) => ({ ...p, pageIndex: p.pageIndex - 1 }))
-      $REFETCH_ENABLED = false
-    }}
-    timestamp={$timestamps.latestTimestamp
-      ? toPrettyDateTimeFormat($timestamps.latestTimestamp, { local: true })
-      : ""}
-  />
-</div>
+
 {#if $transfersDataStore?.length}
   <Card.Root>
     <Table.Root>
@@ -387,5 +340,44 @@ onNavigate(navigation => {
 {:else if queryStatus === "pending"}
   <LoadingLogo class="size-16" />
 {/if}
+<div
+  class="flex sm:justify-start sm:flex-row flex-col justify-end items-end gap-1 w-full"
+>
+  <ExplorerPagination
+    class={cn("w-auto")}
+    status={queryStatus}
+    totalTableRows={420_69}
+    live={$REFETCH_ENABLED}
+    rowsPerPage={QUERY_LIMIT * 2}
+    onOlderPage={async (page) => {
+      const stamp = $timestamps.oldestTimestamp
+      timestamp.set(stamp)
+      goto(encodeTimestampSearchParam(stamp), {
+        replaceState: true,
+        state: { timestamp: stamp }
+      })
+      pagination.update((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))
+      $REFETCH_ENABLED = false
+    }}
+    onCurrentClick={() => {
+      pagination.update((p) => ({ ...p, pageIndex: 1 }))
+      $REFETCH_ENABLED = true
+      goto("/explorer/user", { replaceState: true })
+    }}
+    onNewerPage={async (page) => {
+      const stamp = $timestamps.latestTimestamp
+      timestamp.set(stamp)
+      goto(encodeTimestampSearchParam(stamp), {
+        replaceState: true,
+        state: { timestamp: stamp }
+      })
+      pagination.update((p) => ({ ...p, pageIndex: p.pageIndex - 1 }))
+      $REFETCH_ENABLED = false
+    }}
+    timestamp={$timestamps.latestTimestamp
+      ? toPrettyDateTimeFormat($timestamps.latestTimestamp, { local: true })
+      : ""}
+  />
+</div>
 
 <style lang="postcss"></style>

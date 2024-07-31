@@ -32,7 +32,6 @@
     "cmdk-sv": "^0.0.18",
     "gql.tada": "^1.8.4",
     "graphql-request": "7.1.0",
-    "lucide-svelte": "^0.417.0",
     "mode-watcher": "^0.4.1",
     "paneforge": "^0.0.5",
     "svelte-persisted-store": "^0.11.0",

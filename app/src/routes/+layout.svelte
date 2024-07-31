@@ -72,7 +72,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
   persistOptions={{ persister: localStoragePersister }}
 >
   <ModeWatcher defaultMode="system" />
-  <Toaster position="bottom-right" expand richColors closeButton />
+  <Toaster position="bottom-right" expand closeButton />
 
   <Header />
   <div class="flex flex-1 overflow-y-auto bg-background">
