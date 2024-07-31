@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v0.transactions (chain_id, block_hash, height, hash, data, index)\n            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])\n            ON CONFLICT (chain_id, hash) DO\n            UPDATE SET\n                block_hash = excluded.block_hash,\n                height = excluded.height,\n                data = excluded.data,\n                index = excluded.index\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4Array",
+        "TextArray",
+        "Int4Array",
+        "TextArray",
+        "JsonbArray",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "51633db48d663481cb8203486db1fb72decc9fd11cbd1631342a80712a70bb92"
+}

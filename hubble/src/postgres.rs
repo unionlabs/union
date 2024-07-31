@@ -203,10 +203,8 @@ where
         sqlx::query!("
             INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
             SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
-            ON CONFLICT (block_hash) DO 
+            ON CONFLICT (chain_id, block_hash) DO 
             UPDATE SET
-                chain_id = excluded.chain_id,
-                block_hash = excluded.block_hash,
                 data = excluded.data,
                 height = excluded.height,
                 time = excluded.time
@@ -267,10 +265,8 @@ where
         sqlx::query!("
             INSERT INTO v0.blocks (chain_id, hash, data, height, time)
             SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
-            ON CONFLICT (hash) DO 
+            ON CONFLICT (chain_id, hash) DO 
             UPDATE SET
-                chain_id = excluded.chain_id,
-                hash = excluded.hash,
                 data = excluded.data,
                 height = excluded.height,
                 time = excluded.time
@@ -323,12 +319,10 @@ where
         sqlx::query!("
             INSERT INTO v0.transactions (chain_id, block_hash, height, hash, data, index)
             SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
-            ON CONFLICT (hash) DO
+            ON CONFLICT (chain_id, hash) DO
             UPDATE SET
-                chain_id = excluded.chain_id,
                 block_hash = excluded.block_hash,
                 height = excluded.height,
-                hash = excluded.hash,
                 data = excluded.data,
                 index = excluded.index
         ", 
@@ -394,13 +388,10 @@ where
         sqlx::query!("
         INSERT INTO v0.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
         SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
-        ON CONFLICT (transaction_hash, index) DO
+        ON CONFLICT (chain_id, block_hash, index) DO
         UPDATE SET
-            chain_id = excluded.chain_id,
-            block_hash = excluded.block_hash,
             height = excluded.height,
             transaction_hash = excluded.transaction_hash,
-            index = excluded.index,
             transaction_index = excluded.transaction_index,
             data = excluded.data,
             time = excluded.time
