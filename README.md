@@ -24,7 +24,6 @@ You can find these components in the [releases](https://github.com/unionlabs/uni
 
 The official docs are hosted [here][docs]. Each individual component also has accompanying developer documentation for contributors, which you can find in each `README.md`.
 
-## Contributing
 
 The [contributing](./CONTRIBUTING.md) guide explains how to get started working on Union and its components.
 Please make sure to [set up your GitHub PAT](<https://github.com/unionlabs/union/wiki/Personal-Access-Token-(PAT)-Setup>), otherwise Nix builds will fail.
