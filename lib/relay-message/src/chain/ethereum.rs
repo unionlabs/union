@@ -247,6 +247,17 @@ where
                                                     well_known = true,
                                                 )
                                                 .in_scope(|| log_msg(effect));
+                                            } else if result.return_data.is_empty() {
+                                                error_span!(
+                                                    "evm message failed",
+                                                    msg = %msg_name,
+                                                    %idx,
+                                                    revert = %serde_utils::to_hex(result.return_data),
+                                                    well_known = false,
+                                                )
+                                                .in_scope(|| log_msg(effect));
+
+                                                return Err(TxSubmitError::EmptyRevert)
                                             } else {
                                                 error_span!(
                                                     "evm message failed",
@@ -355,6 +366,9 @@ where
             Ok(seq([defer_relative(6), effect(id(chain_id, msg))]))
         }
         Some(Err(TxSubmitError::OutOfGas)) => {
+            Ok(seq([defer_relative(12), effect(id(chain_id, msg))]))
+        }
+        Some(Err(TxSubmitError::EmptyRevert)) => {
             Ok(seq([defer_relative(12), effect(id(chain_id, msg))]))
         }
         Some(Err(err)) => Err(err),
@@ -1302,6 +1316,8 @@ pub enum TxSubmitError {
     InvalidRevert(Bytes),
     #[error("out of gas")]
     OutOfGas,
+    #[error("0x revert")]
+    EmptyRevert,
     #[error("gas price is too high: max {max}, price {price}")]
     GasPriceTooHigh { max: U256, price: U256 },
 }
