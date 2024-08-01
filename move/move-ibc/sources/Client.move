@@ -1,4 +1,4 @@
-module ContractClientAddress::Client {
+module IBC::Client {
     use std::signer;
     use std::vector;
     use std::error;
@@ -7,16 +7,21 @@ module ContractClientAddress::Client {
     use aptos_framework::event;
     use aptos_framework::account::{Self, SignerCapability};
     use aptos_framework::aptos_account;
+    use aptos_framework::object;
     use aptos_std::string::{Self as StringModule, String};
 
     use aptos_std::string_utils;
     use 0x1::IBCCommitment;
     use LightClientAddress::LightClient;
+    
 
     const SEED: vector<u8> = b"Move Seed Example";
+    const VAULT_SEED: vector<u8> = b"Vault Seed Example";
     const E_CLIENT_ALREADY_EXISTS: u64 = 1001;
     const E_CLIENT_IMPL_NOT_FOUND: u64 = 1002;
     const E_LIGHT_CLIENT_CALL_FAILED: u64 = 1003;
+    const ERR_SWAP_NOT_INITIALIZED: u64 = 1004;
+    const ERR_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE: u64 = 1005;
     
     struct ClientCreatedEvent has copy, drop, store {
         client_id: String,
@@ -28,6 +33,7 @@ module ContractClientAddress::Client {
         client_impls: SmartTable<String, address>,
         client_registry: SmartTable<String, address>,
         commitments: SmartTable<vector<u8>, u256>,
+        extend_ref: object::ExtendRef,
     }
 
 
@@ -53,10 +59,17 @@ module ContractClientAddress::Client {
             relayer,
         }
     }
-    
+
+    #[view]
+    public fun get_vault_addr(): address {
+        object::create_object_address(&@IBC, VAULT_SEED)
+    }
 
     // Initializes the IBCStore resource in the signer's account
-    public fun create_ibc_store(account: &signer) {
+    public fun create_ibc_store(account: &signer)  {
+        assert!(signer::address_of(account) == @IBC, ERR_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE);
+        let vault_constructor_ref = &object::create_named_object(account, VAULT_SEED);
+        let vault_signer = &object::generate_signer(vault_constructor_ref);
 
         let (resource_signer, resource_signer_cap) = account::create_resource_account(account, SEED);
         let store = IBCStore {
@@ -65,37 +78,17 @@ module ContractClientAddress::Client {
             commitments: SmartTable::new(),
             client_impls: SmartTable::new(),
             client_created_events: account::new_event_handle(&resource_signer),
-        };
-        move_to(account, store);
-    }
-
-    // Function to register a client type   
-    public fun register_client(account: &signer, client_type: String, client_address: address) acquires IBCStore {
-        let store = borrow_global_mut<IBCStore>(signer::address_of(account));
-
-        let curr_registry = SmartTable::borrow_with_default(&store.client_registry, client_type, &@0x0);
-        if (*curr_registry != @0x0) {
-            abort E_CLIENT_ALREADY_EXISTS;
+            extend_ref: object::generate_extend_ref(vault_constructor_ref),
         };
 
-        // Register the new client type
-        SmartTable::add(&mut store.client_registry, client_type, client_address);
+        move_to(vault_signer, store);
+
+        let addr = get_vault_addr();
+
     }
-
-    public fun get_client(account: &signer, client_type: String): address acquires IBCStore {
-        let store = borrow_global<IBCStore>(signer::address_of(account));
-
-        let client_address = SmartTable::borrow_with_default(&store.client_registry, client_type, &@0x0);
-        if (*client_address == @0x0) {
-            abort E_CLIENT_IMPL_NOT_FOUND;
-        };
-
-        *client_address
-    }
-
-    // Function to generate a client identifier
-    public fun generate_client_identifier(account: &signer, client_type: String): String acquires IBCStore {
-        let store = borrow_global_mut<IBCStore>(signer::address_of(account));
+        // Function to generate a client identifier
+    public fun generate_client_identifier(client_type: String): String acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let next_sequence = SmartTable::borrow_with_default(&store.commitments, b"nextClientSequence", &0);
         let next_sequence_str = string_utils::to_string(next_sequence);
@@ -110,13 +103,11 @@ module ContractClientAddress::Client {
         identifier
     }
 
-    // Function to create a client based on the provided message
-    public fun create_client(account: &signer, msg: MsgCreateClient): String  acquires IBCStore {
-        let client_impl = get_client(account, msg.client_type);
-        let client_id = generate_client_identifier(account, msg.client_type);
 
-        let store = borrow_global_mut<IBCStore>(signer::address_of(account));
-        SmartTable::upsert(&mut store.client_impls, client_id, client_impl);
+    // // Function to create a client based on the provided message
+    public fun create_client(msg: MsgCreateClient): String  acquires IBCStore {
+        let client_id = generate_client_identifier(msg.client_type);
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let status_code = LightClientAddress::LightClient::create_client(
             client_id, 

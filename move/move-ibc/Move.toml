@@ -8,8 +8,8 @@ ContractAAddress = "0xA" # Replace with a real address for deployment
 ContractBAddress = "0xB" # Replace with a real address for deployment
 ContractTestAddress = "0x00"
 
-ContractClientAddress = "0x123"
-LightClientAddress = "0x111111111111111"
+LightClientAddress = "0x123"
+IBC = "0x111111111111111" # This will be storage of our IBCStore
 
 [dev-addresses]
 
