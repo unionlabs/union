@@ -5,10 +5,13 @@ export const addressTransfersTimestampFilterQueryDocument = graphql(/* graphql *
     $limit: Int!,
     $addresses: [ String! ]!,
     $timestamp: timestamptz!
-  ) { 
+  ) @cached(ttl: 1000) {
     newer: v0_transfers(
       limit: $limit,
-      order_by: [ { source_timestamp: asc },{ source_transaction_hash: asc } ],
+      order_by: [
+        { source_timestamp: asc },
+        { source_transaction_hash: asc }
+      ],
       where: { 
         _and: [ 
           { source_timestamp: { _gte: $timestamp } },
@@ -36,14 +39,16 @@ export const addressTransfersTimestampFilterQueryDocument = graphql(/* graphql *
 
   older: v0_transfers(
       limit: $limit,
-      order_by: [ { source_timestamp: asc },{ source_transaction_hash: asc } ],
+      order_by: [
+        { source_timestamp: asc },
+        { source_transaction_hash: asc }
+      ],
       where: { 
         _and: [ 
           { source_timestamp: { _lt: $timestamp } },
           { _or: [ { sender: { _in: $addresses } }, { receiver: { _in: $addresses } } ] },
          ]
       }
-
     ) { 
       sender
       source_chain_id
@@ -70,10 +75,13 @@ export const latestAddressTransfersQueryDocument = graphql(/* graphql */ `
   query LatestAddressTransfersQuery(
     $limit: Int!,
     $addresses: [ String! ]!
-  ) { 
+  ) @cached(ttl: 1000) {
     data: v0_transfers(
       limit: $limit,
-      order_by: { source_timestamp: desc, source_transaction_hash: desc },
+      order_by: [
+        { source_timestamp: asc },
+        { source_transaction_hash: asc }
+      ],
       where: { _or: [ { sender: { _in: $addresses } }, { receiver: { _in: $addresses } } ] }
     ) { 
       sender

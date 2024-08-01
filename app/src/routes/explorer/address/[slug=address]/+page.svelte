@@ -42,7 +42,7 @@ let addressArray = derived([addressArrayContext, page], ([$addressArray, $page])
   $page.params?.slug?.length > 0 ? $page.params.slug.split("-") : $addressArray
 )
 
-const QUERY_LIMIT = 5
+const QUERY_LIMIT = 20
 const REFRESH_INTERVAL = 5_000 // 5 seconds
 
 let timestamp = writable(
