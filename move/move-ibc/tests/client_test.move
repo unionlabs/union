@@ -1,4 +1,4 @@
-module 0x1::ClientTest {
+module 0x1::CoreTest {
 
     use std::signer;
     use std::account;
@@ -8,7 +8,8 @@ module 0x1::ClientTest {
     use aptos_framework::coin::Coin;
     use aptos_framework::aptos_coin::AptosCoin;
     use aptos_framework::event;
-    use IBC::Client::{Self as ClientModule, MsgCreateClient};
+    use aptos_std::any::{Self, Any};
+    use IBC::Core::{Self as ClientModule};
 
 
     use aptos_framework::smart_table::{Self as SmartTable, SmartTable};
@@ -26,7 +27,6 @@ module 0x1::ClientTest {
         // Generate the first identifier
         let identifier1 = ClientModule::generate_client_identifier(client_type);
         let expected_identifier1 = StringModule::utf8(b"test_client-0"); 
-        debug::print(&identifier1);
         assert!(identifier1 == expected_identifier1, E_GENERATE_CLIENT_IDENTIFIER);
 
         // Generate the second identifier
@@ -43,15 +43,11 @@ module 0x1::ClientTest {
         // Register the mock client type and address
         let client_type = StringModule::utf8(b"mock_client");
 
-        // Create a MsgCreateClient message using the factory function
-        let msg = ClientModule::new_msg_create_client(
+        ClientModule::create_client(
             client_type,
-            StringModule::utf8(b""),
-            StringModule::utf8(b""),
-            @0x3
-        );
-
-        ClientModule::create_client(msg);
+            any::pack(0),
+            any::pack(0),
+            @0x3);
     }
 
     #[test(alice = @IBC)]
@@ -62,17 +58,14 @@ module 0x1::ClientTest {
         let client_type = StringModule::utf8(b"mock_client");
         let mock_address = @0x2; // This would be the address of the MockLightClient in a real scenario
 
-        // Create a MsgCreateClient message using the factory function
-        let msg = ClientModule::new_msg_create_client(
-            client_type,
-            StringModule::utf8(b"state_bytes"),
-            StringModule::utf8(b"consensus_bytes"),
-            @0x3
-        );
-
         let expected_client_id = StringModule::utf8(b"mock_client-0");
 
-        let client_id = ClientModule::create_client(msg);
+        let client_id = ClientModule::create_client(
+            client_type,
+            any::pack(3),
+            any::pack(3),
+            @0x3
+        );
         assert!(client_id == expected_client_id, E_CREATE_CLIENT);
 
     }
