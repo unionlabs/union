@@ -10,6 +10,7 @@ import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
 import { Toaster } from "$lib/components/ui/sonner"
 import { notifyManager } from "@tanstack/svelte-query"
+import DevTools from "$lib/components/dev-tools.svelte"
 import { createQueryClient } from "$lib/query-client.ts"
 import Header from "$lib/components/header/header.svelte"
 import LoadingBar from "$lib/components/loading-bar.svelte"
@@ -85,6 +86,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
     initialIsOpen={false}
     buttonPosition="bottom-right"
   />
+  <DevTools />
   <!-- will be enabled once powered by index status !-->
   <!-- <OnlineStatus /> !-->
 </PersistQueryClientProvider>

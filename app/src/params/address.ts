@@ -1,4 +1,4 @@
-import { isValidCosmosAddress, isValidEvmAddress } from "$lib/wallet/utilities/validate"
+import { isValidCosmosAddress, isValidEvmAddress } from "$lib/wallet/utilities/validate.ts"
 
 /**
  * what is this?

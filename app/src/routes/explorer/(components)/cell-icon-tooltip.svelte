@@ -25,7 +25,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 3_000)]
     <Tooltip.Trigger asChild let:builder class="size-full">
       <Button
         size="default"
-        variant="default"
+        variant="outline"
         class="size-9 p-1"
         builders={[builder]}
       >
@@ -74,5 +74,3 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 3_000)]
     </Tooltip.Content>
   </Tooltip.Root>
 </div>
-
-<style lang="postcss"></style>

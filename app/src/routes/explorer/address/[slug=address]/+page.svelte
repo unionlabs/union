@@ -17,28 +17,32 @@ import {
   encodeTimestampSearchParam
 } from "./paginated-transfers.ts"
 import { page } from "$app/stores"
+import { getContext } from "svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { derived, writable } from "svelte/store"
 import * as Table from "$lib/components/ui/table"
 import { goto, onNavigate } from "$app/navigation"
 import { showUnsupported } from "$lib/stores/user.ts"
 import DevTools from "$lib/components/dev-tools.svelte"
-import { sepoliaStore } from "$lib/wallet/evm/config.ts"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, TransferAsset } from "$lib/types.ts"
-import { cosmosStore } from "$lib/wallet/cosmos/config.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellAssets from "../../(components)/cell-assets.svelte"
+import { derived, writable, type Readable } from "svelte/store"
 import CellTooltipIcon from "../../(components)/cell-icon-tooltip.svelte"
 import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
-import type { PageData } from "./$types.ts"
 
-const QUERY_LIMIT = 10
+let addressArrayContext = getContext<Readable<Array<string>>>("addressArray")
+
+let addressArray = derived([addressArrayContext, page], ([$addressArray, $page]) =>
+  $page.params?.slug?.length > 0 ? $page.params.slug.split("-") : $addressArray
+)
+
+const QUERY_LIMIT = 5
 const REFRESH_INTERVAL = 5_000 // 5 seconds
 
 let timestamp = writable(
@@ -57,12 +61,9 @@ const queryClient = useQueryClient()
  *  2. the user clicks on the `current` button which resets to current and live data
  */
 let REFETCH_ENABLED = writable($page.url.searchParams.has("timestamp") ? false : true)
-let addresses = derived([sepoliaStore, cosmosStore], ([$sepoliaStore, $cosmosStore]) =>
-  [$sepoliaStore.address?.toLowerCase(), $cosmosStore.address?.toLowerCase()].filter(Boolean)
-)
 
 let liveTransfers = createQuery(
-  derived([REFETCH_ENABLED, addresses], ([$REFETCH_ENABLED, $addresses]) => ({
+  derived([REFETCH_ENABLED, addressArray], ([$REFETCH_ENABLED, $addressArray]) => ({
     queryKey: ["user-transfers", "live"],
     staleTime: Number.POSITIVE_INFINITY,
     enabled: $REFETCH_ENABLED,
@@ -73,15 +74,15 @@ let liveTransfers = createQuery(
     queryFn: async () =>
       await latestAddressTransfers({
         limit: QUERY_LIMIT,
-        addresses: $addresses
+        addresses: $addressArray
       })
   }))
 )
 
 let transfers = createQuery(
   derived(
-    [timestamp, addresses, REFETCH_ENABLED],
-    ([$timestamp, $addresses, $REFETCH_ENABLED]) => ({
+    [timestamp, addressArray, REFETCH_ENABLED],
+    ([$timestamp, $addressArray, $REFETCH_ENABLED]) => ({
       queryKey: ["user-transfers", $timestamp],
       refetchOnMount: false,
       refetchOnReconnect: false,
@@ -91,7 +92,7 @@ let transfers = createQuery(
       queryFn: async () =>
         await paginatedTransfers({
           limit: QUERY_LIMIT,
-          addresses: $addresses,
+          addresses: $addressArray,
           timestamp: $timestamp
         })
     })
