@@ -39,6 +39,10 @@ module IBC::Core {
         commitments: SmartTable<vector<u8>, vector<u8>>
     }
 
+    struct SignerRef has key {
+        self_ref: object::ExtendRef,
+    }
+
 
 
     // // Struct representing the message to create a client
@@ -89,6 +93,10 @@ module IBC::Core {
 
         move_to(vault_signer, store);
 
+        move_to(vault_signer, SignerRef {
+            self_ref: object::generate_extend_ref(vault_constructor_ref)
+        });
+
         let addr = get_vault_addr();
     }
 
@@ -121,11 +129,12 @@ module IBC::Core {
         client_state: Any,
         consensus_state: Any,
         relayer: address
-    ): String  acquires IBCStore {
+    ): String  acquires IBCStore, SignerRef {
         let client_id = generate_client_identifier(client_type);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let client_state_bytes = bcs::to_bytes<Any>(&client_state);
         let status_code = IBC::LightClient::create_client(
+            get_ibc_signer(),
             client_id, 
             client_state, 
             consensus_state
@@ -149,6 +158,11 @@ module IBC::Core {
 
         client_id
 
+    }
+
+    public fun get_ibc_signer(): signer acquires SignerRef {
+        let vault = borrow_global<SignerRef>(get_vault_addr());
+        object::generate_signer_for_extending(&vault.self_ref)
     }
 
     //connection handshake

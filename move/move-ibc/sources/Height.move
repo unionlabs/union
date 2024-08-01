@@ -19,4 +19,7 @@ module IBC::height {
         height.revision_height
     }
 
+    public fun is_zero(height: &Height): bool {
+        height.revision_number == 0 && height.revision_height == 0
+    }
 }
