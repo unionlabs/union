@@ -1,4 +1,4 @@
-import { isValidCosmosAddress, isValidEvmAddress } from "$lib/wallet/utilities/validate.ts"
+import { address as addressUtilities } from "@union/client"
 
 /**
  * what is this?
@@ -7,5 +7,8 @@ import { isValidCosmosAddress, isValidEvmAddress } from "$lib/wallet/utilities/v
 
 export function match(param: string) {
   const addresses = param.indexOf("-") === -1 ? [param] : param.split("-")
-  return addresses.every(address => isValidEvmAddress(address) || isValidCosmosAddress(address))
+  return addresses.every(
+    address =>
+      addressUtilities.isValidEvmAddress(address) || addressUtilities.isValidBech32Address(address)
+  )
 }

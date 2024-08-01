@@ -58,7 +58,7 @@ export async function latestTransfers({
   }
 }
 
-export async function paginatedTransfers({
+export async function paginatedAddressesTransfers({
   limit,
   timestamp
 }: { limit: number; timestamp: string }): Promise<PaginatedTransfers> {

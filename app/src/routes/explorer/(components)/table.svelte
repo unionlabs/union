@@ -40,8 +40,7 @@ const options = writable<TableOptions<any>>({
   getPaginationRowModel: getPaginationRowModel(),
   state: {
     pagination: { pageIndex, pageSize }
-  },
-  debugTable: import.meta.env.MODE === "development"
+  }
 })
 
 let virtualListElement: HTMLDivElement

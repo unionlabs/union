@@ -10,11 +10,11 @@ import {
   getPaginationRowModel
 } from "@tanstack/svelte-table"
 import {
-  paginatedTransfers,
   type TransferAddress,
-  latestAddressTransfers,
+  latestAddressesTransfers,
   decodeTimestampSearchParam,
-  encodeTimestampSearchParam
+  encodeTimestampSearchParam,
+  paginatedAddressesTransfers
 } from "./paginated-transfers.ts"
 import { page } from "$app/stores"
 import { getContext } from "svelte"
@@ -27,6 +27,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, TransferAsset } from "$lib/types.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
+import { addressTransfersPreference } from "../preference.ts"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellAssets from "../../(components)/cell-assets.svelte"
 import { derived, writable, type Readable } from "svelte/store"
@@ -42,8 +43,10 @@ let addressArray = derived([addressArrayContext, page], ([$addressArray, $page])
   $page.params?.slug?.length > 0 ? $page.params.slug.split("-") : $addressArray
 )
 
-const QUERY_LIMIT = 20
-const REFRESH_INTERVAL = 5_000 // 5 seconds
+addressTransfersPreference.useLocalStorage()
+
+let QUERY_LIMIT = 5
+let REFRESH_INTERVAL = 5_000
 
 let timestamp = writable(
   $page.url.searchParams.has("timestamp")
@@ -72,7 +75,7 @@ let liveTransfers = createQuery(
     refetchOnReconnect: $REFETCH_ENABLED,
     refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
     queryFn: async () =>
-      await latestAddressTransfers({
+      await latestAddressesTransfers({
         limit: QUERY_LIMIT * 2,
         addresses: $addressArray
       })
@@ -90,7 +93,7 @@ let transfers = createQuery(
       staleTime: Number.POSITIVE_INFINITY,
       enabled: () => $REFETCH_ENABLED === false,
       queryFn: async () =>
-        await paginatedTransfers({
+        await paginatedAddressesTransfers({
           limit: QUERY_LIMIT,
           addresses: $addressArray,
           timestamp: $timestamp
@@ -143,7 +146,6 @@ const columns: Array<ColumnDef<DataRow>> = [
     size: 100,
     minSize: 20,
     maxSize: 100,
-
     accessorKey: "hash",
     header: _ => "Tx Hash",
     accessorFn: (originalRow, _index) => originalRow.hash,
@@ -180,7 +182,9 @@ const columns: Array<ColumnDef<DataRow>> = [
       }
       const { chainId, address } = info.getValue()
       const chainDisplayName =
-        info.chains.find(chain => chain.chain_id === chainId)?.display_name ?? "unknown chain"
+        info.chains.find(chain => chain.chain_id === chainId)?.display_name ??
+        chainId ??
+        "unknown chain"
       return flexRender(CellOriginTransfer, {
         value: {
           address,
@@ -199,7 +203,9 @@ const columns: Array<ColumnDef<DataRow>> = [
       }
       const { chainId, address } = info.getValue()
       const chainDisplayName =
-        info.chains.find(chain => chain.chain_id === chainId)?.display_name ?? "unknown chain"
+        info.chains.find(chain => chain.chain_id === chainId)?.display_name ??
+        chainId ??
+        "unknown chain"
       return flexRender(CellOriginTransfer, {
         value: {
           address,
@@ -230,27 +236,26 @@ const options = writable<TableOptions<DataRow>>({
   autoResetPageIndex: true,
   enableColumnFilters: true,
   enableColumnResizing: true,
-  columnResizeMode: "onChange",
   enableMultiRowSelection: true,
   getCoreRowModel: getCoreRowModel(),
   rowCount: $transfersDataStore?.length,
   getFilteredRowModel: getFilteredRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
-  defaultColumn: { size: 200, minSize: 200, maxSize: 200 },
   state: { pagination: $pagination },
-  debugAll: import.meta.env.MODE === "development" && import.meta.env.DEBUG_TABLE === "true"
+  debugTable: import.meta.env.MODE === "development" && import.meta.env.DEBUG_TABLE === "true"
 })
 
 const rerender = () => {
   options.update(options => ({
     ...options,
-    data: $transfersDataStore,
-    debugAll: import.meta.env.DEBUG_ALL === "true"
+    data: $transfersDataStore
   }))
 }
 
 const table = createSvelteTable(options)
 const rows = derived(table, $t => $t.getRowModel().rows)
+
+$: console.info("rows per page", $rows.length)
 
 function assetHasInfoProperty(assets: TransferAsset) {
   const [[_, { info }]] = Object.entries(assets)
@@ -364,7 +369,8 @@ onNavigate(navigation => {
     onCurrentClick={() => {
       pagination.update((p) => ({ ...p, pageIndex: 1 }))
       $REFETCH_ENABLED = true
-      goto("/explorer/user", { replaceState: true })
+
+      goto($page.url.pathname, { replaceState: true })
     }}
     onNewerPage={async (page) => {
       const stamp = $timestamps.latestTimestamp

@@ -11,7 +11,7 @@ import {
 } from "@tanstack/svelte-table"
 import {
   latestTransfers,
-  paginatedTransfers,
+  paginatedAddressesTransfers,
   type TransferAddress,
   decodeTimestampSearchParam,
   encodeTimestampSearchParam
@@ -74,13 +74,13 @@ let liveTransfers = createQuery(
 let transfers = createQuery(
   derived([timestamp, REFETCH_ENABLED], ([$timestamp, $REFETCH_ENABLED]) => ({
     queryKey: ["transfers", $timestamp],
-    staleTime: Number.POSITIVE_INFINITY,
     refetchOnMount: false,
     refetchOnReconnect: false,
-    enabled: () => $REFETCH_ENABLED === false,
     placeholderData: keepPreviousData,
+    staleTime: Number.POSITIVE_INFINITY,
+    enabled: () => $REFETCH_ENABLED === false,
     queryFn: async () =>
-      await paginatedTransfers({
+      await paginatedAddressesTransfers({
         timestamp: $timestamp,
         limit: QUERY_LIMIT
       })
@@ -140,7 +140,9 @@ const columns: Array<ColumnDef<DataRow, TransferAddress>> = [
       }
       const { chainId, address } = info.getValue()
       const chainDisplayName =
-        info.chains.find(chain => chain.chain_id === chainId)?.display_name ?? "unknown chain"
+        info.chains.find(chain => chain.chain_id === chainId)?.display_name ??
+        chainId ??
+        "unknown chain"
       return flexRender(CellOriginTransfer, {
         value: {
           address,
@@ -162,7 +164,9 @@ const columns: Array<ColumnDef<DataRow, TransferAddress>> = [
       }
       const { chainId, address } = info.getValue()
       const chainDisplayName =
-        info.chains.find(chain => chain.chain_id === chainId)?.display_name ?? "unknown chain"
+        info.chains.find(chain => chain.chain_id === chainId)?.display_name ??
+        chainId ??
+        "unknown chain"
       return flexRender(CellOriginTransfer, {
         value: {
           address,

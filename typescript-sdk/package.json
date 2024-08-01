@@ -1,6 +1,6 @@
 {
   "name": "@union/client",
-  "version": "0.0.1-rc.46",
+  "version": "0.0.1-rc.48",
   "description": "Union Labs cross-chain transfers client",
   "homepage": "https://jsr.io/@union/client",
   "type": "module",
@@ -41,7 +41,7 @@
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.1",
     "patch-package": "^8.0.0",
-    "tsx": "^4.16.3",
+    "tsx": "^4.16.4",
     "typescript": "^5.5.4",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^2.0.5"

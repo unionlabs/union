@@ -15,21 +15,16 @@ export function truncateAddress({
 export const isValidEvmAddress = (address: unknown): address is HexAddress =>
   typeof address === "string" && isAddress(address) && getAddress(address) === address
 
-export function isValidBech32Address(
-  address: unknown,
-  { expectedPrefixes }: { expectedPrefixes: ["union"] } = { expectedPrefixes: ["union"] }
-): address is Bech32Address {
+export function isValidBech32Address(address: unknown): address is Bech32Address {
   if (typeof address !== "string") return false
 
   try {
-    const { prefix, data } = fromBech32(address)
-    if (expectedPrefixes && !expectedPrefixes.includes(prefix)) return false
-
+    const { prefix: _, data } = fromBech32(address)
     const size = data.length
     if ([20, 32].indexOf(size) === -1) return false
 
     return true
-  } catch (error) {
+  } catch {
     return false
   }
 }
