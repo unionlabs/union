@@ -28,7 +28,7 @@
     "@cosmjs/stargate": "0.32.4",
     "@cosmjs/tendermint-rpc": "0.32.4",
     "ofetch": "^1.3.4",
-    "viem": "^2.18.5"
+    "viem": "^2.18.7"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
@@ -36,15 +36,15 @@
     "@scure/base": "^1.1.7",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.6",
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.0.2",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.1",
     "patch-package": "^8.0.0",
-    "tsx": "^4.16.2",
+    "tsx": "^4.16.3",
     "typescript": "^5.5.4",
     "vite-tsconfig-paths": "^4.3.2",
-    "vitest": "^2.0.4"
+    "vitest": "^2.0.5"
   },
   "overrides": {
     "globalthis": "npm:@nolyfill/globalthis@^1",

@@ -73,7 +73,7 @@ let liveTransfers = createQuery(
     refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
     queryFn: async () =>
       await latestAddressTransfers({
-        limit: QUERY_LIMIT,
+        limit: QUERY_LIMIT * 2,
         addresses: $addressArray
       })
   }))

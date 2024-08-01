@@ -15,7 +15,7 @@ export interface TransferAddress {
   address: string
 }
 
-export interface Transfer {
+export type Transfer = {
   source: TransferAddress
   destination: TransferAddress
   hash: string
@@ -41,22 +41,29 @@ export async function latestAddressTransfers({
     addresses
   })
 
-  return {
-    transfers: data.map(transfer => ({
-      assets: transfer.assets,
+  const transfers = data.map(transfer => {
+    const lastForward = transfer.forwards?.at(-1)
+    const receiver = lastForward?.receiver ?? transfer.receiver
+    const destinationChainId = lastForward?.chain?.chain_id ?? transfer.destination_chain_id
+    return {
       source: {
         address: transfer.sender || "unknown",
         hash: transfer.source_transaction_hash || "unknown",
         chainId: transfer.source_chain_id ?? raise("source_chain_id is null")
       },
       destination: {
-        address: transfer.receiver || "unknown",
+        address: receiver || "unknown",
         hash: transfer.destination_transaction_hash || "unknown",
-        chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null")
+        chainId: destinationChainId ?? raise("destination_chain_id is null")
       },
       timestamp: `${transfer.source_timestamp}`,
-      hash: `${transfer.source_transaction_hash}`
-    })),
+      hash: `${transfer.source_transaction_hash}`,
+      assets: transfer.assets
+    }
+  })
+
+  return {
+    transfers,
     latestTimestamp: data.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
     oldestTimestamp: data.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
   }
@@ -83,22 +90,29 @@ export async function paginatedTransfers({
 
   const allTransfers = [...newer.toReversed(), ...older]
 
-  return {
-    transfers: allTransfers.map(transfer => ({
-      assets: transfer.assets,
+  const transfers = allTransfers.map(transfer => {
+    const lastForward = transfer.forwards?.at(-1)
+    const receiver = lastForward?.receiver ?? transfer.receiver
+    const destinationChainId = lastForward?.chain?.chain_id ?? transfer.destination_chain_id
+    return {
       source: {
         address: transfer.sender || "unknown",
         hash: transfer.source_transaction_hash || "unknown",
         chainId: transfer.source_chain_id ?? raise("source_chain_id is null")
       },
       destination: {
-        address: transfer.receiver || "unknown",
+        address: receiver || "unknown",
         hash: transfer.destination_transaction_hash || "unknown",
-        chainId: transfer.destination_chain_id ?? raise("destination_chain_id is null")
+        chainId: destinationChainId ?? raise("destination_chain_id is null")
       },
       timestamp: `${transfer.source_timestamp}`,
-      hash: `${transfer.source_transaction_hash}`
-    })),
+      hash: `${transfer.source_transaction_hash}`,
+      assets: transfer.assets
+    }
+  })
+
+  return {
+    transfers,
     latestTimestamp: allTransfers.at(0)?.source_timestamp ?? raise("latestTimestamp is null"),
     oldestTimestamp: allTransfers.at(-1)?.source_timestamp ?? raise("oldestTimestamp is null")
   }

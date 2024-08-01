@@ -2,24 +2,14 @@ import { isAddress, getAddress } from "viem"
 import { fromBech32 } from "@cosmjs/encoding"
 import type { HexAddress, Bech32Address } from "../types.ts"
 
-export const truncateBech32Address = (address: string, length = 6) =>
-  length > 0 ? `${address.slice(0, length)}...${address.slice(-length)}` : address
-
-export const truncateEvmAddress = (address: string, length = 6) =>
-  length > 0 ? `${address.slice(0, length)}...${address.slice(-length)}` : address
-
 export function truncateAddress({
   address,
-  type,
   length = 6
 }: {
   address: string
-  type: "bech32" | "hex"
   length?: number
 }) {
-  return type === "bech32"
-    ? truncateBech32Address(address, length)
-    : truncateEvmAddress(address, length)
+  return length > 0 ? `${address.slice(0, length)}...${address.slice(-length)}` : address
 }
 
 export const isValidEvmAddress = (address: unknown): address is HexAddress =>

@@ -3,11 +3,7 @@ import { normalizeBech32 } from "@cosmjs/encoding"
 import type { CosmosAddress, EvmAddress } from "$lib/wallet/types.ts"
 
 export function isValidEvmAddress(address: unknown): address is EvmAddress {
-  return (
-    typeof address === "string" && //
-    isAddress(address) &&
-    getAddress(address) === address
-  )
+  return typeof address === "string" && isAddress(address) && getAddress(address) === address
 }
 
 export function isValidCosmosAddress(

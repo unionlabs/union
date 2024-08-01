@@ -41,15 +41,26 @@ import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
-const pfm = { createPfmMemo }
+const address = {
+  bech32AddressToHex,
+  hexAddressToBech32,
+  bech32ToBech32Address,
+  hexStringToUint8Array,
+  uint8ArrayToHexString,
+  convertByteArrayToHex,
+  truncateAddress,
+  isValidEvmAddress,
+  isValidBech32Address
+}
 
 export {
   /**
    * We export this as a standalone so that it can be used to fetch data that get passed to `createCosmosSdkClient`
    */
-  offchainQuery,
+  address,
   cosmosHttp,
-  pfm
+  offchainQuery,
+  createPfmMemo
 }
 
 export type * from "./types.ts"

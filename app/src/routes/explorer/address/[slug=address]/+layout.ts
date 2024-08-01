@@ -1,3 +1,2 @@
-/** @see https://kit.svelte.dev/docs/page-options */
+/* this is a lie, the page is still prerendered like all others */
 export const prerender = false
-export const trailingSlash = "ignore"

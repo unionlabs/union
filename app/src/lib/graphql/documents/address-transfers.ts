@@ -15,7 +15,6 @@ export const addressTransfersTimestampFilterQueryDocument = graphql(/* graphql *
           { _or: [ { sender: { _in: $addresses } }, { receiver: { _in: $addresses } } ] },
          ]
       }
-
     ) { 
       sender
       source_chain_id
@@ -26,6 +25,13 @@ export const addressTransfersTimestampFilterQueryDocument = graphql(/* graphql *
       destination_timestamp
       destination_transaction_hash
       assets
+
+      forwards {
+        port
+        channel
+        receiver
+        chain { chain_id }
+      }
     }
 
   older: v0_transfers(
@@ -48,6 +54,13 @@ export const addressTransfersTimestampFilterQueryDocument = graphql(/* graphql *
       destination_timestamp
       destination_transaction_hash
       assets
+
+      forwards {
+        port
+        channel
+        receiver
+        chain { chain_id }
+      }
     }
 
   }
@@ -72,6 +85,13 @@ export const latestAddressTransfersQueryDocument = graphql(/* graphql */ `
       destination_timestamp
       destination_transaction_hash
       assets
+
+      forwards {
+        port
+        channel
+        receiver
+        chain { chain_id }
+      }
     }
   }
 `)
