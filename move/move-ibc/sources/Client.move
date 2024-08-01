@@ -1,25 +1,35 @@
 module ContractClientAddress::Client {
-
     use std::signer;
     use std::vector;
     use std::error;
-    use std::table;
     use std::debug;
-    // use std::string::String;
     use aptos_std::smart_table::{Self as SmartTable, SmartTable};
+    use aptos_framework::event;
+    use aptos_framework::account::{Self, SignerCapability};
+    use aptos_framework::aptos_account;
     use aptos_std::string::{Self as StringModule, String};
-    use aptos_std::string_utils;
 
+    use aptos_std::string_utils;
+    use 0x1::IBCCommitment;
+    use LightClientAddress::LightClient;
+
+    const SEED: vector<u8> = b"Move Seed Example";
     const E_CLIENT_ALREADY_EXISTS: u64 = 1001;
     const E_CLIENT_IMPL_NOT_FOUND: u64 = 1002;
+    const E_LIGHT_CLIENT_CALL_FAILED: u64 = 1003;
+    
+    struct ClientCreatedEvent has copy, drop, store {
+        client_id: String,
+    }
 
     // Resource to hold the global state
     struct IBCStore has key {
-        // client_types: SmartTable<String, vector<u8>>,
+        client_created_events: event::EventHandle<ClientCreatedEvent>,
         client_impls: SmartTable<String, address>,
         client_registry: SmartTable<String, address>,
         commitments: SmartTable<vector<u8>, u256>,
     }
+
 
     // Struct representing the message to create a client
     struct MsgCreateClient has drop {
@@ -29,18 +39,37 @@ module ContractClientAddress::Client {
         relayer: address,
     }
 
+    // Public factory function to create MsgCreateClient
+    public fun new_msg_create_client(
+        client_type: String, 
+        client_state_bytes: String, 
+        consensus_state_bytes: String, 
+        relayer: address
+    ): MsgCreateClient {
+        MsgCreateClient {
+            client_type,
+            client_state_bytes,
+            consensus_state_bytes,
+            relayer,
+        }
+    }
+    
+
     // Initializes the IBCStore resource in the signer's account
     public fun create_ibc_store(account: &signer) {
+
+        let (resource_signer, resource_signer_cap) = account::create_resource_account(account, SEED);
         let store = IBCStore {
+            // client_created_events,
             client_registry: SmartTable::new(),
             commitments: SmartTable::new(),
-            // client_types: SmartTable::new(),
             client_impls: SmartTable::new(),
+            client_created_events: account::new_event_handle(&resource_signer),
         };
         move_to(account, store);
     }
 
-    // Function to register a client type
+    // Function to register a client type   
     public fun register_client(account: &signer, client_type: String, client_address: address) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(signer::address_of(account));
 
@@ -69,14 +98,12 @@ module ContractClientAddress::Client {
         let store = borrow_global_mut<IBCStore>(signer::address_of(account));
 
         let next_sequence = SmartTable::borrow_with_default(&store.commitments, b"nextClientSequence", &0);
-        
-         // Convert the next sequence to a string
         let next_sequence_str = string_utils::to_string(next_sequence);
 
-        // Format the identifier as "client_type-next_sequence"
-        let format_str = b"{}-{}";
-        let identifier = string_utils::format2(&format_str, client_type, next_sequence_str);
-        // let identifier = string_utils::to_string(&identifier);
+        // Constructing the identifier string using append
+        let identifier = client_type;
+        StringModule::append_utf8(&mut identifier, b"-");
+        StringModule::append(&mut identifier, next_sequence_str);
 
         SmartTable::upsert(&mut store.commitments, b"nextClientSequence", *next_sequence + 1);
 
@@ -84,18 +111,35 @@ module ContractClientAddress::Client {
     }
 
     // Function to create a client based on the provided message
-    public fun create_client(account: &signer, msg: MsgCreateClient) acquires IBCStore {
+    public fun create_client(account: &signer, msg: MsgCreateClient): String  acquires IBCStore {
         let client_impl = get_client(account, msg.client_type);
-        let clientId = generate_client_identifier(account, msg.client_type);
-        
+        let client_id = generate_client_identifier(account, msg.client_type);
+
         let store = borrow_global_mut<IBCStore>(signer::address_of(account));
-        // SmartTable::upsert(&mut store.client_types, clientId, msg.client_type);
-        SmartTable::upsert(&mut store.client_impls, clientId, client_impl);
+        SmartTable::upsert(&mut store.client_impls, client_id, client_impl);
 
-
-        // TODO: Call createClient functiom from lightclient.
-        // Continue with further steps...
-    }
-
+        let status_code = LightClientAddress::LightClient::create_client(
+            client_id, 
+            msg.client_state_bytes, 
+            msg.consensus_state_bytes
+        );
     
+        // Check if the client was created successfully
+        assert!(status_code == 0, status_code);
+
+        // Update commitments
+        // SmartTable::upsert(&mut store.commitments, IBCCommitment::client_state_commitment_key(client_id), msg.client_state_bytes);
+        // SmartTable::upsert(
+        //     &mut store.commitments,
+        //     IBCCommitment::consensus_state_commitment_key(client_id, update.height, 1),
+        //     update.consensus_state_commitment
+        // ); // TODO: If we don't have update.heigh.revision_number - height how can i update this? Will take a look later
+
+        event::emit_event(&mut  store.client_created_events, ClientCreatedEvent {
+            client_id
+        });
+
+        client_id
+
+    }
 }
