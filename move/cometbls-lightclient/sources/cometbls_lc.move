@@ -133,14 +133,27 @@ module hello_blockchain::message {
 
         let res = multi_pairing<G1, G2, Gt>(
             &vector<Element<G1>>[
-                zkp.proof.a, public_inputs_msm, zkp.proof.c, alpha_g1, zkp.proof_commitment, zkp.proof_commitment_pok
+                zkp.proof.a, public_inputs_msm, zkp.proof.c, alpha_g1
             ],
             &vector<Element<G2>>[
-                zkp.proof.b, gamma_g2, delta_g2, beta_g2, pedersen_g, pedersen_g_root_sigma_neg
+                zkp.proof.b, gamma_g2, delta_g2, beta_g2
             ]
         );
 
-        eq<Gt>(&res, &zero<Gt>())
+        if (!eq<Gt>(&res, &zero<Gt>())) {
+            return false;
+        }
+
+        let res = multi_pairing<G1, G2, Gt>(
+            &vector<Element<G1>>[
+                zkp.proof_commitment, zkp.proof_commitment_pok
+            ],
+            &vector<Element<G2>>[
+                pedersen_g, pedersen_g_root_sigma_neg
+            ]
+        );
+
+        eq<Gt>(&res, &zero<Gt>())        
 }
 
 
