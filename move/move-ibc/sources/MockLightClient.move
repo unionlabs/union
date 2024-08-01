@@ -33,6 +33,17 @@ module IBC::LightClient {
         consensus_state: Any
     ): u64 {
         // Return error code, 0 for success
+        let client_state = std::any::unpack<ClientState>(client_state);
+        let consensus_state = std::any::unpack<ConsensusState>(consensus_state);
+        
+        if (height::get_revision_height(&client_state.latest_height) == 0 || consensus_state.timestamp == 0) {
+            return 1
+        };
+
+        if (string::length(&client_state.chain_id) > 31) {
+            return 1
+        };
+        
         0
     }
 
@@ -45,8 +56,8 @@ module IBC::LightClient {
 
     public fun update_client(
         client_id: String,
-        client_msg: vector<u8>
-    ): (vector<height::Height>, u64) { // second parameter is error code        
+        client_msg: Any
+    ): (vector<height::Height>, u64) { // second parameter is error code
         (
             vector<height::Height>[
 
@@ -58,7 +69,10 @@ module IBC::LightClient {
     public fun verify_membership(
         client_id: String,
         height: height::Height,
-        client_msg: vector<u8>
+        proof: Any,
+        prefix: vector<u8>,
+        path: vector<u8>,
+        value: vector<u8>, 
     ): (vector<height::Height>, u64) { // second parameter is error code        
         (
             vector<height::Height>[
