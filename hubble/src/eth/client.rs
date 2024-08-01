@@ -29,7 +29,7 @@ impl RaceClient<Provider<Http>> {
         T: Into<BlockId> + Send + Sync,
     {
         let id = id.into();
-        self.race(|c| c.get_block(id)).await
+        self.race_some(|c| c.get_block(id)).await
     }
 
     pub async fn get_logs(&self, filter: &Filter) -> Result<Vec<Log>, ProviderError> {
