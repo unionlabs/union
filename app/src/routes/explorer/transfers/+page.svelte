@@ -11,10 +11,10 @@ import {
 } from "@tanstack/svelte-table"
 import {
   latestTransfers,
-  paginatedAddressesTransfers,
   type TransferAddress,
   decodeTimestampSearchParam,
-  encodeTimestampSearchParam
+  encodeTimestampSearchParam,
+  paginatedAddressesTransfers
 } from "./paginated-transfers.ts"
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"

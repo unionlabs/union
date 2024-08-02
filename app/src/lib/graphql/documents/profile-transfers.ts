@@ -1,24 +1,21 @@
-import { graphql } from "../index.ts"
+import { graphql } from "../index.js"
 
-export const addressTransfersTimestampFilterQueryDocument = graphql(/* graphql */ `
-  query AddressTransfersTimestampFilterQuery(
+export const profileTransfersTimestampFilterQueryDocument = graphql(/* graphql */ `
+  query AddressesTransfersTimestampFilterQuery(
     $limit: Int!,
-    $address: String!,
+    $addresses: [ String! ]!,
     $timestamp: timestamptz!
   ) @cached(ttl: 1000) {
     newer: v0_transfers(
       limit: $limit,
       order_by: [
         { source_timestamp: asc },
-        { source_transaction_hash: asc },
+        { source_transaction_hash: asc }
       ],
-      # distinct_on: [source_transaction_hash],
       where: {
         _and: [
-          { source_timestamp: { _gte: $timestamp }},
-          {
-            _or: [ { sender: { _ilike: $address } }, { receiver: { _ilike: $address } } ]
-          }
+          {source_timestamp: { _gte: $timestamp }},
+        {_or: [ { normalized_sender: { _in: $addresses } }, { normalized_receiver: { _in: $addresses } } ] }
         ]
       }
     ) { 
@@ -43,15 +40,12 @@ export const addressTransfersTimestampFilterQueryDocument = graphql(/* graphql *
   older: v0_transfers(
       limit: $limit,
       order_by: [
-        { source_transaction_hash: desc },
         { source_timestamp: desc },
+        { source_transaction_hash: desc }
       ],
-      distinct_on: [source_transaction_hash],
-      where: {
-        _and: [
-          { source_timestamp: { _lt: $timestamp },
-          _or: [ { sender: { _ilike: $address } }, { receiver: { _ilike: $address } } ]}
-        ]
+      where: { 
+        source_timestamp: { _lt: $timestamp },
+        _or: [ { sender: { _in: $addresses } }, { receiver: { _in: $addresses } } ] 
       }
     ) { 
       sender
@@ -74,20 +68,19 @@ export const addressTransfersTimestampFilterQueryDocument = graphql(/* graphql *
   }
 `)
 
-export const latestAddressTransfersQueryDocument = graphql(/* graphql */ `
-  query LatestAddressTransfersQuery(
+export const latestProfileTransfersQueryDocument = graphql(/* graphql */ `
+  query LatestAddressesTransfersQuery(
     $limit: Int!,
-    $address: String!
-  ) {
+    $addresses: [ String! ]!
+  ) @cached(ttl: 1000) {
     data: v0_transfers(
       limit: $limit,
       order_by: [
         { source_timestamp: desc },
         { source_transaction_hash: desc }
       ],
-      where: {
-        _or: [ { sender: { _ilike: $address } }, { receiver: { _ilike: $address } } ]
-      }
+      # distinct_on: [source_transaction_hash],
+      where: { _or: [ { normalized_sender: { _in: $addresses } }, { normalized_receiver: { _in: $addresses } } ] }
     ) { 
       sender
       source_chain_id

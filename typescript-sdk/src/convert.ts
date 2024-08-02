@@ -27,6 +27,7 @@ export function bech32ToBech32Address<ToPrefix extends string>({
   address,
   toPrefix
 }: { address: string; toPrefix: ToPrefix }): Bech32Address<ToPrefix> {
+  console.info(bech32.decode(address))
   return bech32.encode(toPrefix, bech32.decode(address).words) as Bech32Address<ToPrefix>
 }
 

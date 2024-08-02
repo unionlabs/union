@@ -16,6 +16,7 @@ let alwaysCollapsedWidth = 580
 >
   {#each tableRoutes as { route, icon }}
     <Button
+      id={route}
       title={route}
       variant="link"
       href={`/explorer/${route}`}

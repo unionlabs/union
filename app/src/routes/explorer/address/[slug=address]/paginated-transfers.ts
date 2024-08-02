@@ -2,13 +2,11 @@ import "temporal-polyfill/global"
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { raise } from "$lib/utilities/index.ts"
-import {
-  // latestAddressesTransfersQueryDocument,
-  // addressesTransfersTimestampFilterQueryDocument,
-  latestAddressTransfersQueryDocument,
-  addressTransfersTimestampFilterQueryDocument
-} from "$lib/graphql/documents/address-transfers"
 import type { TransferAsset } from "$lib/types.ts"
+import {
+  latestProfileTransfersQueryDocument,
+  profileTransfersTimestampFilterQueryDocument
+} from "$lib/graphql/documents/profile-transfers.ts"
 import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 
 export interface TransferAddress {
@@ -38,19 +36,10 @@ export async function latestAddressesTransfers({
   limit: number
   addresses: Array<string>
 }): Promise<PaginatedTransfers> {
-  const responses = await Promise.all(
-    addresses.map(
-      async address =>
-        await request(URLS.GRAPHQL, latestAddressTransfersQueryDocument, { limit, address })
-    )
-  )
-
-  const data = responses.flatMap(response =>
-    response.data.sort(
-      (a, b) =>
-        Number(new Date(`${b.source_timestamp}`)) - Number(new Date(`${a.source_timestamp}`))
-    )
-  )
+  const { data } = await request(URLS.GRAPHQL, latestProfileTransfersQueryDocument, {
+    limit,
+    addresses
+  })
 
   return {
     transfers: data.map(transfer => {
@@ -81,28 +70,20 @@ export async function latestAddressesTransfers({
 
 export async function paginatedAddressesTransfers({
   limit,
-  timestamp,
-  addresses
+  addresses,
+  timestamp
 }: {
   limit: number
   timestamp: string
   addresses: Array<string>
 }): Promise<PaginatedTransfers> {
-  const responses = await Promise.all(
-    addresses.map(
-      async address =>
-        await request(URLS.GRAPHQL, addressTransfersTimestampFilterQueryDocument, {
-          limit,
-          address,
-          timestamp
-        })
-    )
+  const { newer, older } = await request(
+    URLS.GRAPHQL,
+    profileTransfersTimestampFilterQueryDocument,
+    { limit, addresses, timestamp }
   )
 
-  const allTransfers = responses.flatMap(response => [
-    ...response.newer.toReversed(),
-    ...response.older
-  ])
+  const allTransfers = [...newer.toReversed(), ...older]
 
   return {
     transfers: allTransfers.map(transfer => {

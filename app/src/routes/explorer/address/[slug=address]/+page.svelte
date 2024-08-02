@@ -17,7 +17,6 @@ import {
   paginatedAddressesTransfers
 } from "./paginated-transfers.ts"
 import { page } from "$app/stores"
-import { getContext } from "svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { goto, onNavigate } from "$app/navigation"
@@ -36,16 +35,11 @@ import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
-
-let addressArrayContext = getContext<Readable<Array<string>>>("addressArray")
-
-let addressArray = derived([addressArrayContext, page], ([$addressArray, $page]) =>
-  $page.params?.slug?.length > 0 ? $page.params.slug.split("-") : $addressArray
-)
+import { getContext } from "svelte"
 
 addressTransfersPreference.useLocalStorage()
 
-let QUERY_LIMIT = 5
+let QUERY_LIMIT = 8
 let REFRESH_INTERVAL = 5_000
 
 let timestamp = writable(
@@ -58,6 +52,12 @@ let pagination = writable({ pageIndex: 1, pageSize: QUERY_LIMIT })
 
 const queryClient = useQueryClient()
 
+let addressArray =
+  getContext<Readable<{ nonNormalized: Array<string>; normalized: Array<string> }>>("addressArray")
+
+let nonNormalizedAddressArray = $addressArray.nonNormalized
+
+let normalizedAddressArray = derived(addressArray, $addressArray => $addressArray.normalized)
 /**
  * only happens when:
  *  1. it is the first query on initial page load with no timestamp search param,
@@ -65,28 +65,31 @@ const queryClient = useQueryClient()
  */
 let REFETCH_ENABLED = writable($page.url.searchParams.has("timestamp") ? false : true)
 
-let liveTransfers = createQuery(
-  derived([REFETCH_ENABLED, addressArray], ([$REFETCH_ENABLED, $addressArray]) => ({
-    queryKey: ["user-transfers", "live"],
-    staleTime: Number.POSITIVE_INFINITY,
-    enabled: $REFETCH_ENABLED,
-    refetchOnMount: $REFETCH_ENABLED,
-    placeholderData: keepPreviousData,
-    refetchOnReconnect: $REFETCH_ENABLED,
-    refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
-    queryFn: async () =>
-      await latestAddressesTransfers({
-        limit: QUERY_LIMIT * 2,
-        addresses: $addressArray
-      })
-  }))
+let liveAddressTransfers = createQuery(
+  derived(
+    [REFETCH_ENABLED, normalizedAddressArray],
+    ([$REFETCH_ENABLED, $normalizedAddressArray]) => ({
+      queryKey: ["address-transfers-live"],
+      refetchOnMount: $REFETCH_ENABLED,
+      placeholderData: keepPreviousData,
+      staleTime: Number.POSITIVE_INFINITY,
+      refetchOnReconnect: $REFETCH_ENABLED,
+      enabled: $REFETCH_ENABLED,
+      refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
+      queryFn: async () =>
+        await latestAddressesTransfers({
+          limit: QUERY_LIMIT * 2,
+          addresses: $normalizedAddressArray
+        })
+    })
+  )
 )
 
-let transfers = createQuery(
+let addressTransfers = createQuery(
   derived(
-    [timestamp, addressArray, REFETCH_ENABLED],
-    ([$timestamp, $addressArray, $REFETCH_ENABLED]) => ({
-      queryKey: ["user-transfers", $timestamp],
+    [timestamp, normalizedAddressArray, REFETCH_ENABLED],
+    ([$timestamp, $normalizedAddressArray, $REFETCH_ENABLED]) => ({
+      queryKey: ["address-transfers", $timestamp],
       refetchOnMount: false,
       refetchOnReconnect: false,
       placeholderData: keepPreviousData,
@@ -95,49 +98,49 @@ let transfers = createQuery(
       queryFn: async () =>
         await paginatedAddressesTransfers({
           limit: QUERY_LIMIT,
-          addresses: $addressArray,
-          timestamp: $timestamp
+          timestamp: $timestamp,
+          addresses: $normalizedAddressArray
         })
     })
   )
 )
 
 let queryStatus: "pending" | "done" = $REFETCH_ENABLED
-  ? $liveTransfers.status === "pending" || $liveTransfers.fetchStatus === "fetching"
+  ? $liveAddressTransfers.status === "pending" || $liveAddressTransfers.fetchStatus === "fetching"
     ? "pending"
     : "done"
-  : $transfers.status === "pending" || $transfers.fetchStatus === "fetching"
+  : $addressTransfers.status === "pending" || $addressTransfers.fetchStatus === "fetching"
     ? "pending"
     : "done"
 $: queryStatus = $REFETCH_ENABLED
-  ? $liveTransfers.status === "pending" || $liveTransfers.fetchStatus === "fetching"
+  ? $liveAddressTransfers.status === "pending" || $liveAddressTransfers.fetchStatus === "fetching"
     ? "pending"
     : "done"
-  : $transfers.status === "pending" || $transfers.fetchStatus === "fetching"
+  : $addressTransfers.status === "pending" || $addressTransfers.fetchStatus === "fetching"
     ? "pending"
     : "done"
 
 let transfersDataStore = derived(
-  [liveTransfers, transfers, REFETCH_ENABLED],
-  ([$liveTransfers, $transfers, $REFETCH_ENABLED]) => {
-    if ($REFETCH_ENABLED) return $liveTransfers?.data?.transfers ?? []
-    return $transfers?.data?.transfers ?? []
+  [liveAddressTransfers, addressTransfers, REFETCH_ENABLED],
+  ([$liveAddressTransfers, $addressTransfers, $REFETCH_ENABLED]) => {
+    if ($REFETCH_ENABLED) return $liveAddressTransfers?.data?.transfers ?? []
+    return $addressTransfers?.data?.transfers ?? []
   }
 )
 
 type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 
 let timestamps = derived(
-  [liveTransfers, transfers, REFETCH_ENABLED],
-  ([$liveTransfers, $transfers, $REFETCH_ENABLED]) =>
+  [liveAddressTransfers, addressTransfers, REFETCH_ENABLED],
+  ([$liveAddressTransfers, $addressTransfers, $REFETCH_ENABLED]) =>
     $REFETCH_ENABLED
       ? {
-          oldestTimestamp: $liveTransfers?.data?.oldestTimestamp ?? "",
-          latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? ""
+          oldestTimestamp: $liveAddressTransfers?.data?.oldestTimestamp ?? "",
+          latestTimestamp: $liveAddressTransfers?.data?.latestTimestamp ?? ""
         }
       : {
-          oldestTimestamp: $transfers?.data?.oldestTimestamp ?? "",
-          latestTimestamp: $transfers?.data?.latestTimestamp ?? ""
+          oldestTimestamp: $addressTransfers?.data?.oldestTimestamp ?? "",
+          latestTimestamp: $addressTransfers?.data?.latestTimestamp ?? ""
         }
 )
 
@@ -277,7 +280,7 @@ onNavigate(navigation => {
 
 <DevTools>
   {JSON.stringify(
-    { idx: $pagination.pageIndex, $REFETCH_ENABLED },
+    { idx: $pagination.pageIndex, $REFETCH_ENABLED, ...$timestamps },
     undefined,
     2
   )}
@@ -325,9 +328,10 @@ onNavigate(navigation => {
             )}
           >
             {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
+              {@const columnId = cell.column.id}
               {@const hash = $rows[row.index].original.hash}
               <Table.Cell class={cn("tabular-nums h-12")} headers="header">
-                <a href={`/explorer/transfers/${hash}`} class="">
+                {#if columnId === "hash"}
                   <ChainsGate let:chains>
                     <svelte:component
                       this={flexRender(cell.column.columnDef.cell, {
@@ -336,7 +340,18 @@ onNavigate(navigation => {
                       })}
                     />
                   </ChainsGate>
-                </a>
+                {:else}
+                  <a href={`/explorer/transfers/${hash}`}>
+                    <ChainsGate let:chains>
+                      <svelte:component
+                        this={flexRender(cell.column.columnDef.cell, {
+                          ...cell.getContext(),
+                          chains
+                        })}
+                      />
+                    </ChainsGate>
+                  </a>
+                {/if}
               </Table.Cell>
             {/each}
           </Table.Row>
@@ -351,11 +366,11 @@ onNavigate(navigation => {
   class="flex sm:justify-start sm:flex-row flex-col justify-end items-end gap-1 w-full"
 >
   <ExplorerPagination
+    rowsPerPage={20}
+    totalTableRows={20}
     class={cn("w-auto")}
     status={queryStatus}
-    totalTableRows={420_69}
     live={$REFETCH_ENABLED}
-    rowsPerPage={QUERY_LIMIT * 2}
     onOlderPage={async (page) => {
       const stamp = $timestamps.oldestTimestamp
       timestamp.set(stamp)
@@ -369,7 +384,6 @@ onNavigate(navigation => {
     onCurrentClick={() => {
       pagination.update((p) => ({ ...p, pageIndex: 1 }))
       $REFETCH_ENABLED = true
-
       goto($page.url.pathname, { replaceState: true })
     }}
     onNewerPage={async (page) => {

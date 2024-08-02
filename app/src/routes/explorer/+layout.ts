@@ -1,5 +1,4 @@
 import type { LayoutLoad } from "./$types.ts"
-import { getCurrentISODateTime } from "$lib/utilities/date.ts"
 import IndexIcon from "$lib/components/union-icons/color/icon-index-color.svelte"
 import ChannelsIcon from "$lib/components/union-icons/color/icon-channel-color.svelte"
 import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
@@ -10,8 +9,7 @@ const tables = [
   "channels",
   "transfers",
   "connections",
-  "index-status",
-  "address"
+  "index-status"
 ] as const
 
 export interface Table {
@@ -21,8 +19,6 @@ export interface Table {
 }
 
 export const load = (loadEvent => ({
-  sourceRoute: loadEvent.route,
-  timestamp: getCurrentISODateTime(),
   tables: [
     {
       route: "transfers",
@@ -43,11 +39,6 @@ export const load = (loadEvent => ({
       route: "index-status",
       icon: IndexIcon,
       description: "Statuses of Hubble indices for connected chains"
-    },
-    {
-      route: "address",
-      icon: TransfersIcon,
-      description: "My transfers"
     }
-  ] satisfies Array<Table>
+  ] as const satisfies Array<Table>
 })) satisfies LayoutLoad
