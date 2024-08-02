@@ -21,6 +21,7 @@ Borsh
 CBFF
 CCTP
 CFLAGS
+ilike
 CHAINSTACK
 CMOV
 Celestia
