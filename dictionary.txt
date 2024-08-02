@@ -21,7 +21,6 @@ Borsh
 CBFF
 CCTP
 CFLAGS
-ilike
 CHAINSTACK
 CMOV
 Celestia
@@ -618,6 +617,7 @@ identifing
 idents
 idxs
 iflag
+ilike
 ilog
 imap
 impls
