@@ -192,6 +192,7 @@ input jsonb_comparison_exp {
 type mutation_root {
   dydx_faucet: dydx_faucetMutation
   faucet2: faucet2Mutation
+  stride_faucet: stride_faucetMutation
 }
 
 scalar numeric
@@ -235,6 +236,7 @@ enum order_by {
 type query_root {
   dydx_faucet: dydx_faucetQuery
   faucet2: faucet2Query
+  stride_faucet: stride_faucetQuery
 
   """
   fetch data from the table: "v0.assets"
@@ -770,6 +772,16 @@ type query_root {
 
 input status_v0_transactions_args {
   hasura_session: json
+}
+
+type stride_faucetMutation {
+  send(captchaToken: String!, toAddress: String!): String!
+}
+
+type stride_faucetQuery {
+  handledTransfers(limit: Int, offsetTime: String): [Request!]!
+  transfersForAddress(address: String!, limit: Int, offsetTime: String): [Request!]!
+  unhandledTransfers(limit: Int, offsetTime: String): [Request!]!
 }
 
 type subscription_root {
@@ -5207,7 +5219,9 @@ type v0_transfers {
   destination_transaction_hash: String
   destination_transaction_index: String
 
-  """An array relationship"""
+  """
+  A computed field, executes function "v0.get_transfer_forwards"
+  """
   forwards(
     """distinct select on columns"""
     distinct_on: [v0_transfer_forwards_select_column!]
@@ -5223,7 +5237,7 @@ type v0_transfers {
 
     """filter the rows returned"""
     where: v0_transfer_forwards_bool_exp
-  ): [v0_transfer_forwards!]!
+  ): [v0_transfer_forwards!]
 
   """
   A computed field, executes function "v0.get_transfer_forwards"

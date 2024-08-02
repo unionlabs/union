@@ -9,6 +9,7 @@ import Truncate from "$lib/components/truncate.svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
 import DydxFaucet from "./(components)/dydx-faucet.svelte"
+import StrideFaucet from "./(components)/stride-faucet.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import WalletGate from "$lib/components/wallet-gate.svelte"
@@ -276,6 +277,7 @@ const requestUnoFromFaucet = async () => {
   </Card.Root>
   <!-- dydx faucet -->
   <DydxFaucet />
+  <StrideFaucet />
   <ChainsGate let:chains>
     <ExternalFaucets {chains} />
   </ChainsGate>
