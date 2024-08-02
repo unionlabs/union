@@ -32,6 +32,7 @@ impl RaceClient<Provider<Http>> {
         self.race_some(|c| c.get_block(id)).await
     }
 
+    #[allow(dead_code)]
     pub async fn get_logs(&self, filter: &Filter) -> Result<Vec<Log>, ProviderError> {
         self.race(|c| c.get_logs(filter)).await
     }

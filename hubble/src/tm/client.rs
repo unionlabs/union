@@ -23,6 +23,7 @@ impl<C: TendermintRpcClient + std::marker::Sync> RaceClient<C> {
         self.race(|c| c.blockchain(min, max)).await
     }
 
+    #[allow(dead_code)]
     pub async fn tx_search(
         &self,
         query: Query,
@@ -49,6 +50,7 @@ impl<C: TendermintRpcClient + std::marker::Sync> RaceClient<C> {
         self.race(|c| c.commit(height)).await
     }
 
+    #[allow(dead_code)]
     pub async fn block_results<H: Into<Height>>(
         &self,
         height: H,
