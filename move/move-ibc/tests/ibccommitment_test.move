@@ -1,4 +1,4 @@
-module 0x1::IBCCommitmentTest {
+module IBC::IBCCommitmentTest {
 
     use std::signer;
     use std::account;
@@ -7,7 +7,7 @@ module 0x1::IBCCommitmentTest {
     use aptos_std::string::{Self as StringModule, String};
     use aptos_framework::coin::Coin;
     use aptos_framework::aptos_coin::AptosCoin;
-    use 0x1::IBCCommitment;
+    use IBC::IBCCommitment;
 
     const E_TEST_CHANNEL_COMMITMENT_KEY: u64 = 4001;
     const E_TEST_CHANNEL_PATH: u64 = 4002;

@@ -9,6 +9,7 @@ ContractBAddress = "0xB" # Replace with a real address for deployment
 ContractTestAddress = "0x00"
 
 IBC = "0x111111111111111" # This will be storage of our IBCStore
+mock_relayer_address = "0x222222222222222"
 
 [dev-addresses]
 

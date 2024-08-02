@@ -1,4 +1,4 @@
-module 0x1::IBCCommitment {
+module IBC::IBCCommitment {
 
     use aptos_std::string::{Self as StringModule, String};
     use aptos_std::string_utils;
