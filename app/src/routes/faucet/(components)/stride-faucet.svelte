@@ -37,15 +37,15 @@ let strideAddress = derived(cosmosStore, $cosmosStore =>
     : ""
 )
 
-let srideFaucetState: Writable<DydxFaucetState> = writable({ kind: "IDLE" })
+let strideFaucetState: Writable<DydxFaucetState> = writable({ kind: "IDLE" })
 
 const requestStrdFromFaucet = async () => {
-  if ($srideFaucetState.kind === "IDLE" || $srideFaucetState.kind === "REQUESTING_TOKEN") {
-    srideFaucetState.set({ kind: "REQUESTING_TOKEN" })
+  if ($strideFaucetState.kind === "IDLE" || $strideFaucetState.kind === "REQUESTING_TOKEN") {
+    strideFaucetState.set({ kind: "REQUESTING_TOKEN" })
 
     if (!window?.__google_recaptcha_client) {
       console.error("Recaptcha client not loaded")
-      srideFaucetState.set({
+      strideFaucetState.set({
         kind: "RESULT_ERR",
         error: "Recaptcha client not loaded"
       })
@@ -57,7 +57,7 @@ const requestStrdFromFaucet = async () => {
       typeof window.grecaptcha.execute !== "function"
     ) {
       console.error("Recaptcha execute function not available")
-      srideFaucetState.set({
+      strideFaucetState.set({
         kind: "RESULT_ERR",
         error: "Recaptcha execute function not available"
       })
@@ -69,18 +69,18 @@ const requestStrdFromFaucet = async () => {
       { action: "submit" }
     )
 
-    srideFaucetState.set({ kind: "SUBMITTING", captchaToken })
+    strideFaucetState.set({ kind: "SUBMITTING", captchaToken })
   }
 
-  if ($srideFaucetState.kind === "SUBMITTING") {
+  if ($strideFaucetState.kind === "SUBMITTING") {
     try {
       const result = await request(URLS.GRAPHQL, strideFaucetMutation, {
         address: $strideAddress,
-        captchaToken: $srideFaucetState.captchaToken
+        captchaToken: $strideFaucetState.captchaToken
       })
 
       if (!result.stride_faucet) {
-        srideFaucetState.set({
+        strideFaucetState.set({
           kind: "RESULT_ERR",
           error: "Empty faucet response"
         })
@@ -88,8 +88,8 @@ const requestStrdFromFaucet = async () => {
       }
 
       if (result.stride_faucet.send.startsWith("ERROR")) {
-        console.error(result.dydx_faucet.send)
-        srideFaucetState.set({
+        console.error(result.stride_faucet.send)
+        strideFaucetState.set({
           kind: "RESULT_ERR",
           error: result.stride_faucet.send.endsWith("ratelimited")
             ? "You already got STRD from the faucet today. Try again in 24 hours."
@@ -98,13 +98,13 @@ const requestStrdFromFaucet = async () => {
         return
       }
 
-      srideFaucetState.set({
+      strideFaucetState.set({
         kind: "RESULT_OK",
         message: result.stride_faucet.send
       })
     } catch (error) {
       console.error(error)
-      srideFaucetState.set({
+      strideFaucetState.set({
         kind: "RESULT_ERR",
         error: `Faucet error: ${error}`
       })
@@ -151,23 +151,23 @@ let strideBalance = createQuery(
     </Card.Title>
   </Card.Header>
   <Card.Content>
-    {#if $srideFaucetState.kind === "RESULT_OK"}
+    {#if $strideFaucetState.kind === "RESULT_OK"}
       <p>
         Tokens sent: <a
           target="_blank"
           rel="noopener noreferrer"
-          href={`https://testnet.ping.pub/stride/tx/${$srideFaucetState.message}`}
+          href={`https://testnet.ping.pub/stride/tx/${$strideFaucetState.message}`}
         >
           <Truncate
             class="underline"
-            value={$srideFaucetState.message}
+            value={$strideFaucetState.message}
             type="hash"
           />
         </a>
       </p>
-    {:else if $srideFaucetState.kind === "RESULT_ERR"}
+    {:else if $strideFaucetState.kind === "RESULT_ERR"}
       <p class="mb-4">
-        {$srideFaucetState.error}
+        {$strideFaucetState.error}
       </p>
       <Button 
         
@@ -175,7 +175,7 @@ let strideBalance = createQuery(
                     "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
                     "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0"
                   )}        
-        on:click={() => srideFaucetState.set({ kind: "IDLE" })}>
+        on:click={() => strideFaucetState.set({ kind: "IDLE" })}>
         Retry
       </Button>
     {:else}
@@ -238,7 +238,7 @@ let strideBalance = createQuery(
               event.preventDefault()
               requestStrdFromFaucet()
             }}
-            disabled={$srideFaucetState.kind !== "IDLE" ||
+            disabled={$strideFaucetState.kind !== "IDLE" ||
               isValidCosmosAddress($strideAddress, ["stride"]) === false}
             class={cn(
               "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
@@ -246,7 +246,7 @@ let strideBalance = createQuery(
             )}
           >
             Submit
-            {#if $srideFaucetState.kind !== "IDLE"}
+            {#if $strideFaucetState.kind !== "IDLE"}
               <span class="ml-2">
                 <SpinnerSVG className="w-4 h-4" />
               </span>
