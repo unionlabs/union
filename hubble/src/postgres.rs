@@ -226,6 +226,17 @@ where
                 time = excluded.time
             ", &chain_ids, &hashes, &data, &height, &time)
         .execute(tx.as_mut()).await?;
+
+        if let Some(chain_id) = chain_ids.first() {
+            assert!(
+                chain_ids.iter().all(|&x| x == *chain_id),
+                "expecting all logs to originate from the same chain_id: {:?}",
+                chain_ids
+            );
+            let min_height = height.iter().min().expect("at least one height");
+
+            schedule_replication_reset(tx, *chain_id, (*min_height).into(), "block reorg").await?;
+        }
     }
     Ok(())
 }
