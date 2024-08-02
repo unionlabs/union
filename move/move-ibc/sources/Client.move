@@ -134,7 +134,7 @@ module IBC::Core {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let client_state_bytes = bcs::to_bytes<Any>(&client_state);
         let status_code = IBC::LightClient::create_client(
-            get_ibc_signer(),
+            &get_ibc_signer(),
             client_id, 
             client_state, 
             consensus_state

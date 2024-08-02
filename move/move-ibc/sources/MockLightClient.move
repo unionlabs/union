@@ -1,5 +1,4 @@
 module IBC::LightClient {
-
     use std::vector;
     use aptos_std::from_bcs;
     use std::hash;
@@ -8,6 +7,7 @@ module IBC::LightClient {
     use aptos_std::bcs;
     use std::bn254_algebra::{FormatFqLsb, Fr, FormatFrMsb, FormatGt, FormatFrLsb, Fq, G1, FormatG1Uncompr, G2, Gt, FormatG2Compr, FormatFqMsb};
     use aptos_std::crypto_algebra::{deserialize, serialize, one, zero, add, mul, scalar_mul, multi_pairing, Element, eq, sub};
+    use aptos_std::aptos_hash;
     use IBC::height;
     use IBC::Core;
     use aptos_std::smart_table::{Self, SmartTable};
@@ -44,7 +44,7 @@ module IBC::LightClient {
         proof_commitment_pok: Element<G1>,
     }
 
-    struct Timestamp has drop {
+    struct Timestamp has drop, copy {
         seconds: u64,
         nanos: u64,
     }
@@ -63,7 +63,7 @@ module IBC::LightClient {
         zero_knowledge_proof: ZKP,
     }
 
-    struct ClientState has drop, store {
+    struct ClientState has copy, drop, store {
         chain_id: string::String,
         trusting_period: u64,
         unbonding_period: u64,
@@ -72,11 +72,11 @@ module IBC::LightClient {
         latest_height: height::Height,
     }
 
-    struct MerkleRoot has drop, store {
+    struct MerkleRoot has copy, drop, store {
         hash: vector<u8>
     }
 
-    struct ConsensusState has drop, store {
+    struct ConsensusState has copy, drop, store {
         timestamp: u64,
         app_hash: MerkleRoot,
         next_validators_hash: vector<u8>
@@ -84,7 +84,7 @@ module IBC::LightClient {
 
     // Function to mock the creation of a client
     public fun create_client(
-        ibc_signer: signer,
+        ibc_signer: &signer,
         client_id: String, 
         client_state: Any, 
         consensus_state: Any
@@ -109,7 +109,7 @@ module IBC::LightClient {
             consensus_states: consensus_states
         };
 
-        let store_constructor = object::create_named_object(&ibc_signer, *string::bytes(&client_id));
+        let store_constructor = object::create_named_object(ibc_signer, *string::bytes(&client_id));
         let client_signer = object::generate_signer(&store_constructor);
 
         move_to(&client_signer, state);
@@ -156,7 +156,9 @@ module IBC::LightClient {
         };
 
         if (untrusted_height_number == trusted_height_number + 1) {
-            //sha  
+            if (header.signed_header.validators_hash != consensus_state.next_validators_hash) {
+                return 1
+            };
         };
 
         if (verify_zkp(
@@ -185,11 +187,33 @@ module IBC::LightClient {
 
         let consensus_state = smart_table::borrow<height::Height, ConsensusState>(&state.consensus_states, header.trusted_height);
 
-        verify_header(&header, state, consensus_state);
+        let err = verify_header(&header, state, consensus_state);
+        if (err != 0) {
+            return (vector<height::Height>[], err)
+        };
+
+        let untrusted_height_number = header.signed_header.height;
+        let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + header.signed_header.time.nanos;
+
+        if (untrusted_height_number > height::get_revision_height(&state.client_state.latest_height)) {
+            height::set_revision_height(&mut state.client_state.latest_height, untrusted_height_number);
+        };
+
+        let new_height = height::new(height::get_revision_number(&state.client_state.latest_height), untrusted_height_number);
+
+        let new_consensus_state = ConsensusState {
+            timestamp: untrusted_timestamp,
+            app_hash: MerkleRoot {
+                hash: header.signed_header.app_hash,
+            },
+            next_validators_hash: header.signed_header.next_validators_hash
+        };
+
+        smart_table::upsert<height::Height, ConsensusState>(&mut state.consensus_states, new_height, new_consensus_state);
 
         (
             vector<height::Height>[
-
+                new_height
             ],
             0
         )
@@ -230,7 +254,6 @@ module IBC::LightClient {
         vector::reverse_slice(&mut buffer, 32, 64);
         let hmac = hmac_keccak(&buffer);
         vector::reverse(&mut hmac);
-        std::debug::print(&hmac);
 
         let prime_r_minus_one = from_bcs::to_u256(PRIME_R_MINUS_ONE);
         let hmac = from_bcs::to_u256(hmac);
@@ -255,17 +278,14 @@ module IBC::LightClient {
         vector::append(&mut inputs_hash, header.app_hash);
         vector::append(&mut inputs_hash, *trusted_validators_hash);
 
-       // std::debug::print<vector<u8>>(&inputs_hash);
         let inputs_hash = hash::sha2_256(inputs_hash);
 
         let x = vector::borrow_mut(&mut inputs_hash, 0);
         *x = 0;
-       // std::debug::print<vector<u8>>(&inputs_hash);
 
         let inputs_hash = std::option::extract(&mut deserialize<Fr, FormatFrMsb>(&inputs_hash));
         let commitment_hash = hash_commitment(&zkp.proof_commitment);
         let hmac = bcs::to_bytes(&commitment_hash);
-        std::debug::print<vector<u8>>(&hmac);
         let commitment_hash = std::option::extract(&mut deserialize<Fr, FormatFrLsb>(&hmac));
 
        let alpha_g1 = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&ALPHA_G1));
@@ -282,14 +302,12 @@ module IBC::LightClient {
         let gamma_abc_3 = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 2)));
 
         let res = serialize<Fr, FormatFrLsb>(&commitment_hash);
-        std::debug::print(&res);
 
         let msm_inner = add(&add<G1>(&gamma_abc_1, &zkp.proof_commitment), &scalar_mul<G1, Fr>(&gamma_abc_2, &inputs_hash));
         let public_inputs_msm = add<G1>(&msm_inner, &scalar_mul<G1, Fr>(&gamma_abc_3, &commitment_hash));
         let res = serialize<G1, FormatG1Uncompr>(&public_inputs_msm);
         vector::reverse_slice(&mut res, 0, 32);
         vector::reverse_slice(&mut res, 32, 64);
-        // std::debug::print(&res);
 
         let res = multi_pairing<G1, G2, Gt>(
             &vector<Element<G1>>[
@@ -314,5 +332,60 @@ module IBC::LightClient {
         );
 
         eq<Gt>(&res, &zero<Gt>())        
+    }
+
+    #[test(ibc_signer = @IBC)]
+    fun test_create_client(ibc_signer: &signer) acquires State {
+        let client_state = ClientState {
+            chain_id: string::utf8(b"this-chain"),
+            trusting_period: 0,
+            unbonding_period: 0,
+            max_clock_drift: 0,
+            frozen_height: height::new(0, 0),
+            latest_height: height::new(0, 1000),
+        };
+
+        let consensus_state = ConsensusState {  
+            timestamp: 10000,
+            app_hash: MerkleRoot {
+                hash: vector<u8>[]
+            },
+            next_validators_hash: vector<u8>[]
+        };
+
+        assert!(create_client(ibc_signer, string::utf8(b"this_client"), std::any::pack<ClientState>(client_state), std::any::pack<ConsensusState>(consensus_state)) == 0, 1);
+
+        let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
+        assert!(
+            saved_state.client_state == client_state, 0
+        );
+
+        assert!(
+            smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
+        );
+
+        client_state.trusting_period = 2;
+        consensus_state.timestamp = 20000;
+
+        assert!(create_client(ibc_signer, string::utf8(b"this_client-2"), std::any::pack<ClientState>(client_state), std::any::pack<ConsensusState>(consensus_state)) == 0, 1);
+
+        // new client don't mess with this client's storage
+        let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
+        assert!(
+            saved_state.client_state != client_state, 0
+        );
+
+        assert!(
+            smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) != &consensus_state, 0
+        );
+
+        let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client-2")));
+        assert!(
+            saved_state.client_state == client_state, 0
+        );
+
+        assert!(
+            smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
+        );
     }
 }

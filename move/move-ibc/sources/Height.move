@@ -22,4 +22,8 @@ module IBC::height {
     public fun is_zero(height: &Height): bool {
         height.revision_number == 0 && height.revision_height == 0
     }
+
+    public fun set_revision_height(height: &mut Height, revision_height: u64) {
+        height.revision_height = revision_height;
+    }
 }
