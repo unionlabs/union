@@ -45,7 +45,8 @@ import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
 function getChainById(chainId: number): ViemChain | null {
   const chains: { [key: number]: ViemChain } = {
     11155111: sepolia,
-    80084: berachainTestnetbArtio
+    80084: berachainTestnetbArtio,
+    421614: arbitrumSepolia
   }
   return chains[chainId] || null
 }
