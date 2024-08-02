@@ -40,7 +40,7 @@ import {
   getConnectorClient,
   switchChain
 } from "@wagmi/core"
-import { sepolia, berachainTestnetbArtio } from "viem/chains"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
 
 function getChainById(chainId: number): ViemChain | null {
   const chains: { [key: number]: ViemChain } = {
