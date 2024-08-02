@@ -205,7 +205,7 @@ let strideBalance = createQuery(
                   value={$strideAddress}
                   data-lpignore={true}
                   data-1p-ignore={true}
-                  placeholder="dydx14ea6…"
+                  placeholder="stride14ea6…"
                   name="dydx-wallet-address"
                   class={cn(
                     "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
