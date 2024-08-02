@@ -131,9 +131,9 @@ let strideBalance = createQuery(
 <!-- stride faucet -->
 <Card.Root
   class={cn(
-    "w-full max-w-lg rounded-lg font-sans",
-    "bg-[url('https://dydx.exchange/dots.svg')]",
-    "bg-[#181825] text-[#FFFFFF] dark:bg-[#2D2D44]/50 dark:text-[#FFFFFF]"
+    "w-full max-w-lg rounded-lg font-sans border-[#ffffff] bg-cover",
+    "bg-[url('/images/backgrounds/stride-background.png')]",
+    "bg-[#181825] text-[rgb(60,0,29)] dark:bg-[#2D2D44]/50 dark:text-[#FFFFFF]"
   )}
 >
   <Card.Header>
@@ -141,22 +141,13 @@ let strideBalance = createQuery(
       <p class="flex gap-x-3">
         <a
           target="_blank"
-          class="mt-[4.5px]"
           rel="noopener noreferrer"
           href="https://www.stride.zone/"
         >
-          <img src="https://dydx.exchange/logo.svg" alt="" class="w-14" />
+          <img src="/images/logo/stride/stride-logo.svg" alt="" class="w-18" />
         </a>
         Faucet
       </p>
-      <a
-        target="_blank"
-        class="mt-[4.5px]"
-        rel="noopener noreferrer"
-        href="https://www.stride.zone/"
-      >
-        <img alt="" src="https://dydx.exchange/icon.svg" class="w-6" />
-      </a>
     </Card.Title>
   </Card.Header>
   <Card.Content>
@@ -165,7 +156,7 @@ let strideBalance = createQuery(
         Tokens sent: <a
           target="_blank"
           rel="noopener noreferrer"
-          href={`https://www.mintscan.io/dydx-testnet/tx/${$srideFaucetState.message}`}
+          href={`https://testnet.ping.pub/stride/tx/${$srideFaucetState.message}`}
         >
           <Truncate
             class="underline"
@@ -178,7 +169,13 @@ let strideBalance = createQuery(
       <p class="mb-4">
         {$srideFaucetState.error}
       </p>
-      <Button on:click={() => srideFaucetState.set({ kind: "IDLE" })}>
+      <Button 
+        
+      class={cn(
+                    "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
+                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0"
+                  )}        
+        on:click={() => srideFaucetState.set({ kind: "IDLE" })}>
         Retry
       </Button>
     {:else}
@@ -211,14 +208,14 @@ let strideBalance = createQuery(
                   placeholder="dydx14ea6…"
                   name="dydx-wallet-address"
                   class={cn(
-                    "bg-[#2D2D44] text-[#ffffff] dark:bg-[#181825] dark:text-[#ffffff]",
+                    "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
                     "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0"
                   )}
                   pattern={createCosmosSdkAddressRegex({ prefix: "dydx" })
                     .source}
                 />
               </div>
-              <div class="flex justify-between px-1 text-white">
+              <div class="flex justify-between px-1">
                 <div class="text-xs">
                   <p>
                     {#if $strideAddress?.indexOf("stride") === 0 && $strideBalance.status === "success"}
@@ -245,7 +242,7 @@ let strideBalance = createQuery(
               isValidCosmosAddress($strideAddress, ["stride"]) === false}
             class={cn(
               "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
-              "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]"
+              "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]"
             )}
           >
             Submit
@@ -257,7 +254,7 @@ let strideBalance = createQuery(
           </Button>
           <p class="text-xs">
             STRD faucet is provided by <a
-              class="text-[#9e9dff]"
+              class="text-[#E6007A]"
               target="_blank"
               rel="noopener noreferrer"
               href="https://www.stride.zone/"
