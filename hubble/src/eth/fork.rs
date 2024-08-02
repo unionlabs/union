@@ -82,6 +82,8 @@ impl Config {
 
 impl Indexer {
     pub async fn index(self) -> Result<(), Report> {
+        use crate::postgres::InsertMode;
+
         let indexing_span = info_span!("indexer", chain_id = self.chain_id.canonical);
 
         async move {
@@ -197,7 +199,14 @@ impl Indexer {
                         .try_collect()
                         .await?;
 
-                    crate::postgres::update_batch_logs(&self.pool, logs.into_iter()).await?;
+                    let mut tx = self.pool.begin().await?;
+                    crate::postgres::insert_batch_logs(
+                        &mut tx,
+                        logs.into_iter(),
+                        InsertMode::Upsert,
+                    )
+                    .await?;
+                    tx.commit().await?;
                 }
 
                 tokio::time::sleep(self.interval).await;
