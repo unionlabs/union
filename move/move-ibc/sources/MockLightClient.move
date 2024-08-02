@@ -388,4 +388,34 @@ module IBC::LightClient {
             smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
         );
     }
+
+    fun new_client_state(
+        chain_id: string::String,
+        trusting_period: u64,
+        unbonding_period: u64,
+        max_clock_drift: u64,
+        frozen_height: height::Height,
+        latest_height: height::Height,
+    ): ClientState {
+        ClientState {            
+            chain_id: chain_id,
+            trusting_period: trusting_period,
+            unbonding_period: unbonding_period,
+            max_clock_drift: max_clock_drift,
+            frozen_height: frozen_height,
+            latest_height: latest_height,
+        }
+    }
+
+    fun new_consensus_state(
+        timestamp: u64,
+        app_hash: MerkleRoot,
+        next_validators_hash: vector<u8>        
+    ): ConsensusState {
+        ConsensusState {
+            timestamp: timestamp,
+            app_hash: app_hash,
+            next_validators_hash: next_validators_hash,
+        }
+    }
 }
