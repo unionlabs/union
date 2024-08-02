@@ -37,6 +37,14 @@ module IBC::ics23 {
         }
     }
 
+    fun tm_proof_spec(): ProofSpec {
+        ProofSpec {
+            child_size: 32,
+            min_prefix_length: 1, 
+            max_prefix_length: 1
+        }
+    }
+
     fun verify_chained_membership(
         proofs: vector<ExistenceProof>,
         root: vector<u8>,
@@ -58,6 +66,44 @@ module IBC::ics23 {
 
         if (err != 0) {
             return 1
+        };
+
+        verify_existence(
+            vector::borrow(&proofs, 1),
+            tm_proof_spec(),
+            root,
+            prefix,
+            subroot,
+        )
+    }
+
+    fun verify_existence(
+        proof: &ExistenceProof,
+        proof_spec: ProofSpec,
+        commitment_root: vector<u8>,
+        key: vector<u8>,
+        value: vector<u8>,
+    ): u64 {
+        if (key != proof.key) {
+            return 1
+        };
+
+        if (value != proof.value) {
+            return 1
+        };
+
+        let err = check_against_spec(proof, proof_spec);
+        if (err != 0) {
+            return err
+        };
+
+        let (root, err) = calculate_existence_root(proof);
+        if (err != 0) {
+            return err
+        };
+
+        if (root != commitment_root) {
+            return 1 
         };
 
         0
