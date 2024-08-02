@@ -4,11 +4,10 @@ use std::fmt;
 use futures::{Stream, TryStreamExt};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use sqlx::{Acquire, PgPool, Postgres};
+use sqlx::{types::BigDecimal, Acquire, PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::info;
 use valuable::Valuable;
-use sqlx::types::BigDecimal;
 
 /// A trait to describe the different parameters of a chain, used to instantiate types for insertion.
 pub trait ChainType {
@@ -72,7 +71,7 @@ pub type ChainId = ChainIdInner<'static>;
 
 /// The internal representation of a chain-id, assigned by the database, combined
 /// with the canonical chain-id (from the genesis).
-#[derive(Clone, Debug, Valuable)]
+#[derive(Clone, Debug, Valuable, PartialEq, Eq)]
 pub struct ChainIdInner<'a> {
     pub db: i32,
     pub canonical: &'a str,
@@ -150,6 +149,8 @@ where
         })
         .multiunzip();
 
+    let mut tx = db.begin().await?;
+
     sqlx::query!("
         UPDATE v0.logs
         SET chain_id = batch.chain_id,
@@ -162,7 +163,21 @@ where
         ) as batch
         WHERE batch.height = v0.logs.height AND batch.chain_id = v0.logs.chain_id
         ", &chain_ids, &hashes, &data, &height, &time)
-    .execute(db).await?;
+    .execute(tx.as_mut()).await?;
+
+    if let Some(chain_id) = chain_ids.first() {
+        assert!(
+            chain_ids.iter().all(|&x| x == *chain_id),
+            "expecting all logs to originate from the same chain_id: {:?}",
+            chain_ids
+        );
+        let min_height = height.iter().min().expect("at least one height");
+
+        schedule_replication_reset(&mut tx, *chain_id, (*min_height).into(), "block reorg");
+    }
+
+    tx.commit().await?;
+
     Ok(())
 }
 
@@ -480,11 +495,18 @@ pub async fn update_contracts_indexed_heights<'a>(
 
 pub async fn schedule_replication_reset(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    chain_id: ChainId,
+    chain_id: i32,
     height: i64,
-    reason: &str
+    reason: &str,
 ) -> sqlx::Result<()> {
-    sqlx::query!("CALL public.replication_schedule_reset_chain($1, $2, $3);", BigDecimal::from(chain_id.db), &height, reason).execute(tx.as_mut()).await?;
+    sqlx::query!(
+        "CALL public.replication_schedule_reset_chain($1, $2, $3);",
+        BigDecimal::from(chain_id),
+        &height,
+        reason
+    )
+    .execute(tx.as_mut())
+    .await?;
 
     Ok(())
 }
