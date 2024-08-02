@@ -8,6 +8,7 @@ use sqlx::{Acquire, PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::info;
 use valuable::Valuable;
+use sqlx::types::BigDecimal;
 
 /// A trait to describe the different parameters of a chain, used to instantiate types for insertion.
 pub trait ChainType {
@@ -203,10 +204,10 @@ where
         sqlx::query!("
             INSERT INTO v0.logs (chain_id, block_hash, data, height, time)
             SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
-            ON CONFLICT (chain_id, block_hash) DO 
+            ON CONFLICT (chain_id, height) DO 
             UPDATE SET
                 data = excluded.data,
-                height = excluded.height,
+                block_hash = excluded.block_hash,
                 time = excluded.time
             ", &chain_ids, &hashes, &data, &height, &time)
         .execute(tx.as_mut()).await?;
@@ -262,16 +263,7 @@ where
             ", &chain_ids, &hashes, &data, &height, &time)
         .execute(tx.as_mut()).await?;
     } else {
-        sqlx::query!("
-            INSERT INTO v0.blocks (chain_id, hash, data, height, time)
-            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])
-            ON CONFLICT (chain_id, hash) DO 
-            UPDATE SET
-                data = excluded.data,
-                height = excluded.height,
-                time = excluded.time
-        ", &chain_ids, &hashes, &data, &height, &time)
-        .execute(tx.as_mut()).await?;
+        panic!("upsert not supported for tendermint chains.");
     }
     Ok(())
 }
@@ -316,18 +308,7 @@ where
             &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
         .execute(tx.as_mut()).await?;
     } else {
-        sqlx::query!("
-            INSERT INTO v0.transactions (chain_id, block_hash, height, hash, data, index)
-            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
-            ON CONFLICT (chain_id, hash) DO
-            UPDATE SET
-                block_hash = excluded.block_hash,
-                height = excluded.height,
-                data = excluded.data,
-                index = excluded.index
-        ", 
-        &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
-        .execute(tx.as_mut()).await?;
+        panic!("upsert not supported for tendermint chains.");
     }
     Ok(())
 }
@@ -385,19 +366,7 @@ where
             &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
         .execute(tx.as_mut()).await?;
     } else {
-        sqlx::query!("
-        INSERT INTO v0.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
-        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::int[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
-        ON CONFLICT (chain_id, block_hash, index) DO
-        UPDATE SET
-            height = excluded.height,
-            transaction_hash = excluded.transaction_hash,
-            transaction_index = excluded.transaction_index,
-            data = excluded.data,
-            time = excluded.time
-    ", 
-    &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
-    .execute(tx.as_mut()).await?;
+        panic!("upsert not supported for tendermint chains.");
     }
     Ok(())
 }
@@ -507,6 +476,17 @@ pub async fn update_contracts_indexed_heights<'a>(
     .iter()
     .len();
     Ok(rows_updated)
+}
+
+pub async fn schedule_replication_reset(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    chain_id: ChainId,
+    height: i64,
+    reason: &str
+) -> sqlx::Result<()> {
+    sqlx::query!("CALL public.replication_schedule_reset_chain($1, $2, $3);", BigDecimal::from(chain_id.db), &height, reason).execute(tx.as_mut()).await?;
+
+    Ok(())
 }
 
 pub async fn get_max_consensus_height<'a, A: Acquire<'a, Database = Postgres>>(

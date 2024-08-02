@@ -188,7 +188,7 @@ impl Indexer {
                                     self.chain_id,
                                     height as u64,
                                     provider_clone,
-                                    None, 
+                                    None,
                                 )
                                 .await
                                 .map(|b| b.unwrap().into())

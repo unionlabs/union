@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v0.logs (chain_id, block_hash, data, height, time)\n            SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::int[]), unnest($5::timestamptz[])\n            ON CONFLICT (chain_id, height) DO \n            UPDATE SET\n                data = excluded.data,\n                block_hash = excluded.block_hash,\n                time = excluded.time\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4Array",
+        "TextArray",
+        "JsonbArray",
+        "Int4Array",
+        "TimestamptzArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "84c5652c3ba9f79624137ec1534b3d69280a9c252fc98d61e7fda9cd52d4c1ab"
+}
