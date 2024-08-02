@@ -266,7 +266,7 @@ async fn fetch_and_insert_blocks(
             .await?
             .block_metas
             .into_iter()
-            .map(|meta| meta.header),
+            .map(|meta| (meta.block_id, meta.header)),
         )
     } else {
         // We do need this arm, because client.blockchain will error if max > latest block (instead of just returning min..latest).
@@ -279,7 +279,10 @@ async fn fetch_and_insert_blocks(
                     return Err(err.into());
                 }
             }
-            Ok(val) if val.canonical => Either::Right(std::iter::once(val.signed_header.header)),
+            Ok(val) if val.canonical => Either::Right(std::iter::once((
+                val.signed_header.commit.block_id,
+                val.signed_header.header,
+            ))),
             _ => {
                 debug!("encountered non-canonical header");
                 return Ok(None);
@@ -289,9 +292,9 @@ async fn fetch_and_insert_blocks(
 
     let submit_blocks = postgres::insert_batch_blocks(
         tx,
-        headers.clone().into_iter().map(|header| PgBlock {
+        headers.clone().into_iter().map(|(id, header)| PgBlock {
             chain_id,
-            hash: header.hash().to_string(),
+            hash: id.hash.to_string(),
             height: header.height.value() as i32,
             time: header.time.into(),
             data: serde_json::to_value(&header)
@@ -307,7 +310,7 @@ async fn fetch_and_insert_blocks(
     let client = client.fastest();
 
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
-        .and_then(|header| async {
+        .and_then(|(id, header)| async move {
             debug!("fetching block results for height {}", header.height);
             let block = (|| {
                 client
@@ -327,7 +330,7 @@ async fn fetch_and_insert_blocks(
             })
             .retry(&crate::expo_backoff())
             .await?;
-            Ok((header, block, txs))
+            Ok((id, header, block, txs))
         })
         .try_collect();
 
@@ -338,62 +341,64 @@ async fn fetch_and_insert_blocks(
     // Initial capacity is a bit of an estimate, but shouldn't need to resize too often.
     let mut events = Vec::with_capacity(block_results.len() * 4 * 10);
 
-    let transactions = block_results.into_iter().flat_map(|(header, block, txs)| {
-        let block_height: i32 = block.height.value().try_into().unwrap();
-        let block_hash = header.hash().to_string();
-        let time: OffsetDateTime = header.time.into();
-        let mut block_index = 0;
-        let finalize_block_events = block.events(chain_id, block_hash.clone(), time);
+    let transactions = block_results
+        .into_iter()
+        .flat_map(|(id, header, block, txs)| {
+            let block_height: i32 = block.height.value().try_into().unwrap();
+            let block_hash = id.hash.to_string();
+            let time: OffsetDateTime = header.time.into();
+            let mut block_index = 0;
+            let finalize_block_events = block.events(chain_id, block_hash.clone(), time);
 
-        let txs = txs
-            .into_iter()
-            .map(|tx| {
-                let transaction_hash = tx.hash.to_string();
-                let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
-                events.extend(tx.tx_result.events.into_iter().enumerate().filter_map(
-                    |(i, event)| {
-                        if filter.is_some_and(|filter| filter.is_match(event.kind.as_str())) {
-                            block_index += 1;
-                            return None;
-                        }
-
-                        let event = PgEvent {
-                            chain_id,
-                            block_hash: block_hash.clone(),
-                            block_height,
-                            time,
-                            data: serde_json::to_value(event).unwrap().replace_escape_chars(),
-                            transaction_hash: Some(transaction_hash.clone()),
-                            transaction_index: Some(i.try_into().unwrap()),
-                            block_index,
-                        };
-
-                        block_index += 1;
-                        Some(event)
-                    },
-                ));
-                PgTransaction {
-                    chain_id,
-                    block_hash: block_hash.clone(),
-                    block_height,
-                    time,
-                    data,
-                    hash: transaction_hash,
-                    index: tx.index.try_into().unwrap(),
-                }
-            })
-            .collect::<Vec<_>>();
-        events.extend(
-            finalize_block_events
+            let txs = txs
                 .into_iter()
-                .enumerate()
-                .map(|(i, e)| PgEvent {
-                    block_index: i as i32 + block_index,
-                    ..e
-                }),
-        );
-        txs
-    });
+                .map(|tx| {
+                    let transaction_hash = tx.hash.to_string();
+                    let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
+                    events.extend(tx.tx_result.events.into_iter().enumerate().filter_map(
+                        |(i, event)| {
+                            if filter.is_some_and(|filter| filter.is_match(event.kind.as_str())) {
+                                block_index += 1;
+                                return None;
+                            }
+
+                            let event = PgEvent {
+                                chain_id,
+                                block_hash: block_hash.clone(),
+                                block_height,
+                                time,
+                                data: serde_json::to_value(event).unwrap().replace_escape_chars(),
+                                transaction_hash: Some(transaction_hash.clone()),
+                                transaction_index: Some(i.try_into().unwrap()),
+                                block_index,
+                            };
+
+                            block_index += 1;
+                            Some(event)
+                        },
+                    ));
+                    PgTransaction {
+                        chain_id,
+                        block_hash: block_hash.clone(),
+                        block_height,
+                        time,
+                        data,
+                        hash: transaction_hash,
+                        index: tx.index.try_into().unwrap(),
+                    }
+                })
+                .collect::<Vec<_>>();
+            events.extend(
+                finalize_block_events
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, e)| PgEvent {
+                        block_index: i as i32 + block_index,
+                        ..e
+                    }),
+            );
+            txs
+        });
     postgres::insert_batch_transactions(tx, transactions, mode).await?;
     postgres::insert_batch_events(tx, events, mode).await?;
     Ok(Some((from.value() as u32 + headers.len() as u32).into()))
