@@ -15,3 +15,11 @@ export const dydxFaucetMutation = graphql(/* GraphQL */ `
     }
   }  
 `)
+
+export const strideFaucetMutation = graphql(/* GraphQL */ `
+  mutation StrideFaucetMutation($address: String!, $captchaToken: String!) {
+    stride_faucet {
+      send(toAddress: $address, captchaToken: $captchaToken)
+    }
+  }  
+`)
