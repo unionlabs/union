@@ -1,16 +1,37 @@
 use core::{fmt::Debug, future::Future};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use futures::{stream::FuturesUnordered, StreamExt};
 use tracing::debug;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RaceClient<C> {
     pub clients: Vec<C>,
+    fastest: AtomicUsize,
+}
+
+impl<C: Clone> Clone for RaceClient<C> {
+    fn clone(&self) -> Self {
+        let clients = self.clients.clone();
+        let fastest = self.fastest.load(Ordering::Relaxed);
+        Self {
+            clients,
+            fastest: fastest.into(),
+        }
+    }
 }
 
 impl<C> RaceClient<C> {
     pub fn new(clients: Vec<C>) -> Self {
-        Self { clients }
+        Self {
+            clients,
+            fastest: AtomicUsize::new(0),
+        }
+    }
+
+    pub fn fastest(&self) -> &C {
+        let fastest = self.fastest.load(Ordering::Relaxed);
+        &self.clients[fastest]
     }
 
     /// Run the provided closure over the clients, returning the first encountered Ok, or if all error, the first
@@ -25,13 +46,27 @@ impl<C> RaceClient<C> {
         &'a self,
         f: F,
     ) -> Result<T, E> {
-        let mut futures: FuturesUnordered<_> = self.clients.iter().map(f).collect();
+        let mut futures: FuturesUnordered<_> = self
+            .clients
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let f = f(c);
+                async move {
+                    let res = f.await;
+                    (i, res)
+                }
+            })
+            .collect();
         let mut error = None;
 
         loop {
             match futures.next().await {
-                Some(Ok(res)) => return Ok(res),
-                Some(Err(err)) => {
+                Some((i, Ok(res))) => {
+                    self.fastest.store(i, Ordering::Relaxed);
+                    return Ok(res);
+                }
+                Some((_, Err(err))) => {
                     debug!("error racing client requests: {:?}", err);
                     if error.is_none() {
                         error = Some(err)
@@ -40,6 +75,7 @@ impl<C> RaceClient<C> {
                 None => break,
             }
         }
+
         Err(error.unwrap())
     }
 
@@ -55,14 +91,28 @@ impl<C> RaceClient<C> {
         &'a self,
         f: F,
     ) -> Result<Option<T>, E> {
-        let mut futures: FuturesUnordered<_> = self.clients.iter().map(f).collect();
+        let mut futures: FuturesUnordered<_> = self
+            .clients
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let f = f(c);
+                async move {
+                    let res = f.await;
+                    (i, res)
+                }
+            })
+            .collect();
         let mut error = None;
 
         loop {
             match futures.next().await {
-                Some(Ok(Some(res))) => return Ok(Some(res)),
-                Some(Ok(None)) => continue,
-                Some(Err(err)) => {
+                Some((i, Ok(Some(res)))) => {
+                    self.fastest.store(i, Ordering::Relaxed);
+                    return Ok(Some(res));
+                }
+                Some((_, Ok(None))) => continue,
+                Some((_, Err(err))) => {
                     debug!("error racing client requests: {:?}", err);
                     if error.is_none() {
                         error = Some(err)

@@ -434,6 +434,8 @@ impl BlockInsert {
     ) -> Result<Option<Self>, FromProviderError> {
         use std::collections::HashMap;
 
+        use ethers::middleware::Middleware;
+
         let id = id.into();
 
         use ethers::{
@@ -445,6 +447,8 @@ impl BlockInsert {
             .get_block(id)
             .await?
             .ok_or(FromProviderError::BlockNotFound)?;
+
+        let provider = provider.fastest();
 
         // We check for a potential log match, which potentially avoids querying
         // eth_getLogs.

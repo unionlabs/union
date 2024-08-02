@@ -9,7 +9,7 @@ use tendermint_rpc::{
     error::ErrorDetail,
     query::{Condition, Query},
     response_error::Code,
-    Error, HttpClient, Order,
+    Client, Error, HttpClient, Order,
 };
 use time::OffsetDateTime;
 use tokio::time::{sleep, Duration};
@@ -301,6 +301,11 @@ async fn fetch_and_insert_blocks(
         mode,
     );
 
+    // From this moment on we use the client which provided us with the response the fastest.
+    // We use the same since we know the data will be consistent with that node. Otherwise we
+    // get an effective TOCTOU.
+    let client = client.fastest();
+
     let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
         .and_then(|header| async {
             debug!("fetching block results for height {}", header.height);
@@ -395,7 +400,7 @@ async fn fetch_and_insert_blocks(
 }
 
 async fn fetch_transactions_for_block(
-    client: &RaceClient<HttpClient>,
+    client: &HttpClient,
     height: Height,
     expected: impl Into<Option<usize>>,
 ) -> Result<Vec<tendermint_rpc::endpoint::tx::Response>, Report> {
