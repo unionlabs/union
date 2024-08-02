@@ -8,16 +8,16 @@ export const UNO = {
 } as const
 
 export const URLS = {
-  GRAPHQL: "https://graphql.union.build/v1/graphql",
-  GRAPHQL_WSS: "wss://noble-pika-27.hasura.app/v1/graphql",
-  GRAPHQL_REST: "https://graphql.union.build/api/rest",
+  GRAPHQL: "https://blue.graphql.union.build/v1/graphql",
+  GRAPHQL_WSS: "wss//hubble-blue.hasura.app/v1/graphql",
+  GRAPHQL_REST: "https://blue.graphql.union.build/api/rest",
   UNION: {
     /**
      * TODO: add array of RPCs and pass to `viem`'s `fallback` array
      */
-    RPC: "https://rpc.testnet.bonlulu.uno",
+    RPC: "https://rpc.testnet-8.union.build",
     // REST: "https://api.testnet.bonlulu.uno"
-    REST: "https://union-testnet-api.polkachu.com"
+    REST: "https://rest.testnet-8.union.build/"
   },
   SEPOLIA: {
     RPC: "https://rpc.ankr.com/eth_sepolia/6c72c8d164912bed4694cb882fc4ca55574126511a4f5f66828a53fa2448a20a",

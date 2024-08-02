@@ -23,6 +23,8 @@ export type Chain = {
   chain_id: string
   display_name: string
   testnet: boolean
+  enabled: boolean
+  enabled_staging: boolean
   rpc_type: "evm" | "cosmos"
   rpcs: Array<{
     type: string

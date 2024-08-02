@@ -993,7 +993,7 @@ const resetInput = () => {
 
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
-  {chains}
+  chains={chains.filter(c => c.enabled_staging)}
   connected={connected}
   kind="from"
   onChainSelect={newSelectedChain => {
@@ -1005,7 +1005,7 @@ const resetInput = () => {
 
 <ChainDialog
   bind:dialogOpen={dialogOpenToChain}
-  {chains}
+  chains={chains.filter(c => c.enabled_staging)}
   connected={connected}
   kind="to"
   onChainSelect={newSelectedChain => {

@@ -65,6 +65,8 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 
     return {
       chain_id: chain.chain_id,
+      enabled: chain.enabled,
+      enabled_staging: chain.enabled_staging,
       ucs1_configurations,
       display_name,
       rpc_type,
