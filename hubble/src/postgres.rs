@@ -173,7 +173,7 @@ where
         );
         let min_height = height.iter().min().expect("at least one height");
 
-        schedule_replication_reset(&mut tx, *chain_id, (*min_height).into(), "block reorg");
+        schedule_replication_reset(&mut tx, *chain_id, (*min_height).into(), "block reorg").await?;
     }
 
     tx.commit().await?;

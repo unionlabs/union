@@ -12,12 +12,13 @@ use ethers::{
 };
 use futures::{stream::FuturesOrdered, FutureExt, StreamExt, TryFutureExt};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres};
 use time::OffsetDateTime;
 use tracing::{debug, info, info_span, warn, Instrument};
 use url::Url;
 
 use crate::{
+    metrics,
     postgres::{self, ChainId, InsertMode},
     race_client::RaceClient,
 };
@@ -262,8 +263,6 @@ async fn index_blocks_by_chunk(
     mode: InsertMode,
     filter: Arc<Vec<Address>>,
 ) -> Result<(), IndexBlockError> {
-    use itertools::{Either, Itertools};
-
     let mut chunks = futures::stream::iter(range.into_iter()).chunks(chunk_size);
 
     while let Some(chunk) = chunks.next().await {
@@ -277,7 +276,7 @@ async fn index_blocks_by_chunk(
             info!("indexing block {}", chunk.first().unwrap(),);
         }
 
-        let mut inserts = FuturesOrdered::from_iter(chunk.iter().copied().map(|height| {
+        let mut inserts = FuturesOrdered::from_iter(chunk.into_iter().map(|height| {
             let provider_clone = provider.clone();
             let filter_clone = filter.clone();
             (move || {
@@ -295,61 +294,92 @@ async fn index_blocks_by_chunk(
             )
             .when(|_| chunk_size == 1)
             .map(move |res| (height, res))
-        }))
-        .ready_chunks(chunk.len());
+        }));
 
-        // The below algorithm is a little complex in syntax but relatively simple:
-        // 1. We take all ready futures from inserts (1 or more).
-        // 2. We partition such that a chunk of [ok, ok, err, ok, err] becomes blocks: [ok, ok], errs: [err].
-        // 3. if the blocks contain Some(block) (when the filter matches), we insert them.
-        // 4. we update the indexed_height to blocks.last().height.
-        // 5. if err is not empty, throw the error afterwards.
-        while let Some(blocks) = inserts.next().await {
-            let (blocks, mut err): (Vec<(_, Option<PgLog<_>>)>, Vec<_>) = blocks
-                .into_iter()
-                .take_while_inclusive(|(_, block)| block.is_ok())
-                .partition_map(|(h, result)| match result {
-                    Ok(block) => Either::Left((h, block.map(Into::into))),
-                    Err(err) => Either::Right((h, err)),
-                });
+        while let Some((height, block)) = inserts.next().await {
+            let block = match block {
+                Err(FromProviderError::Other(err)) => {
+                    return Err(IndexBlockError::Other(err));
+                }
+                Err(err) => {
+                    return Err(IndexBlockError::Retryable { height, err });
+                }
+                Ok(Some(block)) => block,
+                Ok(None) => {
+                    // No relevant data for the current filter in this block. We still update the
+                    // contracts.indexed_heights to avoid rechecking on crashes.
+                    let mut tx = pool.begin().await?;
+                    postgres::update_contracts_indexed_heights(
+                        &mut tx,
+                        filter
+                            .iter()
+                            .map(|addr| format!("0x{}", addr.encode_hex()))
+                            .collect(),
+                        filter.iter().map(|_| height.try_into().unwrap()).collect(),
+                        chain_id,
+                    )
+                    .await?;
+                    tx.commit().await?;
+                    continue;
+                }
+            };
+            debug!(?height, "attempting to insert");
 
-            if !blocks.is_empty() {
-                let mut tx = pool.begin().await?;
-                let height = blocks.last().unwrap().0.try_into().unwrap();
-                let blocks = blocks.into_iter().filter_map(|(_, b)| b);
+            let mut tx = pool.begin().await?;
 
-                postgres::insert_batch_logs(&mut tx, blocks, mode).await?;
-                let updated = postgres::update_contracts_indexed_heights(
-                    &mut tx,
-                    filter
-                        .iter()
-                        .map(|addr| format!("0x{}", addr.encode_hex()))
-                        .collect(),
-                    filter.iter().map(|_| height).collect(),
-                    chain_id,
-                )
-                .await?;
-                assert_eq!(
-                    updated,
-                    filter.len(),
-                    "no contracts should be removed while hubble is running"
-                );
-                tx.commit().await?;
-            }
+            match block.execute(&mut tx, mode).await {
+                Err(err) => {
+                    debug!(?err, "error executing block insert");
+                    return Err(err.into());
+                }
+                Ok(info) => {
+                    let updated = postgres::update_contracts_indexed_heights(
+                        &mut tx,
+                        filter
+                            .iter()
+                            .map(|addr| format!("0x{}", addr.encode_hex()))
+                            .collect(),
+                        filter.iter().map(|_| info.height.into()).collect(),
+                        chain_id,
+                    )
+                    .await?;
 
-            if !err.is_empty() {
-                match err.remove(0) {
-                    (_, FromProviderError::Other(err)) => {
-                        return Err(IndexBlockError::Other(err));
-                    }
-                    (height, err) => {
-                        return Err(IndexBlockError::Retryable { height, err });
-                    }
+                    // Hacky way to force hubble to crash and restart everything, allowing for it to refetch the addresses.
+                    assert_eq!(
+                        updated,
+                        filter.len(),
+                        "no contracts should be removed while hubble is running"
+                    );
+
+                    tx.commit().await?;
+                    debug!(
+                        height = info.height,
+                        hash = info.hash,
+                        num_transactions = info.num_tx,
+                        num_events = info.num_events,
+                        "indexed block"
+                    );
+                    metrics::BLOCK_COLLECTOR
+                        .with_label_values(&[chain_id.canonical])
+                        .inc();
+                    metrics::TRANSACTION_COLLECTOR
+                        .with_label_values(&[chain_id.canonical])
+                        .inc_by(info.num_tx as u64);
+                    metrics::EVENT_COLLECTOR
+                        .with_label_values(&[chain_id.canonical])
+                        .inc_by(info.num_events as u64);
                 }
             }
         }
     }
-    Ok(())
+    panic!("end of index_blocks_by_chunk should not occur");
+}
+
+pub struct InsertInfo {
+    height: i32,
+    hash: String,
+    num_tx: usize,
+    num_events: i32,
 }
 
 #[must_use]
@@ -541,6 +571,31 @@ impl BlockInsert {
             })
         };
         result.map_err(Into::into)
+    }
+
+    /// Handles inserting the block data and transactions as a log.
+    async fn execute(
+        self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        mode: InsertMode,
+    ) -> Result<InsertInfo, Report> {
+        let num_tx = self.transactions.len();
+        let num_events = self
+            .transactions
+            .iter()
+            .map(|tx| tx.events.len() as i32)
+            .sum();
+
+        let (height, hash) = (self.height, self.hash.clone());
+
+        postgres::insert_batch_logs(tx, std::iter::once(self.into()), mode).await?;
+
+        Ok(InsertInfo {
+            height,
+            hash,
+            num_tx,
+            num_events,
+        })
     }
 }
 
