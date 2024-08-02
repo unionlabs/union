@@ -389,7 +389,7 @@ module IBC::LightClient {
         );
     }
 
-    fun new_client_state(
+    public fun new_client_state(
         chain_id: string::String,
         trusting_period: u64,
         unbonding_period: u64,
@@ -407,7 +407,7 @@ module IBC::LightClient {
         }
     }
 
-    fun new_consensus_state(
+    public fun new_consensus_state(
         timestamp: u64,
         app_hash: MerkleRoot,
         next_validators_hash: vector<u8>        
@@ -416,6 +416,15 @@ module IBC::LightClient {
             timestamp: timestamp,
             app_hash: app_hash,
             next_validators_hash: next_validators_hash,
+        }
+    }
+
+
+    public fun new_merkle_root(
+        hash: vector<u8>    
+    ): MerkleRoot {
+        MerkleRoot {
+            hash: hash
         }
     }
 }
