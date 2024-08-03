@@ -193,13 +193,20 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
-async function windowEthereumSwitchChain(id: number) {
-  if (!window?.ethereum?.request) return
-  return await window.ethereum?.request({
-    method: "wallet_switchEthereumChain",
-    params: [{ chainId: toHex(id) }]
-  })
-}
+// async function windowEthereumAddChain(chainSpec) {
+//   if (!window?.ethereum?.request) return
+//   return await window.ethereum?.request({
+//     method: "wallet_addEthereumChain",
+//     params: [chainSpec]
+//   })
+// }
+// async function windowEthereumSwitchChain(id: number) {
+//   if (!window?.ethereum?.request) return
+//   return await window.ethereum?.request({
+//     method: "wallet_switchEthereumChain",
+//     params: [{ chainId: toHex(id) }]
+//   })
+// }
 
 const transfer = async () => {
   if (!$assetSymbol) return toast.error("Please select an asset")
@@ -363,10 +370,11 @@ const transfer = async () => {
       return
     }
 
-    if (connectorClient?.chain?.id !== selectedChain.id) {
-      await windowEthereumSwitchChain(selectedChain.id)
-      await sleep(1_500)
-    }
+    // if (connectorClient?.chain?.id !== selectedChain.id) {
+    // await windowEthereumAddChain(selectedChain)
+    // await windowEthereumSwitchChain(selectedChain.id)
+    //   await sleep(1_500)
+    // }
 
     const ucs01address = ucs1_configuration.contract_address as Address
 
