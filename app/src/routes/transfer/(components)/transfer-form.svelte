@@ -40,12 +40,13 @@ import {
   getConnectorClient,
   switchChain
 } from "@wagmi/core"
-import { sepolia, berachainTestnetbArtio } from "viem/chains"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
 
 function getChainById(chainId: number): ViemChain | null {
   const chains: { [key: number]: ViemChain } = {
     11155111: sepolia,
-    80084: berachainTestnetbArtio
+    80084: berachainTestnetbArtio,
+    421614: arbitrumSepolia
   }
   return chains[chainId] || null
 }
@@ -192,13 +193,20 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
-async function windowEthereumSwitchChain(id: number) {
-  if (!window?.ethereum?.request) return
-  return await window.ethereum?.request({
-    method: "wallet_switchEthereumChain",
-    params: [{ chainId: toHex(id) }]
-  })
-}
+// async function windowEthereumAddChain(chainSpec) {
+//   if (!window?.ethereum?.request) return
+//   return await window.ethereum?.request({
+//     method: "wallet_addEthereumChain",
+//     params: [chainSpec]
+//   })
+// }
+// async function windowEthereumSwitchChain(id: number) {
+//   if (!window?.ethereum?.request) return
+//   return await window.ethereum?.request({
+//     method: "wallet_switchEthereumChain",
+//     params: [{ chainId: toHex(id) }]
+//   })
+// }
 
 const transfer = async () => {
   if (!$assetSymbol) return toast.error("Please select an asset")
@@ -362,10 +370,11 @@ const transfer = async () => {
       return
     }
 
-    if (connectorClient?.chain?.id !== selectedChain.id) {
-      await windowEthereumSwitchChain(selectedChain.id)
-      await sleep(1_500)
-    }
+    // if (connectorClient?.chain?.id !== selectedChain.id) {
+    // await windowEthereumAddChain(selectedChain)
+    // await windowEthereumSwitchChain(selectedChain.id)
+    //   await sleep(1_500)
+    // }
 
     const ucs01address = ucs1_configuration.contract_address as Address
 
@@ -993,7 +1002,7 @@ const resetInput = () => {
 
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
-  {chains}
+  chains={chains.filter(c => c.enabled_staging)}
   connected={connected}
   kind="from"
   onChainSelect={newSelectedChain => {
@@ -1005,7 +1014,7 @@ const resetInput = () => {
 
 <ChainDialog
   bind:dialogOpen={dialogOpenToChain}
-  {chains}
+  chains={chains.filter(c => c.enabled_staging)}
   connected={connected}
   kind="to"
   onChainSelect={newSelectedChain => {

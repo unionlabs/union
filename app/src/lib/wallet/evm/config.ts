@@ -20,7 +20,7 @@ import { writable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
 import { APP_INFO } from "$lib/constants/app.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { sepolia, berachainTestnetbArtio } from "@wagmi/core/chains"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "@wagmi/core/chains"
 import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
 
 const chains = [sepolia] as const
@@ -32,7 +32,7 @@ export type ConnectedWallet = Wallet & { status: "connected" }
 export type ConnectorType = "injected" | "walletConnect"
 
 export const config = createConfig({
-  chains: [sepolia, berachainTestnetbArtio],
+  chains: [sepolia, berachainTestnetbArtio, arbitrumSepolia],
   cacheTime: 4_000,
   pollingInterval: 4_000,
   syncConnectedChain: true,
@@ -59,6 +59,15 @@ export const config = createConfig({
         name: "unstable_connector-injected-berachain"
       }),
       http(berachainTestnetbArtio.rpcUrls.default.http.at(0), { name: "default Berachain RPC" })
+    ]),
+    [arbitrumSepolia.id]: fallback([
+      // unstable_connector(injected, {
+      //   retryCount: 3,
+      //   retryDelay: 100,
+      //   key: "unstable_connector-injected-berachain",
+      //   name: "unstable_connector-injected-berachain"
+      // }),
+      http(arbitrumSepolia.rpcUrls.default.http.at(0), { name: "default Arbitrum Sepolia RPC" })
     ])
   },
   storage: createWagmiStorage({
