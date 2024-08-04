@@ -6,13 +6,13 @@ use ethers::{
     providers::{Http, Provider},
     types::BlockId,
 };
-use futures::{StreamExt, TryStreamExt};
+use futures::{stream, stream::FuturesOrdered, StreamExt, TryStreamExt};
 use sqlx::PgPool;
 use tracing::{debug, info, info_span, Instrument};
 use url::Url;
 
 use crate::{
-    eth::BlockInsert,
+    eth::{BlockInsert, PgLog},
     postgres::{self, ChainId},
     race_client::RaceClient,
 };
@@ -82,6 +82,8 @@ impl Config {
 
 impl Indexer {
     pub async fn index(self) -> Result<(), Report> {
+        use crate::postgres::InsertMode;
+
         let indexing_span = info_span!("indexer", chain_id = self.chain_id.canonical);
 
         async move {
@@ -162,23 +164,49 @@ impl Indexer {
 
             // Re-indexes the tip.
             loop {
-                let logs = postgres::get_last_n_logs(&self.pool, self.chain_id, chunk_size)?;
-                let blocks: Vec<BlockInsert> = logs
-                    .map_err(Report::from)
+                let logs: Vec<(String, i32)> =
+                    postgres::get_last_n_logs(&self.pool, self.chain_id, chunk_size)?
+                        .try_collect()
+                        .await?;
+                let start = logs[0].1;
+                let end = logs.last().unwrap().1;
+
+                let blocks: Vec<BlockInsert> = stream::iter(logs.into_iter().map(Ok::<_, Report>))
                     .try_filter_map(|(hash, height)| {
                         fetch_and_compare_block(self.chain_id, hash, height, self.provider.clone())
                     })
                     .map(futures::future::ready)
-                    .buffered(32)
+                    .buffered(chunk_size as usize)
                     .try_collect()
                     .await?;
 
+                // If we encounter any forked block in the batch, we recalculate the entire batch.
                 if !blocks.is_empty() {
-                    crate::postgres::update_batch_logs(
-                        &self.pool,
-                        blocks.into_iter().map(Into::into),
+                    let logs: Vec<PgLog<_>> =
+                        FuturesOrdered::from_iter((start..=end).map(|height| {
+                            let provider_clone = self.provider.clone();
+                            async move {
+                                BlockInsert::from_provider_retried_filtered(
+                                    self.chain_id,
+                                    height as u64,
+                                    provider_clone,
+                                    None,
+                                )
+                                .await
+                                .map(|b| b.unwrap().into())
+                            }
+                        }))
+                        .try_collect()
+                        .await?;
+
+                    let mut tx = self.pool.begin().await?;
+                    crate::postgres::insert_batch_logs(
+                        &mut tx,
+                        logs.into_iter(),
+                        InsertMode::Upsert,
                     )
                     .await?;
+                    tx.commit().await?;
                 }
 
                 tokio::time::sleep(self.interval).await;

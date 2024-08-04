@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "CALL public.replication_schedule_reset_chain($1, $2, $3);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "22f5dcc43fb08266c21ec0f3579e5ea8ee579eeea7ecd845721e84cf93afa336"
+}
