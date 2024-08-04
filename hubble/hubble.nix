@@ -62,10 +62,36 @@
                 example = "coin_received";
                 default = null;
               };
-              options.urls = mkOption { type = types.listOf types.str; example = [ "https://rpc.example.com" ]; };
+              options.urls = mkOption {
+                type = types.nullOr (types.listOf types.str);
+                example = [ "https://rpc.example.com" ];
+                default = null;
+              };
+
+              # arb consensus height indexer
+              options.l1_url = mkOption {
+                type = types.nullOr types.str;
+                example = "https://rpc.example.com";
+                default = null;
+              };
+              options.l2_url = mkOption {
+                type = types.nullOr types.str;
+                example = "https://rpc.example.com";
+                default = null;
+              };
+              options.beacon_url = mkOption {
+                type = types.nullOr types.str;
+                example = "https://rpc.example.com";
+                default = null;
+              };
+              options.rollup_finalization_config = mkOption {
+                type = types.nullOr types.attrs;
+                default = null;
+              };
+
               options.chain_id = mkOption { type = types.nullOr types.str; example = "union-testnet-8"; default = null; };
               options.grpc_url = mkOption { type = types.nullOr types.str; example = "https://grpc.example.com"; default = null; };
-              options.type = mkOption { type = types.enum [ "tendermint" "ethereum" "beacon" "bera" "ethereum-fork" ]; };
+              options.type = mkOption { type = types.enum [ "tendermint" "ethereum" "beacon" "bera" "ethereum-fork" "arb" ]; };
               options.start_height = mkOption { type = types.int; example = 1; default = 0; };
               options.chunk_size = mkOption { type = types.int; example = 1; default = 200; };
               options.until = mkOption { type = types.int; example = 1; default = 1000000000000; };
