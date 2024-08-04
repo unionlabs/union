@@ -43,13 +43,13 @@ pub struct Beacon {
     client: reqwest::Client,
 }
 
-enum BlockNumber {
+pub enum BlockNumber {
     Head,
     Number(i64),
 }
 
 impl Beacon {
-    fn new(url: url::Url, client: reqwest::Client) -> Self {
+    pub fn new(url: url::Url, client: reqwest::Client) -> Self {
         Self { url, client }
     }
 
@@ -75,7 +75,7 @@ impl Beacon {
         }
     }
 
-    async fn get_height_at_skip_missing(&self, height: i64) -> Result<Block> {
+    pub async fn get_height_at_skip_missing(&self, height: i64) -> Result<Block> {
         let mut height = height;
         loop {
             debug!("getting consensus block for height {}", height);

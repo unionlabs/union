@@ -62,6 +62,7 @@ impl IntoIterator for Indexers {
 
 #[derive(Clone, Debug, serde::Deserialize)]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)]
 pub enum IndexerConfig {
     #[serde(rename = "tendermint")]
     Tm(crate::tm::Config),
@@ -73,6 +74,8 @@ pub enum IndexerConfig {
     Beacon(crate::beacon::Config),
     #[serde(rename = "bera")]
     Bera(crate::bera::Config),
+    #[serde(rename = "arb")]
+    Arb(crate::arb::Config),
 }
 
 impl IndexerConfig {
@@ -83,6 +86,7 @@ impl IndexerConfig {
             Self::Beacon(cfg) => &cfg.label,
             Self::Bera(cfg) => &cfg.label,
             Self::EthFork(cfg) => &cfg.label,
+            Self::Arb(cfg) => &cfg.label,
         }
     }
 }
@@ -121,6 +125,14 @@ impl IndexerConfig {
                     .await
             }
             Self::EthFork(cfg) => {
+                cfg.indexer(db)
+                    .instrument(initializer_span)
+                    .await?
+                    .index()
+                    .instrument(indexer_span)
+                    .await
+            }
+            Self::Arb(cfg) => {
                 cfg.indexer(db)
                     .instrument(initializer_span)
                     .await?

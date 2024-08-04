@@ -189,6 +189,7 @@ impl EthereumIbcChain for Arbitrum {
 }
 
 impl EthereumConsensusChain for Arbitrum {
+    // NOTE: any modifications made here should also be made to the same fn on the hubble Arb consensus height indexer
     async fn execution_height_of_beacon_slot(&self, slot: u64) -> u64 {
         // read the next_node_num at l1.execution_height(beacon_slot), then from there filter for `NodeCreated`
         let next_node_num = self.next_node_num_at_beacon_slot(slot).await;
@@ -257,7 +258,7 @@ impl EthereumConsensusChain for Arbitrum {
         uint256
     )"
 )]
-struct NodeCreated {
+pub struct NodeCreated {
     pub node_num: u64,
     pub parent_node_hash: H256,
     pub node_hash: H256,
@@ -270,19 +271,19 @@ struct NodeCreated {
 
 // https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L15
 #[derive(Debug, EthAbiType, EthAbiCodec, EthDisplay)]
-struct Assertion {
-    before_state: ExecutionState,
-    after_state: ExecutionState,
-    num_blocks: u64,
+pub struct Assertion {
+    pub before_state: ExecutionState,
+    pub after_state: ExecutionState,
+    pub num_blocks: u64,
 }
 
 // https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L10
 #[derive(Debug, EthAbiType, EthAbiCodec, EthDisplay)]
-struct ExecutionState {
-    global_state: GlobalState,
+pub struct ExecutionState {
+    pub global_state: GlobalState,
 
     // https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/state/Machine.sol
-    machine_status: u8,
+    pub machine_status: u8,
 }
 
 // ethers doesn't support solidity enums (?????)
@@ -296,9 +297,9 @@ struct ExecutionState {
 
 // https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/state/GlobalState.sol
 #[derive(Debug, EthAbiType, EthAbiCodec, EthDisplay)]
-struct GlobalState {
-    bytes32_vals: [H256; 2],
-    u64_vals: [u64; 2],
+pub struct GlobalState {
+    pub bytes32_vals: [H256; 2],
+    pub u64_vals: [u64; 2],
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
