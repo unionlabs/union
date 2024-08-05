@@ -45,6 +45,7 @@ jobs:
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "REPO=unionlabs/$component" >> $GITHUB_OUTPUT
               build="(.attr == \"evm-contracts\")"
+              ;;
             *)
               echo "Invalid tag $TAG"
               exit 1
