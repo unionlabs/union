@@ -156,7 +156,7 @@ module IBC::ConnectionTest {
         let client_id = string::utf8(b"client-0");
         let counterparty_prefix = Core::new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"ibc")));
         let height = height::new(0, 0);
-        let counterparty = Core::new_counterparty(
+        let counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             counterparty_prefix
@@ -187,7 +187,7 @@ module IBC::ConnectionTest {
         let client_id = string::utf8(b"client-0");
         let counterparty_prefix = Core::new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"ibc")));
         let height = height::new(0, 0);
-        let counterparty = Core::new_counterparty(
+        let counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             counterparty_prefix
@@ -204,7 +204,7 @@ module IBC::ConnectionTest {
             vector::empty<Version>(),
             1,
             0,
-            Core::new_counterparty(
+            Core::new_connection_counterparty(
                 string::utf8(b"client-0"),
                 string::utf8(b"connection-0"),
                 counterparty_prefix
@@ -244,7 +244,7 @@ module IBC::ConnectionTest {
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
         let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_counterparty(
+        let counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             counterparty_prefix
@@ -272,7 +272,7 @@ module IBC::ConnectionTest {
         let version_2 = Core::default_ibc_version();
         let delay_period_2: u64 = 0;
         let counterparty_prefix_2 = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty_2 = Core::new_counterparty(
+        let counterparty_2 = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client-1"),
             string::utf8(b"connection-1"),
             counterparty_prefix_2
@@ -308,7 +308,7 @@ module IBC::ConnectionTest {
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
         let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_counterparty(
+        let counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             counterparty_prefix
@@ -350,12 +350,12 @@ module IBC::ConnectionTest {
         assert!(vector::length(&commitment) > 0, 1005);
 
         // Verify that the counterparty fields are set correctly
-        assert!(Core::get_counterparty_client_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"counterparty-client"), 1006);
-        assert!(Core::get_counterparty_connection_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"connection-0"), 1007);
+        assert!(Core::get_connection_counterparty_client_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"counterparty-client"), 1006);
+        assert!(Core::get_connection_counterparty_connection_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"connection-0"), 1007);
 
         // Add second connection to check if the connection state is increasing
         let new_client_id = string::utf8(b"client-1");
-        let new_counterparty = Core::new_counterparty(
+        let new_counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client-1"),
             string::utf8(b"connection-1"),
             counterparty_prefix
@@ -399,7 +399,7 @@ module IBC::ConnectionTest {
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
         let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_counterparty(
+        let counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             counterparty_prefix
@@ -448,12 +448,12 @@ module IBC::ConnectionTest {
         assert!(vector::length(&commitment) > 0, 1005);
 
         // Verify that the counterparty fields are set correctly
-        assert!(Core::get_counterparty_client_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"counterparty-client"), 1006);
-        assert!(Core::get_counterparty_connection_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"connection-0"), 1007);
+        assert!(Core::get_connection_counterparty_client_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"counterparty-client"), 1006);
+        assert!(Core::get_connection_counterparty_connection_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"connection-0"), 1007);
 
         // Add second connection to check if the connection state is increasing
         let new_client_id = string::utf8(b"client-1");
-        let new_counterparty = Core::new_counterparty(
+        let new_counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client-1"),
             string::utf8(b"connection-1"),
             counterparty_prefix
@@ -498,8 +498,8 @@ module IBC::ConnectionTest {
         assert!(Core::get_connection_state(&new_connection) == 3, 2003); // STATE_OPEN
         assert!(Core::get_connection_delay_period(&new_connection) == delay_period, 2004);
         assert!(vector::length(&new_commitment) > 0, 2005);
-        assert!(Core::get_counterparty_client_id(&Core::get_connection_counterparty(&new_connection)) == string::utf8(b"counterparty-client-1"), 2006);
-        assert!(Core::get_counterparty_connection_id(&Core::get_connection_counterparty(&new_connection)) == string::utf8(b"connection-1"), 2007);
+        assert!(Core::get_connection_counterparty_client_id(&Core::get_connection_counterparty(&new_connection)) == string::utf8(b"counterparty-client-1"), 2006);
+        assert!(Core::get_connection_counterparty_connection_id(&Core::get_connection_counterparty(&new_connection)) == string::utf8(b"connection-1"), 2007);
     }
    
 
@@ -511,7 +511,7 @@ module IBC::ConnectionTest {
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
         let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_counterparty(
+        let counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             counterparty_prefix
@@ -558,8 +558,8 @@ module IBC::ConnectionTest {
         assert!(vector::length(&commitment) > 0, 1005);
 
         // Verify that the counterparty fields are set correctly
-        assert!(Core::get_counterparty_client_id(&Core::get_connection_counterparty(&updated_connection)) == string::utf8(b"counterparty-client"), 1006);
-        assert!(Core::get_counterparty_connection_id(&Core::get_connection_counterparty(&updated_connection)) == string::utf8(b"connection-0"), 1007);
+        assert!(Core::get_connection_counterparty_client_id(&Core::get_connection_counterparty(&updated_connection)) == string::utf8(b"counterparty-client"), 1006);
+        assert!(Core::get_connection_counterparty_connection_id(&Core::get_connection_counterparty(&updated_connection)) == string::utf8(b"connection-0"), 1007);
     }
 
     #[test(alice = @IBC, relayer=@mock_relayer_address)]   
@@ -571,7 +571,7 @@ module IBC::ConnectionTest {
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
         let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_counterparty(
+        let counterparty = Core::new_connection_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             counterparty_prefix
@@ -607,7 +607,7 @@ module IBC::ConnectionTest {
     //     let version = Core::default_ibc_version();
     //     let delay_period: u64 = 0;
     //     let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-    //     let counterparty = Core::new_counterparty(
+    //     let counterparty = Core::new_connection_counterparty(
     //         string::utf8(b"counterparty-client"),
     //         string::utf8(b"connection-0"),
     //         counterparty_prefix

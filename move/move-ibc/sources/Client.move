@@ -17,6 +17,7 @@ module IBC::Core {
     use IBC::IBCCommitment;
     use IBC::LightClient;
     use IBC::height;
+    use IBC::IBCModule;
 
     const SEED: vector<u8> = b"Move Seed Example";
     const VAULT_SEED: vector<u8> = b"Vault Seed Example";
@@ -30,6 +31,13 @@ module IBC::Core {
     const ERR_INVALID_CONNECTION_STATE: u64 = 1008;
     const E_CONNECTION_ALREADY_EXISTS: u64 = 1009;
     const E_INVALID_PROOF: u64 = 1010;
+    const E_CONN_NOT_SINGLE_HOP: u64 = 1011;
+    const E_CONN_NOT_SINGLE_VERSION: u64 = 1012;
+    const E_UNSUPPORTED_FEATURE: u64 = 1013;
+    const E_CAPABILITY_ALREADY_CLAIMED: u64 = 1014;
+    const E_PORT_ID_MUST_BE_LOWERCASE: u64 = 1015;
+    const E_INVALID_CHANNEL_STATE: u64 = 1016;
+    const E_COUNTERPARTY_CHANNEL_NOT_EMPTY: u64 = 1017;
     
     struct ClientCreatedEvent has copy, drop, store {
         client_id: String,
@@ -40,6 +48,14 @@ module IBC::Core {
         connection_id: String,
         client_id: String,
         counterparty_client_id: String,
+    }    
+
+    struct ChannelOpenInit has copy, drop, store {
+        port_id: String,
+        channel_id: String,
+        counterparty_port_id: String,
+        connection_id: String,
+        version: String
     }
     
     struct ConnectionOpenTry has copy, drop, store {
@@ -63,11 +79,12 @@ module IBC::Core {
         counterparty_connection_id: String,
     }
 
-
+    
     // Resource to hold the global state
     struct IBCStore has key {
         client_created_events: event::EventHandle<ClientCreatedEvent>,
         connection_open_init_events: event::EventHandle<ConnectionOpenInit>, 
+        channel_open_init_events: event::EventHandle<ChannelOpenInit>,  
         connection_open_try_events: event::EventHandle<ConnectionOpenTry>, 
         connection_open_ack_events: event::EventHandle<ConnectionOpenAck>,
         connection_open_confirm_events: event::EventHandle<ConnectionOpenConfirm>,
@@ -75,6 +92,15 @@ module IBC::Core {
         client_registry: SmartTable<String, address>,
         commitments: SmartTable<vector<u8>, vector<u8>>,
         connections: SmartTable<String, ConnectionEnd>,
+        channels: SmartTable<String, SmartTable<String, IbcCoreChannelV1Channel>>, 
+        capabilities: SmartTable<String, address>,
+    }
+
+
+    // Sample setter for `capabilities`
+    public fun set_capability(capability_id: String, addr: address) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        SmartTable::upsert(&mut store.capabilities, capability_id, addr);
     }
 
     struct SignerRef has key {
@@ -86,6 +112,38 @@ module IBC::Core {
     public fun get_vault_addr(): address {
         object::create_object_address(&@IBC, VAULT_SEED)
     }
+
+    public fun set_connection(connection_id: String, connection: ConnectionEnd) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        SmartTable::upsert(&mut store.connections, connection_id, connection);
+    }
+
+    // Setter for Commitments
+    public fun set_commitment(key: vector<u8>, value: vector<u8>) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        SmartTable::upsert(&mut store.commitments, key, value);
+    }
+
+    // Getter for Commitments
+    public fun get_commitment(key: vector<u8>): vector<u8> acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        let commitment = SmartTable::borrow_with_default(&store.commitments, key, &vector::empty<u8>());
+        *commitment
+    }
+
+    // Setter for nextChannelSequence in Commitments
+    public fun set_next_channel_sequence(sequence: u64) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        SmartTable::upsert(&mut store.commitments, b"nextChannelSequence", bcs::to_bytes(&sequence));
+    }
+
+    // Getter for nextChannelSequence in Commitments
+    public fun get_next_channel_sequence(): u64 acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        let next_sequence_bytes = SmartTable::borrow_with_default(&store.commitments, b"nextChannelSequence", &bcs::to_bytes<u64>(&0));
+        from_bcs::to_u64(*next_sequence_bytes)
+    }
+
 
     // Initializes the IBCStore resource in the signer's account
     public fun create_ibc_store(account: &signer)  {
@@ -99,8 +157,11 @@ module IBC::Core {
             commitments: SmartTable::new(),
             client_impls: SmartTable::new(),
             connections: SmartTable::new(),
+            channels: SmartTable::new(),
+            capabilities: SmartTable::new(),
             client_created_events: account::new_event_handle(&resource_signer),
-            connection_open_init_events: account::new_event_handle(&resource_signer),
+            connection_open_init_events: account::new_event_handle(&resource_signer), 
+            channel_open_init_events: account::new_event_handle(&resource_signer), 
             connection_open_try_events: account::new_event_handle(&resource_signer),
             connection_open_ack_events: account::new_event_handle(&resource_signer),
             connection_open_confirm_events: account::new_event_handle(&resource_signer),
@@ -185,18 +246,56 @@ module IBC::Core {
         features: vector<String>,
     }
 
+    struct IbcCoreChannelV1Packet has copy, store, drop, key {
+        sequence: u64,
+        source_port: String,
+        source_channel: String,
+        destination_port: String,
+        destination_channel: String,
+        data: vector<u8>,
+        timeout_height: height::Height,
+        timeout_timestamp: u64,
+    }
+
+
+    /*
+    IbcCoreChannelV1GlobalEnums {
+        //enum definition
+        // Solidity enum definitions
+        enum State {
+            STATE_UNINITIALIZED_UNSPECIFIED,
+            STATE_INIT,
+            STATE_TRYOPEN,
+            STATE_OPEN,
+            STATE_CLOSED
+        }
+        */
+    struct IbcCoreChannelV1Channel has copy, store, drop, key {
+        state: u8, //STATE_UNINITIALIZED_UNSPECIFIED, STATE_INIT, STATE_TRYOPEN, STATE_OPEN, STATE_CLOSED
+        ordering: u8, //STATE_UNINITIALIZED_UNSPECIFIED, STATE_INIT, STATE_TRYOPEN, STATE_OPEN, STATE_CLOSED
+        counterparty: IbcCoreChannelV1Counterparty,
+        connection_hops: vector<String>,
+        version: String
+    }
+
+
     struct ConnectionEnd has copy, store, drop {
         client_id: String,
         versions: vector<Version>,
         state: u64,
         delay_period: u64,
-        counterparty: Counterparty,
+        counterparty: IbcCoreConnectionV1Counterparty,
     }
 
-    struct Counterparty has copy, store, drop {
+    struct IbcCoreConnectionV1Counterparty has copy, store, drop {
         client_id: String,
         connection_id: String,
         prefix: IbcCoreCommitmentV1MerklePrefix,
+    }
+
+    struct IbcCoreChannelV1Counterparty has copy, store, drop {
+        port_id: String,
+        channel_id: String,
     }
 
     struct IbcCoreCommitmentV1MerklePrefix has copy, store, drop {
@@ -219,15 +318,15 @@ module IBC::Core {
         version.features
     }
 
-    public fun new_counterparty(client_id: String, connection_id: String, prefix: IbcCoreCommitmentV1MerklePrefix): Counterparty {
-        Counterparty { client_id, connection_id, prefix }
+    public fun new_connection_counterparty(client_id: String, connection_id: String, prefix: IbcCoreCommitmentV1MerklePrefix): IbcCoreConnectionV1Counterparty {
+        IbcCoreConnectionV1Counterparty { client_id, connection_id, prefix }
     }
 
-    public fun get_counterparty_client_id(counterparty: &Counterparty): String {
+    public fun get_connection_counterparty_client_id(counterparty: &IbcCoreConnectionV1Counterparty): String {
         counterparty.client_id
     }
 
-    public fun get_counterparty_connection_id(counterparty: &Counterparty): String {
+    public fun get_connection_counterparty_connection_id(counterparty: &IbcCoreConnectionV1Counterparty): String {
         counterparty.connection_id
     }
 
@@ -237,7 +336,7 @@ module IBC::Core {
         versions: vector<Version>,
         state: u64,
         delay_period: u64,
-        counterparty: Counterparty
+        counterparty: IbcCoreConnectionV1Counterparty
     ): ConnectionEnd {
         ConnectionEnd {
             client_id,
@@ -247,6 +346,18 @@ module IBC::Core {
             counterparty,
         }
     }
+
+    public fun get_connection_end(
+        connection_end: ConnectionEnd
+    ): (String,
+        vector<Version>,
+        u64,
+        u64,
+        IbcCoreConnectionV1Counterparty) {
+            (connection_end.client_id, connection_end.versions, connection_end.state, connection_end.delay_period, connection_end.counterparty)
+    }
+
+
 
     public fun get_connection_client_id(connection: &ConnectionEnd): String {
         connection.client_id
@@ -264,7 +375,7 @@ module IBC::Core {
         connection.delay_period
     }
 
-    public fun get_connection_counterparty(connection: &ConnectionEnd): Counterparty {
+    public fun get_connection_counterparty(connection: &ConnectionEnd): IbcCoreConnectionV1Counterparty {
         connection.counterparty
     }
 
@@ -523,6 +634,15 @@ module IBC::Core {
         identifier
     }
 
+
+
+    // TODO: Implement the encode function for Channel
+    // originally, defined under: IbcCoreChannelV1Channel.encode
+    public fun encode_channel(channel: &IbcCoreChannelV1Channel): String {
+        // Placeholder implementation for encoding a connection
+        string::utf8(b"")
+    }
+
     // TODO: Implement the encode function for ConnectionEnd
     // originally, defined under: IbcCoreConnectionV1ConnectionEnd.encode
     public fun encode(connection: &ConnectionEnd): String {
@@ -533,7 +653,7 @@ module IBC::Core {
         // let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let default_counterparty_prefix = IBCCommitment::keccak256(string::utf8(b"prefix"));
-        let default_counterparty = new_counterparty(
+        let default_counterparty = new_connection_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             new_merkleprefix(default_counterparty_prefix)
@@ -559,7 +679,7 @@ module IBC::Core {
     public fun connection_open_init(
         client_id: String,
         version: Version,
-        counterparty: Counterparty,
+        counterparty: IbcCoreConnectionV1Counterparty,
         delay_period: u64,
         relayer: address
     ): String acquires IBCStore {
@@ -620,7 +740,7 @@ module IBC::Core {
                 vector::empty<Version>(),
                 0,
                 0,
-                new_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
+                new_connection_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
             )
         );
         *connection
@@ -640,7 +760,7 @@ module IBC::Core {
     }
 
     public fun connection_open_try(
-        counterparty: Counterparty,
+        counterparty: IbcCoreConnectionV1Counterparty,
         delay_period: u64,
         client_id: String,
         client_state_bytes: vector<u8>,
@@ -666,7 +786,7 @@ module IBC::Core {
                 vector::empty<Version>(),
                 0,
                 0,
-                new_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
+                new_connection_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
             )
         );
 
@@ -696,7 +816,7 @@ module IBC::Core {
             counterparty_versions,
             1, // STATE_INIT
             delay_period,
-            new_counterparty(client_id, string::utf8(b""), new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"ibc"))))
+            new_connection_counterparty(client_id, string::utf8(b""), new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"ibc"))))
         );
 
         // Verify the connection state
@@ -756,7 +876,7 @@ module IBC::Core {
                 vector::empty<Version>(),
                 0,
                 0,
-                new_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
+                new_connection_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
             )
         );
 
@@ -770,7 +890,7 @@ module IBC::Core {
             abort(ERR_UNSUPPORTED_VERSION);
         };
 
-        let expected_counterparty = new_counterparty(
+        let expected_counterparty = new_connection_counterparty(
             connection.client_id,
             connection_id,
             new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"ibc")))
@@ -835,7 +955,7 @@ module IBC::Core {
                 vector::empty<Version>(),
                 0,
                 0,
-                new_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
+                new_connection_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
             )
         );
 
@@ -845,7 +965,7 @@ module IBC::Core {
             abort(ERR_INVALID_CONNECTION_STATE);
         };
 
-        let expected_counterparty = new_counterparty(
+        let expected_counterparty = new_connection_counterparty(
             connection.client_id,
             connection_id,
             new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"ibc")))
@@ -882,5 +1002,256 @@ module IBC::Core {
         });
     }
 
+    public fun verify_supported_feature(version: &Version, feature: String): bool {
+        let h = IBCCommitment::keccak256(feature);
+        let i = 0;
+        while (i < vector::length(&version.features)) {
+            if (IBCCommitment::keccak256(*vector::borrow(&version.features, i)) == h) {
+                return true;
+            };
+            i = i + 1;
+        };
+        false
+    }
 
+    public fun to_string(ordering: u8): String {
+        let return_val = string::utf8(b"ORDER_INVALID");
+        if (ordering == 1) { // Order.ORDER_UNORDERED
+            return_val = string::utf8(b"ORDER_UNORDERED");
+        } else if (ordering == 2) { // Order.ORDER_ORDERED
+            return_val = string::utf8(b"ORDER_ORDERED");
+        };
+        return_val
+    }
+
+
+    public fun get_counterparty_hops(connection_id: String): vector<String> acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        let connection = SmartTable::borrow_with_default(
+            &store.connections,
+            connection_id,
+            &new_connection_end(
+                string::utf8(b""),
+                vector::empty<Version>(),
+                0,
+                0,
+                new_connection_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
+            )
+        );
+        let hops = vector::empty<String>();
+        vector::push_back(&mut hops, connection.counterparty.connection_id);
+        hops
+    }
+
+    public fun generate_channel_identifier(): String acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let next_sequence_bytes = SmartTable::borrow_with_default(
+            &store.commitments,
+            b"nextChannelSequence",
+            &bcs::to_bytes<u64>(&0)
+        );
+        let next_sequence = from_bcs::to_u64(*next_sequence_bytes);
+        let identifier = string::utf8(b"channel-");
+        string::append(&mut identifier, string_utils::to_string(&next_sequence));
+        let new_sequence = next_sequence + 1;
+        SmartTable::upsert(
+            &mut store.commitments,
+            b"nextChannelSequence",
+            bcs::to_bytes(&new_sequence)
+        );
+        identifier
+    }
+
+    public fun ensure_connection_state(connection_id: String): ConnectionEnd acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        let connection = SmartTable::borrow_with_default(
+            &store.connections,
+            connection_id,
+            &new_connection_end(
+                string::utf8(b""),
+                vector::empty<Version>(),
+                0,
+                0,
+                new_connection_counterparty(string::utf8(b""), string::utf8(b""), new_merkleprefix(vector::empty<u8>()))
+            )
+        );
+        if (connection.state != 3) { // STATE_OPEN
+            abort(ERR_INVALID_CONNECTION_STATE);
+        };
+        *connection
+    }
+    public fun ensure_connection_feature(connection_hops: vector<String>, ordering: u8): (String, ConnectionEnd) acquires IBCStore {
+        if (vector::length(&connection_hops) != 1) {
+            abort(E_CONN_NOT_SINGLE_HOP);
+        };
+        let connection_id = *vector::borrow(&connection_hops, 0);
+        let connection = ensure_connection_state(connection_id);
+        if (vector::length(&connection.versions) != 1) {
+            abort(E_CONN_NOT_SINGLE_VERSION);
+        };
+        let version = *vector::borrow(&connection.versions, 0);
+        if (!verify_supported_feature(&version, to_string(ordering))) {
+            abort(E_UNSUPPORTED_FEATURE);
+        };
+        (connection_id, connection)
+    }
+
+    public fun is_lowercase(s: &String): bool {
+        let bytes = bcs::to_bytes(s);
+        let i = 1;
+        while (i < vector::length(&bytes)) {
+            let byte = *vector::borrow(&bytes, i);
+            if (byte < 0x61 || byte > 0x7A) { // ASCII values for 'a' and 'z'
+                return false;
+            };
+            i = i + 1;
+        };
+        true
+    }
+    
+    public fun update_channel_commitment(port_id: String, channel_id: String) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        
+        let channels_for_port = SmartTable::borrow(
+            &store.channels,
+            port_id,
+        );
+
+        let channel = SmartTable::borrow(
+            channels_for_port,
+            channel_id
+        );
+        let hash = IBCCommitment::keccak256(encode_channel(channel));
+        let key = IBCCommitment::channel_commitment_key(port_id, channel_id);
+        SmartTable::upsert(&mut store.commitments, key, hash);
+    }
+
+
+    public fun verify_channel_state(
+        connection: &ConnectionEnd,
+        height: height::Height,
+        proof: Any,
+        port_id: String,
+        channel_id: String,
+        channel_bytes: vector<u8>
+    ): bool {
+        let path = IBCCommitment::channel_commitment_key(port_id, channel_id);
+        let (result, error_code) = IBC::LightClient::verify_membership(
+            connection.client_id,
+            height,
+            proof,
+            connection.counterparty.prefix.key_prefix,
+            path,
+            channel_bytes
+        );
+        assert!(error_code == 0, E_INVALID_PROOF);
+        true
+    }
+
+    public fun claim_capability(name: String, addr: address) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let default_addr: address = @0x0;
+        let existing_addr = SmartTable::borrow_with_default(&store.capabilities, name, &default_addr);
+        if (*existing_addr == default_addr) {
+            abort E_CAPABILITY_ALREADY_CLAIMED;
+        };
+        SmartTable::upsert(&mut store.capabilities, name, addr);
+    }
+
+public fun channel_open_init(
+    msg_port_id: String,
+    msg_channel: IbcCoreChannelV1Channel,
+    relayer: address
+): String acquires IBCStore {
+    if (!is_lowercase(&msg_port_id)) {
+        abort E_PORT_ID_MUST_BE_LOWERCASE;
+    };
+
+    let (connection_id, _) = ensure_connection_feature(
+        msg_channel.connection_hops, 
+        msg_channel.ordering
+    );
+
+    if (msg_channel.state != 1) { // STATE_INIT
+        abort E_INVALID_CHANNEL_STATE;
+    };
+
+    if (string::length(&msg_channel.counterparty.channel_id) != 0) {
+        abort E_COUNTERPARTY_CHANNEL_NOT_EMPTY;
+    };
+
+    let channel_id = generate_channel_identifier();
+
+    let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+    let channels_for_port = SmartTable::borrow_mut(&mut store.channels, msg_port_id);
+    
+    let channel_table = SmartTable::borrow_mut(
+        channels_for_port,
+        msg_port_id
+    );
+    // let empty_channel_table = SmartTable::new();
+
+    // let channel_table = SmartTable::borrow_with_default(
+    //     channels_for_port,
+    //     msg_port_id,
+    //     &empty_channel_table
+    // );
+
+    // SmartTable::upsert(channel_table, channel_id, msg_channel);
+    SmartTable::upsert(channels_for_port, msg_port_id, *channel_table);
+
+    SmartTable::upsert(
+        &mut store.commitments,
+        IBCCommitment::next_sequence_send_commitment_key(msg_port_id, channel_id),
+        bcs::to_bytes(&1)
+    );
+
+    SmartTable::upsert(
+        &mut store.commitments,
+        IBCCommitment::next_sequence_recv_commitment_key(msg_port_id, channel_id),
+        bcs::to_bytes(&1)
+    );
+
+    SmartTable::upsert(
+        &mut store.commitments,
+        IBCCommitment::next_sequence_ack_commitment_key(msg_port_id, channel_id),
+        bcs::to_bytes(&1)
+    );
+
+    // TODO: Is it problem to emit event before updating the commitment?
+
+    event::emit_event(&mut store.channel_open_init_events, ChannelOpenInit {
+        port_id: msg_port_id,
+        channel_id: channel_id,
+        counterparty_port_id: msg_channel.counterparty.port_id,
+        connection_id: connection_id,
+        version: msg_channel.version
+    });
+
+    update_channel_commitment(msg_port_id, channel_id);
+
+    // Hardcoded call to IBCModule::on_chan_open_init
+    let result = IBCModule::on_chan_open_init(
+        msg_channel.ordering,
+        msg_channel.connection_hops,
+        msg_port_id,
+        channel_id,
+        msg_channel.counterparty.port_id,
+        msg_channel.counterparty.channel_id,
+        msg_channel.version,
+        relayer
+    );
+
+    claim_capability(
+        IBCCommitment::channel_capability_path(msg_port_id, channel_id),
+        relayer
+    );
+
+
+
+    channel_id
 }
+
+
+}   

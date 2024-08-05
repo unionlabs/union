@@ -96,6 +96,12 @@ module IBC::IBCCommitment {
         StringModule::append(&mut path, channel_id);
         path
     }
+    public fun channel_capability_path(port_id: String, channel_id: String): String {
+        let path = port_id;
+        StringModule::append_utf8(&mut path, b"/");
+        StringModule::append(&mut path, channel_id);
+        path
+    }
 
     // Generate the path for next sequence acknowledge commitment
     public fun next_sequence_ack_commitment_path(port_id: String, channel_id: String): String {
