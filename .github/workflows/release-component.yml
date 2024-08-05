@@ -58,7 +58,7 @@ jobs:
 
   build:
     needs: eval-tag
-    uses: unionlabs/workflows/.github/workflows/build.yml@7c5ff7677d51d9b6d9a62701a6cf8de96510cc8b
+    uses: unionlabs/workflows/.github/workflows/build.yml@8fdbd5d131725a503e1e8c7a415edf6726da25c5
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
