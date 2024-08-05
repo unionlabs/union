@@ -174,7 +174,7 @@ impl Querier for Arb {
     async fn get_execution_height(&self, slot: i64) -> Result<(i64, i64)> {
         let height = (|| self.execution_height_of_beacon_slot(slot as u64))
             .retry(
-                    &ConstantBuilder::default()
+                &ConstantBuilder::default()
                     .with_delay(Duration::from_millis(500))
                     .with_max_times(60),
             )
