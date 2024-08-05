@@ -62,6 +62,7 @@ jobs:
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
       access-tokens: github.com=${{ secrets.GITHUB_TOKEN }}
+      org_token: ${{ secrets.UNION_ORG_PAT }}
     with:
       filter_builds: ${{ needs.eval-tag.outputs.build }}
 
