@@ -17,6 +17,7 @@ import {
   paginatedAddressesTransfers
 } from "./paginated-transfers.ts"
 import { page } from "$app/stores"
+import { getContext } from "svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { goto, onNavigate } from "$app/navigation"
@@ -35,7 +36,6 @@ import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
-import { getContext } from "svelte"
 
 addressTransfersPreference.useLocalStorage()
 
@@ -241,10 +241,10 @@ const options = writable<TableOptions<DataRow>>({
   enableColumnResizing: true,
   enableMultiRowSelection: true,
   getCoreRowModel: getCoreRowModel(),
+  state: { pagination: $pagination },
   rowCount: $transfersDataStore?.length,
   getFilteredRowModel: getFilteredRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
-  state: { pagination: $pagination },
   debugTable: import.meta.env.MODE === "development" && import.meta.env.DEBUG_TABLE === "true"
 })
 
@@ -279,11 +279,13 @@ onNavigate(navigation => {
 </script>
 
 <DevTools>
-  {JSON.stringify(
-    { idx: $pagination.pageIndex, $REFETCH_ENABLED, ...$timestamps },
-    undefined,
-    2
-  )}
+  <!-- <pre>
+    {JSON.stringify(
+      { idx: $pagination.pageIndex, $REFETCH_ENABLED, ...$timestamps,...$addressArray },
+      undefined,
+      2
+    )}
+  </pre> -->
 </DevTools>
 
 {#if $transfersDataStore?.length}

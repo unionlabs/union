@@ -18,7 +18,7 @@ export interface Table {
   description: string
 }
 
-export const load = (loadEvent => ({
+export const load = (_ => ({
   tables: [
     {
       route: "transfers",
