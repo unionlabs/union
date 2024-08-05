@@ -27,7 +27,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, TransferAsset } from "$lib/types.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-// import { addressTransfersPreference } from "../preference.ts"
+import { addressTransfersPreference } from "../preference.ts"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellAssets from "../../(components)/cell-assets.svelte"
 import { derived, writable, type Readable } from "svelte/store"
@@ -37,7 +37,7 @@ import { ExplorerPagination } from "../../(components)/explorer-pagination/index
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
 
-// addressTransfersPreference.useLocalStorage()
+addressTransfersPreference.useLocalStorage()
 
 let QUERY_LIMIT = 10
 let REFRESH_INTERVAL = 5_000
@@ -145,36 +145,36 @@ let timestamps = derived(
 )
 
 const columns: Array<ColumnDef<DataRow>> = [
-  {
-    size: 100,
-    minSize: 20,
-    maxSize: 100,
-    accessorKey: "hash",
-    header: _ => "Tx Hash",
-    accessorFn: (originalRow, _index) => originalRow.hash,
-    cell: info => {
-      const destinationRecord =
-        !info.row.original.destination.hash || info.row.original.destination.hash === "unknown"
-          ? undefined
-          : {
-              truncateSize: 12,
-              index: info.row.index,
-              label: "Destination Tx",
-              hash: info.row.original.destination.hash
-            }
-      return flexRender(CellTooltipIcon, {
-        records: [
-          {
-            truncateSize: 14,
-            label: "Source Tx",
-            hash: info.getValue(),
-            index: info.row.index
-          },
-          destinationRecord
-        ].filter(Boolean)
-      })
-    }
-  },
+  // {
+  //   size: 100,
+  //   minSize: 20,
+  //   maxSize: 100,
+  //   accessorKey: "hash",
+  //   header: _ => "Tx Hash",
+  //   accessorFn: (originalRow, _index) => originalRow.hash,
+  //   cell: info => {
+  //     const destinationRecord =
+  //       !info.row.original.destination.hash || info.row.original.destination.hash === "unknown"
+  //         ? undefined
+  //         : {
+  //             truncateSize: 12,
+  //             index: info.row.index,
+  //             label: "Destination Tx",
+  //             hash: info.row.original.destination.hash
+  //           }
+  //     return flexRender(CellTooltipIcon, {
+  //       records: [
+  //         {
+  //           truncateSize: 14,
+  //           label: "Source Tx",
+  //           hash: info.getValue(),
+  //           index: info.row.index
+  //         },
+  //         destinationRecord
+  //       ].filter(Boolean)
+  //     })
+  //   }
+  // },
   {
     accessorKey: "source",
     header: () => "Source",
@@ -278,7 +278,7 @@ onNavigate(navigation => {
 </script>
 
 <DevTools>
-  <pre>
+  <!-- <pre>
     {JSON.stringify(
       {
         idx: $pagination.pageIndex,
@@ -290,7 +290,7 @@ onNavigate(navigation => {
       undefined,
       2
     )}
-  </pre>
+  </pre> -->
 </DevTools>
 
 {#if $transfersDataStore?.length}
@@ -300,14 +300,11 @@ onNavigate(navigation => {
         <Table.Header class="tabular-nums">
           {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
             <Table.Row class="tabular-nums">
-              {#each headerGroup.headers as header, index (header.id)}
+              {#each headerGroup.headers as header (header.id)}
                 <Table.Head
                   colspan={header.colSpan}
-                  class={cn(
-                    index === 0 ? "pl-5" : "",
-                    `w-[${header.getSize()}px]`,
-                    "whitespace-nowrap tabular-nums"
-                  )}
+                  rowspan={header.rowSpan}
+                  class={cn(`whitespace-nowrap tabular-nums`)}
                 >
                   <svelte:component
                     this={flexRender(
@@ -336,26 +333,20 @@ onNavigate(navigation => {
               )}
             >
               {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-                {@const columnId = cell.column.id}
                 {@const hash = $rows[row.index].original.hash}
-                <Table.Cell class={cn("tabular-nums h-12")} headers="header">
-                  {#if columnId === "hash"}
+                <Table.Cell class="tabular-nums" headers="header">
+                  <a
+                    title={hash}
+                    href={`/explorer/transfers/${hash}`}
+                    class="size-full min-size-full w-full"
+                  >
                     <svelte:component
                       this={flexRender(cell.column.columnDef.cell, {
                         ...cell.getContext(),
                         chains
                       })}
                     />
-                  {:else}
-                    <a href={`/explorer/transfers/${hash}`}>
-                      <svelte:component
-                        this={flexRender(cell.column.columnDef.cell, {
-                          ...cell.getContext(),
-                          chains
-                        })}
-                      />
-                    </a>
-                  {/if}
+                  </a>
                 </Table.Cell>
               {/each}
             </Table.Row>

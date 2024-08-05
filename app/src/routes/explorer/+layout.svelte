@@ -2,8 +2,8 @@
 import { page } from "$app/stores"
 import { onNavigate } from "$app/navigation"
 import { cn } from "$lib/utilities/shadcn.ts"
-import Menu from "./(components)/menu.svelte"
 import type { LayoutData } from "./$types.ts"
+import Menu from "./(components)/menu.svelte"
 import { deviceWidth } from "$lib/utilities/device.ts"
 import StatsBar from "./(components)/stats-bar.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
@@ -58,15 +58,15 @@ onNavigate(navigation => {
       <ArrowLeftIcon />
       <span class="uppercase">{$page.route.id?.split("/").at(-2)}</span>
     </a>
-    {#if $deviceWidth < 888 && $page.route.id?.split("/").length !== 5}
+    {#if $deviceWidth < 888 && $page.route.id?.split("/").length !== 4}
       <StatsBarMobile />
     {/if}
 
     <div class="flex flex-col flex-1 size-full">
-      {#if $deviceWidth >= 888 && $page.route.id?.split("/").length !== 5}
+      {#if $deviceWidth >= 888 && $page.route.id?.split("/").length !== 4}
         <StatsBar />
       {/if}
-      <div class="px-2 pb-2 pt-0 sm:px-6 sm:py-4">
+      <div class="p-2 pt-0 sm:p-6">
         <div
           class={cn($page.route.id?.split("/").length === 3 ? "" : "hidden")}
         >
