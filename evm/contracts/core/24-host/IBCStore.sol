@@ -5,6 +5,8 @@ import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../02-client/ILightClient.sol";
 
 library IBCStoreLib {
+    string public constant COMMITMENT_PREFIX = "ibc";
+
     error ErrClientNotFound();
 }
 
@@ -30,7 +32,7 @@ abstract contract IBCStore {
     bytes32 public constant nextChannelSequencePath =
         keccak256("nextChannelSequence");
 
-    string public constant COMMITMENT_PREFIX = "ibc";
+    string public constant COMMITMENT_PREFIX = IBCStoreLib.COMMITMENT_PREFIX;
 
     // Storage accessors
     function getClient(string memory clientId)

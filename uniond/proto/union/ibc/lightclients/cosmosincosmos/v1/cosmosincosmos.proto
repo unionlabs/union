@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package union.ibc.lightclients.cosmosincosmos.v1;
+
+option go_package = "union/ibc/lightclients/cosmosincosmos";
+
+import "ibc/core/client/v1/client.proto";
+import "ibc/core/commitment/v1/commitment.proto";
+import "gogoproto/gogo.proto";
+
+message ClientState {
+  option (gogoproto.goproto_getters) = false;
+  string l2_chain_id = 1;
+  string l1_client_id = 2;
+  string l2_client_id = 3;
+  .ibc.core.client.v1.Height latest_height = 4 [(gogoproto.nullable) = false];
+}
+
+message ConsensusState {
+  option (gogoproto.goproto_getters) = false;
+  // timestamp that corresponds to the block height in which the ConsensusState
+  // was stored.
+  uint64 timestamp = 1;
+  // commitment root (app_hash)
+  .ibc.core.commitment.v1.MerkleRoot app_hash = 2 [(gogoproto.nullable) = false];
+}
+
+message Header {
+  option (gogoproto.goproto_getters) = false;
+  .ibc.core.client.v1.Height l1_height = 1 [(gogoproto.nullable) = false];
+  .ibc.core.client.v1.Height l2_height = 2 [(gogoproto.nullable) = false];
+  // Eth abi encoded ICS23 MerkleProof
+  bytes l2_inclusion_proof = 3 [(gogoproto.nullable) = false];
+  // Proto encoded tendermint ConsensusState
+  // Optimize: technically extractable from the merkleproof as it must be an inclusion proof.
+  bytes l2_consensus_state = 4 [(gogoproto.nullable) = false];
+}

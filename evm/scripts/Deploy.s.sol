@@ -15,6 +15,7 @@ import "../contracts/core/04-channel/IBCChannelHandshake.sol";
 import "../contracts/core/04-channel/IBCPacket.sol";
 import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClientV2.sol";
+import "../contracts/clients/CosmosInCosmosClient.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
 import "../contracts/lib/Hex.sol";
