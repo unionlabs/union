@@ -288,14 +288,14 @@ module IBC::LightClient {
         let hmac = bcs::to_bytes(&commitment_hash);
         let commitment_hash = std::option::extract(&mut deserialize<Fr, FormatFrLsb>(&hmac));
 
-       let alpha_g1 = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&ALPHA_G1));
+        let alpha_g1 = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&ALPHA_G1));
 
-       let beta_g2 = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&BETA_G2));
+        let beta_g2 = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&BETA_G2));
 
-       let gamma_g2 = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&GAMMA_G2));
-       let delta_g2 = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&DELTA_G2));
-       let pedersen_g = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&PEDERSEN_G));
-       let pedersen_g_root_sigma_neg = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&PEDERSEN_G_ROOT_SIGMA_NEG));
+        let gamma_g2 = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&GAMMA_G2));
+        let delta_g2 = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&DELTA_G2));
+        let pedersen_g = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&PEDERSEN_G));
+        let pedersen_g_root_sigma_neg = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&PEDERSEN_G_ROOT_SIGMA_NEG));
 
         let gamma_abc_1 = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 0)));
         let gamma_abc_2 = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 1)));
