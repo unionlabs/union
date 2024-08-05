@@ -11,7 +11,6 @@ jobs:
       build: ${{ steps.eval.outputs.BUILD }}
       component: ${{ steps.eval.outputs.COMPONENT }}
       image-produced: ${{ steps.eval.outputs.IMAGE_PRODUCED}}
-      repo: ${{ steps.eval.outputs.REPO }}
       version: ${{ steps.eval.outputs.VERSION }}
     steps:
       - id: eval
@@ -22,29 +21,24 @@ jobs:
           case $component in
             bunde-testnet-8)
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              echo "REPO=unionlabs/unionvisor-bundles" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
               build="(.attr == \"bundle-testnet-8\" or .attr == \"bundle-testnet-8-image\")"
               ;;
             cometbls-light-client)
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              echo "REPO=unionlabs/$component" >> $GITHUB_OUTPUT
               build="(.attr == \"cometbls-light-client\")"
               ;;
             ucs01-relay)
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              echo "REPO=unionlabs/$component" >> $GITHUB_OUTPUT
               build="(.attr == \"ucs01-relay\")"
               ;;
             uniond)
               echo "COMPONENT=uniond-release" >> $GITHUB_OUTPUT
-              echo "REPO=unionlabs/uniond-release" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
               build="(.attr == \"uniond-release\" or .attr == \"uniond-release-image\")"
               ;;
             voyager)
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              echo "REPO=unionlabs/$component" >> $GITHUB_OUTPUT
               build="(.attr == \"voyager\")"
               ;;
             *)
@@ -273,7 +267,7 @@ jobs:
         with:
           body_path: release.md
           prerelease: false
-          repository: ${{ needs.eval-tag.outputs.repo }}
+          repository: unionlabs/union
           token: ${{ secrets.UNION_RELEASES_PAT }}
           tag_name: ${{ needs.eval-tag.outputs.version }}
           fail_on_unmatched_files: true
