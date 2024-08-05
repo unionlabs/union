@@ -29,6 +29,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
 
     for indexer in indexers {
         match indexer {
+            IndexerConfig::Scroll(_) => {}
             IndexerConfig::Arb(_) => {}
             IndexerConfig::Beacon(_) => {}
             IndexerConfig::Bera(_) => {}

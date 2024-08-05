@@ -76,6 +76,8 @@ pub enum IndexerConfig {
     Bera(crate::bera::Config),
     #[serde(rename = "arb")]
     Arb(crate::arb::Config),
+    #[serde(rename = "scroll")]
+    Scroll(crate::scroll::Config),
 }
 
 impl IndexerConfig {
@@ -87,6 +89,7 @@ impl IndexerConfig {
             Self::Bera(cfg) => &cfg.label,
             Self::EthFork(cfg) => &cfg.label,
             Self::Arb(cfg) => &cfg.label,
+            Self::Scroll(cfg) => &cfg.label,
         }
     }
 }
@@ -133,6 +136,14 @@ impl IndexerConfig {
                     .await
             }
             Self::Arb(cfg) => {
+                cfg.indexer(db)
+                    .instrument(initializer_span)
+                    .await?
+                    .index()
+                    .instrument(indexer_span)
+                    .await
+            }
+            Self::Scroll(cfg) => {
                 cfg.indexer(db)
                     .instrument(initializer_span)
                     .await?

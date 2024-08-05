@@ -38,6 +38,7 @@ prost.workspace     = true
 protos              = { workspace = true, features = ["client"] }
 regex               = "1.10.5"
 reqwest             = { workspace = true, features = ["json", "blocking"] }
+scroll-api.workspace = true
 serde               = { workspace = true, features = ["derive"] }
 serde-aux           = "4.5.0"
 serde_json          = { workspace = true }

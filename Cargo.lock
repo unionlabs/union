@@ -4501,6 +4501,7 @@ dependencies = [
  "protos",
  "regex",
  "reqwest 0.11.27",
+ "scroll-api",
  "serde",
  "serde-aux",
  "serde_json",
