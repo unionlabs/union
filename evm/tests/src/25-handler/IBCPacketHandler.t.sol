@@ -145,7 +145,7 @@ contract IBCPacketHandlerTest is TestPlus {
     function mkWriteAckPacket(
         string memory destinationChannel,
         uint64 sequence
-    ) public returns (IbcCoreChannelV1Packet.Data memory) {
+    ) public view returns (IbcCoreChannelV1Packet.Data memory) {
         return IbcCoreChannelV1Packet.Data({
             sequence: sequence,
             source_port: "",
