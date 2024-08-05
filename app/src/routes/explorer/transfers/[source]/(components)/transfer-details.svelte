@@ -544,7 +544,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               </h2>
               {#if sourceExplorer !== undefined}
                 <a
-                  href={`/explorer/address/${transfer.sender}`}
+                  href={`/explorer/transfers/address/${transfer.sender}`}
                   class="block text-sm underline break-words"
                   >{transfer.sender}
                 </a>{:else}<p class="text-sm break-words">
@@ -567,7 +567,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               </h2>
               {#if destinationExplorer !== undefined}
                 <a
-                  href={`/explorer/address/${transfer.receiver}`}
+                  href={`/explorer/transfers/address/${transfer.receiver}`}
                   class="block text-sm underline break-words"
                   >{transfer.receiver}
                 </a>{:else}<p class="text-sm break-words">
