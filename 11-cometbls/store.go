@@ -23,7 +23,7 @@ stores the consensus state under the key: `consensusStates/{revision_number}-{re
 represented as a string.
 While this works fine for IBC proof verification, it makes efficient iteration difficult since the lexicographic order
 of the consensus state keys do not match the height order of consensus states. This makes consensus state pruning and
-monotonic time enforcement difficult since it is inefficient to find the earliest consensus state or to find the neigboring
+monotonic time enforcement difficult since it is inefficient to find the earliest consensus state or to find the neighboring
 consensus states given a consensus state height.
 Changing the ICS-24 representation will be a major breaking change that requires counterparty chains to accept a new key format.
 Thus to avoid breaking IBC, we can store a lookup from a more efficiently formatted key: `iterationKey` to the consensus state key which
@@ -232,7 +232,7 @@ func IterateConsensusStateAscending(clientStore storetypes.KVStore, cb func(heig
 
 // GetNextConsensusState returns the lowest consensus state that is larger than the given height.
 // The Iterator returns a storetypes.Iterator which iterates from start (inclusive) to end (exclusive).
-// If the starting height exists in store, we need to call iterator.Next() to get the next consenus state.
+// If the starting height exists in store, we need to call iterator.Next() to get the next consensus state.
 // Otherwise, the iterator is already at the next consensus state so we can call iterator.Value() immediately.
 func GetNextConsensusState(clientStore storetypes.KVStore, cdc codec.BinaryCodec, height exported.Height) (*ConsensusState, bool) {
 	iterateStore := prefix.NewStore(clientStore, []byte(KeyIterateConsensusStatePrefix))
