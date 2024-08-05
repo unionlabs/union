@@ -1,6 +1,9 @@
 use backon::Retryable;
 use color_eyre::eyre::{bail, eyre, Report};
-use futures::{stream, stream::TryStreamExt, TryFutureExt};
+use futures::{
+    stream::{FuturesOrdered, TryStreamExt},
+    TryFutureExt,
+};
 use regex::Regex;
 use sqlx::{Acquire, Postgres};
 use tendermint::block::Height;
@@ -309,8 +312,8 @@ async fn fetch_and_insert_blocks(
     // get an effective TOCTOU.
     let client = client.fastest();
 
-    let block_results = stream::iter(headers.clone().into_iter().rev().map(Ok::<_, Report>))
-        .and_then(|(id, header)| async move {
+    let block_results = FuturesOrdered::from_iter(headers.clone().into_iter().rev()
+        .map(|(id, header)| async move {
             debug!("fetching block results for height {}", header.height);
             let block = (|| {
                 client
@@ -330,8 +333,8 @@ async fn fetch_and_insert_blocks(
             })
             .retry(&crate::expo_backoff())
             .await?;
-            Ok((id, header, block, txs))
-        })
+            Ok::<_, Report>((id, header, block, txs))
+        }))
         .try_collect();
 
     // let (submit_blocks, block_results) = join!(submit_blocks, block_results);
