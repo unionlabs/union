@@ -4,9 +4,9 @@ import { URLS } from "$lib/constants"
 import { raise } from "$lib/utilities/index.ts"
 import type { TransferAsset } from "$lib/types.ts"
 import {
-  latestProfileTransfersQueryDocument,
-  profileTransfersTimestampFilterQueryDocument
-} from "$lib/graphql/documents/profile-transfers.ts"
+  latestAddressTransfersQueryDocument,
+  addressTransfersTimestampFilterQueryDocument
+} from "$lib/graphql/documents/address-transfers.ts"
 import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 
 export interface TransferAddress {
@@ -36,7 +36,7 @@ export async function latestAddressesTransfers({
   limit: number
   addresses: Array<string>
 }): Promise<PaginatedTransfers> {
-  const { data } = await request(URLS.GRAPHQL, latestProfileTransfersQueryDocument, {
+  const { data } = await request(URLS.GRAPHQL, latestAddressTransfersQueryDocument, {
     limit,
     addresses
   })
@@ -79,7 +79,7 @@ export async function paginatedAddressesTransfers({
 }): Promise<PaginatedTransfers> {
   const { older, newer } = await request(
     URLS.GRAPHQL,
-    profileTransfersTimestampFilterQueryDocument,
+    addressTransfersTimestampFilterQueryDocument,
     {
       limit,
       timestamp,

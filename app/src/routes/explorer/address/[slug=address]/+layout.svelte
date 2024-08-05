@@ -1,35 +1,39 @@
 <script lang="ts">
-import { page } from "$app/stores"
-import { setContext } from "svelte"
-import { derived } from "svelte/store"
-import ChainsGate from "$lib/components/chains-gate.svelte"
-import { address as addressUtilities } from "@union/client"
+  import {
+    isValidEvmAddress,
+    bech32AddressToHex,
+    isValidBech32Address
+  } from "@union/client"
+  import { page } from "$app/stores"
+  import { setContext } from "svelte"
+  import { derived } from "svelte/store"
+  import ChainsGate from "$lib/components/chains-gate.svelte"
 
-/**
- * TODO: instead of displaying data here, go to error page and display a proper error message
- */
+  /**
+   * TODO: instead of displaying data here, go to error page and display a proper error message
+   */
 
-let addressArray = derived(page, $page => {
-  const slug = $page.params.slug
-  if (!slug) return { nonNormalized: [], normalized: [] }
-  const addresses = slug.indexOf("-") === -1 ? [slug] : slug.split("-")
+  let addressArray = derived(page, ($page) => {
+    const slug = $page.params.slug
+    if (!slug) return { nonNormalized: [], normalized: [] }
+    const addresses = slug.indexOf("-") === -1 ? [slug] : slug.split("-")
 
-  const normalizedAddresses = addresses.map(address => {
-    if (addressUtilities.isValidEvmAddress(address)) {
-      return address.slice(2).toLowerCase()
+    const normalizedAddresses = addresses.map((address) => {
+      if (isValidEvmAddress(address)) {
+        return address.slice(2).toLowerCase()
+      }
+      if (isValidBech32Address(address)) {
+        return bech32AddressToHex({ address }).slice(2).toLowerCase()
+      }
+      return address
+    })
+    return {
+      nonNormalized: [...new Set(addresses)],
+      normalized: [...new Set(normalizedAddresses)]
     }
-    if (addressUtilities.isValidBech32Address(address)) {
-      return addressUtilities.bech32AddressToHex({ address }).slice(2).toLowerCase()
-    }
-    return address
   })
-  return {
-    nonNormalized: [...new Set(addresses)],
-    normalized: [...new Set(normalizedAddresses)]
-  }
-})
 
-setContext<typeof addressArray>("addressArray", addressArray)
+  setContext<typeof addressArray>("addressArray", addressArray)
 </script>
 
 <ChainsGate let:chains>

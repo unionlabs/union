@@ -1,5 +1,5 @@
+import { isHex } from "viem"
 import { bech32 } from "@scure/base"
-import { getAddress, isHex } from "viem"
 import { raise } from "./utilities/index.ts"
 import type { Bech32Address, HexAddress } from "./types.ts"
 
@@ -8,7 +8,7 @@ import type { Bech32Address, HexAddress } from "./types.ts"
  */
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
   const { words } = bech32.decode(address)
-  return getAddress(`0x${Buffer.from(bech32.fromWords(words)).toString("hex")}`)
+  return `0x${Buffer.from(bech32.fromWords(words)).toString("hex")}`
 }
 
 /**
@@ -27,7 +27,6 @@ export function bech32ToBech32Address<ToPrefix extends string>({
   address,
   toPrefix
 }: { address: string; toPrefix: ToPrefix }): Bech32Address<ToPrefix> {
-  console.info(bech32.decode(address))
   return bech32.encode(toPrefix, bech32.decode(address).words) as Bech32Address<ToPrefix>
 }
 
