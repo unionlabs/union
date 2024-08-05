@@ -43,7 +43,6 @@ jobs:
               ;;
             evm-contracts)
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              echo "REPO=unionlabs/$component" >> $GITHUB_OUTPUT
               build="(.attr == \"evm-contracts\")"
               ;;
             *)
