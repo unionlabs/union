@@ -41,6 +41,10 @@ jobs:
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               build="(.attr == \"voyager\")"
               ;;
+            evm-contracts)
+              echo "COMPONENT=$component" >> $GITHUB_OUTPUT
+              echo "REPO=unionlabs/$component" >> $GITHUB_OUTPUT
+              build="(.attr == \"evm-contracts\")"
             *)
               echo "Invalid tag $TAG"
               exit 1
@@ -125,7 +129,7 @@ jobs:
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
             mv "$SYSTEM.$COMPONENT"/bin/uniond "$COMPONENT-$SYSTEM"
-          elif [[ "$COMPONENT" =~ bundle-testnet-8 || "$COMPONENT" =~ cometbls-light-client || "$COMPONENT" =~ ucs01-relay ]]
+          elif [[ "$COMPONENT" =~ bundle-testnet-8 || "$COMPONENT" =~ cometbls-light-client || "$COMPONENT" =~ ucs01-relay || "$COMPONENT" =~ "evm-contracts" ]]
           then
             ls -la
             tar -zcf "$COMPONENT-$SYSTEM" "$SYSTEM.$COMPONENT"
@@ -240,7 +244,7 @@ jobs:
         run: |
           echo "# sha256 Checksums" >> release.md
           case $COMPONENT in
-            bundle-testnet-8)
+            bundle-testnet-8 | evm-contracts)
               comp_aarch64="$COMPONENT-aarch64-linux"
               comp_aarch64_archive="$comp_aarch64.tar.gz"
               echo "- $(cd "$comp_aarch64" && mv "$comp_aarch64" "$comp_aarch64_archive" && sha256sum "$comp_aarch64_archive")" >> release.md
