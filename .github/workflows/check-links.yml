@@ -56,5 +56,4 @@ jobs:
           title: Link Checker Report
           content-filepath: ./lychee/out.md
           labels: |
-            documentation
-            dead-links
+            C-dead-links
