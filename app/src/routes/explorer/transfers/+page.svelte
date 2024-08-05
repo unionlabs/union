@@ -250,63 +250,63 @@ onNavigate(navigation => {
 {#if $transfersDataStore?.length}
   <Card.Root>
     <Table.Root>
-      <Table.Header class="tabular-nums">
-        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row class="tabular-nums">
-            {#each headerGroup.headers as header (header.id)}
-              <Table.Head
-                colspan={header.colSpan}
-                rowspan={header.rowSpan}
-                class={cn(`whitespace-nowrap tabular-nums`)}
-              >
-                <svelte:component
-                  this={flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                />
-              </Table.Head>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Header>
-      <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
-        {#each $table.getRowModel().rows as row, index (row.index)}
-          {@const isSupported = assetHasInfoProperty(
-            $rows[row.index]?.original?.assets
-          )}
-          {@const showUnsupported = $showUnsupported}
-          {@const shouldShow = isSupported || showUnsupported}
-          <Table.Row
-            class={cn(
-              "cursor-pointer tabular-nums",
-              index % 2 === 0 ? "bg-secondary/10" : "bg-transparent",
-              isSupported ? "" : "opacity-50",
-              shouldShow ? "" : "hidden"
-            )}
-          >
-            {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              {@const hash = $rows[row.index].original.hash}
-              <Table.Cell class="tabular-nums" headers="header">
-                <a
-                  title={hash}
-                  href={`/explorer/transfers/${hash}`}
-                  class="size-full min-size-full w-full"
+      <ChainsGate let:chains>
+        <Table.Header class="tabular-nums">
+          {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
+            <Table.Row class="tabular-nums">
+              {#each headerGroup.headers as header (header.id)}
+                <Table.Head
+                  colspan={header.colSpan}
+                  rowspan={header.rowSpan}
+                  class={cn(`whitespace-nowrap tabular-nums`)}
                 >
-                  <ChainsGate let:chains>
+                  <svelte:component
+                    this={flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  />
+                </Table.Head>
+              {/each}
+            </Table.Row>
+          {/each}
+        </Table.Header>
+        <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
+          {#each $table.getRowModel().rows as row, index (row.index)}
+            {@const isSupported = assetHasInfoProperty(
+              $rows[row.index]?.original?.assets
+            )}
+            {@const showUnsupported = $showUnsupported}
+            {@const shouldShow = isSupported || showUnsupported}
+            <Table.Row
+              class={cn(
+                "cursor-pointer tabular-nums",
+                index % 2 === 0 ? "bg-secondary/10" : "bg-transparent",
+                isSupported ? "" : "opacity-50",
+                shouldShow ? "" : "hidden"
+              )}
+            >
+              {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
+                {@const hash = $rows[row.index].original.hash}
+                <Table.Cell class="tabular-nums" headers="header">
+                  <a
+                    title={hash}
+                    href={`/explorer/transfers/${hash}`}
+                    class="size-full min-size-full w-full"
+                  >
                     <svelte:component
                       this={flexRender(cell.column.columnDef.cell, {
                         ...cell.getContext(),
                         chains
                       })}
                     />
-                  </ChainsGate>
-                </a>
-              </Table.Cell>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Body>
+                  </a>
+                </Table.Cell>
+              {/each}
+            </Table.Row>
+          {/each}
+        </Table.Body>
+      </ChainsGate>
     </Table.Root>
   </Card.Root>
 {:else if queryStatus === "pending"}

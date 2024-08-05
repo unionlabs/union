@@ -77,10 +77,14 @@ export async function paginatedAddressesTransfers({
   timestamp: string
   addresses: Array<string>
 }): Promise<PaginatedTransfers> {
-  const { newer, older } = await request(
+  const { older, newer } = await request(
     URLS.GRAPHQL,
     profileTransfersTimestampFilterQueryDocument,
-    { limit, addresses, timestamp }
+    {
+      limit,
+      timestamp,
+      addresses
+    }
   )
 
   const allTransfers = [...newer.toReversed(), ...older]

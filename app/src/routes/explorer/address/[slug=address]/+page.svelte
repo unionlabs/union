@@ -27,7 +27,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, TransferAsset } from "$lib/types.ts"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-import { addressTransfersPreference } from "../preference.ts"
+// import { addressTransfersPreference } from "../preference.ts"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellAssets from "../../(components)/cell-assets.svelte"
 import { derived, writable, type Readable } from "svelte/store"
@@ -37,9 +37,9 @@ import { ExplorerPagination } from "../../(components)/explorer-pagination/index
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { toPrettyDateTimeFormat, currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
 
-addressTransfersPreference.useLocalStorage()
+// addressTransfersPreference.useLocalStorage()
 
-let QUERY_LIMIT = 8
+let QUERY_LIMIT = 10
 let REFRESH_INTERVAL = 5_000
 
 let timestamp = writable(
@@ -69,7 +69,7 @@ let liveAddressTransfers = createQuery(
   derived(
     [REFETCH_ENABLED, normalizedAddressArray],
     ([$REFETCH_ENABLED, $normalizedAddressArray]) => ({
-      queryKey: ["address-transfers-live"],
+      queryKey: ["address-transfers", "live", ...$normalizedAddressArray],
       refetchOnMount: $REFETCH_ENABLED,
       placeholderData: keepPreviousData,
       staleTime: Number.POSITIVE_INFINITY,
@@ -89,7 +89,7 @@ let addressTransfers = createQuery(
   derived(
     [timestamp, normalizedAddressArray, REFETCH_ENABLED],
     ([$timestamp, $normalizedAddressArray, $REFETCH_ENABLED]) => ({
-      queryKey: ["address-transfers", $timestamp],
+      queryKey: ["address-transfers", $timestamp, ...$normalizedAddressArray],
       refetchOnMount: false,
       refetchOnReconnect: false,
       placeholderData: keepPreviousData,
@@ -241,10 +241,10 @@ const options = writable<TableOptions<DataRow>>({
   enableColumnResizing: true,
   enableMultiRowSelection: true,
   getCoreRowModel: getCoreRowModel(),
-  state: { pagination: $pagination },
   rowCount: $transfersDataStore?.length,
   getFilteredRowModel: getFilteredRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
+  state: { pagination: $pagination },
   debugTable: import.meta.env.MODE === "development" && import.meta.env.DEBUG_TABLE === "true"
 })
 
@@ -266,99 +266,102 @@ function assetHasInfoProperty(assets: TransferAsset) {
 }
 
 $: if ($transfersDataStore) rerender()
-
 /**
  * this can be removed if desired
  * it is only used to clear the cache when navigating away from the page `/explorer/transfers`
  */
 onNavigate(navigation => {
-  // if (navigation.to?.route.id !== "/explorer/user") {
-  //   queryClient.removeQueries({ queryKey: ["user-transfers"] })
-  // }
+  if (!navigation.to?.route.id?.startsWith("/explorer/address")) {
+    queryClient.removeQueries({ queryKey: ["address-transfers"] })
+  }
 })
 </script>
 
 <DevTools>
-  <!-- <pre>
+  <pre>
     {JSON.stringify(
-      { idx: $pagination.pageIndex, $REFETCH_ENABLED, ...$timestamps,...$addressArray },
+      {
+        idx: $pagination.pageIndex,
+        $REFETCH_ENABLED,
+        $timestamp,
+        ...$timestamps,
+        ...$addressArray
+      },
       undefined,
       2
     )}
-  </pre> -->
+  </pre>
 </DevTools>
 
 {#if $transfersDataStore?.length}
   <Card.Root>
     <Table.Root>
-      <Table.Header class="tabular-nums">
-        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-          <Table.Row class="tabular-nums">
-            {#each headerGroup.headers as header, index (header.id)}
-              <Table.Head
-                colspan={header.colSpan}
-                class={cn(
-                  index === 0 ? "pl-5" : "",
-                  `w-[${header.getSize()}px]`,
-                  "whitespace-nowrap tabular-nums"
-                )}
-              >
-                <svelte:component
-                  this={flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
+      <ChainsGate let:chains>
+        <Table.Header class="tabular-nums">
+          {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
+            <Table.Row class="tabular-nums">
+              {#each headerGroup.headers as header, index (header.id)}
+                <Table.Head
+                  colspan={header.colSpan}
+                  class={cn(
+                    index === 0 ? "pl-5" : "",
+                    `w-[${header.getSize()}px]`,
+                    "whitespace-nowrap tabular-nums"
                   )}
-                />
-              </Table.Head>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Header>
-      <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
-        {#each $table.getRowModel().rows as row, index (row.index)}
-          {@const isSupported = assetHasInfoProperty(
-            $rows[row.index]?.original?.assets
-          )}
-          {@const showUnsupported = $showUnsupported}
-          {@const shouldShow = isSupported || showUnsupported}
-          <Table.Row
-            class={cn(
-              "cursor-pointer tabular-nums",
-              index % 2 === 0 ? "bg-secondary/10" : "bg-transparent",
-              isSupported ? "" : "opacity-50",
-              shouldShow ? "" : "hidden"
+                >
+                  <svelte:component
+                    this={flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  />
+                </Table.Head>
+              {/each}
+            </Table.Row>
+          {/each}
+        </Table.Header>
+        <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
+          {#each $table.getRowModel().rows as row, index (row.index)}
+            {@const isSupported = assetHasInfoProperty(
+              $rows[row.index]?.original?.assets
             )}
-          >
-            {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-              {@const columnId = cell.column.id}
-              {@const hash = $rows[row.index].original.hash}
-              <Table.Cell class={cn("tabular-nums h-12")} headers="header">
-                {#if columnId === "hash"}
-                  <ChainsGate let:chains>
+            {@const showUnsupported = $showUnsupported}
+            {@const shouldShow = isSupported || showUnsupported}
+            <Table.Row
+              class={cn(
+                "cursor-pointer tabular-nums",
+                index % 2 === 0 ? "bg-secondary/10" : "bg-transparent",
+                isSupported ? "" : "opacity-50",
+                shouldShow ? "" : "hidden"
+              )}
+            >
+              {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
+                {@const columnId = cell.column.id}
+                {@const hash = $rows[row.index].original.hash}
+                <Table.Cell class={cn("tabular-nums h-12")} headers="header">
+                  {#if columnId === "hash"}
                     <svelte:component
                       this={flexRender(cell.column.columnDef.cell, {
                         ...cell.getContext(),
                         chains
                       })}
                     />
-                  </ChainsGate>
-                {:else}
-                  <a href={`/explorer/transfers/${hash}`}>
-                    <ChainsGate let:chains>
+                  {:else}
+                    <a href={`/explorer/transfers/${hash}`}>
                       <svelte:component
                         this={flexRender(cell.column.columnDef.cell, {
                           ...cell.getContext(),
                           chains
                         })}
                       />
-                    </ChainsGate>
-                  </a>
-                {/if}
-              </Table.Cell>
-            {/each}
-          </Table.Row>
-        {/each}
-      </Table.Body>
+                    </a>
+                  {/if}
+                </Table.Cell>
+              {/each}
+            </Table.Row>
+          {/each}
+        </Table.Body>
+      </ChainsGate>
     </Table.Root>
   </Card.Root>
 {:else if queryStatus === "pending"}

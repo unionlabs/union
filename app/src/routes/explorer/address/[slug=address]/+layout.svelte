@@ -1,7 +1,7 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import { setContext } from "svelte"
-import { derived, type Readable } from "svelte/store"
+import { derived } from "svelte/store"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { address as addressUtilities } from "@union/client"
 
@@ -11,19 +11,21 @@ import { address as addressUtilities } from "@union/client"
 
 let addressArray = derived(page, $page => {
   const slug = $page.params.slug
+  if (!slug) return { nonNormalized: [], normalized: [] }
   const addresses = slug.indexOf("-") === -1 ? [slug] : slug.split("-")
 
+  const normalizedAddresses = addresses.map(address => {
+    if (addressUtilities.isValidEvmAddress(address)) {
+      return address.slice(2).toLowerCase()
+    }
+    if (addressUtilities.isValidBech32Address(address)) {
+      return addressUtilities.bech32AddressToHex({ address }).slice(2).toLowerCase()
+    }
+    return address
+  })
   return {
-    nonNormalized: addresses,
-    normalized: addresses.map(address => {
-      if (addressUtilities.isValidEvmAddress(address)) {
-        return address.slice(2).toLowerCase()
-      }
-      if (addressUtilities.isValidBech32Address(address)) {
-        return addressUtilities.bech32AddressToHex({ address }).slice(2).toLowerCase()
-      }
-      return address
-    })
+    nonNormalized: [...new Set(addresses)],
+    normalized: [...new Set(normalizedAddresses)]
   }
 })
 

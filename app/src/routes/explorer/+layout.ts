@@ -18,7 +18,8 @@ export interface Table {
   description: string
 }
 
-export const load = (_ => ({
+export const load = (loadEvent => ({
+  sourceRoute: loadEvent.route,
   tables: [
     {
       route: "transfers",

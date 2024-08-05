@@ -59,8 +59,6 @@ let confirmedUserAddr: Readable<UserAddresses> = derived(userAddr, $userAddr => 
   )
 })
 
-$: console.info($userAddr)
-
 onMount(async () => {
   await sleep(100)
   loading.set(false)

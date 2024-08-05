@@ -14,8 +14,13 @@ export const profileTransfersTimestampFilterQueryDocument = graphql(/* graphql *
       ],
       where: {
         _and: [
-          {source_timestamp: { _gte: $timestamp }},
-        {_or: [ { normalized_sender: { _in: $addresses } }, { normalized_receiver: { _in: $addresses } } ] }
+          { source_timestamp: { _gte: $timestamp } },
+          {
+            _or: [
+              { normalized_sender: { _in: $addresses } },
+              { normalized_receiver: { _in: $addresses } }
+            ]
+          }
         ]
       }
     ) { 
@@ -43,9 +48,16 @@ export const profileTransfersTimestampFilterQueryDocument = graphql(/* graphql *
         { source_timestamp: desc },
         { source_transaction_hash: desc }
       ],
-      where: { 
-        source_timestamp: { _lt: $timestamp },
-        _or: [ { sender: { _in: $addresses } }, { receiver: { _in: $addresses } } ] 
+      where: {
+        _and: [
+          { source_timestamp: { _lt: $timestamp } },
+          {
+            _or: [
+              { normalized_sender: { _in: $addresses } },
+              { normalized_receiver: { _in: $addresses } }
+            ]
+          }
+        ]
       }
     ) { 
       sender
@@ -72,15 +84,19 @@ export const latestProfileTransfersQueryDocument = graphql(/* graphql */ `
   query LatestAddressesTransfersQuery(
     $limit: Int!,
     $addresses: [ String! ]!
-  ) @cached(ttl: 1000) {
+  ) {
     data: v0_transfers(
       limit: $limit,
       order_by: [
         { source_timestamp: desc },
         { source_transaction_hash: desc }
       ],
-      # distinct_on: [source_transaction_hash],
-      where: { _or: [ { normalized_sender: { _in: $addresses } }, { normalized_receiver: { _in: $addresses } } ] }
+      where: {
+        _or: [
+          { normalized_sender: { _in: $addresses } },
+          { normalized_receiver: { _in: $addresses } }
+        ]
+      }
     ) { 
       sender
       source_chain_id
