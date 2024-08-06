@@ -172,6 +172,9 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
 
                                     cs.chain_id().to_string()
                                 }
+                                WasmClientType::EvmInCosmos => {
+                                    todo!()
+                                }
                             };
 
                             datas.push(Data {

@@ -1,0 +1,33 @@
+syntax = "proto3";
+package union.ibc.lightclients.evmincosmos.v1;
+
+option go_package = "union/ibc/lightclients/evmincosmos";
+import "ibc/core/client/v1/client.proto";
+import "union/ibc/lightclients/ethereum/v1/ethereum.proto";
+import "ibc/core/commitment/v1/commitment.proto";
+
+message ClientState {
+  string l1_client_id = 1;
+  string l2_client_id = 2;
+  uint64 latest_slot = 3;
+
+  // Evm
+  bytes ibc_commitment_slot = 5;
+  bytes ibc_contract_address = 6;
+}
+
+message ConsensusState {
+  bytes evm_state_root = 1;
+  bytes ibc_storage_root = 2;
+  uint64 timestamp = 3;
+}
+
+message Header {
+  .ibc.core.client.v1.Height l1_height = 1;
+  uint64 l2_slot = 2;
+  .union.ibc.lightclients.ethereum.v1.ConsensusState l2_consensus_state = 3;
+  // Proof of the l2 consensus state in the l1 client.
+  .ibc.core.commitment.v1.MerkleProof l2_inclusion_proof = 4;
+  // Proof of the ibc contract in the evm state root.
+  .union.ibc.lightclients.ethereum.v1.AccountProof account_proof = 5;
+}

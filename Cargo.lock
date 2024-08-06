@@ -3549,6 +3549,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "evm-in-cosmos-light-client"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-std 1.5.2",
+ "ethereum-light-client",
+ "ics008-wasm-client",
+ "ics23",
+ "protos",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "expander"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
