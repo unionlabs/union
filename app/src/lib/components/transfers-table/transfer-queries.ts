@@ -9,7 +9,7 @@ import {
   addressTransfersTimestampFilterQueryDocument
 } from "$lib/graphql/documents/address-transfers.ts"
 import { raise } from "$lib/utilities/index.ts"
-import type { PaginatedTransfers } from "./types.ts"
+import type { PaginatedTransfers } from "../../transfers-types.ts"
 
 export async function transfersLive({
   limit = 12

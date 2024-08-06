@@ -16,21 +16,21 @@ import * as Table from "$lib/components/ui/table"
 import { showUnsupported } from "$lib/stores/user.ts"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, TransferAsset } from "$lib/types.ts"
-import type { Transfer, TransferAddress } from "../types.ts"
+import type { Transfer, TransferAddress } from "./transfers-types.ts"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
-import CellAssets from "../../(components)/cell-assets.svelte"
+import CellAssets from "$lib/components/table-cells/cell-assets.svelte"
 import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 import { derived, writable, type Readable, type Writable } from "svelte/store"
-import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
-import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
+import CellOriginTransfer from "$lib/components/table-cells/cell-origin-transfer.svelte"
+import ExplorerPagination from "./explorer-pagination.svelte"
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
 import {
   transfersLive,
   transfersByTimestamp,
   transfersLiveByAddress,
   transfersByTimestampForAddresses
-} from "../paginated-transfers.ts"
+} from "./transfer-queries.ts"
 import { toast } from "svelte-sonner"
 
 export let chains: Array<Chain>
