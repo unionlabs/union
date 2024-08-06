@@ -89,6 +89,12 @@
                 default = null;
               };
 
+              # scroll
+              options.scroll_api_client = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+              };
+
               options.chain_id = mkOption { type = types.nullOr types.str; example = "union-testnet-8"; default = null; };
               options.grpc_url = mkOption { type = types.nullOr types.str; example = "https://grpc.example.com"; default = null; };
               options.type = mkOption { type = types.enum [ "tendermint" "ethereum" "beacon" "bera" "ethereum-fork" "arb" ]; };
