@@ -253,9 +253,6 @@ const encodeTimestampSearchParam = (timestamp: string) =>
   class="flex sm:justify-start sm:flex-row flex-col justify-center gap-1 w-full"
 >
   <ExplorerPagination
-    rowsPerPage={20}
-    totalTableRows={20}
-    class={cn("w-auto")}
     status={$transfers.status === "success" ? "done" : "pending"}
     live={!$timestamp}
     onOlderPage={async _ => {
