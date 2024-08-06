@@ -9,19 +9,30 @@ export const cosmosWalletsInformation = [
     id: "leap",
     name: "leap",
     icon: "https://assets.leapwallet.io/logos/leap-cosmos-logo.svg",
-    download: "https://www.leapwallet.io/download"
+    /**
+     * reference links:
+     * - leap deep link generator: https://developers.leapwallet.io/deeplink-generator
+     * - qr code: https://git-union69.web.val.run/app.union.build?svg=union.build/logo.svg&url=leapcosmoswallet.page.link/M3BmzUK5RRPsNyBe9?d=1
+     */
+    deepLink: "https://leapcosmoswallet.page.link/rXtQWTw1fSRuQCeZ8?d=1",
+    download: "https://leapwallet.io/download"
   },
+  /**
+   * reference links:
+   * - keplr link generator: https://chainapsis.notion.site/How-to-use-Deep-Link-on-Keplr-mobile-5593b89de65142278a6a7573c97ad0d4
+   * - qr code: https://git-union69.web.val.run/app.union.build?svg=union.build/logo.svg&url=leapcosmoswallet.page.link/M3BmzUK5RRPsNyBe9?d=1
+   */
   {
     id: "keplr",
     name: "keplr",
     icon: "https://assets-global.website-files.com/63eb7ddf41cf5b1c8fdfbc74/63fc1eaf76d6a3bd547b017c_Keplr_icon_ver.1.3_2.svg",
-    download: "https://www.keplr.app/download"
+    deepLink:
+      "https://deeplink.keplr.app?url=app.union.build#Intent;package=com.chainapsis.keplr;scheme=keplrwallet;end;",
+    download: "https://keplr.app/download"
   }
 ] as const
 
 export type CosmosWalletId = (typeof cosmosWalletsInformation)[number]["id"]
-
-const stored = localStorage.getItem("cosmos-config") || "{}"
 
 function createCosmosStore(
   previousState: ChainWalletStore<"cosmos"> = {
@@ -33,7 +44,6 @@ function createCosmosStore(
     connectionStatus: "disconnected"
   }
 ) {
-  console.log("[cosmosStore] previousState", previousState)
   const { subscribe, set, update } = persisted("cosmos-store", previousState, {
     syncTabs: true,
     storage: "session"
@@ -48,7 +58,10 @@ function createCosmosStore(
       const walletApi = window[walletId]
       if (!walletApi) {
         const walletInfo = cosmosWalletsInformation.find(wallet => wallet.id === walletId)
-        if (walletInfo) window.open(walletInfo?.download, "_blank", "noopener noreferrer")
+        if (walletInfo) {
+          const { deepLink, download } = walletInfo
+          window.open(deepLink || download, "_blank", "noopener noreferrer")
+        }
         return update(v => ({ ...v, connectionStatus: "disconnected" }))
       }
       const chainInfoMap = {

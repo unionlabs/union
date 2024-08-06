@@ -46,9 +46,11 @@ let processedTransfers = derived(
   [transfers, submittedTransfers],
   ([$transfers, $submittedTransfers]) => {
     if ($transfers.data === undefined || $transfers.data.length === 0) {
+      // @ts-expect-error
       if ($submittedTransfers[source] === undefined) {
         return null
       }
+      // @ts-expect-error
       return [$submittedTransfers[source]]
     }
     //@ts-ignore
@@ -123,6 +125,7 @@ let processedTraces = derived(
   [tracesAndHops, submittedTransfers],
   ([$tracesAndHops, $submittedTransfers]) => {
     if (!$tracesAndHops.data || $tracesAndHops.data.length === 0) {
+      // @ts-expect-error
       if ($submittedTransfers[source] !== undefined) {
         return [[]] // pre-generate trace for submitted transfer
       }
@@ -133,8 +136,10 @@ let processedTraces = derived(
       if (tx.hop !== null) {
         tx.traces.push.apply(tx.traces, tx.hop.traces)
         tx.traces.sort((a, b) => {
-          // @ts-ignore timestamp is guaranteed to be a date
-          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          return (
+            // @ts-ignore timestamp is guaranteed to be a date
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          )
         })
       }
 
@@ -143,6 +148,7 @@ let processedTraces = derived(
   }
 )
 
+// @ts-expect-error
 let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
   [processedTraces, processedTransfers],
   ([$processedTraces, $processedTransfers]) => {
@@ -373,96 +379,235 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 !-->
 
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
-<div class="flex flex-col w-full items-center gap-6">
-  {#each $processedTransfers as transfer, transferIndex}
-    {@const sourceExplorer = chains.find(c => c.chain_id === transfer.source_chain_id)?.explorers?.at(0)}
-    {@const destinationExplorer = chains.find(c => c.chain_id === transfer.destination_chain_id)?.explorers?.at(0)}
+  <div class="flex flex-col w-full items-center gap-6">
+    {#each $processedTransfers as transfer, transferIndex}
+      {@const sourceExplorer = chains
+        .find((c) => c.chain_id === transfer.source_chain_id)
+        ?.explorers?.at(0)}
+      {@const destinationExplorer = chains
+        .find((c) => c.chain_id === transfer.destination_chain_id)
+        ?.explorers?.at(0)}
 
-    <!--
+      <!--
     <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
     !-->
 
-  <Card.Root class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4 dark:bg-muted">
-    <Card.Header class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center">
-      TRANSFER <Truncate value={transfer.source_transaction_hash} type="hash"/>
-    </Card.Header>
-    <Card.Content class="flex flex-col gap-8">
-
-    <section class="mt-6">
-      {#if transfer.assets}
-        <ul class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl">
-          {#each Object.entries(transfer.assets) as [denom, value]}
-            {#if value.info}
-              <li><Truncate value={formatUnits(value.amount, value.info.decimals)} type="full"/> <Truncate value={value.info.display_symbol} type="address"/></li>
+      <Card.Root
+        class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4 dark:bg-muted"
+      >
+        <Card.Header
+          class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
+        >
+          TRANSFER <Truncate
+            value={transfer.source_transaction_hash}
+            type="hash"
+          />
+        </Card.Header>
+        <Card.Content class="flex flex-col gap-8">
+          <section class="mt-6">
+            {#if transfer.assets}
+              <ul
+                class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl"
+              >
+                {#each Object.entries(transfer.assets) as [denom, value]}
+                  {#if value.info}
+                    <li>
+                      <Truncate
+                        value={formatUnits(value.amount, value.info.decimals)}
+                        type="full"
+                      />
+                      <Truncate
+                        value={value.info.display_symbol}
+                        type="address"
+                      />
+                    </li>
+                  {:else}
+                    <li>
+                      <Truncate value={value.amount} type="full" />
+                      <Truncate value={denom} type="address" />
+                    </li>
+                  {/if}
+                {/each}
+              </ul>
             {:else}
-                <li><Truncate value={value.amount} type="full"/> <Truncate value={denom} type="address"/></li>
+              No assets in transfer
             {/if}
-          {/each}
-        </ul>
-      {:else}
-        No assets in transfer
-      {/if}
-    </section>
+          </section>
 
-    <section>
-    <section class="flex flex-col sm:flex-row">
-      <div class="flex-1 lex-col text-muted-foreground">
-        <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.source_chain_id, chains)}</h2>
-        <p class="text-sm dark:text-muted-foreground">{transfer.source_chain_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.source_connection_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.source_channel_id}</p>
+          <section>
+            <section class="flex flex-col sm:flex-row">
+              <div class="flex-1 lex-col text-muted-foreground">
+                <h2
+                  class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
+                >
+                  {toDisplayName(transfer.source_chain_id, chains)}
+                </h2>
+                <p class="text-sm dark:text-muted-foreground">
+                  {transfer.source_chain_id}
+                </p>
+                <p
+                  class={cn(
+                    "text-sm",
+                    transfer.source_connection_id
+                      ? "text-black dark:text-muted-foreground"
+                      : "text-transparent"
+                  )}
+                >
+                  {transfer.source_connection_id}
+                </p>
+                <p
+                  class={cn(
+                    "text-sm",
+                    transfer.source_connection_id
+                      ? "text-black dark:text-muted-foreground"
+                      : "text-transparent"
+                  )}
+                >
+                  {transfer.source_channel_id}
+                </p>
+              </div>
+              <div class="flex items-center justify-center px-8">
+                <MoveRightIcon class="text-foreground size-8" />
+              </div>
+              <div class="flex-1 sm:text-right flex-col text-muted-foreground">
+                <h2
+                  class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
+                >
+                  {toDisplayName(transfer.destination_chain_id, chains)}
+                </h2>
+                <p class="text-sm dark:text-muted-foreground">
+                  {transfer.destination_chain_id}
+                </p>
+                <p
+                  class={cn(
+                    "text-sm",
+                    transfer.source_connection_id
+                      ? "text-black dark:text-muted-foreground"
+                      : "text-transparent"
+                  )}
+                >
+                  {transfer.destination_connection_id}
+                </p>
+                <p
+                  class={cn(
+                    "text-sm",
+                    transfer.source_connection_id
+                      ? "text-black dark:text-muted-foreground"
+                      : "text-transparent"
+                  )}
+                >
+                  {transfer.destination_channel_id}
+                </p>
+              </div>
+            </section>
+            {#if transfer.hop_chain_id}
+              <div
+                class="flex-1 text-center flex-col text-sm text-muted-foreground items-center"
+              >
+                forwarded through
+                <h2
+                  class="font-supermolot uppercase md:font-expanded text-xl font-extrabold text-foreground whitespace-nowrap"
+                >
+                  {toDisplayName(transfer.hop_chain_id, chains)}
+                </h2>
+                <p
+                  class={cn(
+                    "text-sm",
+                    transfer.hop_chain_destination_connection_id &&
+                      transfer.hop_chain_source_connection_id
+                      ? "text-black dark:text-muted-foreground"
+                      : "text-transparent"
+                  )}
+                >
+                  {transfer?.hop_chain_destination_connection_id ?? "unknown"} {'->'}
+                  {transfer?.hop_chain_source_connection_id ?? "unknown"}
+                </p>
+                <p
+                  class={cn(
+                    "text-sm",
+                    transfer.hop_chain_destination_channel_id &&
+                      transfer.hop_chain_source_channel_id
+                      ? "text-black dark:text-muted-foreground"
+                      : "text-transparent"
+                  )}
+                >
+                  {transfer?.hop_chain_destination_channel_id ?? "unknown"} {'->'} {transfer.hop_chain_source_channel_id ??
+                    "unknown"}
+                </p>
+              </div>
+            {/if}
+          </section>
+          <section class="flex flex-col lg:flex-row gap-8">
+            <div class=" lex-col text-muted-foreground">
+              <h2 class="text-lg text-foreground font-bold font-supermolot">
+                Sender
+              </h2>
+              {#if sourceExplorer !== undefined}
+                <a
+                  href={`/explorer/address/${transfer.sender}`}
+                  class="block text-sm underline break-words"
+                  >{transfer.sender}
+                </a>{:else}<p class="text-sm break-words">
+                  {transfer.sender}
+                </p>{/if}
+              <p
+                class={cn(
+                  "text-[10px] break-words",
+                  transfer.normalized_sender
+                    ? "text-black dark:text-muted-foreground"
+                    : "text-transparent"
+                )}
+              >
+                raw: {transfer.normalized_sender}
+              </p>
+            </div>
+            <div class="flex-1 lg:text-right flex-col text-muted-foreground">
+              <h2 class="text-lg text-foreground font-supermolot font-bold">
+                Receiver
+              </h2>
+              {#if destinationExplorer !== undefined}
+                <a
+                  href={`/explorer/address/${transfer.receiver}`}
+                  class="block text-sm underline break-words"
+                  >{transfer.receiver}
+                </a>{:else}<p class="text-sm break-words">
+                  {transfer.receiver}
+                </p>{/if}
+              <p
+                class={cn(
+                  "text-[10px] break-words",
+                  transfer.normalized_receiver
+                    ? "text-black dark:text-muted-foreground"
+                    : "text-transparent"
+                )}
+              >
+                raw: {transfer.normalized_receiver}
+              </p>
+            </div>
+          </section>
+        </Card.Content>
+        <Card.Footer class="items-start flex flex-col w-full gap-4">
+          <div class="mt-6 font-bold text-md">{transfer.transfer_day}</div>
+          <!-- bit of a hack, pTrace is used to check if there is a trace, and if there is, we show the steps !-->
+          {@const pTrace = $processedTraces?.at(transferIndex) ?? null}
+          {@const ts = derived(
+            tracesSteps,
+            ($tracesSteps) => $tracesSteps?.at(transferIndex) ?? []
+          )}
+          {#if pTrace}
+            <Stepper steps={ts} />
+          {:else}
+            <LoadingLogo />
+          {/if}
+        </Card.Footer>
+      </Card.Root>
+      <div class="text-transparent hover:text-muted-foreground transition">
+        {#if !(source.slice(0, 2) === "0x")}0x{/if}{source.toLowerCase()}
       </div>
-      <div class="flex items-center justify-center px-8">
-        <MoveRightIcon class="text-foreground size-8"/>
-      </div>
-      <div class="flex-1 sm:text-right flex-col text-muted-foreground">
-        <h2 class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.destination_chain_id, chains)}</h2>
-        <p class="text-sm dark:text-muted-foreground">{transfer.destination_chain_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.destination_connection_id}</p>
-        <p class={cn("text-sm", transfer.source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer.destination_channel_id}</p>
-      </div>
-    </section>
-    {#if transfer.hop_chain_id}
-      <div class="flex-1 text-center flex-col text-sm text-muted-foreground items-center">
-        forwarded through
-        <h2 class="font-supermolot uppercase md:font-expanded text-xl font-extrabold text-foreground whitespace-nowrap">{toDisplayName(transfer.hop_chain_id, chains)}</h2>
-        <p class={cn("text-sm", transfer.hop_chain_destination_connection_id && transfer.hop_chain_source_connection_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer?.hop_chain_destination_connection_id ?? "unknown"} -> {transfer?.hop_chain_source_connection_id ?? "unknown"}</p>
-        <p class={cn("text-sm", transfer.hop_chain_destination_channel_id && transfer.hop_chain_source_channel_id ? "text-black dark:text-muted-foreground" : "text-transparent")}>{transfer?.hop_chain_destination_channel_id ?? "unknown"} -> {transfer.hop_chain_source_channel_id ?? "unknown"}</p>
-      </div>
-    {/if}
-    </section>
-    <section class="flex flex-col lg:flex-row gap-8">
-      <div class=" lex-col text-muted-foreground">
-        <h2 class="text-lg text-foreground font-bold font-supermolot">Sender</h2>
-        {#if sourceExplorer !== undefined}<a href={`${sourceExplorer.address_url}${transfer.sender}`} class="block text-sm underline break-words">{transfer.sender}</a>{:else}<p class="text-sm break-words">{transfer.sender}</p>{/if}
-        <p class={cn("text-[10px] break-words", transfer.normalized_sender ? "text-black dark:text-muted-foreground" : "text-transparent")}>raw: {transfer.normalized_sender}</p>
-      </div>
-      <div class="flex-1 lg:text-right flex-col text-muted-foreground">
-        <h2 class="text-lg text-foreground font-supermolot font-bold">Receiver</h2>
-        {#if destinationExplorer !== undefined}<a href={`${destinationExplorer.address_url}${transfer.receiver}`} class="block text-sm underline break-words">{transfer.receiver}</a>{:else}<p class="text-sm break-words">{transfer.receiver}</p>{/if}
-        <p class={cn("text-[10px] break-words", transfer.normalized_receiver ? "text-black dark:text-muted-foreground" : "text-transparent")}>raw: {transfer.normalized_receiver}</p>
-      </div>
-    </section>
-    </Card.Content>
-    <Card.Footer class="items-start flex flex-col w-full gap-4">
-      <div class="mt-6 font-bold text-md">{transfer.transfer_day}</div>
-      <!-- bit of a hack, pTrace is used to check if there is a trace, and if there is, we show the steps !-->
-      {@const pTrace = $processedTraces?.at(transferIndex) ?? null } 
-      {@const ts = derived(tracesSteps, ($tracesSteps) => $tracesSteps?.at(transferIndex) ?? []) } 
-      {#if pTrace }
-        <Stepper steps={ts}/>
-      {:else}
-        <LoadingLogo/>
-      {/if}
-    </Card.Footer>
-  </Card.Root>
-  <div class="text-transparent hover:text-muted-foreground transition">{#if !(source.slice(0,2) === "0x")}0x{/if}{source.toLowerCase()}</div>
-  {/each}
-</div>
+    {/each}
+  </div>
 {:else if $transfers.isLoading}
-  <LoadingLogo class="size-16"/>
+  <LoadingLogo class="size-16" />
 {:else if $transfers.isError}
   Error loading transfer data
 {/if}
-
-

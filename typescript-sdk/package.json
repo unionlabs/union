@@ -1,9 +1,10 @@
 {
   "name": "@union/client",
-  "version": "0.0.0",
+  "version": "0.0.1-rc.49",
   "description": "Union Labs cross-chain transfers client",
+  "homepage": "https://jsr.io/@union/client",
   "type": "module",
-  "exports": "./mod.ts",
+  "exports": "./src/mod.ts",
   "scripts": {
     "build": "echo 'No need… jsr.io requires no build step'",
     "typecheck": "tsc --project tsconfig.json --noEmit",
@@ -27,7 +28,7 @@
     "@cosmjs/stargate": "0.32.4",
     "@cosmjs/tendermint-rpc": "0.32.4",
     "ofetch": "^1.3.4",
-    "viem": "^2.18.0"
+    "viem": "^2.18.8"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
@@ -35,15 +36,15 @@
     "@scure/base": "^1.1.7",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.6",
-    "@types/node": "^20.14.12",
+    "@types/node": "^22.1.0",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.1",
     "patch-package": "^8.0.0",
-    "tsx": "^4.16.2",
+    "tsx": "^4.16.5",
     "typescript": "^5.5.4",
     "vite-tsconfig-paths": "^4.3.2",
-    "vitest": "^2.0.4"
+    "vitest": "^2.0.5"
   },
   "overrides": {
     "globalthis": "npm:@nolyfill/globalthis@^1",

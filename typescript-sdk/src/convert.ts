@@ -1,14 +1,18 @@
+import { isHex } from "viem"
 import { bech32 } from "@scure/base"
-import { getAddress, isHex } from "viem"
 import { raise } from "./utilities/index.ts"
 import type { Bech32Address, HexAddress } from "./types.ts"
+
+export const convertByteArrayToHex = (byteArray: Uint8Array): string =>
+  byteArray.reduce((hex, byte) => hex + byte.toString(16).padStart(2, "0"), "")
 
 /**
  * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)
  */
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
   const { words } = bech32.decode(address)
-  return getAddress(`0x${Buffer.from(bech32.fromWords(words)).toString("hex")}`)
+  const byteArray = bech32.fromWords(words)
+  return `0x${convertByteArrayToHex(byteArray)}`
 }
 
 /**
@@ -19,7 +23,7 @@ export function hexAddressToBech32({
   bech32Prefix
 }: { address: HexAddress; bech32Prefix: string }): Bech32Address {
   if (!isHex(address)) raise("Invalid hex address")
-  const words = bech32.toWords(Buffer.from(address.slice(2), "hex"))
+  const words = bech32.toWords(hexStringToUint8Array(address.slice(2)))
   return bech32.encode(bech32Prefix, words)
 }
 
@@ -28,6 +32,13 @@ export function bech32ToBech32Address<ToPrefix extends string>({
   toPrefix
 }: { address: string; toPrefix: ToPrefix }): Bech32Address<ToPrefix> {
   return bech32.encode(toPrefix, bech32.decode(address).words) as Bech32Address<ToPrefix>
+}
+
+export function bytesToBech32Address<ToPrefix extends string>({
+  bytes,
+  toPrefix
+}: { bytes: Uint8Array; toPrefix: ToPrefix }): Bech32Address<ToPrefix> {
+  return bech32.encode(toPrefix, bech32.toWords(bytes)) as Bech32Address<ToPrefix>
 }
 
 /**
@@ -55,9 +66,6 @@ export function hexStringToUint8Array(hexString: string) {
   }
   return arrayBuffer
 }
-
-export const convertByteArrayToHex = (byteArray: Uint8Array): string =>
-  byteArray.reduce((hex, byte) => hex + byte.toString(16).padStart(2, "0"), "").toUpperCase()
 
 export const normalizeToCosmosAddress = ({
   address,

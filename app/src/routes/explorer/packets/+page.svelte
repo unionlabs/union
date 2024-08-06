@@ -6,9 +6,9 @@ import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { writable } from "svelte/store"
-import CellStatus from "../(components)/cell-status.svelte"
+import CellStatus from "$lib/components/table-cells/cell-status.svelte"
 import { DurationUnits } from "svelte-ux"
-import CellDurationText from "../(components)/cell-duration-text.svelte"
+import CellDurationText from "$lib/components/table-cells/cell-duration-text.svelte"
 
 $: packets = createQuery({
   queryKey: ["packets"],

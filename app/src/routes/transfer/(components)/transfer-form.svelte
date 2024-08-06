@@ -1,9 +1,8 @@
 <script lang="ts">
-import { slide } from "svelte/transition"
 import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
-import { UnionClient } from "@union/client"
+import { UnionClient } from "@union/client/v0"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"

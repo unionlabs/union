@@ -6,10 +6,10 @@ import { URLS } from "$lib/constants"
 import type { UnwrapReadable } from "$lib/utilities/types"
 import Table from "../(components)/table.svelte"
 import { createQuery } from "@tanstack/svelte-query"
-import CellStatus from "../(components)/cell-status.svelte"
+import CellStatus from "$lib/components/table-cells//cell-status.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import CellDurationText from "../(components)/cell-duration-text.svelte"
-import CellChainIndex from "../(components)/cell-chain-index.svelte"
+import CellDurationText from "$lib/components/table-cells//cell-duration-text.svelte"
+import CellChainIndex from "$lib/components/table-cells//cell-chain-index.svelte"
 import { indexStatusQuery } from "$lib/graphql/documents/index-status.ts"
 
 let indexStatus = createQuery({

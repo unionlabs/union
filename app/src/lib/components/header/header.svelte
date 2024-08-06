@@ -37,7 +37,7 @@ import { routes } from "$lib/components/navigation/index.ts"
             ? 'hidden'
             : [
                 '',
-                $page.route.id?.split('/')[1] === path.split('/')[1] ? 'bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground' : '',
+                currentRoute ? 'bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground' : '',
               ],
         )}
       >

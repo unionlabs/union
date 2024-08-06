@@ -14,6 +14,7 @@ import {
 import {
   bech32AddressToHex,
   hexAddressToBech32,
+  bytesToBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,
   uint8ArrayToHexString,
@@ -41,16 +42,27 @@ import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
-const pfm = { createPfmMemo }
-
 export {
   /**
    * We export this as a standalone so that it can be used to fetch data that get passed to `createCosmosSdkClient`
    */
-  offchainQuery,
+
   cosmosHttp,
-  pfm
+  offchainQuery,
+  createPfmMemo,
+  bech32AddressToHex,
+  hexAddressToBech32,
+  bytesToBech32Address,
+  bech32ToBech32Address,
+  hexStringToUint8Array,
+  uint8ArrayToHexString,
+  convertByteArrayToHex,
+  truncateAddress,
+  isValidEvmAddress,
+  isValidBech32Address
 }
+
+export type * from "./types.ts"
 
 export interface EvmClientParameters extends WalletClientConfig {}
 

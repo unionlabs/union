@@ -6,9 +6,6 @@ import Button from "$lib/components/ui/button/button.svelte"
 import ChevronRight from "virtual:icons/lucide/chevron-right"
 import * as Pagination from "$lib/components/ui/pagination/index.ts"
 
-export let rowsPerPage: number
-export let totalTableRows: number
-
 export let timestamp: string
 export let status: "pending" | "done" = "done"
 
@@ -21,17 +18,14 @@ export let onNewerPage: (page: number) => void
 export let newerDisabled = false
 
 export let onCurrentClick: () => void
-
-export let className = ""
-export { className as class }
 </script>
 
 <Pagination.Root
   let:pages
   siblingCount={2000}
-  perPage={rowsPerPage}
-  class={cn(className)}
-  count={totalTableRows}
+  perPage={20}
+  class="w-auto"
+  count={20}
 >
   <Pagination.Content
     class="py-2 text-sm uppercase font-supermolot w-full flex gap-x-1"

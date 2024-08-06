@@ -31,6 +31,9 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   "union"
 )
 
+const [account] = await cosmosAccount.getAccounts()
+console.info(account?.address)
+
 try {
   /**
    * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
@@ -66,7 +69,10 @@ try {
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+      transport: cosmosHttp(
+        // "https://rpc.testnet.bonlulu.uno"
+        "https://rpc.testnet.seed.poisonphang.com:443"
+      )
     }
   })
 

@@ -6,7 +6,7 @@ import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import { derived } from "svelte/store"
-import CellOriginChannel from "../(components)/cell-origin-channel.svelte"
+import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types"
 

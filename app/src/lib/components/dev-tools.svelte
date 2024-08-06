@@ -16,7 +16,7 @@ const queryClient = useQueryClient()
       {
         key: 'd',
         modifier: ['ctrl'],
-        callback: () => {
+        callback: (_shortCutEventDetail) => {
           if (import.meta.env.MODE !== 'development') return
           console.info('Clearing cache and local storage')
           toast.warning('Clearing cache and local storage')
@@ -26,7 +26,6 @@ const queryClient = useQueryClient()
           queryClient.cancelQueries()
           queryClient.invalidateQueries()
           queryClient.unmount()
-          localStorage.clear()
           if (typeof window === 'undefined') return
           window.localStorage.clear()
           window.sessionStorage.clear()
