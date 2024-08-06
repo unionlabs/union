@@ -26,7 +26,7 @@
     "@tanstack/svelte-table": "^8.19.3",
     "@union/client": "npm:@jsr/union__client@^0.0.1-rc.49",
     "@tanstack/svelte-virtual": "^3.8.4",
-    "@wagmi/connectors":"^5.1.2",
+    "@wagmi/connectors": "^5.1.2",
     "@wagmi/core": "^2.13.1",
     "bech32": "^2.0.0",
     "bits-ui": "^0.21.13",
