@@ -34,7 +34,7 @@ type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 export let timestamp: Writable<string | null>
 export let pageSize: number
 
-const QUERY_LIMIT = 6
+const QUERY_LIMIT = 12
 
 let transfers = createQuery(
   derived([timestamp], ([$timestamp]) =>
@@ -227,7 +227,7 @@ const encodeTimestampSearchParam = (timestamp: string) =>
     totalTableRows={20}
     class={cn("w-auto")}
     status={$transfers.status === "success" ? "done" : "pending"}
-    live={!timestamp}
+    live={!$timestamp}
     onOlderPage={async page => {
       const stamp = $transfers?.data?.oldestTimestamp
       timestamp.set(stamp)
@@ -237,6 +237,7 @@ const encodeTimestampSearchParam = (timestamp: string) =>
       })
     }}
     onCurrentClick={() => {
+      timestamp.set(null)
       goto($page.url.pathname, { replaceState: true })
     }}
     onNewerPage={async page => {
