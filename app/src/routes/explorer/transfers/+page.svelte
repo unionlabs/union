@@ -23,8 +23,6 @@ let timestamp = writable(
     : currentUtcTimestampWithBuffer()
 )
 
-let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
-
 const queryClient = useQueryClient()
 
 /**
@@ -111,20 +109,13 @@ onNavigate(navigation => {
 })
 </script>
 
-<DevTools>
-  {JSON.stringify(
-    { idx: $pagination.pageIndex, $REFETCH_ENABLED },
-    undefined,
-    2
-  )}
-</DevTools>
 
 <ChainsGate let:chains>
   <TableTransfers
     {chains}
+    pageSize={QUERY_LIMIT}
     {timestamp}
     {timestamps}
-    {pagination}
     {queryStatus}
     {REFETCH_ENABLED}
     {transfersDataStore}

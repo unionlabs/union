@@ -23,8 +23,6 @@ let timestamp = writable(
     : currentUtcTimestampWithBuffer()
 )
 
-let pagination = writable({ pageIndex: 0, pageSize: QUERY_LIMIT })
-
 const queryClient = useQueryClient()
 
 let addressArray =
@@ -61,23 +59,19 @@ let liveAddressTransfers = createQuery(
 )
 
 let addressTransfers = createQuery(
-  derived(
-    [timestamp, normalizedAddressArray, REFETCH_ENABLED],
-    ([$timestamp, $normalizedAddressArray, $REFETCH_ENABLED]) => ({
-      queryKey: ["address-transfers", $timestamp, ...$normalizedAddressArray],
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      placeholderData: keepPreviousData,
-      staleTime: Number.POSITIVE_INFINITY,
-      enabled: () => $REFETCH_ENABLED === false,
-      queryFn: async () =>
-        await paginatedAddressesTransfers({
-          limit: QUERY_LIMIT,
-          timestamp: $timestamp,
-          addresses: $normalizedAddressArray
-        })
-    })
-  )
+  derived([timestamp, normalizedAddressArray], ([$timestamp, $normalizedAddressArray]) => ({
+    queryKey: ["address-transfers", $timestamp, ...$normalizedAddressArray],
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    placeholderData: keepPreviousData,
+    staleTime: Number.POSITIVE_INFINITY,
+    queryFn: async () =>
+      await paginatedAddressesTransfers({
+        limit: QUERY_LIMIT,
+        timestamp: $timestamp,
+        addresses: $normalizedAddressArray
+      })
+  }))
 )
 
 let queryStatus: "pending" | "done" = $REFETCH_ENABLED
@@ -128,27 +122,13 @@ onNavigate(navigation => {
 })
 </script>
 
-<DevTools>
-  <!-- <pre>
-    {JSON.stringify(
-      {
-        idx: $pagination.pageIndex,
-        $REFETCH_ENABLED,
-        ...$timestamps,
-        ...$addressArray
-      },
-      undefined,
-      2
-    )}
-  </pre> -->
-</DevTools>
 
 <ChainsGate let:chains>
   <TableTransfers
     {chains}
     {timestamp}
     {timestamps}
-    {pagination}
+    pageSize={QUERY_LIMIT}
     {queryStatus}
     {REFETCH_ENABLED}
     {transfersDataStore}

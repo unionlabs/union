@@ -38,7 +38,8 @@ export let timestamps: Readable<{
   oldestTimestamp: string
   latestTimestamp: string
 }>
-export let pagination: Writable<{ pageIndex: number; pageSize: number }>
+export let pageSize: number
+let pagination = writable({ pageIndex: 0, pageSize })
 
 const columns: Array<ColumnDef<DataRow>> = [
   {
