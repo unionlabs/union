@@ -1,12 +1,12 @@
 <script lang="ts">
 import "$lib/polyfill.ts"
 import "$styles/index.css"
+import "$lib/wallet/cosmos"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { shortcut } from "@svelte-put/shortcut"
-import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
 import { Toaster } from "$lib/components/ui/sonner"
 import { notifyManager } from "@tanstack/svelte-query"
@@ -24,16 +24,6 @@ if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 onMount(() => {
   checkWebGLSupport()
   disablePinchToZoom()
-  const lastConnectedWallet = $cosmosStore["connectedWallet"] as "leap" | "keplr"
-  if (
-    lastConnectedWallet &&
-    window[lastConnectedWallet] &&
-    ["leap", "keplr"].includes(lastConnectedWallet)
-  )
-    return cosmosStore.connect(lastConnectedWallet)
-
-  if (window?.keplr) cosmosStore.connect("keplr")
-  else if (window?.leap) cosmosStore.connect("leap")
 })
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
