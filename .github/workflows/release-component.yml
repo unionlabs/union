@@ -22,7 +22,7 @@ jobs:
           component="${TAG%/*}"
           case $component in
             bunde-testnet-8)
-              attrs="(.attr == \"bundle-testnet-8\" or .attr == \"bundle-testnet-8-image\")"
+              attrs="[\"bundle-testnet-8\", \"bundle-testnet-8-image\"]"
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
@@ -30,34 +30,34 @@ jobs:
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
             cometbls-light-client)
-              attrs="(.attr == \"cometbls-light-client\")"
+              attrs="[\"cometbls-light-client\"]"
               systems="[\"x86_64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
             ucs01-relay)
-              attrs="(.attr == \"ucs01-relay\")"
+              attrs="[\"ucs01-relay\"]"
               systems="[\"x86_64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
             uniond)
-              attrs="(.attr == \"uniond-release\" or .attr == \"uniond-release-image\")"
+              attrs="[\"uniond-release\", \"uniond-release-image\"]"
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=uniond-release" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               ;;
             voyager)
-              attrs="(.attr == \"voyager\")"
+              attrs="[\"voyager\"]"
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               ;;
             evm-contracts)
-              attrs="(.attr == \"evm-contracts\")"
+              attrs="[\"evm-contracts\"]"
               systems="[\"x86_64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
@@ -69,8 +69,8 @@ jobs:
               ;;
           esac
           echo "BUILD=(.top_attr == \"packages\") \
-            and $systems \
-            and $attrs" >> $GITHUB_OUTPUT
+            and ([.system] | inside($systems) ) \
+            and ([.attr] | inside($attrs))" >> $GITHUB_OUTPUT
           echo "VERSION=${TAG##*/}" >> $GITHUB_OUTPUT
 
   build:
