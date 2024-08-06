@@ -10,14 +10,19 @@ import "./proto/cosmos/ics23/v1/proofs.sol";
 import "./proto/tendermint/types/types.sol";
 import "./proto/tendermint/types/canonical.sol";
 import "./proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import "./proto/union/ibc/lightclients/cosmosincosmos/v1/cosmosincosmos.sol";
 import "./proto/ibc/lightclients/wasm/v1/wasm.sol";
 import "./lib/CometblsHelp.sol";
+import "./clients/CosmosInCosmosClient.sol";
 
 contract Glue {
     function typesTelescope(
         UnionIbcLightclientsCometblsV1ClientState.Data memory,
         UnionIbcLightclientsCometblsV1ConsensusState.Data memory,
         UnionIbcLightclientsCometblsV1Header.Data memory,
+        UnionIbcLightclientsCosmosincosmosV1ClientState.Data memory,
+        UnionIbcLightclientsCosmosincosmosV1Header.Data memory,
+        OptimizedCosmosInCosmosConsensusState memory,
         TendermintTypesHeader.Data memory,
         TendermintTypesCommit.Data memory,
         IbcCoreClientV1Height.Data memory,

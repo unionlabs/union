@@ -99,7 +99,6 @@ interface ILightClient {
 
     /**
      * @dev getClientState returns the clientState corresponding to `clientId`.
-     *      If it's not found, the function returns false.
      */
     function getClientState(string calldata clientId)
         external
@@ -108,10 +107,14 @@ interface ILightClient {
 
     /**
      * @dev getConsensusState returns the consensusState corresponding to `clientId` and `height`.
-     *      If it's not found, the function returns false.
      */
     function getConsensusState(
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
     ) external view returns (bytes memory);
+
+    /**
+     * @dev isFrozen returns whether the `clientId` is frozen or not.
+     */
+    function isFrozen(string calldata clientId) external view returns (bool);
 }

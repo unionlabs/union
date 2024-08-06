@@ -309,6 +309,9 @@ contract CometblsClient is
         bytes calldata path,
         bytes calldata value
     ) external virtual returns (bool) {
+        if (isFrozenImpl(clientId)) {
+            revert CometblsClientLib.ErrClientFrozen();
+        }
         bytes32 appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
@@ -326,6 +329,9 @@ contract CometblsClient is
         bytes calldata prefix,
         bytes calldata path
     ) external virtual returns (bool) {
+        if (isFrozenImpl(clientId)) {
+            revert CometblsClientLib.ErrClientFrozen();
+        }
         bytes32 appHash = validateDelayPeriod(
             clientId, height, delayPeriodTime, delayPeriodBlocks
         );
@@ -389,6 +395,23 @@ contract CometblsClient is
         returns (IbcCoreClientV1Height.Data memory)
     {
         return clientStates[clientId].latest_height;
+    }
+
+    function isFrozen(string calldata clientId)
+        external
+        view
+        virtual
+        returns (bool)
+    {
+        return isFrozenImpl(clientId);
+    }
+
+    function isFrozenImpl(string calldata clientId)
+        internal
+        view
+        returns (bool)
+    {
+        return !clientStates[clientId].frozen_height.isZero();
     }
 
     // ZKP VERIFICATION

@@ -61,7 +61,7 @@ contract TestCometblsClient is CometblsClient {
         string memory,
         bytes32,
         UnionIbcLightclientsCometblsV1LightHeader.Data calldata
-    ) internal override returns (bool) {
+    ) internal pure override returns (bool) {
         return true;
     }
 

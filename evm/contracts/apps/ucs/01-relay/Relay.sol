@@ -382,6 +382,60 @@ contract UCS01Relay is
         }
     }
 
+    function calculateFee(
+        uint256 amount,
+        uint128 fee
+    ) internal pure returns (uint256, uint256) {
+        uint256 feeAmount = Math.mulDiv(amount, fee, type(uint128).max);
+        uint256 actualAmount = amount - feeAmount;
+        return (actualAmount, feeAmount);
+    }
+
+    function onRecvLocalTransfer(
+        string memory destinationChannel,
+        string memory denom,
+        address receiver,
+        uint256 amount,
+        address relayer,
+        uint256 feeAmount
+    ) internal returns (address) {
+        // It's an ERC20 string 0x prefixed hex address
+        address denomAddress = Hex.hexToAddress(denom);
+        // The token must be outstanding.
+        decreaseOutstanding(destinationChannel, denomAddress, amount);
+        IERC20(denomAddress).transfer(receiver, amount);
+        if (feeAmount > 0) {
+            IERC20(denomAddress).transfer(relayer, feeAmount);
+        }
+        return denomAddress;
+    }
+
+    function onRecvRemoteTransfer(
+        uint64 sequence,
+        string memory destinationChannel,
+        string memory denom,
+        address receiver,
+        uint256 amount,
+        address relayer,
+        uint256 feeAmount
+    ) internal returns (address) {
+        address denomAddress = denomToAddress[destinationChannel][denom];
+        if (denomAddress == address(0)) {
+            denomAddress =
+                address(new ERC20Denom{salt: keccak256(bytes(denom))}(denom));
+            denomToAddress[destinationChannel][denom] = denomAddress;
+            addressToDenom[destinationChannel][denomAddress] = denom;
+            emit RelayLib.DenomCreated(
+                sequence, destinationChannel, denom, denomAddress
+            );
+        }
+        IERC20Denom(denomAddress).mint(receiver, amount);
+        if (feeAmount > 0) {
+            IERC20Denom(denomAddress).mint(relayer, feeAmount);
+        }
+        return denomAddress;
+    }
+
     function onRecvPacketProcessing(
         IbcCoreChannelV1Packet.Data calldata ibcPacket,
         address relayer
@@ -391,7 +445,7 @@ contract UCS01Relay is
         }
         RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
-            ibcPacket.source_port, ibcPacket.source_channel
+            ibcPacket.destination_port, ibcPacket.destination_channel
         );
         uint256 packetTokensLength = packet.tokens.length;
         for (uint256 i; i < packetTokensLength; i++) {
@@ -399,9 +453,8 @@ contract UCS01Relay is
             if (token.amount == 0) {
                 revert RelayLib.ErrInvalidAmount();
             }
-            uint256 feeAmount =
-                Math.mulDiv(token.amount, token.fee, type(uint128).max);
-            uint256 actualAmount = token.amount - feeAmount;
+            (uint256 actualAmount, uint256 feeAmount) =
+                calculateFee(token.amount, token.fee);
             address receiver = RelayLib.bytesToAddress(packet.receiver);
             address denomAddress;
             string memory denom;
@@ -409,47 +462,32 @@ contract UCS01Relay is
                 // In this branch the token was originating from
                 // this chain as it was prefixed by the local channel/port.
                 // We need to unescrow the amount.
-                // This will trim the denom in-place IFF it is prefixed
                 denom = token.denom.slice(bytes(prefix).length);
-                // It's an ERC20 string 0x prefixed hex address
-                denomAddress = Hex.hexToAddress(denom);
-                // The token must be outstanding.
-                decreaseOutstanding(
-                    ibcPacket.destination_channel, denomAddress, token.amount
+                denomAddress = onRecvLocalTransfer(
+                    ibcPacket.destination_channel,
+                    denom,
+                    receiver,
+                    actualAmount,
+                    relayer,
+                    feeAmount
                 );
-                IERC20(denomAddress).transfer(receiver, actualAmount);
-                if (feeAmount > 0) {
-                    IERC20(denomAddress).transfer(relayer, feeAmount);
-                }
             } else {
                 // In this branch the token was originating from the
-                // counterparty chain. We need to mint the amount.
+                // counterparty chain. We need to prefix the denom and mint the amount.
                 denom = RelayLib.makeForeignDenom(
                     ibcPacket.destination_port,
                     ibcPacket.destination_channel,
                     token.denom
                 );
-                denomAddress =
-                    denomToAddress[ibcPacket.destination_channel][denom];
-                if (denomAddress == address(0)) {
-                    denomAddress = address(
-                        new ERC20Denom{salt: keccak256(bytes(denom))}(denom)
-                    );
-                    denomToAddress[ibcPacket.destination_channel][denom] =
-                        denomAddress;
-                    addressToDenom[ibcPacket.destination_channel][denomAddress]
-                    = denom;
-                    emit RelayLib.DenomCreated(
-                        ibcPacket.sequence,
-                        ibcPacket.source_channel,
-                        denom,
-                        denomAddress
-                    );
-                }
-                IERC20Denom(denomAddress).mint(receiver, actualAmount);
-                if (feeAmount > 0) {
-                    IERC20Denom(denomAddress).mint(relayer, feeAmount);
-                }
+                denomAddress = onRecvRemoteTransfer(
+                    ibcPacket.sequence,
+                    ibcPacket.destination_channel,
+                    denom,
+                    receiver,
+                    actualAmount,
+                    relayer,
+                    feeAmount
+                );
             }
             string memory senderAddress = packet.sender.toHexString();
             emit RelayLib.Received(
@@ -541,7 +579,7 @@ contract UCS01Relay is
         string calldata,
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata version,
-        address relayer
+        address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
@@ -559,7 +597,7 @@ contract UCS01Relay is
         IbcCoreChannelV1Counterparty.Data calldata,
         string calldata version,
         string calldata counterpartyVersion,
-        address relayer
+        address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
             revert RelayLib.ErrInvalidProtocolVersion();
@@ -577,7 +615,7 @@ contract UCS01Relay is
         string calldata,
         string calldata,
         string calldata counterpartyVersion,
-        address relayer
+        address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
             revert RelayLib.ErrInvalidCounterpartyProtocolVersion();

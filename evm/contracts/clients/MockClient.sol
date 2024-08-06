@@ -233,6 +233,10 @@ contract MockClient is ILightClient {
         );
     }
 
+    function isFrozen(string calldata) external view virtual returns (bool) {
+        return false;
+    }
+
     /* Internal functions */
 
     function parseHeader(bytes memory bz)

@@ -613,7 +613,7 @@ contract RelayTests is Test {
         // Receive a token that hasn't been escrowed
         Token[] memory tokens = new Token[](1);
         tokens[0].denom = RelayLib.makeForeignDenom(
-            sourcePort, sourceChannel, denom.toHexString()
+            destinationPort, destinationChannel, denom.toHexString()
         );
         tokens[0].amount = amount;
 
@@ -709,7 +709,9 @@ contract RelayTests is Test {
 
         Token[] memory tokens = new Token[](1);
         tokens[0].denom = RelayLib.makeForeignDenom(
-            args.sourcePort, args.sourceChannel, denomAddress.toHexString()
+            args.destinationPort,
+            args.destinationChannel,
+            denomAddress.toHexString()
         );
         tokens[0].amount = args.amount;
 
@@ -1074,6 +1076,7 @@ contract RelayTests is Test {
     function test_receive_remote_no_collision(NoCollision calldata args)
         public
     {
+        vm.assume(!args.sourcePort.eq(args.destinationPort));
         vm.assume(args.sequence < 1000000000);
         vm.assume(args.receiver != address(0));
         vm.assume(args.relayer != address(0));
@@ -1107,7 +1110,9 @@ contract RelayTests is Test {
             args.sender,
             args.receiver,
             args.relayer,
-            args.denomName,
+            RelayLib.makeForeignDenom(
+                args.sourcePort, args.sourceChannel, args.denomName
+            ),
             args.amount,
             args.extension
         );
@@ -1124,7 +1129,9 @@ contract RelayTests is Test {
             args.sender,
             args.receiver,
             args.relayer,
-            args.denomName,
+            RelayLib.makeForeignDenom(
+                args.sourcePort, args.sourceChannel, args.denomName
+            ),
             args.amount,
             args.extension
         );
