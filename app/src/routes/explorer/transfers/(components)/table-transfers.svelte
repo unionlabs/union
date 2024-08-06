@@ -25,40 +25,68 @@ import { derived, writable, type Readable, type Writable } from "svelte/store"
 import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
-import { latestTransfers, paginatedAddressesTransfers } from "../paginated-transfers.ts"
+import {
+  transfersLive,
+  transfersByTimestamp,
+  transfersLiveByAddress,
+  transfersByTimestampForAddresses
+} from "../paginated-transfers.ts"
 
 export let chains: Array<Chain>
-
-type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
-
+export let normalizedAddresses: Array<string> | null = null
 export let timestamp: Writable<string | null>
-export let pageSize: number
-
-const QUERY_LIMIT = 12
+export let pageSize: number // must be even
 
 let transfers = createQuery(
   derived([timestamp], ([$timestamp]) =>
-    $timestamp
-      ? {
-          queryKey: ["transfers", $timestamp],
-          refetchOnMount: false,
-          refetchOnReconnect: false,
-          placeholderData: keepPreviousData,
-          staleTime: Number.POSITIVE_INFINITY,
-          queryFn: async () =>
-            await paginatedAddressesTransfers({
-              timestamp: $timestamp as string, // otherwise its disabled
-              limit: QUERY_LIMIT
-            })
-        }
-      : {
-          queryKey: ["transfers", "live"],
-          refetchOnMount: true,
-          placeholderData: keepPreviousData,
-          refetchOnReconnect: true,
-          refetchInterval: () => 5_000,
-          queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT * 2 })
-        }
+    normalizedAddresses
+      ? $timestamp
+        ? {
+            queryKey: ["transfers", $timestamp, ...normalizedAddresses],
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            placeholderData: keepPreviousData,
+            staleTime: Number.POSITIVE_INFINITY,
+            queryFn: async () =>
+              await transfersByTimestampForAddresses({
+                limit: pageSize / 2,
+                timestamp: $timestamp as string,
+                addresses: normalizedAddresses
+              })
+          }
+        : {
+            queryKey: ["transfers", "live", ...normalizedAddresses],
+            refetchOnMount: true,
+            placeholderData: keepPreviousData,
+            refetchOnReconnect: true,
+            refetchInterval: () => 5_000,
+            queryFn: async () =>
+              await transfersLiveByAddress({
+                limit: pageSize,
+                addresses: normalizedAddresses
+              })
+          }
+      : $timestamp
+        ? {
+            queryKey: ["transfers", $timestamp],
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            placeholderData: keepPreviousData,
+            staleTime: Number.POSITIVE_INFINITY,
+            queryFn: async () =>
+              await transfersByTimestamp({
+                timestamp: $timestamp as string, // otherwise its disabled
+                limit: pageSize / 2
+              })
+          }
+        : {
+            queryKey: ["transfers", "live"],
+            refetchOnMount: true,
+            placeholderData: keepPreviousData,
+            refetchOnReconnect: true,
+            refetchInterval: () => 5_000,
+            queryFn: async () => await transfersLive({ limit: pageSize })
+          }
   )
 )
 
@@ -71,6 +99,7 @@ let timestamps = derived([transfers], ([$liveTransfers]) => ({
   latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? ""
 }))
 
+type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "source",
