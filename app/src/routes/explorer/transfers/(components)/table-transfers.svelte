@@ -31,6 +31,7 @@ import {
   transfersLiveByAddress,
   transfersByTimestampForAddresses
 } from "../paginated-transfers.ts"
+import { toast } from "svelte-sonner"
 
 export let chains: Array<Chain>
 export let normalizedAddresses: Array<string> | null = null
@@ -257,8 +258,12 @@ const encodeTimestampSearchParam = (timestamp: string) =>
     class={cn("w-auto")}
     status={$transfers.status === "success" ? "done" : "pending"}
     live={!$timestamp}
-    onOlderPage={async page => {
+    onOlderPage={async _ => {
       const stamp = $transfers?.data?.oldestTimestamp
+      if (!stamp) {
+        toast.error("Invalid older timestap");
+        return;
+      }
       timestamp.set(stamp)
       goto(encodeTimestampSearchParam(stamp), {
         replaceState: true,
@@ -269,8 +274,12 @@ const encodeTimestampSearchParam = (timestamp: string) =>
       timestamp.set(null)
       goto($page.url.pathname, { replaceState: true })
     }}
-    onNewerPage={async page => {
+    onNewerPage={async _ => {
       const stamp = $transfers?.data?.latestTimestamp
+      if (!stamp) {
+        toast.error("Invalid newer timestap");
+        return;
+      }
       timestamp.set(stamp)
       goto(encodeTimestampSearchParam(stamp), {
         replaceState: true,
