@@ -12,6 +12,8 @@ jobs:
       component: ${{ steps.eval.outputs.COMPONENT }}
       image-produced: ${{ steps.eval.outputs.IMAGE_PRODUCED}}
       version: ${{ steps.eval.outputs.VERSION }}
+      systems: ${{ steps.eval.outputs.SYSTEMS }}
+      archive: ${{ steps.eval.outputs.ARCHIVE }}
     steps:
       - id: eval
         env:
@@ -20,30 +22,46 @@ jobs:
           component="${TAG%/*}"
           case $component in
             bunde-testnet-8)
+              attrs="(.attr == \"bundle-testnet-8\" or .attr == \"bundle-testnet-8-image\")"
+              systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
-              build="(.attr == \"bundle-testnet-8\" or .attr == \"bundle-testnet-8-image\")"
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
             cometbls-light-client)
+              attrs="(.attr == \"cometbls-light-client\")"
+              systems="[\"x86_64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              build="(.attr == \"cometbls-light-client\")"
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
             ucs01-relay)
+              attrs="(.attr == \"ucs01-relay\")"
+              systems="[\"x86_64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              build="(.attr == \"ucs01-relay\")"
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
             uniond)
+              attrs="(.attr == \"uniond-release\" or .attr == \"uniond-release-image\")"
+              systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=uniond-release" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
-              build="(.attr == \"uniond-release\" or .attr == \"uniond-release-image\")"
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               ;;
             voyager)
+              attrs="(.attr == \"voyager\")"
+              systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              build="(.attr == \"voyager\")"
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               ;;
             evm-contracts)
+              attrs="(.attr == \"evm-contracts\")"
+              systems="[\"x86_64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
-              build="(.attr == \"evm-contracts\")"
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
             *)
               echo "Invalid tag $TAG"
@@ -51,8 +69,8 @@ jobs:
               ;;
           esac
           echo "BUILD=(.top_attr == \"packages\") \
-            and (.system == \"x86_64-linux\" or .system == \"aarch64-linux\") \
-            and $build" >> $GITHUB_OUTPUT
+            and $systems \
+            and $attrs" >> $GITHUB_OUTPUT
           echo "VERSION=${TAG##*/}" >> $GITHUB_OUTPUT
 
   build:
@@ -71,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        system: [aarch64-linux, x86_64-linux]
+        system: ${{ needs.eval-tag.outputs.systems }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -100,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        system: [aarch64-linux, x86_64-linux]
+        system: ${{ needs.eval-tag.outputs.systems }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -120,17 +138,20 @@ jobs:
             --arg system "$SYSTEM" \
             '.packages[$system][$component].outputs.out' result.json)
           NARINFO_NAME=$(basename "$OUTPUT" | cut -d'-' -f1)
+
           echo "Copying $OUTPUT from nixbuild.net"
           nix copy --to "file://$(pwd)/$SYSTEM" --from ssh-ng://eu.nixbuild.net "$OUTPUT" --extra-experimental-features nix-command
+
           echo "Get the NAR_URL"
           nar_url_line=$(cat "./$SYSTEM/$NARINFO_NAME.narinfo" | grep "URL:")
           NAR_URL=$(echo "$nar_url_line" | cut -d " " -f 2-)
+
           echo "Restore the package from the NAR_URL archive"
           cat "$SYSTEM/$NAR_URL" | xz -dc | nix-store --restore "$SYSTEM.$COMPONENT"
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
             mv "$SYSTEM.$COMPONENT"/bin/uniond "$COMPONENT-$SYSTEM"
-          elif [[ "$COMPONENT" =~ bundle-testnet-8 || "$COMPONENT" =~ cometbls-light-client || "$COMPONENT" =~ ucs01-relay || "$COMPONENT" =~ "evm-contracts" ]]
+          elif [[ ${{needs.eval-tag.outputs.archive}} ]]
           then
             ls -la
             tar -zcf "$COMPONENT-$SYSTEM" "$SYSTEM.$COMPONENT"
@@ -242,32 +263,35 @@ jobs:
       - id: prep-artifacts
         env:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
+          ARCHIVE: ${{ needs.eval-tag.outputs.archive }}
+          SYSTEMS: ${{ needs.eval-tag.outputs.systems }}
         run: |
           echo "# sha256 Checksums" >> release.md
-          case $COMPONENT in
-            bundle-testnet-8 | evm-contracts)
-              comp_aarch64="$COMPONENT-aarch64-linux"
-              comp_aarch64_archive="$comp_aarch64.tar.gz"
-              echo "- $(cd "$comp_aarch64" && mv "$comp_aarch64" "$comp_aarch64_archive" && sha256sum "$comp_aarch64_archive")" >> release.md
+          x86_64=$(echo $systems | jq 'contains(["x86_64-linux"])')
+          aarch64=$(echo $systems | jq 'contains(["aarch64-linux"])')
+          if [[ $ARCHIVE ]]; then
+            if [[ $x86_64 ]]; then
               comp_x86_64="$COMPONENT-x86_64-linux"
               comp_x86_64_archive="$comp_x86_64.tar.gz"
               echo "- $(cd "$comp_x86_64" && mv "$comp_x86_64" "$comp_x86_64_archive" && sha256sum "$comp_x86_64_archive")" >> release.md
-              echo "FILES=**/$COMPONENT-*.tar.gz" >> $GITHUB_OUTPUT
-              ;;
-            cometbls-light-client | ucs01-relay)
-              comp_x86_64="$COMPONENT-x86_64-linux"
-              comp_archive="$COMPONENT.tar.gz"
-              echo "- $(cd "$comp_x86_64" && mv "$comp_x86_64" "$comp_archive" && sha256sum "$comp_archive")" >> release.md
-              echo "FILES=**/$comp_archive" >> $GITHUB_OUTPUT
-              ;;
-            *)
+            fi
+            if [[ $xaarch64 ]]; then
               comp_aarch64="$COMPONENT-aarch64-linux"
-              echo "- $(cd "$comp_aarch64" && sha256sum "$comp_aarch64")" >> release.md
+              comp_aarch64_archive="$comp_aarch64.tar.gz"
+              echo "- $(cd "$comp_aarch64" && mv "$comp_aarch64" "$comp_aarch64_archive" && sha256sum "$comp_aarch64_archive")" >> release.md
+            fi
+            echo "FILES=**/$COMPONENT-*.tar.gz" >> $GITHUB_OUTPUT
+          else
+            if [[ $x86_64 ]]; then
               comp_x86_64="$COMPONENT-x86_64-linux"
               echo "- $(cd "$comp_x86_64" && sha256sum "$comp_x86_64")" >> release.md
-              echo "FILES=**/$COMPONENT-*" >> $GITHUB_OUTPUT
-              ;;
-          esac
+            fi
+            if [[ $xaarch64 ]]; then
+              comp_aarch64="$COMPONENT-aarch64-linux"
+              echo "- $(cd "$comp_aarch64" && sha256sum "$comp_aarch64")" >> release.md
+            fi
+            echo "FILES=**/$COMPONENT-*" >> $GITHUB_OUTPUT
+          fi
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release.md
