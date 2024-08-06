@@ -268,8 +268,8 @@ jobs:
           SYSTEMS: ${{ needs.eval-tag.outputs.systems }}
         run: |
           echo "# sha256 Checksums" >> release.md
-          x86_64=$(echo "$systems" | jq 'contains(["x86_64-linux"])')
-          aarch64=$(echo "$systems" | jq 'contains(["aarch64-linux"])')
+          x86_64=$(echo "$SYSTEMS" | jq 'contains(["x86_64-linux"])')
+          aarch64=$(echo "$SYSTEMS" | jq 'contains(["aarch64-linux"])')
           echo "Is x86_64-linux? $x86_64"
           echo "Is aarch64-linux? $aarch64"
           if [[ $ARCHIVE ]]; then
