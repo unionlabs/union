@@ -128,6 +128,7 @@ jobs:
         with:
           nixbuild_token: ${{ secrets.nixbuild_token }}
       - env:
+          ARCHIVE: ${{ needs.eval-tag.outputs.archive }}
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
           SYSTEM: ${{ matrix.system }}
         run: |
@@ -151,10 +152,11 @@ jobs:
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
             mv "$SYSTEM.$COMPONENT"/bin/uniond "$COMPONENT-$SYSTEM"
-          elif [[ ${{needs.eval-tag.outputs.archive}} ]]
+          elif [[ $ARCHIVE ]]
           then
             ls -la
             tar -zcf "$COMPONENT-$SYSTEM" "$SYSTEM.$COMPONENT"
+            tree
           else
             mv "$SYSTEM.$COMPONENT/bin/$COMPONENT" "$COMPONENT-$SYSTEM"
           fi
