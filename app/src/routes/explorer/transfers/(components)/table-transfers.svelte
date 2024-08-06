@@ -32,8 +32,7 @@ export let transfersDataStore: Readable<Array<Transfer>>
 type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 
 export let queryStatus: "pending" | "done"
-export let REFETCH_ENABLED: Writable<boolean>
-export let timestamp: Writable<string>
+export let timestamp: Writable<string | null>
 export let timestamps: Readable<{
   oldestTimestamp: string
   latestTimestamp: string
@@ -207,7 +206,7 @@ $: if ($transfersDataStore) rerender()
     totalTableRows={20}
     class={cn("w-auto")}
     status={queryStatus}
-    live={$REFETCH_ENABLED}
+    live={!timestamp}
     onOlderPage={async page => {
       const stamp = $timestamps.oldestTimestamp
       timestamp.set(stamp)
@@ -216,11 +215,9 @@ $: if ($transfersDataStore) rerender()
         state: { timestamp: stamp }
       })
       pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
-      $REFETCH_ENABLED = false
     }}
     onCurrentClick={() => {
       pagination.update(p => ({ ...p, pageIndex: 0 }))
-      $REFETCH_ENABLED = true
       goto($page.url.pathname, { replaceState: true })
     }}
     onNewerPage={async page => {
@@ -231,7 +228,6 @@ $: if ($transfersDataStore) rerender()
         state: { timestamp: stamp }
       })
       pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
-      $REFETCH_ENABLED = false
     }}
     timestamp={$timestamps.latestTimestamp
       ? toPrettyDateTimeFormat($timestamps.latestTimestamp, { local: true })

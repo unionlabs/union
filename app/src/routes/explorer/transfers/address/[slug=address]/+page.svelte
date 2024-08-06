@@ -130,7 +130,6 @@ onNavigate(navigation => {
     {timestamps}
     pageSize={QUERY_LIMIT}
     {queryStatus}
-    {REFETCH_ENABLED}
     {transfersDataStore}
   />
 </ChainsGate>

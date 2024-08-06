@@ -1,7 +1,7 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import { onNavigate } from "$app/navigation"
-import { derived, writable } from "svelte/store"
+import { derived, writable, type Writable } from "svelte/store"
 import DevTools from "$lib/components/dev-tools.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { decodeTimestampSearchParam } from "./timestamps.ts"
@@ -15,86 +15,71 @@ import { latestTransfers, paginatedAddressesTransfers } from "./paginated-transf
  */
 
 const QUERY_LIMIT = 6
-const REFRESH_INTERVAL = 5_000 // 5 seconds
 
-let timestamp = writable(
+let timestamp: Writable<string | null> = writable(
   $page.url.searchParams.has("timestamp")
     ? decodeTimestampSearchParam(`${$page.url.searchParams.get("timestamp")}`)
-    : currentUtcTimestampWithBuffer()
+    : null
 )
 
 const queryClient = useQueryClient()
 
-/**
- * only happens when:
- *  1. it is the first query on initial page load with no timestamp search param,
- *  2. the user clicks on the `current` button which resets to current and live data
- */
-let REFETCH_ENABLED = writable($page.url.searchParams.has("timestamp") ? false : true)
-
 let liveTransfers = createQuery(
-  derived(REFETCH_ENABLED, $REFETCH_ENABLED => ({
+  derived([timestamp], ([$timestamp]) => ({
     queryKey: ["transfers", "live"],
     staleTime: Number.POSITIVE_INFINITY,
-    enabled: $REFETCH_ENABLED,
-    refetchOnMount: $REFETCH_ENABLED,
+    enabled: () => !$timestamp,
+    refetchOnMount: true,
     placeholderData: keepPreviousData,
-    refetchOnReconnect: $REFETCH_ENABLED,
-    refetchInterval: () => ($REFETCH_ENABLED ? REFRESH_INTERVAL : false),
+    refetchOnReconnect: true,
+    refetchInterval: () => 5_000,
     queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT * 2 })
   }))
 )
 
-let transfers = createQuery(
-  derived([timestamp, REFETCH_ENABLED], ([$timestamp, $REFETCH_ENABLED]) => ({
+let transfersByTimestamp = createQuery(
+  derived([timestamp], ([$timestamp]) => ({
     queryKey: ["transfers", $timestamp],
     refetchOnMount: false,
     refetchOnReconnect: false,
     placeholderData: keepPreviousData,
     staleTime: Number.POSITIVE_INFINITY,
-    enabled: () => $REFETCH_ENABLED === false,
+    enabled: () => !!$timestamp,
     queryFn: async () =>
       await paginatedAddressesTransfers({
-        timestamp: $timestamp,
+        timestamp: $timestamp as string, // otherwise its disabled
         limit: QUERY_LIMIT
       })
   }))
 )
 
-let queryStatus: "pending" | "done" = $REFETCH_ENABLED
-  ? $liveTransfers.status === "pending" || $liveTransfers.fetchStatus === "fetching"
+let queryStatus: "pending" | "done" = $timestamp
+  ? $transfersByTimestamp.status === "pending" || $transfersByTimestamp.fetchStatus === "fetching"
     ? "pending"
     : "done"
-  : $transfers.status === "pending" || $transfers.fetchStatus === "fetching"
-    ? "pending"
-    : "done"
-$: queryStatus = $REFETCH_ENABLED
-  ? $liveTransfers.status === "pending" || $liveTransfers.fetchStatus === "fetching"
-    ? "pending"
-    : "done"
-  : $transfers.status === "pending" || $transfers.fetchStatus === "fetching"
+  : $liveTransfers.status === "pending" || $liveTransfers.fetchStatus === "fetching"
     ? "pending"
     : "done"
 
 let transfersDataStore = derived(
-  [liveTransfers, transfers, REFETCH_ENABLED],
-  ([$liveTransfers, $transfers, $REFETCH_ENABLED]) => {
-    if ($REFETCH_ENABLED) return $liveTransfers?.data?.transfers ?? []
-    return $transfers?.data?.transfers ?? []
+  [liveTransfers, transfersByTimestamp, timestamp],
+  ([$liveTransfers, $transfersByTimestamp, $timestamp]) => {
+    if ($timestamp) return $transfersByTimestamp?.data?.transfers ?? []
+    return $liveTransfers?.data?.transfers ?? []
   }
 )
 
 let timestamps = derived(
-  [liveTransfers, transfers, REFETCH_ENABLED],
-  ([$liveTransfers, $transfers, $REFETCH_ENABLED]) =>
-    $REFETCH_ENABLED
+  [liveTransfers, transfersByTimestamp, timestamp],
+  ([$liveTransfers, $transfers, $timestamp]) =>
+    $timestamp
       ? {
-          oldestTimestamp: $liveTransfers?.data?.oldestTimestamp ?? "",
-          latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? ""
-        }
-      : {
           oldestTimestamp: $transfers?.data?.oldestTimestamp ?? "",
           latestTimestamp: $transfers?.data?.latestTimestamp ?? ""
+        }
+      : {
+          oldestTimestamp: $liveTransfers?.data?.oldestTimestamp ?? "",
+          latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? ""
         }
 )
 
@@ -117,7 +102,6 @@ onNavigate(navigation => {
     {timestamp}
     {timestamps}
     {queryStatus}
-    {REFETCH_ENABLED}
     {transfersDataStore}
   />
 </ChainsGate>
