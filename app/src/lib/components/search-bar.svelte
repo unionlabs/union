@@ -72,7 +72,7 @@ const onInputChange = (event: InputEvent) =>
 
 <Command.Dialog
   bind:open={commandDialogOpen}
-  class="rounded-lg border-[1.5px] border-solid shadow-2xl border-accent w-full"
+  class="rounded-sm border-[1.5px] border-solid shadow-2xl border-accent w-full"
 >
   <Command.Input
     type="search"
