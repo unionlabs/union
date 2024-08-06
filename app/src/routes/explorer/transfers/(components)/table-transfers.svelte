@@ -24,21 +24,52 @@ import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 import { derived, writable, type Readable, type Writable } from "svelte/store"
 import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
+import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
+import { latestTransfers, paginatedAddressesTransfers } from "../paginated-transfers.ts"
 
 export let chains: Array<Chain>
 
-export let transfersDataStore: Readable<Array<Transfer>>
-
 type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 
-export let queryStatus: "pending" | "done"
 export let timestamp: Writable<string | null>
-export let timestamps: Readable<{
-  oldestTimestamp: string
-  latestTimestamp: string
-}>
 export let pageSize: number
-let pagination = writable({ pageIndex: 0, pageSize })
+
+const QUERY_LIMIT = 6
+
+let transfers = createQuery(
+  derived([timestamp], ([$timestamp]) =>
+    $timestamp
+      ? {
+          queryKey: ["transfers", $timestamp],
+          refetchOnMount: false,
+          refetchOnReconnect: false,
+          placeholderData: keepPreviousData,
+          staleTime: Number.POSITIVE_INFINITY,
+          queryFn: async () =>
+            await paginatedAddressesTransfers({
+              timestamp: $timestamp as string, // otherwise its disabled
+              limit: QUERY_LIMIT
+            })
+        }
+      : {
+          queryKey: ["transfers", "live"],
+          refetchOnMount: true,
+          placeholderData: keepPreviousData,
+          refetchOnReconnect: true,
+          refetchInterval: () => 5_000,
+          queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT * 2 })
+        }
+  )
+)
+
+let transfersDataStore: Readable<Array<Transfer>> = derived([transfers], ([$transfers]) => {
+  return $transfers?.data?.transfers ?? []
+})
+
+let timestamps = derived([transfers], ([$liveTransfers]) => ({
+  oldestTimestamp: $liveTransfers?.data?.oldestTimestamp ?? "",
+  latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? ""
+}))
 
 const columns: Array<ColumnDef<DataRow>> = [
   {
@@ -96,32 +127,24 @@ const columns: Array<ColumnDef<DataRow>> = [
   }
 ]
 
-const options = writable<TableOptions<DataRow>>({
-  data: $transfersDataStore,
-  columns,
-  enableHiding: true,
-  enableFilters: true,
-  manualPagination: true,
-  autoResetPageIndex: true,
-  enableColumnFilters: true,
-  enableColumnResizing: true,
-  enableMultiRowSelection: true,
-  getCoreRowModel: getCoreRowModel(),
-  rowCount: $transfersDataStore?.length,
-  getFilteredRowModel: getFilteredRowModel(),
-  getPaginationRowModel: getPaginationRowModel(),
-  state: { pagination: $pagination },
-  debugTable: import.meta.env.MODE === "development" && import.meta.env.DEBUG_TABLE === "true"
-})
-
-const rerender = () => {
-  options.update(options => ({
-    ...options,
-    data: $transfersDataStore
+const table = createSvelteTable(
+  derived([transfersDataStore], ([$transfersDataStore]) => ({
+    data: $transfersDataStore,
+    columns,
+    enableHiding: true,
+    enableFilters: true,
+    manualPagination: true,
+    autoResetPageIndex: true,
+    enableColumnFilters: true,
+    enableColumnResizing: true,
+    enableMultiRowSelection: true,
+    getCoreRowModel: getCoreRowModel(),
+    rowCount: $transfersDataStore?.length,
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    debugTable: import.meta.env.MODE === "development" && import.meta.env.DEBUG_TABLE === "true"
   }))
-}
-
-const table = createSvelteTable(options)
+)
 const rows = derived(table, $t => $t.getRowModel().rows)
 
 function assetHasInfoProperty(assets: TransferAsset) {
@@ -131,8 +154,6 @@ function assetHasInfoProperty(assets: TransferAsset) {
 
 const encodeTimestampSearchParam = (timestamp: string) =>
   `?timestamp=${toPrettyDateTimeFormat(timestamp)?.replaceAll("-", "").replaceAll(":", "").replaceAll(" ", "")}`
-
-$: if ($transfersDataStore) rerender()
 </script>
 
 {#if $transfersDataStore?.length}
@@ -159,7 +180,7 @@ $: if ($transfersDataStore) rerender()
         {/each}
       </Table.Header>
       <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
-        {#each $table.getRowModel().rows as row, index (row.index)}
+        {#each $rows as row, index (row.index)}
           {@const isSupported = assetHasInfoProperty(
             $rows[row.index]?.original?.assets
           )}
@@ -195,7 +216,7 @@ $: if ($transfersDataStore) rerender()
       </Table.Body>
     </Table.Root>
   </Card.Root>
-{:else if queryStatus === "pending"}
+{:else if $transfers.status  === "pending"}
   <LoadingLogo class="size-16" />
 {/if}
 <div
@@ -205,29 +226,26 @@ $: if ($transfersDataStore) rerender()
     rowsPerPage={20}
     totalTableRows={20}
     class={cn("w-auto")}
-    status={queryStatus}
+    status={$transfers.status === "success" ? "done" : "pending"}
     live={!timestamp}
     onOlderPage={async page => {
-      const stamp = $timestamps.oldestTimestamp
+      const stamp = $transfers?.data?.oldestTimestamp
       timestamp.set(stamp)
       goto(encodeTimestampSearchParam(stamp), {
         replaceState: true,
         state: { timestamp: stamp }
       })
-      pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
     }}
     onCurrentClick={() => {
-      pagination.update(p => ({ ...p, pageIndex: 0 }))
       goto($page.url.pathname, { replaceState: true })
     }}
     onNewerPage={async page => {
-      const stamp = $timestamps.latestTimestamp
+      const stamp = $transfers?.data?.latestTimestamp
       timestamp.set(stamp)
       goto(encodeTimestampSearchParam(stamp), {
         replaceState: true,
         state: { timestamp: stamp }
       })
-      pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
     }}
     timestamp={$timestamps.latestTimestamp
       ? toPrettyDateTimeFormat($timestamps.latestTimestamp, { local: true })
