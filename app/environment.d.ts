@@ -11,9 +11,6 @@ interface EnvironmentVariables {
   // `rollup-plugin-visualizer`
   readonly VISUALIZE: string
   readonly DEBUG_TABLE: "true" | "false"
-
-  readonly EXPLORER_ADDRESS_TRANSFERS_ROWS_PER_PAGE: string
-  readonly EXPLORER_ADDRESS_TRANSFERS_REFETCH_INTERVAL: string
 }
 
 // Node.js environment variables types
