@@ -182,7 +182,7 @@ impl IbcClient for EvmInCosmosLightClient {
         _env: Env,
         _client_message: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
-        panic!("impossible; misbheavior check is done on the l1 light client.")
+        panic!("impossible; misbehavior check is done on the l1 light client.")
     }
 
     fn check_for_misbehaviour_on_header(
