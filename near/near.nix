@@ -1,5 +1,5 @@
 { ... }: {
-  perSystem = { self', lib, unstablePkgs, pkgs, system, config, rust, crane, stdenv, dbg, ... }:
+  perSystem = { self', lib, unstablePkgs, pkgs, system, config, rust, crane, stdenv, dbg, python, ... }:
     let
 
       near-ibc-tests = pkgs.stdenv.mkDerivation {
@@ -26,6 +26,31 @@
             --set IBC_APP_WASM_FILEPATH "${self'.packages.dummy-ibc-app}/lib/dummy_ibc_app.wasm";
         '';
         meta.mainProgram = "near-ibc-tests";
+      };
+
+
+      test-circuit = pkgs.stdenv.mkDerivation {
+        name = "test-circuit";
+        buildInputs = [ pkgs.makeWrapper ];
+        src =
+          (crane.buildWorkspaceMember {
+            crateDirFromRoot = "near/test-circuit";
+            extraEnv = {
+              PROTOC = "${pkgs.protobuf}/bin/protoc";
+              LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+            };
+            extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+            extraNativeBuildInputs = [ pkgs.clang ];
+            extraEnv = { };
+          }).packages.test-circuit;
+        installPhase = ''
+          mkdir -p $out/bin
+          cp -r $src/bin/test-circuit $out/bin/test-circuit
+          wrapProgram $out/bin/test-circuit \
+            --set NEAR_SANDBOX_BIN_PATH "${near-sandbox}/bin/neard" \
+            --set VERIFIER "${self'.packages.cometbls-near}/lib/cometbls_near.wasm"
+        '';
+        meta.mainProgram = "test-circuit";
       };
 
       cargo-near = craneLib.buildPackage rec {
@@ -66,6 +91,30 @@
 
       craneLib = crane.lib.overrideToolchain rustToolchain;
 
+      nearcore = craneLib.buildPackage rec {
+        pname = "neard";
+        version = "177c8657acd79a9a33f4e9f2ecadfabad792eae1";
+
+        buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ] ++ (
+          lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
+        );
+
+        nativeBuildInputs = [
+          pkgs.clang
+        ];
+
+        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+
+        cargoExtraArgs = " --verbose --verbose -p neard";
+
+        src = pkgs.fetchFromGitHub {
+          owner = "aeryz";
+          repo = "nearcore";
+          rev = version;
+          hash = "sha256-2Iii+prFl5W4OS9VLwbce+QssKe8dLH/P+bVG8AWJ2c=";
+        };
+      };
+
       near-sandbox = craneLib.buildPackage rec {
         pname = "neard";
         version = "326c6098c652c0fe3419067ad0ff839804658b7d";
@@ -94,7 +143,13 @@
       };
 
       near-light-client = (crane.buildWasmContract {
-        crateDirFromRoot = "near/near-light-client";
+        crateDirFromRoot = "light-clients/near/near";
+        extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+        extraNativeBuildInputs = [ pkgs.clang ];
+      });
+
+      near-ics08 = (crane.buildWasmContract {
+        crateDirFromRoot = "light-clients/near/ics08-near";
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });
@@ -110,10 +165,70 @@
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });
+
+      cometbls-near = (crane.buildWasmContract {
+        crateDirFromRoot = "light-clients/cometbls/near";
+        extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+        extraNativeBuildInputs = [ pkgs.clang ];
+      });
+
+      near-localnet = pkgs.writeShellApplication {
+        name = "near-localnet";
+        # runtimeInputs = [ nearup ];
+        runtimeInputs = [
+          (python.withPackages (py-pkgs: [
+            py-pkgs.nearup
+          ]))
+        ] ++ [ pkgs.strace pkgs.iproute pkgs.busybox unstablePkgs.nodePackages_latest.near-cli ];
+        text = ''
+          mkdir /tmp
+          export TMPDIR=/tmp
+          export TEMP=/tmp
+
+          nearup run --override --binary-path ${nearcore}/bin localnet
+          sleep 3
+          echo Deploying ibc..
+          ls -la ~/.near
+          mkdir neardev
+
+          echo N | near create-account ibc-union.node0 \
+            --networkId asd \
+            --masterAccount node0 \
+            --keyPath ~/.near/localnet/node0/validator_key.json \
+            --nodeUrl http://localhost:3030
+
+          near deploy \
+            --networkId asd \
+            --wasmFile ${self'.packages.near-ibc}/lib/near_ibc.wasm \
+            --masterAccount node0 \
+            --keyPath ~/.near/localnet/node0/validator_key.json \
+            --nodeUrl http://localhost:3030 \
+            --accountId ibc-union.node0
+          echo "Deployed near-ibc"
+
+          near create-account cometbls-light-client.node0 \
+            --networkId asd \
+            --masterAccount node0 \
+            --keyPath ~/.near/localnet/node0/validator_key.json \
+            --nodeUrl http://localhost:3030
+
+          near deploy \
+            --networkId asd \
+            --wasmFile ${self'.packages.cometbls-near}/lib/cometbls_near.wasm \
+            --masterAccount node0 \
+            --keyPath ~/.near/localnet/node0/validator_key.json \
+            --nodeUrl http://localhost:3030 \
+            --accountId cometbls-light-client.node0
+          echo "Deployed cometbls-near"
+          cat ~/.near/localnet/node0/validator_key.json
+          
+          tail -f /.nearup/logs/localnet/node0.log
+        '';
+      };
     in
     {
-      packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // {
-        inherit near-ibc-tests near-sandbox cargo-near;
+      packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // cometbls-near.packages // near-ics08.packages // {
+        inherit near-ibc-tests near-sandbox cargo-near nearcore near-localnet test-circuit;
       };
 
       checks = near-light-client.checks // near-ibc.checks;

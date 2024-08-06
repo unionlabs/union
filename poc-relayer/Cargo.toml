@@ -1,0 +1,33 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "poc-relayer"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+base64                  = { workspace = true }
+borsh                   = { workspace = true, features = ["borsh-derive"] }
+chain-utils             = { workspace = true }
+cometbft-rpc            = { workspace = true }
+hex.workspace           = true
+ibc-vm-rs.workspace     = true
+near-crypto             = "0.23"
+near-jsonrpc-client     = "0.10.1"
+near-jsonrpc-primitives = "0.23"
+near-primitives         = "0.23.0"
+near-primitives-core    = { version = "0.23" }
+near-verifier           = { workspace = true }
+num-bigint              = { workspace = true }
+prost                   = { workspace = true }
+protos.workspace        = true
+serde.workspace         = true
+serde_json              = { workspace = true }
+tendermint              = { workspace = true }
+tendermint-proto        = { workspace = true }
+tendermint-rpc          = { workspace = true, features = ["http-client", "websocket-client", "default"] }
+tokio                   = { workspace = true, features = ["full"] }
+unionlabs               = { workspace = true, features = ["near"] }
+
+[lints]
+workspace = true

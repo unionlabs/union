@@ -1,0 +1,25 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "cometbls-near"
+repository.workspace   = true
+version                = "0.1.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+borsh                     = { workspace = true, features = ["derive"] }
+hex-literal               = { workspace = true }
+hex.workspace             = true
+ibc-vm-rs                 = { workspace = true }
+ics23                     = { workspace = true }
+near-contract-standards   = { workspace = true }
+near-primitives-core      = { version = "0.21" }
+near-sdk                  = { workspace = true, features = ["wee_alloc"] }
+near-sdk-contract-tools   = { workspace = true }
+thiserror                 = { workspace = true }
+unionlabs                 = { workspace = true, features = ["near"] }
+
+[lints]
+workspace = true

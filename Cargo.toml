@@ -55,7 +55,7 @@ members = [
 
   "light-clients/arbitrum-light-client",
   "light-clients/berachain-light-client",
-  "light-clients/cometbls-light-client",
+  "light-clients/cometbls/ics08",
   "light-clients/ethereum-light-client",
   "light-clients/scroll-light-client",
   "light-clients/tendermint-light-client",
@@ -70,11 +70,16 @@ members = [
   "unionvisor",
   "voyager",
   "near/near-ibc",
-  "near/near-light-client",
+  "light-clients/near/near",
   "near/dummy-ibc-app",
-  "near/near-ibc-tests",
 
   "drip",
+  "near/near-ibc-tests",
+  "light-clients/near/ics08-near",
+  "lib/near-verifier",
+  "light-clients/cometbls/near",
+  "poc-relayer",
+  "near/test-circuit",
 ]
 
 [workspace.package]
@@ -110,6 +115,7 @@ ics23                     = { path = "lib/ics23", default-features = false }
 linea-verifier            = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie              = { path = "lib/linea-zktrie", default-features = false }
 macros                    = { path = "lib/macros", default-features = false }
+near-verifier             = { path = "lib/near-verifier", default-features = false }
 pg-queue                  = { path = "lib/pg-queue", default-features = false }
 poseidon-rs               = { path = "lib/poseidon-rs", default-features = false }
 protos                    = { path = "generated/rust/protos", default-features = false }
@@ -172,6 +178,7 @@ go-parse-duration        = { version = "0.1.1", default-features = false }
 hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }
 lazy_static              = { version = "1.4.0", default-features = false }
+near-account-id          = { version = "1.0.0", default-features = false }
 near-contract-standards  = { version = "5.1.0", default-features = false }
 near-sdk                 = { version = "5.1.0", default-features = false }
 near-sdk-contract-tools  = { version = "3.0.2", default-features = false }

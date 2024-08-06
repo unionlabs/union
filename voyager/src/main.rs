@@ -26,6 +26,7 @@ use chain_utils::{
     cosmos::Cosmos,
     ethereum::{Ethereum, EthereumConsensusChain},
     keyring::ChainKeyring,
+    near::Near,
     scroll::Scroll,
     union::Union,
     wasm::Wasm,
@@ -368,6 +369,10 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
                         .query_latest_height()
                         .await
                         .map_err(|e| VoyagerError::Command(Box::new(e)))?,
+                    AnyChain::Near(on) => on
+                        .query_latest_height()
+                        .await
+                        .map_err(|e| VoyagerError::Command(e))?,
                 };
 
                 print_json(&height);

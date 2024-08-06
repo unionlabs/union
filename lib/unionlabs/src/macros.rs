@@ -17,6 +17,8 @@ macro_rules! hex_string_array_wrapper {
                 ::ssz::Ssz,
                 ::serde::Serialize,
                 ::serde::Deserialize,
+                ::borsh::BorshSerialize,
+                ::borsh::BorshDeserialize,
                 Hash
             )]
             #[ssz(transparent)]

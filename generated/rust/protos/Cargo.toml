@@ -283,6 +283,7 @@ proto_full = [
   "union+ibc+lightclients+cometbls+v1",
   "union+ibc+lightclients+ethereum+v1",
   "union+ibc+lightclients+linea+v1",
+  "union+ibc+lightclients+near+v1",
   "union+ibc+lightclients+scroll+v1",
   "union+ics23+v1",
   "union+staking+v1",
@@ -326,6 +327,7 @@ proto_full = [
 ]
 "union+ibc+lightclients+ethereum+v1" = ["ibc+core+client+v1"]
 "union+ibc+lightclients+linea+v1" = ["ibc+core+client+v1", "union+ibc+lightclients+ethereum+v1"]
+"union+ibc+lightclients+near+v1" = []
 "union+ibc+lightclients+scroll+v1" = ["ibc+core+client+v1", "union+ibc+lightclients+ethereum+v1"]
 "union+ics23+v1" = []
 "union+staking+v1" = ["cosmos+staking+v1beta1"]

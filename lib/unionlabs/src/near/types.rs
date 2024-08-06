@@ -1,11 +1,7 @@
 use core::str::FromStr;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_primitives_core::{
-    hash::CryptoHash,
-    types::{Balance, BlockHeight, MerkleHash},
-};
-use near_sdk::AccountId;
+use near_primitives_core::{hash::CryptoHash, types::MerkleHash};
 
 #[derive(
     Debug,
@@ -20,6 +16,44 @@ use near_sdk::AccountId;
 pub struct MerklePathItem {
     pub hash: MerkleHash,
     pub direction: Direction,
+}
+
+impl From<MerklePathItem> for protos::union::ibc::lightclients::near::v1::MerklePathItem {
+    fn from(value: MerklePathItem) -> Self {
+        Self {
+            hash: value.hash.into(),
+            direction: value.direction as u64,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
+pub enum TryFromMerklePathItemError {
+    #[error("invalid hash")]
+    Hash,
+    #[error("invalid direction ({0})")]
+    Direction(u64),
+}
+
+impl TryFrom<protos::union::ibc::lightclients::near::v1::MerklePathItem> for MerklePathItem {
+    type Error = TryFromMerklePathItemError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::near::v1::MerklePathItem,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            hash: value
+                .hash
+                .as_slice()
+                .try_into()
+                .map_err(|_| TryFromMerklePathItemError::Hash)?,
+            direction: match value.direction {
+                1 => Direction::Left,
+                2 => Direction::Right,
+                v => return Err(TryFromMerklePathItemError::Direction(v)),
+            },
+        })
+    }
 }
 
 pub type MerklePath = Vec<MerklePathItem>;
@@ -37,30 +71,6 @@ pub type MerklePath = Vec<MerklePathItem>;
 pub enum Direction {
     Left,
     Right,
-}
-
-#[derive(
-    PartialEq,
-    Eq,
-    Debug,
-    Clone,
-    BorshDeserialize,
-    BorshSerialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-pub struct BlockHeaderInnerLiteView {
-    pub height: BlockHeight,
-    pub epoch_id: CryptoHash,
-    pub next_epoch_id: CryptoHash,
-    pub prev_state_root: CryptoHash,
-    pub outcome_root: CryptoHash,
-    /// Legacy json number. Should not be used.
-    pub timestamp: u64,
-    // TODO(aeryz): #[serde(with = "dec_format")]
-    pub timestamp_nanosec: u64,
-    pub next_bp_hash: CryptoHash,
-    pub block_merkle_root: CryptoHash,
 }
 
 /// Epoch identifier -- wrapped hash, to make it easier to distinguish.
@@ -93,105 +103,42 @@ impl core::str::FromStr for EpochId {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, serde::Serialize, Debug, Clone, Eq, PartialEq)]
-pub struct BlockHeaderInnerLite {
-    /// Height of this block.
-    pub height: BlockHeight,
-    /// Epoch start hash of this block's epoch.
-    /// Used for retrieving validator information
-    pub epoch_id: EpochId,
-    pub next_epoch_id: EpochId,
-    /// Root hash of the state at the previous block.
-    pub prev_state_root: MerkleHash,
-    /// Root of the outcomes of transactions and receipts from the previous chunks.
-    pub prev_outcome_root: MerkleHash,
-    /// Timestamp at which the block was built (number of non-leap-nanoseconds since January 1, 1970 0:00:00 UTC).
-    pub timestamp: u64,
-    /// Hash of the next epoch block producers set
-    pub next_bp_hash: CryptoHash,
-    /// Merkle root of block hashes up to the current block.
-    pub block_merkle_root: CryptoHash,
-}
-
-impl From<BlockHeaderInnerLiteView> for BlockHeaderInnerLite {
-    fn from(value: BlockHeaderInnerLiteView) -> Self {
-        Self {
-            height: value.height,
-            epoch_id: EpochId(value.epoch_id),
-            next_epoch_id: EpochId(value.next_epoch_id),
-            prev_state_root: value.prev_state_root,
-            prev_outcome_root: value.outcome_root,
-            timestamp: value.timestamp,
-            next_bp_hash: value.next_bp_hash,
-            block_merkle_root: value.block_merkle_root,
-        }
-    }
-}
-
-#[derive(Debug, Clone, BorshSerialize, BorshDeserialize)]
-pub struct HeaderUpdate {
-    pub new_state: LightClientBlockView,
-    pub trusted_height: BlockHeight,
-    pub prev_state_root_proof: MerklePath,
-    pub prev_state_root: CryptoHash,
-}
-
-#[derive(
-    PartialEq,
-    Eq,
-    Debug,
-    Clone,
-    BorshDeserialize,
-    BorshSerialize,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-pub struct LightClientBlockView {
-    pub prev_block_hash: CryptoHash,
-    pub next_block_inner_hash: CryptoHash,
-    pub inner_lite: BlockHeaderInnerLiteView,
-    pub inner_rest_hash: CryptoHash,
-    pub next_bps: Option<Vec<ValidatorStakeView>>,
-    pub approvals_after_next: Vec<Option<Box<Signature>>>,
-}
-
-#[derive(
-    BorshSerialize,
-    BorshDeserialize,
-    serde::Serialize,
-    serde::Deserialize,
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-)]
-#[serde(tag = "validator_stake_struct_version")]
-pub enum ValidatorStakeView {
-    V1(ValidatorStakeViewV1),
-}
-
-#[derive(
-    BorshSerialize,
-    BorshDeserialize,
-    Debug,
-    Clone,
-    Eq,
-    PartialEq,
-    serde::Serialize,
-    serde::Deserialize,
-)]
-pub struct ValidatorStakeViewV1 {
-    pub account_id: AccountId,
-    // TODO(aeryz): implement the public key type and also impl BorshSerialize for it
-    pub public_key: PublicKey,
-    // TODO(aeryz): #[serde(with = "dec_format")]
-    pub stake: Balance,
-}
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum PublicKey {
     Ed25519([u8; 32]),
     Secp256k1([u8; 64]),
+}
+
+impl From<PublicKey>
+    for protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey
+{
+    fn from(value: PublicKey) -> Self {
+        match value {
+            PublicKey::Ed25519(val) => Self::Ed25519(val.to_vec()),
+            PublicKey::Secp256k1(val) => Self::Secp256k1(val.to_vec()),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
+pub enum TryFromPublicKeyError {
+    #[error("invalid length")]
+    InvalidLength,
+}
+
+impl TryFrom<protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey>
+    for PublicKey
+{
+    type Error = TryFromPublicKeyError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey,
+    ) -> Result<Self, Self::Error> {
+        Ok(match value {
+            protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey::Ed25519(val) => Self::Ed25519(val.try_into().map_err(|_| TryFromPublicKeyError::InvalidLength)?),
+            protos::union::ibc::lightclients::near::v1::validator_stake_view::PublicKey::Secp256k1(val) => Self::Secp256k1(val.try_into().map_err(|_| TryFromPublicKeyError::InvalidLength)?),
+        })
+    }
 }
 
 impl FromStr for KeyType {
@@ -425,11 +372,35 @@ pub enum Signature {
     Secp256k1(Vec<u8>),
 }
 
-/// The part of the block approval that is different for endorsements and skips
-#[derive(BorshSerialize, BorshDeserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ApprovalInner {
-    Endorsement(CryptoHash),
-    Skip(BlockHeight),
+impl Signature {
+    pub fn inner(&self) -> &[u8] {
+        match self {
+            Signature::Ed25519(val) => val.as_slice(),
+            Signature::Secp256k1(val) => val.as_slice(),
+        }
+    }
+}
+
+impl From<Signature> for protos::union::ibc::lightclients::near::v1::signature::Signature {
+    fn from(value: Signature) -> Self {
+        match value {
+            Signature::Ed25519(val) => Self::Ed25519(val),
+            Signature::Secp256k1(val) => Self::Secp256k1(val),
+        }
+    }
+}
+
+impl From<protos::union::ibc::lightclients::near::v1::signature::Signature> for Signature {
+    fn from(value: protos::union::ibc::lightclients::near::v1::signature::Signature) -> Self {
+        match value {
+            protos::union::ibc::lightclients::near::v1::signature::Signature::Ed25519(val) => {
+                Self::Ed25519(val)
+            }
+            protos::union::ibc::lightclients::near::v1::signature::Signature::Secp256k1(val) => {
+                Self::Secp256k1(val)
+            }
+        }
+    }
 }
 
 #[derive(

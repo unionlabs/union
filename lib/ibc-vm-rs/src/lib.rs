@@ -44,8 +44,8 @@ pub enum IbcError {
     UnexpectedAction,
 
     // TODO(aeryz): this needs context
-    #[error("client message verification failed")]
-    ClientMessageVerificationFailed,
+    #[error("client message verification failed: {0}")]
+    ClientMessageVerificationFailed(String),
 
     #[error("connection ({0}) not found")]
     ConnectionNotFound(String),
@@ -193,7 +193,7 @@ pub enum IbcResponse {
         valid: bool,
     },
     VerifyClientMessage {
-        valid: bool,
+        error: Option<String>,
     },
     CheckForMisbehaviour {
         misbehaviour_found: bool,

@@ -34,7 +34,6 @@ pub mod google;
 
 pub mod cosmwasm;
 
-#[cfg(feature = "near")]
 pub mod near;
 
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
@@ -156,6 +155,7 @@ pub enum WasmClientType {
     Arbitrum,
     Linea,
     Berachain,
+    Near,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -204,6 +204,7 @@ impl FromStr for WasmClientType {
             "Arbitrum" => Ok(WasmClientType::Arbitrum),
             "Linea" => Ok(WasmClientType::Linea),
             "Berachain" => Ok(WasmClientType::Berachain),
+            "Near" => Ok(WasmClientType::Near),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }
@@ -220,6 +221,7 @@ impl Display for WasmClientType {
             Self::Arbitrum => write!(f, "Arbitrum"),
             Self::Linea => write!(f, "Linea"),
             Self::Berachain => write!(f, "Berachain"),
+            Self::Near => write!(f, "Near"),
         }
     }
 }

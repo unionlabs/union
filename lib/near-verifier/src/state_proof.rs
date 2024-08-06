@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use near_primitives_core::{hash::CryptoHash, types::AccountId};
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
+use unionlabs::near::raw_state_proof::RawStateProof;
 
 use crate::nibble_slice::NibbleSlice;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct RawStateProof {
-    pub state_proof: Vec<Vec<u8>>,
+pub struct StateProof {
+    pub state_proof_nodes: HashMap<CryptoHash, RawTrieNodeWithSize>,
 }
 
-impl RawStateProof {
-    pub fn parse(self) -> StateProof {
-        let state_proof_nodes = self
+impl StateProof {
+    pub fn parse(proof: RawStateProof) -> Self {
+        let state_proof_nodes = proof
             .state_proof
             .into_iter()
             .map(|bytes| {
@@ -24,13 +24,7 @@ impl RawStateProof {
 
         StateProof { state_proof_nodes }
     }
-}
 
-pub struct StateProof {
-    pub state_proof_nodes: HashMap<CryptoHash, RawTrieNodeWithSize>,
-}
-
-impl StateProof {
     pub fn verify(
         &self,
         state_root: &CryptoHash,
@@ -96,7 +90,7 @@ impl StateProof {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, borsh::BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub struct RawTrieNodeWithSize {
     pub node: RawTrieNode,
     pub memory_usage: u64,

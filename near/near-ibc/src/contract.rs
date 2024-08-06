@@ -535,7 +535,7 @@ impl Contract {
                 let account_id = self.clients.get(&client_id.to_string()).unwrap();
                 PromiseOrValue::Promise(
                     ext_light_client::ext(account_id.clone())
-                        .query(ibc_queries)
+                        .query(client_id, ibc_queries)
                         .then(Contract::ext(env::current_account_id()).callback_query(runnable)),
                 )
             }
@@ -549,7 +549,7 @@ impl Contract {
                     let account_id = self.account_ids.get(&client_type).unwrap();
                     PromiseOrValue::Promise(
                         ext_light_client::ext(account_id.clone())
-                            .initialize(client_id, client_state, consensus_state)
+                            .new(client_id, client_state, consensus_state)
                             .then(
                                 Contract::ext(env::current_account_id())
                                     .callback_initialize(runnable),
@@ -577,7 +577,7 @@ impl Contract {
                     let account_id = self.clients.get(&client_id.to_string()).unwrap();
                     PromiseOrValue::Promise(
                         ext_light_client::ext(account_id.clone())
-                            .update_client(client_msg)
+                            .update_client(client_id.to_string(), client_msg)
                             .then(
                                 Contract::ext(env::current_account_id())
                                     .callback_update_client(runnable),
@@ -712,30 +712,15 @@ pub enum LightClientQuery {
 
 #[ext_contract(ext_light_client)]
 pub trait LightClient {
-    fn initialize(client_id: ClientId, client_state: Vec<u8>, consensus_state: Vec<u8>);
+    fn new(&mut self, client_id: ClientId, client_state: Vec<u8>, consensus_state: Vec<u8>);
 
-    fn query(&self, query: Vec<IbcQuery>) -> Vec<IbcResponse>;
+    fn query(&self, client_id: ClientId, query: Vec<IbcQuery>) -> Vec<IbcResponse>;
 
-    fn status(&self) -> Status;
-
-    fn latest_height(&self) -> Height;
-
-    fn verify_membership(
-        &self,
-        height: Height,
-        // TODO(aeryz): delay times might not be relevant for other chains we could make it optional
-        delay_time_period: u64,
-        delay_block_period: u64,
-        proof: Vec<u8>,
-        path: MerklePath,
-        value: Vec<u8>,
-    ) -> bool;
-
-    fn verify_client_message(&self, client_msg: Vec<u8>) -> bool;
-
-    fn check_for_misbehaviour(&self, client_msg: Vec<u8>) -> bool;
-
-    fn update_client(&mut self, client_msg: Vec<u8>) -> (Vec<u8>, Vec<(Height, Vec<u8>)>);
+    fn update_client(
+        &mut self,
+        client_id: String,
+        client_msg: Vec<u8>,
+    ) -> (Vec<u8>, Vec<(Height, Vec<u8>)>);
 
     fn update_client_on_misbehaviour(&mut self, client_msg: Vec<u8>);
 }

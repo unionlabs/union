@@ -1,0 +1,45 @@
+[package]
+authors                = ["Union Labs"]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "near-ics08"
+repository.workspace   = true
+version                = "0.1.0"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bytes           = { workspace = true }
+cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }
+cw-storage-plus = { workspace = true }
+dlmalloc        = { workspace = true, features = ["global"] }
+hex             = { workspace = true }
+prost           = { workspace = true }
+protos          = { workspace = true, features = ["proto_full", "std"] }
+ripemd          = { workspace = true }
+schemars        = { workspace = true }
+serde           = { workspace = true, features = ["derive"] }
+serde-json-wasm = { workspace = true }
+serde-utils     = { workspace = true }
+sha2            = { workspace = true }
+sha3            = { workspace = true }
+thiserror       = { workspace = true }
+
+borsh                = { workspace = true }
+ics008-wasm-client   = { workspace = true }
+near-primitives-core = { version = "0.23" }
+near-verifier        = { workspace = true }
+unionlabs            = { workspace = true, features = ["near"] }
+
+base64 = { workspace = true }
+[dev-dependencies]
+lazy_static         = "1.4.0"
+near-crypto         = "0.23"
+near-jsonrpc-client = "0.10.1"
+near-primitives     = "0.23.0"
+serde_json          = { workspace = true }
+tokio               = { workspace = true, features = ["full"] }

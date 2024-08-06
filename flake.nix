@@ -257,7 +257,7 @@
         ./site/openapi.nix
         ./near/near.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
-        ./light-clients/cometbls-light-client/cometbls-light-client.nix
+        ./light-clients/cometbls/cometbls-light-client.nix
         ./light-clients/tendermint-light-client/tendermint-light-client.nix
         ./light-clients/scroll-light-client/scroll-light-client.nix
         ./light-clients/arbitrum-light-client/arbitrum-light-client.nix
@@ -333,11 +333,13 @@
 
           goPkgs = import inputs.nixpkgs-go { inherit system; };
           unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
+          packageOverrides = pkgs.callPackage ./python-packages.nix { };
+          python = pkgs.python3.override { inherit packageOverrides; };
         in
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs mkCi;
+              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs mkCi python;
 
               gitRev =
                 if (builtins.hasAttr "rev" self) then self.rev else "dirty";
@@ -525,13 +527,26 @@
               postgresql
               emmet-language-server
               nodePackages.graphqurl
+              nodePackages_latest.near-cli
               nodePackages_latest.nodejs
               nodePackages_latest.svelte-language-server
               nodePackages_latest."@astrojs/language-server"
               nodePackages_latest."@tailwindcss/language-server"
               nodePackages_latest.typescript-language-server
               nodePackages_latest.vscode-langservers-extracted
-            ])
+            ]) ++
+              (with pkgs; [
+                go
+                gopls
+                go-tools
+                gotools
+              ])
+              ++ [
+              (python.withPackages (py-pkgs: [
+                py-pkgs.nearup
+              ]))
+            ]
+
               ++ (with goPkgs; [
               go
               gopls

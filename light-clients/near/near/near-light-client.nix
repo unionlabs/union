@@ -2,7 +2,7 @@
   perSystem = { self', lib, unstablePkgs, pkgs, system, config, rust, crane, stdenv, dbg, ... }:
     let
       near-light-client = (crane.buildWasmContract {
-        crateDirFromRoot = "near/near-light-client";
+        crateDirFromRoot = "light-clients/near/near";
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });

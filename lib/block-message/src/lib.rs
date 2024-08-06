@@ -3,8 +3,8 @@
 use std::{collections::VecDeque, fmt::Debug};
 
 use chain_utils::{
-    arbitrum::Arbitrum, berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, scroll::Scroll,
-    union::Union, Chains,
+    arbitrum::Arbitrum, berachain::Berachain, cosmos::Cosmos, ethereum::Ethereum, near::Near,
+    scroll::Scroll, union::Union, Chains,
 };
 use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use queue_msg::{Op, OpT, QueueMessage};
@@ -66,6 +66,7 @@ pub enum AnyChainIdentified<T: AnyChain> {
     Scroll(Identified<Scroll, InnerOf<T, Scroll>>),
     Arbitrum(Identified<Arbitrum, InnerOf<T, Arbitrum>>),
     Berachain(Identified<Berachain, InnerOf<T, Berachain>>),
+    Near(Identified<Near, InnerOf<T, Near>>),
 }
 
 impl<T: AnyChain> AnyChainIdentified<T> {
@@ -220,6 +221,12 @@ pub trait DoAggregate: Sized + Debug + Clone + PartialEq {
     fn do_aggregate(_: Self, _: VecDeque<AnyChainIdentified<AnyData>>) -> Op<BlockMessage>;
 }
 
+impl<C: ChainExt> DoAggregate for Identified<C, Never> {
+    fn do_aggregate(this: Self, _: VecDeque<AnyChainIdentified<AnyData>>) -> Op<BlockMessage> {
+        match this.t {}
+    }
+}
+
 macro_rules! any_chain {
     (|$msg:ident| $expr:expr) => {
         match $msg {
@@ -230,6 +237,7 @@ macro_rules! any_chain {
             AnyChainIdentified::Scroll($msg) => $expr,
             AnyChainIdentified::Arbitrum($msg) => $expr,
             AnyChainIdentified::Berachain($msg) => $expr,
+            AnyChainIdentified::Near($msg) => $expr,
         }
     };
 }

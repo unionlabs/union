@@ -7,6 +7,7 @@ use crate::{
 };
 
 #[model(
+    borsh,
     proto(
         raw(protos::union::ibc::lightclients::cometbls::v1::ConsensusState),
         into,

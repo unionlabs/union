@@ -1,7 +1,4 @@
-use borsh::{BorshDeserialize, BorshSerialize};
 use ibc_vm_rs::states::connection_handshake;
-use near_primitives_core::hash::CryptoHash;
-use near_sdk::AccountId;
 use unionlabs::{
     ibc::core::{
         channel::{self, packet::Packet},
@@ -9,7 +6,6 @@ use unionlabs::{
         connection::version::Version,
     },
     id::{ChannelId, ConnectionId, PortId},
-    near::types::{self, BlockHeaderInnerLiteView},
 };
 
 #[derive(serde::Serialize)]
@@ -105,19 +101,6 @@ pub struct ChannelOpenConfirm {
 #[derive(serde::Serialize)]
 pub struct GetAccountId {
     pub client_type: String,
-}
-
-#[derive(BorshSerialize, BorshDeserialize)]
-pub struct ConsensusState {
-    pub state: BlockHeaderInnerLiteView,
-    pub chunk_prev_state_root: CryptoHash,
-}
-
-#[derive(BorshSerialize, BorshDeserialize)]
-pub struct ClientState {
-    pub latest_height: u64,
-    pub ibc_account_id: AccountId,
-    pub initial_block_producers: Option<Vec<types::ValidatorStakeView>>,
 }
 
 #[derive(serde::Serialize)]

@@ -1,0 +1,72 @@
+syntax = "proto3";
+package union.ibc.lightclients.near.v1;
+
+option go_package = "union/ibc/lightclients/near";
+import "ibc/core/client/v1/client.proto";
+
+message Header {
+  LightClientBlockView new_state = 1;
+  uint64 trusted_height = 2;
+  repeated MerklePathItem prev_state_root_proof = 3;
+  bytes prev_state_root= 4;
+}
+
+message MerklePathItem {
+  bytes hash = 1;
+  uint64 direction = 2;
+}
+
+message LightClientBlockView {
+    bytes prev_block_hash = 1;
+    bytes next_block_inner_hash = 2;
+    BlockHeaderInnerLiteView inner_lite = 3;
+    bytes inner_rest_hash = 4;
+    repeated ValidatorStakeView next_bps = 5;
+    repeated Signature approvals_after_next = 6;
+}
+
+message Signature {
+  oneof signature {
+    bytes ed25519 = 1;
+    bytes secp256k1 = 2;
+  }
+}
+
+message ValidatorStakeView {
+  string account_id = 1;
+  oneof public_key {
+    bytes ed25519 = 2;
+    bytes secp256k1 = 3;
+  }
+  // TODO(aeryz): u128
+  bytes balance = 4;
+}
+
+message PublicKey {
+  bytes ed25519 = 1;
+  bytes secp256k1 = 2;
+}
+
+message BlockHeaderInnerLiteView {
+  uint64 height = 1;
+  bytes epoch_id = 2;
+  bytes next_epoch_id = 3;
+  bytes prev_state_root = 4;
+  bytes outcome_root = 5;
+  uint64 timestamp = 6;
+  uint64 timestamp_nanosec = 7;
+  bytes next_bp_hash = 8;
+  bytes block_merkle_root = 9;
+}
+
+message ClientState {
+  string chain_id = 1;
+  uint64 latest_height = 2;
+  string account_id = 3;
+  repeated ValidatorStakeView iniitial_block_producers = 4;
+}
+
+message ConsensusState {
+    BlockHeaderInnerLiteView state = 1;
+    bytes chunk_prev_state_root = 2;
+}

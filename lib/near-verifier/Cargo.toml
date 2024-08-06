@@ -1,0 +1,20 @@
+[package]
+authors                = ["Union Labs"]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "near-verifier"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+borsh                = { workspace = true }
+near-account-id      = { workspace = true }
+near-primitives-core = { version = "0.23" }
+serde                = { workspace = true }
+serde_json.workspace = true
+sha2                 = { workspace = true }
+thiserror            = { workspace = true }
+unionlabs            = { workspace = true, features = ["near"] }
+
+[lints]
+workspace = true

@@ -1,8 +1,8 @@
 { ... }: {
   perSystem = { crane, lib, ensure-wasm-client-type, ... }:
     let
-      workspace = (crane.buildWasmContract {
-        crateDirFromRoot = "light-clients/cometbls-light-client";
+      ics08 = (crane.buildWasmContract {
+        crateDirFromRoot = "light-clients/cometbls/ics08";
         checks = [
           (file_path: ''
             ${ensure-wasm-client-type {
@@ -14,6 +14,6 @@
       });
     in
     {
-      inherit (workspace) packages checks;
+      inherit (ics08) packages checks;
     };
 }

@@ -14,6 +14,10 @@ impl Encoding for Ssz {}
 pub enum Json {}
 impl Encoding for Json {}
 
+// TODO: feature gate this
+pub enum Borsh {}
+impl Encoding for Borsh {}
+
 impl<T> Encode<Json> for T
 where
     T: serde::Serialize,

@@ -8,26 +8,30 @@ use msgs::{ChannelOpenTry, RecvPacket};
 use near_primitives_core::hash::CryptoHash;
 use near_workspaces::{
     network::Sandbox,
-    sandbox,
+    sandbox, testnet,
     types::{Gas, KeyType, NearToken, SecretKey},
     Account, AccountId, Contract, Worker,
 };
 use unionlabs::{
-    ibc::core::{
-        channel::{self, packet::Packet},
-        client::height::Height,
-        commitment::merkle_prefix::MerklePrefix,
+    ibc::{
+        core::{
+            channel::{self, packet::Packet},
+            client::height::Height,
+            commitment::merkle_prefix::MerklePrefix,
+        },
+        lightclients::near::{
+            client_state::ClientState, consensus_state::ConsensusState, header::Header,
+        },
     },
-    near::types::HeaderUpdate,
     validated::ValidateT,
 };
 use utils::convert_block_producers;
 
 use crate::{
     msgs::{
-        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ClientState,
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        ConsensusState, CreateClient, RegisterClient, UpdateClient,
+        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ConnectionOpenAck,
+        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, RegisterClient,
+        UpdateClient,
     },
     utils::{
         chunk_proof, convert_block_header_inner, convert_light_client_block_view, state_proof,
@@ -61,11 +65,18 @@ pub async fn deploy_contract(
         .unwrap()
 }
 
+async fn my_main() {
+    let testnet = testnet().await.unwrap();
+}
+
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    let sandbox = sandbox().await.unwrap();
 
+    my_main().await;
+    panic!();
+
+    let sandbox = sandbox().await.unwrap();
     let ibc_contract = deploy_contract(&sandbox, "ibc.test.near", IBC_WASM_PATH_ENV).await;
     let alice_lc = deploy_contract(&sandbox, "light-client.test.near", NEAR_LC_WASM_PATH_ENV).await;
     let bob_lc = deploy_contract(
@@ -323,7 +334,7 @@ async fn update_client(
 
     let update = UpdateClient {
         client_id: client_id.to_string(),
-        client_msg: borsh::to_vec(&HeaderUpdate {
+        client_msg: borsh::to_vec(&Header {
             new_state: convert_light_client_block_view(light_client_block),
             trusted_height: latest_height.revision_height,
             prev_state_root_proof,
@@ -653,15 +664,17 @@ async fn create_client(
     let create = CreateClient {
         client_type: client_type.clone(),
         client_state: borsh::to_vec(&ClientState {
+            chain_id: "hello".to_string(),
             latest_height: height - 1,
             ibc_account_id: ibc_contract.id().clone(),
             // TODO(aeryz): this is only valid in this sandboxed environment where the validator set is not changing. For a real environment,
             // the relayer must read the block producers using another endpoint.
             initial_block_producers: lc_block.next_bps.map(convert_block_producers),
+            frozen_height: 0,
         })
         .unwrap(),
         consensus_state: borsh::to_vec(&ConsensusState {
-            state: convert_block_header_inner(lc_block.inner_lite),
+            state: convert_block_header_inner(lc_block.inner_lite.clone()),
             chunk_prev_state_root: CryptoHash(
                 sandbox
                     .view_block()
@@ -672,6 +685,7 @@ async fn create_client(
                     .prev_state_root
                     .0,
             ),
+            timestamp: lc_block.inner_lite.timestamp_nanosec,
         })
         .unwrap(),
     };

@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[model(
+    borsh,
     proto(
         raw(protos::union::ibc::lightclients::cometbls::v1::ClientState),
         into,
@@ -17,6 +18,7 @@ use crate::{
         from
     )
 )]
+#[derive(Default)]
 pub struct ClientState {
     pub chain_id: String,
     pub trusting_period: u64,
