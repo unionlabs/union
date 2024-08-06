@@ -32,15 +32,13 @@ let addressArray = derived(page, $page => {
 setContext<typeof addressArray>("addressArray", addressArray)
 </script>
 
-<ChainsGate let:chains>
-  {@const slug = $page.params.slug}
-  {@const addressArray = slug.indexOf("-") === -1 ? [slug] : slug.split("-")}
-  <!--
-    this is not optimal so we should definitely improve this
-  -->
-  {#if addressArray.find( (address) => chains.find( (chain) => address.startsWith(chain.addr_prefix) ) )}
-    <slot />
-  {:else}
-    <p>Invalid address</p>
-  {/if}
-</ChainsGate>
+<div class='pt-3'>
+  <ChainsGate let:chains>
+    {@const addressArray = $addressArray.nonNormalized}
+    {#if addressArray.find( address => chains.find( chain => address.startsWith(chain.addr_prefix) ) )}
+      <slot />
+    {:else}
+      <p>Invalid address</p>
+    {/if}
+  </ChainsGate>
+</div>

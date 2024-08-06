@@ -133,7 +133,6 @@ onNavigate(navigation => {
       {
         idx: $pagination.pageIndex,
         $REFETCH_ENABLED,
-        $timestamp,
         ...$timestamps,
         ...$addressArray
       },
