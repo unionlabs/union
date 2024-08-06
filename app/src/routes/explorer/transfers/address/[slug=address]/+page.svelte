@@ -3,6 +3,7 @@ import { page } from "$app/stores"
 import { getContext } from "svelte"
 import { onNavigate } from "$app/navigation"
 import DevTools from "$lib/components/dev-tools.svelte"
+import ChainsGate from "$lib/components/chains-gate.svelte"
 import { derived, writable, type Readable } from "svelte/store"
 import { addressTransfersPreference } from "../../preference.ts"
 import { decodeTimestampSearchParam } from "../../timestamps.ts"
@@ -10,7 +11,6 @@ import { currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
 import TableTransfers from "../../(components)/table-transfers.svelte"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { latestAddressesTransfers, paginatedAddressesTransfers } from "./paginated-transfers.ts"
-import ChainsGate from "$lib/components/chains-gate.svelte"
 
 addressTransfersPreference.useLocalStorage()
 

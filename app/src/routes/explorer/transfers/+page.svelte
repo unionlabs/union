@@ -3,12 +3,12 @@ import { page } from "$app/stores"
 import { onNavigate } from "$app/navigation"
 import { derived, writable } from "svelte/store"
 import DevTools from "$lib/components/dev-tools.svelte"
+import ChainsGate from "$lib/components/chains-gate.svelte"
 import { decodeTimestampSearchParam } from "./timestamps.ts"
 import TableTransfers from "./(components)/table-transfers.svelte"
 import { currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { latestTransfers, paginatedAddressesTransfers } from "./paginated-transfers.ts"
-import ChainsGate from "$lib/components/chains-gate.svelte"
 
 /**
  * the timestamp is the source of truth, used as query key and url search param
