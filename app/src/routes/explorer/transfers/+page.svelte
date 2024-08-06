@@ -8,6 +8,7 @@ import TableTransfers from "./(components)/table-transfers.svelte"
 import { currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { latestTransfers, paginatedAddressesTransfers } from "./paginated-transfers.ts"
+import ChainsGate from "$lib/components/chains-gate.svelte"
 
 /**
  * the timestamp is the source of truth, used as query key and url search param
@@ -118,11 +119,14 @@ onNavigate(navigation => {
   )}
 </DevTools>
 
-<TableTransfers
-  {timestamp}
-  {timestamps}
-  {pagination}
-  {queryStatus}
-  {REFETCH_ENABLED}
-  {transfersDataStore}
-/>
+<ChainsGate let:chains>
+  <TableTransfers
+    {chains}
+    {timestamp}
+    {timestamps}
+    {pagination}
+    {queryStatus}
+    {REFETCH_ENABLED}
+    {transfersDataStore}
+  />
+</ChainsGate>

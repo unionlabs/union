@@ -16,7 +16,6 @@ import * as Table from "$lib/components/ui/table"
 import { showUnsupported } from "$lib/stores/user.ts"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, TransferAsset } from "$lib/types.ts"
-import ChainsGate from "$lib/components/chains-gate.svelte"
 import type { Transfer, TransferAddress } from "../types.ts"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
@@ -25,6 +24,8 @@ import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 import { derived, writable, type Readable, type Writable } from "svelte/store"
 import CellOriginTransfer from "../../(components)/cell-origin-transfer.svelte"
 import { ExplorerPagination } from "../../(components)/explorer-pagination/index.ts"
+
+export let chains: Array<Chain>
 
 export let transfersDataStore: Readable<Array<Transfer>>
 
@@ -136,65 +137,63 @@ $: if ($transfersDataStore) rerender()
 
 {#if $transfersDataStore?.length}
   <Card.Root>
-    <ChainsGate let:chains>
-      <Table.Root>
-        <Table.Header class="tabular-nums">
-          {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
-            <Table.Row class="tabular-nums">
-              {#each headerGroup.headers as header (header.id)}
-                <Table.Head
-                  colspan={header.colSpan}
-                  rowspan={header.rowSpan}
-                  class={cn(`whitespace-nowrap tabular-nums`)}
+    <Table.Root>
+      <Table.Header class="tabular-nums">
+        {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
+          <Table.Row class="tabular-nums">
+            {#each headerGroup.headers as header (header.id)}
+              <Table.Head
+                colspan={header.colSpan}
+                rowspan={header.rowSpan}
+                class={cn(`whitespace-nowrap tabular-nums`)}
+              >
+                <svelte:component
+                  this={flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                />
+              </Table.Head>
+            {/each}
+          </Table.Row>
+        {/each}
+      </Table.Header>
+      <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
+        {#each $table.getRowModel().rows as row, index (row.index)}
+          {@const isSupported = assetHasInfoProperty(
+            $rows[row.index]?.original?.assets
+          )}
+          {@const showUnsupported = $showUnsupported}
+          {@const shouldShow = isSupported || showUnsupported}
+          <Table.Row
+            class={cn(
+              "cursor-pointer tabular-nums",
+              index % 2 === 0 ? "bg-secondary/10" : "bg-transparent",
+              isSupported ? "" : "opacity-50",
+              shouldShow ? "" : "hidden"
+            )}
+          >
+            {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
+              {@const hash = $rows[row.index].original.hash}
+              <Table.Cell class="tabular-nums" headers="header">
+                <a
+                  title={hash}
+                  href={`/explorer/transfers/${hash}`}
+                  class="size-full min-size-full w-full"
                 >
                   <svelte:component
-                    this={flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                    this={flexRender(cell.column.columnDef.cell, {
+                      ...cell.getContext(),
+                      chains
+                    })}
                   />
-                </Table.Head>
-              {/each}
-            </Table.Row>
-          {/each}
-        </Table.Header>
-        <Table.Body class={cn(`whitespace-nowrap h-full tabular-nums`)}>
-          {#each $table.getRowModel().rows as row, index (row.index)}
-            {@const isSupported = assetHasInfoProperty(
-              $rows[row.index]?.original?.assets
-            )}
-            {@const showUnsupported = $showUnsupported}
-            {@const shouldShow = isSupported || showUnsupported}
-            <Table.Row
-              class={cn(
-                "cursor-pointer tabular-nums",
-                index % 2 === 0 ? "bg-secondary/10" : "bg-transparent",
-                isSupported ? "" : "opacity-50",
-                shouldShow ? "" : "hidden"
-              )}
-            >
-              {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
-                {@const hash = $rows[row.index].original.hash}
-                <Table.Cell class="tabular-nums" headers="header">
-                  <a
-                    title={hash}
-                    href={`/explorer/transfers/${hash}`}
-                    class="size-full min-size-full w-full"
-                  >
-                    <svelte:component
-                      this={flexRender(cell.column.columnDef.cell, {
-                        ...cell.getContext(),
-                        chains
-                      })}
-                    />
-                  </a>
-                </Table.Cell>
-              {/each}
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </ChainsGate>
+                </a>
+              </Table.Cell>
+            {/each}
+          </Table.Row>
+        {/each}
+      </Table.Body>
+    </Table.Root>
   </Card.Root>
 {:else if queryStatus === "pending"}
   <LoadingLogo class="size-16" />
@@ -208,29 +207,29 @@ $: if ($transfersDataStore) rerender()
     class={cn("w-auto")}
     status={queryStatus}
     live={$REFETCH_ENABLED}
-    onOlderPage={async (page) => {
+    onOlderPage={async page => {
       const stamp = $timestamps.oldestTimestamp
       timestamp.set(stamp)
       goto(encodeTimestampSearchParam(stamp), {
         replaceState: true,
         state: { timestamp: stamp }
       })
-      pagination.update((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))
+      pagination.update(p => ({ ...p, pageIndex: p.pageIndex + 1 }))
       $REFETCH_ENABLED = false
     }}
     onCurrentClick={() => {
-      pagination.update((p) => ({ ...p, pageIndex: 0 }))
+      pagination.update(p => ({ ...p, pageIndex: 0 }))
       $REFETCH_ENABLED = true
       goto($page.url.pathname, { replaceState: true })
     }}
-    onNewerPage={async (page) => {
+    onNewerPage={async page => {
       const stamp = $timestamps.latestTimestamp
       timestamp.set(stamp)
       goto(encodeTimestampSearchParam(stamp), {
         replaceState: true,
         state: { timestamp: stamp }
       })
-      pagination.update((p) => ({ ...p, pageIndex: p.pageIndex - 1 }))
+      pagination.update(p => ({ ...p, pageIndex: p.pageIndex - 1 }))
       $REFETCH_ENABLED = false
     }}
     timestamp={$timestamps.latestTimestamp

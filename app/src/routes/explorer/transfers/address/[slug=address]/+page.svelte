@@ -10,6 +10,7 @@ import { currentUtcTimestampWithBuffer } from "$lib/utilities/date.ts"
 import TableTransfers from "../../(components)/table-transfers.svelte"
 import { createQuery, useQueryClient, keepPreviousData } from "@tanstack/svelte-query"
 import { latestAddressesTransfers, paginatedAddressesTransfers } from "./paginated-transfers.ts"
+import ChainsGate from "$lib/components/chains-gate.svelte"
 
 addressTransfersPreference.useLocalStorage()
 
@@ -128,7 +129,7 @@ onNavigate(navigation => {
 </script>
 
 <DevTools>
-  <pre>
+  <!-- <pre>
     {JSON.stringify(
       {
         idx: $pagination.pageIndex,
@@ -139,14 +140,17 @@ onNavigate(navigation => {
       undefined,
       2
     )}
-  </pre>
+  </pre> -->
 </DevTools>
 
-<TableTransfers
-  {timestamp}
-  {timestamps}
-  {pagination}
-  {queryStatus}
-  {REFETCH_ENABLED}
-  {transfersDataStore}
-/>
+<ChainsGate let:chains>
+  <TableTransfers
+    {chains}
+    {timestamp}
+    {timestamps}
+    {pagination}
+    {queryStatus}
+    {REFETCH_ENABLED}
+    {transfersDataStore}
+  />
+</ChainsGate>
