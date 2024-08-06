@@ -156,7 +156,6 @@ jobs:
           then
             ls -la
             tar -zcf "$COMPONENT-$SYSTEM" "$SYSTEM.$COMPONENT"
-            tree
           else
             mv "$SYSTEM.$COMPONENT/bin/$COMPONENT" "$COMPONENT-$SYSTEM"
           fi
@@ -294,6 +293,7 @@ jobs:
             fi
             echo "FILES=**/$COMPONENT-*" >> $GITHUB_OUTPUT
           fi
+          tree
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release.md
