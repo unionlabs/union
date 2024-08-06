@@ -258,7 +258,7 @@ const encodeTimestampSearchParam = (timestamp: string) =>
     onOlderPage={async _ => {
       const stamp = $transfers?.data?.oldestTimestamp
       if (!stamp) {
-        toast.error("Invalid older timestap");
+        toast.error("Invalid older timestamp");
         return;
       }
       timestamp.set(stamp)
@@ -274,7 +274,7 @@ const encodeTimestampSearchParam = (timestamp: string) =>
     onNewerPage={async _ => {
       const stamp = $transfers?.data?.latestTimestamp
       if (!stamp) {
-        toast.error("Invalid newer timestap");
+        toast.error("Invalid newer timestamp");
         return;
       }
       timestamp.set(stamp)
