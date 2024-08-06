@@ -121,7 +121,7 @@ let timestamps = derived(
  * it is only used to clear the cache when navigating away from the page `/explorer/transfers`
  */
 onNavigate(navigation => {
-  if (!navigation.to?.route.id?.startsWith("/explorer/address")) {
+  if (!navigation.to?.route.id?.startsWith("/explorer/transfers/address")) {
     queryClient.removeQueries({ queryKey: ["address-transfers"] })
   }
 })

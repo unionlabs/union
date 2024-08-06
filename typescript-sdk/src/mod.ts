@@ -14,6 +14,7 @@ import {
 import {
   bech32AddressToHex,
   hexAddressToBech32,
+  bytesToBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,
   uint8ArrayToHexString,
@@ -51,6 +52,7 @@ export {
   createPfmMemo,
   bech32AddressToHex,
   hexAddressToBech32,
+  bytesToBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,
   uint8ArrayToHexString,
