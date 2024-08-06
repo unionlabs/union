@@ -90,7 +90,7 @@
               };
 
               # scroll
-              options.scroll_api_client = mkOption {
+              options.scroll_api_url = mkOption {
                 type = types.nullOr types.str;
                 default = null;
               };
