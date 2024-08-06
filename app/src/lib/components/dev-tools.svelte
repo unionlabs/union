@@ -26,7 +26,6 @@ const queryClient = useQueryClient()
           queryClient.cancelQueries()
           queryClient.invalidateQueries()
           queryClient.unmount()
-          localStorage.clear()
           if (typeof window === 'undefined') return
           window.localStorage.clear()
           window.sessionStorage.clear()
