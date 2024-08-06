@@ -1,0 +1,27 @@
+[package]
+authors      = ["Union Labs"]
+edition      = "2021"
+license-file = { workspace = true }
+name         = "evm-in-cosmos-light-client"
+publish      = false
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cosmwasm-std          = { workspace = true, features = ["abort"] }
+ethereum-light-client = { workspace = true, features = ["mainnet", "library"] }
+ics008-wasm-client    = { workspace = true }
+ics23                 = { workspace = true }
+protos                = { workspace = true }
+thiserror             = { workspace = true }
+unionlabs             = { workspace = true, features = ["ethabi", "stargate"] }
+
+[features]
+default = []
+# enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
+library = []

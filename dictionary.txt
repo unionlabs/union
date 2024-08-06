@@ -482,6 +482,7 @@ ethevent
 ethkey
 evidencekeeper
 evidencetypes
+evmincosmos
 evmos
 extldflags
 extralight
