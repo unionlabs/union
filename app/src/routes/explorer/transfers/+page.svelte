@@ -25,63 +25,45 @@ let timestamp: Writable<string | null> = writable(
 const queryClient = useQueryClient()
 
 let liveTransfers = createQuery(
-  derived([timestamp], ([$timestamp]) => ({
-    queryKey: ["transfers", "live"],
-    staleTime: Number.POSITIVE_INFINITY,
-    enabled: () => !$timestamp,
-    refetchOnMount: true,
-    placeholderData: keepPreviousData,
-    refetchOnReconnect: true,
-    refetchInterval: () => 5_000,
-    queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT * 2 })
-  }))
-)
-
-let transfersByTimestamp = createQuery(
-  derived([timestamp], ([$timestamp]) => ({
-    queryKey: ["transfers", $timestamp],
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    placeholderData: keepPreviousData,
-    staleTime: Number.POSITIVE_INFINITY,
-    enabled: () => !!$timestamp,
-    queryFn: async () =>
-      await paginatedAddressesTransfers({
-        timestamp: $timestamp as string, // otherwise its disabled
-        limit: QUERY_LIMIT
-      })
-  }))
-)
-
-let queryStatus: "pending" | "done" = $timestamp
-  ? $transfersByTimestamp.status === "pending" || $transfersByTimestamp.fetchStatus === "fetching"
-    ? "pending"
-    : "done"
-  : $liveTransfers.status === "pending" || $liveTransfers.fetchStatus === "fetching"
-    ? "pending"
-    : "done"
-
-let transfersDataStore = derived(
-  [liveTransfers, transfersByTimestamp, timestamp],
-  ([$liveTransfers, $transfersByTimestamp, $timestamp]) => {
-    if ($timestamp) return $transfersByTimestamp?.data?.transfers ?? []
-    return $liveTransfers?.data?.transfers ?? []
-  }
-)
-
-let timestamps = derived(
-  [liveTransfers, transfersByTimestamp, timestamp],
-  ([$liveTransfers, $transfers, $timestamp]) =>
+  derived([timestamp], ([$timestamp]) =>
     $timestamp
       ? {
-          oldestTimestamp: $transfers?.data?.oldestTimestamp ?? "",
-          latestTimestamp: $transfers?.data?.latestTimestamp ?? ""
+          queryKey: ["transfers", $timestamp],
+          refetchOnMount: false,
+          refetchOnReconnect: false,
+          placeholderData: keepPreviousData,
+          staleTime: Number.POSITIVE_INFINITY,
+          queryFn: async () =>
+            await paginatedAddressesTransfers({
+              timestamp: $timestamp as string, // otherwise its disabled
+              limit: QUERY_LIMIT
+            })
         }
       : {
-          oldestTimestamp: $liveTransfers?.data?.oldestTimestamp ?? "",
-          latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? ""
+          queryKey: ["transfers", "live"],
+          staleTime: Number.POSITIVE_INFINITY,
+          refetchOnMount: true,
+          placeholderData: keepPreviousData,
+          refetchOnReconnect: true,
+          refetchInterval: () => 5_000,
+          queryFn: async () => await latestTransfers({ limit: QUERY_LIMIT * 2 })
         }
+  )
 )
+
+let queryStatus: "pending" | "done" =
+  $liveTransfers.status === "pending" || $liveTransfers.fetchStatus === "fetching"
+    ? "pending"
+    : "done"
+
+let transfersDataStore = derived([liveTransfers], ([$liveTransfers]) => {
+  return $liveTransfers?.data?.transfers ?? []
+})
+
+let timestamps = derived([liveTransfers], ([$liveTransfers]) => ({
+  oldestTimestamp: $liveTransfers?.data?.oldestTimestamp ?? "",
+  latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? ""
+}))
 
 /**
  * this can be removed if desired
