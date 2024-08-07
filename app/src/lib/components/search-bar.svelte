@@ -109,7 +109,8 @@ function onEnterPress(event: KeyboardEvent) {
     bind:value={searchInput}
     on:keydown={onEnterPress}
     pattern="[A-Za-z0-9\-]+"
-    placeholder={windowSize.width >= 960
+    placeholder={(windowSize.width >= 930 || windowSize.width <= 768) &&
+    windowSize.width > 538
       ? "Search for address or tx hash..."
       : "Search..."}
     class={cn(

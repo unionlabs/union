@@ -45,18 +45,25 @@ $: if ($navigating) sheetOpen = false
     <Button
       builders={[builder]}
       class={cn(
-        "space-x-1.5 lg:w-[180px] w-[75px] text-md bg-accent text-black hover:bg-cyan-300/90 ml-auto",
+        connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
+        "space-x-1.5 lg:w-[180px] text-md bg-accent text-black hover:bg-cyan-300/90 ml-auto",
         $sepoliaStore.connectionStatus === "connected" &&
           $cosmosStore.connectionStatus === "connected"
       )}
       on:click={() => (sheetOpen = !sheetOpen)}
       size="sm"
     >
-      <WalletIcon class="size-5 text-black" />
+      <WalletIcon class="size-6 text-black" />
       <span class="font-supermolot font-bold uppercase lg:block hidden">
         {buttonText}
       </span>
-      <span class="font-supermolot font-bold uppercase">
+      <span
+        class={cn(
+          connectedWallets === 1
+            ? "font-supermolot font-bold uppercase"
+            : "hidden"
+        )}
+      >
         {connectedWallets === 1 ? "1/2" : ""}
       </span>
     </Button>
