@@ -306,6 +306,7 @@ jobs:
           prerelease: false
           repository: unionlabs/union
           token: ${{ secrets.UNION_RELEASES_PAT }}
+          name: ${{needs.eval-tag.outputs.component}} ${{needs.eval-tag.outputs.version}}
           tag_name: ${{ needs.eval-tag.outputs.version }}
           fail_on_unmatched_files: true
           files: ${{ steps.prep-artifacts.outputs.FILES }}
