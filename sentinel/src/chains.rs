@@ -517,26 +517,26 @@ impl IbcListen for Ethereum {
             let provider = self.rpc.provider.clone();
 
             let latest_block: u64 = provider.get_block_number().await.unwrap().as_u64();
+
+            if latest_checked_block == 0 {
+                latest_checked_block = latest_block;
+            }
+
             if latest_checked_block >= latest_block {
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 continue;
             }
-            latest_checked_block = latest_block;
             let chain_id = provider
                 .get_chainid()
                 .await
                 .expect("Failed to get chain ID")
                 .as_u64();
-            // tracing::info!(
-            //     block = latest_block,
-            //     chain_id = chain_id,
-            //     "Fetching Ethereum latest_block."
-            // );
-            // Update the filter to fetch logs from the latest block processed + 1
             let filter = Filter::new()
                 .address(ethers::types::H160::from(self.rpc.ibc_handler_address))
-                .from_block(latest_block)
+                .from_block(latest_checked_block)
                 .to_block(latest_block);
+
+            latest_checked_block = latest_block;
 
             let logs = provider.get_logs(&filter).await.unwrap();
 
