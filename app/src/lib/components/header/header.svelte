@@ -27,11 +27,11 @@ import { routes } from "$lib/components/navigation/index.ts"
     />
     <Badge class="mb-0.5 ml-1">Testnet</Badge>
   </Button>
-  <div class={cn("sm:max-w-sm max-w-[30rem] w-full self-end mr-auto pl-3.25")}>
+  <div class={cn("sm:max-w-sm max-w-[30rem] w-full self-center mx-auto pl-3.25")}>
     <CmdK />
   </div>
   <nav
-    class="hidden md:flex items-center justify-end space-x-0 sm:gap-x-1 w-full max-w-[18.5rem] ml-auto mx-1 pr-1"
+    class="hidden md:flex items-center justify-end space-x-0 sm:gap-x-1 w-full max-w-40 ml-auto mx-1 pr-1"
   >
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
       {@const currentRoute =
