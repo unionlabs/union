@@ -21,9 +21,9 @@ import { routes } from "$lib/components/navigation/index.ts"
     class="p-0 no-underline decoration-transparent border-none min-w-fit flex"
   >
     <img
-      alt="Union Logo"
       src="/images/logo/union-logo-supermolot.svg"
-      class="size-full max-w-30 h-9 select-none invert dark:invert-0"
+      alt="Union Logo"
+      class="size-full max-w-32 h-12 select-none invert dark:invert-0"
     />
     <Badge class="mb-0.5 ml-1">Testnet</Badge>
   </Button>

@@ -34,6 +34,7 @@ $: if (
   connectedWallets = 1
 } else {
   buttonText = "Connect Wallet"
+  connectedWallets = 0
 }
 
 let sheetOpen = false
