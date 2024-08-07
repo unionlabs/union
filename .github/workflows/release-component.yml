@@ -21,7 +21,7 @@ jobs:
         run: |
           component="${TAG%/*}"
           case $component in
-            bunde-testnet-8)
+            bundle-testnet-8)
               attrs="[\"bundle-testnet-8\", \"bundle-testnet-8-image\"]"
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
@@ -270,8 +270,6 @@ jobs:
           echo "# sha256 Checksums" >> release.md
           x86_64=$(echo "$SYSTEMS" | jq 'contains(["x86_64-linux"])')
           aarch64=$(echo "$SYSTEMS" | jq 'contains(["aarch64-linux"])')
-          echo "Is x86_64-linux? $x86_64"
-          echo "Is aarch64-linux? $aarch64"
           if [[ $ARCHIVE ]]; then
             if [[ $x86_64 ]]; then
               echo "Renaming x86_64-linux archive"
