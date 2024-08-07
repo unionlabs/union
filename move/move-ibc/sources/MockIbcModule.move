@@ -28,7 +28,6 @@ module IBC::IBCModule {
         counterparty_port_id: String, 
         counterparty_channel_id: String, 
         version: String,
-        relayer: address
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
@@ -43,7 +42,6 @@ module IBC::IBCModule {
         counterparty_channel_id: String, 
         version: String,
         counterparty_version: String,
-        relayer: address
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
@@ -54,7 +52,6 @@ module IBC::IBCModule {
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
-        relayer: address
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
@@ -63,7 +60,6 @@ module IBC::IBCModule {
     public fun on_chan_open_confirm(
         port_id: String,
         channel_id: String,
-        relayer: address
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
@@ -72,7 +68,6 @@ module IBC::IBCModule {
     public fun on_chan_close_init(
         port_id: String,
         channel_id: String,
-        relayer: address
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
@@ -81,7 +76,6 @@ module IBC::IBCModule {
     public fun on_chan_close_confirm(
         port_id: String,
         channel_id: String,
-        relayer: address
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success

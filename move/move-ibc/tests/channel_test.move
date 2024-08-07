@@ -161,5 +161,113 @@ module IBC::ChannelTest {
         let lowercase_string = string::utf8(b"thisshouldbecorrecttoo");
         let is_lowercase = Core::is_lowercase(&lowercase_string);
         assert!(is_lowercase, 7001);
+
+        let lowercase_string = string::utf8(b"port-0-also-ok");
+        let is_lowercase = Core::is_lowercase(&lowercase_string);
+        assert!(is_lowercase, 7001);
     }
+
+    #[test(alice = @IBC)]
+    public fun test_channel_open_init(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = Core::new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            Core::new_merkleprefix(vector::empty<u8>())
+        );
+        let connection = Core::new_connection_end(
+            client_id,
+            vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // debug::print(&string::utf8(b"Connection set in store"));
+
+        // Prepare a mock channel
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = Core::new_channel(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
+
+        // Call channel_open_init function
+        let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
+
+        // Validate that the channel was added to the store
+        let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
+        let (state, ordering, counterparty, connection_hops, version) = Core::get_channel(&stored_channel);
+
+        // Validate that the stored channel matches the expected channel
+        assert!(state == 1, 8001);
+        assert!(ordering == ORDER_ORDERED, 8002);
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1016)] //E_INVALID_CHANNEL_STATE
+    public fun test_channel_open_init_invalid_state(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = Core::new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            Core::new_merkleprefix(vector::empty<u8>())
+        );
+        let connection = Core::new_connection_end(
+            client_id,
+            vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel with an invalid state (not STATE_INIT)
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = Core::new_channel(3, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1")); // Invalid state
+
+        Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1017)] //E_COUNTERPARTY_CHANNEL_NOT_EMPTY
+    public fun test_channel_open_init_non_empty_counterparty_channel_id(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = Core::new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            Core::new_merkleprefix(vector::empty<u8>())
+        );
+        let connection = Core::new_connection_end(
+            client_id,
+            vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel with a non-empty counterparty channel ID
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b"channel-1"));
+        let channel = Core::new_channel(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1")); // Non-empty counterparty channel ID
+
+        Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
+    }
+
 }
