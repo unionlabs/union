@@ -348,14 +348,15 @@ async fn fetch_and_insert_blocks(
         .into_iter()
         .flat_map(|(id, header, block, txs)| {
             let txs_event_count: usize = txs.iter().map(|tx| tx.tx_result.events.len()).sum();
+
             let block_tx_event_count = block
                 .txs_results
-                .clone()
+                .as_ref()
                 .map_or(0, |r| r.iter().map(|result| result.events.len()).sum());
 
             assert!(
                 txs_event_count == block_tx_event_count,
-                "client: {:?} has pruned transactions at height {} (block: {} <> txs: {})",
+                "client: {:?} at height {} block_results tx events: {} <> transactions events: {}",
                 client,
                 block.height,
                 block_tx_event_count,
