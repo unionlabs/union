@@ -271,13 +271,13 @@ jobs:
           x86_64=$(echo "$SYSTEMS" | jq 'contains(["x86_64-linux"])')
           aarch64=$(echo "$SYSTEMS" | jq 'contains(["aarch64-linux"])')
           if [[ $ARCHIVE ]]; then
-            if [[ $x86_64 ]]; then
+            if [[ $x86_64 = true ]]; then
               echo "Renaming x86_64-linux archive"
               comp_x86_64="$COMPONENT-x86_64-linux"
               comp_x86_64_archive="$comp_x86_64.tar.gz"
               echo "- $(cd "$comp_x86_64" && mv "$comp_x86_64" "$comp_x86_64_archive" && sha256sum "$comp_x86_64_archive")" >> release.md
             fi
-            if [[ $aarch64 ]]; then
+            if [[ $aarch64 = true ]]; then
               echo "Renaming aarch64-linux archive"
               comp_aarch64="$COMPONENT-aarch64-linux"
               comp_aarch64_archive="$comp_aarch64.tar.gz"
@@ -286,12 +286,12 @@ jobs:
             echo "Setting archive output"
             echo "FILES=**/$COMPONENT-*.tar.gz" >> $GITHUB_OUTPUT
           else
-            if [[ $x86_64 ]]; then
+            if [[ $x86_64 = true ]]; then
               echo "Renaming x86_64-linux binary"
               comp_x86_64="$COMPONENT-x86_64-linux"
               echo "- $(cd "$comp_x86_64" && sha256sum "$comp_x86_64")" >> release.md
             fi
-            if [[ $aarch64 ]]; then
+            if [[ $aarch64 = true ]]; then
               echo "Renaming aarch64-linux binary"
               comp_aarch64="$COMPONENT-aarch64-linux"
               echo "- $(cd "$comp_aarch64" && sha256sum "$comp_aarch64")" >> release.md
