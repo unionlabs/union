@@ -30,6 +30,7 @@ export let windowWidth = window.innerWidth
       : 'Search...'}
     class={cn(
       'h-10 cursor-pointer',
+      'dark:hover:bg-muted hover:bg-secondary',
       'shadow-sm transition-colors placeholder:text-muted-foreground',
       'w-full bg-background pl-8 self-stretch lowercase border-[1px] border-input',
       'focus-visible:border-secondary focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',

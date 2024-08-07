@@ -11,8 +11,8 @@ import { routes } from "$lib/components/navigation/index.ts"
 <header
   class={cn(
     "antialiased",
-    "bg-card flex md:justify-start justify-between border-b border-solid",
-    "dark:bg-muted p-2.5 min-w-full w-screen flex flex-row items-center z-10 pr-3.5"
+    "bg-card flex justify-center border-b border-solid",
+    "dark:bg-muted p-2.5 min-w-full w-screen flex-row items-center z-10 pr-3.5"
   )}
 >
   <Button
@@ -31,7 +31,7 @@ import { routes } from "$lib/components/navigation/index.ts"
     <CmdK />
   </div>
   <nav
-    class="hidden md:flex items-center justify-end space-x-0 sm:gap-x-1 w-full max-w-40 ml-auto mx-1 pr-1"
+    class="hidden md:flex items-center justify-end space-x-0 sm:gap-x-1 mx-1 pr-1"
   >
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
       {@const currentRoute =
