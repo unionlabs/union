@@ -41,7 +41,7 @@ import { offchainQuery } from "./query/offchain/hubble.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
 import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
-
+import { $page } from "@union/client"
 export {
   /**
    * We export this as a standalone so that it can be used to fetch data that get passed to `createCosmosSdkClient`
@@ -50,16 +50,16 @@ export {
   cosmosHttp,
   offchainQuery,
   createPfmMemo,
+  truncateAddress,
+  isValidEvmTxHash,
   bech32AddressToHex,
   hexAddressToBech32,
   bytesToBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,
   uint8ArrayToHexString,
-  convertByteArrayToHex,
-  truncateAddress,
-  isValidEvmAddress,
-  isValidBech32Address
+  isValidBech32Address,
+  convertByteArrayToHex
 }
 
 export type * from "./types.ts"

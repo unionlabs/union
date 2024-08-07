@@ -8,12 +8,14 @@ type $$Props = DialogPrimitive.Props & CommandPrimitive.CommandProps
 
 export let open: $$Props["open"] = false
 export let value: $$Props["value"] = undefined
+export let tabindex: $$Props["tabindex"] = undefined
 
 export let backdropFilter: $$Props["style"] = undefined
 </script>
 
 <Dialog.Root bind:open {...$$restProps}>
   <Dialog.Content
+    {tabindex}
     data-command-dialog-overlay
     style={`backdrop-filter: ${backdropFilter}`}
     class="overflow-hidden p-0 shadow-lg rounded-sm"

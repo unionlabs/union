@@ -1,63 +1,70 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import { goto } from "$app/navigation"
-import { cn } from "$lib/utilities/shadcn"
-import { sepoliaStore } from "$lib/wallet/evm"
-import { cosmosStore } from "$lib/wallet/cosmos"
-import SmileIcon from "virtual:icons/lucide/smile"
-import TableIcon from "virtual:icons/lucide/table"
-import BrainIcon from "virtual:icons/lucide/brain"
-import { debounce } from "$lib/utilities/index.ts"
-import SearchIcon from "virtual:icons/lucide/search"
-import { Input } from "$lib/components/ui/input/index.ts"
-import Button from "$lib/components/ui/button/button.svelte"
-import * as Command from "$lib/components/ui/command/index.ts"
-import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
-import { isValidBech32Address, isValidEvmAddress } from "@union/client"
+  import { onMount } from "svelte"
+  import { goto } from "$app/navigation"
+  import { cn } from "$lib/utilities/shadcn"
+  import { sepoliaStore } from "$lib/wallet/evm"
+  import { cosmosStore } from "$lib/wallet/cosmos"
+  import SmileIcon from "virtual:icons/lucide/smile"
+  import TableIcon from "virtual:icons/lucide/table"
+  import BrainIcon from "virtual:icons/lucide/brain"
+  import { debounce } from "$lib/utilities/index.ts"
+  import SearchIcon from "virtual:icons/lucide/search"
+  import { Input } from "$lib/components/ui/input/index.ts"
+  import Button from "$lib/components/ui/button/button.svelte"
+  import * as Command from "$lib/components/ui/command/index.ts"
+  import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
+  import { isValidBech32Address, isValidEvmAddress } from "@union/client"
 
-let searchInput = ""
-let commandDialogOpen = false
+  import { page } from "$app/stores"
+  import Badge from "$lib/components/ui/badge/badge.svelte"
+  import { isAddress, isHex } from "viem"
+  import { isValidCosmosAddress } from "$lib/wallet/utilities/validate"
 
-function validAddress(address: string) {
-  return isValidBech32Address(address) || isValidEvmAddress(address)
-}
+  let searchInput = ""
+  let commandDialogOpen = false
 
-function handleKeyDown(event: KeyboardEvent) {
-  if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
-  event.preventDefault()
-  commandDialogOpen = true
-}
-
-let windowSize = { width: window.innerWidth, height: window.innerHeight }
-
-const handleResize = () => {
-  requestAnimationFrame(() => {
-    windowSize = { width: window.innerWidth, height: window.innerHeight }
-  })
-}
-
-onMount(() => {
-  window.addEventListener("resize", handleResize)
-  document.addEventListener("keydown", handleKeyDown)
-  return () => {
-    window.removeEventListener("resize", handleResize)
-    document.removeEventListener("keydown", handleKeyDown)
+  function validAddress(address: string) {
+    return isValidBech32Address(address) || isValidEvmAddress(address)
   }
-})
 
-/**
- * sizes when the dialog should be open:
- * 430 or less,
- * between 960 and 768
- */
-const onInputClick = (_event: MouseEvent) => {
-  commandDialogOpen = windowSize.width <= 645 || (windowSize.width < 960 && windowSize.width >= 768)
-}
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
+    event.preventDefault()
+    commandDialogOpen = true
+  }
 
-const onInputChange = (event: InputEvent) =>
-  debounce((_event: InputEvent) => {
-    console.log("Searching...", searchInput)
-  }, 2_500)(event)
+  let windowSize = { width: window.innerWidth, height: window.innerHeight }
+
+  const handleResize = () => {
+    requestAnimationFrame(() => {
+      windowSize = { width: window.innerWidth, height: window.innerHeight }
+    })
+  }
+
+  onMount(() => {
+    window.addEventListener("resize", handleResize)
+    document.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  })
+
+  /**
+   * sizes when the dialog should be open:
+   * 430 or less,
+   * between 960 and 768
+   */
+  const onInputClick = (_event: MouseEvent) => {
+    commandDialogOpen =
+      windowSize.width <= 645 ||
+      (windowSize.width < 960 && windowSize.width >= 768)
+  }
+
+  const onInputChange = (event: InputEvent) =>
+    debounce((_event: InputEvent) => {
+      console.log("Searching...", searchInput)
+    }, 2_500)(event)
 </script>
 
 <div class="relative mr-auto flex-1 w-full max-w-full antialiased">
@@ -65,14 +72,27 @@ const onInputChange = (event: InputEvent) =>
   <Input
     type="text"
     name="search"
+    autofocus={true}
     autocorrect="off"
+    inputmode="search"
     autocomplete="off"
     spellcheck="false"
-    autocapitalize="none"
+    autocapitalize="off"
     on:click={onInputClick}
-    bind:value={searchInput}
     on:input={onInputChange}
+    on:keydown={event => {
+      if (event.key !== "Enter") return
+      const isValidAddress = validAddress(searchInput)
+      console.info("isValidAddress", isValidAddress)
+      if (isValidAddress) {
+        if (isAddress(searchInput))
+          return console.info(response =>
+            to(`/explorer/addresss/${searchInput}`)
+          )
+      }
+    }}
     pattern="[A-Za-z0-9\-]+"
+    bind:value={searchInput}
     placeholder="Search for address, tx..."
     class={cn(
       "h-10",
@@ -104,18 +124,18 @@ const onInputChange = (event: InputEvent) =>
 >
   <Command.Input
     tabindex={0}
-    autofocus={true}
     type="text"
     name="search"
+    autofocus={true}
     autocorrect="off"
     inputmode="search"
     autocomplete="off"
     spellcheck="false"
     autocapitalize="off"
     pattern="[A-Za-z0-9\-]+"
+    bind:value={searchInput}
     class="my-auto h-10 lowercase"
     placeholder="Type a command or search..."
-    bind:value={searchInput}
   />
 
   <Command.List data-search-dialog="">
@@ -170,12 +190,14 @@ const onInputChange = (event: InputEvent) =>
         </ul>
       {/if}
     </Command.Empty>
+    {@const currentRoute = $page.route.id}
     <Command.Group heading="Exploring Data">
       {@const userAddresses = [
         $sepoliaStore?.address,
         $cosmosStore?.address
       ].filter(Boolean)}
       <Command.Item
+        let:attrs
         tabindex={1}
         class={cn(
           "hover:cursor-pointer",
@@ -189,8 +211,22 @@ const onInputChange = (event: InputEvent) =>
       >
         <TableIcon class="mr-2 size-4" />
         <span>Your past transfers</span>
+        {#if $page.route.id?.startsWith("/explorer/address")}
+          <Badge
+            variant="outline"
+            class={cn(
+              "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+              attrs["data-selected"]
+                ? "text-black bg-union-accent"
+                : "bg-primary-foreground"
+            )}
+          >
+            active page
+          </Badge>
+        {/if}
       </Command.Item>
       <Command.Item
+        let:attrs
         tabindex={2}
         class={cn(
           "hover:cursor-pointer",
@@ -203,13 +239,26 @@ const onInputChange = (event: InputEvent) =>
       >
         <BrainIcon class="mr-2 size-4" />
         <span>Live IBC transfer feed</span>
+        {#if $page.route.id?.startsWith("/explorer/transfers")}
+          <Badge
+            variant="outline"
+            class={cn(
+              "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+              attrs["data-selected"]
+                ? "text-black bg-union-accent"
+                : "bg-primary-foreground"
+            )}
+          >
+            active page
+          </Badge>
+        {/if}
       </Command.Item>
     </Command.Group>
     <Command.Separator />
     <Command.Group heading="Suggestions">
       <Command.Item
-        tabindex={3}
         let:attrs
+        tabindex={3}
         class={cn(
           "hover:cursor-pointer",
           "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
@@ -221,8 +270,22 @@ const onInputChange = (event: InputEvent) =>
       >
         <DollarSignIcon class="mr-2 size-4" />
         <span>Cross chain transfer</span>
+        {#if $page.route.id?.startsWith("/transfer")}
+          <Badge
+            variant="outline"
+            class={cn(
+              "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+              attrs["data-selected"]
+                ? "text-black bg-union-accent"
+                : "bg-primary-foreground"
+            )}
+          >
+            active page
+          </Badge>
+        {/if}
       </Command.Item>
       <Command.Item
+        let:attrs
         tabindex={4}
         class={cn(
           "hover:cursor-pointer",
@@ -235,6 +298,19 @@ const onInputChange = (event: InputEvent) =>
       >
         <SmileIcon class="mr-2 size-4" />
         <span>Get tokens from faucet</span>
+        {#if $page.route.id?.startsWith("/faucet")}
+          <Badge
+            variant="outline"
+            class={cn(
+              "px-2 py-1 m-0 ml-auto rounded-none text-xs",
+              attrs["data-selected"]
+                ? "text-black bg-union-accent"
+                : "bg-primary-foreground"
+            )}
+          >
+            active page
+          </Badge>
+        {/if}
       </Command.Item>
     </Command.Group>
   </Command.List>
