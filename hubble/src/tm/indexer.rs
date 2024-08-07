@@ -347,6 +347,22 @@ async fn fetch_and_insert_blocks(
     let transactions = block_results
         .into_iter()
         .flat_map(|(id, header, block, txs)| {
+            let txs_event_count: usize = txs.iter().map(|tx| tx.tx_result.events.len()).sum();
+
+            let block_tx_event_count = block
+                .txs_results
+                .as_ref()
+                .map_or(0, |r| r.iter().map(|result| result.events.len()).sum());
+
+            assert!(
+                txs_event_count == block_tx_event_count,
+                "client: {:?} at height {} block_results tx events: {} <> transactions events: {}",
+                client,
+                block.height,
+                block_tx_event_count,
+                txs_event_count
+            );
+
             let block_height: i32 = block.height.value().try_into().unwrap();
             let block_hash = id.hash.to_string();
             let time: OffsetDateTime = header.time.into();
