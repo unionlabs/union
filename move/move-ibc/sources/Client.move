@@ -1311,21 +1311,12 @@ module IBC::Core {
         proof_height: height::Height
     ) acquires IBCStore {
         // Retrieve the channel from the store
-        let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let channel_port = ChannelPort { port_id, channel_id };
-        let channel = SmartTable::borrow_mut(&mut store.channels, channel_port);
+        let channel = *SmartTable::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);
 
         if (channel.state != 1) { // STATE_INIT
             abort E_INVALID_CHANNEL_STATE;
         };
-
-        event::emit_event(&mut store.channel_open_ack_events, ChannelOpenAck {
-            port_id,
-            channel_id,
-            counterparty_port_id: channel.counterparty.port_id,
-            counterparty_channel_id,
-            connection_id: *vector::borrow(&channel.connection_hops, 0)
-        });
 
         let connection = ensure_connection_state(*vector::borrow(&channel.connection_hops, 0));
 
@@ -1349,9 +1340,6 @@ module IBC::Core {
             abort E_INVALID_PROOF;
         };
 
-        channel.state = 3; // STATE_OPEN
-        channel.version = counterparty_version;
-        channel.counterparty.channel_id = counterparty_channel_id;
 
         update_channel_commitment(port_id, channel_id);
 
@@ -1361,5 +1349,20 @@ module IBC::Core {
             counterparty_channel_id,
             counterparty_version
         );
+
+        channel.state = 3; // STATE_OPEN
+        channel.version = counterparty_version;
+        channel.counterparty.channel_id = counterparty_channel_id;
+
+        SmartTable::upsert(&mut borrow_global_mut<IBCStore>(get_vault_addr()).channels, channel_port, channel);
+
+        event::emit_event(&mut borrow_global_mut<IBCStore>(get_vault_addr()).channel_open_ack_events, ChannelOpenAck {
+            port_id,
+            channel_id,
+            counterparty_port_id: channel.counterparty.port_id,
+            counterparty_channel_id,
+            connection_id: *vector::borrow(&channel.connection_hops, 0)
+        });
+
     }
 }   
