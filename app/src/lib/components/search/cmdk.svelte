@@ -1,10 +1,10 @@
 <script lang="ts">
 import {
+  truncateAddress,
   isValidEvmTxHash,
   isValidEvmAddress,
   isValidCosmosTxHash,
-  isValidBech32Address,
-  truncateAddress
+  isValidBech32Address
 } from "@union/client"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
@@ -27,13 +27,13 @@ searchInput.update($searchInput => $searchInput.replaceAll(" ", ""))
 
 let commandDialogOpen = false
 
+let windowSize = { width: window.innerWidth, height: window.innerHeight }
+
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
   event.preventDefault()
   commandDialogOpen = true
 }
-
-let windowSize = { width: window.innerWidth, height: window.innerHeight }
 
 const handleResize = () =>
   requestAnimationFrame(() => {
@@ -129,9 +129,9 @@ function onEnterPress(event: KeyboardEvent) {
   closeOnOutsideClick={true}
   bind:open={commandDialogOpen}
   class={cn(
-    "rounded-sm border-[1px] w-full",
-    "bg-destructive-foreground dark:bg-card",
-    "border-solid shadow-2xl dark:border-accent/50 border-accent"
+    'rounded-sm border-[1px] w-full',
+    'bg-destructive-foreground dark:bg-card',
+    'border-solid shadow-2xl dark:border-accent/50 border-accent',
   )}
 >
   <Command.Input
@@ -148,8 +148,8 @@ function onEnterPress(event: KeyboardEvent) {
     bind:value={$searchInput}
     placeholder="Navigate, search for address or tx by hash..."
     class={cn(
-      "placeholder:text-gray-600 text-gray-800 dark:text-white",
-      "my-auto h-10 lowercase placeholder:normal-case placeholder:text-xs sm:placeholder:text-sm"
+      'placeholder:text-gray-600 text-gray-800 dark:text-white',
+      'my-auto h-10 lowercase placeholder:normal-case placeholder:text-xs sm:placeholder:text-sm',
     )}
   />
 
@@ -159,13 +159,15 @@ function onEnterPress(event: KeyboardEvent) {
       autocorrect="off"
       spellcheck="false"
       autocapitalize="off"
-      class={cn("h-full px-2 sm:px-3 py-4 text-left flex justify-between")}
+      class={cn(
+        'h-full px-2 sm:px-3 py-4 text-left flex justify-between text-black dark:text-inherit',
+      )}
     >
-      {#if $computedSearchInputResult.type === "tx"}
+      {#if $computedSearchInputResult.type === 'tx'}
         <span>
           {$computedSearchInputResult.truncated}
         </span>
-      {:else if $computedSearchInputResult.type === "address"}
+      {:else if $computedSearchInputResult.type === 'address'}
         {@const truncatedAddresses = $computedSearchInputResult.truncated ?? []}
         <ul>
           {#each truncatedAddresses as address}
@@ -175,41 +177,33 @@ function onEnterPress(event: KeyboardEvent) {
       {/if}
       <div class="my-auto">
         <Kbd class="top-1">Enter</Kbd>
-        <span class="font-thin"> to navigate</span>
+        <span class="font-normal"> to navigate</span>
       </div>
     </Command.Empty>
 
-    <Command.Group
-      heading="Explore Data"
-      class={cn("text-black bg-background")}
-    >
-      {@const userAddresses = [
-        $sepoliaStore?.address,
-        $cosmosStore?.address
-      ].filter(Boolean)}
+    <Command.Group heading="Explore Data" class={cn('text-black bg-background')}>
+      {@const userAddresses = [$sepoliaStore?.address, $cosmosStore?.address].filter(Boolean)}
       <Command.Item
         let:attrs
         tabindex={1}
         class={cn(
-          "hover:cursor-pointer",
-          userAddresses && userAddresses.length === 0 ? "hidden" : "",
-          "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
+          'hover:cursor-pointer',
+          userAddresses && userAddresses.length === 0 ? 'hidden' : '',
+          'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
         )}
         onSelect={() => {
-          goto(`/explorer/address/${userAddresses.join("-")}`)
+          goto(`/explorer/address/${userAddresses.join('-')}`)
           commandDialogOpen = false
         }}
       >
         <TableIcon class="mr-2 size-5" />
         <span>Your past transfers</span>
-        {#if $page.route.id?.startsWith("/explorer/address")}
+        {#if $page.route.id?.startsWith('/explorer/address')}
           <Badge
             variant="outline"
             class={cn(
-              "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-              attrs["data-selected"]
-                ? "text-black bg-union-accent"
-                : "bg-primary-foreground"
+              'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+              attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
             )}
           >
             active page
@@ -220,8 +214,8 @@ function onEnterPress(event: KeyboardEvent) {
         let:attrs
         tabindex={2}
         class={cn(
-          "hover:cursor-pointer",
-          "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
+          'hover:cursor-pointer',
+          'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
         )}
         onSelect={() => {
           goto(`/explorer/transfers`)
@@ -230,14 +224,12 @@ function onEnterPress(event: KeyboardEvent) {
       >
         <BrainIcon class="mr-2 size-5" />
         <span>Live IBC transfer feed</span>
-        {#if $page.route.id?.startsWith("/explorer/transfers")}
+        {#if $page.route.id?.startsWith('/explorer/transfers')}
           <Badge
             variant="outline"
             class={cn(
-              "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-              attrs["data-selected"]
-                ? "text-black bg-union-accent"
-                : "bg-primary-foreground"
+              'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+              attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
             )}
           >
             active page
@@ -246,16 +238,13 @@ function onEnterPress(event: KeyboardEvent) {
       </Command.Item>
     </Command.Group>
     <Command.Separator />
-    <Command.Group
-      heading="Interact with the network"
-      class={cn("text-black bg-background")}
-    >
+    <Command.Group heading="Interact with the network" class={cn('text-black bg-background')}>
       <Command.Item
         let:attrs
         tabindex={3}
         class={cn(
-          "hover:cursor-pointer",
-          "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
+          'hover:cursor-pointer',
+          'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
         )}
         onSelect={() => {
           goto(`/transfer`)
@@ -264,14 +253,12 @@ function onEnterPress(event: KeyboardEvent) {
       >
         <DollarSignIcon class="mr-2 size-5" />
         <span>Execute cross chain transfers</span>
-        {#if $page.route.id?.startsWith("/transfer")}
+        {#if $page.route.id?.startsWith('/transfer')}
           <Badge
             variant="outline"
             class={cn(
-              "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-              attrs["data-selected"]
-                ? "text-black bg-union-accent"
-                : "bg-primary-foreground"
+              'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+              attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
             )}
           >
             active page
@@ -282,8 +269,8 @@ function onEnterPress(event: KeyboardEvent) {
         let:attrs
         tabindex={4}
         class={cn(
-          "hover:cursor-pointer",
-          "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
+          'hover:cursor-pointer',
+          'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
         )}
         onSelect={() => {
           goto(`/faucet`)
@@ -292,14 +279,12 @@ function onEnterPress(event: KeyboardEvent) {
       >
         <SmileIcon class="mr-2 size-5" />
         <span>Get tokens from faucet</span>
-        {#if $page.route.id?.startsWith("/faucet")}
+        {#if $page.route.id?.startsWith('/faucet')}
           <Badge
             variant="outline"
             class={cn(
-              "px-2 py-1 m-0 ml-auto rounded-none text-xs",
-              attrs["data-selected"]
-                ? "text-black bg-union-accent"
-                : "bg-primary-foreground"
+              'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+              attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
             )}
           >
             active page
