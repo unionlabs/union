@@ -7,6 +7,10 @@
 @tailwind components;
 
 @layer components {
+  .max-w-30 {
+    max-width: 7.5rem;
+  }
+
   .min-size-full {
     min-width: 100%;
     min-height: 100%;

@@ -2,17 +2,25 @@
 import { onMount } from "svelte"
 import { goto } from "$app/navigation"
 import { cn } from "$lib/utilities/shadcn"
-import Smile from "virtual:icons/lucide/smile"
-import Table from "virtual:icons/lucide/table"
-import Brain from "virtual:icons/lucide/brain"
-import Search from "virtual:icons/lucide/search"
+import { sepoliaStore } from "$lib/wallet/evm"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import SmileIcon from "virtual:icons/lucide/smile"
+import TableIcon from "virtual:icons/lucide/table"
+import BrainIcon from "virtual:icons/lucide/brain"
 import { debounce } from "$lib/utilities/index.ts"
+import SearchIcon from "virtual:icons/lucide/search"
 import { Input } from "$lib/components/ui/input/index.ts"
+import Button from "$lib/components/ui/button/button.svelte"
 import * as Command from "$lib/components/ui/command/index.ts"
-import DollarSign from "virtual:icons/lucide/badge-dollar-sign"
+import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
+import { isValidBech32Address, isValidEvmAddress } from "@union/client"
 
+let searchInput = ""
 let commandDialogOpen = false
-let searchInput: string
+
+function validAddress(address: string) {
+  return isValidBech32Address(address) || isValidEvmAddress(address)
+}
 
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
@@ -37,92 +45,196 @@ onMount(() => {
   }
 })
 
-const onInputClick = (_event: MouseEvent) => (commandDialogOpen = windowSize.width < 720)
+/**
+ * sizes when the dialog should be open:
+ * 430 or less,
+ * between 960 and 768
+ */
+const onInputClick = (_event: MouseEvent) => {
+  commandDialogOpen = windowSize.width <= 645 || (windowSize.width < 960 && windowSize.width >= 768)
+}
+
 const onInputChange = (event: InputEvent) =>
   debounce((_event: InputEvent) => {
     console.log("Searching...", searchInput)
-  }, 1_000)(event)
+  }, 2_500)(event)
 </script>
 
-<div class="relative mr-auto flex-1 w-full max-w-[490px]">
-  <Search class="absolute left-2.5 top-3 size-4 text-muted-foreground" />
+<div class="relative mr-auto flex-1 w-full max-w-full antialiased">
+  <SearchIcon class="absolute left-2.5 top-3 size-4 text-muted-foreground" />
   <Input
-    type="search"
+    type="text"
     name="search"
-    pattern="[a-z]"
     autocorrect="off"
     autocomplete="off"
     spellcheck="false"
     autocapitalize="none"
-    placeholder="Search"
     on:click={onInputClick}
     bind:value={searchInput}
     on:input={onInputChange}
+    pattern="[A-Za-z0-9\-]+"
+    placeholder="Search for address, tx..."
     class={cn(
-      'w-full rounded-md bg-background pl-8 self-stretch lowercase border-[1px] border-input focus-visible:border-secondary',
-      'shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+      "h-10",
+      "shadow-sm transition-colors placeholder:text-muted-foreground",
+      "w-full bg-background pl-8 self-stretch lowercase border-[1px] border-input",
+      "focus-visible:border-secondary focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
     )}
   />
   <kbd
-    class="absolute right-1.5 top-1.5 pointer-events-none inline-flex h-7 select-none items-center gap-0.5 border bg-primary px-1.5 font-mono text-xs font-medium text text-white dark:text-black opacity-100"
+    class={cn(
+      "h-7 gap-0.5 px-1.5",
+      "text-white dark:text-black",
+      "absolute select-none pointer-events-none",
+      "right-1.5 top-1.5 inline-flex items-center border bg-primary font-mono text-xs font-medium opacity-100"
+    )}
   >
-    <span class="text-xs"><span class="text-md">⌘</span></span>K
+    <span class="text-sm mb-1"><span class="text-lg mr-0.25">⌘</span>K</span>
   </kbd>
 </div>
 
 <Command.Dialog
+  tabindex={0}
   bind:open={commandDialogOpen}
-  class="rounded-sm border-[1.5px] border-solid shadow-2xl border-accent w-full"
+  class={cn(
+    "antialiased",
+    "rounded-sm border-[1px] w-full",
+    "border-solid shadow-2xl dark:border-accent/50 border-accent"
+  )}
 >
   <Command.Input
-    type="search"
-    pattern="[a-z]"
+    tabindex={0}
+    autofocus={true}
+    type="text"
+    name="search"
     autocorrect="off"
+    inputmode="search"
+    autocomplete="off"
     spellcheck="false"
     autocapitalize="off"
-    class="my-auto h-9 lowercase"
+    pattern="[A-Za-z0-9\-]+"
+    class="my-auto h-10 lowercase"
     placeholder="Type a command or search..."
+    bind:value={searchInput}
   />
 
   <Command.List data-search-dialog="">
-    <Command.Empty>No results found.</Command.Empty>
-    <Command.Group heading="Suggestions">
+    <Command.Empty class={cn("h-full py-0")}>
+      {#if searchInput && searchInput?.length > 10}
+        {@const isValidAddress =
+          validAddress(searchInput) &&
+          !(searchInput.startsWith("0x") && searchInput.length > 42)}
+        <!-- TODO: this is temporary, will update tomorrow -->
+        {@const isNotAddressPathParam =
+          (["union", "stride", "osmosis"].some(prefix =>
+            searchInput.startsWith(prefix)
+          ) ||
+            (searchInput.startsWith("0x") && searchInput.length > 42)) ===
+          false}
+        <ul class="flex flx-row justify-around size-full">
+          <li class="size-full">
+            <Button
+              variant="link"
+              disabled={!isValidAddress}
+              aria-disabled={!isValidAddress}
+              href={`/explorer/address/${searchInput}`}
+              on:click={() => (commandDialogOpen = false)}
+              class={cn(
+                isValidAddress
+                  ? "hover:bg-black hover:text-union-accent hover:border-union-accent"
+                  : "cursor-not-allowed opacity-45 hover:bg-union-accent",
+                "size-full uppercase font-mono text-xl font-semibold border border-solid border-transparent",
+                "bg-union-accent text-black border-r-black border-l"
+              )}
+            >
+              address
+            </Button>
+          </li>
+          <li class="size-full">
+            <Button
+              disabled={isNotAddressPathParam}
+              aria-disabled={isNotAddressPathParam}
+              href={`/explorer/transfers/${searchInput}`}
+              on:click={() => (commandDialogOpen = false)}
+              class={cn(
+                isNotAddressPathParam
+                  ? "cursor-not-allowed opacity-45 hover:bg-union-accent"
+                  : "hover:bg-black hover:text-union-accent hover:border-union-accent",
+                "size-full uppercase font-mono text-xl font-semibold border border-solid border-transparent",
+                "bg-union-accent text-black border-r-black border-l"
+              )}
+            >
+              transaction
+            </Button>
+          </li>
+        </ul>
+      {/if}
+    </Command.Empty>
+    <Command.Group heading="Exploring Data">
+      {@const userAddresses = [
+        $sepoliaStore?.address,
+        $cosmosStore?.address
+      ].filter(Boolean)}
       <Command.Item
-        class="hover:cursor-pointer"
+        tabindex={1}
+        class={cn(
+          "hover:cursor-pointer",
+          userAddresses && userAddresses.length === 0 ? "hidden" : "",
+          "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
+        )}
         onSelect={() => {
-          goto(`/send`)
+          goto(`/explorer/address/${userAddresses.join("-")}`)
           commandDialogOpen = false
         }}
       >
-        <DollarSign class="mr-2 size-4" />
-        <span>Send & Swap</span>
+        <TableIcon class="mr-2 size-4" />
+        <span>Your past transfers</span>
       </Command.Item>
       <Command.Item
-        class="hover:cursor-pointer"
+        tabindex={2}
+        class={cn(
+          "hover:cursor-pointer",
+          "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
+        )}
+        onSelect={() => {
+          goto(`/explorer/transfers`)
+          commandDialogOpen = false
+        }}
+      >
+        <BrainIcon class="mr-2 size-4" />
+        <span>Live IBC transfer feed</span>
+      </Command.Item>
+    </Command.Group>
+    <Command.Separator />
+    <Command.Group heading="Suggestions">
+      <Command.Item
+        tabindex={3}
+        let:attrs
+        class={cn(
+          "hover:cursor-pointer",
+          "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
+        )}
+        onSelect={() => {
+          goto(`/transfer`)
+          commandDialogOpen = false
+        }}
+      >
+        <DollarSignIcon class="mr-2 size-4" />
+        <span>Cross chain transfer</span>
+      </Command.Item>
+      <Command.Item
+        tabindex={4}
+        class={cn(
+          "hover:cursor-pointer",
+          "focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1"
+        )}
         onSelect={() => {
           goto(`/faucet`)
           commandDialogOpen = false
         }}
       >
-        <Smile class="mr-2 size-4" />
+        <SmileIcon class="mr-2 size-4" />
         <span>Get tokens from faucet</span>
-      </Command.Item>
-    </Command.Group>
-    <Command.Separator />
-    <Command.Group heading="Exploring Data">
-      <Command.Item>
-        <Brain class="mr-2 size-4" />
-        <span>Investigate IBC activity</span>
-      </Command.Item>
-      <Command.Item
-        class="hover:cursor-pointer"
-        onSelect={() => {
-          goto(`/transfers`)
-          commandDialogOpen = false
-        }}
-      >
-        <Table class="mr-2 size-4" />
-        <span>View your past transfers</span>
       </Command.Item>
     </Command.Group>
   </Command.List>
@@ -131,6 +243,9 @@ const onInputChange = (event: InputEvent) =>
 <style lang="postcss">
   /* TODO: figure out a way to style width of dialogs individually */
 
+  :global(div[data-command-dialog-overlay], div[data-dialog-overlay]) {
+    backdrop-filter: blur(2.5px);
+  }
   /* :global(div[data-dialog-content]) {
     @apply rounded-lg mx-auto max-w-[450px];
   } */
