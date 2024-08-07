@@ -193,7 +193,7 @@
         }
       ];
 
-      eth-deploy-full = { rpc-url, private-key, extra-args ? "", ... }: pkgs.writeShellApplication {
+      eth-deploy-full = { rpc-url, private-key, extra-args ? "", ... }: mkCi false (pkgs.writeShellApplication {
         name = "eth-deploy-full";
         runtimeInputs = [ self'.packages.forge ];
         text = ''
@@ -213,9 +213,9 @@
           popd
           rm -rf "$OUT"
         '';
-      };
+      });
 
-      eth-deploy-multicall = { rpc-url, kind, extra-args ? "", ... }: pkgs.writeShellApplicationWithArgs {
+      eth-deploy-multicall = { rpc-url, kind, extra-args ? "", ... }: mkCi false (pkgs.writeShellApplicationWithArgs {
         name = "eth-deploy-multicall";
         runtimeInputs = [ self'.packages.forge ];
         arguments = [
@@ -248,7 +248,7 @@
           popd
           rm -rf "$OUT"
         '';
-      };
+      });
 
       eth-upgrade = { dry ? false, rpc-url, protocol, ... }: mkCi false (pkgs.writeShellApplicationWithArgs {
         name = "evm-${pkgs.lib.optionalString dry "dry"}upgrade-${protocol}";
