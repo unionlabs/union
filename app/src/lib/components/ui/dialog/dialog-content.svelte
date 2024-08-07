@@ -30,8 +30,9 @@ export { className as class }
     {transitionConfig}
     data-dialog-content
     class={cn(
-      "fixed left-[50%] top-[50%] z-40 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 shadow-lg sm: md:w-full",
-      className
+      "border bg-background shadow-lg",
+      "fixed left-[50%] top-[50%] z-40 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-4 sm: md:w-full",
+      className,
     )}
     {...$$restProps}
   >

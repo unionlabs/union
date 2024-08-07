@@ -11,7 +11,7 @@ export let value = ""
 </script>
 
 <div class="flex items-center border-b px-2" data-cmdk-input-wrapper="">
-	<Search class="mr-2 size-4 shrink-0 opacity-50" />
+	<Search class="mr-2 size-4 shrink-0 opacity-80 text-black dark:text-white/70" />
 	<CommandPrimitive.Input
 		class={cn(
 			'dark:placeholder:text-primary/60 placeholder:text-background/85',

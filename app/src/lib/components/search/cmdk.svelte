@@ -3,26 +3,27 @@ import {
   isValidEvmTxHash,
   isValidEvmAddress,
   isValidCosmosTxHash,
-  isValidBech32Address
+  isValidBech32Address,
+  truncateAddress
 } from "@union/client"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { cn } from "$lib/utilities/shadcn"
+import SearchBar from "./search-bar.svelte"
+import Kbd from "$lib/components/kbd.svelte"
 import { sepoliaStore } from "$lib/wallet/evm"
 import { cosmosStore } from "$lib/wallet/cosmos"
+import { derived, writable } from "svelte/store"
 import SmileIcon from "virtual:icons/lucide/smile"
 import TableIcon from "virtual:icons/lucide/table"
 import BrainIcon from "virtual:icons/lucide/brain"
-import { debounce } from "$lib/utilities/index.ts"
-import SearchIcon from "virtual:icons/lucide/search"
-import { Input } from "$lib/components/ui/input/index.ts"
 import Badge from "$lib/components/ui/badge/badge.svelte"
 import * as Command from "$lib/components/ui/command/index.ts"
 import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
 
-let searchInput = ""
-$: searchInput = searchInput.replaceAll(" ", "")
+let searchInput = writable("")
+searchInput.update($searchInput => $searchInput.replaceAll(" ", ""))
 
 let commandDialogOpen = false
 
@@ -34,11 +35,10 @@ function handleKeyDown(event: KeyboardEvent) {
 
 let windowSize = { width: window.innerWidth, height: window.innerHeight }
 
-const handleResize = () => {
+const handleResize = () =>
   requestAnimationFrame(() => {
     windowSize = { width: window.innerWidth, height: window.innerHeight }
   })
-}
 
 onMount(() => {
   window.addEventListener("resize", handleResize)
@@ -49,18 +49,6 @@ onMount(() => {
   }
 })
 
-/**
- * sizes when the dialog should be open:
- * 430 or less,
- * between 960 and 768
- */
-const onInputClick = (_event: MouseEvent) => {
-  commandDialogOpen = windowSize.width <= 645 || (windowSize.width < 960 && windowSize.width >= 768)
-}
-
-const onInputChange = (event: InputEvent) =>
-  debounce((_event: InputEvent) => console.log("Searching...", searchInput), 1_500)(event)
-
 function validTxHash(hash: string) {
   return isValidCosmosTxHash(hash) || isValidEvmTxHash(hash)
 }
@@ -69,82 +57,86 @@ function validAddress(address: string) {
   return isValidBech32Address(address) || isValidEvmAddress(address)
 }
 
+function validateAndFilterMultiAddress(addressArray: Array<string>) {
+  return addressArray.filter(validAddress)
+}
+
+let computedSearchInputResult = derived(searchInput, $searchInput => {
+  if (validTxHash($searchInput)) {
+    return {
+      type: "tx",
+      value: $searchInput,
+      truncated: [
+        truncateAddress({
+          address: $searchInput,
+          length: windowSize.width >= 500 ? 16 : 11
+        })
+      ]
+    }
+  }
+
+  const input = validateAndFilterMultiAddress(
+    $searchInput.includes("-") ? $searchInput.split("-") : [$searchInput]
+  )
+
+  if (input.length > 0) {
+    return {
+      type: "address",
+      value: $searchInput,
+      truncated: input.map(address =>
+        truncateAddress({
+          address,
+          length: windowSize.width >= 500 ? 17 : 11
+        })
+      )
+    }
+  }
+
+  return { type: "unknown", value: $searchInput }
+})
+
 function onEnterPress(event: KeyboardEvent) {
   event.stopPropagation()
   if (event.key === "Escape") commandDialogOpen = false
   if (event.key !== "Enter") return
 
-  if (validTxHash(searchInput)) {
-    goto(`/explorer/transfers/${searchInput}`)
+  if ($computedSearchInputResult.type === "tx") {
+    goto(`/explorer/transfers/${$searchInput}`)
     commandDialogOpen = false
-    searchInput = ""
+    $searchInput = ""
   }
 
-  let input = searchInput.includes("-") ? searchInput.split("-") : [searchInput]
-
-  input = input.filter(validAddress)
-
-  if (input.length > 0) {
-    goto(`/explorer/address/${input.join("-")}`)
+  if ($computedSearchInputResult.type === "address") {
+    goto(`/explorer/address/${$searchInput}`)
     commandDialogOpen = false
-    searchInput = ""
+    $searchInput = ""
   }
-
-  console.log("Searching...", searchInput)
 }
 </script>
 
-<div class="relative mr-auto flex-1 w-full max-w-full antialiased">
-  <SearchIcon class="absolute left-2.5 top-2.5 size-5 text-muted-foreground" />
-  <Input
-    type="text"
-    name="search"
-    autocorrect="off"
-    inputmode="search"
-    autocomplete="off"
-    spellcheck="false"
-    autocapitalize="off"
-    on:click={onInputClick}
-    on:input={onInputChange}
-    bind:value={searchInput}
-    on:keydown={onEnterPress}
-    pattern="[A-Za-z0-9\-]+"
-    placeholder={(windowSize.width >= 930 || windowSize.width <= 768) &&
-    windowSize.width > 538
-      ? "Search for address or tx hash..."
-      : "Search..."}
-    class={cn(
-      "h-10",
-      "shadow-sm transition-colors placeholder:text-muted-foreground",
-      "w-full bg-background pl-8 self-stretch lowercase border-[1px] border-input",
-      "focus-visible:border-secondary focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-    )}
-  />
-  <kbd
-    class={cn(
-      "h-7 gap-0.5 px-1.5",
-      "text-white dark:text-black",
-      "absolute select-none pointer-events-none",
-      "right-1.5 top-1.5 inline-flex items-center border bg-primary font-mono text-xs font-medium opacity-100"
-    )}
-  >
-    <span class="text-sm mb-1"><span class="text-lg mr-0.25">⌘</span>K</span>
-  </kbd>
-</div>
+<SearchBar
+  searchInput={$searchInput}
+  windowWidth={windowSize.width}
+  onInputClick={() => (commandDialogOpen = true)}
+/>
+
 <Command.Dialog
   tabindex={0}
+  preventScroll={true}
+  closeOnEscape={true}
   label="Search Dialog"
   onKeydown={onEnterPress}
+  closeOnOutsideClick={true}
   bind:open={commandDialogOpen}
   class={cn(
     "rounded-sm border-[1px] w-full",
-    "border-solid shadow-2xl dark:border-accent/50 border-accent",
-    "bg-destructive-foreground dark:bg-card"
+    "bg-destructive-foreground dark:bg-card",
+    "border-solid shadow-2xl dark:border-accent/50 border-accent"
   )}
 >
   <Command.Input
-    tabindex={0}
     type="text"
+    tabindex={0}
     name="search"
     autofocus={true}
     autocorrect="off"
@@ -152,18 +144,41 @@ function onEnterPress(event: KeyboardEvent) {
     autocomplete="off"
     spellcheck="false"
     autocapitalize="off"
-    bind:value={searchInput}
     pattern="[A-Za-z0-9\-]+"
+    bind:value={$searchInput}
     placeholder="Navigate, search for address or tx by hash..."
     class={cn(
-      "placeholder:text-gray-600 text-gray-800",
+      "placeholder:text-gray-600 text-gray-800 dark:text-white",
       "my-auto h-10 lowercase placeholder:normal-case placeholder:text-xs sm:placeholder:text-sm"
     )}
   />
 
-  <Command.List data-search-dialog="" class={cn("")}>
-    <Command.Empty class={cn("h-full py-0")}></Command.Empty>
-    {@const currentRoute = $page.route.id}
+  <Command.List data-search-dialog="">
+    <Command.Empty
+      data-cmdk-empty
+      autocorrect="off"
+      spellcheck="false"
+      autocapitalize="off"
+      class={cn("h-full px-2 sm:px-3 py-4 text-left flex justify-between")}
+    >
+      {#if $computedSearchInputResult.type === "tx"}
+        <span>
+          {$computedSearchInputResult.truncated}
+        </span>
+      {:else if $computedSearchInputResult.type === "address"}
+        {@const truncatedAddresses = $computedSearchInputResult.truncated ?? []}
+        <ul>
+          {#each truncatedAddresses as address}
+            <li>{address}</li>
+          {/each}
+        </ul>
+      {/if}
+      <div class="my-auto">
+        <Kbd class="top-1">Enter</Kbd>
+        <span class="font-thin"> to navigate</span>
+      </div>
+    </Command.Empty>
+
     <Command.Group
       heading="Explore Data"
       class={cn("text-black bg-background")}
@@ -303,12 +318,4 @@ function onEnterPress(event: KeyboardEvent) {
   :global([data-cmdk-group-heading]) {
     @apply text-muted-foreground;
   }
-  /* 
-  :global(div[data-cmdk-list], div[data-command-list], div[data-cmdk-group]) {
-    @apply bg-foreground;
-  } */
-
-  /* :global(div[data-dialog-content]) {
-    @apply mx-auto max-w-[450px7];
-  } */
 </style>
