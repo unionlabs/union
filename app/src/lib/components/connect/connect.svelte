@@ -18,17 +18,20 @@ import { setMode } from "mode-watcher"
 import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 
 let buttonText: string
+let connectedWallets = 0
 
 $: if (
   $sepoliaStore.connectionStatus === "connected" &&
   $cosmosStore.connectionStatus === "connected"
 ) {
   buttonText = "Connected"
+  connectedWallets = 2
 } else if (
   $sepoliaStore.connectionStatus === "connected" ||
   $cosmosStore.connectionStatus === "connected"
 ) {
-  buttonText = "Connected (1/2)"
+  buttonText = "Connected"
+  connectedWallets = 1
 } else {
   buttonText = "Connect Wallet"
 }
@@ -42,15 +45,20 @@ $: if ($navigating) sheetOpen = false
     <Button
       builders={[builder]}
       class={cn(
-        "space-x-2 w-[189px] text-md bg-accent text-black hover:bg-cyan-300/90",
+        "space-x-1.5 lg:w-[180px] w-[75px] text-md bg-accent text-black hover:bg-cyan-300/90 ml-auto",
         $sepoliaStore.connectionStatus === "connected" &&
           $cosmosStore.connectionStatus === "connected"
       )}
       on:click={() => (sheetOpen = !sheetOpen)}
       size="sm"
     >
-      <WalletIcon class="size-4 text-black" />
-      <span class="font-supermolot font-bold uppercase">{buttonText}</span>
+      <WalletIcon class="size-5 text-black" />
+      <span class="font-supermolot font-bold uppercase lg:block hidden">
+        {buttonText}
+      </span>
+      <span class="font-supermolot font-bold uppercase">
+        {connectedWallets === 1 ? "1/2" : ""}
+      </span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content

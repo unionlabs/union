@@ -28,6 +28,7 @@ export { className as class }
   <DialogPrimitive.Content
     {transition}
     {transitionConfig}
+    data-dialog-content
     class={cn(
       "fixed left-[50%] top-[50%] z-40 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-4 shadow-lg sm: md:w-full",
       className

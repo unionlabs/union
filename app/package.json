@@ -17,7 +17,6 @@
   "dependencies": {
     "@builder.io/partytown": "^0.10.2",
     "@cosmjs/encoding": "^0.32.4",
-    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.50",
     "@sentry/sveltekit": "^8.20.0",
     "@tanstack/match-sorter-utils": "^8.15.1",
     "@tanstack/query-core": "^5.51.15",
@@ -32,6 +31,7 @@
     "bits-ui": "^0.21.13",
     "cmdk-sv": "^0.0.18",
     "gql.tada": "^1.8.4",
+    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.52",
     "graphql-request": "7.1.0",
     "mode-watcher": "^0.4.1",
     "paneforge": "^0.0.5",

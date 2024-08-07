@@ -21,6 +21,13 @@ import {
   convertByteArrayToHex
 } from "./convert.ts"
 import {
+  truncateAddress,
+  isValidEvmTxHash,
+  isValidEvmAddress,
+  isValidCosmosTxHash,
+  isValidBech32Address
+} from "./utilities/address.ts"
+import {
   ibcTransfer,
   cosmwasmTransfer,
   ibcTransferSimulate,
@@ -40,8 +47,7 @@ import { timestamp } from "./utilities/index.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
-import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
-import { $page } from "@union/client"
+
 export {
   /**
    * We export this as a standalone so that it can be used to fetch data that get passed to `createCosmosSdkClient`
@@ -52,8 +58,10 @@ export {
   createPfmMemo,
   truncateAddress,
   isValidEvmTxHash,
+  isValidEvmAddress,
   bech32AddressToHex,
   hexAddressToBech32,
+  isValidCosmosTxHash,
   bytesToBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,

@@ -1,78 +1,104 @@
 <script lang="ts">
-  import { onMount } from "svelte"
-  import { goto } from "$app/navigation"
-  import { cn } from "$lib/utilities/shadcn"
-  import { sepoliaStore } from "$lib/wallet/evm"
-  import { cosmosStore } from "$lib/wallet/cosmos"
-  import SmileIcon from "virtual:icons/lucide/smile"
-  import TableIcon from "virtual:icons/lucide/table"
-  import BrainIcon from "virtual:icons/lucide/brain"
-  import { debounce } from "$lib/utilities/index.ts"
-  import SearchIcon from "virtual:icons/lucide/search"
-  import { Input } from "$lib/components/ui/input/index.ts"
-  import Button from "$lib/components/ui/button/button.svelte"
-  import * as Command from "$lib/components/ui/command/index.ts"
-  import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
-  import { isValidBech32Address, isValidEvmAddress } from "@union/client"
+import {
+  isValidEvmTxHash,
+  isValidEvmAddress,
+  isValidCosmosTxHash,
+  isValidBech32Address
+} from "@union/client"
+import { onMount } from "svelte"
+import { page } from "$app/stores"
+import { goto } from "$app/navigation"
+import { cn } from "$lib/utilities/shadcn"
+import { sepoliaStore } from "$lib/wallet/evm"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import SmileIcon from "virtual:icons/lucide/smile"
+import TableIcon from "virtual:icons/lucide/table"
+import BrainIcon from "virtual:icons/lucide/brain"
+import { debounce } from "$lib/utilities/index.ts"
+import SearchIcon from "virtual:icons/lucide/search"
+import { Input } from "$lib/components/ui/input/index.ts"
+import Badge from "$lib/components/ui/badge/badge.svelte"
+import * as Command from "$lib/components/ui/command/index.ts"
+import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
 
-  import { page } from "$app/stores"
-  import Badge from "$lib/components/ui/badge/badge.svelte"
-  import { isAddress, isHex } from "viem"
-  import { isValidCosmosAddress } from "$lib/wallet/utilities/validate"
+let searchInput = ""
+$: searchInput = searchInput.replaceAll(" ", "")
 
-  let searchInput = ""
-  let commandDialogOpen = false
+let commandDialogOpen = false
 
-  function validAddress(address: string) {
-    return isValidBech32Address(address) || isValidEvmAddress(address)
-  }
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
+  event.preventDefault()
+  commandDialogOpen = true
+}
 
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.key !== "k" || !(event.metaKey || event.ctrlKey)) return
-    event.preventDefault()
-    commandDialogOpen = true
-  }
+let windowSize = { width: window.innerWidth, height: window.innerHeight }
 
-  let windowSize = { width: window.innerWidth, height: window.innerHeight }
-
-  const handleResize = () => {
-    requestAnimationFrame(() => {
-      windowSize = { width: window.innerWidth, height: window.innerHeight }
-    })
-  }
-
-  onMount(() => {
-    window.addEventListener("resize", handleResize)
-    document.addEventListener("keydown", handleKeyDown)
-    return () => {
-      window.removeEventListener("resize", handleResize)
-      document.removeEventListener("keydown", handleKeyDown)
-    }
+const handleResize = () => {
+  requestAnimationFrame(() => {
+    windowSize = { width: window.innerWidth, height: window.innerHeight }
   })
+}
 
-  /**
-   * sizes when the dialog should be open:
-   * 430 or less,
-   * between 960 and 768
-   */
-  const onInputClick = (_event: MouseEvent) => {
-    commandDialogOpen =
-      windowSize.width <= 645 ||
-      (windowSize.width < 960 && windowSize.width >= 768)
+onMount(() => {
+  window.addEventListener("resize", handleResize)
+  document.addEventListener("keydown", handleKeyDown)
+  return () => {
+    window.removeEventListener("resize", handleResize)
+    document.removeEventListener("keydown", handleKeyDown)
+  }
+})
+
+/**
+ * sizes when the dialog should be open:
+ * 430 or less,
+ * between 960 and 768
+ */
+const onInputClick = (_event: MouseEvent) => {
+  commandDialogOpen = windowSize.width <= 645 || (windowSize.width < 960 && windowSize.width >= 768)
+}
+
+const onInputChange = (event: InputEvent) =>
+  debounce((_event: InputEvent) => console.log("Searching...", searchInput), 1_500)(event)
+
+function validTxHash(hash: string) {
+  return isValidCosmosTxHash(hash) || isValidEvmTxHash(hash)
+}
+
+function validAddress(address: string) {
+  return isValidBech32Address(address) || isValidEvmAddress(address)
+}
+
+function onEnterPress(event: KeyboardEvent) {
+  event.stopPropagation()
+  if (event.key === "Escape") commandDialogOpen = false
+  if (event.key !== "Enter") return
+
+  if (validTxHash(searchInput)) {
+    goto(`/explorer/transfers/${searchInput}`)
+    commandDialogOpen = false
+    searchInput = ""
   }
 
-  const onInputChange = (event: InputEvent) =>
-    debounce((_event: InputEvent) => {
-      console.log("Searching...", searchInput)
-    }, 2_500)(event)
+  let input = searchInput.includes("-") ? searchInput.split("-") : [searchInput]
+
+  input = input.filter(validAddress)
+
+  if (input.length > 0) {
+    goto(`/explorer/address/${input.join("-")}`)
+    commandDialogOpen = false
+    searchInput = ""
+  }
+
+  console.log("Searching...", searchInput)
+}
 </script>
 
 <div class="relative mr-auto flex-1 w-full max-w-full antialiased">
-  <SearchIcon class="absolute left-2.5 top-3 size-4 text-muted-foreground" />
+  <SearchIcon class="absolute left-2.5 top-2.5 size-5 text-muted-foreground" />
   <Input
     type="text"
     name="search"
-    autofocus={true}
     autocorrect="off"
     inputmode="search"
     autocomplete="off"
@@ -80,20 +106,12 @@
     autocapitalize="off"
     on:click={onInputClick}
     on:input={onInputChange}
-    on:keydown={event => {
-      if (event.key !== "Enter") return
-      const isValidAddress = validAddress(searchInput)
-      console.info("isValidAddress", isValidAddress)
-      if (isValidAddress) {
-        if (isAddress(searchInput))
-          return console.info(response =>
-            to(`/explorer/addresss/${searchInput}`)
-          )
-      }
-    }}
-    pattern="[A-Za-z0-9\-]+"
     bind:value={searchInput}
-    placeholder="Search for address, tx..."
+    on:keydown={onEnterPress}
+    pattern="[A-Za-z0-9\-]+"
+    placeholder={windowSize.width >= 960
+      ? "Search for address or tx hash..."
+      : "Search..."}
     class={cn(
       "h-10",
       "shadow-sm transition-colors placeholder:text-muted-foreground",
@@ -115,9 +133,10 @@
 
 <Command.Dialog
   tabindex={0}
+  label="Search Dialog"
+  onKeydown={onEnterPress}
   bind:open={commandDialogOpen}
   class={cn(
-    "antialiased",
     "rounded-sm border-[1px] w-full",
     "border-solid shadow-2xl dark:border-accent/50 border-accent"
   )}
@@ -132,66 +151,16 @@
     autocomplete="off"
     spellcheck="false"
     autocapitalize="off"
-    pattern="[A-Za-z0-9\-]+"
     bind:value={searchInput}
-    class="my-auto h-10 lowercase"
-    placeholder="Type a command or search..."
+    pattern="[A-Za-z0-9\-]+"
+    placeholder="Navigate, search for address or tx by hash..."
+    class="my-auto h-10 lowercase placeholder:text-xs sm:placeholder:text-sm"
   />
 
   <Command.List data-search-dialog="">
-    <Command.Empty class={cn("h-full py-0")}>
-      {#if searchInput && searchInput?.length > 10}
-        {@const isValidAddress =
-          validAddress(searchInput) &&
-          !(searchInput.startsWith("0x") && searchInput.length > 42)}
-        <!-- TODO: this is temporary, will update tomorrow -->
-        {@const isNotAddressPathParam =
-          (["union", "stride", "osmosis"].some(prefix =>
-            searchInput.startsWith(prefix)
-          ) ||
-            (searchInput.startsWith("0x") && searchInput.length > 42)) ===
-          false}
-        <ul class="flex flx-row justify-around size-full">
-          <li class="size-full">
-            <Button
-              variant="link"
-              disabled={!isValidAddress}
-              aria-disabled={!isValidAddress}
-              href={`/explorer/address/${searchInput}`}
-              on:click={() => (commandDialogOpen = false)}
-              class={cn(
-                isValidAddress
-                  ? "hover:bg-black hover:text-union-accent hover:border-union-accent"
-                  : "cursor-not-allowed opacity-45 hover:bg-union-accent",
-                "size-full uppercase font-mono text-xl font-semibold border border-solid border-transparent",
-                "bg-union-accent text-black border-r-black border-l"
-              )}
-            >
-              address
-            </Button>
-          </li>
-          <li class="size-full">
-            <Button
-              disabled={isNotAddressPathParam}
-              aria-disabled={isNotAddressPathParam}
-              href={`/explorer/transfers/${searchInput}`}
-              on:click={() => (commandDialogOpen = false)}
-              class={cn(
-                isNotAddressPathParam
-                  ? "cursor-not-allowed opacity-45 hover:bg-union-accent"
-                  : "hover:bg-black hover:text-union-accent hover:border-union-accent",
-                "size-full uppercase font-mono text-xl font-semibold border border-solid border-transparent",
-                "bg-union-accent text-black border-r-black border-l"
-              )}
-            >
-              transaction
-            </Button>
-          </li>
-        </ul>
-      {/if}
-    </Command.Empty>
+    <Command.Empty class={cn("h-full py-0")}></Command.Empty>
     {@const currentRoute = $page.route.id}
-    <Command.Group heading="Exploring Data">
+    <Command.Group heading="Explore Data">
       {@const userAddresses = [
         $sepoliaStore?.address,
         $cosmosStore?.address
@@ -209,7 +178,7 @@
           commandDialogOpen = false
         }}
       >
-        <TableIcon class="mr-2 size-4" />
+        <TableIcon class="mr-2 size-5" />
         <span>Your past transfers</span>
         {#if $page.route.id?.startsWith("/explorer/address")}
           <Badge
@@ -237,7 +206,7 @@
           commandDialogOpen = false
         }}
       >
-        <BrainIcon class="mr-2 size-4" />
+        <BrainIcon class="mr-2 size-5" />
         <span>Live IBC transfer feed</span>
         {#if $page.route.id?.startsWith("/explorer/transfers")}
           <Badge
@@ -255,7 +224,7 @@
       </Command.Item>
     </Command.Group>
     <Command.Separator />
-    <Command.Group heading="Suggestions">
+    <Command.Group class="text-sm" heading="Interact with the network">
       <Command.Item
         let:attrs
         tabindex={3}
@@ -268,8 +237,8 @@
           commandDialogOpen = false
         }}
       >
-        <DollarSignIcon class="mr-2 size-4" />
-        <span>Cross chain transfer</span>
+        <DollarSignIcon class="mr-2 size-5" />
+        <span>Execute cross chain transfers</span>
         {#if $page.route.id?.startsWith("/transfer")}
           <Badge
             variant="outline"
@@ -296,7 +265,7 @@
           commandDialogOpen = false
         }}
       >
-        <SmileIcon class="mr-2 size-4" />
+        <SmileIcon class="mr-2 size-5" />
         <span>Get tokens from faucet</span>
         {#if $page.route.id?.startsWith("/faucet")}
           <Badge
@@ -317,12 +286,15 @@
 </Command.Dialog>
 
 <style lang="postcss">
-  /* TODO: figure out a way to style width of dialogs individually */
-
   :global(div[data-command-dialog-overlay], div[data-dialog-overlay]) {
-    backdrop-filter: blur(2.5px);
+    backdrop-filter: blur(5px);
   }
+
+  :global([data-cmdk-group-heading]) {
+    @apply text-gray-400;
+  }
+
   /* :global(div[data-dialog-content]) {
-    @apply rounded-lg mx-auto max-w-[450px];
+    @apply mx-auto max-w-[450px];
   } */
 </style>
