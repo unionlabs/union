@@ -9,33 +9,33 @@ import { isValidEvmAddress, bech32AddressToHex, isValidBech32Address } from "@un
  * TODO: instead of displaying data here, go to error page and display a proper error message
  */
 
-let addressArray = derived(page, $page => {
+let addresses = derived(page, $page => {
   const slug = $page.params.slug
-  if (!slug) return { nonNormalized: [], normalized: [] }
+  if (!slug) return []
+
   const addresses = slug.indexOf("-") === -1 ? [slug] : slug.split("-")
 
-  const normalizedAddresses = addresses.map(address => {
+  return addresses.map(address => {
+    let normalizedAddress = address
     if (isValidEvmAddress(address)) {
-      return address.slice(2).toLowerCase()
+      normalizedAddress = address.slice(2).toLowerCase()
     }
     if (isValidBech32Address(address)) {
-      return bech32AddressToHex({ address }).slice(2).toLowerCase()
+      normalizedAddress = bech32AddressToHex({ address }).slice(2).toLowerCase()
     }
-    return address
+    return {
+      address,
+      normalizedAddress
+    }
   })
-  return {
-    nonNormalized: [...new Set(addresses)],
-    normalized: [...new Set(normalizedAddresses)]
-  }
 })
 
-setContext<typeof addressArray>("addressArray", addressArray)
+setContext<typeof addresses>("addresses", addresses)
 </script>
 
 <div class='pt-3'>
   <ChainsGate let:chains>
-    {@const addressArray = $addressArray.nonNormalized}
-    {#if addressArray.find( address => chains.find( chain => address.startsWith(chain.addr_prefix) ) )}
+    {#if $addresses.find( address => chains.find( chain => address.address.startsWith(chain.addr_prefix) ) )}
       <slot />
     {:else}
       <p>Invalid address(es)</p>

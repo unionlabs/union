@@ -14,15 +14,17 @@ let timestamp = writable(
 )
 
 let addresses =
-  getContext<Readable<{ nonNormalized: Array<string>; normalized: Array<string> }>>("addressArray")
+  getContext<Readable<Array<{ address: string; normalizedAddress: string }>>>("addresses")
 
-let normalizedAddresses = derived(addresses, $addresses => $addresses.normalized)
+let normalizedAddresses = derived(addresses, $addresses =>
+  $addresses.map(addr => addr.normalizedAddress)
+)
 </script>
 
 
 <ChainsGate let:chains>
-  {#each $normalizedAddresses as normalizedAddress}
-    <AddressMultichain {chains} {normalizedAddress}/>
+  {#each $addresses as address }
+    <AddressMultichain {address} {chains}/>
   {/each}
   <TableTransfers
     {chains}
