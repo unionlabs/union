@@ -269,5 +269,291 @@ module IBC::ChannelTest {
 
         Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
     }
+    #[test(alice = @IBC)]
+public fun test_channel_open_ack(alice: &signer) {
+    // Initialize IBCStore for testing
+    Core::create_ibc_store(alice);
+
+    // Prepare a mock connection and set it in the IBCStore
+    let client_id = string::utf8(b"client-0");
+    let connection_id = string::utf8(b"connection-0");
+    let counterparty = Core::new_connection_counterparty(
+        string::utf8(b"counterparty-client"),
+        connection_id,
+        Core::new_merkleprefix(vector::empty<u8>())
+    );
+    let connection = Core::new_connection_end(
+        client_id,
+        vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+        3, // STATE_OPEN
+        0,
+        counterparty
+    );
+    Core::set_connection(connection_id, connection);
+
+    // Prepare a mock channel
+    let connection_hops = vector::singleton(connection_id);
+    let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+    let channel = Core::new_channel(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
+    let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
+
+    // Prepare mock proof data
+    let proof_height = height::new(0, 1);
+    let proof_try = any::pack(vector::empty<u8>());
+
+    // Call channel_open_ack function
+    Core::channel_open_ack(
+        string::utf8(b"port-0"),
+        channel_id,
+        string::utf8(b"counterparty-channel-0"),
+        string::utf8(b"counterparty-version-0"),
+        proof_try,
+        proof_height
+    );
+
+    // Validate that the channel state has been updated to STATE_OPEN
+    let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
+    let (state, ordering, counterparty, connection_hops, version) = Core::get_channel(&stored_channel);
+    let (port_id, channel_id) = Core::get_channel_counterparty(counterparty);
+    assert!(state == 3, 9001); // STATE_OPEN
+    assert!(version == string::utf8(b"counterparty-version-0"), 9002);
+    
+    assert!(channel_id == string::utf8(b"counterparty-channel-0"), 9003);
+}
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
+    public fun test_channel_open_ack_invalid_state(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = Core::new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            Core::new_merkleprefix(vector::empty<u8>())
+        );
+        let connection = Core::new_connection_end(
+            client_id,
+            vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel with an invalid state (not STATE_INIT)
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = Core::new_channel(3, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
+        let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
+
+        // Prepare mock proof data
+        let proof_height = height::new(0, 1);
+        let proof_try = any::pack(vector::empty<u8>());
+
+        // Call channel_open_ack function
+        Core::channel_open_ack(
+            string::utf8(b"port-0"),
+            channel_id,
+            string::utf8(b"counterparty-channel-0"),
+            string::utf8(b"counterparty-version-0"),
+            proof_try,
+            proof_height
+        );
+    }
+    #[test(alice = @IBC)]
+    public fun test_channel_open_confirm_success(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = Core::new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            Core::new_merkleprefix(vector::empty<u8>())
+        );
+        let connection = Core::new_connection_end(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty_channel = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = Core::new_channel(2, 1, counterparty_channel, connection_hops, string::utf8(b"1")); // STATE_TRYOPEN
+        let port_id = string::utf8(b"port-0");
+        let channel_id = string::utf8(b"channel-0");
+        Core::set_channel(port_id, channel_id, channel);
+
+        // Prepare proof and height
+        let proof_height = height::new(1, 1);
+        let proof_ack = any::pack(vector::empty<u8>());
+
+        // Call channel_open_confirm function
+        Core::channel_open_confirm(port_id, channel_id, proof_ack, proof_height);
+
+        // Validate the channel state after confirmation
+        let updated_channel = Core::get_channel_from_store(port_id, channel_id);
+        let (state, _, _, _, _) = Core::get_channel(&updated_channel);
+        assert!(state == 3, 1001); // STATE_OPEN
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
+    public fun test_channel_open_confirm_invalid_state(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = Core::new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            Core::new_merkleprefix(vector::empty<u8>())
+        );
+        let connection = Core::new_connection_end(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel with an invalid state
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty_channel = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = Core::new_channel(1, 1, counterparty_channel, connection_hops, string::utf8(b"1")); // STATE_INIT (invalid state for confirm)
+        let port_id = string::utf8(b"port-0");
+        let channel_id = string::utf8(b"channel-0");
+        Core::set_channel(port_id, channel_id, channel);
+
+        // Prepare proof and height
+        let proof_height = height::new(1, 1);
+        let proof_ack = any::pack(vector::empty<u8>());
+
+        // Call channel_open_confirm function
+        Core::channel_open_confirm(port_id, channel_id, proof_ack, proof_height);
+    }
+
+    #[test(alice = @IBC)]
+    public fun test_channel_open_try_success(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = Core::new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            Core::new_merkleprefix(vector::empty<u8>())
+        );
+        let connection = Core::new_connection_end(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty_channel = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = Core::new_channel(2, ORDER_ORDERED, counterparty_channel, connection_hops, string::utf8(b"1"));
+
+        // Mock data for proof
+        let proof_height = height::new(1, 1);
+        let proof_init = any::pack(vector::empty<u8>());
+
+        // Call channel_open_try function
+        let channel_id = Core::channel_open_try(string::utf8(b"port-0"), channel, string::utf8(b"1"), proof_init, proof_height);
+
+        // Validate that the channel was added to the store
+        let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
+        let (state, ordering, counterparty, connection_hops, version) = Core::get_channel(&stored_channel);
+
+        // Validate that the stored channel matches the expected channel
+        assert!(state == 2, 8001);
+        assert!(ordering == ORDER_ORDERED, 8002);
+        assert!(version == string::utf8(b"1"), 8003);
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
+    public fun test_channel_open_try_invalid_state(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = Core::new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            Core::new_merkleprefix(vector::empty<u8>())
+        );
+        let connection = Core::new_connection_end(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel with an invalid state (not STATE_TRYOPEN)
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty_channel = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = Core::new_channel(1, ORDER_ORDERED, counterparty_channel, connection_hops, string::utf8(b"1")); // Invalid state
+
+        // Mock data for proof
+        let proof_height = height::new(1, 1);
+        let proof_init = any::pack(vector::empty<u8>());
+
+        // Call channel_open_try function, should abort due to invalid state
+        Core::channel_open_try(string::utf8(b"port-0"), channel, string::utf8(b"1"), proof_init, proof_height);
+    }
+
+    #[test(alice = @IBC)]
+    public fun test_claim_capability_success(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Claim a new capability
+        let capability_name = string::utf8(b"capability-0");
+        let addr = signer::address_of(alice);
+        Core::claim_capability(capability_name, addr);
+
+        // Verify the capability was claimed
+        let claimed_addr = Core::get_capability_from_store(capability_name);
+        assert!(claimed_addr == addr, 9001);
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1014)] // E_CAPABILITY_ALREADY_CLAIMED
+    public fun test_claim_capability_already_claimed(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Claim a new capability
+        let capability_name = string::utf8(b"capability-0");
+        let addr = signer::address_of(alice);
+        Core::claim_capability(capability_name, addr);
+
+        // Attempt to claim the same capability again, should abort
+        Core::claim_capability(capability_name, addr);
+    }
 
 }

@@ -1,4 +1,4 @@
-module IBC::IBCModule {
+module IBCModuleAddr::IBCModule {
     use std::vector;
     use IBC::height;
     use aptos_std::string::{Self, String};

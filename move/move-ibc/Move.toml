@@ -10,6 +10,7 @@ ContractTestAddress = "0x00"
 
 IBC = "0x111111111111111" # This will be storage of our IBCStore
 mock_relayer_address = "0x222222222222222"
+IBCModuleAddr = "0x333333333333333"
 
 [dev-addresses]
 
