@@ -14,14 +14,17 @@ const fromHexString = hexString =>
   Uint8Array.from(hexString.match(/.{1,2}/g).map(byte => Number.parseInt(byte, 16)))
 </script>
 
+<div>
 {#if address.address.startsWith("0x")}
-  {address.address}
+  <h3>EVM address</h3>
+  <div>{address.address}</div>
 {:else}
+  <h3>Cosmos address</h3>
   {#each cosmosChains as cosmosChain}
     <div>
       {rawToBech32(cosmosChain.addr_prefix, fromHexString(address.normalizedAddress))}
     </div>
   {/each}
 {/if}
-
+</div>
 

@@ -23,9 +23,11 @@ let normalizedAddresses = derived(addresses, $addresses =>
 
 
 <ChainsGate let:chains>
-  {#each $addresses as address }
-    <AddressMultichain {address} {chains}/>
-  {/each}
+  <section class="flex gap-4 flex-col">
+    {#each $addresses as address }
+      <AddressMultichain {address} {chains}/>
+    {/each}
+  </section>
   <TableTransfers
     {chains}
     {timestamp}
