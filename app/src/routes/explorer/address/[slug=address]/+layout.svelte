@@ -38,7 +38,7 @@ setContext<typeof addressArray>("addressArray", addressArray)
     {#if addressArray.find( address => chains.find( chain => address.startsWith(chain.addr_prefix) ) )}
       <slot />
     {:else}
-      <p>Invalid address</p>
+      <p>Invalid address(es)</p>
     {/if}
   </ChainsGate>
 </div>

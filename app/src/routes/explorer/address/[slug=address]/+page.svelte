@@ -5,6 +5,7 @@ import ChainsGate from "$lib/components/chains-gate.svelte"
 import { derived, writable, type Readable } from "svelte/store"
 import { decodeTimestampSearchParam } from "$lib/timestamps.ts"
 import TableTransfers from "$lib/components/transfers-table/transfers-table.svelte"
+import AddressMultichain from "$lib/components/address-multichain.svelte"
 
 let timestamp = writable(
   $page.url.searchParams.has("timestamp")
@@ -12,14 +13,17 @@ let timestamp = writable(
     : null
 )
 
-let addressArray =
+let addresses =
   getContext<Readable<{ nonNormalized: Array<string>; normalized: Array<string> }>>("addressArray")
 
-let normalizedAddresses = derived(addressArray, $addressArray => $addressArray.normalized)
+let normalizedAddresses = derived(addresses, $addresses => $addresses.normalized)
 </script>
 
 
 <ChainsGate let:chains>
+  {#each $normalizedAddresses as normalizedAddress}
+    <AddressMultichain {chains} {normalizedAddress}/>
+  {/each}
   <TableTransfers
     {chains}
     {timestamp}
