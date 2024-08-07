@@ -409,7 +409,7 @@
           let
             contracts = self'.packages.evm-contracts;
           in
-          pkgs.runCommand "hubble-abis"
+          mkCi false (pkgs.runCommand "hubble-abis"
             {
               buildInputs = [ pkgs.jq ];
             } ''
@@ -433,7 +433,7 @@
               ${contracts}/out/NFT.sol/NFTLib.json \
               ${contracts}/out/NFT.sol/NFTPacketLib.json \
               ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
-          '';
+          '');
 
 
         solidity-build-tests = pkgs.writeShellApplication {
@@ -445,7 +445,7 @@
           '';
         };
 
-        evm-contracts-addresses = pkgs.writeShellApplication {
+        evm-contracts-addresses = mkCi false (pkgs.writeShellApplication {
           name = "evm-contracts-addresses";
           runtimeInputs = [ self'.packages.forge pkgs.jq ];
           text = ''
@@ -460,7 +460,7 @@
             rm -rf "$OUT"
             popd
           '';
-        };
+        });
 
         forge = wrappedForge;
 
@@ -481,7 +481,7 @@
                 '';
               };
           in
-          pkgs.dockerTools.buildLayeredImage {
+          mkCi (system == "x86_64-linux") (pkgs.dockerTools.buildLayeredImage {
             name = "evm-deployer-image";
             contents = [
               pkgs.coreutils
@@ -495,7 +495,7 @@
               Entrypoint = [ (pkgs.lib.getExe forge-deploy) ];
               Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
             };
-          };
+          });
       } //
       builtins.listToAttrs (
         builtins.map
