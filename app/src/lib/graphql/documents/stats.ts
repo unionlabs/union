@@ -1,5 +1,14 @@
 import { graphql } from "gql.tada"
 
+export const statsQueryDocument = graphql(/* GraphQL */ `
+  query StatsQuery @cached(ttl: 5) {
+    v0_stats {
+      total_packets
+      total_transfers
+    }
+  }
+`)
+
 export const transferCountQueryDocument = graphql(/* GraphQL */ `
   query TransferCountQuery @cached(ttl: 5)  {
     v0_transfers_aggregate {
