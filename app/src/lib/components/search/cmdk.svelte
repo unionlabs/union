@@ -21,6 +21,8 @@ import BrainIcon from "virtual:icons/lucide/brain"
 import Badge from "$lib/components/ui/badge/badge.svelte"
 import * as Command from "$lib/components/ui/command/index.ts"
 import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
+import UnionIcon from "$lib/components/union-icons/index.svelte"
+import { mode } from "mode-watcher";
 
 let searchInput = writable("")
 searchInput.update($searchInput => $searchInput.replaceAll(" ", ""))
@@ -208,7 +210,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <SmileIcon class="mr-2 size-5" />
+          {#if $mode === 'dark'}
+            <UnionIcon theme="monoInverse" name="faucet" class="mr-2 size-5" />
+            {:else}
+            <UnionIcon theme="mono" name="faucet" class="mr-2 size-5" />
+          {/if}
           <span>Get tokens from faucet</span>
           {#if $page.route.id?.startsWith('/faucet')}
             <Badge
@@ -235,7 +241,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <DollarSignIcon class="mr-2 size-5" />
+          {#if $mode === 'dark'}
+            <UnionIcon theme="monoInverse" name="transfers" class="mr-2 size-5" />
+          {:else}
+            <UnionIcon theme="mono" name="transfers" class="mr-2 size-5" />
+          {/if}
           <span>Transfer assets across chains</span>
           {#if $page.route.id?.startsWith('/transfer')}
             <Badge
