@@ -11,6 +11,7 @@ module IBC::Core {
     use aptos_std::string_utils;
     use aptos_std::from_bcs;
     use IBC::IBCCommitment;
+    use 0x1::timestamp;
     use IBC::LightClient;
     use IBC::height;
     use IBCModuleAddr::IBCModule;
@@ -34,7 +35,20 @@ module IBC::Core {
     const E_PORT_ID_MUST_BE_LOWERCASE: u64 = 1015;
     const E_INVALID_CHANNEL_STATE: u64 = 1016;
     const E_COUNTERPARTY_CHANNEL_NOT_EMPTY: u64 = 1017;
-    
+    const E_INVALID_TIMEOUT_HEIGHT: u64 = 1018;
+    const E_LATEST_TIMESTAMP_NOT_FOUND: u64 = 1019;
+    const E_UNAUTHORIZED: u64 = 1020;
+    const E_INVALID_TIMEOUT_TIMESTAMP: u64 = 1021;
+    const E_LATEST_HEIGHT_NOT_FOUND: u64 = 1022; 
+    const E_SOURCE_AND_COUNTERPARTY_PORT_MISMATCH: u64 = 1023;
+    const E_SOURCE_AND_COUNTERPARTY_CHANNEL_MISMATCH: u64 = 1022;   
+    const E_TIMESTAMP_TIMEOUT: u64 = 1023;   
+    const E_HEIGHT_TIMEOUT: u64 = 1024;   
+    const E_PACKET_ALREADY_RECEIVED: u64 = 1025;   
+    const E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH: u64 = 1026; 
+    const E_UNKNOWN_CHANNEL_ORDERING: u64 = 1027;    
+
+     
 
     #[event]
     struct ClientCreatedEvent has copy, drop, store {
@@ -108,6 +122,22 @@ module IBC::Core {
         counterparty_client_id: String,
         counterparty_connection_id: String,
     }
+
+    #[event]
+    struct SendPacket has drop, store {
+        sequence: u64,
+        source_port: String,
+        source_channel: String,
+        timeout_height: height::Height,
+        timeout_timestamp: u64,
+        data: String 
+    }    
+    
+    #[event]
+    struct RecvPacket has drop, store {
+        packet: IbcCoreChannelV1Packet
+    }
+
 
     struct ChannelPort has copy, drop, store {
         port_id: String,
@@ -1529,6 +1559,246 @@ module IBC::Core {
         );
 
         channel_id
+    }
+
+    // Ensures that the channel state is open
+    public fun ensure_channel_state(
+        port_id: String,
+        channel_id: String
+    ): IbcCoreChannelV1Channel acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        let channel_port = ChannelPort { port_id, channel_id };
+        let channel = smart_table::borrow(&store.channels, channel_port);
+
+        if (channel.state != 3) { // STATE_OPEN
+            abort E_INVALID_CHANNEL_STATE;
+        };
+        *channel
+    }
+
+    // Authenticates the capability
+    public fun authenticate_capability(
+        caller: &signer,
+        name: String
+    ): bool acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        let capability_addr = smart_table::borrow_with_default(
+            &store.capabilities,
+            name,
+            &@0x0
+        );
+        signer::address_of(caller) == *capability_addr
+    }
+
+    // Sends a packet
+    public fun send_packet(
+        caller: &signer,
+        source_channel: String,
+        timeout_height: height::Height,
+        timeout_timestamp: u64,
+        data: String
+    ): u64 acquires IBCStore {
+        let caller_addr = signer::address_of(caller);
+        let source_port = string_utils::to_string(&caller_addr);
+        // let source_port = &signer::address_of(borrow_global<SignerRef>(get_vault_addr()).signer_ref));
+
+        // Authenticate capability
+        if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(source_port, source_channel))) {
+            abort E_UNAUTHORIZED;
+        };
+
+        let channel = ensure_channel_state(source_port, source_channel);
+
+        let client_id = *vector::borrow(&channel.connection_hops, 0);
+
+        let latest_height = LightClient::latest_height(client_id);
+    
+        if (height::get_revision_height(&latest_height) == 0) {
+            abort E_LATEST_HEIGHT_NOT_FOUND;
+        };
+        if (!height::is_zero(&timeout_height) && height::gte(&latest_height, &timeout_height)) {
+            abort E_INVALID_TIMEOUT_HEIGHT;
+        };
+
+        let latest_timestamp = LightClient::get_timestamp_at_height(client_id, latest_height);
+        if (latest_timestamp == 0) {
+            abort E_LATEST_TIMESTAMP_NOT_FOUND;
+        };
+        if (timeout_timestamp != 0 && latest_timestamp >= timeout_timestamp) {
+            abort E_INVALID_TIMEOUT_TIMESTAMP;
+        };
+
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+        let packet_sequence = from_bcs::to_u64(
+            *smart_table::borrow_with_default(
+                &store.commitments,
+                IBCCommitment::next_sequence_send_commitment_key(source_port, source_channel),
+                &bcs::to_bytes(&0u64)
+            )
+        );
+        smart_table::upsert(
+            &mut store.commitments,
+            IBCCommitment::next_sequence_send_commitment_key(source_port, source_channel),
+            bcs::to_bytes(&(packet_sequence + 1))
+        );
+
+
+
+
+        // TODO: How can we implement this one? We need to agree on the implementation of
+        // abi.encodePacked
+        // smart_table::upsert(
+        //     &mut store.commitments,
+        //     IBCCommitment::packet_commitment_key(source_port, source_channel, packet_sequence),
+        //     IBCCommitment::keccak256(
+        //         IBCCommitment::keccak256(
+        //             bcs::to_bytes(&(
+        //                 timeout_timestamp,
+        //                 height::get_revision_number(&timeout_height),
+        //                 height::get_revision_height(&timeout_height),
+        //                 IBCCommitment::keccak256(data)
+        //             ))
+        //         )
+        //     )
+        // );
+
+        event::emit(SendPacket {
+            sequence: packet_sequence,
+            source_port,
+            source_channel,
+            timeout_height,
+            timeout_timestamp,
+            data
+        });
+
+        packet_sequence
+    }
+
+    // Receives and processes an IBC packet
+    public fun recv_packet(
+        caller: &signer,
+        msg_port_id: String,
+        msg_channel_id: String,
+        msg_packet: IbcCoreChannelV1Packet,
+        msg_proof: Any,
+        msg_proof_height: height::Height,
+        acknowledgement: String
+    ) acquires IBCStore {
+        let channel = ensure_channel_state(msg_port_id, msg_channel_id);
+
+        if (IBCCommitment::keccak256(msg_packet.source_port) != IBCCommitment::keccak256(channel.counterparty.port_id)) {
+            abort E_SOURCE_AND_COUNTERPARTY_PORT_MISMATCH;
+        };
+        if (IBCCommitment::keccak256(msg_packet.source_channel) != IBCCommitment::keccak256(channel.counterparty.channel_id)) {
+            abort E_SOURCE_AND_COUNTERPARTY_CHANNEL_MISMATCH;
+        };
+
+
+        let connection_hop = *vector::borrow(&channel.connection_hops, 0);
+        let store = borrow_global<IBCStore>(get_vault_addr());
+        
+        let default_counterparty = new_connection_counterparty(
+            string::utf8(b"counterparty-client"),
+            string::utf8(b"connection-0"),
+            new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"prefix")))
+        );
+
+        let connection = smart_table::borrow_with_default(
+            &store.connections,
+            connection_hop,
+            &new_connection_end(
+                string::utf8(b"client_id"),
+                vector::empty<Version>(),
+                0,
+                0,
+                new_connection_counterparty(
+                    string::utf8(b"counterparty-client"),
+                    string::utf8(b"connection-0"),
+                    new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"prefix")))
+                )
+            )
+        );
+        
+        if (connection.state != 3) { // STATE_OPEN
+            abort E_INVALID_CONNECTION_STATE
+        };
+
+        if (height::get_revision_height(&msg_packet.timeout_height) != 0 && (timestamp::now_seconds() * 1000000000 >= height::get_revision_height(&msg_packet.timeout_height))) {
+            abort E_HEIGHT_TIMEOUT
+        };
+
+        let current_timestamp = timestamp::now_seconds() * 1000000000; // 1e9
+        if (msg_packet.timeout_timestamp != 0 && (current_timestamp >= msg_packet.timeout_timestamp)) {
+            abort E_TIMESTAMP_TIMEOUT
+        };
+
+
+        // TODO: How can we implement this one? We need to agree on the implementation of
+        // abi.encodePacked
+        // if (!verify_commitment(
+        //     connection,
+        //     msg_proof_height,
+        //     msg_proof,
+        //     IBCCommitment::packet_commitment_path(msg_packet.source_port, msg_packet.source_channel, msg_packet.sequence),
+        //     IBCCommitment::keccak256(
+        //         IBCCommitment::keccak256(
+        //             bcs::to_bytes(&(
+        //                 msg_packet.timeout_timestamp,
+        //                 height::get_revision_number(&msg_packet.timeout_height),
+        //                 height::get_revision_height(&msg_packet.timeout_height),
+        //                 IBCCommitment::keccak256(msg_packet.data)
+        //             ))
+        //         )
+        //     )
+        // )) {
+        //     abort E_INVALID_PROOF;
+        // }
+
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+        if (channel.ordering == 1) { // ORDER_UNORDERED
+            let receipt_commitment_key = IBCCommitment::packet_receipt_commitment_key(msg_packet.destination_port, msg_packet.destination_channel, msg_packet.sequence);
+            let receipt = smart_table::borrow_with_default(&store.commitments, receipt_commitment_key, &bcs::to_bytes(&0u8));
+            if (*receipt != bcs::to_bytes(&0u8)) {
+                abort E_PACKET_ALREADY_RECEIVED
+            };
+            smart_table::upsert(&mut store.commitments, receipt_commitment_key, bcs::to_bytes(&1u8));
+        } else if (channel.ordering == 2) { // ORDER_ORDERED
+            let expected_recv_sequence = from_bcs::to_u64(
+                *smart_table::borrow_with_default(
+                    &store.commitments,
+                    IBCCommitment::next_sequence_recv_commitment_key(msg_packet.destination_port, msg_packet.destination_channel),
+                    &bcs::to_bytes(&0u64)
+                )
+            );
+            if (expected_recv_sequence != msg_packet.sequence) {
+                abort E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
+            };
+            smart_table::upsert(
+                &mut store.commitments,
+                IBCCommitment::next_sequence_recv_commitment_key(msg_packet.destination_port, msg_packet.destination_channel),
+                bcs::to_bytes(&(expected_recv_sequence + 1))
+            );
+        } else {
+            abort E_UNKNOWN_CHANNEL_ORDERING;
+        };
+
+
+        // let acknowledgement = IBCModule::on_recv_packet(
+        //     msg_packet,
+        //     caller
+        // );
+
+
+        // TODO: What will be the type of that acknowledgement? String? bytes array?
+        // if (vector::length(&acknowledgement) > 0) {
+        //     write_acknowledgement(msg_packet, acknowledgement);
+        // }
+
+        event::emit(RecvPacket {
+            packet: msg_packet
+        });
     }
 
 }   

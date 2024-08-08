@@ -426,4 +426,12 @@ module IBC::LightClient {
             hash: hash
         }
     }
+
+
+    public fun get_timestamp_at_height(
+        client_id: String,
+        height: height::Height
+    ): u64 {
+        0
+    }
 }

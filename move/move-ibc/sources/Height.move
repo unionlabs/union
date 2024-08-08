@@ -23,6 +23,13 @@ module IBC::height {
         height.revision_number == 0 && height.revision_height == 0
     }
 
+
+    public fun gte(height1: &Height, height2: &Height): bool {
+        height1.revision_number > height2.revision_number || 
+            (height1.revision_number == height2.revision_number && 
+                height1.revision_height >= height2.revision_height)
+    }
+
     public fun set_revision_height(height: &mut Height, revision_height: u64) {
         height.revision_height = revision_height;
     }
