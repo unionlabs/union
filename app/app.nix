@@ -41,6 +41,7 @@
             '';
           };
         };
+
         app-fetch-schema = {
           type = "app";
           program = pkgs.writeShellApplication {
@@ -49,9 +50,30 @@
             text = ''
               ${ensureAtRepositoryRoot}
               cd app/
-              npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://noble-pika-27.hasura.app/v1/graphql"
+              npm_config_yes=true npx gql.tada generate-schema \
+                --tsconfig ./tsconfig.json \
+                --output "./src/generated/schema.graphql" \
+                "https://noble-pika-27.hasura.app/v1/graphql"
 
-              npx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
+              npm_config_yes=true npx gql.tada generate-output \
+                --disable-preprocessing \
+                --tsconfig ./tsconfig.json \
+                --output ./src/generated/graphql-env.d.ts
+            '';
+          };
+        };
+
+        app-svelte-check = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "app-svelte-check";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd app/
+              
+              npm_config_yes=true npx svelte-check sync
+              npm_config_yes=true npx svelte-check --tsconfig ./tsconfig.json
             '';
           };
         };
