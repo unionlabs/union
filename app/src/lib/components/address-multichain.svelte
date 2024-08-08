@@ -2,6 +2,7 @@
 import type { Chain } from "$lib/types"
 import { rawToBech32 } from "$lib/utilities/address"
 import { Badge } from "$lib/components/ui/badge/index.ts"
+import { fade, blur, fly, slide, scale } from "svelte/transition"
 
 export let address: { address: string; normalizedAddress: string }
 export let chains: Array<Chain>
@@ -47,22 +48,29 @@ const longestPrefix = Math.max.apply(
   0,
   allCosmosAddresses.map(pair => pair.prefix.length)
 )
+let addressIndex = 0
+setInterval(() => {
+  //logic goes here
+  addressIndex = (addressIndex + 1) % (allCosmosAddresses.length - 1)
+}, 2000)
 </script>
 
-<div>
 {#if addressChain?.rpc_type === "evm"}
   <div class="text-lg font-bold flex items-center gap-2">{address.address}<Badge>EVM</Badge></div>
 {:else}
-<Badge>Cosmos</Badge>
-<ul>
-  {#each allCosmosAddressesDeduplicated as cosmosAddress}
-    <li class="text-lg first:font-bold whitespace-pre">
-      <span class="select-none">{' '.repeat(longestPrefix - cosmosAddress.prefix.length)}</span><span class="text-muted-foreground mr-1">{cosmosAddress.prefix}</span>{cosmosAddress.body}<span class="ml-1 text-muted-foreground">{cosmosAddress.checksum}</span>
-    </li>
-  {/each}
-</ul>
-
-  
-{/if}
+<div class="flex items-center">
+  <ul class="py-4">
+    {#each allCosmosAddressesDeduplicated as cosmosAddress, i}
+      {#if i === addressIndex}
+      <li 
+        class="text-lg first:font-bold whitespace-pre">
+        <span class="select-none">{' '.repeat(longestPrefix - cosmosAddress.prefix.length)}</span><span class="text-muted-foreground mr-1">{cosmosAddress.prefix}</span>{cosmosAddress.body}<span class="ml-1 text-muted-foreground">{cosmosAddress.checksum}</span>
+      </li>
+      {/if}
+    {/each}
+  </ul>
+  <Badge>Cosmos</Badge>
 </div>
+
+{/if}
 
