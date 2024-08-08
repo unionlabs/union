@@ -18,6 +18,7 @@ import { updateTheme } from "$lib/utilities/update-theme.ts"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
+import { crtEffectEnabled } from "$lib/stores/user"
 
 const { queryClient, localStoragePersister, PersistQueryClientProvider } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
@@ -90,6 +91,8 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
   <!-- will be enabled once powered by index status !-->
   <!-- <OnlineStatus /> !-->
 </PersistQueryClientProvider>
+
+<div class:crt={$crtEffectEnabled} class="absolute top-0 w-dvw h-dvh z-50 pointer-events-none"></div>
 
 <style>
   :global([data-close-button]) {

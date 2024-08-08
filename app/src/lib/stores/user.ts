@@ -1,4 +1,5 @@
 import { writable } from "svelte/store"
+import { persisted } from "svelte-persisted-store"
 
 function persistStore<T>(key: string, initial: T) {
   const storedValue = localStorage.getItem(key)
@@ -13,3 +14,4 @@ function persistStore<T>(key: string, initial: T) {
 }
 
 export const showUnsupported = persistStore("show-unsupported", true)
+export const crtEffectEnabled = persisted("crt-effect-enabled", true)
