@@ -11,6 +11,8 @@ import ColorTransfers from "$lib/components/union-icons/color/icon-transfers-col
 import ColorUserTransfers from "$lib/components/union-icons/color/icon-usertransfers-color.svelte"
 import ColorWallet from "$lib/components/union-icons/color/icon-wallet-color.svelte"
 import ColorPacket from "$lib/components/union-icons/color/icon-packet-color.svelte"
+import ColorHome from "$lib/components/union-icons/color/icon-home-color.svelte"
+import ColorSettings from "$lib/components/union-icons/color/icon-settings-color.svelte"
 
 import MonoBlocks from "$lib/components/union-icons/mono/icon-blocks-mono.svelte"
 import MonoChannel from "$lib/components/union-icons/mono/icon-channel-mono.svelte"
@@ -24,6 +26,13 @@ import MonoTransfers from "$lib/components/union-icons/mono/icon-transfers-mono.
 import MonoUserTransfers from "$lib/components/union-icons/mono/icon-usertransfers-mono.svelte"
 import MonoWallet from "$lib/components/union-icons/mono/icon-wallet-mono.svelte"
 import MonoPacket from "$lib/components/union-icons/mono/icon-packet-mono.svelte"
+import MonoHome from "$lib/components/union-icons/mono/icon-home-mono.svelte"
+import MonoSettings from "$lib/components/union-icons/mono/icon-settings-mono.svelte"
+import MonoAllTransfers from "$lib/components/union-icons/mono/icon-alltransfers-mono.svelte"
+import MonoIbcConnections from "$lib/components/union-icons/mono/icon-ibcconnections-mono.svelte"
+import MonoIbcChannels from "$lib/components/union-icons/mono/icon-ibcchannels-mono.svelte"
+import MonoHubbleStatus from "$lib/components/union-icons/mono/icon-hubblestatus-mono.svelte"
+import MonoSearchK from "$lib/components/union-icons/mono/icon-searchk-mono.svelte"
 
 import InverseBlocks from "$lib/components/union-icons/inverse/icon-blocks-inverse.svelte"
 import InverseChannel from "$lib/components/union-icons/inverse/icon-channel-inverse.svelte"
@@ -37,6 +46,8 @@ import InverseTransfers from "$lib/components/union-icons/inverse/icon-transfers
 import InverseUserTransfers from "$lib/components/union-icons/inverse/icon-usertransfers-inverse.svelte"
 import InverseWallet from "$lib/components/union-icons/inverse/icon-wallet-inverse.svelte"
 import InversePacket from "$lib/components/union-icons/inverse/icon-packet-inverse.svelte"
+import InverseHome from "$lib/components/union-icons/inverse/icon-home-inverse.svelte"
+import InverseSettings from "$lib/components/union-icons/inverse/icon-settings-inverse.svelte"
 
 type IconName =
   | "blocks"
@@ -50,119 +61,165 @@ type IconName =
   | "transfers"
   | "usertransfers"
   | "wallet"
+  | "packet"
+  | "home"
+  | "settings"
+  | "alltransfers"
+  | "ibcconnections"
+  | "ibcchannels"
+  | "hubblestatus"
+  | "searchk"
 
-let icons = [
-  {
-    name: "blocks",
+type IconVariant = "color" | "mono" | "inverse"
+type mode = "dark" | "light"
+
+type IconConfig = {
+  [key in IconName]: {
+    variants: Partial<Record<IconVariant, any>>
+  }
+}
+
+const icons: IconConfig = {
+  blocks: {
     variants: {
       color: ColorBlocks,
       mono: MonoBlocks,
       inverse: InverseBlocks
     }
   },
-  {
-    name: "channel",
+  channel: {
     variants: {
       color: ColorChannel,
       mono: MonoChannel,
       inverse: InverseChannel
     }
   },
-  {
-    name: "connection",
+  connection: {
     variants: {
       color: ColorConnection,
       mono: MonoConnection,
       inverse: InverseConnection
     }
   },
-  {
-    name: "explorer",
+  explorer: {
     variants: {
       color: ColorExplorer,
       mono: MonoExplorer,
       inverse: InverseExplorer
     }
   },
-  {
-    name: "faucet",
+  faucet: {
     variants: {
       color: ColorFaucet,
       mono: MonoFaucet,
       inverse: InverseFaucet
     }
   },
-  {
-    name: "index",
+  index: {
     variants: {
       color: ColorIndex,
       mono: MonoIndex,
       inverse: InverseIndex
     }
   },
-  {
-    name: "queue",
+  queue: {
     variants: {
       color: ColorQueue,
       mono: MonoQueue,
       inverse: InverseQueue
     }
   },
-  {
-    name: "search",
+  search: {
     variants: {
       color: ColorSearch,
       mono: MonoSearch,
       inverse: InverseSearch
     }
   },
-  {
-    name: "transfers",
+  transfers: {
     variants: {
       color: ColorTransfers,
       mono: MonoTransfers,
       inverse: InverseTransfers
     }
   },
-  {
-    name: "usertransfers",
+  usertransfers: {
     variants: {
       color: ColorUserTransfers,
       mono: MonoUserTransfers,
       inverse: InverseUserTransfers
     }
   },
-  {
-    name: "wallet",
+  wallet: {
     variants: {
       color: ColorWallet,
       mono: MonoWallet,
       inverse: InverseWallet
     }
   },
-  {
-    name: "packet",
+  packet: {
     variants: {
       color: ColorPacket,
       mono: MonoPacket,
       inverse: InversePacket
     }
+  },
+  home: {
+    variants: {
+      color: ColorHome,
+      mono: MonoHome,
+      inverse: InverseHome
+    }
+  },
+  settings: {
+    variants: {
+      color: ColorSettings,
+      mono: MonoSettings,
+      inverse: InverseSettings
+    }
+  },
+  alltransfers: {
+    variants: {
+      mono: MonoAllTransfers
+    }
+  },
+  ibcconnections: {
+    variants: {
+      mono: MonoIbcConnections
+    }
+  },
+  ibcchannels: {
+    variants: {
+      mono: MonoIbcChannels
+    }
+  },
+  hubblestatus: {
+    variants: {
+      mono: MonoHubbleStatus
+    }
+  },
+  searchk: {
+    variants: {
+      mono: MonoSearchK
+    }
   }
-]
+}
 
 let className: string | undefined = undefined
-export let theme: "color" | "mono" | "inverse" = "color"
+export let theme: IconVariant = "color"
 export let name: IconName | undefined
 
 export { className as class }
 
-let iconName = icons.find(e => e.name === name)
-$: display = iconName ? iconName.variants[theme] : null
+function getIconComponent(name: IconName | undefined, theme: IconVariant): any | undefined {
+  return name && icons[name]?.variants[theme]
+}
+
+$: component = getIconComponent(name, theme)
 </script>
 
-{#if display}
-  <svelte:component this={display} class={className}/>
+{#if component}
+  <svelte:component this={component} class={className} />
 {:else}
-  <p>Icon not found.</p>
+  <p>Icon not found or not available in this variant.</p>
 {/if}
-

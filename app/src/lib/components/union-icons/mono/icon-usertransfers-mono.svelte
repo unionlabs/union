@@ -3,19 +3,21 @@ let className: string | undefined = undefined
 export { className as class }
 </script>
 
-<svg class={className} viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <g clip-path="url(#clip0_106_696)">
-    <rect x="0.5" y="0.5" width="12" height="12" rx="0.5" fill="black" stroke="black"/>
-    <circle cx="2.99805" cy="4.00012" r="1" fill="#A0ECFD"/>
-    <rect x="1.99805" y="5.00006" width="2" height="7" fill="white"/>
-    <rect x="5.00488" y="2.99988" width="3" height="2" fill="white"/>
-    <rect x="8.00781" y="8.00018" width="3" height="2" fill="#A0ECFD"/>
-    <path d="M8.00781 6.00043V2.00043L10.0078 4.00043L8.00781 6.00043Z" fill="white"/>
-    <path d="M8.00781 7.00006L8.00781 11.0001L6.00781 9.00006L8.00781 7.00006Z" fill="#A0ECFD"/>
+<svg class={className} viewBox="0 0 65 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g clip-path="url(#clip0_402_497)">
+    <rect x="2.5" y="2.5" width="60" height="60" rx="2.5" stroke="currentColor" stroke-width="5"/>
+    <circle cx="14.9912" cy="20.0005" r="5" fill="currentColor"/>
+    <rect x="10" y="30" width="10" height="30" fill="currentColor"/>
+    <rect x="25.0244" y="14.9994" width="15" height="10" fill="currentColor"/>
+    <rect x="40.0391" y="40.0009" width="15" height="10" fill="currentColor"/>
+    <path d="M40.0391 30.0021V10.0021L50.0391 20.0021L40.0391 30.0021Z" fill="currentColor"/>
+    <path d="M40.0391 35.0003L40.0391 55.0003L30.0391 45.0003L40.0391 35.0003Z" fill="currentColor"/>
   </g>
   <defs>
-    <clipPath id="clip0_106_696">
-      <rect width="13" height="13" fill="white"/>
+    <clipPath id="clip0_402_497">
+      <rect width="65" height="65" fill="white"/>
     </clipPath>
   </defs>
 </svg>
+
+

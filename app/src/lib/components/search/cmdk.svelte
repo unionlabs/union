@@ -21,6 +21,8 @@ import BrainIcon from "virtual:icons/lucide/brain"
 import Badge from "$lib/components/ui/badge/badge.svelte"
 import * as Command from "$lib/components/ui/command/index.ts"
 import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
+import UnionIcon from "$lib/components/union-icons/index.svelte"
+import { mode } from "mode-watcher"
 
 let searchInput = writable("")
 searchInput.update($searchInput => $searchInput.replaceAll(" ", ""))
@@ -145,7 +147,7 @@ const DISABLE_TAB_INDEX = -1
     filter={(value, search) => (value.includes(search) ? 1 : 0)}
 
  class={cn('text-foreground bg-background')}
-    
+
   >
     <Command.Input
       type="text"
@@ -200,7 +202,7 @@ const DISABLE_TAB_INDEX = -1
           let:attrs
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
-            'hover:cursor-pointer',
+            'hover:cursor-pointer group',
             'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
           )}
           onSelect={() => {
@@ -208,7 +210,8 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <SmileIcon class="mr-2 size-5" />
+
+          <UnionIcon theme="mono" name="faucet" class="mr-2 size-5"/>
           <span>Get tokens from faucet</span>
           {#if $page.route.id?.startsWith('/faucet')}
             <Badge
@@ -222,7 +225,7 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-  
+
         <Command.Item
           let:attrs
           tabindex={DISABLE_TAB_INDEX}
@@ -235,7 +238,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <DollarSignIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme="mono"
+                  name="transfers"
+                  class="mr-2 size-5"
+          />
           <span>Transfer assets across chains</span>
           {#if $page.route.id?.startsWith('/transfer')}
             <Badge
@@ -249,10 +256,10 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-        
+
       </Command.Group>
       <Command.Separator />
-      
+
       <Command.Group heading="Explore Data" class={cn('text-black bg-background')}>
         {@const userAddresses = [$sepoliaStore?.address, $cosmosStore?.address].filter(Boolean)}
         <Command.Item
@@ -268,7 +275,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <TableIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme="mono"
+                  name="usertransfers"
+                  class="mr-2 size-5"
+          />
           <span>Your transfers</span>
           {#if $page.route.id?.startsWith('/explorer/address')}
             <Badge
@@ -294,7 +305,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <BrainIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme="mono"
+                  name="channel"
+                  class="mr-2 size-5"
+          />
           <span>All transfers</span>
           {#if $page.route.id?.startsWith('/explorer/transfers')}
             <Badge
@@ -320,7 +335,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <BrainIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme="mono"
+                  name="ibcconnections"
+                  class="mr-2 size-5"
+          />
           <span>IBC connections</span>
           {#if $page.route.id?.startsWith('/explorer/connections')}
             <Badge
@@ -334,7 +353,7 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-        
+
         <Command.Item
           let:attrs
           tabindex={DISABLE_TAB_INDEX}
@@ -347,7 +366,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <BrainIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme="mono"
+                  name="ibcchannels"
+                  class="mr-2 size-5"
+          />
           <span>IBC channels</span>
           {#if $page.route.id?.startsWith('/explorer/channels')}
             <Badge
@@ -374,7 +397,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <BrainIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme="mono"
+                  name="hubblestatus"
+                  class="mr-2 size-5"
+          />
           <span>Hubble index status</span>
           {#if $page.route.id?.startsWith('/explorer/index-status')}
             <Badge
@@ -388,11 +415,11 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-        
+
       </Command.Group>
 
 
-      
+
     </Command.List>
   </Command.Root>
 </Command.Dialog>
