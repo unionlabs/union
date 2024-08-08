@@ -9,7 +9,6 @@ use ark_ff::vec;
 use byteorder::{BigEndian, ByteOrder};
 use constants::*;
 use hex_literal::hex;
-use sha2::Sha256;
 use sha3::Digest;
 use substrate_bn::G1;
 use unionlabs::{
@@ -219,19 +218,6 @@ pub fn verify_zkp(
     )
 }
 
-fn g1_to_bytes(g1_point: &G1) -> Result<[u8; 64], Error> {
-    let mut buffer = [0; 64];
-    g1_point
-        .x()
-        .to_big_endian(&mut buffer[..32])
-        .map_err(|_| Error::InvalidPoint)?;
-    g1_point
-        .y()
-        .to_big_endian(&mut buffer[32..])
-        .map_err(|_| Error::InvalidPoint)?;
-    Ok(buffer)
-}
-
 fn verify_generic_zkp_2(
     chain_id: &str,
     trusted_validators_hash: H256,
@@ -299,34 +285,18 @@ fn verify_generic_zkp_2(
     let pc: G1 = zkp.proof_commitment.into();
     let pok: G1 = zkp.proof_commitment_pok.into();
 
-    let r1 = substrate_bn::Fr::from_slice(
-        &Sha256::new()
-            .chain_update(g1_to_bytes(&proof_a)?)
-            .chain_update(g1_to_bytes(&proof_c)?)
-            .chain_update(g1_to_bytes(&public_inputs_msm)?)
-            .finalize(),
-    )
-    .map_err(|_| Error::InvalidSliceLength)?;
+    let pok_result = substrate_bn::pairing_batch(&[(pc, g.into()), (pok, g_root_sigma_neg.into())]);
+    if pok_result != substrate_bn::Gt::one() {
+        return Err(Error::InvalidProof);
+    }
 
-    let r2 = substrate_bn::Fr::from_slice(
-        &Sha256::new()
-            .chain_update(g1_to_bytes(&pc)?)
-            .chain_update(g1_to_bytes(&pok)?)
-            .finalize(),
-    )
-    .map_err(|_| Error::InvalidSliceLength)?;
-
-    let result = substrate_bn::pairing_batch(&[
-        (proof_a * r1, zkp.proof.b.into()),
-        (public_inputs_msm * r1, -substrate_bn::G2::from(GAMMA_G2)),
-        (proof_c * r1, -substrate_bn::G2::from(DELTA_G2)),
-        (G1::from(ALPHA_G1) * r1, -substrate_bn::G2::from(BETA_G2)),
-        // Verify pedersen proof of knowledge
-        (pc * r2, g.into()),
-        (pok * r2, g_root_sigma_neg.into()),
+    let g16_result = substrate_bn::pairing_batch(&[
+        (proof_a, zkp.proof.b.into()),
+        (public_inputs_msm, -substrate_bn::G2::from(GAMMA_G2)),
+        (proof_c, -substrate_bn::G2::from(DELTA_G2)),
+        (G1::from(ALPHA_G1), -substrate_bn::G2::from(BETA_G2)),
     ]);
-
-    if result != substrate_bn::Gt::one() {
+    if g16_result != substrate_bn::Gt::one() {
         Err(Error::InvalidProof)
     } else {
         Ok(())
