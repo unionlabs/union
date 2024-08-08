@@ -9,13 +9,10 @@ import "../../contracts/proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 import "../../contracts/proto/tendermint/types/types.sol";
 import "../../contracts/proto/tendermint/types/validator.sol";
 import "../../contracts/proto/tendermint/types/canonical.sol";
-import {
-    CometblsHelp,
-    OptimizedConsensusState
-} from "../../contracts/lib/CometblsHelp.sol";
+import "../../contracts/lib/Common.sol";
 import {CometblsClient} from "../../contracts/clients/CometblsClientV2.sol";
 
-contract CometblsHelpProxy {
+contract VerifierProxy {
     CometblsClient client;
 
     constructor() {
@@ -30,19 +27,13 @@ contract CometblsHelpProxy {
     ) public returns (bool) {
         return client.verifyZKP(zkp, chainId, trustedValidatorsHash, header);
     }
-
-    function optimize(
-        UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState
-    ) public pure returns (OptimizedConsensusState memory) {
-        return CometblsHelp.optimize(consensusState);
-    }
 }
 
-contract CometblsHelpTests is Test {
-    CometblsHelpProxy proxy;
+contract VerifierTests is Test {
+    VerifierProxy proxy;
 
     function setUp() public {
-        proxy = new CometblsHelpProxy();
+        proxy = new VerifierProxy();
     }
 
     function test_verifyZKP_ok() public {
@@ -82,32 +73,6 @@ contract CometblsHelpTests is Test {
                     app_hash: hex"3A34FC963EEFAAE9B7C0D3DFF89180D91F3E31073E654F732340CEEDD77DD25B"
                 })
             )
-        );
-    }
-
-    function test_optimize_iso(
-        uint64 timestamp,
-        bytes32 appHash,
-        bytes32 validatorsHash
-    ) public view {
-        UnionIbcLightclientsCometblsV1ConsensusState.Data memory consensusState =
-        UnionIbcLightclientsCometblsV1ConsensusState.Data({
-            timestamp: timestamp,
-            root: IbcCoreCommitmentV1MerkleRoot.Data({
-                hash: abi.encodePacked(appHash)
-            }),
-            next_validators_hash: abi.encodePacked(validatorsHash)
-        });
-        OptimizedConsensusState memory optimizedConsensusState =
-            proxy.optimize(consensusState);
-        assertEq(consensusState.timestamp, optimizedConsensusState.timestamp);
-        assertEq(
-            consensusState.root.hash,
-            abi.encodePacked(optimizedConsensusState.appHash)
-        );
-        assertEq(
-            consensusState.next_validators_hash,
-            abi.encodePacked(optimizedConsensusState.nextValidatorsHash)
         );
     }
 }

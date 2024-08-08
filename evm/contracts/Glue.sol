@@ -12,8 +12,9 @@ import "./proto/tendermint/types/canonical.sol";
 import "./proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "./proto/union/ibc/lightclients/cosmosincosmos/v1/cosmosincosmos.sol";
 import "./proto/ibc/lightclients/wasm/v1/wasm.sol";
-import "./lib/CometblsHelp.sol";
+import "./lib/Common.sol";
 import "./clients/CosmosInCosmosClient.sol";
+import "./clients/CometblsClientV2.sol";
 
 contract Glue {
     function typesTelescope(

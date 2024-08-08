@@ -15,10 +15,16 @@ import "../proto/tendermint/types/types.sol";
 import "../proto/tendermint/types/canonical.sol";
 import "../proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
 import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
-import "../lib/CometblsHelp.sol";
+import "../lib/Common.sol";
 import "../lib/ICS23.sol";
 import "./ICS23MembershipVerifier.sol";
 import "./Verifier.sol";
+
+struct OptimizedConsensusState {
+    uint64 timestamp;
+    bytes32 appHash;
+    bytes32 nextValidatorsHash;
+}
 
 library CometblsClientLib {
     error ErrNotIBC();
@@ -33,6 +39,125 @@ library CometblsClientLib {
     error ErrInvalidMisbehaviorHeadersSequence();
     error ErrInvalidMisbehavior();
     error ErrClientFrozen();
+
+    function isExpired(
+        uint64 headerTime,
+        uint64 trustingPeriod,
+        uint64 currentTime
+    ) internal pure returns (bool) {
+        return currentTime > (headerTime + trustingPeriod);
+    }
+
+    function encodeMemory(
+        UnionIbcLightclientsCometblsV1Header.Data memory header
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            header.signed_header,
+            header.trusted_height,
+            header.zero_knowledge_proof
+        );
+    }
+
+    function encode(UnionIbcLightclientsCometblsV1Header.Data calldata header)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encode(
+            header.signed_header,
+            header.trusted_height,
+            header.zero_knowledge_proof
+        );
+    }
+
+    function decodeHeader(bytes calldata bz)
+        internal
+        pure
+        returns (UnionIbcLightclientsCometblsV1Header.Data calldata)
+    {
+        UnionIbcLightclientsCometblsV1Header.Data calldata header;
+        assembly {
+            header := bz.offset
+        }
+        return header;
+    }
+
+    function encodeMemory(
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            clientState.chain_id,
+            clientState.trusting_period,
+            clientState.unbonding_period,
+            clientState.max_clock_drift,
+            clientState.frozen_height,
+            clientState.latest_height
+        );
+    }
+
+    function decodeClientState(bytes calldata bz)
+        internal
+        pure
+        returns (UnionIbcLightclientsCometblsV1ClientState.Data calldata)
+    {
+        UnionIbcLightclientsCometblsV1ClientState.Data calldata clientState;
+        assembly {
+            clientState := bz.offset
+        }
+        return clientState;
+    }
+
+    function encodeMemory(OptimizedConsensusState memory consensusState)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encode(
+            consensusState.timestamp,
+            consensusState.appHash,
+            consensusState.nextValidatorsHash
+        );
+    }
+
+    function decodeConsensusState(bytes calldata bz)
+        internal
+        pure
+        returns (OptimizedConsensusState calldata)
+    {
+        OptimizedConsensusState calldata consensusState;
+        assembly {
+            consensusState := bz.offset
+        }
+        return consensusState;
+    }
+
+    function decodeConsensusStateMemory(bytes memory bz)
+        internal
+        pure
+        returns (OptimizedConsensusState memory)
+    {
+        OptimizedConsensusState memory consensusState;
+        (uint64 timestamp, bytes32 appHash, bytes32 nextValidatorsHash) =
+            abi.decode(bz, (uint64, bytes32, bytes32));
+        consensusState.timestamp = timestamp;
+        consensusState.appHash = appHash;
+        consensusState.nextValidatorsHash = nextValidatorsHash;
+        return consensusState;
+    }
+
+    function commit(OptimizedConsensusState memory consensusState)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(encodeMemory(consensusState));
+    }
+
+    function commit(
+        UnionIbcLightclientsCometblsV1ClientState.Data memory clientState
+    ) internal pure returns (bytes32) {
+        return keccak256(encodeMemory(clientState));
+    }
 }
 
 contract CometblsClient is
@@ -44,11 +169,7 @@ contract CometblsClient is
 {
     using BytesLib for bytes;
     using IBCHeight for IbcCoreClientV1Height.Data;
-    using CometblsHelp for TendermintTypesHeader.Data;
-    using CometblsHelp for TendermintTypesCommit.Data;
-    using CometblsHelp for UnionIbcLightclientsCometblsV1ClientState.Data;
-    using CometblsHelp for OptimizedConsensusState;
-    using CometblsHelp for bytes;
+    using CometblsClientLib for *;
 
     address private ibcHandler;
 
@@ -86,9 +207,9 @@ contract CometblsClient is
         )
     {
         UnionIbcLightclientsCometblsV1ClientState.Data calldata clientState =
-            clientStateBytes.unmarshalClientStateEthABI();
+            clientStateBytes.decodeClientState();
         OptimizedConsensusState calldata consensusState =
-            consensusStateBytes.unmarshalConsensusStateEthABI();
+            consensusStateBytes.decodeConsensusState();
         if (
             clientState.latest_height.revision_height == 0
                 || consensusState.timestamp == 0
@@ -108,9 +229,9 @@ contract CometblsClient is
             height: block.number
         });
         return (
-            clientState.marshalToCommitmentEthABI(),
+            clientState.commit(),
             ConsensusStateUpdate({
-                consensusStateCommitment: consensusState.marshalToCommitmentEthABI(),
+                consensusStateCommitment: consensusState.commit(),
                 height: clientState.latest_height
             }),
             true
@@ -198,7 +319,7 @@ contract CometblsClient is
         // Normalize to nanosecond because ibc-go recvPacket expects nanos...
         uint64 currentTime = uint64(block.timestamp * 1e9);
         if (
-            CometblsHelp.isExpired(
+            CometblsClientLib.isExpired(
                 untrustedTimestamp, clientState.trusting_period, currentTime
             )
         ) {
@@ -252,7 +373,7 @@ contract CometblsClient is
         returns (bytes32, ConsensusStateUpdate[] memory)
     {
         UnionIbcLightclientsCometblsV1Header.Data calldata header =
-            clientMessageBytes.unmarshalEthABI();
+            clientMessageBytes.decodeHeader();
         UnionIbcLightclientsCometblsV1ClientState.Data storage clientState =
             clientStates[clientId];
 
@@ -292,11 +413,11 @@ contract CometblsClient is
 
         ConsensusStateUpdate[] memory updates = new ConsensusStateUpdate[](1);
         updates[0] = ConsensusStateUpdate({
-            consensusStateCommitment: consensusState.marshalToCommitmentEthABI(),
+            consensusStateCommitment: consensusState.commit(),
             height: untrustedHeight
         });
 
-        return (clientState.marshalToCommitmentEthABI(), updates);
+        return (clientState.commit(), updates);
     }
 
     function verifyMembership(
@@ -371,14 +492,14 @@ contract CometblsClient is
         view
         returns (bytes memory)
     {
-        return clientStates[clientId].marshalEthABI();
+        return clientStates[clientId].encodeMemory();
     }
 
     function getConsensusState(
         string calldata clientId,
         IbcCoreClientV1Height.Data calldata height
     ) external view returns (bytes memory) {
-        return consensusStates[clientId][height.toUint128()].marshalEthABI();
+        return consensusStates[clientId][height.toUint128()].encodeMemory();
     }
 
     function getTimestampAtHeight(

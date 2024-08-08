@@ -29,9 +29,9 @@ import {
 import {IbcCoreCommitmentV1MerklePrefix as CommitmentMerklePrefix} from
     "../../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 import {
-    CometblsHelp,
-    OptimizedConsensusState as CometblsConsensusState
-} from "../../../contracts/lib/CometblsHelp.sol";
+    CometblsClientLib,
+    OptimizedConsensusState
+} from "../../../contracts/clients/CometblsClientV2.sol";
 import {
     UnionIbcLightclientsCometblsV1ClientState as CometblsClientState,
     UnionIbcLightclientsCometblsV1Header as CometblsHeader,
@@ -51,7 +51,7 @@ import {IbcLightclientsTendermintV1Fraction as Fraction} from
     "../../../contracts/proto/ibc/lightclients/tendermint/v1/tendermint.sol";
 
 library Cometbls {
-    using CometblsHelp for *;
+    using CometblsClientLib for *;
 
     uint64 constant HOUR = 3600;
     uint64 constant DAY = 24 * HOUR;
@@ -94,11 +94,11 @@ library Cometbls {
         bytes32 appHash,
         bytes32 nextValidatorsHash,
         uint64 timestamp
-    ) internal pure returns (CometblsConsensusState memory) {
-        return CometblsConsensusState({
+    ) internal pure returns (OptimizedConsensusState memory) {
+        return OptimizedConsensusState({
+            timestamp: timestamp,
             appHash: appHash,
-            nextValidatorsHash: nextValidatorsHash,
-            timestamp: timestamp
+            nextValidatorsHash: nextValidatorsHash
         });
     }
 
@@ -112,10 +112,10 @@ library Cometbls {
     ) internal pure returns (IBCMsgs.MsgCreateClient memory m) {
         m.clientType = clientType;
         m.clientStateBytes =
-            createClientState(chainId, latestHeight).marshalEthABI();
+            createClientState(chainId, latestHeight).encodeMemory();
         m.consensusStateBytes = createConsensusState(
             appHash, nextValidatorsHash, timestamp
-        ).marshalEthABI();
+        ).encodeMemory();
     }
 
     function updateClient(
@@ -132,6 +132,6 @@ library Cometbls {
                 revision_height: trustedHeight
             }),
             zero_knowledge_proof: zkp
-        }).marshalEthABIMemory();
+        }).encodeMemory();
     }
 }

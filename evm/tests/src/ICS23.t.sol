@@ -4,7 +4,6 @@ import "forge-std/Test.sol";
 import "../../contracts/proto/cosmos/ics23/v1/proofs.sol";
 import "../../contracts/proto/ibc/core/commitment/v1/commitment.sol";
 import "../../contracts/lib/ICS23.sol";
-import "../../contracts/lib/CometblsHelp.sol";
 import "../../contracts/clients/ICS23MembershipVerifier.sol";
 
 contract ICS23Test is Test {
