@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { Chain } from "$lib/types"
 import { rawToBech32 } from "$lib/utilities/address"
+import { Badge } from "$lib/components/ui/badge/index.ts"
 
 export let address: { address: string; normalizedAddress: string }
 export let chains: Array<Chain>
@@ -16,11 +17,9 @@ const fromHexString = hexString =>
 
 <div>
 {#if address.address.startsWith("0x")}
-  <h3>EVM address</h3>
-  <div>{address.address}</div>
+  <div class="text-lg font-bold flex items-center gap-2">{address.address}<Badge>EVM</Badge></div>
 {:else}
-  <h3>Cosmos address</h3>
-  <div class="font-bold">{address.address}</div>
+  <div class="text-lg font-bold flex items-center gap-2">{address.address}<Badge>Cosmos</Badge></div>
   {#each cosmosChains as cosmosChain}
     {#if !address.address.startsWith(cosmosChain.addr_prefix)}
     <div>
