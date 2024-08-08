@@ -47,6 +47,7 @@ onNavigate(navigation => {
       explorerRoute === null ? "hidden sm:block" : ""
     )}
   >
+    {#if !$page.route.id?.startsWith("/explorer/address")}
     <a
       class={cn(
         "font-bold px-4 py-2 gap-2 items-center font-supermolot flex",
@@ -58,6 +59,7 @@ onNavigate(navigation => {
       <ArrowLeftIcon />
       <span class="uppercase">{$page.route.id?.split("/").at(-2)}</span>
     </a>
+    {/if}
     {#if $deviceWidth < 888 && $page.route.id?.split("/").length !== 4}
       <StatsBarMobile />
     {/if}
