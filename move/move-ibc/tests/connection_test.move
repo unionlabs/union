@@ -1,3 +1,4 @@
+#[test_only]
 module IBC::ConnectionTest {
     use aptos_std::string::{Self, String};
     use aptos_framework::vector;
@@ -5,7 +6,6 @@ module IBC::ConnectionTest {
     use IBC::Core::{Self, Version};
     use IBC::IBCCommitment::{Self};
     use IBC::height;
-    use aptos_std::smart_table::{Self as SmartTable, SmartTable};
     use aptos_std::any::{Self, Any};
 
     #[test]
@@ -254,8 +254,7 @@ module IBC::ConnectionTest {
             client_id,
             version,
             counterparty,
-            delay_period,
-            relayer
+            delay_period
         );
 
         let connection = Core::get_connection(connection_id_1);
@@ -282,8 +281,7 @@ module IBC::ConnectionTest {
             client_id_2,
             version_2,
             counterparty_2,
-            delay_period_2,
-            relayer_2
+            delay_period_2
         );
 
         let connection_2 = Core::get_connection(connection_id_2);
@@ -334,8 +332,7 @@ module IBC::ConnectionTest {
             proof_client,
             proof_consensus,
             proof_height,
-            proof_height,
-            relayer
+            proof_height
         );
 
         // Fetch the connection and commitment from the store
@@ -376,8 +373,7 @@ module IBC::ConnectionTest {
             proof_client2,
             proof_consensus,
             proof_height,
-            proof_height,
-            relayer
+            proof_height
         );
 
         let new_connection = Core::get_connection(new_connection_id);
@@ -410,8 +406,7 @@ module IBC::ConnectionTest {
             client_id,
             version,
             counterparty,
-            delay_period,
-            relayer
+            delay_period
         );
 
         // Mock data for proof
@@ -432,8 +427,7 @@ module IBC::ConnectionTest {
             proof_consensus,
             counterparty_connection_id,
             proof_height,
-            proof_height,
-            relayer
+            proof_height
         );
 
         // Fetch the connection and commitment from the store
@@ -462,8 +456,7 @@ module IBC::ConnectionTest {
             new_client_id,
             version,
             new_counterparty,
-            delay_period,
-            relayer
+            delay_period
         );
 
         // Mock data for proof for the new connection
@@ -484,8 +477,7 @@ module IBC::ConnectionTest {
             new_proof_consensus,
             new_counterparty_connection_id,
             new_proof_height,
-            new_proof_height,
-            relayer
+            new_proof_height
         );
 
         // Fetch the new connection and commitment from the store
@@ -534,16 +526,14 @@ module IBC::ConnectionTest {
             proof_client,
             vector::empty<u8>(),  // proof_consensus (not used in this test)
             proof_height,
-            proof_height,
-            relayer
+            proof_height
         );
 
         // Call connection_open_confirm
         Core::connection_open_confirm(
             connection_id,
             any::pack(vector::empty<u8>()),  // proofAck
-            proof_height,
-            relayer
+            proof_height
         );
 
         // Fetch the connection and commitment from the store
@@ -563,7 +553,7 @@ module IBC::ConnectionTest {
     }
 
     #[test(alice = @IBC, relayer=@mock_relayer_address)]   
-    #[expected_failure(abort_code = 1008)] // ERR_INVALID_CONNECTION_STATE
+    #[expected_failure(abort_code = 1008)] // E_INVALID_CONNECTION_STATE
     public fun test_connection_open_confirm_failure_invalid_state(alice: &signer, relayer:address) {
         Core::create_ibc_store(alice);
 
@@ -584,23 +574,21 @@ module IBC::ConnectionTest {
             client_id,
             version,
             counterparty,
-            delay_period,
-            relayer
+            delay_period
         );
 
         // Call connection_open_confirm without calling connection_open_try
         Core::connection_open_confirm(
             connection_id,
             proof_ack,
-            proof_height,
-            relayer
+            proof_height
         );
     }
 
     // TODO: Uncomment this test when light client is implemented
 
     // #[test(alice = @IBC, relayer=@mock_relayer_address)]   
-    // #[expected_failure(abort_code = 1010)] // ERR_INVALID_PROOF
+    // #[expected_failure(abort_code = 1010)] // E_INVALID_PROOF
     // public fun test_connection_open_confirm_failure_invalid_proof(alice: &signer, relayer:address) {
     //     Core::create_ibc_store(alice);
     //     let client_id = string::utf8(b"client-0");

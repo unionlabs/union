@@ -1,3 +1,4 @@
+#[test_only]
 module IBC::ClientTest {
 
     use std::signer;
@@ -13,8 +14,6 @@ module IBC::ClientTest {
     use IBC::Core;
     use IBC::LightClient;
 
-
-    use aptos_framework::smart_table::{Self as SmartTable, SmartTable};
     const E_GENERATE_CLIENT_IDENTIFIER: u64 = 3001;
     const E_GET_CLIENT_IMPL: u64 = 3002;
     const E_CREATE_CLIENT: u64 = 3003;
@@ -67,7 +66,6 @@ module IBC::ClientTest {
             client_type,
             client_state,
             consensus_state,
-            @0x3
         );
         assert!(client_id == expected_client_id, E_CREATE_CLIENT);
 
@@ -98,7 +96,6 @@ module IBC::ClientTest {
             client_type2,
             client_state2,
             consensus_state2,
-            @0x3
         );
         assert!(client_id2 == expected_client_id2, E_CREATE_CLIENT);
 

@@ -9,7 +9,6 @@ module IBC::LightClient {
     use aptos_std::crypto_algebra::{deserialize, serialize, one, zero, add, mul, scalar_mul, multi_pairing, Element, eq, sub};
     use aptos_std::aptos_hash;
     use IBC::height;
-    use IBC::Core;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
@@ -243,9 +242,9 @@ module IBC::LightClient {
         let inner = HMAC_I;
         vector::append(&mut inner, *message);
         let outer = HMAC_O;
-        vector::append(&mut outer, aptos_std::aptos_hash::keccak256(inner));
+        vector::append(&mut outer, aptos_hash::keccak256(inner));
 
-        aptos_std::aptos_hash::keccak256(outer)
+        aptos_hash::keccak256(outer)
     }
 
     fun hash_commitment(proof_commitment: &Element<G1>): u256 {

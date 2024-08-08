@@ -1,3 +1,4 @@
+#[test_only]
 module IBC::ChannelTest {
 
     use std::signer;
@@ -13,8 +14,6 @@ module IBC::ChannelTest {
     use IBC::Core::{Self, Version};
     use IBC::LightClient;
 
-
-    use aptos_framework::smart_table::{Self as SmartTable, SmartTable};
     const E_GENERATE_CLIENT_IDENTIFIER: u64 = 3001;
     const E_GET_CLIENT_IMPL: u64 = 3002;
     const E_CREATE_CLIENT: u64 = 3003;

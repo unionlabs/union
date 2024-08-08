@@ -1,7 +1,7 @@
 module IBCModuleAddr::IBCModule {
     use std::vector;
     use IBC::height;
-    use aptos_std::string::{Self, String};
+    use aptos_std::string::{String};
     // use IBC::Core;
 
     // Order Enums
@@ -21,86 +21,86 @@ module IBCModuleAddr::IBCModule {
 
 
     public fun on_chan_open_init(
-        order: u8, // ORDER_ORDERED or ORDER_UNORDERED
-        connection_hops: vector<String>,
-        port_id: String,
-        channel_id: String,
-        counterparty_port_id: String, 
-        counterparty_channel_id: String, 
-        version: String,
+        _order: u8, // ORDER_ORDERED or ORDER_UNORDERED
+        _connection_hops: vector<String>,
+        _port_id: String,
+        _channel_id: String,
+        _counterparty_port_id: String, 
+        _counterparty_channel_id: String, 
+        _version: String,
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
     }
 
     public fun on_chan_open_try(
-        order: u8, // ORDER_ORDERED or ORDER_UNORDERED
-        connection_hops: vector<String>,
-        port_id: String,
-        channel_id: String,
-        counterparty_port_id: String, 
-        counterparty_channel_id: String, 
-        version: String,
-        counterparty_version: String,
+        _order: u8, // ORDER_ORDERED or ORDER_UNORDERED
+        _connection_hops: vector<String>,
+        _port_id: String,
+        _channel_id: String,
+        _counterparty_port_id: String, 
+        _counterparty_channel_id: String, 
+        _version: String,
+        _counterparty_version: String,
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
     }
 
     public fun on_chan_open_ack(
-        port_id: String,
-        channel_id: String,
-        counterparty_channel_id: String,
-        counterparty_version: String,
+        _port_id: String,
+        _channel_id: String,
+        _counterparty_channel_id: String,
+        _counterparty_version: String,
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
     }
 
     public fun on_chan_open_confirm(
-        port_id: String,
-        channel_id: String,
+        _port_id: String,
+        _channel_id: String,
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
     }
 
     public fun on_chan_close_init(
-        port_id: String,
-        channel_id: String,
+        _port_id: String,
+        _channel_id: String,
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
     }
 
     public fun on_chan_close_confirm(
-        port_id: String,
-        channel_id: String,
+        _port_id: String,
+        _channel_id: String,
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
     }
 
     public fun on_recv_packet(
-        packet: IbcCoreChannelV1Packet,
-        relayer: address
+        _packet: IbcCoreChannelV1Packet,
+        _relayer: address
     ): vector<u8> {
         // Implement your logic here
         vector::empty<u8>() // Return an empty vector for success
     }
 
     public fun on_acknowledgement_packet(
-        packet: IbcCoreChannelV1Packet,
-        acknowledgement: vector<u8>,
-        relayer: address
+        _packet: IbcCoreChannelV1Packet,
+        _acknowledgement: vector<u8>,
+        _relayer: address
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
     }
 
     public fun on_timeout_packet(
-        packet: IbcCoreChannelV1Packet,
-        relayer: address
+        _packet: IbcCoreChannelV1Packet,
+        _relayer: address
     ): u8 {
         // Implement your logic here
         0 // Return 0 for success
