@@ -57,8 +57,8 @@ setInterval(() => {
 
 {#if addressChain?.rpc_type === "evm"}
 <div class="flex items-center gap-2">
-  <div class="text-lg font-bold flex items-center"><span class="text-muted-foreground">0x</span>{address.address.slice(2)}</div>
-  <Badge>EVM</Badge>
+  <div class="text-sm sm:text-base md:text-lg font-bold flex items-center"><span class="text-muted-foreground">0x</span>{address.address.slice(2)}</div>
+  <Badge class="hidden md:block">EVM</Badge>
 </div>
 {:else}
 <div class="flex items-center">
@@ -66,13 +66,13 @@ setInterval(() => {
     {#each allCosmosAddressesDeduplicated as cosmosAddress, i}
       {#if i === addressIndex}
       <li 
-        class="text-lg first:font-bold whitespace-pre">
+        class="text-sm sm:text-base md:text-lg first:font-bold whitespace-pre">
         <span class="select-none">{' '.repeat(longestPrefix - cosmosAddress.prefix.length)}</span><span class="text-muted-foreground mr-1">{cosmosAddress.prefix}</span>{cosmosAddress.body}<span class="ml-1 text-muted-foreground">{cosmosAddress.checksum}</span>
       </li>
       {/if}
     {/each}
   </ul>
-  <Badge>Cosmos</Badge>
+  <Badge class="hidden md:block">Cosmos</Badge>
 </div>
 
 {/if}
