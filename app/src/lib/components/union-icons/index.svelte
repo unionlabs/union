@@ -11,6 +11,8 @@ import ColorTransfers from "$lib/components/union-icons/color/icon-transfers-col
 import ColorUserTransfers from "$lib/components/union-icons/color/icon-usertransfers-color.svelte"
 import ColorWallet from "$lib/components/union-icons/color/icon-wallet-color.svelte"
 import ColorPacket from "$lib/components/union-icons/color/icon-packet-color.svelte"
+import ColorHome from "$lib/components/union-icons/color/icon-home-color.svelte"
+import ColorSettings from "$lib/components/union-icons/color/icon-settings-color.svelte"
 
 import MonoBlocks from "$lib/components/union-icons/mono/icon-blocks-mono.svelte"
 import MonoChannel from "$lib/components/union-icons/mono/icon-channel-mono.svelte"
@@ -24,6 +26,8 @@ import MonoTransfers from "$lib/components/union-icons/mono/icon-transfers-mono.
 import MonoUserTransfers from "$lib/components/union-icons/mono/icon-usertransfers-mono.svelte"
 import MonoWallet from "$lib/components/union-icons/mono/icon-wallet-mono.svelte"
 import MonoPacket from "$lib/components/union-icons/mono/icon-packet-mono.svelte"
+import MonoHome from "$lib/components/union-icons/mono/icon-home-mono.svelte"
+import MonoSettings from "$lib/components/union-icons/mono/icon-settings-mono.svelte"
 
 import InverseBlocks from "$lib/components/union-icons/inverse/icon-blocks-inverse.svelte"
 import InverseChannel from "$lib/components/union-icons/inverse/icon-channel-inverse.svelte"
@@ -37,6 +41,23 @@ import InverseTransfers from "$lib/components/union-icons/inverse/icon-transfers
 import InverseUserTransfers from "$lib/components/union-icons/inverse/icon-usertransfers-inverse.svelte"
 import InverseWallet from "$lib/components/union-icons/inverse/icon-wallet-inverse.svelte"
 import InversePacket from "$lib/components/union-icons/inverse/icon-packet-inverse.svelte"
+import InverseHome from "$lib/components/union-icons/inverse/icon-home-inverse.svelte"
+import InverseSettings from "$lib/components/union-icons/inverse/icon-settings-inverse.svelte"
+
+import MonoInverseBlocks from "$lib/components/union-icons/mono-inverse/icon-blocks-mono-inverse.svelte"
+import MonoInverseChannel from "$lib/components/union-icons/mono-inverse/icon-channel-mono-inverse.svelte"
+import MonoInverseConnection from "$lib/components/union-icons/mono-inverse/icon-connection-mono-inverse.svelte"
+import MonoInverseExplorer from "$lib/components/union-icons/mono-inverse/icon-explorer-mono-inverse.svelte"
+import MonoInverseFaucet from "$lib/components/union-icons/mono-inverse/icon-faucet-mono-inverse.svelte"
+import MonoInverseIndex from "$lib/components/union-icons/mono-inverse/icon-index-mono-inverse.svelte"
+import MonoInverseQueue from "$lib/components/union-icons/mono-inverse/icon-queue-mono-inverse.svelte"
+import MonoInverseSearch from "$lib/components/union-icons/mono-inverse/icon-search-mono-inverse.svelte"
+import MonoInverseTransfers from "$lib/components/union-icons/mono-inverse/icon-transfers-mono-inverse.svelte"
+import MonoInverseUserTransfers from "$lib/components/union-icons/mono-inverse/icon-usertransfers-mono-inverse.svelte"
+import MonoInverseWallet from "$lib/components/union-icons/mono-inverse/icon-wallet-mono-inverse.svelte"
+import MonoInversePacket from "$lib/components/union-icons/mono-inverse/icon-packet-mono-inverse.svelte"
+import MonoInverseHome from "$lib/components/union-icons/mono-inverse/icon-home-mono-inverse.svelte"
+import MonoInverseSettings from "$lib/components/union-icons/mono-inverse/icon-packet-mono-inverse.svelte"
 
 type IconName =
   | "blocks"
@@ -50,6 +71,8 @@ type IconName =
   | "transfers"
   | "usertransfers"
   | "wallet"
+  | "home"
+  | "settings"
 
 let icons = [
   {
@@ -57,7 +80,8 @@ let icons = [
     variants: {
       color: ColorBlocks,
       mono: MonoBlocks,
-      inverse: InverseBlocks
+      inverse: InverseBlocks,
+      monoInverse: MonoInverseBlocks
     }
   },
   {
@@ -65,7 +89,8 @@ let icons = [
     variants: {
       color: ColorChannel,
       mono: MonoChannel,
-      inverse: InverseChannel
+      inverse: InverseChannel,
+      monoInverse: MonoInverseChannel
     }
   },
   {
@@ -73,7 +98,8 @@ let icons = [
     variants: {
       color: ColorConnection,
       mono: MonoConnection,
-      inverse: InverseConnection
+      inverse: InverseConnection,
+      monoInverse: MonoInverseConnection
     }
   },
   {
@@ -81,7 +107,8 @@ let icons = [
     variants: {
       color: ColorExplorer,
       mono: MonoExplorer,
-      inverse: InverseExplorer
+      inverse: InverseExplorer,
+      monoInverse: MonoInverseExplorer
     }
   },
   {
@@ -89,7 +116,8 @@ let icons = [
     variants: {
       color: ColorFaucet,
       mono: MonoFaucet,
-      inverse: InverseFaucet
+      inverse: InverseFaucet,
+      monoInverse: MonoInverseFaucet
     }
   },
   {
@@ -97,7 +125,8 @@ let icons = [
     variants: {
       color: ColorIndex,
       mono: MonoIndex,
-      inverse: InverseIndex
+      inverse: InverseIndex,
+      monoInverse: MonoInverseIndex
     }
   },
   {
@@ -105,7 +134,8 @@ let icons = [
     variants: {
       color: ColorQueue,
       mono: MonoQueue,
-      inverse: InverseQueue
+      inverse: InverseQueue,
+      monoInverse: MonoInverseQueue
     }
   },
   {
@@ -113,7 +143,8 @@ let icons = [
     variants: {
       color: ColorSearch,
       mono: MonoSearch,
-      inverse: InverseSearch
+      inverse: InverseSearch,
+      monoInverse: MonoInverseSearch
     }
   },
   {
@@ -121,7 +152,8 @@ let icons = [
     variants: {
       color: ColorTransfers,
       mono: MonoTransfers,
-      inverse: InverseTransfers
+      inverse: InverseTransfers,
+      monoInverse: MonoInverseTransfers
     }
   },
   {
@@ -129,7 +161,8 @@ let icons = [
     variants: {
       color: ColorUserTransfers,
       mono: MonoUserTransfers,
-      inverse: InverseUserTransfers
+      inverse: InverseUserTransfers,
+      monoInverse: MonoInverseUserTransfers
     }
   },
   {
@@ -137,7 +170,8 @@ let icons = [
     variants: {
       color: ColorWallet,
       mono: MonoWallet,
-      inverse: InverseWallet
+      inverse: InverseWallet,
+      monoInverse: MonoInverseWallet
     }
   },
   {
@@ -145,13 +179,32 @@ let icons = [
     variants: {
       color: ColorPacket,
       mono: MonoPacket,
-      inverse: InversePacket
+      inverse: InversePacket,
+      monoInverse: MonoInversePacket
+    }
+  },
+  {
+    name: "home",
+    variants: {
+      color: ColorHome,
+      mono: MonoHome,
+      inverse: InverseHome,
+      monoInverse: MonoInverseHome
+    }
+  },
+  {
+    name: "settings",
+    variants: {
+      color: ColorSettings,
+      mono: MonoSettings,
+      inverse: InverseSettings,
+      monoInverse: MonoInverseSettings
     }
   }
 ]
 
 let className: string | undefined = undefined
-export let theme: "color" | "mono" | "inverse" = "color"
+export let theme: "color" | "mono" | "inverse" | "monoInverse" = "color"
 export let name: IconName | undefined
 
 export { className as class }
