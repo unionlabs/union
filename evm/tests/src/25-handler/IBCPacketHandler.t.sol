@@ -5,8 +5,6 @@ import "solidity-bytes-utils/BytesLib.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/utils/math/Math.sol";
 
-import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
-import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
 import {IBCConnection} from
     "../../../contracts/core/03-connection/IBCConnection.sol";
@@ -47,6 +45,7 @@ import {
 } from "../../../contracts/proto/tendermint/types/types.sol";
 import
     "../../../contracts/proto/union/ibc/lightclients/cometbls/v1/cometbls.sol";
+import "../../../contracts/clients/CometblsClientV2.sol";
 
 import "../TestPlus.sol";
 
@@ -113,7 +112,7 @@ contract TestCometblsClient is CometblsClient {
 }
 
 contract IBCPacketHandlerTest is TestPlus {
-    using CometblsHelp for *;
+    using CometblsClientLib for *;
     using BytesLib for *;
     using LibString for *;
     using ConnectionCounterparty for *;

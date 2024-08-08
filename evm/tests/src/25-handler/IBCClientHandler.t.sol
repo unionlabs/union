@@ -24,7 +24,6 @@ import {
 } from "../../../contracts/clients/CometblsClientV2.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {IBCCommitment} from "../../../contracts/core/24-host/IBCCommitment.sol";
-import {CometblsHelp} from "../../../contracts/lib/CometblsHelp.sol";
 import {IbcCoreClientV1Height} from
     "../../../contracts/proto/ibc/core/client/v1/client.sol";
 import {
@@ -110,7 +109,7 @@ contract TestCometblsClient is CometblsClient {
 
 contract IBCClientHandlerTests is TestPlus {
     using BytesLib for bytes;
-    using CometblsHelp for *;
+    using CometblsClientLib for *;
 
     IBCHandler_Testable handler;
 
@@ -402,7 +401,7 @@ contract IBCClientHandlerTests is TestPlus {
             keccak256(
                 Cometbls.createClientState(
                     "union-devnet-10", uint64(signedHeader.height)
-                ).marshalEthABI()
+                ).encodeMemory()
             )
         );
         assertEq(updates.length, 1);
@@ -414,7 +413,7 @@ contract IBCClientHandlerTests is TestPlus {
                     signedHeader.validators_hash.toBytes32(0),
                     uint64(signedHeader.time.secs) * 1e9
                         + uint64(signedHeader.time.nanos)
-                ).marshalEthABI()
+                ).encodeMemory()
             )
         );
         assertEq(updates[0].height.revision_height, uint64(signedHeader.height));
@@ -735,7 +734,7 @@ contract IBCClientHandlerTests is TestPlus {
             clientStateBytes,
             Cometbls.createClientState(
                 "union-devnet-10", uint64(signedHeader.height)
-            ).marshalEthABI()
+            ).encodeMemory()
         );
     }
 
@@ -772,7 +771,7 @@ contract IBCClientHandlerTests is TestPlus {
                 ARBITRARY_INITIAL_APP_HASH,
                 signedHeader.validators_hash.toBytes32(0),
                 (uint64(signedHeader.time.secs) - 10) * 1e9
-            ).marshalEthABI()
+            ).encodeMemory()
         );
     }
 
@@ -857,7 +856,7 @@ contract IBCClientHandlerTests is TestPlus {
                 signedHeader.validators_hash.toBytes32(0),
                 uint64(signedHeader.time.secs) * 1e9
                     + uint64(signedHeader.time.nanos)
-            ).marshalEthABI()
+            ).encodeMemory()
         );
     }
 

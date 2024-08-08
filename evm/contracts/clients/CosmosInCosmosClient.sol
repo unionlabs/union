@@ -25,11 +25,7 @@ import {UnionIbcLightclientsCometblsV1ClientState as CometblsClientState} from
 import "../proto/ibc/lightclients/wasm/v1/wasm.sol";
 import "../lib/ICS23.sol";
 import "./ICS23MembershipVerifier.sol";
-import {
-    OptimizedConsensusState as CometblsOptimizedConsensusState,
-    ProcessedMoment,
-    CometblsHelp
-} from "../lib/CometblsHelp.sol";
+import {ProcessedMoment} from "../lib/Common.sol";
 
 struct OptimizedCosmosInCosmosConsensusState {
     uint64 timestamp;
