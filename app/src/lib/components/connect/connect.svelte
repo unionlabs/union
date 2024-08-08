@@ -16,6 +16,7 @@ import Sun from "virtual:icons/lucide/sun"
 import Moon from "virtual:icons/lucide/moon"
 import { setMode } from "mode-watcher"
 import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
+import { crtEffectEnabled } from "$lib/stores/user"
 
 let buttonText: string
 let connectedWallets = 0
@@ -119,10 +120,14 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={cosmosStore.connect}
       onDisconnectClick={cosmosStore.disconnect}
     />
+    <div class="flex items-center space-x-2">
+      <Switch bind:checked={$showUnsupported} id="unsupported-assets" />
+      <Label for="unsupported-assets">Show unverified assets</Label>
+    </div>
     <div class="mt-auto flex justify-between">
       <div class="flex items-center space-x-2">
-        <Switch bind:checked={$showUnsupported} id="unsupported-assets" />
-        <Label for="unsupported-assets">Show unverified assets</Label>
+        <Switch bind:checked={$crtEffectEnabled} id="crt-effect-enabled" />
+        <Label for="unsupported-assets">CRT effect</Label>
       </div>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
