@@ -135,16 +135,17 @@ const DISABLE_TAB_INDEX = -1
   closeOnOutsideClick={true}
   bind:open={commandDialogOpen}
   class={cn(
-    'rounded-none border-[1px] w-full',
-    'bg-card dark:bg-card',
-    'border-solid shadow-2xl dark:border-accent/50 border-accent',
+    ' w-full',
+    'border-solid shadow-2xl',
   )}
 >
   <Command.Root
     loop={true}
     shouldFilter={true}
-    class="bg-transparent"
     filter={(value, search) => (value.includes(search) ? 1 : 0)}
+
+ class={cn('text-foreground bg-background')}
+    
   >
     <Command.Input
       type="text"
@@ -158,10 +159,6 @@ const DISABLE_TAB_INDEX = -1
       pattern="[A-Za-z0-9\-]+"
       bind:value={$searchInput}
       placeholder="Navigate, search for address or tx by hash..."
-      class={cn(
-        'placeholder:text-gray-600 text-gray-800 dark:text-white',
-        'rounded-none my-auto h-10 lowercase placeholder:normal-case placeholder:text-xs sm:placeholder:text-sm',
-      )}
     />
 
     <Command.List data-search-dialog="">
