@@ -23,7 +23,7 @@ let normalizedAddresses = derived(addresses, $addresses =>
 
 
 <ChainsGate let:chains>
-  <section class="flex gap-4 flex-col my-4">
+  <section class="flex gap-4 flex-col mb-4 items-center">
     {#each $addresses as address }
       <AddressMultichain {address} {chains}/>
     {/each}

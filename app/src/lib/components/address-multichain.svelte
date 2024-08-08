@@ -56,10 +56,13 @@ setInterval(() => {
 </script>
 
 {#if addressChain?.rpc_type === "evm"}
-  <div class="text-lg font-bold flex items-center gap-2">{address.address}<Badge>EVM</Badge></div>
+<div class="flex items-center gap-2">
+  <div class="text-lg font-bold flex items-center"><span class="text-muted-foreground">0x</span>{address.address.slice(2)}</div>
+  <Badge>EVM</Badge>
+</div>
 {:else}
 <div class="flex items-center">
-  <ul class="py-4">
+  <ul>
     {#each allCosmosAddressesDeduplicated as cosmosAddress, i}
       {#if i === addressIndex}
       <li 
