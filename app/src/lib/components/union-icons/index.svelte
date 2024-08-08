@@ -84,123 +84,123 @@ const icons: IconConfig = {
     variants: {
       color: ColorBlocks,
       mono: MonoBlocks,
-      inverse: InverseBlocks,
+      inverse: InverseBlocks
     }
   },
   channel: {
     variants: {
       color: ColorChannel,
       mono: MonoChannel,
-      inverse: InverseChannel,
+      inverse: InverseChannel
     }
   },
   connection: {
     variants: {
       color: ColorConnection,
       mono: MonoConnection,
-      inverse: InverseConnection,
+      inverse: InverseConnection
     }
   },
   explorer: {
     variants: {
       color: ColorExplorer,
       mono: MonoExplorer,
-      inverse: InverseExplorer,
+      inverse: InverseExplorer
     }
   },
   faucet: {
     variants: {
       color: ColorFaucet,
       mono: MonoFaucet,
-      inverse: InverseFaucet,
+      inverse: InverseFaucet
     }
   },
   index: {
     variants: {
       color: ColorIndex,
       mono: MonoIndex,
-      inverse: InverseIndex,
+      inverse: InverseIndex
     }
   },
   queue: {
     variants: {
       color: ColorQueue,
       mono: MonoQueue,
-      inverse: InverseQueue,
+      inverse: InverseQueue
     }
   },
   search: {
     variants: {
       color: ColorSearch,
       mono: MonoSearch,
-      inverse: InverseSearch,
+      inverse: InverseSearch
     }
   },
   transfers: {
     variants: {
       color: ColorTransfers,
       mono: MonoTransfers,
-      inverse: InverseTransfers,
+      inverse: InverseTransfers
     }
   },
   usertransfers: {
     variants: {
       color: ColorUserTransfers,
       mono: MonoUserTransfers,
-      inverse: InverseUserTransfers,
+      inverse: InverseUserTransfers
     }
   },
   wallet: {
     variants: {
       color: ColorWallet,
       mono: MonoWallet,
-      inverse: InverseWallet,
+      inverse: InverseWallet
     }
   },
   packet: {
     variants: {
       color: ColorPacket,
       mono: MonoPacket,
-      inverse: InversePacket,
+      inverse: InversePacket
     }
   },
   home: {
     variants: {
       color: ColorHome,
       mono: MonoHome,
-      inverse: InverseHome,
+      inverse: InverseHome
     }
   },
   settings: {
     variants: {
       color: ColorSettings,
       mono: MonoSettings,
-      inverse: InverseSettings,
+      inverse: InverseSettings
     }
   },
   alltransfers: {
     variants: {
-      mono: MonoAllTransfers,
+      mono: MonoAllTransfers
     }
   },
   ibcconnections: {
     variants: {
-      mono: MonoIbcConnections,
+      mono: MonoIbcConnections
     }
   },
   ibcchannels: {
     variants: {
-      mono: MonoIbcChannels,
+      mono: MonoIbcChannels
     }
   },
   hubblestatus: {
     variants: {
-      mono: MonoHubbleStatus,
+      mono: MonoHubbleStatus
     }
   },
   searchk: {
     variants: {
-      mono: MonoSearchK,
+      mono: MonoSearchK
     }
   }
 }
