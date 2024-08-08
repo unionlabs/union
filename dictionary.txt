@@ -229,6 +229,7 @@ aitlahcen
 akash
 alloc
 alltables
+alltransfers
 amcl
 amet
 ankr
@@ -579,6 +580,7 @@ holiman
 horcrux
 httpie
 httptemplate
+hubblestatus
 hxtmjjsrmzsjyc
 hypertable
 hypertables
@@ -586,11 +588,13 @@ iaviewer
 iavl
 ibcante
 ibcchannelkeeper
+ibcchannels
 ibcclient
 ibcclientclient
 ibcclienttypes
 ibccometblsclient
 ibcconnectionkeeper
+ibcconnections
 ibcconnectiontypes
 ibcexported
 ibcfee
@@ -973,6 +977,7 @@ scrollproof
 scure
 sdkerrors
 sdkmath
+searchk
 secp
 sepolia
 sequi
