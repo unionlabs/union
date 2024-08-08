@@ -1,6 +1,7 @@
 module IBC::proto_utils {
     use std::string::{Self, String};
     use std::vector;
+    use std::option::{Self, Option};
 
     public fun encode_string(field: u8, value: String): vector<u8> {
         let prefix = encode_varint(((((field << 3) as u8) | 2) as u64));
@@ -32,8 +33,25 @@ module IBC::proto_utils {
         buf
     }
 
-    public fun decode_prefix(buf: &vector<u8>): (u64, u64, u64, u64) {
-        let (key, advance, err) = decode_varint(buf);
+    public fun decode_string(wire_type: u64, buf: &vector<u8>, cursor: u64): (Option<String>, u64) {
+        if (wire_type != 2) {
+            return (option::none(), 0)  
+        };
+        
+        decode_untagged_string(buf, cursor)
+    }
+
+    public fun decode_untagged_string(buf: &vector<u8>, cursor: u64): (Option<String>, u64) {
+        let (strlen, advance, err) = decode_varint_raw(buf, cursor);
+        cursor = cursor + advance;
+        if (err != 0) {
+            return (option::none(), 0)
+        };
+        (string::try_utf8(vector::slice(buf, cursor, cursor + strlen)), advance + strlen)
+    }
+
+    public fun decode_prefix(buf: &vector<u8>, cursor: u64): (u64, u64, u64, u64) {
+        let (key, advance, err) = decode_varint_raw(buf, cursor);
         if (err != 0) {
             return (0, 0, 0, err)
         };
@@ -50,50 +68,66 @@ module IBC::proto_utils {
 
     }
 
-    public fun decode_varint(buf: &vector<u8>): (u64, u64, u64) {
-        let len = vector::length(buf);
+    public fun decode_nested_len(wire_type: u64, buf: &vector<u8>, cursor: u64): (u64, u64, u64) {
+        if (wire_type != 2) {
+            return (0, 0, 1)  
+        };
+        
+        decode_varint_raw(buf, cursor)
+    }
+
+    public fun decode_varint(wire_type: u64, buf: &vector<u8>, cursor: u64): (u64, u64, u64) {
+        if (wire_type != 0) {
+            return (0, 0, 1)  
+        };
+        
+        decode_varint_raw(buf, cursor)
+    }
+
+    public fun decode_varint_raw(buf: &vector<u8>, cursor: u64): (u64, u64, u64) {
+        let len = vector::length(buf) - cursor;
         if (len == 0) {
             return (0, 0, 1)
         };
 
-        let byte = *vector::borrow(buf, 0);
+        let byte = *vector::borrow(buf, cursor);
         if (byte < 0x80) {
             ((byte as u64), 1, 0)
-        } else if (len > 10 || *vector::borrow(buf, len - 1) < 0x80) {
-            decode_varint_slice(buf)
+        } else if (len > 10 || *vector::borrow(buf, cursor + len - 1) < 0x80) {
+            decode_varint_raw_slice(buf, cursor)
         } else {
-            decode_varint_slow(buf)
+            decode_varint_raw_slow(buf, cursor)
         }
     }
 
-    fun decode_varint_slice(buf: &vector<u8>): (u64, u64, u64) {
-        let len = vector::length(buf);
-        if (len <= 10 && *vector::borrow(buf, len - 1) >= 0x80) {
+    fun decode_varint_raw_slice(buf: &vector<u8>, cursor: u64): (u64, u64, u64) {
+        let len = vector::length(buf) - cursor;
+        if (len <= 10 && *vector::borrow(buf, cursor + len - 1) >= 0x80) {
             return (0, 0, 1)
         };
 
-        let b = *vector::borrow(buf, 0);
+        let b = *vector::borrow(buf, cursor);
         let part0 = (b as u32);
         if (b < 0x80) {
             return ((part0 as u64), 1, 0);
         };
         
         part0 = part0 - 0x80;
-        let b = *vector::borrow(buf, 1);
+        let b = *vector::borrow(buf, cursor + 1);
         part0 = part0 + ((b as u32) << 7);
        if (b < 0x80) {
             return ((part0 as u64), 2, 0)
         };
 
         part0 = part0 - (0x80 << 7);
-        let b = *vector::borrow(buf, 2);
+        let b = *vector::borrow(buf, cursor + 2);
         part0 = part0 + ((b as u32) << 14);
         if (b < 0x80) {
             return ((part0 as u64), 3, 0)  
         };
 
         part0 = part0 - (0x80 << 14);
-        let b = *vector::borrow(buf, 3);
+        let b = *vector::borrow(buf, cursor + 3);
         part0 = part0 + ((b as u32) << 21);
         if (b < 0x80) {
             return ((part0 as u64), 4, 0)  
@@ -102,21 +136,21 @@ module IBC::proto_utils {
         part0 = part0 - (0x80 << 21);
         let value = (part0 as u64);
 
-        let b = *vector::borrow(buf, 4);
+        let b = *vector::borrow(buf, cursor + 4);
         let part1 = (b as u32);
         if (b < 0x80) {
             return (value + ((part1 as u64) << 28), 5, 0)
         };
 
         part1 = part1 - 0x80;
-        let b = *vector::borrow(buf, 5);
+        let b = *vector::borrow(buf, cursor + 5);
         let part1 = part1 + ((b as u32) << 7);
         if (b < 0x80) {
             return (value + ((part1 as u64) << 28), 6, 0)
         };
 
         part1 = part1 - (0x80 << 7);
-        let b = *vector::borrow(buf, 6);
+        let b = *vector::borrow(buf, cursor + 6);
         let part1 = part1 + ((b as u32) << 14);
         if (b < 0x80) {
             return (value + ((part1 as u64) << 28), 7, 0)
@@ -124,7 +158,7 @@ module IBC::proto_utils {
 
         
         part1 = part1 - (0x80 << 14);
-        let b = *vector::borrow(buf, 7);
+        let b = *vector::borrow(buf, cursor + 7);
         let part1 = part1 + ((b as u32) << 21);
         if (b < 0x80) {
             return (value + ((part1 as u64) << 28), 8, 0)
@@ -133,13 +167,13 @@ module IBC::proto_utils {
         part1 = part1 - (0x80 << 21);
         let value = value + ((part1 as u64) << 28);
 
-        let b = *vector::borrow(buf, 8);
+        let b = *vector::borrow(buf, cursor + 8);
         let part2 = (b as u32);
         if (b < 0x80) {
             return (value + ((part2 as u64) << 56), 9, 0)
         };
         part2 = part2 - 0x80;
-        let b = *vector::borrow(buf, 9);
+        let b = *vector::borrow(buf, cursor + 9);
         let part2 = part2 + ((b as u32) << 7);
         if (b < 0x02) {
             return (value + ((part2 as u64) << 56), 10, 0)
@@ -148,16 +182,16 @@ module IBC::proto_utils {
         (0, 0, 1)
     }
 
-    fun decode_varint_slow(buf: &vector<u8>): (u64, u64, u64) {
+    fun decode_varint_raw_slow(buf: &vector<u8>, cursor: u64): (u64, u64, u64) {
         let value = 0u64;
-        let rem = vector::length(buf);
+        let rem = vector::length(buf) - cursor;
         if (rem > 10) {
             rem = 10;
         };
 
         let count = 0u8;
-        while (count < 10) {
-            let byte = *vector::borrow(buf, 0);
+        while ((count as u64) < rem) {
+            let byte = *vector::borrow(buf, cursor);
             value = value | ((byte & 0x7F) as u64) << (count * 7);
             if (byte <= 0x7F) {
                 if (count == 9 && byte >= 0x02) {
@@ -196,8 +230,33 @@ module IBC::proto_utils {
         while (i < vector::length(&exp)) {
             let exp = *vector::borrow(&exp, i);
             let enc_num = encode_varint(exp);
-            let (num, _, _) = decode_varint(&enc_num);
+            let (num, _, _) = decode_varint_raw(&enc_num, 0);
             assert!(num == exp, 0);
+            i = i + 1;
+        };
+    }
+
+    #[test]
+    public fun test_str() {
+        let exp = vector<String> [
+            string::utf8(b"h"),
+            string::utf8(b"hello world"),
+            string::utf8(b"hello worldas enednsedn eansd"),
+        ];
+
+        let i = 0;
+        while (i < vector::length(&exp)) {
+            let exp = *vector::borrow(&exp, i);
+            let enc = encode_string(1, exp);
+            std::debug::print(&enc);
+            let (tag, wire_type, advance, err) = decode_prefix(&enc, 0);
+            assert!(tag == 1, 0);
+            assert!(wire_type == 2, 0);
+            assert!(err == 0, 0);
+
+            let (dec, _) = decode_untagged_string(&enc, advance);
+            assert!(option::extract<String>(&mut dec) == exp, 0);
+
             i = i + 1;
         };
     }
