@@ -147,7 +147,7 @@ const DISABLE_TAB_INDEX = -1
     filter={(value, search) => (value.includes(search) ? 1 : 0)}
 
  class={cn('text-foreground bg-background')}
-    
+
   >
     <Command.Input
       type="text"
@@ -202,7 +202,7 @@ const DISABLE_TAB_INDEX = -1
           let:attrs
           tabindex={DISABLE_TAB_INDEX}
           class={cn(
-            'hover:cursor-pointer',
+            'hover:cursor-pointer group',
             'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
           )}
           onSelect={() => {
@@ -210,11 +210,8 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <UnionIcon
-                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
-                  name="faucet"
-                  class="mr-2 size-5"
-          />
+
+          <UnionIcon theme="mono" name="faucet" class="mr-2 size-5"/>
           <span>Get tokens from faucet</span>
           {#if $page.route.id?.startsWith('/faucet')}
             <Badge
@@ -228,7 +225,7 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-  
+
         <Command.Item
           let:attrs
           tabindex={DISABLE_TAB_INDEX}
@@ -242,7 +239,7 @@ const DISABLE_TAB_INDEX = -1
           }}
         >
           <UnionIcon
-                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  theme="mono"
                   name="transfers"
                   class="mr-2 size-5"
           />
@@ -259,10 +256,10 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-        
+
       </Command.Group>
       <Command.Separator />
-      
+
       <Command.Group heading="Explore Data" class={cn('text-black bg-background')}>
         {@const userAddresses = [$sepoliaStore?.address, $cosmosStore?.address].filter(Boolean)}
         <Command.Item
@@ -278,7 +275,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <TableIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme="mono"
+                  name="usertransfers"
+                  class="mr-2 size-5"
+          />
           <span>Your transfers</span>
           {#if $page.route.id?.startsWith('/explorer/address')}
             <Badge
@@ -305,8 +306,8 @@ const DISABLE_TAB_INDEX = -1
           }}
         >
           <UnionIcon
-                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
-                  name="alltransfers"
+                  theme="mono"
+                  name="channel"
                   class="mr-2 size-5"
           />
           <span>All transfers</span>
@@ -335,7 +336,7 @@ const DISABLE_TAB_INDEX = -1
           }}
         >
           <UnionIcon
-                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  theme="mono"
                   name="ibcconnections"
                   class="mr-2 size-5"
           />
@@ -352,7 +353,7 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-        
+
         <Command.Item
           let:attrs
           tabindex={DISABLE_TAB_INDEX}
@@ -366,7 +367,7 @@ const DISABLE_TAB_INDEX = -1
           }}
         >
           <UnionIcon
-                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  theme="mono"
                   name="ibcchannels"
                   class="mr-2 size-5"
           />
@@ -397,7 +398,7 @@ const DISABLE_TAB_INDEX = -1
           }}
         >
           <UnionIcon
-                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  theme="mono"
                   name="hubblestatus"
                   class="mr-2 size-5"
           />
@@ -414,11 +415,11 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-        
+
       </Command.Group>
 
 
-      
+
     </Command.List>
   </Command.Root>
 </Command.Dialog>

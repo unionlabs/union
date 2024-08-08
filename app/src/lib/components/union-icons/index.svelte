@@ -49,26 +49,6 @@ import InversePacket from "$lib/components/union-icons/inverse/icon-packet-inver
 import InverseHome from "$lib/components/union-icons/inverse/icon-home-inverse.svelte"
 import InverseSettings from "$lib/components/union-icons/inverse/icon-settings-inverse.svelte"
 
-import MonoInverseBlocks from "$lib/components/union-icons/mono-inverse/icon-blocks-mono-inverse.svelte"
-import MonoInverseChannel from "$lib/components/union-icons/mono-inverse/icon-channel-mono-inverse.svelte"
-import MonoInverseConnection from "$lib/components/union-icons/mono-inverse/icon-connection-mono-inverse.svelte"
-import MonoInverseExplorer from "$lib/components/union-icons/mono-inverse/icon-explorer-mono-inverse.svelte"
-import MonoInverseFaucet from "$lib/components/union-icons/mono-inverse/icon-faucet-mono-inverse.svelte"
-import MonoInverseIndex from "$lib/components/union-icons/mono-inverse/icon-index-mono-inverse.svelte"
-import MonoInverseQueue from "$lib/components/union-icons/mono-inverse/icon-queue-mono-inverse.svelte"
-import MonoInverseSearch from "$lib/components/union-icons/mono-inverse/icon-search-mono-inverse.svelte"
-import MonoInverseTransfers from "$lib/components/union-icons/mono-inverse/icon-transfers-mono-inverse.svelte"
-import MonoInverseUserTransfers from "$lib/components/union-icons/mono-inverse/icon-usertransfers-mono-inverse.svelte"
-import MonoInverseWallet from "$lib/components/union-icons/mono-inverse/icon-wallet-mono-inverse.svelte"
-import MonoInversePacket from "$lib/components/union-icons/mono-inverse/icon-packet-mono-inverse.svelte"
-import MonoInverseHome from "$lib/components/union-icons/mono-inverse/icon-home-mono-inverse.svelte"
-import MonoInverseSettings from "$lib/components/union-icons/mono-inverse/icon-packet-mono-inverse.svelte"
-import MonoInverseAllTransfers from "$lib/components/union-icons/mono-inverse/icon-alltransfers-mono-inverse.svelte"
-import MonoInverseIbcConnections from "$lib/components/union-icons/mono-inverse/icon-ibcconnections-mono-inverse.svelte"
-import MonoInverseIbcChannels from "$lib/components/union-icons/mono-inverse/icon-ibcchannels-mono-inverse.svelte"
-import MonoInverseHubbleStatus from "$lib/components/union-icons/mono-inverse/icon-hubblestatus-mono-inverse.svelte"
-import MonoInverseSearchK from "$lib/components/union-icons/mono-inverse/icon-searchk-mono-inverse.svelte"
-
 type IconName =
   | "blocks"
   | "channel"
@@ -90,7 +70,8 @@ type IconName =
   | "hubblestatus"
   | "searchk"
 
-type IconVariant = "color" | "mono" | "inverse" | "monoInverse"
+type IconVariant = "color" | "mono" | "inverse"
+type mode = "dark" | "light"
 
 type IconConfig = {
   [key in IconName]: {
@@ -104,7 +85,6 @@ const icons: IconConfig = {
       color: ColorBlocks,
       mono: MonoBlocks,
       inverse: InverseBlocks,
-      monoInverse: MonoInverseBlocks
     }
   },
   channel: {
@@ -112,7 +92,6 @@ const icons: IconConfig = {
       color: ColorChannel,
       mono: MonoChannel,
       inverse: InverseChannel,
-      monoInverse: MonoInverseChannel
     }
   },
   connection: {
@@ -120,7 +99,6 @@ const icons: IconConfig = {
       color: ColorConnection,
       mono: MonoConnection,
       inverse: InverseConnection,
-      monoInverse: MonoInverseConnection
     }
   },
   explorer: {
@@ -128,7 +106,6 @@ const icons: IconConfig = {
       color: ColorExplorer,
       mono: MonoExplorer,
       inverse: InverseExplorer,
-      monoInverse: MonoInverseExplorer
     }
   },
   faucet: {
@@ -136,7 +113,6 @@ const icons: IconConfig = {
       color: ColorFaucet,
       mono: MonoFaucet,
       inverse: InverseFaucet,
-      monoInverse: MonoInverseFaucet
     }
   },
   index: {
@@ -144,7 +120,6 @@ const icons: IconConfig = {
       color: ColorIndex,
       mono: MonoIndex,
       inverse: InverseIndex,
-      monoInverse: MonoInverseIndex
     }
   },
   queue: {
@@ -152,7 +127,6 @@ const icons: IconConfig = {
       color: ColorQueue,
       mono: MonoQueue,
       inverse: InverseQueue,
-      monoInverse: MonoInverseQueue
     }
   },
   search: {
@@ -160,7 +134,6 @@ const icons: IconConfig = {
       color: ColorSearch,
       mono: MonoSearch,
       inverse: InverseSearch,
-      monoInverse: MonoInverseSearch
     }
   },
   transfers: {
@@ -168,7 +141,6 @@ const icons: IconConfig = {
       color: ColorTransfers,
       mono: MonoTransfers,
       inverse: InverseTransfers,
-      monoInverse: MonoInverseTransfers
     }
   },
   usertransfers: {
@@ -176,7 +148,6 @@ const icons: IconConfig = {
       color: ColorUserTransfers,
       mono: MonoUserTransfers,
       inverse: InverseUserTransfers,
-      monoInverse: MonoInverseUserTransfers
     }
   },
   wallet: {
@@ -184,7 +155,6 @@ const icons: IconConfig = {
       color: ColorWallet,
       mono: MonoWallet,
       inverse: InverseWallet,
-      monoInverse: MonoInverseWallet
     }
   },
   packet: {
@@ -192,7 +162,6 @@ const icons: IconConfig = {
       color: ColorPacket,
       mono: MonoPacket,
       inverse: InversePacket,
-      monoInverse: MonoInversePacket
     }
   },
   home: {
@@ -200,7 +169,6 @@ const icons: IconConfig = {
       color: ColorHome,
       mono: MonoHome,
       inverse: InverseHome,
-      monoInverse: MonoInverseHome
     }
   },
   settings: {
@@ -208,37 +176,31 @@ const icons: IconConfig = {
       color: ColorSettings,
       mono: MonoSettings,
       inverse: InverseSettings,
-      monoInverse: MonoInverseSettings
     }
   },
   alltransfers: {
     variants: {
       mono: MonoAllTransfers,
-      monoInverse: MonoInverseAllTransfers
     }
   },
   ibcconnections: {
     variants: {
       mono: MonoIbcConnections,
-      monoInverse: MonoInverseIbcConnections
     }
   },
   ibcchannels: {
     variants: {
       mono: MonoIbcChannels,
-      monoInverse: MonoInverseIbcChannels
     }
   },
   hubblestatus: {
     variants: {
       mono: MonoHubbleStatus,
-      monoInverse: MonoInverseHubbleStatus
     }
   },
   searchk: {
     variants: {
       mono: MonoSearchK,
-      monoInverse: MonoInverseSearchK
     }
   }
 }
