@@ -39,6 +39,10 @@ const allCosmosAddresses = [
   }
 })
 
+const allCosmosAddressesDeduplicated = allCosmosAddresses.filter(
+  (obj1, i, arr) => arr.findIndex(obj2 => obj2.prefix === obj1.prefix) === i
+)
+
 const longestPrefix = Math.max.apply(
   0,
   allCosmosAddresses.map(pair => pair.prefix.length)
@@ -50,9 +54,8 @@ const longestPrefix = Math.max.apply(
   <div class="text-lg font-bold flex items-center gap-2">{address.address}<Badge>EVM</Badge></div>
 {:else}
 <Badge>Cosmos</Badge>
-{longestPrefix}
 <ul>
-  {#each allCosmosAddresses as cosmosAddress}
+  {#each allCosmosAddressesDeduplicated as cosmosAddress}
     <li class="text-lg first:font-bold whitespace-pre">
       <span class="select-none">{' '.repeat(longestPrefix - cosmosAddress.prefix.length)}</span><span class="text-muted-foreground mr-1">{cosmosAddress.prefix}</span>{cosmosAddress.body}<span class="ml-1 text-muted-foreground">{cosmosAddress.checksum}</span>
     </li>
