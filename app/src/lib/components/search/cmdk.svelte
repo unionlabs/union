@@ -135,8 +135,8 @@ const DISABLE_TAB_INDEX = -1
   closeOnOutsideClick={true}
   bind:open={commandDialogOpen}
   class={cn(
-    'rounded-sm border-[1px] w-full',
-    'bg-destructive-foreground dark:bg-card',
+    'rounded-none border-[1px] w-full',
+    'bg-card dark:bg-card',
     'border-solid shadow-2xl dark:border-accent/50 border-accent',
   )}
 >
@@ -196,92 +196,9 @@ const DISABLE_TAB_INDEX = -1
         </Command.Empty>
       {/if}
 
-      <Command.Group heading="Explore Data" class={cn('text-black bg-background')}>
-        {@const userAddresses = [$sepoliaStore?.address, $cosmosStore?.address].filter(Boolean)}
-        <Command.Item
-          let:attrs
-          tabindex={DISABLE_TAB_INDEX}
-          class={cn(
-            'hover:cursor-pointer',
-            userAddresses && userAddresses.length === 0 ? 'hidden' : '',
-            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
-          )}
-          onSelect={_value => {
-            goto(`/explorer/address/${userAddresses.join('-')}`)
-            commandDialogOpen = false
-          }}
-        >
-          <TableIcon class="mr-2 size-5" />
-          <span>Your past transfers</span>
-          {#if $page.route.id?.startsWith('/explorer/address')}
-            <Badge
-              variant="outline"
-              class={cn(
-                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
-                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
-        <Command.Item
-          let:attrs
-          tabindex={DISABLE_TAB_INDEX}
-          class={cn(
-            'hover:cursor-pointer',
-            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
-          )}
-          onSelect={() => {
-            goto(`/explorer/transfers`)
-            commandDialogOpen = false
-          }}
-        >
-          <BrainIcon class="mr-2 size-5" />
-          <span>Live IBC transfer feed</span>
-          {#if $page.route.id?.startsWith('/explorer/transfers')}
-            <Badge
-              variant="outline"
-              class={cn(
-                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
-                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
-      </Command.Group>
 
-      <Command.Separator />
+<Command.Group heading="Interact with the testnet" class={cn('text-black bg-background')}>
 
-      <Command.Group heading="Interact with the network" class={cn('text-black bg-background')}>
-        <Command.Item
-          let:attrs
-          tabindex={DISABLE_TAB_INDEX}
-          class={cn(
-            'hover:cursor-pointer',
-            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
-          )}
-          onSelect={() => {
-            goto(`/transfer`)
-            commandDialogOpen = false
-          }}
-        >
-          <DollarSignIcon class="mr-2 size-5" />
-          <span>Execute cross chain transfers</span>
-          {#if $page.route.id?.startsWith('/transfer')}
-            <Badge
-              variant="outline"
-              class={cn(
-                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
-                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
-              )}
-            >
-              active page
-            </Badge>
-          {/if}
-        </Command.Item>
         <Command.Item
           let:attrs
           tabindex={DISABLE_TAB_INDEX}
@@ -308,7 +225,177 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
+  
+        <Command.Item
+          let:attrs
+          tabindex={DISABLE_TAB_INDEX}
+          class={cn(
+            'hover:cursor-pointer',
+            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
+          )}
+          onSelect={() => {
+            goto(`/transfer`)
+            commandDialogOpen = false
+          }}
+        >
+          <DollarSignIcon class="mr-2 size-5" />
+          <span>Transfer assets across chains</span>
+          {#if $page.route.id?.startsWith('/transfer')}
+            <Badge
+              variant="outline"
+              class={cn(
+                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
+              )}
+            >
+              active page
+            </Badge>
+          {/if}
+        </Command.Item>
+        
       </Command.Group>
+      <Command.Separator />
+      
+      <Command.Group heading="Explore Data" class={cn('text-black bg-background')}>
+        {@const userAddresses = [$sepoliaStore?.address, $cosmosStore?.address].filter(Boolean)}
+        <Command.Item
+          let:attrs
+          tabindex={DISABLE_TAB_INDEX}
+          class={cn(
+            'hover:cursor-pointer',
+            userAddresses && userAddresses.length === 0 ? 'hidden' : '',
+            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
+          )}
+          onSelect={_value => {
+            goto(`/explorer/address/${userAddresses.join('-')}`)
+            commandDialogOpen = false
+          }}
+        >
+          <TableIcon class="mr-2 size-5" />
+          <span>Your transfers</span>
+          {#if $page.route.id?.startsWith('/explorer/address')}
+            <Badge
+              variant="outline"
+              class={cn(
+                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
+              )}
+            >
+              active page
+            </Badge>
+          {/if}
+        </Command.Item>
+        <Command.Item
+          let:attrs
+          tabindex={DISABLE_TAB_INDEX}
+          class={cn(
+            'hover:cursor-pointer',
+            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
+          )}
+          onSelect={() => {
+            goto(`/explorer/transfers`)
+            commandDialogOpen = false
+          }}
+        >
+          <BrainIcon class="mr-2 size-5" />
+          <span>All transfers</span>
+          {#if $page.route.id?.startsWith('/explorer/transfers')}
+            <Badge
+              variant="outline"
+              class={cn(
+                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
+              )}
+            >
+              active page
+            </Badge>
+          {/if}
+        </Command.Item>
+        <Command.Item
+          let:attrs
+          tabindex={DISABLE_TAB_INDEX}
+          class={cn(
+            'hover:cursor-pointer',
+            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
+          )}
+          onSelect={() => {
+            goto(`/explorer/connections`)
+            commandDialogOpen = false
+          }}
+        >
+          <BrainIcon class="mr-2 size-5" />
+          <span>IBC connections</span>
+          {#if $page.route.id?.startsWith('/explorer/connections')}
+            <Badge
+              variant="outline"
+              class={cn(
+                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
+              )}
+            >
+              active page
+            </Badge>
+          {/if}
+        </Command.Item>
+        
+        <Command.Item
+          let:attrs
+          tabindex={DISABLE_TAB_INDEX}
+          class={cn(
+            'hover:cursor-pointer',
+            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
+          )}
+          onSelect={() => {
+            goto(`/explorer/channels`)
+            commandDialogOpen = false
+          }}
+        >
+          <BrainIcon class="mr-2 size-5" />
+          <span>IBC channels</span>
+          {#if $page.route.id?.startsWith('/explorer/channels')}
+            <Badge
+              variant="outline"
+              class={cn(
+                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
+              )}
+            >
+              active page
+            </Badge>
+          {/if}
+        </Command.Item>
+
+        <Command.Item
+          let:attrs
+          tabindex={DISABLE_TAB_INDEX}
+          class={cn(
+            'hover:cursor-pointer',
+            'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
+          )}
+          onSelect={() => {
+            goto(`/explorer/index-status`)
+            commandDialogOpen = false
+          }}
+        >
+          <BrainIcon class="mr-2 size-5" />
+          <span>Hubble index status</span>
+          {#if $page.route.id?.startsWith('/explorer/index-status')}
+            <Badge
+              variant="outline"
+              class={cn(
+                'px-2 py-1 m-0 ml-auto rounded-none text-xs',
+                attrs['data-selected'] ? 'text-black bg-union-accent' : 'bg-primary-foreground',
+              )}
+            >
+              active page
+            </Badge>
+          {/if}
+        </Command.Item>
+        
+      </Command.Group>
+
+
+      
     </Command.List>
   </Command.Root>
 </Command.Dialog>
