@@ -20,10 +20,13 @@ const fromHexString = hexString =>
   <div>{address.address}</div>
 {:else}
   <h3>Cosmos address</h3>
+  <div class="font-bold">{address.address}</div>
   {#each cosmosChains as cosmosChain}
+    {#if !address.address.startsWith(cosmosChain.addr_prefix)}
     <div>
       {rawToBech32(cosmosChain.addr_prefix, fromHexString(address.normalizedAddress))}
     </div>
+    {/if}
   {/each}
 {/if}
 </div>
