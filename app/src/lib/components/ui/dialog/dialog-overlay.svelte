@@ -10,12 +10,14 @@ export let transition: $$Props["transition"] = fade
 export let transitionConfig: $$Props["transitionConfig"] = {
   duration: 150
 }
+export let backdropFilter: $$Props["style"] = undefined
 export { className as class }
 </script>
 
 <DialogPrimitive.Overlay
   {transition}
   {transitionConfig}
-  class={cn('fixed inset-0 z-40 bg-muted/60 backdrop-blur-sm', className)}
+  style={`backdrop-filter: ${backdropFilter}`}
+  class={cn('fixed inset-0 z-40 bg-muted/60', className)}
   {...$$restProps}
 />

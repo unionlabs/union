@@ -35,6 +35,7 @@ type Props = ButtonPrimitive.Props & {
   size?: Size
   name?: string
   value?: any
+  disabled?: boolean
 }
 
 type Events = ButtonPrimitive.Events

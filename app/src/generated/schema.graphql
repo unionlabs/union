@@ -642,6 +642,26 @@ type query_root {
   v0_rpcs_by_pk(chain_id: Int!, url: String!): v0_rpcs
 
   """
+  fetch data from the table: "v0.stats"
+  """
+  v0_stats(
+    """distinct select on columns"""
+    distinct_on: [v0_stats_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_stats_order_by!]
+
+    """filter the rows returned"""
+    where: v0_stats_bool_exp
+  ): [v0_stats!]!
+
+  """
   fetch data from the table: "v0.traces"
   """
   v0_traces(
@@ -1399,6 +1419,40 @@ type subscription_root {
   ): [v0_rpcs!]!
 
   """
+  fetch data from the table: "v0.stats"
+  """
+  v0_stats(
+    """distinct select on columns"""
+    distinct_on: [v0_stats_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_stats_order_by!]
+
+    """filter the rows returned"""
+    where: v0_stats_bool_exp
+  ): [v0_stats!]!
+
+  """
+  fetch data from the table in a streaming manner: "v0.stats"
+  """
+  v0_stats_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v0_stats_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v0_stats_bool_exp
+  ): [v0_stats!]!
+
+  """
   fetch data from the table: "v0.traces"
   """
   v0_traces(
@@ -2078,7 +2132,8 @@ type v0_chains {
   ): [v0_blocks!]!
   chain_id: String!
   display_name: String
-  enabled: Boolean
+  enabled: Boolean!
+  enabled_staging: Boolean!
 
   """An array relationship"""
   explorers(
@@ -2170,6 +2225,7 @@ input v0_chains_bool_exp {
   chain_id: String_comparison_exp
   display_name: String_comparison_exp
   enabled: Boolean_comparison_exp
+  enabled_staging: Boolean_comparison_exp
   explorers: v0_explorers_bool_exp
   id: Int_comparison_exp
   logo_uri: String_comparison_exp
@@ -2188,6 +2244,7 @@ input v0_chains_order_by {
   chain_id: order_by
   display_name: order_by
   enabled: order_by
+  enabled_staging: order_by
   explorers_aggregate: v0_explorers_aggregate_order_by
   id: order_by
   logo_uri: order_by
@@ -2213,6 +2270,9 @@ enum v0_chains_select_column {
 
   """column name"""
   enabled
+
+  """column name"""
+  enabled_staging
 
   """column name"""
   id
@@ -2244,6 +2304,7 @@ input v0_chains_stream_cursor_value_input {
   chain_id: String
   display_name: String
   enabled: Boolean
+  enabled_staging: Boolean
   id: Int
   logo_uri: String
   rpc_type: String
@@ -4465,6 +4526,59 @@ order by variance() on columns of table "v0.rpcs"
 """
 input v0_rpcs_variance_order_by {
   chain_id: order_by
+}
+
+"""
+columns and relationships of "v0.stats"
+"""
+type v0_stats {
+  total_packets: bigint
+  total_transfers: bigint
+}
+
+"""
+Boolean expression to filter rows from the table "v0.stats". All fields are combined with a logical 'AND'.
+"""
+input v0_stats_bool_exp {
+  _and: [v0_stats_bool_exp!]
+  _not: v0_stats_bool_exp
+  _or: [v0_stats_bool_exp!]
+  total_packets: bigint_comparison_exp
+  total_transfers: bigint_comparison_exp
+}
+
+"""Ordering options when selecting data from "v0.stats"."""
+input v0_stats_order_by {
+  total_packets: order_by
+  total_transfers: order_by
+}
+
+"""
+select columns of table "v0.stats"
+"""
+enum v0_stats_select_column {
+  """column name"""
+  total_packets
+
+  """column name"""
+  total_transfers
+}
+
+"""
+Streaming cursor of the table "v0_stats"
+"""
+input v0_stats_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v0_stats_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v0_stats_stream_cursor_value_input {
+  total_packets: bigint
+  total_transfers: bigint
 }
 
 """

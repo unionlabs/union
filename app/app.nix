@@ -9,7 +9,7 @@
     {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-xgWvY38HJJSErFFVvXAHUf7myWOKfq7h4HAYQyvgyXk=";
+          npmDepsHash = "sha256-F7uA88UA9rlR5K9htsV0lpk8IvlJvb5eroVIVRvEE2g=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [ "--legacy-peer-deps" ];
@@ -49,7 +49,7 @@
             text = ''
               ${ensureAtRepositoryRoot}
               cd app/
-              npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://noble-pika-27.hasura.app/v1/graphql"
+              npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://blue.graphql.union.build/v1/graphql"
 
               npx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
             '';

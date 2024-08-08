@@ -1,6 +1,7 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
+import CmdK from "$lib/components/search/cmdk.svelte"
 import { Badge } from "$lib/components/ui/badge/index.ts"
 import Connect from "$lib/components/connect/connect.svelte"
 import Button from "$lib/components/ui/button/button.svelte"
@@ -9,8 +10,9 @@ import { routes } from "$lib/components/navigation/index.ts"
 
 <header
   class={cn(
-    'dark:bg-muted p-2.5 min-w-full w-screen flex flex-row items-center md:gap-4 z-10',
-    'bg-card flex md:justify-start justify-between border-b border-solid',
+    "antialiased",
+    "bg-card flex justify-center border-b border-solid",
+    "dark:bg-muted p-2.5 min-w-full w-screen flex-row items-center z-10 pr-3.5"
   )}
 >
   <Button
@@ -25,27 +27,35 @@ import { routes } from "$lib/components/navigation/index.ts"
     />
     <Badge class="mb-0.5 ml-1">Testnet</Badge>
   </Button>
-  <nav class="hidden md:flex items-center justify-end space-x-0 sm:space-x-2 w-full">
+  <div class={cn("sm:max-w-sm max-w-[30rem] w-full self-center mx-auto pl-3.25")}>
+    <CmdK />
+  </div>
+  <nav
+    class="hidden md:flex items-center justify-end space-x-0 sm:gap-x-1 mx-1 pr-1"
+  >
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
-      {@const currentRoute = $page.route.id?.split('/')[1] === path.split('/').at(1)}
+      {@const currentRoute =
+        $page.route.id?.split("/")[1] === path.split("/").at(1)}
       <Button
         size="sm"
         href={path}
         variant="link"
         class={cn(
           draft
-            ? 'hidden'
+            ? "hidden"
             : [
-                '',
-                currentRoute ? 'bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground' : '',
-              ],
+                "",
+                currentRoute
+                  ? "bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground"
+                  : ""
+              ]
         )}
       >
         {name}
       </Button>
     {/each}
   </nav>
-  <div class="hidden md:flex space-x-3">
+  <div class="hidden md:flex lg:w-full lg:max-w-min max-w-[10.5rem]">
     <Connect />
   </div>
 </header>

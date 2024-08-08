@@ -1,5 +1,6 @@
 import { createQuery } from "@tanstack/svelte-query"
 import {
+  statsQueryDocument,
   packetCountQueryDocument,
   transfersPerDayQueryDocument,
   transferCountQueryDocument
@@ -7,6 +8,15 @@ import {
 
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
+
+export const statsQuery = () =>
+  createQuery({
+    queryKey: ["stats"],
+    queryFn: async () => (await request(URLS.GRAPHQL, statsQueryDocument, {})).v0_stats[0],
+    enabled: true,
+    refetchInterval: 5_000,
+    refetchOnWindowFocus: false
+  })
 
 export const transfersPerDayQuery = (limit: number) =>
   createQuery({

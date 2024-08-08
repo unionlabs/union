@@ -21,6 +21,13 @@ import {
   convertByteArrayToHex
 } from "./convert.ts"
 import {
+  truncateAddress,
+  isValidEvmTxHash,
+  isValidEvmAddress,
+  isValidCosmosTxHash,
+  isValidBech32Address
+} from "./utilities/address.ts"
+import {
   ibcTransfer,
   cosmwasmTransfer,
   ibcTransferSimulate,
@@ -40,7 +47,6 @@ import { timestamp } from "./utilities/index.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 import { cosmosHttp, rankCosmosRpcProviders } from "./transport.ts"
 import type { OfflineSigner, TransactionResponse } from "./types.ts"
-import { truncateAddress, isValidEvmAddress, isValidBech32Address } from "./utilities/address.ts"
 
 export {
   /**
@@ -50,16 +56,18 @@ export {
   cosmosHttp,
   offchainQuery,
   createPfmMemo,
+  truncateAddress,
+  isValidEvmTxHash,
+  isValidEvmAddress,
   bech32AddressToHex,
   hexAddressToBech32,
+  isValidCosmosTxHash,
   bytesToBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,
   uint8ArrayToHexString,
-  convertByteArrayToHex,
-  truncateAddress,
-  isValidEvmAddress,
-  isValidBech32Address
+  isValidBech32Address,
+  convertByteArrayToHex
 }
 
 export type * from "./types.ts"
