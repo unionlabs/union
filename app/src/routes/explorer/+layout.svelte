@@ -7,7 +7,6 @@ import Menu from "./(components)/menu.svelte"
 import { deviceWidth } from "$lib/utilities/device.ts"
 import StatsBar from "./(components)/stats-bar.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
-import StatsBarMobile from "./(components)/stats-bar-mobile.svelte"
 
 export let data: LayoutData
 
@@ -26,7 +25,6 @@ onNavigate(navigation => {
   <title>Union - Explorer</title>
 </svelte:head>
 
-<!-- mobile layout !-->
 <div class="flex flex-row sm:divide-x overflow-x-none max-w-full w-full">
   <nav
     class={cn(
@@ -60,14 +58,12 @@ onNavigate(navigation => {
       <span class="uppercase">{$page.route.id?.split("/").at(-2)}</span>
     </a>
     {/if}
-    {#if $deviceWidth < 888 && $page.route.id?.split("/").length !== 4}
-      <StatsBarMobile />
+
+    {#if $page.route.id?.split("/").length !== 4}
+      <StatsBar />
     {/if}
 
     <div class="flex flex-col flex-1 size-full">
-      {#if $deviceWidth >= 888 && $page.route.id?.split("/").length !== 4}
-        <StatsBar />
-      {/if}
       <div class="p-2 pt-0 sm:p-6">
         <div
           class={cn($page.route.id?.split("/").length === 3 ? "" : "hidden")}
