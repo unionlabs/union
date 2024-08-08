@@ -196,44 +196,29 @@
               app = self.packages.aarch64-linux.app;
             };
           };
-          herculesCI = { branch, ... }: {
-            onPush.default = {
-              outputs = {
-                packages.x86_64-linux =
-                  filterAttrs isCi self.packages.x86_64-linux;
-                checks.x86_64-linux =
-                  filterAttrs isCi self.checks.x86_64-linux;
-                devShells.x86_64-linux =
-                  filterAttrs isCi self.devShells.x86_64-linux;
+          herculesCI = {
+            onPush = {
+              x86_64 = {
+                outputs = {
+                  packages.x86_64-linux =
+                    filterAttrs isCi self.packages.x86_64-linux;
+                  checks.x86_64-linux =
+                    filterAttrs isCi self.checks.x86_64-linux;
+                  devShells.x86_64-linux =
+                    filterAttrs isCi self.devShells.x86_64-linux;
+                };
+              };
+              aarch64 = {
+                outputs = {
+                  packages.aarch64-linux =
+                    filterAttrs isCi self.packages.aarch64-linux;
+                  checks.aarch64-linux =
+                    filterAttrs isCi self.checks.aarch64-linux;
+                  devShells.aarch64-linux =
+                    filterAttrs isCi self.devShells.aarch64-linux;
+                };
               };
             };
-            onSchedule =
-              if (branch == "main")
-              then
-                {
-                  nightly = {
-                    # 4 AM CET, generally low traffic time for runners
-                    when = {
-                      hour = [ 4 ];
-                    };
-                    outputs = {
-                      checks.x86_64-linux.epoch-completes =
-                        self.checks.x86_64-linux.epoch-completes;
-                      checks.x86_64-linux.forced-set-rotation =
-                        self.checks.x86_64-linux.forced-set-rotation;
-                      checks.x86_64-linux.union-runs =
-                        self.checks.x86_64-linux.union-runs;
-                      checks.x86_64-linux.upgrade-from-genesis =
-                        self.checks.x86_64-linux.upgrade-from-genesis;
-                      checks.x86_64-linux.upgrade-with-tokenfactory-state =
-                        self.checks.x86_64-linux.upgrade-with-tokenfactory-state;
-                      checks.x86_64-linux.virtualisation-works =
-                        self.checks.x86_64-linux.virtualisation-works;
-                    };
-                  };
-                }
-              else
-                { };
           };
         };
       systems =
