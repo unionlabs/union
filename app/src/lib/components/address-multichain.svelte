@@ -38,6 +38,11 @@ const allCosmosAddresses = [
     ...pair
   }
 })
+
+const longestPrefix = Math.max.apply(
+  0,
+  allCosmosAddresses.map(pair => pair.prefix.length)
+)
 </script>
 
 <div>
@@ -45,10 +50,11 @@ const allCosmosAddresses = [
   <div class="text-lg font-bold flex items-center gap-2">{address.address}<Badge>EVM</Badge></div>
 {:else}
 <Badge>Cosmos</Badge>
+{longestPrefix}
 <ul>
   {#each allCosmosAddresses as cosmosAddress}
-    <li class="text-lg first:font-bold">
-      <span class="text-muted-foreground mr-1">{cosmosAddress.prefix}</span>{cosmosAddress.body}<span class="ml-1 text-muted-foreground">{cosmosAddress.checksum}</span>
+    <li class="text-lg first:font-bold whitespace-pre">
+      <span class="select-none">{' '.repeat(longestPrefix - cosmosAddress.prefix.length)}</span><span class="text-muted-foreground mr-1">{cosmosAddress.prefix}</span>{cosmosAddress.body}<span class="ml-1 text-muted-foreground">{cosmosAddress.checksum}</span>
     </li>
   {/each}
 </ul>
