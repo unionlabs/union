@@ -22,7 +22,7 @@ import Badge from "$lib/components/ui/badge/badge.svelte"
 import * as Command from "$lib/components/ui/command/index.ts"
 import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
 import UnionIcon from "$lib/components/union-icons/index.svelte"
-import { mode } from "mode-watcher";
+import { mode } from "mode-watcher"
 
 let searchInput = writable("")
 searchInput.update($searchInput => $searchInput.replaceAll(" ", ""))

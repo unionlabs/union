@@ -70,25 +70,25 @@ import MonoInverseHubbleStatus from "$lib/components/union-icons/mono-inverse/ic
 import MonoInverseSearchK from "$lib/components/union-icons/mono-inverse/icon-searchk-mono-inverse.svelte"
 
 type IconName =
-        | "blocks"
-        | "channel"
-        | "connection"
-        | "explorer"
-        | "faucet"
-        | "index"
-        | "queue"
-        | "search"
-        | "transfers"
-        | "usertransfers"
-        | "wallet"
-        | "packet"
-        | "home"
-        | "settings"
-        | "alltransfers"
-        | "ibcconnections"
-        | "ibcchannels"
-        | "hubblestatus"
-        | "searchk"
+  | "blocks"
+  | "channel"
+  | "connection"
+  | "explorer"
+  | "faucet"
+  | "index"
+  | "queue"
+  | "search"
+  | "transfers"
+  | "usertransfers"
+  | "wallet"
+  | "packet"
+  | "home"
+  | "settings"
+  | "alltransfers"
+  | "ibcconnections"
+  | "ibcchannels"
+  | "hubblestatus"
+  | "searchk"
 
 type IconVariant = "color" | "mono" | "inverse" | "monoInverse"
 
@@ -249,16 +249,15 @@ export let name: IconName | undefined
 
 export { className as class }
 
-function isValidIconThemeCombination(name: IconName | undefined, theme: IconVariant): boolean {
-  return !!name && !!icons[name]?.variants[theme]
+function getIconComponent(name: IconName | undefined, theme: IconVariant): any | undefined {
+  return name && icons[name]?.variants[theme]
 }
 
-$: isValid = isValidIconThemeCombination(name, theme)
-$: display = isValid ? icons[name!].variants[theme] : null
+$: component = getIconComponent(name, theme)
 </script>
 
-{#if isValid && display}
-  <svelte:component this={display} class={className}/>
+{#if component}
+  <svelte:component this={component} class={className} />
 {:else}
   <p>Icon not found or not available in this variant.</p>
 {/if}
