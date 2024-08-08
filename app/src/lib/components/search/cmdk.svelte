@@ -210,11 +210,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          {#if $mode === 'dark'}
-            <UnionIcon theme="monoInverse" name="faucet" class="mr-2 size-5" />
-            {:else}
-            <UnionIcon theme="mono" name="faucet" class="mr-2 size-5" />
-          {/if}
+          <UnionIcon
+                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  name="faucet"
+                  class="mr-2 size-5"
+          />
           <span>Get tokens from faucet</span>
           {#if $page.route.id?.startsWith('/faucet')}
             <Badge
@@ -241,11 +241,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          {#if $mode === 'dark'}
-            <UnionIcon theme="monoInverse" name="transfers" class="mr-2 size-5" />
-          {:else}
-            <UnionIcon theme="mono" name="transfers" class="mr-2 size-5" />
-          {/if}
+          <UnionIcon
+                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  name="transfers"
+                  class="mr-2 size-5"
+          />
           <span>Transfer assets across chains</span>
           {#if $page.route.id?.startsWith('/transfer')}
             <Badge
@@ -304,7 +304,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <BrainIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  name="alltransfers"
+                  class="mr-2 size-5"
+          />
           <span>All transfers</span>
           {#if $page.route.id?.startsWith('/explorer/transfers')}
             <Badge
@@ -330,7 +334,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <BrainIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  name="ibcconnections"
+                  class="mr-2 size-5"
+          />
           <span>IBC connections</span>
           {#if $page.route.id?.startsWith('/explorer/connections')}
             <Badge
@@ -357,7 +365,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <BrainIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  name="ibcchannels"
+                  class="mr-2 size-5"
+          />
           <span>IBC channels</span>
           {#if $page.route.id?.startsWith('/explorer/channels')}
             <Badge
@@ -384,7 +396,11 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <BrainIcon class="mr-2 size-5" />
+          <UnionIcon
+                  theme={$mode === 'dark' ? 'monoInverse' : 'mono'}
+                  name="hubblestatus"
+                  class="mr-2 size-5"
+          />
           <span>Hubble index status</span>
           {#if $page.route.id?.startsWith('/explorer/index-status')}
             <Badge

@@ -28,6 +28,11 @@ import MonoWallet from "$lib/components/union-icons/mono/icon-wallet-mono.svelte
 import MonoPacket from "$lib/components/union-icons/mono/icon-packet-mono.svelte"
 import MonoHome from "$lib/components/union-icons/mono/icon-home-mono.svelte"
 import MonoSettings from "$lib/components/union-icons/mono/icon-settings-mono.svelte"
+import MonoAllTransfers from "$lib/components/union-icons/mono/icon-alltransfers-mono.svelte"
+import MonoIbcConnections from "$lib/components/union-icons/mono/icon-ibcconnections-mono.svelte"
+import MonoIbcChannels from "$lib/components/union-icons/mono/icon-ibcchannels-mono.svelte"
+import MonoHubbleStatus from "$lib/components/union-icons/mono/icon-hubblestatus-mono.svelte"
+import MonoSearchK from "$lib/components/union-icons/mono/icon-searchk-mono.svelte"
 
 import InverseBlocks from "$lib/components/union-icons/inverse/icon-blocks-inverse.svelte"
 import InverseChannel from "$lib/components/union-icons/inverse/icon-channel-inverse.svelte"
@@ -58,25 +63,43 @@ import MonoInverseWallet from "$lib/components/union-icons/mono-inverse/icon-wal
 import MonoInversePacket from "$lib/components/union-icons/mono-inverse/icon-packet-mono-inverse.svelte"
 import MonoInverseHome from "$lib/components/union-icons/mono-inverse/icon-home-mono-inverse.svelte"
 import MonoInverseSettings from "$lib/components/union-icons/mono-inverse/icon-packet-mono-inverse.svelte"
+import MonoInverseAllTransfers from "$lib/components/union-icons/mono-inverse/icon-alltransfers-mono-inverse.svelte"
+import MonoInverseIbcConnections from "$lib/components/union-icons/mono-inverse/icon-ibcconnections-mono-inverse.svelte"
+import MonoInverseIbcChannels from "$lib/components/union-icons/mono-inverse/icon-ibcchannels-mono-inverse.svelte"
+import MonoInverseHubbleStatus from "$lib/components/union-icons/mono-inverse/icon-hubblestatus-mono-inverse.svelte"
+import MonoInverseSearchK from "$lib/components/union-icons/mono-inverse/icon-searchk-mono-inverse.svelte"
 
 type IconName =
-  | "blocks"
-  | "channel"
-  | "connection"
-  | "explorer"
-  | "faucet"
-  | "index"
-  | "queue"
-  | "search"
-  | "transfers"
-  | "usertransfers"
-  | "wallet"
-  | "home"
-  | "settings"
+        | "blocks"
+        | "channel"
+        | "connection"
+        | "explorer"
+        | "faucet"
+        | "index"
+        | "queue"
+        | "search"
+        | "transfers"
+        | "usertransfers"
+        | "wallet"
+        | "packet"
+        | "home"
+        | "settings"
+        | "alltransfers"
+        | "ibcconnections"
+        | "ibcchannels"
+        | "hubblestatus"
+        | "searchk"
 
-let icons = [
-  {
-    name: "blocks",
+type IconVariant = "color" | "mono" | "inverse" | "monoInverse"
+
+type IconConfig = {
+  [key in IconName]: {
+    variants: Partial<Record<IconVariant, any>>
+  }
+}
+
+const icons: IconConfig = {
+  blocks: {
     variants: {
       color: ColorBlocks,
       mono: MonoBlocks,
@@ -84,8 +107,7 @@ let icons = [
       monoInverse: MonoInverseBlocks
     }
   },
-  {
-    name: "channel",
+  channel: {
     variants: {
       color: ColorChannel,
       mono: MonoChannel,
@@ -93,8 +115,7 @@ let icons = [
       monoInverse: MonoInverseChannel
     }
   },
-  {
-    name: "connection",
+  connection: {
     variants: {
       color: ColorConnection,
       mono: MonoConnection,
@@ -102,8 +123,7 @@ let icons = [
       monoInverse: MonoInverseConnection
     }
   },
-  {
-    name: "explorer",
+  explorer: {
     variants: {
       color: ColorExplorer,
       mono: MonoExplorer,
@@ -111,8 +131,7 @@ let icons = [
       monoInverse: MonoInverseExplorer
     }
   },
-  {
-    name: "faucet",
+  faucet: {
     variants: {
       color: ColorFaucet,
       mono: MonoFaucet,
@@ -120,8 +139,7 @@ let icons = [
       monoInverse: MonoInverseFaucet
     }
   },
-  {
-    name: "index",
+  index: {
     variants: {
       color: ColorIndex,
       mono: MonoIndex,
@@ -129,8 +147,7 @@ let icons = [
       monoInverse: MonoInverseIndex
     }
   },
-  {
-    name: "queue",
+  queue: {
     variants: {
       color: ColorQueue,
       mono: MonoQueue,
@@ -138,8 +155,7 @@ let icons = [
       monoInverse: MonoInverseQueue
     }
   },
-  {
-    name: "search",
+  search: {
     variants: {
       color: ColorSearch,
       mono: MonoSearch,
@@ -147,8 +163,7 @@ let icons = [
       monoInverse: MonoInverseSearch
     }
   },
-  {
-    name: "transfers",
+  transfers: {
     variants: {
       color: ColorTransfers,
       mono: MonoTransfers,
@@ -156,8 +171,7 @@ let icons = [
       monoInverse: MonoInverseTransfers
     }
   },
-  {
-    name: "usertransfers",
+  usertransfers: {
     variants: {
       color: ColorUserTransfers,
       mono: MonoUserTransfers,
@@ -165,8 +179,7 @@ let icons = [
       monoInverse: MonoInverseUserTransfers
     }
   },
-  {
-    name: "wallet",
+  wallet: {
     variants: {
       color: ColorWallet,
       mono: MonoWallet,
@@ -174,8 +187,7 @@ let icons = [
       monoInverse: MonoInverseWallet
     }
   },
-  {
-    name: "packet",
+  packet: {
     variants: {
       color: ColorPacket,
       mono: MonoPacket,
@@ -183,8 +195,7 @@ let icons = [
       monoInverse: MonoInversePacket
     }
   },
-  {
-    name: "home",
+  home: {
     variants: {
       color: ColorHome,
       mono: MonoHome,
@@ -192,30 +203,62 @@ let icons = [
       monoInverse: MonoInverseHome
     }
   },
-  {
-    name: "settings",
+  settings: {
     variants: {
       color: ColorSettings,
       mono: MonoSettings,
       inverse: InverseSettings,
       monoInverse: MonoInverseSettings
     }
+  },
+  alltransfers: {
+    variants: {
+      mono: MonoAllTransfers,
+      monoInverse: MonoInverseAllTransfers
+    }
+  },
+  ibcconnections: {
+    variants: {
+      mono: MonoIbcConnections,
+      monoInverse: MonoInverseIbcConnections
+    }
+  },
+  ibcchannels: {
+    variants: {
+      mono: MonoIbcChannels,
+      monoInverse: MonoInverseIbcChannels
+    }
+  },
+  hubblestatus: {
+    variants: {
+      mono: MonoHubbleStatus,
+      monoInverse: MonoInverseHubbleStatus
+    }
+  },
+  searchk: {
+    variants: {
+      mono: MonoSearchK,
+      monoInverse: MonoInverseSearchK
+    }
   }
-]
+}
 
 let className: string | undefined = undefined
-export let theme: "color" | "mono" | "inverse" | "monoInverse" = "color"
+export let theme: IconVariant = "color"
 export let name: IconName | undefined
 
 export { className as class }
 
-let iconName = icons.find(e => e.name === name)
-$: display = iconName ? iconName.variants[theme] : null
+function isValidIconThemeCombination(name: IconName | undefined, theme: IconVariant): boolean {
+  return !!name && !!icons[name]?.variants[theme]
+}
+
+$: isValid = isValidIconThemeCombination(name, theme)
+$: display = isValid ? icons[name!].variants[theme] : null
 </script>
 
-{#if display}
+{#if isValid && display}
   <svelte:component this={display} class={className}/>
 {:else}
-  <p>Icon not found.</p>
+  <p>Icon not found or not available in this variant.</p>
 {/if}
-
