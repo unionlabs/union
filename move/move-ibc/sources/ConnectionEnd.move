@@ -27,6 +27,80 @@ module IBC::connection_end {
         key_prefix: vector<u8>,
     }
 
+    public fun new(
+        client_id: String,
+        versions: vector<Version>,
+        state: u64,
+        delay_period: u64,
+        counterparty: Counterparty,
+    ): ConnectionEnd {
+        ConnectionEnd {
+            client_id,
+            versions,
+            state,
+            delay_period,
+            counterparty,
+        }
+    }
+
+    public fun new_counterparty(
+        client_id: String,
+        connection_id: String,
+        prefix: vector<u8>,
+    ): Counterparty {
+        Counterparty {
+            client_id,
+            connection_id,
+            prefix: MerklePrefix {
+                key_prefix: prefix,
+            },
+        }
+    }
+
+    public fun delay_period(connection_end: &ConnectionEnd): u64 {
+        connection_end.delay_period
+    }
+
+    public fun versions(connection_end: &ConnectionEnd): &vector<Version> {
+        &connection_end.versions
+    }
+
+    public fun state(connection_end: &ConnectionEnd): u64 {
+        connection_end.state
+    }
+
+    public fun set_state(connection_end: &mut ConnectionEnd, state: u64) {
+        connection_end.state = state;
+    }
+
+    public fun set_versions(connection_end: &mut ConnectionEnd, versions: vector<Version>) {
+        connection_end.versions = versions;
+    }
+
+    public fun client_id(connection_end: &ConnectionEnd): &String {
+        &connection_end.client_id
+    }
+
+    public fun counterparty_client_id(connection_end: &ConnectionEnd): &String {
+        &connection_end.counterparty.client_id
+    }
+
+    public fun counterparty_connection_id(connection_end: &ConnectionEnd): &String {
+        &connection_end.counterparty.connection_id
+    }
+
+    public fun set_counterparty_connection_id(connection_end: &mut ConnectionEnd, connection_id: String) {
+        connection_end.counterparty.connection_id = connection_id;
+    }
+
+    public fun counterparty_key_prefix(connection_end: &ConnectionEnd): &vector<u8> {
+        &connection_end.counterparty.prefix.key_prefix
+    }
+
+    public fun version_features(version: &Version): &vector<String> {
+        &version.features
+    }
+
     public fun default(): ConnectionEnd {
         ConnectionEnd {
             client_id: string::utf8(b""),
