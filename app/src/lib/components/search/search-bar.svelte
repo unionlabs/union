@@ -2,6 +2,7 @@
 import { cn } from "$lib/utilities/shadcn"
 import SearchIcon from "virtual:icons/lucide/search"
 import { Input } from "$lib/components/ui/input/index.ts"
+import { hasKeyboard } from "$lib/utilities/device"
 
 export let searchInput = ""
 export let onInputClick: ((event: MouseEvent) => void) | undefined = undefined
@@ -36,6 +37,7 @@ export let windowWidth = window.innerWidth
       'focus-visible:border-secondary focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
     )}
   />
+  {#if $hasKeyboard}
   <kbd
     class={cn(
       'h-7 gap-0.5 px-1.5',
@@ -46,4 +48,5 @@ export let windowWidth = window.innerWidth
   >
     <span class="text-sm mb-1"><span class="text-lg mr-0.25">⌘</span>K</span>
   </kbd>
+  {/if}
 </div>

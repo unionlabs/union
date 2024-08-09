@@ -1,4 +1,4 @@
-import { writable } from "svelte/store"
+import { writable, readable} from "svelte/store"
 
 export const deviceWidth = writable<number>()
 
@@ -13,3 +13,19 @@ export function checkWebGLSupport() {
     supportsWebGL.set(false)
   }
 }
+
+export const hasKeyboard = readable(false, (set) => {
+    const updateKeyboardState = () => set('keyboard' in navigator && navigator.keyboard !== null);
+
+    updateKeyboardState();
+
+    if ('addEventListener' in navigator) {
+        navigator.addEventListener('keyboardconnect', updateKeyboardState);
+        navigator.addEventListener('keyboarddisconnect', updateKeyboardState);
+
+        return () => {
+            navigator.removeEventListener('keyboardconnect', updateKeyboardState);
+            navigator.removeEventListener('keyboarddisconnect', updateKeyboardState);
+        };
+    }
+});
