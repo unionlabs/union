@@ -37,8 +37,7 @@ Cosmoverse
 Counterparties
 Counterparty
 Cpath
-Cryptopunks
-Csvg
+Cryptopunkssvg
 Cypherpunk
 DATADIR
 DYLD
@@ -660,6 +659,8 @@ keccak
 keepertest
 keplr
 keybase
+keyboardconnect
+keyboarddisconnect
 keyframes
 keygen
 keyof
