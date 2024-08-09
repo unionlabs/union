@@ -1,7 +1,3 @@
-keyboardconnect
-keyboarddisconnect
-keyboardconnect
-keyboarddisconnect
 0xbonlulu
 0xc0dejug
 0xkaiserkarel
@@ -663,6 +659,10 @@ keccak
 keepertest
 keplr
 keybase
+keyboardconnect
+keyboardconnect
+keyboarddisconnect
+keyboarddisconnect
 keyframes
 keygen
 keyof
