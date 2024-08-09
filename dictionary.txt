@@ -660,8 +660,6 @@ keepertest
 keplr
 keybase
 keyboardconnect
-keyboardconnect
-keyboarddisconnect
 keyboarddisconnect
 keyframes
 keygen
