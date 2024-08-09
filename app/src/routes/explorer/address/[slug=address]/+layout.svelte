@@ -33,7 +33,7 @@ let addresses = derived(page, $page => {
 setContext<typeof addresses>("addresses", addresses)
 </script>
 
-<div class='pt-3'>
+<div>
   <ChainsGate let:chains>
     {#if $addresses.find( address => chains.find( chain => address.address.startsWith(chain.addr_prefix) ) )}
       <slot />
