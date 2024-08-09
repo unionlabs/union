@@ -8,7 +8,7 @@ import { Separator } from "$lib/components/ui/separator"
 import { deviceWidth, supportsWebGL } from "$lib/utilities/device.ts"
 import { onMount } from "svelte"
 
-export let addresses: Array<string>
+export let addresses: Array<string> = []
 
 $: console.log(addresses)
 
@@ -33,7 +33,7 @@ onMount(() => {
 
 <div class="bg-muted dark:bg-background border-b flex">
     <div class="w-full flex flex-1">
-        {#if addresses}
+        {#if addresses.length > 0}
             <StatsBarStat blink={true} label={"Total Transfers"} value={$transfersPerAddressData?.data?.count || 0}/>
         {:else}
             {#if $deviceWidth > 888 || show === 0}
