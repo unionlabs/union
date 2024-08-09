@@ -41,6 +41,23 @@ module IBC::proto_utils {
         decode_untagged_string(buf, cursor)
     }
 
+    public fun decode_bytes(wire_type: u64, buf: &vector<u8>, cursor: u64): (Option<vector<u8>>, u64) {
+        if (wire_type != 2) {
+            return (option::none(), 0)  
+        };
+        
+        decode_untagged_bytes(buf, cursor)
+    }
+
+    public fun decode_untagged_bytes(buf: &vector<u8>, cursor: u64): (Option<vector<u8>>, u64) {
+        let (bytes_len, advance, err) = decode_varint_raw(buf, cursor);
+        cursor = cursor + advance;
+        if (err != 0) {
+            return (option::none(), 0)
+        };
+        (option::some(vector::slice(buf, cursor, cursor + bytes_len)), advance + bytes_len)
+    }
+
     public fun decode_untagged_string(buf: &vector<u8>, cursor: u64): (Option<String>, u64) {
         let (strlen, advance, err) = decode_varint_raw(buf, cursor);
         cursor = cursor + advance;

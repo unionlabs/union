@@ -3,12 +3,11 @@ module IBCModuleAddr::PingPong {
     use std::vector;
     use aptos_framework::event;
     use aptos_framework::account::{Self as AptosAccount};
-    use aptos_framework::timestamp;
+    // use aptos_framework::timestamp;
     use aptos_std::string::{Self, String};
     use IBC::Core;
     use aptos_std::any::{Self, Any};
     use IBC::height;
-    use std::bcs;
 
     const ACK_SUCCESS: vector<u8> = b"\x01";
     const ERR_ONLY_ONE_CHANNEL: u64 = 2001;

@@ -1,7 +1,6 @@
 module IBC::ics23 {
-    use std::string::{Self, String};
     use std::vector;
-    use std::option::{Self, Option};
+    use std::option::Option;
     use std::hash;
 
     struct ExistenceProof has drop {

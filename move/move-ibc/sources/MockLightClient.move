@@ -2,11 +2,11 @@ module IBC::LightClient {
     use std::vector;
     use aptos_std::from_bcs;
     use std::hash;
-    use aptos_std::any::{Self, Any};
+    use aptos_std::any::Any;
     use aptos_std::string::{Self, String};
     use aptos_std::bcs;
-    use std::bn254_algebra::{FormatFqLsb, Fr, FormatFrMsb, FormatGt, FormatFrLsb, Fq, G1, FormatG1Uncompr, G2, Gt, FormatG2Compr, FormatFqMsb};
-    use aptos_std::crypto_algebra::{deserialize, serialize, one, zero, add, mul, scalar_mul, multi_pairing, Element, eq, sub};
+    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr, G2, Gt, FormatG2Compr};
+    use aptos_std::crypto_algebra::{deserialize, serialize, zero, add, scalar_mul, multi_pairing, Element, eq};
     use aptos_std::aptos_hash;
     use IBC::height;
     use aptos_std::smart_table::{Self, SmartTable};
