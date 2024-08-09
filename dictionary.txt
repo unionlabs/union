@@ -1,3 +1,7 @@
+keyboardconnect
+keyboarddisconnect
+keyboardconnect
+keyboarddisconnect
 0xbonlulu
 0xc0dejug
 0xkaiserkarel
@@ -37,8 +41,7 @@ Cosmoverse
 Counterparties
 Counterparty
 Cpath
-Cryptopunks
-Csvg
+Cryptopunkssvg
 Cypherpunk
 DATADIR
 DYLD

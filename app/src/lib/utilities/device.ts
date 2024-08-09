@@ -1,4 +1,4 @@
-import { writable, readable} from "svelte/store"
+import { writable, readable } from "svelte/store"
 
 export const deviceWidth = writable<number>()
 
@@ -14,18 +14,18 @@ export function checkWebGLSupport() {
   }
 }
 
-export const hasKeyboard = readable(false, (set) => {
-    const updateKeyboardState = () => set('keyboard' in navigator && navigator.keyboard !== null);
+export const hasKeyboard = readable(false, set => {
+  const updateKeyboardState = () => set("keyboard" in navigator && navigator.keyboard !== null)
 
-    updateKeyboardState();
+  updateKeyboardState()
 
-    if ('addEventListener' in navigator) {
-        navigator.addEventListener('keyboardconnect', updateKeyboardState);
-        navigator.addEventListener('keyboarddisconnect', updateKeyboardState);
+  if ("addEventListener" in navigator) {
+    navigator.addEventListener("keyboardconnect", updateKeyboardState)
+    navigator.addEventListener("keyboarddisconnect", updateKeyboardState)
 
-        return () => {
-            navigator.removeEventListener('keyboardconnect', updateKeyboardState);
-            navigator.removeEventListener('keyboarddisconnect', updateKeyboardState);
-        };
+    return () => {
+      navigator.removeEventListener("keyboardconnect", updateKeyboardState)
+      navigator.removeEventListener("keyboarddisconnect", updateKeyboardState)
     }
-});
+  }
+})
