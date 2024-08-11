@@ -20,13 +20,12 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import { type Address, parseUnits, toHex, formatUnits, type Chain as ViemChain } from "viem"
+import { type Address, parseUnits, formatUnits, type Chain as ViemChain, erc20Abi } from "viem"
 import Stepper from "$lib/components/stepper.svelte"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { erc20Abi } from "viem"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
@@ -42,6 +41,7 @@ import {
   switchChain
 } from "@wagmi/core"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
+import { bytesToBech32Address } from "@union/client"
 
 function getChainById(chainId: number): ViemChain | null {
   const chains: { [key: number]: ViemChain } = {
@@ -328,7 +328,6 @@ const transfer = async () => {
         let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
         console.log({ ucs1_configuration })
         if (ucs1_configuration.contract_address === "ics20") {
-          console.log({ $recipient })
           transferAssetsMessage = {
             kind: "ibc",
             messageTransfers: [

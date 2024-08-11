@@ -4,6 +4,7 @@ import { onDestroy, onMount } from "svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { URLS } from "$lib/constants/index.ts"
 import { Label } from "$lib/components/ui/label"
+import { isValidBech32Address } from "@union/client"
 import { writable, type Writable } from "svelte/store"
 import Truncate from "$lib/components/truncate.svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
@@ -235,7 +236,7 @@ const requestUnoFromFaucet = async () => {
                 requestUnoFromFaucet()
               }}
               disabled={$unoFaucetState.kind !== "IDLE" ||
-                isValidCosmosAddress(address, ["union"]) === false}
+                isValidBech32Address(address) === false}
               class={cn(
                 "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50"
               )}

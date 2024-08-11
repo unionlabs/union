@@ -49,7 +49,7 @@ function createCosmosStore(
 ) {
   const { subscribe, set, update } = persisted("cosmos-store", previousState, {
     syncTabs: true,
-    storage: "session"
+    storage: "local"
   })
   return {
     set,

@@ -1,26 +1,21 @@
 <script lang="ts">
 import type { Chain } from "$lib/types"
-import { rawToBech32 } from "$lib/utilities/address"
+import { hexAddressToBech32 } from "@union/client"
 import { Badge } from "$lib/components/ui/badge/index.ts"
-import { fade, blur, fly, slide, scale } from "svelte/transition"
 
 export let address: { address: string; normalizedAddress: string }
 export let chains: Array<Chain>
 
 const addressChain = chains.find(c => address.address.startsWith(c.addr_prefix)) as Chain
-const cosmosChains: Array<Chain> = chains.filter(c => c.rpc_type === "cosmos" && c.enabled_staging)
-
-const rpc_type = address.address.startsWith("0x") ? "evm" : "cosmos"
-
-// @ts-ignore
-const fromHexString = hexString =>
-  Uint8Array.from(hexString.match(/.{1,2}/g).map(byte => Number.parseInt(byte, 16)))
 
 const otherCosmosAddresses: Array<{ address: string; chain: Chain }> = chains
-  .filter(c => c.rpc_type === "cosmos")
-  .map(c => ({
-    address: rawToBech32(c.addr_prefix, fromHexString(address.normalizedAddress)),
-    chain: c
+  .filter(chain => chain.rpc_type === "cosmos")
+  .map(chain => ({
+    address: hexAddressToBech32({
+      bech32Prefix: chain.addr_prefix,
+      address: `0x${address.normalizedAddress}`
+    }),
+    chain: chain
   }))
   .filter(pair => pair.address !== address.address)
 
@@ -56,24 +51,31 @@ setInterval(() => {
 </script>
 
 {#if addressChain?.rpc_type === "evm"}
-<div class="flex items-center gap-2">
-  <div class="text-sm sm:text-base md:text-lg font-bold flex items-center"><span class="text-muted-foreground">0x</span>{address.address.slice(2)}</div>
-  <Badge class="hidden md:block">EVM</Badge>
-</div>
+  <div class="flex items-center gap-2">
+    <div class="text-sm sm:text-base md:text-lg font-bold flex items-center">
+      <span class="text-muted-foreground">0x</span>{address.address.slice(2)}
+    </div>
+    <Badge class="hidden md:block">EVM</Badge>
+  </div>
 {:else}
-<div class="flex items-center">
-  <ul>
-    {#each allCosmosAddressesDeduplicated as cosmosAddress, i}
-      {#if i === addressIndex}
-      <li 
-        class="text-sm sm:text-base md:text-lg first:font-bold whitespace-pre">
-        <span class="select-none">{' '.repeat(longestPrefix - cosmosAddress.prefix.length)}</span><span class="text-muted-foreground mr-1">{cosmosAddress.prefix}</span>{cosmosAddress.body}<span class="ml-1 text-muted-foreground">{cosmosAddress.checksum}</span>
-      </li>
-      {/if}
-    {/each}
-  </ul>
-  <Badge class="hidden md:block">Cosmos</Badge>
-</div>
-
+  <div class="flex items-center">
+    <ul>
+      {#each allCosmosAddressesDeduplicated as cosmosAddress, i}
+        {#if i === addressIndex}
+          <li
+            class="text-sm sm:text-base md:text-lg first:font-bold whitespace-pre"
+          >
+            <span class="select-none"
+              >{" ".repeat(longestPrefix - cosmosAddress.prefix.length)}</span
+            ><span class="text-muted-foreground mr-1"
+              >{cosmosAddress.prefix}</span
+            >{cosmosAddress.body}<span class="ml-1 text-muted-foreground"
+              >{cosmosAddress.checksum}</span
+            >
+          </li>
+        {/if}
+      {/each}
+    </ul>
+    <Badge class="hidden md:block">Cosmos</Badge>
+  </div>
 {/if}
-

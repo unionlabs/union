@@ -13,9 +13,9 @@ import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { derived, writable, type Writable } from "svelte/store"
 import { strideFaucetMutation } from "$lib/graphql/queries/faucet"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
-import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
+import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
+import { bech32ToBech32Address, isValidBech32Address } from "@union/client"
 import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
-import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 
 type DydxFaucetState = DiscriminatedUnion<
   "kind",
@@ -30,7 +30,7 @@ type DydxFaucetState = DiscriminatedUnion<
 
 let strideAddress = derived(cosmosStore, $cosmosStore =>
   $cosmosStore.address
-    ? convertCosmosAddress({
+    ? bech32ToBech32Address({
         address: $cosmosStore.address,
         toPrefix: "stride"
       })
@@ -239,7 +239,7 @@ let strideBalance = createQuery(
               requestStrdFromFaucet()
             }}
             disabled={$strideFaucetState.kind !== "IDLE" ||
-              isValidCosmosAddress($strideAddress, ["stride"]) === false}
+              isValidBech32Address($strideAddress) === false}
             class={cn(
               "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
               "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]"
