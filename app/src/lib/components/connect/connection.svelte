@@ -2,13 +2,13 @@
 import type { Props } from "./index.ts"
 import XIcon from "virtual:icons/lucide/x"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { truncateAddress } from "@union/client"
 import CopyIcon from "virtual:icons/lucide/copy"
 import CheckIcon from "virtual:icons/lucide/check"
 import { Button } from "$lib/components/ui/button"
 import { copyTextAction } from "$lib/actions/copy.ts"
 import LoaderCircleIcon from "virtual:icons/lucide/loader-circle"
 import MetamaskMobileAlert from "$lib/components/connect/metamask-mobile-alert.svelte"
-import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 
 const OFFENDING_WALLET_ID = "io.metamask.mobile"
 
@@ -28,8 +28,8 @@ export let chainWalletsInformation: $$Props["chainWalletsInformation"]
 $: connectText =
   connectStatus === "connected" && address && address?.length > 0
     ? chain === "evm"
-      ? truncateEvmAddress(address, -1)
-      : truncateUnionAddress(address, -1)
+      ? truncateAddress({ address, length: -1 })
+      : truncateAddress({ address, length: -1 })
     : chain === "evm"
       ? "EVM"
       : "Cosmos"
@@ -61,18 +61,20 @@ let metamaskAlertDialogOpen = false
   class={cn(
     "px-2 w-full focus:ring-0 ring-transparent focus-visible:ring-0 flex justify-start",
     connectStatus !== "connected" &&
-      "hover:bg-transparent pointer-events-none text-md font-bold hidden",
+      "hover:bg-transparent pointer-events-none text-md font-bold hidden"
   )}
-  id={`${chain}-connect`}
-  on:click={_event => onCopyClick()}
   tabindex={0}
-  data-connect-button=""
+  id={`${chain}-connect`}
+  data-connect-button={chain}
+  on:click={_event => onCopyClick()}
   variant={connectStatus === "connected" ? "default" : "ghost"}
 >
   <div
     class={cn(
       "w-full text-left font-mono",
-      connectText === "EVM" || connectText === "Cosmos" ? "hidden" : "text-sm sm:text-[15.5px]",
+      connectText === "EVM" || connectText === "Cosmos"
+        ? "hidden"
+        : "text-sm sm:text-[15.5px]"
     )}
   >
     {connectText}
@@ -94,8 +96,10 @@ let metamaskAlertDialogOpen = false
         role="row"
         tabindex={0}
         data-index={index}
-        on:mouseleave={() => (hoverState = connectedWalletId === id ? "none" : "none")}
-        on:mouseenter={() => (hoverState = connectedWalletId === id ? "hover" : "none")}
+        on:mouseleave={() =>
+          (hoverState = connectedWalletId === id ? "none" : "none")}
+        on:mouseenter={() =>
+          (hoverState = connectedWalletId === id ? "hover" : "none")}
         class={cn("flex flex-col w-full justify-start mb-3")}
       >
         <Button
@@ -103,12 +107,14 @@ let metamaskAlertDialogOpen = false
           variant="outline"
           class={cn(
             "capitalize justify-start h-12 text-lg ring-0 focus:ring-0 ring-transparent",
-            connectStatus === "connected" && connectedWalletId === id && "border-border",
+            connectStatus === "connected" &&
+              connectedWalletId === id &&
+              "border-border",
             (connectStatus === "disconnected" || connectStatus == undefined) &&
               "opacity-75 hover:opacity-100 dark:hover:text-black",
             hoverState === "hover" &&
               connectedWalletId === id &&
-              "hover:text-destructive border-destructive hover:bg-transparent",
+              "hover:text-destructive border-destructive hover:bg-transparent"
           )}
           on:click={async () => {
             if (connectStatus === "connected") onDisconnectClick()

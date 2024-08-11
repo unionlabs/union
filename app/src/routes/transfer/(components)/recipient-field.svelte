@@ -29,8 +29,8 @@ const onUnlockClick = (_event: MouseEvent) => {
     spellcheck="false"
     autocapitalize="none"
     bind:value={recipient}
-    data-transfer-recipient-address
     placeholder="Destination address"
+    data-transfer-recipient-address=""
     disabled={recipientInputState === 'locked' && $recipient.length > 0}
     class={cn('font-mono placeholder:font-sans focus:ring-0 focus-visible:ring-0')}
   />
@@ -49,5 +49,3 @@ const onUnlockClick = (_event: MouseEvent) => {
     />
   </Button>
 </div>
-
-<style lang="postcss"></style>

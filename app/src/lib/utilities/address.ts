@@ -1,7 +1,7 @@
 import { bytesToBech32Address } from "@union/client"
 import type { Chain, UserAddresses } from "$lib/types"
 
-export const userAddrOnChain = (userAddr: UserAddresses, chain: Chain | null): string | null => {
+export const userAddrOnChain = (userAddr: UserAddresses, chain?: Chain): string | null => {
   if (!chain) {
     return null
   }

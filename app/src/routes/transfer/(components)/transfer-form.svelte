@@ -1,19 +1,32 @@
 <script lang="ts">
+import {
+  switchChain,
+  writeContract,
+  simulateContract,
+  getConnectorClient,
+  waitForTransactionReceipt
+} from "@wagmi/core"
+import {
+  createPfmMemo,
+  bytesToBech32Address,
+  createCosmosSdkClient,
+  type TransactionResponse,
+  type TransferAssetsParameters
+} from "@union/client"
 import { onMount } from "svelte"
+import { page } from "$app/stores"
 import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
-import { UnionClient } from "@union/client/v0"
+import { goto } from "$app/navigation"
+import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { raise, sleep } from "$lib/utilities/index.ts"
-import type { OfflineSigner } from "@leapwallet/types"
-import * as Card from "$lib/components/ui/card/index.ts"
-import { Input } from "$lib/components/ui/input/index.js"
-import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { Button } from "$lib/components/ui/button/index.ts"
+import { UnionClient } from "@union/client/v0"
 import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
+import { config } from "$lib/wallet/evm/config.ts"
 import { truncate } from "$lib/utilities/format.ts"
+<<<<<<< HEAD
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
@@ -21,38 +34,41 @@ import { page } from "$app/stores"
 import { goto } from "$app/navigation"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import { type Address, parseUnits, formatUnits, type Chain as ViemChain, erc20Abi } from "viem"
+=======
+>>>>>>> fd648165e (chore: progress)
 import Stepper from "$lib/components/stepper.svelte"
-import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
+import { toIsoString } from "$lib/utilities/date.ts"
+import { raise, sleep } from "$lib/utilities/index.ts"
+import type { OfflineSigner } from "@leapwallet/types"
+import { userBalancesQuery } from "$lib/queries/balance"
+import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
+import { Input } from "$lib/components/ui/input/index.ts"
+import { userAddrOnChain } from "$lib/utilities/address.ts"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
+import { Button } from "$lib/components/ui/button/index.ts"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
+<<<<<<< HEAD
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
 import { config } from "$lib/wallet/evm/config"
 import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
+=======
+import { type Writable, writable, derived, get } from "svelte/store"
+>>>>>>> fd648165e (chore: progress)
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
-import {
-  writeContract,
-  simulateContract,
-  waitForTransactionReceipt,
-  getConnectorClient,
-  switchChain
-} from "@wagmi/core"
+import { erc20Abi, parseUnits, formatUnits, type Address } from "viem"
+import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
-import { bytesToBech32Address } from "@union/client"
+import { stepAfter, stepBefore, type TransferState } from "$lib/transfer/transfer.ts"
 
-function getChainById(chainId: number): ViemChain | null {
-  const chains: { [key: number]: ViemChain } = {
-    11155111: sepolia,
-    80084: berachainTestnetbArtio,
-    421614: arbitrumSepolia
-  }
-  return chains[chainId] || null
-}
-
+export let connected: boolean
 export let chains: Array<Chain>
+<<<<<<< HEAD
 let userAddr: Readable<UserAddresses> = derived(
   [userAddrCosmos, userAddrEvm],
   ([$userAddrCosmos, $userAddrEvm]) => ({
@@ -62,6 +78,14 @@ let userAddr: Readable<UserAddresses> = derived(
 )
 
 $: userBalances = userBalancesQuery({ chains, userAddr: $userAddr, connected: true })
+=======
+export let userAddr: UserAddresses
+
+const getChainById = (chainId: number) =>
+  [sepolia, berachainTestnetbArtio, arbitrumSepolia].find(chain => chain.id === chainId)
+
+$: userBalances = userBalancesQuery({ chains, userAddr, connected })
+>>>>>>> fd648165e (chore: progress)
 
 // CURRENT FORM STATE
 let fromChainId = writable("")
@@ -69,7 +93,9 @@ let toChainId = writable("")
 let assetSymbol = writable("")
 let assetAddress = writable("")
 
-let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
+let transferState: Writable<TransferState> = writable({
+  kind: "PRE_TRANSFER"
+})
 
 let amount = ""
 $: amountLargerThanZero = Number.parseFloat(amount) > 0
@@ -129,6 +155,7 @@ $: asset = derived(
 
 let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
   switch ($toChain?.rpc_type) {
+<<<<<<< HEAD
     case "evm": {
       const evmAddr = $userAddr.evm
       if (evmAddr === null) return null
@@ -139,6 +166,15 @@ let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
       if (cosmosAddr === null) return null
       return rawToBech32($toChain.addr_prefix, cosmosAddr.bytes)
     }
+=======
+    case "evm":
+      return userAddr.evm.canonical
+    case "cosmos":
+      return bytesToBech32Address({
+        toPrefix: $toChain.addr_prefix,
+        bytes: userAddr.cosmos.bytes
+      })
+>>>>>>> fd648165e (chore: progress)
     default:
       return null
   }
@@ -319,11 +355,25 @@ const transfer = async () => {
               {
                 sourcePort: "transfer",
                 sourceChannel: ucs1_configuration.channel_id,
+<<<<<<< HEAD
                 token: { denom: $assetAddress, amount: parsedAmount.toString() },
                 sender: rawToBech32($fromChain.addr_prefix, $userAddrCosmos.bytes),
+=======
+                token: {
+                  denom: $assetAddress,
+                  amount: parsedAmount.toString()
+                },
+                sender: bytesToBech32Address({
+                  toPrefix: $fromChain.addr_prefix,
+                  bytes: userAddr.cosmos.bytes
+                }),
+>>>>>>> fd648165e (chore: progress)
                 receiver: $recipient,
                 memo: pfmMemo ?? "",
-                timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
+                timeoutHeight: {
+                  revisionHeight: 888888888n,
+                  revisionNumber: 8n
+                }
               }
             ]
           }
@@ -350,7 +400,10 @@ const transfer = async () => {
         console.log({ transferAssetsMessage })
 
         const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
-        transferState.set({ kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash })
+        transferState.set({
+          kind: "TRANSFERRING",
+          transferHash: cosmosTransfer.transactionHash
+        })
       } catch (error) {
         if (error instanceof Error) {
           // @ts-ignore
@@ -368,6 +421,7 @@ const transfer = async () => {
       return
     }
 
+<<<<<<< HEAD
     if ($userAddrEvm === null) return toast.error("No Cosmos user address found")
     if (pfmMemo === null && $userAddrCosmos === null)
       return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
@@ -377,6 +431,8 @@ const transfer = async () => {
     //   await sleep(1_500)
     // }
 
+=======
+>>>>>>> fd648165e (chore: progress)
     const ucs01address = ucs1_configuration.contract_address as Address
 
     if (window.ethereum === undefined) raise("no ethereum browser extension")
@@ -410,7 +466,11 @@ const transfer = async () => {
       try {
         hash = await writeContract(config, {
           chain: selectedChain,
+<<<<<<< HEAD
           account: $userAddrEvm.canonical,
+=======
+          account: userAddr.evm.canonical,
+>>>>>>> fd648165e (chore: progress)
           abi: erc20Abi,
           address: $asset.address as Address,
           functionName: "approve",
@@ -451,16 +511,33 @@ const transfer = async () => {
       const contractRequest = {
         chainId: selectedChain.id,
         abi: ucs01abi,
+<<<<<<< HEAD
         account: $userAddrEvm.canonical,
+=======
+        account: userAddr.evm.canonical,
+>>>>>>> fd648165e (chore: progress)
         functionName: "send",
         address: ucs01address,
         args: [
           ucs1_configuration.channel_id,
+<<<<<<< HEAD
           // @ts-ignore see the assertion above
           pfmMemo === null ? $userAddrCosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
           [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
+=======
+          pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
+          [
+            {
+              denom: $asset.address.toLowerCase() as Address,
+              amount: parsedAmount
+            }
+          ],
+>>>>>>> fd648165e (chore: progress)
           pfmMemo ?? "", // memo
-          { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
+          {
+            revision_number: 9n,
+            revision_height: BigInt(999_999_999) + 100n
+          },
           0n
         ]
       } as const
@@ -489,7 +566,11 @@ const transfer = async () => {
 
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
-        const transferHash = await writeContract(config, $transferState.contractRequest)
+        const transferHash = await writeContract(
+          config,
+          // @ts-expect-error
+          $transferState.contractRequest
+        )
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
       } catch (error) {
         if (error instanceof Error) {
@@ -507,7 +588,10 @@ const transfer = async () => {
         await waitForTransactionReceipt(config, {
           hash: $transferState.transferHash
         })
-        transferState.set({ kind: "TRANSFERRING", transferHash: $transferState.transferHash })
+        transferState.set({
+          kind: "TRANSFERRING",
+          transferHash: $transferState.transferHash
+        })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({
@@ -594,11 +678,14 @@ $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $user
   if (!$fromChainId) return
   const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
   const cosmosBalance = $userBalances[chainIndex]
-  if (!cosmosBalance?.isSuccess) {
+  if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
     console.log("trying to send from cosmos but no balances fetched yet")
-    return
+    return null
   }
-  return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
+  return cosmosBalance.data.map(balance => ({
+    ...balance,
+    balance: BigInt(balance.balance)
+  }))
 })
 
 function swapChainsClick(_event: MouseEvent) {
@@ -640,7 +727,7 @@ const stateToStatus = <K extends TransferState["kind"]>(
           ? errorFormatter(state as Extract<TransferState, { kind: K }>)
           : progressFormatter(state as Extract<TransferState, { kind: K }>)
 
-let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
+let stepperSteps: any = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
   if ($transferState.kind === "PRE_TRANSFER") return [] // don't generate steps before transfer is ready
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
@@ -709,6 +796,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         ts => ({
           status: "ERROR",
           title: `Error simulating transfer on ${$fromChain.display_name}`,
+          // @ts-expect-error
           description: `${ts.error}`
         }),
         () => ({
@@ -850,18 +938,33 @@ const resetInput = () => {
 </script>
 
 <div
-  class={cn("size-full duration-1000 transition-colors dark:bg-muted", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
+  class={cn(
+    "size-full duration-1000 transition-colors dark:bg-muted",
+    $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : ""
+  )}
+></div>
 
 <div class="cube-scene" id="scene">
-
-  <div class={cn("cube ",
-  $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "no-transition")}>
-    <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
-    <Card.Root class={cn($transferState.kind === "PRE_TRANSFER" ? "no-transition" : "cube-front")}>
+  <div
+    class={cn(
+      "cube ",
+      $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "no-transition"
+    )}
+  >
+    <div
+      class="cube-right font-bold flex items-center justify-center text-xl font-supermolot"
+    >
+      UNION TESTNET
+    </div>
+    <Card.Root
+      class={cn(
+        $transferState.kind === "PRE_TRANSFER" ? "no-transition" : "cube-front"
+      )}
+    >
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
-      <Card.Content class={cn('flex flex-col gap-4')}>
+      <Card.Content class={cn("flex flex-col gap-4")}>
         <section>
           <CardSectionHeading>From</CardSectionHeading>
           <ChainButton bind:dialogOpen={dialogOpenFromChain}>
@@ -869,7 +972,7 @@ const resetInput = () => {
           </ChainButton>
           <div class="flex flex-col items-center pt-4 -mb-6">
             <Button on:click={swapChainsClick} size="icon" variant="outline">
-              <ArrowLeftRight class="size-5 dark:text-white rotate-90"/>
+              <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
             </Button>
           </div>
           <CardSectionHeading>To</CardSectionHeading>
@@ -881,120 +984,129 @@ const resetInput = () => {
           <CardSectionHeading>Asset</CardSectionHeading>
           {#if $sendableBalances !== undefined && $fromChainId}
             {#if $sendableBalances === null}
-              Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
+              Failed to load sendable balances for <b
+                >{$fromChain?.display_name}</b
+              >.
             {:else if $sendableBalances && $sendableBalances.length === 0}
-              You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some from <a
-              class="underline font-bold" href="/faucet">the faucet</a>
+              You don't have sendable assets on <b>{$fromChain?.display_name}</b
+              >. You can get some from
+              <a class="underline font-bold" href="/faucet">the faucet</a>
             {:else}
               <Button
                 class="w-full"
                 variant="outline"
                 on:click={() => (dialogOpenToken = !dialogOpenToken)}
               >
-                <div
-                  class="flex-1 text-left font-bold text-md">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol ? $assetSymbol : 'Select Asset', 12)}</div>
+                <div class="flex-1 text-left font-bold text-md">
+                  {truncate(
+                    supportedAsset
+                      ? supportedAsset.display_symbol
+                      : $assetSymbol
+                        ? $assetSymbol
+                        : "Select Asset",
+                    12
+                  )}
+                </div>
 
-                <Chevron/>
+                <Chevron />
               </Button>
             {/if}
           {:else}
             Select a chain to send from.
           {/if}
-          {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
+          {#if $assetSymbol !== "" && $sendableBalances !== null && $asset?.address}
             <div class="mt-4 text-xs text-muted-foreground">
-              <b>{truncate(supportedAsset ? supportedAsset?.display_symbol : $assetSymbol, 12)}</b> balance on
+              <b
+                >{truncate(
+                  supportedAsset
+                    ? supportedAsset?.display_symbol
+                    : $assetSymbol,
+                  12
+                )}</b
+              >
+              balance on
               <b>{$fromChain?.display_name}</b> is
-              {formatUnits(BigInt($asset.balance), supportedAsset?.decimals ?? 0)}
+              {formatUnits(
+                BigInt($asset.balance),
+                supportedAsset?.decimals ?? 0
+              )}
             </div>
           {/if}
         </section>
-        
-          <section>
-            <CardSectionHeading>Amount</CardSectionHeading>
-            <Input
-              autocapitalize="none"
-              autocomplete="off"
-              autocorrect="off"
-              type="number"
-              inputmode="decimal"
-              bind:value={amount}
-              class={cn(
-                !balanceCoversAmount && amount ? 'border-red-500' : '',
-                'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
-              )}
-              disabled={!$asset}
-              maxlength={64}
-              minlength={1}
-              pattern="^[0-9]*[.,]?[0-9]*$"
-              placeholder="0.00"
-              spellcheck="false"
-            />
-          </section>
-          <section>
-            <CardSectionHeading>Recipient</CardSectionHeading>
-            <div class="flex items-start gap-2">
-              <div class="w-full">
-                <div class="relative w-full mb-2">
-                  <Input
-                    autocapitalize="none"
-                    autocomplete="off"
-                    autocorrect="off"
-                    bind:value={address}
-                    class="disabled:bg-black/30"
-                    disabled={inputState === 'locked'}
-                    id="address"
-                    on:input={handleInput}
-                    placeholder="Select chain"
-                    required={true}
-                    spellcheck="false"
-                    type="text"
-                  />
-                </div>
-                <div class="flex justify-between px-1">
-                  {#if userInput}
-                    <button
-                      type="button"
-                      on:click={resetInput}
-                      class="text-xs text-muted-foreground hover:text-primary transition"
-                    >
-                      Reset
-                    </button>
-                  {/if}
-                </div>
+
+        <section>
+          <CardSectionHeading>Amount</CardSectionHeading>
+          <Input
+            autocapitalize="none"
+            autocomplete="off"
+            autocorrect="off"
+            type="number"
+            inputmode="decimal"
+            bind:value={amount}
+            class={cn(
+              !balanceCoversAmount && amount ? "border-red-500" : "",
+              "focus:ring-0 focus-visible:ring-0 disabled:bg-black/30"
+            )}
+            disabled={!$asset}
+            maxlength={64}
+            minlength={1}
+            pattern="^[0-9]*[.,]?[0-9]*$"
+            placeholder="0.00"
+            spellcheck="false"
+          />
+        </section>
+        <section>
+          <CardSectionHeading>Recipient</CardSectionHeading>
+          <div class="flex items-start gap-2">
+            <div class="w-full">
+              <div class="relative w-full mb-2">
+                <Input
+                  autocapitalize="none"
+                  autocomplete="off"
+                  autocorrect="off"
+                  bind:value={address}
+                  class="disabled:bg-black/30"
+                  disabled={inputState === "locked"}
+                  id="address"
+                  on:input={handleInput}
+                  placeholder="Select chain"
+                  required={true}
+                  spellcheck="false"
+                  type="text"
+                />
               </div>
-              <!--            <Button-->
-              <!--              aria-label="Toggle address lock"-->
-              <!--              class="px-3"-->
-              <!--              on:click={onLockClick}-->
-              <!--              variant="ghost"-->
-              <!--            >-->
-              <!--              {#if inputState === 'locked'}-->
-              <!--                <LockLockedIcon class="size-4.5"/>-->
-              <!--              {:else}-->
-              <!--                <LockOpenIcon class="size-4.5"/>-->
-              <!--              {/if}-->
-              <!--            </Button>-->
+              <div class="flex justify-between px-1">
+                {#if userInput}
+                  <button
+                    type="button"
+                    on:click={resetInput}
+                    class="text-xs text-muted-foreground hover:text-primary transition"
+                  >
+                    Reset
+                  </button>
+                {/if}
+              </div>
             </div>
-          </section>
-        </Card.Content>
-        <Card.Footer class="flex flex-col gap-4 items-start">
-          <Button
-            disabled={!amount ||
-          !$asset ||
-          !$toChainId ||
-          !$recipient ||
-          !$assetSymbol ||
-          !$fromChainId ||
-          !amountLargerThanZero ||
-          // >= because need some sauce for gas
-          !balanceCoversAmount
-          }
+          </div>
+        </section>
+      </Card.Content>
+      <Card.Footer class="flex flex-col gap-4 items-start">
+        <Button
+          disabled={!amount ||
+            !$asset ||
+            !$toChainId ||
+            !$recipient ||
+            !$assetSymbol ||
+            !$fromChainId ||
+            !amountLargerThanZero ||
+            // >= because need some sauce for gas
+            !balanceCoversAmount}
           on:click={async event => {
-          event.preventDefault()
-          transferState.set({ kind: "FLIPPING" })
-          await sleep(1200)
-          transfer()
-        }}
+            event.preventDefault()
+            transferState.set({ kind: "FLIPPING" })
+            await sleep(1200)
+            transfer()
+          }}
           type="button"
         >
           {buttonText}
@@ -1003,12 +1115,11 @@ const resetInput = () => {
     </Card.Root>
 
     {#if $transferState.kind !== "PRE_TRANSFER"}
-      <Card.Root
-        class={cn("cube-back p-6")}>
+      <Card.Root class={cn("cube-back p-6")}>
         {#if $fromChain}
           <Stepper
             steps={stepperSteps}
-            on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}
+            on:cancel={() => transferState.set({ kind: "PRE_TRANSFER" })}
             onRetry={() => {
               transferState.update(ts => {
                 // @ts-ignore
@@ -1020,116 +1131,70 @@ const resetInput = () => {
           />
         {/if}
       </Card.Root>
-      <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
+      <div
+        class="cube-left font-bold flex items-center justify-center text-xl font-supermolot"
+      >
+        UNION TESTNET
+      </div>
     {/if}
   </div>
 </div>
 
-
 <ChainDialog
+  {userAddr}
+  {connected}
+  kind="from"
+  selectedChain={$fromChainId}
   bind:dialogOpen={dialogOpenFromChain}
   chains={chains.filter(c => c.enabled_staging)}
+<<<<<<< HEAD
   kind="from"
   onChainSelect={newSelectedChain => {
     fromChainId.set(newSelectedChain)
   }}
   selectedChain={$fromChainId}
   userAddr={$userAddr}
+=======
+  onChainSelect={newSelectedChain => {
+    fromChainId.set(newSelectedChain)
+  }}
+>>>>>>> fd648165e (chore: progress)
 />
 
 <ChainDialog
+  kind="to"
+  {userAddr}
+  {connected}
+  selectedChain={$toChainId}
   bind:dialogOpen={dialogOpenToChain}
   chains={chains.filter(c => c.enabled_staging)}
+<<<<<<< HEAD
   kind="to"
   onChainSelect={newSelectedChain => {
     toChainId.set(newSelectedChain)
   }}
   selectedChain={$toChainId}
   userAddr={$userAddr}
+=======
+  onChainSelect={newSelectedChain => {
+    toChainId.set(newSelectedChain)
+  }}
+>>>>>>> fd648165e (chore: progress)
 />
 
-{#if $sendableBalances !== null && $fromChain !== null}
+{#if $sendableBalances && $fromChain}
   <AssetsDialog
     chain={$fromChain}
     assets={$sendableBalances}
+    bind:dialogOpen={dialogOpenToken}
     onAssetSelect={asset => {
+<<<<<<< HEAD
       console.log('Selected Asset: ', asset)
+=======
+      console.log("Selected Asset: ", asset)
+>>>>>>> fd648165e (chore: progress)
       assetSymbol.set(asset.symbol)
       assetAddress.set(asset.address)
     }}
-    bind:dialogOpen={dialogOpenToken}
   />
 {/if}
-
-<style global lang="postcss">
-
-
-    .cube-scene {
-        @apply absolute -my-6 py-6 z-20;
-        top: calc(50% - (var(--height) / 2));
-        --width: calc(min(500px, (100dvw - 32px)));
-        --height: calc(min(740px, (100dvh - 144px)));
-        --depth: 80px;
-        --speed: 2s;
-        width: var(--width);
-        height: var(--height);
-        perspective: 1000px;
-    }
-
-    .cube {
-        @apply relative;
-        width: var(--width);
-        height: var(--height);
-        transform-style: preserve-3d;
-        transition: transform var(--speed);
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
-    }
-
-    .cube--flipped {
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
-    }
-
-    .cube-front, .cube-back {
-        @apply absolute overflow-y-auto overflow-x-hidden;
-
-        width: var(--width);
-        height: var(--height);
-    }
-
-    .cube-left {
-        @apply absolute bg-card border;
-        width: var(--height);
-        height: var(--depth);
-        top: calc((var(--height) / 2) - (var(--depth) / 2));
-        right: calc((var(--width) / 2) - (var(--height) / 2));
-        transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
-    }
-
-    .cube-right {
-        @apply absolute bg-card border;
-        width: var(--height);
-        height: var(--depth);
-        top: calc((var(--height) / 2) - (var(--depth) / 2));
-        left: calc((var(--width) / 2) - (var(--height) / 2));
-        transform: rotateZ(-90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
-    }
-
-    .cube-front {
-        transform: translateZ(calc(var(--depth) * 0.5));
-    }
-
-    .cube-back {
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
-    }
-
-    .no-transition {
-        @apply overflow-y-auto overflow-x-hidden;
-        width: var(--width);
-        height: var(--height);
-        transition: none !important;
-    }
-
-
-</style>
-
-

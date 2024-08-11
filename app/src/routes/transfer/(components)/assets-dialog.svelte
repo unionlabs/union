@@ -21,10 +21,10 @@ export let onAssetSelect: (data: { address: string; symbol: string }) => void
 </script>
 
 <Dialog.Root
-  bind:open={dialogOpen}
   closeOnEscape={true}
-  closeOnOutsideClick={true}
   preventScroll={true}
+  bind:open={dialogOpen}
+  closeOnOutsideClick={true}
 >
   <Dialog.Content
     class="max-w-[90%] sm:max-w-[450px] max-h-[95%] px-0 pt-4 pb-2 flex flex-col items-start"
@@ -34,32 +34,51 @@ export let onAssetSelect: (data: { address: string; symbol: string }) => void
     </Dialog.Header>
     <div class="w-full overflow-scroll">
       <ul>
-          {#each assets as asset, index}
-            {@const supportedAsset = getSupportedAsset(chain, asset.address)}
-            {#if $showUnsupported || supportedAsset}
-              <li
+        {#each assets as asset, index}
+          {@const supportedAsset = getSupportedAsset(chain, asset.address)}
+          {#if $showUnsupported || supportedAsset}
+            <li
+              class={cn(
+                "pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5"
+              )}
+            >
+              <Button
+                variant="ghost"
                 class={cn(
-              'pb-2 dark:text-accent-foreground flex flex-col h-full justify-start align-middle space-x-3.5',
-            )}
+                  "size-full px-4 py-2 w-full text-foreground rounded-none flex "
+                )}
+                on:click={() => {
+                  onAssetSelect({
+                    address: asset.address,
+                    symbol:
+                      (supportedAsset && supportedAsset.display_symbol) ||
+                      (asset && asset.symbol) ||
+                      "Unknown symbol"
+                  })
+                  dialogOpen = false
+                }}
               >
-                <Button
-                  variant="ghost"
-                  class={cn('size-full px-4 py-2 w-full text-foreground rounded-none flex ')}
-                  on:click={() => {
-                onAssetSelect({address: asset.address, symbol : (supportedAsset && supportedAsset.display_symbol) || (asset && asset.symbol) || 'Unknown symbol' })
-                dialogOpen = false
-              }}
+                <div
+                  class="size-full flex flex-col items-start"
+                  class:opacity-30={!supportedAsset}
                 >
-                  <div class="size-full flex flex-col items-start" class:opacity-30={!supportedAsset}>
-                    {truncate((supportedAsset && supportedAsset.display_symbol) || (asset && asset.symbol) || '', 6) || 'Unknown symbol'}
-                  </div>
-                  <p class="mb-auto text-lg font-black" class:opacity-30={!supportedAsset}>
-                    {formatUnits(asset.balance, supportedAsset?.decimals ?? 0)}
-                  </p>
-                </Button>
-              </li>
-            {/if}
-          {/each}
+                  {truncate(
+                    (supportedAsset && supportedAsset.display_symbol) ||
+                      (asset && asset.symbol) ||
+                      "",
+                    6
+                  ) || "Unknown symbol"}
+                </div>
+                <p
+                  class="mb-auto text-lg font-black"
+                  class:opacity-30={!supportedAsset}
+                >
+                  {formatUnits(asset.balance, supportedAsset?.decimals ?? 0)}
+                </p>
+              </Button>
+            </li>
+          {/if}
+        {/each}
       </ul>
     </div>
   </Dialog.Content>
