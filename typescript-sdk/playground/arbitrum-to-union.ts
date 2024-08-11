@@ -2,12 +2,9 @@
 import { parseArgs } from "node:util"
 import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
-import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { hexStringToUint8Array } from "#convert.ts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/arbitrum-to-union.ts --private-key "..."` */
@@ -25,11 +22,6 @@ if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
-
-const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-  "union"
-)
 
 const LINK_CONTRACT_ADDRESS = "0xb1d4538b4571d411f07960ef2838ce337fe1e80e"
 
@@ -58,11 +50,6 @@ try {
       account: evmAccount,
       chain: arbitrumSepolia,
       transport: fallback([http(arbitrumSepolia?.rpcUrls.default.http.at(0))])
-    },
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet-8.union.build")
     }
   })
 

@@ -1,13 +1,10 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { fallback, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
-import { hexStringToUint8Array } from "#convert.ts"
 import { berachainTestnetbArtio } from "viem/chains"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/berachain-to-stride.ts --private-key "..."` --estimate-gas */
@@ -25,14 +22,6 @@ if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
-
-const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-  "stride"
-)
-
-const [account] = await cosmosAccount.getAccounts()
-if (!account) raise("Account not found")
 
 const WBTC_CONTRACT_ADDRESS = "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae"
 
@@ -72,11 +61,6 @@ try {
         ),
         http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
       ])
-    },
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "strd" },
-      transport: cosmosHttp("https://stride-testnet-rpc.polkachu.com")
     }
   })
 

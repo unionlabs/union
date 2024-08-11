@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
@@ -55,11 +54,6 @@ try {
   const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
 
   const client = createCosmosSdkClient({
-    evm: {
-      account: evmAccount,
-      chain: arbitrumSepolia,
-      transport: fallback([http(arbitrumSepolia?.rpcUrls.default.http.at(0))])
-    },
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "muno" },

@@ -5,9 +5,9 @@ import { parseArgs } from "node:util"
 import { sepolia } from "viem/chains"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
+import { consola } from "../scripts/logger.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { consola, timestamp } from "../scripts/logger.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
@@ -31,8 +31,6 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
 )
-
-const stamp = timestamp()
 
 try {
   const {
@@ -59,7 +57,7 @@ try {
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+      transport: cosmosHttp("https://rpc.testnet-8.union.build")
     }
   })
 

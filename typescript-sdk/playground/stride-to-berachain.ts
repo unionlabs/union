@@ -1,12 +1,10 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { berachainTestnetbArtio } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
@@ -61,16 +59,6 @@ try {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "ustrd" },
       transport: cosmosHttp("https://stride-testnet-rpc.polkachu.com")
-    },
-    evm: {
-      account: berachainAccount,
-      chain: berachainTestnetbArtio,
-      transport: fallback([
-        http(
-          "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
-        ),
-        http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
-      ])
     }
   })
 
@@ -92,8 +80,6 @@ try {
     relayContractAddress: ucsConfiguration.contract_address,
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   } satisfies TransferAssetsParameters
-
-  console.info(transactionPayload)
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

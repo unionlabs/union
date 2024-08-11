@@ -78,7 +78,6 @@ export async function ibcTransferSimulate({
   cosmosSigner: CosmosOfflineSigner
   messageTransfers: Array<MessageTransferWithOptionals>
 }): Promise<TransactionResponse> {
-  console.info("ibcTransferSimulate")
   try {
     const signingClient = await SigningStargateClient.connectWithSigner(
       cosmosRpcUrl,
@@ -288,7 +287,6 @@ export async function cosmosSameChainTransferSimulate({
     signingClient.disconnect()
     return { success: true, data: gas.toString() }
   } catch (error) {
-    console.error(error)
     return {
       success: false,
       data: error instanceof Error ? error.message : "An unknown error occurred"

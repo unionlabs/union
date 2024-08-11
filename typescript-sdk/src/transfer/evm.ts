@@ -58,7 +58,6 @@ export async function transferAssetFromEvm(
         relayContractAddress
       })
       if (!approveResponse.success) return approveResponse
-      console.info(`[transferAssetFromEvm] Approval transaction hash: ${approveResponse.data}`)
     }
 
     memo ||= timestamp()

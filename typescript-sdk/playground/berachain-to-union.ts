@@ -2,12 +2,9 @@
 import { parseArgs } from "node:util"
 import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
-import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { hexStringToUint8Array } from "#convert.ts"
 import { berachainTestnetbArtio } from "viem/chains"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/berachain-to-union.ts --private-key "..."` */
@@ -27,11 +24,6 @@ const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 console.info(berachainAccount.address)
-
-const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-  "union"
-)
 
 const WBTC_CONTRACT_ADDRESS = "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae"
 const DAI_CONTRACT_ADDRESS = "0x806Ef538b228844c73E8E692ADCFa8Eb2fCF729c"
@@ -66,11 +58,6 @@ try {
         ),
         http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
       ])
-    },
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
     }
   })
 

@@ -3,11 +3,8 @@ import { fallback, http } from "viem"
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { hexStringToUint8Array } from "#convert.ts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
 /* `bun playground/sepolia-to-berachain.ts --private-key "..."` */
@@ -25,11 +22,6 @@ if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
-
-const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-  "union"
-)
 
 const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
 const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
@@ -59,11 +51,6 @@ try {
         http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
         http(sepolia?.rpcUrls.default.http.at(0))
       ])
-    },
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
     }
   })
 

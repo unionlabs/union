@@ -1,12 +1,10 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { berachainTestnetbArtio } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
@@ -56,16 +54,6 @@ try {
   const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
 
   const client = createCosmosSdkClient({
-    evm: {
-      account: berachainAccount,
-      chain: berachainTestnetbArtio,
-      transport: fallback([
-        http(
-          "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
-        ),
-        http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
-      ])
-    },
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "muno" },

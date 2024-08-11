@@ -5,8 +5,6 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { fallback, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
-import { hexStringToUint8Array } from "#convert.ts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 import type { ApproveTransferAssetFromEvmParams } from "#transfer/evm.js"
 
@@ -25,11 +23,6 @@ if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
-
-const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-  "union"
-)
 
 const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
 const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
@@ -70,9 +63,7 @@ try {
         ],
         { rank: true, retryCount: 3 }
       )
-    },
-    // @ts-expect-error
-    cosmos: {}
+    }
   })
 
   const gasEstimationResponse = await client.simulateTransaction({
