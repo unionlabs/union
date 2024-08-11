@@ -3,7 +3,6 @@ import Chevron from "./chevron.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 
 export let dialogOpen: boolean
-export let selectedChainId: string
 </script>
 
 <Button

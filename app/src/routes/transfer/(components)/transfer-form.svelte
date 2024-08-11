@@ -206,21 +206,6 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
-// async function windowEthereumAddChain(chainSpec) {
-//   if (!window?.ethereum?.request) return
-//   return await window.ethereum?.request({
-//     method: "wallet_addEthereumChain",
-//     params: [chainSpec]
-//   })
-// }
-// async function windowEthereumSwitchChain(id: number) {
-//   if (!window?.ethereum?.request) return
-//   return await window.ethereum?.request({
-//     method: "wallet_switchEthereumChain",
-//     params: [{ chainId: toHex(id) }]
-//   })
-// }
-
 const transfer = async () => {
   if (!$assetSymbol) return toast.error("Please select an asset")
   if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
@@ -609,9 +594,9 @@ $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $user
   if (!$fromChainId) return
   const chainIndex = chains.findIndex(c => c.chain_id === $fromChainId)
   const cosmosBalance = $userBalances[chainIndex]
-  if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
+  if (!cosmosBalance?.isSuccess) {
     console.log("trying to send from cosmos but no balances fetched yet")
-    return null
+    return
   }
   return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
 })
@@ -879,7 +864,7 @@ const resetInput = () => {
       <Card.Content class={cn('flex flex-col gap-4')}>
         <section>
           <CardSectionHeading>From</CardSectionHeading>
-          <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>
+          <ChainButton bind:dialogOpen={dialogOpenFromChain}>
             {$fromChain?.display_name ?? "Select chain"}
           </ChainButton>
           <div class="flex flex-col items-center pt-4 -mb-6">
@@ -888,7 +873,7 @@ const resetInput = () => {
             </Button>
           </div>
           <CardSectionHeading>To</CardSectionHeading>
-          <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>
+          <ChainButton bind:dialogOpen={dialogOpenToChain}>
             {$toChain?.display_name ?? "Select chain"}
           </ChainButton>
         </section>

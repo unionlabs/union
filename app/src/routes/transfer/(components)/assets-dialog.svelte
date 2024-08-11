@@ -1,24 +1,12 @@
 <script lang="ts">
 import { formatUnits } from "viem"
+import type { Chain } from "$lib/types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import * as Dialog from "$lib/components/ui/dialog"
-import { Button } from "$lib/components/ui/button/index.js"
-import type { Chain } from "$lib/types.ts"
-import Precise from "$lib/components/precise.svelte"
-import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { showUnsupported } from "$lib/stores/user.ts"
-import { ScrollArea } from "$lib/components/ui/scroll-area"
-import { type Address, parseUnits, toHex } from "viem"
-
-/**
- * TODO: format the balance to a readable format - in order to do that properly, need:
- *  - the balance,
- *  - the decimals,
- *  - whether it's evm or cosmos:
- *    - if evm then `Number(formatUnits(balance, decimals)).toFixed(2)`, - the 2 can be a 4 if you want more precision
- *    - if cosmos then: TBD
- */
+import { Button } from "$lib/components/ui/button/index.ts"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 
 export let dialogOpen = false
 export let chain: Chain
