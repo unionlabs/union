@@ -1,4 +1,4 @@
-export * from "./v0/mod.ts"
+import "./patch.ts"
 import {
   http,
   fallback,

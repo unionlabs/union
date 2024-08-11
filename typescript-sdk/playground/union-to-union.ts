@@ -41,7 +41,7 @@ try {
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+      transport: cosmosHttp("https://rpc.testnet-8.union.build")
     }
   })
 

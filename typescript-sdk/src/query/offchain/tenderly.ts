@@ -1,6 +1,6 @@
 import { ofetch } from "ofetch"
+import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
 import { bech32AddressToHex } from "../../convert.ts"
-import { ucs01Abi } from "../../abi/berachain/ucs-01.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 
 const TENDERLY_URL =
@@ -39,7 +39,7 @@ export async function simulateTransaction({
   relayContractAddress: Address
 }) {
   const encodedFunctionData = encodeFunctionData({
-    abi: ucs01Abi,
+    abi: ucs01RelayAbi,
     functionName: "send",
     args: [
       sourceChannel,

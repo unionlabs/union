@@ -8,7 +8,7 @@ import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { berachainTestnetbArtio } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
+import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/union-to-berachain.ts --private-key "..."` --estimate-gas */
 
@@ -69,14 +69,11 @@ try {
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp(
-        // "https://rpc.testnet.bonlulu.uno"
-        "https://rpc.testnet.seed.poisonphang.com:443"
-      )
+      transport: cosmosHttp("https://rpc.testnet-8.union.build")
     }
   })
 
-  const gasEstimationResponse = await client.simulateTransaction({
+  const transactionPayload = {
     amount: 1n,
     denomAddress: "muno",
     sourceChannel: channel_id,
@@ -85,7 +82,9 @@ try {
     recipient: berachainAccount.address,
     relayContractAddress: contract_address,
     path: [source_chain.chain_id, destination_chain.chain_id]
-  })
+  } satisfies TransferAssetsParameters
+
+  const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
   consola.box("Union to Berachain gas cost:", gasEstimationResponse)
 
@@ -96,16 +95,7 @@ try {
     process.exit(1)
   }
 
-  const transfer = await client.transferAsset({
-    amount: 1n,
-    denomAddress: "muno",
-    sourceChannel: channel_id,
-    network: unionTestnetInfo.rpc_type,
-    // or `client.evm.account.address` if you want to send to yourself
-    recipient: berachainAccount.address,
-    relayContractAddress: contract_address,
-    path: [source_chain.chain_id, destination_chain.chain_id]
-  })
+  const transfer = await client.transferAsset(transactionPayload)
 
   console.info(transfer)
 } catch (error) {

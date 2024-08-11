@@ -1,12 +1,10 @@
-import { Comet38Client } from "@cosmjs/tendermint-rpc"
-
 type rpcUrlArgument = { rpcUrl: string }
 export type RpcQueryPath = "height" | "block" | "transaction" | "net_info" | "health"
 
 const queryHeaders = new Headers({
   Accept: "application/json",
-  "Content-Type": "application/json",
-  "User-Agent": "typescript-sdk"
+  "User-Agent": "typescript-sdk",
+  "Content-Type": "application/json"
 })
 
 export async function getCosmosHeight({ rpcUrl }: { rpcUrl: string }) {
@@ -19,28 +17,30 @@ export async function getCosmosTransactionReceipt(params: {
   hash: string
   rpcUrl: string
 }) {
-  const client = await Comet38Client.connect(params.rpcUrl)
-  return await client.txSearch({
-    query: `tx.hash='${params.hash}'`
-  })
+  const url = `${params.rpcUrl}/tx_search?query="tx.hash='${params.hash}'"`
+  const response = await fetch(url, { headers: queryHeaders })
+  return await response.json()
 }
 
 export async function getCosmosAccountTransactions({
   address,
   rpcUrl
 }: { address: string } & rpcUrlArgument) {
-  const client = await Comet38Client.connect(rpcUrl)
+  const senderUrl = `${rpcUrl}/tx_search?query="transfer.sender='${address}'"`
+  const recipientUrl = `${rpcUrl}/tx_search?query="transfer.recipient='${address}'"`
   const [sent, received] = await Promise.all([
-    client.txSearch({
-      query: `transfer.sender='${address}'`
-    }),
-    client.txSearch({
-      query: `transfer.recipient='${address}'`
-    })
+    fetch(senderUrl, { headers: queryHeaders })
+      .then(_ => _.json())
+      .catch(),
+    fetch(recipientUrl, { headers: queryHeaders })
+      .then(_ => _.json())
+      .catch()
   ])
+
   return {
     sent,
     received,
-    total: sent.totalCount + received.totalCount
+    // @ts-expect-error
+    total: Number.parseInt(sent.result.total_count) + Number.parseInt(received.result.total_count)
   }
 }

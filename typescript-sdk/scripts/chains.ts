@@ -17,6 +17,7 @@ if (chainId) {
   }
 
   consola.info(JSON.stringify(data, undefined, 2))
+  process.exit(0)
 }
 
 const data = await offchainQuery.chains({

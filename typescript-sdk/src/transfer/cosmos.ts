@@ -6,11 +6,11 @@ import {
 } from "@cosmjs/stargate"
 import type {
   Coin,
+  TransactionResponse,
   MessageTransferWithOptionals,
   OfflineSigner as CosmosOfflineSigner
 } from "../types.ts"
 import { timestamp } from "../utilities/index.ts"
-import type { TransactionResponse } from "../types.ts"
 import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 
 /**
@@ -60,7 +60,6 @@ export async function ibcTransfer({
     signingClient.disconnect()
     return { success: true, data: response.transactionHash }
   } catch (error) {
-    console.error(error)
     return {
       success: false,
       data: error instanceof Error ? error.message : "An unknown error occurred"
@@ -104,7 +103,6 @@ export async function ibcTransferSimulate({
     signingClient.disconnect()
     return { success: true, data: gas.toString() }
   } catch (error) {
-    console.error(error)
     return {
       success: false,
       data: error instanceof Error ? error.message : "An unknown error occurred"
@@ -140,7 +138,6 @@ export async function cosmwasmTransfer({
     signingClient.disconnect()
     return { success: true, data: response.transactionHash }
   } catch (error) {
-    console.error(error)
     return {
       success: false,
       data: error instanceof Error ? error.message : "An unknown error occurred"
@@ -189,7 +186,6 @@ export async function cosmwasmTransferSimulate({
     signingClient.disconnect()
     return { success: true, data: gas.toString() }
   } catch (error) {
-    console.error(error)
     return {
       success: false,
       data: error instanceof Error ? error.message : "An unknown error occurred"
@@ -244,7 +240,6 @@ export async function cosmosSameChainTransfer({
     signingClient.disconnect()
     return { success: true, data: response.transactionHash }
   } catch (error) {
-    console.error(error)
     return {
       success: false,
       data: error instanceof Error ? error.message : "An unknown error occurred"
