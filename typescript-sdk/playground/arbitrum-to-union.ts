@@ -41,6 +41,7 @@ try {
   const ucsConfiguration = arbitrumInfo.ucs1_configurations
     ?.filter(config => config.destination_chain.chain_id === "union-testnet-8")
     .at(0)
+
   if (!ucsConfiguration) raise("UCS configuration not found")
 
   const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration

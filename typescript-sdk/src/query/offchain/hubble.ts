@@ -1,18 +1,13 @@
 import { ofetch } from "ofetch"
 
-/**
- * TODO:
- * - Figure out why graphql.union.build/api/rest/* gets a cloudflare challenge
- */
-
 const HUBBLE_URL = import.meta.env
   ? import.meta.env.HUBBLE_URL
-  : process.env.HUBBLE_URL ?? "https://noble-pika-27.hasura.app"
+  : process.env.HUBBLE_URL ?? "https://blue.graphql.union.build"
 
 const queryHeaders = new Headers({
   Accept: "application/json",
-  "Content-Type": "application/json",
-  "User-Agent": "typescript-sdk"
+  "User-Agent": "typescript-sdk",
+  "Content-Type": "application/json"
 })
 
 const hubbleRestFetch = ofetch.create({
