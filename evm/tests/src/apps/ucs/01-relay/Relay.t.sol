@@ -613,7 +613,7 @@ contract RelayTests is Test {
         // Receive a token that hasn't been escrowed
         Token[] memory tokens = new Token[](1);
         tokens[0].denom = RelayLib.makeForeignDenom(
-            destinationPort, destinationChannel, denom.toHexString()
+            sourcePort, sourceChannel, denom.toHexString()
         );
         tokens[0].amount = amount;
 
@@ -709,9 +709,7 @@ contract RelayTests is Test {
 
         Token[] memory tokens = new Token[](1);
         tokens[0].denom = RelayLib.makeForeignDenom(
-            args.destinationPort,
-            args.destinationChannel,
-            denomAddress.toHexString()
+            args.sourcePort, args.sourceChannel, denomAddress.toHexString()
         );
         tokens[0].amount = args.amount;
 
@@ -1111,7 +1109,7 @@ contract RelayTests is Test {
             args.receiver,
             args.relayer,
             RelayLib.makeForeignDenom(
-                args.sourcePort, args.sourceChannel, args.denomName
+                args.destinationPort, "channel-1", args.denomName
             ),
             args.amount,
             args.extension
@@ -1130,7 +1128,7 @@ contract RelayTests is Test {
             args.receiver,
             args.relayer,
             RelayLib.makeForeignDenom(
-                args.sourcePort, args.sourceChannel, args.denomName
+                args.destinationPort, "channel-2", args.denomName
             ),
             args.amount,
             args.extension

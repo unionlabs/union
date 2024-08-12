@@ -445,7 +445,7 @@ contract UCS01Relay is
         }
         RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(
-            ibcPacket.destination_port, ibcPacket.destination_channel
+            ibcPacket.source_port, ibcPacket.source_channel
         );
         uint256 packetTokensLength = packet.tokens.length;
         for (uint256 i; i < packetTokensLength; i++) {
