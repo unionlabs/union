@@ -3,7 +3,7 @@ import { bech32 } from "@scure/base"
 import { raise } from "./utilities/index.ts"
 import type { Bech32Address, HexAddress } from "./types.ts"
 
-export const convertByteArrayToHex = (byteArray: Uint8Array): string =>
+export const byteArrayToHex = (byteArray: Uint8Array): string =>
   byteArray.reduce((hex, byte) => hex + byte.toString(16).padStart(2, "0"), "")
 
 /**
@@ -12,7 +12,7 @@ export const convertByteArrayToHex = (byteArray: Uint8Array): string =>
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
   const { words } = bech32.decode(address)
   const byteArray = bech32.fromWords(words)
-  return `0x${convertByteArrayToHex(byteArray)}`
+  return `0x${byteArrayToHex(byteArray)}`
 }
 
 /**

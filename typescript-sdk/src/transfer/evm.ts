@@ -58,7 +58,6 @@ export async function transferAssetFromEvm(
         relayContractAddress
       })
       if (!approveResponse.success) return approveResponse
-      console.info(`[transferAssetFromEvm] Approval transaction hash: ${approveResponse.data}`)
     }
 
     memo ||= timestamp()
@@ -103,7 +102,6 @@ export async function transferAssetFromEvm(
 
     return { success: true, data: hash }
   } catch (error) {
-    console.error(JSON.stringify(error, undefined, 2))
     return {
       success: false,
       data: error instanceof Error ? error.message : "Unknown error"
@@ -158,7 +156,6 @@ export async function approveTransferAssetFromEvm(
 
     return { success: true, data: approveHash }
   } catch (error) {
-    console.error(JSON.stringify(error, undefined, 2))
     return {
       success: false,
       data: error instanceof Error ? error.message : "Unknown error"
@@ -206,7 +203,6 @@ export async function transferAssetFromEvmSimulate(
     })
     return { success: true, data: gasEstimation.toString() }
   } catch (error) {
-    console.error(error)
     return {
       success: false,
       data: error instanceof Error ? error.message : "Unknown error"

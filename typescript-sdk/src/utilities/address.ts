@@ -1,4 +1,4 @@
-import { fromBech32 } from "@cosmjs/encoding"
+import { bech32 } from "@scure/base"
 import type { HexAddress, Bech32Address } from "../types.ts"
 
 export function isValidCosmosTxHash(hash: unknown): hash is string {
@@ -18,8 +18,8 @@ export function isValidBech32Address(address: unknown): address is Bech32Address
   if (typeof address !== "string") return false
 
   try {
-    const { prefix: _, data } = fromBech32(address)
-    const size = data.length
+    const { prefix: _, words } = bech32.decode(address)
+    const size = words.length
     if ([20, 32].indexOf(size) === -1) return false
 
     return true

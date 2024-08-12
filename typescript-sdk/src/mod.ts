@@ -1,4 +1,4 @@
-export * from "./v0/mod.ts"
+import "./patch.ts"
 import {
   http,
   fallback,
@@ -12,13 +12,13 @@ import {
   type WalletClientConfig
 } from "viem"
 import {
+  byteArrayToHex,
   bech32AddressToHex,
   hexAddressToBech32,
   bytesToBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,
-  uint8ArrayToHexString,
-  convertByteArrayToHex
+  uint8ArrayToHexString
 } from "./convert.ts"
 import {
   truncateAddress,
@@ -56,6 +56,7 @@ export {
   cosmosHttp,
   offchainQuery,
   createPfmMemo,
+  byteArrayToHex,
   truncateAddress,
   isValidEvmTxHash,
   isValidEvmAddress,
@@ -63,11 +64,10 @@ export {
   hexAddressToBech32,
   isValidCosmosTxHash,
   bytesToBech32Address,
+  isValidBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,
-  uint8ArrayToHexString,
-  isValidBech32Address,
-  convertByteArrayToHex
+  uint8ArrayToHexString
 }
 
 export type * from "./types.ts"
@@ -99,21 +99,31 @@ export interface TransferAssetsParameters {
 export function createCosmosSdkClient({
   evm,
   cosmos
-}: {
-  evm: EvmClientParameters
-  cosmos: CosmosClientParameters
-}) {
-  const chain = evm.chain ?? sepolia
-  const transport: Transport = fallback([evm.transport ?? http("https://rpc2.sepolia.org")])
+}:
+  | {
+      evm: EvmClientParameters
+      cosmos: CosmosClientParameters
+    }
+  | {
+      evm?: EvmClientParameters
+      cosmos: CosmosClientParameters
+    }
+  | {
+      evm: EvmClientParameters
+      cosmos?: CosmosClientParameters
+    }) {
+  const chain = evm?.chain ?? sepolia
+  const transport: Transport = fallback([evm?.transport ?? http("https://rpc2.sepolia.org")])
 
-  return createWalletClient({ ...evm, transport, chain, account: evm.account })
+  return createWalletClient({ ...evm, transport, chain, account: evm?.account })
     .extend(publicActions)
     .extend(() => ({ offchainQuery }))
     .extend(() => ({
+      byteArrayToHex,
       bech32AddressToHex,
       hexAddressToBech32,
       bech32ToBech32Address,
-      convertByteArrayToHex,
+      bytesToBech32Address,
       hexStringToUint8Array,
       uint8ArrayToHexString,
       truncateAddress,
@@ -168,9 +178,9 @@ export function createCosmosSdkClient({
         sourceChannel,
         approve = false,
         relayContractAddress,
-        evmSigner = evm.account,
-        gasPrice = cosmos.gasPrice,
-        cosmosSigner = cosmos.account,
+        evmSigner = evm?.account,
+        gasPrice = cosmos?.gasPrice,
+        cosmosSigner = cosmos?.account,
         memo = timestamp()
       }: TransferAssetsParameters): Promise<TransactionResponse> => {
         try {
@@ -206,9 +216,9 @@ export function createCosmosSdkClient({
           )
 
           const cosmosRpcTransport = await rankCosmosRpcProviders({
-            transports: Array.isArray(cosmos.transport)
-              ? cosmos.transport.flatMap(t => t({}).value?.url).filter(Boolean)
-              : [cosmos.transport({}).value?.url].filter(Boolean),
+            transports: Array.isArray(cosmos?.transport)
+              ? cosmos?.transport.flatMap(t => t({}).value?.url).filter(Boolean)
+              : [cosmos?.transport({}).value?.url].filter(Boolean),
             interval: 1_000,
             sampleCount: 10,
             timeout: 1_000
@@ -309,9 +319,9 @@ export function createCosmosSdkClient({
         denomAddress,
         sourceChannel,
         relayContractAddress,
-        gasPrice = cosmos.gasPrice,
-        cosmosSigner = cosmos.account,
-        evmSigner = typeof evm.account === "string" ? evm.account : client.account?.address
+        gasPrice = cosmos?.gasPrice,
+        cosmosSigner = cosmos?.account,
+        evmSigner = typeof evm?.account === "string" ? evm.account : client.account?.address
       }: TransferAssetsParameters): Promise<TransactionResponse> => {
         const [sourceChainId, destinationChainId] = path
 
@@ -345,7 +355,7 @@ export function createCosmosSdkClient({
           })
         }
 
-        if (!Object.hasOwn(cosmos, "transport")) {
+        if (!(cosmos && Object.hasOwn(cosmos, "transport"))) {
           return { success: false, data: "No cosmos transport found" }
         }
         const cosmosRpcTransport = await rankCosmosRpcProviders({

@@ -2,11 +2,8 @@
 import { http } from "viem"
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
-import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { hexStringToUint8Array } from "#convert.ts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { offchainQuery, createCosmosSdkClient } from "#mod.ts"
 
 /**
@@ -28,11 +25,6 @@ const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) throw new Error("Private key not found")
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
-
-const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
-  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-  "osmo"
-)
 
 const LINK_CONTRACT_ADDRESS = "0x779877A7B0D9E8603169DdbD7836e478b4624789"
 const wOSMO_CONTRACT_ADDRESS = "0x3C148Ec863404e48d88757E88e456963A14238ef"
@@ -59,11 +51,6 @@ try {
       chain: sepolia,
       account: evmAccount,
       transport: http("https://rpc2.sepolia.org")
-    },
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "uosmo" },
-      transport: cosmosHttp("https://rpc.osmo.test.yieldpay.finance")
     }
   })
 

@@ -48,8 +48,6 @@ try {
   if (!ucsConfiguration) raise("UCS configuration not found")
 
   const client = createCosmosSdkClient({
-    // @ts-expect-error
-    evm: {},
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "strd" },

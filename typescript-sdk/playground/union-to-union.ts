@@ -1,12 +1,9 @@
 #!/usr/bin/env bun
-import { http } from "viem"
 import { parseArgs } from "node:util"
-import { sepolia } from "viem/chains"
 import { consola } from "scripts/logger"
 import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
-import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createCosmosSdkClient, type TransferAssetsParameters } from "#mod.ts"
 
@@ -24,8 +21,6 @@ const PRIVATE_KEY = values["private-key"]
 if (!PRIVATE_KEY) raise("Private key not found")
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
-const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
-
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "union"
@@ -33,15 +28,10 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
 
 try {
   const client = createCosmosSdkClient({
-    evm: {
-      chain: sepolia,
-      account: evmAccount,
-      transport: http("https://rpc2.sepolia.org")
-    },
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
+      transport: cosmosHttp("https://rpc.testnet-8.union.build")
     }
   })
 
