@@ -8,8 +8,9 @@ import {
   type Account,
   publicActions,
   type Transport,
+  type WalletClientConfig,
   createWalletClient,
-  type WalletClientConfig
+  rpcSchema
 } from "viem"
 import {
   byteArrayToHex,
@@ -96,6 +97,14 @@ export interface TransferAssetsParameters {
   evmSigner?: `0x${string}` | Account | undefined
 }
 
+export type CustomRpcSchema = [
+  {
+    Method: "Foo"
+    Parameters: [string]
+    ReturnType: string
+  }
+]
+
 export function createCosmosSdkClient({
   evm,
   cosmos
@@ -115,7 +124,13 @@ export function createCosmosSdkClient({
   const chain = evm?.chain ?? sepolia
   const transport: Transport = fallback([evm?.transport ?? http("https://rpc2.sepolia.org")])
 
-  return createWalletClient({ ...evm, transport, chain, account: evm?.account })
+  return createWalletClient({
+    ...evm,
+    chain,
+    transport,
+    account: evm?.account,
+    rpcSchema: rpcSchema<CustomRpcSchema>()
+  })
     .extend(publicActions)
     .extend(() => ({ offchainQuery }))
     .extend(() => ({

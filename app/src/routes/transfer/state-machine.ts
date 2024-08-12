@@ -1,4 +1,4 @@
-import { setup, assign, fromPromise, createActor } from "xstate"
+import { setup, assign, fromPromise, } from "xstate"
 import {
   cosmosHttp,
   offchainQuery,
@@ -8,15 +8,15 @@ import {
   type EvmClientParameters,
   type CosmosClientParameters,
   type TransferAssetsParameters,
-  bech32AddressToHex
+  bech32AddressToHex,
+  createPfmMemo
 } from "@union/client"
 import { get } from "svelte/store"
 import { raise } from "$lib/utilities"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { sepoliaStore, wagmiConfig } from "$lib/wallet/evm"
-import { fallback, getAddress, http } from "viem"
-import { sepolia } from "viem/chains"
+import { getAddress, } from "viem"
 import type { Chain } from "$lib/types.ts"
 
 type Network = "cosmos" | "evm"
@@ -136,6 +136,10 @@ export const transferStateMachine = setup({
       | { type: "APPROVE_TRANSFER" }
       | { type: "RECEIPT_RECEIVED" }
       | { type: "CONSTRUCT_PAYLOAD" }
+      | {
+          type: "CREATE_PFM_MEMO"
+          value: { port: string; receiver: string; channelId: string }
+        }
       | { type: "SET_AMOUNT"; value: bigint }
       | { type: "APPROVAL_RECEIPT_RECEIVED" }
       | { type: "SWITCH_CHAIN"; value: string }
@@ -234,6 +238,7 @@ export const transferStateMachine = setup({
             }
           })
         },
+
         SET_ASSET: {
           actions: assign(({ event }) => ({
             ASSET_SYMBOL: event.value.symbol,
@@ -244,6 +249,7 @@ export const transferStateMachine = setup({
           actions: assign(({ event }) => ({ AMOUNT: event.value }))
         },
         SET_RECIPIENT: {
+          // target: "CREATE_PFM_MEMO",
           actions: assign(({ event, context }) => {
             const sourceNetwork = context.NETWORK
 
@@ -281,6 +287,18 @@ export const transferStateMachine = setup({
             return { RECIPIENT: event.value ?? recipient() }
           })
         },
+        // CREATE_PFM_MEMO: {
+        //   actions: assign(({ event, context }) => ({
+        //     PAYLOAD: {
+        //       ...context.PAYLOAD,
+        //       memo: createPfmMemo({
+        //         port: context.PAYLOAD?..port ?? raise("Port not found"),
+        //         channel: context.PAYLOAD?.FORWARD.channel_id ?? raise("Channel not found"),
+        //         receiver: ''
+        //       }),
+        //     }
+        //   }))
+        // },
         SET_EVM_CLIENT_PARAMETERS: {
           guard: "IS_EVM",
           target: "SET_CLIENT",
@@ -389,7 +407,6 @@ export const transferStateMachine = setup({
 
               if (!senderAddress) return raise("No account found")
               if (!prefix) return raise("No prefix found")
-
               const recipient =
                 sourceNetwork === "evm" && destinationNetwork === "evm"
                   ? senderAddress
@@ -403,6 +420,13 @@ export const transferStateMachine = setup({
                       : sourceNetwork === "cosmos" && destinationNetwork === "evm"
                         ? bech32AddressToHex({ address: senderAddress })
                         : raise("Invalid address")
+
+              const chain = context.chains.find(chain => chain.chain_id === context.SOURCE_CHAIN_ID)
+              const ucsConfiguration = chain?.ucs1_configurations?.filter(config => config)
+
+              const memo = createPfmMemo({
+                // port:
+              })
               return {
                 path: event.output.PATH,
                 network: event.output.NETWORK,

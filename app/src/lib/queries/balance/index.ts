@@ -18,7 +18,7 @@ export interface TokenBalance {
 export function userBalancesQuery({
   chains,
   connected,
-  userAddresses,
+  userAddresses
 }: {
   connected: boolean
   chains: Array<Chain>

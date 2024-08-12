@@ -41,7 +41,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
       addr_prefix = chain.addr_prefix
     }
 
-    let ucs1_configurations = chain.ucs1_configurations.reduce<Chain["ucs1_configurations"]>(
+    let ucs1_configurations = chain.ucs1_configurations?.reduce<Chain["ucs1_configurations"]>(
       (acc, item) => {
         let forward = item.forward.reduce<Record<string, (typeof item.forward)[number]>>(
           (acc2, item2) => {
@@ -61,7 +61,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
         return acc
       },
       {}
-    )
+    ) as Chain["ucs1_configurations"]
 
     return {
       chain_id: chain.chain_id,
@@ -70,12 +70,12 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
       ucs1_configurations,
       display_name,
       rpc_type,
-      rpcs: chain.rpcs,
+      rpcs: chain.rpcs as Array<{ url: string; type: string }>,
       addr_prefix,
       testnet: !!chain.testnet,
       explorers: chain.explorers,
       // this as statement should no longer be required in the next typescript release
-      assets: chain.assets.filter(
+      assets: chain.assets?.filter(
         asset => asset.display_symbol !== null && asset.decimals !== null && asset.denom !== null
       ) as Chain["assets"]
     }
@@ -84,7 +84,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 </script>
 
 {#if !!$chains.data}
-  <slot chains={$checkedChains} />
+  <slot chains={$checkedChains} rawChains={$chains?.data ?? []} />
 {:else if $chains.isLoading}
   <LoadingLogo class="size-16" />
 {:else if $chains.isError}

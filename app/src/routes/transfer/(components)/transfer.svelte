@@ -1,122 +1,147 @@
 <script lang="ts">
-  import {
-    switchChain,
-    writeContract,
-    simulateContract,
-    getConnectorClient,
-    waitForTransactionReceipt
-  } from "@wagmi/core"
-  import {
-    cosmosHttp,
-    createPfmMemo,
-    truncateAddress,
-    bytesToBech32Address,
-    createCosmosSdkClient,
-    type TransactionResponse,
-    type TransferAssetsParameters,
-    bech32ToBech32Address
-  } from "@union/client"
-  import { onMount } from "svelte"
-  import { page } from "$app/stores"
-  import { toast } from "svelte-sonner"
-  import { goto } from "$app/navigation"
-  import Chevron from "./chevron.svelte"
-  import { useMachine } from "@xstate/svelte"
-  import { ucs01abi } from "$lib/abi/ucs-01.ts"
-  import { cn } from "$lib/utilities/shadcn.ts"
-  import { cosmosStore } from "$lib/wallet/cosmos"
-  import { raise, sleep } from "$lib/utilities/index.ts"
-  import type { OfflineSigner } from "@leapwallet/types"
-  import { userBalancesQuery } from "$lib/queries/balance"
-  import { transferStateMachine } from "../state-machine.ts"
-  import * as Card from "$lib/components/ui/card/index.ts"
-  import type { Chain, UserAddresses } from "$lib/types.ts"
-  import { Input } from "$lib/components/ui/input/index.ts"
-  import { userAddrOnChain } from "$lib/utilities/address.ts"
-  import ChainsGate from "$lib/components/chains-gate.svelte"
-  import { createBrowserInspector } from "@statelyai/inspect"
-  import WalletGate from "$lib/components/wallet-gate.svelte"
-  import { Button } from "$lib/components/ui/button/index.ts"
-  import { getSupportedAsset } from "$lib/utilities/helpers.ts"
-  import CardSectionHeading from "./card-section-heading.svelte"
-  import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-  import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
-  import { sepoliaStore, wagmiConfig, evmConnect } from "$lib/wallet/evm"
-  import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
-  import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
-  import {
-    get,
-    derived,
-    writable,
-    type Writable,
-    type Readable
-  } from "svelte/store"
-  import {
-    custom,
-    erc20Abi,
-    parseUnits,
-    getAddress,
-    formatUnits,
-    type Address
-  } from "viem"
-  import ChainButton from "./chain-button.svelte"
-  import ChainDialog from "./chain-dialog.svelte"
-  import AssetsDialog from "./assets-dialog.svelte"
-  import { truncate } from "$lib/utilities/format.ts"
-  import DevTools from "$lib/components/dev-tools.svelte"
+import {
+  switchChain,
+  writeContract,
+  simulateContract,
+  getConnectorClient,
+  waitForTransactionReceipt
+} from "@wagmi/core"
+import {
+  cosmosHttp,
+  createPfmMemo,
+  truncateAddress,
+  bytesToBech32Address,
+  createCosmosSdkClient,
+  type TransactionResponse,
+  type TransferAssetsParameters,
+  bech32ToBech32Address
+} from "@union/client"
+import { onMount } from "svelte"
+import { page } from "$app/stores"
+import { toast } from "svelte-sonner"
+import { goto } from "$app/navigation"
+import Chevron from "./chevron.svelte"
+import { useMachine } from "@xstate/svelte"
+import { ucs01abi } from "$lib/abi/ucs-01.ts"
+import { cn } from "$lib/utilities/shadcn.ts"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import { raise, sleep } from "$lib/utilities/index.ts"
+import type { OfflineSigner } from "@leapwallet/types"
+import { userBalancesQuery } from "$lib/queries/balance"
+import { transferStateMachine } from "../state-machine.ts"
+import * as Card from "$lib/components/ui/card/index.ts"
+import type { Chain, UserAddresses } from "$lib/types.ts"
+import { Input } from "$lib/components/ui/input/index.ts"
+import { userAddrOnChain } from "$lib/utilities/address.ts"
+import ChainsGate from "$lib/components/chains-gate.svelte"
+import { createBrowserInspector } from "@statelyai/inspect"
+import WalletGate from "$lib/components/wallet-gate.svelte"
+import { Button } from "$lib/components/ui/button/index.ts"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
+import CardSectionHeading from "./card-section-heading.svelte"
+import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
+import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
+import { sepoliaStore, wagmiConfig, evmConnect } from "$lib/wallet/evm"
+import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
+import { get, derived, writable, type Writable, type Readable } from "svelte/store"
+import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address } from "viem"
+import ChainButton from "./chain-button.svelte"
+import ChainDialog from "./chain-dialog.svelte"
+import AssetsDialog from "./assets-dialog.svelte"
+import { truncate } from "$lib/utilities/format.ts"
+import DevTools from "$lib/components/dev-tools.svelte"
 
-  export let connected: boolean
-  export let chains: Array<Chain>
-  export let userAddresses: UserAddresses
+export let connected: boolean
+export let chains: Array<Chain>
+export let userAddresses: UserAddresses
 
-  const { inspect, ...inspector } = createBrowserInspector({
-    autoStart: true
-    // import.meta.env.MODE === "development" &&
-    // import.meta.env.DEBUG_XSTATE === "true"
-  })
+const { inspect, ...inspector } = createBrowserInspector({
+  autoStart: true
+  // import.meta.env.MODE === "development" &&
+  // import.meta.env.DEBUG_XSTATE === "true"
+})
 
-  const { snapshot, send } = useMachine(transferStateMachine, {
-    inspect,
-    input: {
-      chains,
-      cosmosStore: $cosmosStore,
-      sepoliaStore: $sepoliaStore
-    }
-  })
-
-  function swapChainsClick() {
-    const fromChain = $snapshot.context["SOURCE_CHAIN_ID"]
-    const toChain = $snapshot.context["DESTINATION_CHAIN_ID"]
-    const network = chains.find(c => c.chain_id === toChain)?.rpc_type
-    if (!(network && fromChain && toChain)) return
-    send({ type: "SET_DESTINATION_CHAIN", value: fromChain })
-    send({ type: "SET_SOURCE_CHAIN", value: { network, chainId: toChain } })
+const { snapshot, send } = useMachine(transferStateMachine, {
+  inspect,
+  input: {
+    chains: chains,
+    cosmosStore: $cosmosStore,
+    sepoliaStore: $sepoliaStore
   }
+})
 
-  let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [
-    false,
-    false,
-    false
-  ]
+function swapChainsClick() {
+  const fromChain = $snapshot.context["SOURCE_CHAIN_ID"]
+  const toChain = $snapshot.context["DESTINATION_CHAIN_ID"]
+  const network = chains.find(c => c.chain_id === toChain)?.rpc_type
+  if (!(network && fromChain && toChain)) return
+  send({ type: "SET_DESTINATION_CHAIN", value: fromChain })
+  send({ type: "SET_SOURCE_CHAIN", value: { network, chainId: toChain } })
+}
 
-  // $: console.info($snapshot.context)
+let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [false, false, false]
 
-  $: recipient = $snapshot.context?.["RECIPIENT"] ?? ""
-  $: sourceChain = chains.find(
-    ({ chain_id }) => chain_id === $snapshot.context["SOURCE_CHAIN_ID"]
-  )
+// $: console.info($snapshot.context)
 
-  let _assetBalances = userBalancesQuery({ chains, userAddresses, connected })
-  let assetBalances = derived(_assetBalances, $_assetBalances => {
-    const chainIndex = chains.findIndex(
-      ({ chain_id }) => chain_id === sourceChain?.chain_id
-    )
-    return $_assetBalances[chainIndex]?.data ?? []
-  })
+$: recipient = $snapshot.context?.["RECIPIENT"] ?? ""
+$: sourceChain = chains.find(({ chain_id }) => chain_id === $snapshot.context["SOURCE_CHAIN_ID"])
 
-  $: disableRecipientField =
-    $snapshot.context["SOURCE_CHAIN_ID"] === undefined ||
-    $snapshot.context["DESTINATION_CHAIN_ID"] === undefined
+let _assetBalances = userBalancesQuery({ chains, userAddresses, connected })
+let assetBalances = derived(_assetBalances, $_assetBalances => {
+  const chainIndex = chains.findIndex(({ chain_id }) => chain_id === sourceChain?.chain_id)
+  return $_assetBalances[chainIndex]?.data ?? []
+})
+
+let balanceCoversAmount = false
+
+$: buttonText =
+  $snapshot.context["ASSET_SYMBOL"] && $snapshot.context["AMOUNT"]
+    ? balanceCoversAmount
+      ? "transfer"
+      : "insufficient balance"
+    : $snapshot.context["ASSET_SYMBOL"] && !$snapshot.context["AMOUNT"]
+      ? "enter amount"
+      : "select asset and enter amount"
+
+$: disableRecipientField =
+  $snapshot.context["SOURCE_CHAIN_ID"] === undefined ||
+  $snapshot.context["DESTINATION_CHAIN_ID"] === undefined
+
+$: buttonDisabled = !(
+  $snapshot.context["AMOUNT"] &&
+  $snapshot.context["ASSET_SYMBOL"] &&
+  $snapshot.context["DESTINATION_CHAIN_ID"] &&
+  $snapshot.context["RECIPIENT"] &&
+  $snapshot.context["SOURCE_CHAIN_ID"] &&
+  $snapshot.context["AMOUNT"] &&
+  balanceCoversAmount
+)
+
+let ANIMATION_STATE: "FLIP" | "FLIPPED" | "UNFLIP" | "UNFLIPPED" = "UNFLIPPED"
+
+async function transferASS() {
+  let client = $snapshot.context["client"]
+  if (!client) send({ type: "SET_CLIENT" })
+  await sleep(1_000)
+  client = $snapshot.context["client"]
+
+  const payload = $snapshot.context["PAYLOAD"]
+  if (!payload) return toast.error("No payload found")
+
+  const transactionPayload = {
+    path: payload["path"],
+    memo: payload["memo"],
+    amount: payload["amount"],
+    network: payload["network"],
+    recipient: payload["recipient"],
+    denomAddress: payload["denomAddress"],
+    sourceChannel: payload["sourceChannel"],
+    relayContractAddress: payload["relayContractAddress"]
+  } satisfies TransferAssetsParameters
+
+  client?.simulateTransaction(transactionPayload)
+}
 </script>
 
 <DevTools>
@@ -283,26 +308,26 @@
         </section>
       </Card.Content>
       <Card.Footer class="flex flex-col gap-4 items-start">
-        <!-- <Button
-          disabled={!amount ||
-            !$asset ||
-            !$toChainId ||
-            !$recipient ||
-            !$assetSymbol ||
-            !$fromChainId ||
-            !amountLargerThanZero ||
-            // >= because need some sauce for gas
-            !balanceCoversAmount}
+        <Button
+          type="button"
+          disabled={buttonDisabled}
           on:click={async event => {
             event.preventDefault()
-            transferState.set({ kind: "FLIPPING" })
-            await sleep(1200)
-            transfer()
+            ANIMATION_STATE = "FLIP"
+            await sleep(500)
+            let client = $snapshot.context["client"]
+            if (!client) send({ type: "SET_CLIENT" })
+            await sleep(1_000)
+            client = $snapshot.context["client"]
+            // client
+
+            // transferState.set({ kind: "FLIPPING" })
+            // await sleep(1200)
+            // transfer()
           }}
-          type="button"
         >
           {buttonText}
-        </Button> -->
+        </Button>
       </Card.Footer>
     </Card.Root>
 
