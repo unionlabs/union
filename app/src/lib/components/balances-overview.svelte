@@ -8,12 +8,11 @@ import { userAddrOnChain } from "$lib/utilities/address"
 
 export let userAddr: UserAddresses
 export let chains: Array<Chain>
-export let connected: boolean
 
 $: userBalances = userBalancesQuery({
   chains,
   userAddr,
-  connected
+  connected: true
 })
 </script>
 
