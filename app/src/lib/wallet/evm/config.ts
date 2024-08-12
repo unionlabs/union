@@ -98,8 +98,8 @@ export const config = createConfig({
       dappMetadata: {
         name: APP_INFO.name,
         url: APP_INFO.baseUrl,
-        iconUrl: APP_INFO.iconUrl
-        // base64Icon: APP_INFO.base64Icon
+        iconUrl: APP_INFO.iconUrl,
+        base64Icon: APP_INFO.base64Icon
       },
       // default values
       useDeeplink: false,

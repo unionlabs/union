@@ -6,14 +6,23 @@ import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
 import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 
+export interface TokenBalance {
+  name: string
+  symbol: string
+  address: string
+  balance: bigint
+  gasToken: boolean
+  decimals: number
+}
+
 export function userBalancesQuery({
-  userAddr,
   chains,
-  connected
+  connected,
+  userAddresses,
 }: {
-  userAddr: UserAddresses
-  chains: Array<Chain>
   connected: boolean
+  chains: Array<Chain>
+  userAddresses: UserAddresses
 }) {
   return createQueries({
     queries: chains.map(chain => ({
@@ -21,13 +30,13 @@ export function userBalancesQuery({
       queryKey: [
         "balances",
         chain.chain_id,
-        userAddr?.evm?.normalized,
-        userAddr?.cosmos?.normalized
+        userAddresses?.evm?.normalized,
+        userAddresses?.cosmos?.normalized
       ],
       refetchOnWindowFocus: false,
       refetchInterval: 4_000,
       queryFn: async () => {
-        if (chain.rpc_type === "evm" && userAddr.evm && connected) {
+        if (chain.rpc_type === "evm" && userAddresses.evm && connected) {
           const rpc = chain.rpcs
             .filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan")
             .at(0)
@@ -38,23 +47,23 @@ export function userBalancesQuery({
           if (rpc.type === "alchemy") {
             return await getBalancesFromAlchemy({
               url: rpc.url,
-              walletAddress: userAddr.evm.canonical
+              walletAddress: userAddresses.evm.canonical
             })
           }
           if (rpc.type === "routescan") {
             return await getBalancesFromRoutescan({
               url: rpc.url,
-              walletAddress: userAddr.evm.canonical
+              walletAddress: userAddresses.evm.canonical
             })
           }
         }
 
-        if (chain.rpc_type === "cosmos" && userAddr.cosmos && connected) {
+        if (chain.rpc_type === "cosmos" && userAddresses.cosmos && connected) {
           const url = chain.rpcs.filter(rpc => rpc.type === "rest").at(0)?.url
           if (!url) raise(`No REST RPC available for chain ${chain.chain_id}`)
 
           const bech32_addr = bytesToBech32Address({
-            bytes: userAddr.cosmos.bytes,
+            bytes: userAddresses.cosmos.bytes,
             toPrefix: chain.addr_prefix
           })
           return getCosmosChainBalances({ url, walletAddress: bech32_addr })

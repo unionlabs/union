@@ -12,6 +12,7 @@ export default defineConfig(config => {
     INSPECT,
     NODE_ENV,
     VISUALIZE,
+    SENTRY_AUTH_TOKEN,
     PORT = process.env.PORT || 5173
   } = loadEnv(config.mode, process.cwd(), "") as unknown as EnvironmentVariables
 
@@ -21,7 +22,8 @@ export default defineConfig(config => {
       sourceMapsUploadOptions: {
         project: "app",
         telemetry: true,
-        org: "unionlabs"
+        org: "unionlabs",
+        authToken: SENTRY_AUTH_TOKEN
       }
     }),
     sveltekit(),
@@ -42,6 +44,9 @@ export default defineConfig(config => {
     },
     optimizeDeps: {
       exclude: ["@tanstack/svelte-query-devtools"]
+    },
+    build: {
+      sourcemap: true
     },
     server: {
       port: Number(PORT)

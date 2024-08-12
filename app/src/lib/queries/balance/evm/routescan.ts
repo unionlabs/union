@@ -1,15 +1,25 @@
 import * as v from "valibot"
 import type { Address } from "viem"
 import { raise } from "$lib/utilities"
+import type { TokenBalance } from "../index.ts"
 
 const routescanTokenBalancesSchema = v.object({
   items: v.array(
     v.object({
-      tokenAddress: v.pipe(v.string(), v.length(42)),
+      chainId: v.string(),
+      tokenName: v.string(),
       tokenSymbol: v.string(),
-      tokenQuantity: v.string()
+      tokenDecimals: v.number(),
+      tokenQuantity: v.string(),
+      updatedAtBlock: v.number(),
+      tokenValueInUsd: v.string(),
+      tokenAddress: v.pipe(v.string(), v.length(42))
     })
-  )
+  ),
+  link: v.object({
+    next: v.string(),
+    nextToken: v.string()
+  })
 })
 
 export type EvmBalances = v.InferOutput<typeof routescanTokenBalancesSchema>
@@ -17,7 +27,7 @@ export type EvmBalances = v.InferOutput<typeof routescanTokenBalancesSchema>
 export async function getBalancesFromRoutescan({
   url,
   walletAddress
-}: { url: string; walletAddress: string }) {
+}: { url: string; walletAddress: string }): Promise<Array<TokenBalance>> {
   let json: unknown
 
   try {
@@ -35,10 +45,14 @@ export async function getBalancesFromRoutescan({
 
   if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
 
-  return result.output.items.map(({ tokenAddress, tokenQuantity, tokenSymbol }) => ({
-    balance: BigInt(tokenQuantity),
-    gasToken: false,
-    address: tokenAddress as Address,
-    symbol: tokenSymbol
-  }))
+  return result.output.items.map(
+    ({ tokenAddress, tokenQuantity, tokenSymbol, tokenDecimals, tokenName }) => ({
+      name: tokenName,
+      symbol: tokenSymbol,
+      address: tokenAddress as Address,
+      balance: BigInt(tokenQuantity),
+      gasToken: false,
+      decimals: tokenDecimals
+    })
+  )
 }

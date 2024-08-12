@@ -1,4 +1,4 @@
-import { setup, assign, fromPromise } from "xstate"
+import { setup, assign, fromPromise, createActor } from "xstate"
 import {
   cosmosHttp,
   offchainQuery,
@@ -7,13 +7,17 @@ import {
   createCosmosSdkClient,
   type EvmClientParameters,
   type CosmosClientParameters,
-  type TransferAssetsParameters
+  type TransferAssetsParameters,
+  bech32AddressToHex
 } from "@union/client"
 import { get } from "svelte/store"
 import { raise } from "$lib/utilities"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { sepoliaStore, wagmiConfig } from "$lib/wallet/evm"
+import { fallback, getAddress, http } from "viem"
+import { sepolia } from "viem/chains"
+import type { Chain } from "$lib/types.ts"
 
 type Network = "cosmos" | "evm"
 
@@ -89,17 +93,24 @@ export const transferStateMachine = setup({
     )
   },
   types: {
+    input: {} as {
+      chains: ReadonlyArray<Chain>
+      sepoliaStore: ChainWalletStore<"evm"> | undefined
+      cosmosStore: ChainWalletStore<"cosmos"> | undefined
+    },
     context: {} as {
       error: unknown
       AMOUNT: bigint | undefined
       RPC_URL: string | undefined
+      chains: ReadonlyArray<Chain>
       NETWORK: Network | undefined
       RECIPIENT: string | undefined
-      DENOM_ADDRESS: string | undefined
+      ASSET_SYMBOL: string | undefined
       PATH: [string, string] | undefined
       SOURCE_CHANNEL: string | undefined
       SOURCE_CHAIN_ID: string | undefined
       sepoliaStore: ChainWalletStore<"evm">
+      ASSET_DENOM_ADDRESS: string | undefined
       cosmosStore: ChainWalletStore<"cosmos">
       DESTINATION_CHAIN_ID: string | undefined
       RELAY_CONTRACT_ADDRESS: string | undefined
@@ -111,26 +122,26 @@ export const transferStateMachine = setup({
     events: {} as
       | {
           type: "SET_SOURCE_CHAIN"
-          value: {
-            chainId: string
-            network: Network
-          }
+          value: { chainId: string; network: Network }
         }
-      | { type: "SET_DESTINATION_CHAIN"; value: string }
-      | { type: "SET_DENOM_ADDRESS"; value: string }
-      | { type: "SET_AMOUNT"; value: bigint }
-      | { type: "CONSTRUCT_PAYLOAD" }
+      | {
+          type: "SET_ASSET"
+          value: { symbol: string; denomAddress: string }
+        }
       | { type: "SUCCESS" }
-      | { type: "SWITCH_CHAIN"; value: string }
-      | { type: "SET_RECIPIENT" }
-      | { type: "APPROVE_TRANSFER" }
-      | { type: "TRANSFER_ASSET" }
-      | { type: "RECEIPT_RECEIVED" }
+      | { type: "SET_CLIENT" }
       | { type: "SHOW_RECEIPT" }
       | { type: "APPROVE_SPEND" }
-      | { type: "SET_CLIENT" }
+      | { type: "TRANSFER_ASSET" }
+      | { type: "APPROVE_TRANSFER" }
+      | { type: "RECEIPT_RECEIVED" }
+      | { type: "CONSTRUCT_PAYLOAD" }
+      | { type: "SET_AMOUNT"; value: bigint }
       | { type: "APPROVAL_RECEIPT_RECEIVED" }
+      | { type: "SWITCH_CHAIN"; value: string }
+      | { type: "SET_RECIPIENT"; value: string }
       | { type: "TRANSFER_SIMULATION_APPROVED" }
+      | { type: "SET_DESTINATION_CHAIN"; value: string }
       | { type: "SET_EVM_CLIENT_PARAMETERS"; value: EvmClientParameters }
       | {
           type: "SET_COSMOS_CLIENT_PARAMETERS"
@@ -151,24 +162,27 @@ export const transferStateMachine = setup({
       context.evmClientParameters !== undefined || context.cosmosClientParameters !== undefined
   }
 }).createMachine({
-  context: () => ({
+  context: ({ input }) => ({
     PATH: undefined,
     error: undefined,
     AMOUNT: undefined,
+    client: undefined,
     PAYLOAD: undefined,
     NETWORK: undefined,
     RPC_URL: undefined,
     RECIPIENT: undefined,
+    chains: input.chains,
+    ASSET_SYMBOL: undefined,
     DENOM_ADDRESS: undefined,
     SOURCE_CHANNEL: undefined,
     SOURCE_CHAIN_ID: undefined,
-    cosmosStore: get(cosmosStore),
-    sepoliaStore: get(sepoliaStore),
+    ASSET_DENOM_ADDRESS: undefined,
+    evmClientParameters: undefined,
     DESTINATION_CHAIN_ID: undefined,
     RELAY_CONTRACT_ADDRESS: undefined,
-    evmClientParameters: undefined,
     cosmosClientParameters: undefined,
-    client: undefined
+    cosmosStore: input?.cosmosStore ?? get(cosmosStore),
+    sepoliaStore: input?.sepoliaStore ?? get(sepoliaStore)
   }),
   id: "transfer",
   initial: "START",
@@ -184,27 +198,105 @@ export const transferStateMachine = setup({
           }))
         },
         SET_DESTINATION_CHAIN: {
-          actions: assign(({ event }) => ({ DESTINATION_CHAIN_ID: event.value }))
+          actions: assign(({ event, context }) => {
+            const sourceNetwork = context.NETWORK
+
+            const destinationChain = context.chains.find(chain => chain.chain_id === event.value)
+            const prefix = destinationChain?.addr_prefix
+            const destinationNetwork = destinationChain?.rpc_type
+
+            const senderAddress =
+              sourceNetwork === "evm"
+                ? context.sepoliaStore.address ?? wagmiConfig.getClient().account?.address
+                : sourceNetwork === "cosmos"
+                  ? context.cosmosStore.address
+                  : raise("No account found")
+
+            if (!senderAddress) return raise("No account found")
+            if (!prefix) return raise("No prefix found")
+
+            const recipient =
+              sourceNetwork === "evm" && destinationNetwork === "evm"
+                ? senderAddress
+                : sourceNetwork === "cosmos" && destinationNetwork === "cosmos"
+                  ? senderAddress
+                  : sourceNetwork === "evm" && destinationNetwork === "cosmos"
+                    ? hexAddressToBech32({
+                        bech32Prefix: prefix,
+                        address: getAddress(senderAddress)
+                      })
+                    : sourceNetwork === "cosmos" && destinationNetwork === "evm"
+                      ? bech32AddressToHex({ address: senderAddress })
+                      : raise("Invalid address")
+            return {
+              DESTINATION_CHAIN_ID: event.value,
+              RECIPIENT: context.RECIPIENT ?? recipient
+            }
+          })
         },
-        SET_DENOM_ADDRESS: {
-          actions: assign(({ event }) => ({ DENOM_ADDRESS: event.value }))
+        SET_ASSET: {
+          actions: assign(({ event }) => ({
+            ASSET_SYMBOL: event.value.symbol,
+            ASSET_DENOM_ADDRESS: event.value.denomAddress
+          }))
         },
         SET_AMOUNT: {
           actions: assign(({ event }) => ({ AMOUNT: event.value }))
         },
+        SET_RECIPIENT: {
+          actions: assign(({ event, context }) => {
+            const sourceNetwork = context.NETWORK
+
+            const destinationChain = context.chains.find(chain => chain.chain_id === event.value)
+            const prefix = destinationChain?.addr_prefix
+            const destinationNetwork = destinationChain?.rpc_type
+
+            const senderAddress =
+              sourceNetwork === "evm"
+                ? context.sepoliaStore.address ?? wagmiConfig.getClient().account?.address
+                : sourceNetwork === "cosmos"
+                  ? context.cosmosStore.address
+                  : raise("No account found")
+
+            // if (!senderAddress) return raise("No account found")
+            // if (!prefix) return raise("No prefix found")
+
+            const recipient = () => {
+              if (event.value) return event.value
+              if (!(senderAddress && prefix)) return ""
+              return sourceNetwork === "evm" && destinationNetwork === "evm"
+                ? senderAddress
+                : sourceNetwork === "cosmos" && destinationNetwork === "cosmos"
+                  ? senderAddress
+                  : sourceNetwork === "evm" && destinationNetwork === "cosmos"
+                    ? hexAddressToBech32({
+                        bech32Prefix: prefix,
+                        address: getAddress(senderAddress)
+                      })
+                    : sourceNetwork === "cosmos" && destinationNetwork === "evm"
+                      ? bech32AddressToHex({ address: senderAddress })
+                      : raise("Invalid address")
+            }
+
+            return { RECIPIENT: event.value ?? recipient() }
+          })
+        },
         SET_EVM_CLIENT_PARAMETERS: {
           guard: "IS_EVM",
           target: "SET_CLIENT",
-          actions: assign(({ event, context }) => ({
-            evmClientParameters: {
-              account: event.value.account || wagmiConfig.getClient().account,
-              transport: event.value.transport || wagmiConfig.getClient().transport,
-              chain:
-                wagmiConfig.chains.find(chain => chain.id === Number(context.SOURCE_CHAIN_ID)) ||
-                event.value.chain ||
-                wagmiConfig.getClient().chain
+          actions: assign(({ event, context }) => {
+            const account = event.value.account ?? wagmiConfig.getClient().account
+            return {
+              evmClientParameters: {
+                account,
+                transport: event.value.transport || wagmiConfig.getClient().transport,
+                chain:
+                  wagmiConfig.chains.find(chain => chain.id === Number(context.SOURCE_CHAIN_ID)) ||
+                  event.value.chain ||
+                  wagmiConfig.getClient().chain
+              }
             }
-          }))
+          })
         },
         SET_COSMOS_CLIENT_PARAMETERS: {
           guard: "IS_COSMOS",
@@ -280,12 +372,37 @@ export const transferStateMachine = setup({
           target: "SUCCESS",
           actions: assign({
             PAYLOAD: ({ event, context }) => {
-              const recipient = Number.isInteger(context.SOURCE_CHAIN_ID)
-                ? context.RECIPIENT
-                : hexAddressToBech32({
-                    address: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
-                    bech32Prefix: "stride"
-                  })
+              const sourceNetwork = context.NETWORK
+
+              const destinationChain = context.chains.find(
+                chain => chain.chain_id === event.output.PATH.at(1)
+              )
+              const prefix = destinationChain?.addr_prefix
+              const destinationNetwork = destinationChain?.rpc_type
+
+              const senderAddress =
+                sourceNetwork === "evm"
+                  ? context.sepoliaStore.address ?? wagmiConfig.getClient().account?.address
+                  : sourceNetwork === "cosmos"
+                    ? context.cosmosStore.address
+                    : raise("No account found")
+
+              if (!senderAddress) return raise("No account found")
+              if (!prefix) return raise("No prefix found")
+
+              const recipient =
+                sourceNetwork === "evm" && destinationNetwork === "evm"
+                  ? senderAddress
+                  : sourceNetwork === "cosmos" && destinationNetwork === "cosmos"
+                    ? senderAddress
+                    : sourceNetwork === "evm" && destinationNetwork === "cosmos"
+                      ? hexAddressToBech32({
+                          bech32Prefix: prefix,
+                          address: getAddress(senderAddress)
+                        })
+                      : sourceNetwork === "cosmos" && destinationNetwork === "evm"
+                        ? bech32AddressToHex({ address: senderAddress })
+                        : raise("Invalid address")
               return {
                 path: event.output.PATH,
                 network: event.output.NETWORK,
@@ -293,7 +410,7 @@ export const transferStateMachine = setup({
                 amount: context.AMOUNT ?? raise("Amount not found"),
                 recipient: recipient ?? raise("Recipient not found"),
                 relayContractAddress: event.output.RELAY_CONTRACT_ADDRESS,
-                denomAddress: context.DENOM_ADDRESS ?? raise("Denom address not found")
+                denomAddress: context.ASSET_DENOM_ADDRESS ?? raise("Denom address not found")
               }
             }
           })
@@ -302,11 +419,7 @@ export const transferStateMachine = setup({
     },
     SUCCESS: {
       tags: ["success"],
-      // always: {
-      //   actions: _ => {
-      //     console.info(JSON.stringify({ _ }, undefined, 2))
-      //   }
-      // },
+      id: "#TRANSFER-MACHINE-SUCCESS",
       output: ({ context }) => context.client
     }
   },
@@ -322,9 +435,12 @@ export const transferStateMachine = setup({
 // })
 // actor.start()
 
-// actor.send({ type: "SET_SOURCE_CHAIN", value: { chainId: "11155111", network: "evm" } })
+// actor.send({ type: "SET_SOURCE_CHAIN", value: { chainId: "80084", network: "evm" } })
 // actor.send({ type: "SET_DESTINATION_CHAIN", value: "stride-internal-1" })
-// actor.send({ type: "SET_DENOM_ADDRESS", value: "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03" })
+// actor.send({
+//   type: "SET_ASSET",
+//   value: { denomAddress: "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03", symbol: "HONEY" }
+// })
 // actor.send({ type: "SET_AMOUNT", value: 1n })
 // actor.send({ type: "CONSTRUCT_PAYLOAD" })
 // actor.send({ type: "SUCCESS" })

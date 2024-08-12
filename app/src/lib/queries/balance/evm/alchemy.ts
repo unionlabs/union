@@ -1,6 +1,7 @@
 import * as v from "valibot"
 import type { Address } from "viem"
 import { raise } from "$lib/utilities"
+import type { TokenBalance } from "../index.ts"
 
 const alchemyTokenBalancesSchema = v.object({
   jsonrpc: v.string(),
@@ -21,7 +22,7 @@ export type EvmBalances = v.InferOutput<typeof alchemyTokenBalancesSchema>
 export async function getBalancesFromAlchemy({
   url,
   walletAddress
-}: { url: string; walletAddress: string }) {
+}: { url: string; walletAddress: string }): Promise<Array<TokenBalance>> {
   let json: unknown
 
   try {
@@ -51,7 +52,8 @@ export async function getBalancesFromAlchemy({
     name: token.contractAddress,
     symbol: token.contractAddress,
     address: token.contractAddress as Address,
-    balance: token.tokenBalance,
-    gasToken: false
+    balance: BigInt(token.tokenBalance),
+    gasToken: false,
+    decimals: 0
   }))
 }

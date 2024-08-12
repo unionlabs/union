@@ -4,6 +4,7 @@ interface EnvironmentVariables {
   readonly APP_URL: string
   readonly VERSION: string // from package.json#version
   readonly COMMIT_SHA: string
+  readonly SENTRY_AUTH_TOKEN: string
   readonly VITE_APP_VERSION: string
   readonly ETHERSCAN_API_KEY: string
   // `vite-plugin-inspect`
@@ -11,6 +12,7 @@ interface EnvironmentVariables {
   // `rollup-plugin-visualizer`
   readonly VISUALIZE: string
   readonly DEBUG_TABLE: "true" | "false"
+  readonly DEBUG_XSTATE: "true" | "false"
 }
 
 // Node.js environment variables types

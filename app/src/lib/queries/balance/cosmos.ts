@@ -1,5 +1,6 @@
 import * as v from "valibot"
 import { raise } from "$lib/utilities"
+import type { TokenBalance } from "./index.ts"
 
 const cosmosBalancesResponseSchema = v.object({
   balances: v.array(
@@ -13,7 +14,7 @@ const cosmosBalancesResponseSchema = v.object({
 export async function getCosmosChainBalances({
   url,
   walletAddress
-}: { url: string; walletAddress: string }) {
+}: { url: string; walletAddress: string }): Promise<Array<TokenBalance>> {
   let json: undefined | unknown
 
   try {
@@ -33,9 +34,11 @@ export async function getCosmosChainBalances({
 
   if (!result.success) raise(`error parsing result ${JSON.stringify(result.issues)}`)
   return result.output.balances.map(x => ({
-    address: x.denom,
+    name: x.denom,
     symbol: x.denom,
+    address: x.denom,
     balance: BigInt(x.amount),
+    gasToken: false,
     decimals: 0
   }))
 }

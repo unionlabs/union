@@ -1,5 +1,5 @@
 import "temporal-polyfill/global"
-import process from "process"
+// import process from "process"
 import { Buffer } from "buffer"
 import EventEmitter from "events"
 import { browser } from "$app/environment"
