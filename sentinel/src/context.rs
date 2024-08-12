@@ -27,6 +27,8 @@ pub struct Context {
     pub chains: HashMap<String, Chain>,
     pub interactions: Vec<IbcInteraction>,
     pub event_state_map: EventStateMap,
+    pub arbitrum_forward_channel_id: String,
+    pub arbitrum_forward_expect_full_cycle: u64,
 }
 
 impl Context {
@@ -61,6 +63,8 @@ impl Context {
             chains,
             interactions: config.interactions,
             event_state_map, // Set the event_state_map field
+            arbitrum_forward_channel_id: config.arbitrum_forward_channel_id,
+            arbitrum_forward_expect_full_cycle: config.arbitrum_forward_expect_full_cycle,
         })
     }
 
@@ -260,10 +264,17 @@ impl Context {
         }
         handles
     }
-    pub async fn check_packet_sequence(&self, expect_full_cycle: u64, key: &str) -> JoinHandle<()> {
+
+    pub async fn check_packet_sequence(
+        &self,
+        mut expect_full_cycle: u64,
+        key: &str,
+        arbitrum_forward_channel_id: &str,
+        arbitrum_forward_expect_full_cycle: u64,
+    ) -> JoinHandle<()> {
         let event_state_map = Arc::clone(&self.event_state_map);
         let key = key.to_string(); // Clone the key to extend its lifetime
-
+        let arbitrum_forward_channel_id = arbitrum_forward_channel_id.to_string(); // Clone the channel ID to extend its lifetime
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(10)); // TODO: Make this configurable (?)
 
@@ -293,6 +304,14 @@ impl Context {
                                         let now = chrono::Utc::now();
                                         let duration = now.signed_duration_since(send_packet_time);
 
+                                        if event_data.forwarded != "" {
+
+                                            let channel_hex = hex::encode(&arbitrum_forward_channel_id);
+                                            if event_data.forwarded.contains(&channel_hex){
+                                                expect_full_cycle = arbitrum_forward_expect_full_cycle;
+                                                tracing::info!("Expecting full cycle for arbitrum forward channel overwritten with: {}", expect_full_cycle);
+                                            }
+                                        }
                                         if duration.num_seconds() >= (expect_full_cycle as i64) {
                                             tracing::error!(
                                                 "[TRANSFER FAILED] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
@@ -340,8 +359,19 @@ impl Context {
                 interaction.destination.channel, interaction.source.channel
             );
             let expect_full_cycle = interaction.expect_full_cycle;
-            tracing::info!("Calling check_packet_sequence for key: {}", key);
-            let handle = self.check_packet_sequence(expect_full_cycle, &key).await;
+            tracing::info!(
+                "Calling check_packet_sequence for key: {}, {:?}",
+                key,
+                expect_full_cycle
+            );
+            let handle = self
+                .check_packet_sequence(
+                    expect_full_cycle,
+                    &key,
+                    self.arbitrum_forward_channel_id.clone().as_str(),
+                    self.arbitrum_forward_expect_full_cycle.clone(),
+                )
+                .await;
             handles.push(handle);
         }
         handles

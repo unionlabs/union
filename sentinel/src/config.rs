@@ -13,6 +13,8 @@ pub struct Config {
     pub chain_configs: HashMap<String, AnyChainConfig>,
     pub interactions: Vec<IbcInteraction>,
     pub single_interaction: Option<IbcInteraction>, // This is just to send single transaction and close the program
+    pub arbitrum_forward_channel_id: String,
+    pub arbitrum_forward_expect_full_cycle: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -21,6 +23,7 @@ pub struct EventTrackerConfig {
     pub arrived: bool, // is packet arrived or not
     pub arrived_time: Option<DateTime<Utc>>, // time when packet arrived
     pub tx_hash: Option<String>, // hash of the transaction
+    pub forwarded: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

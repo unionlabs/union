@@ -201,6 +201,7 @@ pub trait IbcListen: Send + Sync {
                             arrived: false,
                             arrived_time: None,
                             tx_hash: None,
+                            forwarded: "".to_string(),
                         },
                     );
                 }
@@ -210,6 +211,18 @@ pub trait IbcListen: Send + Sync {
             match ibc_event {
                 IbcEvent::SendPacket(event) => {
                     if let Some(event_data) = sequence_entry.get_mut(&0) {
+                        if event.packet_data_hex.len() >= 72 {
+                            match std::str::from_utf8(&event.packet_data_hex[72..]) {
+                                Ok(pfm_part) => {
+                                    let forward_hex = hex::encode("forward");
+                                    if pfm_part.contains(&forward_hex) {
+                                        tracing::info!("Pfm part contains forward: {:?}", pfm_part);
+                                        event_data.forwarded = pfm_part.to_string();
+                                    }
+                                }
+                                Err(_) => {}
+                            }
+                        }
                         event_data.arrived = true;
                         event_data.arrived_time = Some(chrono::Utc::now());
                         event_data.tx_hash = Some(formatted_tx.clone());
