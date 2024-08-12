@@ -29,14 +29,6 @@ export const transferAddressesCountQueryDocument = graphql(/* GraphQL */ `
   }
 `)
 
-// export const transferAddressesCountQueryDocument = graphql(/* GraphQL */ `
-//   query TransfersByAddressesQuery($addresses: [String!]!) {
-//     v0_transfers(where: {normalized_sender: {_in: $addresses}}) {
-//       sender
-//     }
-//   }
-// `)
-
 export const packetCountQueryDocument = graphql(/* GraphQL */ `
   query PacketCountQuery @cached(ttl: 5)  {
       v0_packets_aggregate {
