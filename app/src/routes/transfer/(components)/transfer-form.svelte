@@ -245,7 +245,7 @@ const transfer = async () => {
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
-    if ($userAddrCosmos === null) return toast.error("No Cosmos user adderss found")
+    if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
     if (connectionStatus !== "connected" || !connectedWallet) {
       transferState.set({
@@ -384,7 +384,7 @@ const transfer = async () => {
       return
     }
 
-    if ($userAddrEvm === null) return toast.error("No Cosmos user adderss found")
+    if ($userAddrEvm === null) return toast.error("No Cosmos user address found")
     if (pfmMemo === null && $userAddrCosmos === null)
       return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
     // if (connectorClient?.chain?.id !== selectedChain.id) {
