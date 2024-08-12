@@ -1,8 +1,4 @@
-import {
-  setup,
-  assign,
-  fromPromise,
-} from "xstate"
+import { setup, assign, fromPromise } from "xstate"
 import {
   cosmosHttp,
   offchainQuery,
@@ -17,7 +13,7 @@ import { get } from "svelte/store"
 import { raise } from "$lib/utilities"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { sepoliaStore, wagmiConfig, } from "$lib/wallet/evm"
+import { sepoliaStore, wagmiConfig } from "$lib/wallet/evm"
 
 type Network = "cosmos" | "evm"
 
@@ -214,7 +210,7 @@ export const transferStateMachine = setup({
           guard: "IS_COSMOS",
           target: "SET_CLIENT",
           actions: assign(({ event, context }) => {
-            const offlineSginer =
+            const offlineSigner =
               context.cosmosStore.connectedWallet === "keplr"
                 ? window?.keplr?.getOfflineSigner(
                     `${event.value.chainId || context.SOURCE_CHAIN_ID}`,
@@ -228,7 +224,7 @@ export const transferStateMachine = setup({
                   : raise("Wallet not found")
             return {
               cosmosClientParameters: {
-                account: offlineSginer,
+                account: offlineSigner,
                 gasPrice: event.value.gasPrice,
                 chainId: event.value.chainId || context.SOURCE_CHAIN_ID,
                 transport: cosmosHttp(event.value.rpcUrl || context.RPC_URL)

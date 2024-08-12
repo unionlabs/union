@@ -1052,6 +1052,7 @@ stargate
 starport
 starsd
 statedb
+statelyai
 statemachine
 stateproof
 stateroot
@@ -1287,6 +1288,7 @@ xnever
 xpla
 xprv
 xqxp
+xstate
 yamlfmt
 ypyp
 yqyp
