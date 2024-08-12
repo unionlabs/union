@@ -583,6 +583,28 @@ onMount(() => {
   if (asset) {
     assetSymbol.set(asset)
   }
+
+  userAddrCosmos.subscribe(address => {
+    if (address === null) {
+      if ($fromChain?.rpc_type === "cosmos") {
+        fromChainId.set("")
+      }
+      if ($toChain?.rpc_type === "cosmos") {
+        toChainId.set("")
+      }
+    }
+  })
+
+  userAddrEvm.subscribe(address => {
+    if (address === null) {
+      if ($fromChain?.rpc_type === "evm") {
+        fromChainId.set("")
+      }
+      if ($toChain?.rpc_type === "evm") {
+        toChainId.set("")
+      }
+    }
+  })
 })
 
 $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
