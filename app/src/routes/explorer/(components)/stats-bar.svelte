@@ -10,13 +10,9 @@ import { onMount } from "svelte"
 
 export let addresses: Array<string> = []
 
-$: console.log(addresses)
-
 const statsData = statsQuery()
 const transfersPerDayData = transfersPerDayQuery(30)
 const transfersPerAddressData = transfersAddressQuery(addresses)
-
-$: console.log($transfersPerAddressData.data)
 
 let show = 0
 let interval: any
