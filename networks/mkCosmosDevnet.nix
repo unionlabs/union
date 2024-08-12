@@ -139,11 +139,11 @@ let
         testnet ${pkgs.lib.optionalString (sdkVersion >= 50) ''--default-denom ${denom}''} \
         --chain-id ${chainId} \
         --home $out \
-        --recover 2>/dev/null
+        --recover
 
       ${pkgs.lib.optionalString (sdkVersion < 50) ''
         sed -i 's/: "stake"/: "${denom}"/g' $out/config/genesis.json
-      ''} 2>/dev/null
+      ''}
     '';
 
   addDevKeyToKeyringAndGenesis = name: mnemonic: home:
@@ -671,7 +671,7 @@ let
 
     echo "collecting"
     # collect-gentxs was moved to a subcommand of genesis in sdk v50
-    ${nodeBin} ${if sdkVersion >= 50 then "genesis" else ""} collect-gentxs --home . 2> /dev/null
+    ${nodeBin} ${if sdkVersion >= 50 then "genesis" else ""} collect-gentxs --home .
 
     echo "validating"
     ${if sdkVersion < 50 then ''
@@ -742,6 +742,7 @@ let
             if startCommandOverwrite == null
             then
               ''
+                # TODO(aeryz): this is not valid for SDK < 0.50
                 ${nodeBin} comet show-node-id --home home
 
                 ${nodeBin} \

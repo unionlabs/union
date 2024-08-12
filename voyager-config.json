@@ -1,7 +1,7 @@
 {
   "chain": {
     "ethereum-devnet": {
-      "enabled": true,
+      "enabled": false,
       "chain_type": "ethereum",
       "preset_base": "minimal",
       "ibc_commitment_slot": "0",
@@ -175,6 +175,53 @@
       },
       "ws_url": "ws://localhost:26857/websocket",
       "grpc_url": "http://localhost:9290"
+    },
+    "0gchain-devnet": {
+      "chain_type": "cosmos",
+      "enabled": true,
+      "keyring": {
+        "name": "0gchain-devnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "alice",
+            "key": "0x76d6cd9f14fc3c0dbbbecaf47ac5a976db8cb63901af5063f752f58b3eb370f8"
+          },
+          {
+            "type": "raw",
+            "name": "bob",
+            "key": "0x1f262c692307923e1d87b5d28aa802b571c1aab07abcff87441a000444b42af9"
+          },
+          {
+            "type": "raw",
+            "name": "charlie",
+            "key": "0x723170cadb50c601b5aeb4635f5fffb6d5778e56644a4a5595a16bd376f0255d"
+          },
+          {
+            "type": "raw",
+            "name": "dave",
+            "key": "0x6696e9d6c903770692f3a3e20faf8c7ee9c790881aad62a19963ef33ac85f8c7"
+          },
+          {
+            "type": "raw",
+            "name": "erin",
+            "key": "0x991bc35664d83f707c70067538249b628a84a8d4cb4a51d6570400323de5fe74"
+          },
+          {
+            "type": "raw",
+            "name": "frank",
+            "key": "0xf49122af970a6ecedb766231e6b79193efcb1715f2eba64dc4194b1b3403b9b7"
+          }
+        ]
+      },
+      "gas_config": {
+        "gas_price": "1.0",
+        "gas_denom": "stake",
+        "gas_multiplier": "1.1",
+        "max_gas": 40000000
+      },
+      "ws_url": "ws://localhost:27057/websocket",
+      "grpc_url": "http://localhost:9490"
     },
     "stargaze-devnet": {
       "chain_type": "cosmos",
