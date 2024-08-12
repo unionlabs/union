@@ -3,6 +3,7 @@ import type { Chain } from "$lib/types"
 import LoadingLogo from "./loading-logo.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { type Readable, derived } from "svelte/store"
+import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
 
 let chains = chainsQuery()
 
@@ -81,10 +82,12 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
     }
   })
 })
+// @ts-expect-error
+let rawChains: ChainsQueryResult = ($chains?.data ?? []) as ChainsQueryResult
 </script>
 
 {#if !!$chains.data}
-  <slot chains={$checkedChains} rawChains={$chains?.data ?? []} />
+  <slot chains={$checkedChains} {rawChains} />
 {:else if $chains.isLoading}
   <LoadingLogo class="size-16" />
 {:else if $chains.isError}

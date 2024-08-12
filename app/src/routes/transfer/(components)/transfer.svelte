@@ -51,21 +51,21 @@ import ChainDialog from "./chain-dialog.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
 import { truncate } from "$lib/utilities/format.ts"
 import DevTools from "$lib/components/dev-tools.svelte"
+import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
 
 export let connected: boolean
 export let chains: Array<Chain>
 export let userAddresses: UserAddresses
+export let rawChains: Array<ChainsQueryResult>
 
 const { inspect, ...inspector } = createBrowserInspector({
   autoStart: true
-  // import.meta.env.MODE === "development" &&
-  // import.meta.env.DEBUG_XSTATE === "true"
 })
 
 const { snapshot, send } = useMachine(transferStateMachine, {
   inspect,
   input: {
-    chains: chains,
+    chains: rawChains,
     cosmosStore: $cosmosStore,
     sepoliaStore: $sepoliaStore
   }
@@ -77,7 +77,7 @@ function swapChainsClick() {
   const network = chains.find(c => c.chain_id === toChain)?.rpc_type
   if (!(network && fromChain && toChain)) return
   send({ type: "SET_DESTINATION_CHAIN", value: fromChain })
-  send({ type: "SET_SOURCE_CHAIN", value: { network, chainId: toChain } })
+  send({ type: "SET_SOURCE_CHAIN", value: { chainId: toChain, network } })
 }
 
 let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [false, false, false]
@@ -93,7 +93,7 @@ let assetBalances = derived(_assetBalances, $_assetBalances => {
   return $_assetBalances[chainIndex]?.data ?? []
 })
 
-let balanceCoversAmount = false
+let balanceCoversAmount = true
 
 $: buttonText =
   $snapshot.context["ASSET_SYMBOL"] && $snapshot.context["AMOUNT"]
@@ -123,6 +123,7 @@ let ANIMATION_STATE: "FLIP" | "FLIPPED" | "UNFLIP" | "UNFLIPPED" = "UNFLIPPED"
 async function transferASS() {
   let client = $snapshot.context["client"]
   if (!client) send({ type: "SET_CLIENT" })
+  send({ type: "CONSTRUCT_PAYLOAD" })
   await sleep(1_000)
   client = $snapshot.context["client"]
 
@@ -140,7 +141,8 @@ async function transferASS() {
     relayContractAddress: payload["relayContractAddress"]
   } satisfies TransferAssetsParameters
 
-  client?.simulateTransaction(transactionPayload)
+  const result = await client?.simulateTransaction(transactionPayload)
+  console.info(JSON.stringify(result, undefined, 2))
 }
 </script>
 
@@ -319,6 +321,7 @@ async function transferASS() {
             if (!client) send({ type: "SET_CLIENT" })
             await sleep(1_000)
             client = $snapshot.context["client"]
+            await transferASS()
             // client
 
             // transferState.set({ kind: "FLIPPING" })
