@@ -12,7 +12,7 @@ import DydxFaucet from "./(components)/dydx-faucet.svelte"
 import StrideFaucet from "./(components)/stride-faucet.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
-import WalletGate from "$lib/components/wallet-gate.svelte"
+import WalletGateCosmos from "$lib/components/wallet-gate-cosmos.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import TokenBalance from "./(components)/token-balance.svelte"
@@ -198,25 +198,20 @@ const requestUnoFromFaucet = async () => {
                 <div class="flex justify-between px-1">
                   <div class="text-xs">
                     <ChainsGate let:chains>
-                      <WalletGate
-                        let:userAddr
-                        let:connected
-                        let:cosmosConnected
-                      >
-                        <p>
+                      <WalletGateCosmos>
+                        <p slot="connected" let:userAddrCosmos>
                           <span class="text-muted-foreground">Balance: </span>
-                          {#if cosmosConnected}
                             <TokenBalance
                               {chains}
-                              {userAddr}
-                              {connected}
+                              {userAddrCosmos}
                               symbol="muno"
                             />
-                          {:else}
-                            Connect cosmos wallet
-                          {/if}
                         </p>
-                      </WalletGate>
+
+                        <p slot="disconnected">
+                            Connect cosmos wallet
+                        </p>
+                      </WalletGateCosmos>
                     </ChainsGate>
                   </div>
                   {#if address !== $cosmosStore.address}
