@@ -61,8 +61,7 @@ let userAddr: Readable<UserAddresses> = derived(
   })
 )
 
-export let connected: boolean
-$: userBalances = userBalancesQuery({ chains, userAddr: $userAddr, connected })
+$: userBalances = userBalancesQuery({ chains, userAddr: $userAddr, connected: true })
 
 // CURRENT FORM STATE
 let fromChainId = writable("")
@@ -1046,7 +1045,6 @@ const resetInput = () => {
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
   chains={chains.filter(c => c.enabled_staging)}
-  connected={connected}
   kind="from"
   onChainSelect={newSelectedChain => {
     fromChainId.set(newSelectedChain)
@@ -1058,7 +1056,6 @@ const resetInput = () => {
 <ChainDialog
   bind:dialogOpen={dialogOpenToChain}
   chains={chains.filter(c => c.enabled_staging)}
-  connected={connected}
   kind="to"
   onChainSelect={newSelectedChain => {
     toChainId.set(newSelectedChain)
