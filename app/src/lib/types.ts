@@ -17,7 +17,6 @@ export interface TransferAsset {
 export type UserAddresses = {
   cosmos: UserAddressCosmos | null
   evm: UserAddressEvm | null
-  [key: string]: UserAddressCosmos | UserAddressEvm | null
 }
 
 export type UserAddressCosmos = {

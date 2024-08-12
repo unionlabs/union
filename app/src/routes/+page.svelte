@@ -1,20 +1,17 @@
 <script lang="ts">
-import WalletGate from "$lib/components/wallet-gate.svelte"
+import WalletGateCosmos from "$lib/components/wallet-gate-cosmos.svelte"
+import WalletGateEvm from "$lib/components/wallet-gate-evm.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import NotConnected from "$lib/components/not-connected.svelte"
 import BalancesOverview from "$lib/components/balances-overview.svelte"
 </script>
 
 <ChainsGate let:chains>
-  <WalletGate let:connected let:userAddr>
-    <div class="max-w-full w-full">
-      {#if connected}
-        <BalancesOverview {chains} {userAddr} {connected}/>
-      {:else}
-        <div class="flex w-full h-full items-center justify-center">
-          <NotConnected/>
-        </div>
-      {/if}
-    </div>
-  </WalletGate>
+  <WalletGateCosmos>
+    <WalletGateEvm slot="connected" let:userAddrCosmos>
+      <div class="max-w-full w-full" slot="connected" let:userAddrEvm>
+        <BalancesOverview {chains} userAddr={({evm: userAddrEvm, cosmos: userAddrCosmos})}/>
+      </div>
+    </WalletGateEvm>
+  </WalletGateCosmos>
 </ChainsGate>

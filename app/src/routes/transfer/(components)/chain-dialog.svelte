@@ -12,23 +12,21 @@ export let onChainSelect: (newSelectedChain: string) => void
 export let chains: Array<{ chain_id: string; display_name: string; rpc_type: string }>
 export let selectedChain: string
 export let userAddr: UserAddresses | null
-export let connected: boolean
 
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 
 function selectChain(chain: { chain_id: string; display_name: string; rpc_type: string }) {
-  if (!connected || (userAddr && !userAddr[chain.rpc_type])) {
-    if (chain.rpc_type === "cosmos") {
-      toast.info(`Connect Cosmos wallet`)
-    }
-
-    if (chain.rpc_type === "evm") {
-      toast.info(`Connect EVM wallet`)
-    }
-  } else {
-    onChainSelect(chain.chain_id)
-    dialogOpen = false
+  if (chain.rpc_type === "evm" && !userAddr?.evm) {
+    toast.info(`Connect EVM wallet`)
+    return
   }
+
+  if (chain.rpc_type === "cosmos" && !userAddr?.cosmos) {
+    toast.info(`Connect Cosmos wallet`)
+    return
+  }
+  onChainSelect(chain.chain_id)
+  dialogOpen = false
 }
 </script>
 
@@ -82,15 +80,11 @@ function selectChain(chain: { chain_id: string; display_name: string; rpc_type: 
               <span class="text-lg font-bold">
                 {chain.display_name}
               </span>
-              {#if connected}
-                {#if userAddr &&userAddr[chain.rpc_type]}
-                  <Badge variant={selected ? 'secondary' : 'default'}>Connected</Badge>
-                {:else}
+                {#if (chain.rpc_type === "evm" && !userAddr?.evm) || (chain.rpc_type === "cosmos" && !userAddr?.cosmos) }
                   <Badge variant={selected ? 'secondary' : 'default'}>Disconnected</Badge>
+                {:else}
+                  <Badge variant={selected ? 'secondary' : 'default'}>Connected</Badge>
                 {/if}
-              {:else}
-                <Badge variant={selected ? 'secondary' : 'default'}>Disconnected</Badge>
-              {/if}
             </Button>
           </li>
         {/each}

@@ -14,7 +14,7 @@ import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
 import { truncate } from "$lib/utilities/format.ts"
-import { type Writable, writable, derived, get } from "svelte/store"
+import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
@@ -31,6 +31,8 @@ import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
 import { config } from "$lib/wallet/evm/config"
+import { userAddrEvm } from "$lib/wallet/evm"
+import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import {
   writeContract,
@@ -51,9 +53,15 @@ function getChainById(chainId: number): ViemChain | null {
 }
 
 export let chains: Array<Chain>
-export let userAddr: UserAddresses
-export let connected: boolean
-$: userBalances = userBalancesQuery({ chains, userAddr, connected })
+let userAddr: Readable<UserAddresses> = derived(
+  [userAddrCosmos, userAddrEvm],
+  ([$userAddrCosmos, $userAddrEvm]) => ({
+    evm: $userAddrEvm,
+    cosmos: $userAddrCosmos
+  })
+)
+
+$: userBalances = userBalancesQuery({ chains, userAddr: $userAddr, connected: true })
 
 // CURRENT FORM STATE
 let fromChainId = writable("")
@@ -119,12 +127,18 @@ $: asset = derived(
   }
 )
 
-let recipient = derived(toChain, $toChain => {
+let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
   switch ($toChain?.rpc_type) {
-    case "evm":
-      return userAddr.evm.canonical
-    case "cosmos":
-      return rawToBech32($toChain.addr_prefix, userAddr.cosmos.bytes)
+    case "evm": {
+      const evmAddr = $userAddr.evm
+      if (evmAddr === null) return null
+      return $userAddr.evm?.canonical
+    }
+    case "cosmos": {
+      const cosmosAddr = $userAddr.cosmos
+      if (cosmosAddr === null) return null
+      return rawToBech32($toChain.addr_prefix, cosmosAddr.bytes)
+    }
     default:
       return null
   }
@@ -215,8 +229,8 @@ const transfer = async () => {
   if (!$toChain) return toast.error("can't find chain in config")
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
-  if ($fromChain.rpc_type === "evm" && !userAddr.evm) return toast.error("No evm wallet connected")
-  if ($fromChain.rpc_type === "cosmos" && !userAddr.cosmos)
+  if ($fromChain.rpc_type === "evm" && !$userAddr.evm) return toast.error("No evm wallet connected")
+  if ($fromChain.rpc_type === "cosmos" && !$userAddr.cosmos)
     return toast.error("No cosmos wallet connected")
   if (!$recipient) return toast.error("Invalid recipient")
   if (!$ucs01Configuration)
@@ -231,6 +245,7 @@ const transfer = async () => {
   let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
+    if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
     if (connectionStatus !== "connected" || !connectedWallet) {
       transferState.set({
@@ -321,7 +336,7 @@ const transfer = async () => {
                 sourcePort: "transfer",
                 sourceChannel: ucs1_configuration.channel_id,
                 token: { denom: $assetAddress, amount: parsedAmount.toString() },
-                sender: rawToBech32($fromChain.addr_prefix, userAddr.cosmos.bytes),
+                sender: rawToBech32($fromChain.addr_prefix, $userAddrCosmos.bytes),
                 receiver: $recipient,
                 memo: pfmMemo ?? "",
                 timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
@@ -369,6 +384,9 @@ const transfer = async () => {
       return
     }
 
+    if ($userAddrEvm === null) return toast.error("No Cosmos user address found")
+    if (pfmMemo === null && $userAddrCosmos === null)
+      return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
     // if (connectorClient?.chain?.id !== selectedChain.id) {
     // await windowEthereumAddChain(selectedChain)
     // await windowEthereumSwitchChain(selectedChain.id)
@@ -408,7 +426,7 @@ const transfer = async () => {
       try {
         hash = await writeContract(config, {
           chain: selectedChain,
-          account: userAddr.evm.canonical,
+          account: $userAddrEvm.canonical,
           abi: erc20Abi,
           address: $asset.address as Address,
           functionName: "approve",
@@ -443,15 +461,19 @@ const transfer = async () => {
     if ($transferState.kind === "SIMULATING_TRANSFER") {
       console.log("simulating transfer step")
 
+      if (pfmMemo === null && $userAddrCosmos === null)
+        return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
+
       const contractRequest = {
         chainId: selectedChain.id,
         abi: ucs01abi,
-        account: userAddr.evm.canonical,
+        account: $userAddrEvm.canonical,
         functionName: "send",
         address: ucs01address,
         args: [
           ucs1_configuration.channel_id,
-          pfmMemo === null ? userAddr.cosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
+          // @ts-ignore see the assertion above
+          pfmMemo === null ? $userAddrCosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
           [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
           pfmMemo ?? "", // memo
           { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
@@ -525,11 +547,11 @@ const transfer = async () => {
         destination_chain_id: $toChainId,
         source_transaction_hash: $transferState.transferHash,
         hop_chain_id: $hopChain?.chain_id,
-        sender: userAddrOnChain(userAddr, $fromChain),
+        sender: userAddrOnChain($userAddr, $fromChain),
         normalized_sender:
           $fromChain?.rpc_type === "cosmos"
-            ? userAddr?.cosmos?.normalized
-            : userAddr?.evm?.normalized,
+            ? $userAddrCosmos?.normalized
+            : $userAddrEvm?.normalized,
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
         receiver: $recipient,
         assets: {
@@ -560,6 +582,28 @@ onMount(() => {
   if (asset) {
     assetSymbol.set(asset)
   }
+
+  userAddrCosmos.subscribe(address => {
+    if (address === null) {
+      if ($fromChain?.rpc_type === "cosmos") {
+        fromChainId.set("")
+      }
+      if ($toChain?.rpc_type === "cosmos") {
+        toChainId.set("")
+      }
+    }
+  })
+
+  userAddrEvm.subscribe(address => {
+    if (address === null) {
+      if ($fromChain?.rpc_type === "evm") {
+        fromChainId.set("")
+      }
+      if ($toChain?.rpc_type === "evm") {
+        toChainId.set("")
+      }
+    }
+  })
 })
 
 $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $userBalances]) => {
@@ -802,7 +846,6 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 })
 
 let inputState: "locked" | "unlocked" = "locked"
-const onLockClick = () => (inputState = inputState === "locked" ? "unlocked" : "locked")
 
 let userInput = false
 $: address = $recipient ?? ""
@@ -1002,25 +1045,23 @@ const resetInput = () => {
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
   chains={chains.filter(c => c.enabled_staging)}
-  connected={connected}
   kind="from"
   onChainSelect={newSelectedChain => {
     fromChainId.set(newSelectedChain)
   }}
   selectedChain={$fromChainId}
-  userAddr={userAddr}
+  userAddr={$userAddr}
 />
 
 <ChainDialog
   bind:dialogOpen={dialogOpenToChain}
   chains={chains.filter(c => c.enabled_staging)}
-  connected={connected}
   kind="to"
   onChainSelect={newSelectedChain => {
     toChainId.set(newSelectedChain)
   }}
   selectedChain={$toChainId}
-  userAddr={userAddr}
+  userAddr={$userAddr}
 />
 
 {#if $sendableBalances !== null && $fromChain !== null}
@@ -1028,7 +1069,7 @@ const resetInput = () => {
     chain={$fromChain}
     assets={$sendableBalances}
     onAssetSelect={asset => {
-        console.log('Selected Asset: ', asset)
+      console.log('Selected Asset: ', asset)
       assetSymbol.set(asset.symbol)
       assetAddress.set(asset.address)
     }}
