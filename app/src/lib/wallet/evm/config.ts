@@ -16,12 +16,14 @@ import {
   createStorage as createWagmiStorage
 } from "@wagmi/core"
 import { sleep } from "$lib/utilities"
-import { writable } from "svelte/store"
+import { derived, writable, type Readable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
 import { APP_INFO } from "$lib/constants/app.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "@wagmi/core/chains"
 import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
+import type { UserAddressEvm } from "$lib/types"
+import type { Address } from "viem"
 
 const chains = [sepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
@@ -147,6 +149,22 @@ export function createSepoliaStore(
 }
 
 export const sepoliaStore = createSepoliaStore()
+
+export const userAddrEvm: Readable<UserAddressEvm | null> = derived(
+  [sepoliaStore],
+  ([$sepoliaStore]) => {
+    if ($sepoliaStore?.address) {
+      const evm_normalized = $sepoliaStore.address.slice(2).toLowerCase()
+      return {
+        canonical: $sepoliaStore.address as Address,
+        normalized: $sepoliaStore.address.slice(2).toLowerCase(),
+        normalized_prefixed: `0x${evm_normalized}` as Address
+      }
+    }
+
+    return null
+  }
+)
 
 export const evmWalletsInformation = config.connectors.map(connector => {
   const id = connector.id.toLowerCase()

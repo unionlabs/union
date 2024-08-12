@@ -1,26 +1,10 @@
 <script lang="ts">
-import { rawToHex } from "$lib/utilities/address"
-import { derived, writable, type Readable } from "svelte/store"
-import type { UserAddressCosmos, UserAddresses, UserAddressEvm } from "$lib/types"
+import { derived, type Readable } from "svelte/store"
+import type { UserAddressEvm } from "$lib/types"
 import type { Address } from "viem"
-import { onMount } from "svelte"
-import { sleep } from "$lib/utilities"
-import { sepoliaStore } from "$lib/wallet/evm"
+import { userAddrEvm } from "$lib/wallet/evm"
 
-let userAddr: Readable<UserAddressEvm | null> = derived([sepoliaStore], ([$sepoliaStore]) => {
-  if ($sepoliaStore?.address) {
-    const evm_normalized = $sepoliaStore.address.slice(2).toLowerCase()
-    return {
-      canonical: $sepoliaStore.address as Address,
-      normalized: $sepoliaStore.address.slice(2).toLowerCase(),
-      normalized_prefixed: `0x${evm_normalized}` as Address
-    }
-  }
-
-  return null
-})
-
-let confirmedUserAddr: Readable<UserAddressEvm> = derived(userAddr, $userAddr => {
+let confirmedUserAddr: Readable<UserAddressEvm> = derived(userAddrEvm, $userAddr => {
   return (
     $userAddr ?? {
       canonical: "0xnever" as Address,
@@ -31,7 +15,7 @@ let confirmedUserAddr: Readable<UserAddressEvm> = derived(userAddr, $userAddr =>
 })
 </script>
 
-{#if $userAddr}
+{#if $userAddrEvm}
   <slot name="connected" userAddrEvm={$confirmedUserAddr} />
 {:else}
   <slot name="disconnected">
