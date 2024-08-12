@@ -19,7 +19,6 @@ export type ChainWalletStore<TChainSource extends "cosmos" | "evm"> = {
   chain: (TChainSource extends "evm" ? "sepolia" : "cosmos") | String
   hoverState: "hover" | "none"
   address: TChainSource extends "evm" ? EvmAddress | undefined : string | undefined
-  rawAddress: TChainSource extends "evm" ? undefined : Uint8Array | undefined
   connectionStatus: State["status"]
   connectedWallet: string | undefined
 }

@@ -3,5 +3,6 @@ export {
   sepoliaStore,
   userAddrEvm,
   type EvmWalletId,
-  evmWalletsInformation
+  evmWalletsInformation,
+  config as wagmiConfig
 } from "./config.ts"

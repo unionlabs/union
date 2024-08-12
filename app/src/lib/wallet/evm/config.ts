@@ -63,12 +63,12 @@ export const config = createConfig({
       http(berachainTestnetbArtio.rpcUrls.default.http.at(0), { name: "default Berachain RPC" })
     ]),
     [arbitrumSepolia.id]: fallback([
-      // unstable_connector(injected, {
-      //   retryCount: 3,
-      //   retryDelay: 100,
-      //   key: "unstable_connector-injected-berachain",
-      //   name: "unstable_connector-injected-berachain"
-      // }),
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-berachain",
+        name: "unstable_connector-injected-berachain"
+      }),
       http(arbitrumSepolia.rpcUrls.default.http.at(0), { name: "default Arbitrum Sepolia RPC" })
     ])
   },
@@ -98,8 +98,8 @@ export const config = createConfig({
       dappMetadata: {
         name: APP_INFO.name,
         url: APP_INFO.baseUrl,
-        iconUrl: APP_INFO.iconUrl,
-        base64Icon: APP_INFO.base64Icon
+        iconUrl: APP_INFO.iconUrl
+        // base64Icon: APP_INFO.base64Icon
       },
       // default values
       useDeeplink: false,

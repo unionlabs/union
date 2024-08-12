@@ -38,7 +38,9 @@ export const cosmosWalletsInformation = [
 export type CosmosWalletId = (typeof cosmosWalletsInformation)[number]["id"]
 
 function createCosmosStore(
-  previousState: ChainWalletStore<"cosmos"> = {
+  previousState: ChainWalletStore<"cosmos"> & {
+    rawAddress: Uint8Array | undefined
+  } = {
     chain: "cosmos",
     hoverState: "none",
     address: undefined,
