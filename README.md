@@ -1,8 +1,9 @@
 # Union
 
 [![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
-[![Nightly](https://github.com/unionlabs/union/actions/workflows/nightly.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/nightly.yml)
 [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
+[![Discord badge][]](https://discord.union.build)
+[![Twitter handle][]][Twitter badge]
 
 Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security, and usage in decentralized finance. It implements [IBC] for compatibility with Cosmos chains and connects to Ethereum.
 
@@ -33,3 +34,6 @@ Please make sure to [set up your GitHub PAT](<https://github.com/unionlabs/union
 
 [docs]: https://docs.union.build "Official Union Docs"
 [IBC]: https://github.com/cosmos/ibc "cosmos/ibc"
+[Discord badge]: https://img.shields.io/discord/1158939416870522930?logo=discord
+[Twitter handle]: https://img.shields.io/twitter/follow/union_build.svg?style=social&label=Follow
+[Twitter badge]: https://twitter.com/intent/follow?screen_name=union_build
