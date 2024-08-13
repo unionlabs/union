@@ -1,7 +1,5 @@
-<div align="center">
 ![Union Logo](./.github/images/union-logo-white.svg#gh-dark-mode-only)
 ![Union Logo](./.github/images/union-logo-black.svg#gh-light-mode-only)
-</div>
 
 [![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
 [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
