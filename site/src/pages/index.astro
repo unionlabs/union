@@ -1,12 +1,9 @@
 ---
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
-
 import IntroSection from "#/components/sections/IntroSection.astro"
-import ModularConnectedSection from "#/components/sections/ModularConnectedSection.astro"
-import MostEfficientSection from "#/components/sections/MostEfficientSection.astro"
-import BlogSection from "#/components/sections/BlogSection.astro"
-import CodeSection from "#/components/sections/CodeSection.astro"
-import SocialsSection from "#/components/sections/SocialsSection.astro"
+import ConsensusSection from "../components/sections/ConsensusSection.astro";
+import ZkSection from "../components/sections/ZkSection.astro";
+import ExecutionSection from "../components/sections/ExecutionSection.astro";
 
 export const prerender = false
 
@@ -21,10 +18,11 @@ Astro.response.headers.set("netlify-cache-tag", "blog")
 ---
 
 <SectionsLayout gapless>
+  <div class="pt-14 md:pt-28"></div>
   <IntroSection/>
-  <MostEfficientSection/>
-  <ModularConnectedSection/>
-  <CodeSection/>
-  <BlogSection/>
-  <SocialsSection/>
+  <div class="py-36"></div>
+  <ConsensusSection />
+  <ZkSection />
+  <ExecutionSection />
+  <div class="py-36"></div>
 </SectionsLayout>

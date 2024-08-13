@@ -1,25 +1,34 @@
 ---
 import H1 from "#/components/typography/h1.astro"
 import Subtitle from "#/components/typography/subtitle.astro"
-
-import cube from "#/spline/cube-rotating-optimized.splinecode"
-import Spline from "#/components/Spline.astro"
 import ButtonA from "#/components/ButtonA.astro"
+import LanderSection from "../LanderSection.astro";
 ---
 
-<section
-  class="flex flex-col md:py-8 lg:py-32 bg-gradient-to-b from-black to-[#081637]/50 border-gray-800"
->
-  <div class="w-full self-center max-w-[1200px] flex flex-col md:grid md:grid-cols-2  items-center gap-2 md:gap-0 -mx-4 md:mx-0 px-4">
-  <div class="md:order-last w-full max-w-[500px] md:max-w-full">
-    <Spline model={cube} loading="eager"/>
-  </div>
-  <div class="flex flex-col md:text-left items-start drop-shadow-2xl -mt-24 pt-16 md:mt-0 px-2 sm:px-4 pb-16 gap-2 sm:gap-4">
-    <H1>The Modular ZK<br />Interoperability Layer</H1>
-    <Subtitle>
-      Union connects the next generation of blockchains and rollups, across any ecosystem.
-    </Subtitle>
-    <ButtonA href="https://app.union.build">Launch Testnet App</ButtonA>
-  </div>
-  </div>
+<section class="relative flex w-full">
+    <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 z-10">
+        <div class="z-20 grid grid-cols-1 w-full">
+            <div class="flex flex-col text-left items-start">
+                <H1>The <br> Modular <br> <span class="text-accent-500">Ecosystem</span></H1>
+            </div>
+            <div class="flex flex-col items-end">
+                <div class="text-right flex flex-col gap-4">
+                    <H1>The <br> interoperability <br> <span class="text-accent-500"><span
+                            class="text-2xl">0_____________0</span> revolution</span></H1>
+                    <div class="max-w-[557px] text-left flex flex-col gap-4">
+                        <Subtitle>
+                            Connecting every blockchain, without compromising on security, efficiency, decentralization,
+                            or
+                            speed.
+                        </Subtitle>
+                        <ButtonA href="https://app.union.build">DIVE IN >>></ButtonA>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="absolute -mt-14 md:-mt-28 w-full">
+        <img src="/src/assets/images/spline-holders/wave-collateral.png" alt="Wave Collateral" class="object-cover w-full">
+    </div>
 </section>

@@ -1,0 +1,28 @@
+---
+import H1 from "../typography/h1.astro";
+import ButtonA from "../ButtonA.astro";
+import Subtitle from "../typography/subtitle.astro";
+---
+
+<section class="relative flex w-full">
+    <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6">
+        <div class="relative flex w-full h-fit">
+            <div class="absolute inset-0 flex md:items-center justify-center flex-col md:text-center z-10">
+                <H1><span class="text-accent-500">
+                    Z</span>ero <span class="text-accent-500">k</span>nowledge cryptography <br>
+                    = <br>
+                    <span class="text-accent-500">high speed. low cost</span>
+                </H1>
+                <div class="text-3xl max-w-[1037px] py-4 sm:py-8">
+                    <Subtitle>It takes only 6 seconds to generate a Union ZK proof,<br>securing thousands of transfers on
+                        hundreds of chains
+                    </Subtitle>
+                </div>
+                <ButtonA>START SWIMMING >>></ButtonA>
+            </div>
+            <div class="w-full">
+                <img src="/src/assets/images/spline-holders/whale.png" alt="Wave Collateral" class="w-full h-auto">
+            </div>
+        </div>
+    </div>
+</section>
