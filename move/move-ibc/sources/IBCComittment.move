@@ -2,7 +2,6 @@ module IBC::IBCCommitment {
 
     use aptos_std::string::{Self, String};
     use aptos_std::string_utils;
-    use std::vector;
     use aptos_std::hash;
 
     // Function to convert a String to vector<u8>

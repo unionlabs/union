@@ -117,7 +117,7 @@ module IBC::LightClient {
     }
 
     public fun latest_height(
-        client_id: String
+        _client_id: String
     ): height::Height {
         // Return error code, 0 for success
         height::new(0,0)
@@ -219,12 +219,12 @@ module IBC::LightClient {
     }
 
     public fun verify_membership(
-        client_id: String,
-        height: height::Height,
-        proof: Any,
-        prefix: vector<u8>,
-        path: vector<u8>,
-        value: vector<u8>, 
+        _client_id: String,
+        _height: height::Height,
+        _proof: Any,
+        _prefix: vector<u8>,
+        _path: vector<u8>,
+        _value: vector<u8>, 
     ): (vector<height::Height>, u64) { // second parameter is error code        
         (
             vector<height::Height>[
@@ -260,7 +260,7 @@ module IBC::LightClient {
         (hmac % prime_r_minus_one) + 1
     }
     
-    fun verify_zkp(chain_id: &String, trusted_validators_hash: &vector<u8>, header: &LightHeader, zkp: &ZKP): bool {
+    fun verify_zkp(_chain_id: &String, trusted_validators_hash: &vector<u8>, header: &LightHeader, zkp: &ZKP): bool {
         let inputs_hash: vector<u8> = vector[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 117, 110, 105, 111, 110, 45, 100, 101, 118, 110, 101, 116, 45, 49, 51, 51, 55];
         let height = bcs::to_bytes<u256>(&(header.height as u256));
         vector::reverse(&mut height);
@@ -300,7 +300,8 @@ module IBC::LightClient {
         let gamma_abc_2 = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 1)));
         let gamma_abc_3 = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 2)));
 
-        let res = serialize<Fr, FormatFrLsb>(&commitment_hash);
+        // TODO(aeryz): why this is unused?
+        let _res = serialize<Fr, FormatFrLsb>(&commitment_hash);
 
         let msm_inner = add(&add<G1>(&gamma_abc_1, &zkp.proof_commitment), &scalar_mul<G1, Fr>(&gamma_abc_2, &inputs_hash));
         let public_inputs_msm = add<G1>(&msm_inner, &scalar_mul<G1, Fr>(&gamma_abc_3, &commitment_hash));
@@ -318,7 +319,7 @@ module IBC::LightClient {
         );
 
         if (!eq<Gt>(&res, &zero<Gt>())) {
-            return false;
+            return false
         };
 
         let res = multi_pairing<G1, G2, Gt>(
@@ -429,8 +430,8 @@ module IBC::LightClient {
 
 
     public fun get_timestamp_at_height(
-        client_id: String,
-        height: height::Height
+        _client_id: String,
+        _height: height::Height
     ): u64 {
         0
     }

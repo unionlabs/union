@@ -1,10 +1,6 @@
 #[test_only]
 module IBC::IBCCommitmentTest {
 
-    use std::signer;
-    use std::account;
-    use std::vector;
-    use std::debug;
     use aptos_std::string;
     use IBC::IBCCommitment;
 

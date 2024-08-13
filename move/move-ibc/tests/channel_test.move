@@ -2,17 +2,12 @@
 module IBC::ChannelTest {
 
     use std::signer;
-    use std::account;
     use std::vector;
-    use std::debug;
     use aptos_std::string::{Self, String};
-    use aptos_framework::coin::Coin;
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::event;
-    use aptos_std::any::{Self, Any};
+    use aptos_std::any;
     use IBC::height;
-    use IBC::Core::{Self, Version};
-    use IBC::LightClient;
+    use IBC::Core;
+    use IBC::connection_end::{Self, Version};
 
     const E_GENERATE_CLIENT_IDENTIFIER: u64 = 3001;
     const E_GET_CLIENT_IMPL: u64 = 3002;
@@ -30,7 +25,7 @@ module IBC::ChannelTest {
         vector::push_back(&mut features, string::utf8(b"FEATURE_B"));
 
 
-        let version = Core::new_version(string::utf8(b"1"), features);
+        let version = connection_end::new_version(string::utf8(b"1"), features);
         // Test case where the feature is supported
         let feature_a = string::utf8(b"FEATURE_A");
         let is_supported = Core::verify_supported_feature(&version, feature_a);
@@ -67,8 +62,8 @@ module IBC::ChannelTest {
         let connection_id = string::utf8(b"connection-0");
 
         // Prepare counterparty and connection
-        let counterparty = Core::new_connection_counterparty(string::utf8(b"counterparty-client"), connection_id, Core::new_merkleprefix(vector::empty<u8>()));
-        let connection = Core::new_connection_end(string::utf8(b"client-0"), vector::empty<Version>(), 3, 0, counterparty);
+        let counterparty = connection_end::new_counterparty(string::utf8(b"counterparty-client"), connection_id, b"");
+        let connection = connection_end::new(string::utf8(b"client-0"), vector::empty<Version>(), 3, 0, counterparty);
 
         // Insert connection into the store
         Core::set_connection(connection_id, connection);
@@ -85,7 +80,7 @@ module IBC::ChannelTest {
         Core::create_ibc_store(alice);
 
         // Test generate_channel_identifier function
-        let channel_id = Core::generate_channel_identifier();
+        let _ = Core::generate_channel_identifier();
 
         // Verify the next sequence has incremented
         let next_sequence = Core::get_next_channel_sequence();
@@ -101,16 +96,15 @@ module IBC::ChannelTest {
         let connection_id = string::utf8(b"connection-0");
 
         // Prepare counterparty and connection
-        let counterparty = Core::new_connection_counterparty(string::utf8(b"counterparty-client"), connection_id, Core::new_merkleprefix(vector::empty<u8>()));
-        let connection = Core::new_connection_end(string::utf8(b"client-0"), vector::empty<Version>(), 3, 0, counterparty);
+        let counterparty = connection_end::new_counterparty(string::utf8(b"counterparty-client"), connection_id, vector::empty<u8>());
+        let connection = connection_end::new(string::utf8(b"client-0"), vector::empty<Version>(), 3, 0, counterparty);
 
         Core::set_connection(connection_id, connection);
 
         // Test ensure_connection_state function
         let retrieved_connection_end = Core::ensure_connection_state(connection_id);
-        let (client_id, versions, state, delay_period, counterparty) = Core::get_connection_end(retrieved_connection_end);
-        assert!(state == 3, 5001);
-        assert!(client_id == string::utf8(b"client-0"), 5002);
+        assert!(connection_end::state(&retrieved_connection_end) == 3, 5002);
+        assert!(*connection_end::client_id(&retrieved_connection_end) == string::utf8(b"client-0"), 5003);
     }
 
     #[test(alice = @IBC)]
@@ -124,19 +118,18 @@ module IBC::ChannelTest {
         // Prepare counterparty and connection
         let features = vector::empty<String>();
         vector::push_back(&mut features, string::utf8(b"ORDER_ORDERED"));
-        let version = Core::new_version(string::utf8(b"1"), features);
-        let counterparty = Core::new_connection_counterparty(string::utf8(b"counterparty-client"), connection_id, Core::new_merkleprefix(vector::empty<u8>()));
-        let connection = Core::new_connection_end(string::utf8(b"client-0"), vector::singleton(version), 3, 0, counterparty);
+        let version = connection_end::new_version(string::utf8(b"1"), features);
+        let counterparty = connection_end::new_counterparty(string::utf8(b"counterparty-client"), connection_id, vector::empty<u8>());
+        let connection = connection_end::new(string::utf8(b"client-0"), vector::singleton(version), 3, 0, counterparty);
 
         Core::set_connection(connection_id, connection);
 
         // Test ensure_connection_feature function
         let connection_hops = vector::singleton(connection_id);
         let (retrieved_connection_id, retrieved_connection_end) = Core::ensure_connection_feature(connection_hops, ORDER_ORDERED);
-        let (client_id, versions, state, delay_period, counterparty) = Core::get_connection_end(retrieved_connection_end);
         assert!(retrieved_connection_id == connection_id, 6001);
-        assert!(state == 3, 6002);
-        assert!(client_id == string::utf8(b"client-0"), 6003);
+        assert!(connection_end::state(&retrieved_connection_end) == 3, 6002);
+        assert!(*connection_end::client_id(&retrieved_connection_end) == string::utf8(b"client-0"), 6003);
     }
 
     #[test]
@@ -174,14 +167,14 @@ module IBC::ChannelTest {
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
         let connection_id = string::utf8(b"connection-0");
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             connection_id,
-            Core::new_merkleprefix(vector::empty<u8>())
+            b"",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
-            vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            vector::singleton(connection_end::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
             3, // STATE_OPEN
             0,
             counterparty
@@ -200,7 +193,7 @@ module IBC::ChannelTest {
 
         // Validate that the channel was added to the store
         let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
-        let (state, ordering, counterparty, connection_hops, version) = Core::get_channel(&stored_channel);
+        let (state, ordering, _, _, _) = Core::get_channel(&stored_channel);
 
         // Validate that the stored channel matches the expected channel
         assert!(state == 1, 8001);
@@ -216,14 +209,14 @@ module IBC::ChannelTest {
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
         let connection_id = string::utf8(b"connection-0");
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             connection_id,
-            Core::new_merkleprefix(vector::empty<u8>())
+            b"",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
-            vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            vector::singleton(connection_end::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
             3, // STATE_OPEN
             0,
             counterparty
@@ -247,14 +240,14 @@ module IBC::ChannelTest {
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
         let connection_id = string::utf8(b"connection-0");
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             connection_id,
-            Core::new_merkleprefix(vector::empty<u8>())
+            b"",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
-            vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            vector::singleton(connection_end::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
             3, // STATE_OPEN
             0,
             counterparty
@@ -276,14 +269,14 @@ public fun test_channel_open_ack(alice: &signer) {
     // Prepare a mock connection and set it in the IBCStore
     let client_id = string::utf8(b"client-0");
     let connection_id = string::utf8(b"connection-0");
-    let counterparty = Core::new_connection_counterparty(
+    let counterparty = connection_end::new_counterparty(
         string::utf8(b"counterparty-client"),
         connection_id,
-        Core::new_merkleprefix(vector::empty<u8>())
+        b"",
     );
-    let connection = Core::new_connection_end(
+    let connection = connection_end::new(
         client_id,
-        vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+        vector::singleton(connection_end::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
         3, // STATE_OPEN
         0,
         counterparty
@@ -312,8 +305,8 @@ public fun test_channel_open_ack(alice: &signer) {
 
     // Validate that the channel state has been updated to STATE_OPEN
     let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
-    let (state, ordering, counterparty, connection_hops, version) = Core::get_channel(&stored_channel);
-    let (port_id, channel_id) = Core::get_channel_counterparty(counterparty);
+    let (state, _, counterparty, _, version) = Core::get_channel(&stored_channel);
+    let (_, channel_id) = Core::get_channel_counterparty(counterparty);
     assert!(state == 3, 9001); // STATE_OPEN
     assert!(version == string::utf8(b"counterparty-version-0"), 9002);
     
@@ -329,14 +322,14 @@ public fun test_channel_open_ack(alice: &signer) {
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
         let connection_id = string::utf8(b"connection-0");
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             connection_id,
-            Core::new_merkleprefix(vector::empty<u8>())
+            b"",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
-            vector::singleton(Core::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            vector::singleton(connection_end::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
             3, // STATE_OPEN
             0,
             counterparty
@@ -371,12 +364,12 @@ public fun test_channel_open_ack(alice: &signer) {
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
         let connection_id = string::utf8(b"connection-0");
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             connection_id,
-            Core::new_merkleprefix(vector::empty<u8>())
+            b"",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
             vector::singleton(Core::default_ibc_version()),
             3, // STATE_OPEN
@@ -415,12 +408,12 @@ public fun test_channel_open_ack(alice: &signer) {
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
         let connection_id = string::utf8(b"connection-0");
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             connection_id,
-            Core::new_merkleprefix(vector::empty<u8>())
+            b"",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
             vector::singleton(Core::default_ibc_version()),
             3, // STATE_OPEN
@@ -453,12 +446,12 @@ public fun test_channel_open_ack(alice: &signer) {
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
         let connection_id = string::utf8(b"connection-0");
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             connection_id,
-            Core::new_merkleprefix(vector::empty<u8>())
+            b"",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
             vector::singleton(Core::default_ibc_version()),
             3, // STATE_OPEN
@@ -481,7 +474,7 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Validate that the channel was added to the store
         let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
-        let (state, ordering, counterparty, connection_hops, version) = Core::get_channel(&stored_channel);
+        let (state, ordering, counterparty, _, version) = Core::get_channel(&stored_channel);
 
         // Validate that the stored channel matches the expected channel
         assert!(state == 2, 8001);
@@ -498,12 +491,12 @@ public fun test_channel_open_ack(alice: &signer) {
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
         let connection_id = string::utf8(b"connection-0");
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             connection_id,
-            Core::new_merkleprefix(vector::empty<u8>())
+            b"",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
             vector::singleton(Core::default_ibc_version()),
             3, // STATE_OPEN

@@ -214,7 +214,7 @@ module IBC::ics23 {
         while (i < 10) {
             if (value < 0x80) {
                 vector::push_back(&mut buf, (value as u8));
-                break;
+                break
             } else {
                 vector::push_back(&mut buf, (((value & 0x7F) | 0x80) as u8));
                 value = value >> 7;

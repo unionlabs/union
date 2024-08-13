@@ -23,7 +23,7 @@ module IBC::proto_utils {
         while (i < 10) {
             if (value < 0x80) {
                 vector::push_back(&mut buf, (value as u8));
-                break;
+                break
             } else {
                 vector::push_back(&mut buf, (((value & 0x7F) | 0x80) as u8));
                 value = value >> 7;
@@ -126,7 +126,7 @@ module IBC::proto_utils {
         let b = *vector::borrow(buf, cursor);
         let part0 = (b as u32);
         if (b < 0x80) {
-            return ((part0 as u64), 1, 0);
+            return ((part0 as u64), 1, 0)
         };
         
         part0 = part0 - 0x80;
@@ -215,7 +215,7 @@ module IBC::proto_utils {
                     return (0, 0, 1)
                 } else {
                     return (value, (count as u64), 0)
-                };
+                }
             };
             count = count + 1;
         };

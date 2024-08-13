@@ -2,11 +2,10 @@
 module IBC::ConnectionTest {
     use aptos_std::string::{Self, String};
     use aptos_framework::vector;
-    use std::debug;
-    use IBC::Core::{Self, Version};
-    use IBC::IBCCommitment::{Self};
+    use IBC::Core;
     use IBC::height;
-    use aptos_std::any::{Self, Any};
+    use aptos_std::any;
+    use IBC::connection_end::{Version, Self};
 
     #[test]
     public fun test_default_ibc_version() {
@@ -16,11 +15,11 @@ module IBC::ConnectionTest {
         vector::push_back(&mut expected_features, string::utf8(b"ORDER_ORDERED"));
         vector::push_back(&mut expected_features, string::utf8(b"ORDER_UNORDERED"));
 
-        assert!(Core::get_version_identifier(&version) == expected_identifier, 1001);
-        let len = vector::length(&Core::get_version_features(&version));
+        assert!(*connection_end::version_identifier(&version) == expected_identifier, 1001);
+        let len = vector::length(connection_end::version_features(&version));
         assert!(len == 2, 1002);
-        assert!(vector::contains(&Core::get_version_features(&version), &string::utf8(b"ORDER_ORDERED")), 1003);
-        assert!(vector::contains(&Core::get_version_features(&version), &string::utf8(b"ORDER_UNORDERED")), 1004);
+        assert!(vector::contains(connection_end::version_features(&version), &string::utf8(b"ORDER_ORDERED")), 1003);
+        assert!(vector::contains(connection_end::version_features(&version), &string::utf8(b"ORDER_UNORDERED")), 1004);
     }
 
     #[test]
@@ -43,7 +42,7 @@ module IBC::ConnectionTest {
         let is_supported = Core::is_supported_version(&supported_versions, &version);
         assert!(is_supported, 3001);
 
-        let non_matching_version = Core::new_version(string::utf8(b"2"), vector::empty<String>());
+        let non_matching_version = connection_end::new_version(string::utf8(b"2"), vector::empty<String>());
         let is_not_supported = Core::is_supported_version(&supported_versions, &non_matching_version);
         assert!(!is_not_supported, 3002);
     }
@@ -59,9 +58,9 @@ module IBC::ConnectionTest {
         let (found_version, found) = Core::find_supported_version(&supported_versions, &version);
         
         assert!(found, 4001);
-        assert!(Core::get_version_identifier(&found_version) == Core::get_version_identifier(&version), 4002);
+        assert!(connection_end::version_identifier(&found_version) == connection_end::version_identifier(&version), 4002);
 
-        let non_matching_version = Core::new_version(string::utf8(b"2"), vector::empty<String>());
+        let non_matching_version = connection_end::new_version(string::utf8(b"2"), vector::empty<String>());
         let (_, not_found) = Core::find_supported_version(&supported_versions, &non_matching_version);
         assert!(!not_found, 4003);
     }
@@ -70,7 +69,7 @@ module IBC::ConnectionTest {
     public fun test_verify_proposed_version() {
         let supported_version = Core::default_ibc_version();
         let matching_proposed_version = Core::default_ibc_version();
-        let non_matching_proposed_version = Core::new_version(
+        let non_matching_proposed_version = connection_end::new_version(
             string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_CUSTOM"))
         );
 
@@ -87,7 +86,7 @@ module IBC::ConnectionTest {
         let counterparty_versions = vector::empty<Version>();
 
         let version1 = Core::default_ibc_version();
-        let version2 = Core::new_version(string::utf8(b"2"), vector::singleton(string::utf8(b"ORDER_ORDERED")));
+        let version2 = connection_end::new_version(string::utf8(b"2"), vector::singleton(string::utf8(b"ORDER_ORDERED")));
 
         vector::push_back(&mut supported_versions, version1);
         vector::push_back(&mut counterparty_versions, version1);
@@ -95,8 +94,8 @@ module IBC::ConnectionTest {
 
         let picked_version = Core::pick_version(&supported_versions, &counterparty_versions);
 
-        assert!(Core::get_version_identifier(&picked_version) == string::utf8(b"1"), 6001);
-        assert!(vector::length(&Core::get_version_features(&picked_version)) > 0, 6002);
+        assert!(*connection_end::version_identifier(&picked_version) == string::utf8(b"1"), 6001);
+        assert!(vector::length(connection_end::version_features(&picked_version)) > 0, 6002);
     }
 
     #[test]
@@ -105,8 +104,8 @@ module IBC::ConnectionTest {
         let supported_versions = vector::empty<Version>();
         let counterparty_versions = vector::empty<Version>();
 
-        let version1 = Core::new_version(string::utf8(b"2"), vector::singleton(string::utf8(b"ORDER_ORDERED")));
-        let version2 = Core::new_version(string::utf8(b"3"), vector::singleton(string::utf8(b"ORDER_UNORDERED")));
+        let version1 = connection_end::new_version(string::utf8(b"2"), vector::singleton(string::utf8(b"ORDER_ORDERED")));
+        let version2 = connection_end::new_version(string::utf8(b"3"), vector::singleton(string::utf8(b"ORDER_UNORDERED")));
 
         vector::push_back(&mut supported_versions, version1);
         vector::push_back(&mut counterparty_versions, version2);
@@ -120,7 +119,7 @@ module IBC::ConnectionTest {
         let dst_versions = vector::empty<Version>();
 
         let version1 = Core::default_ibc_version();
-        let version2 = Core::new_version(string::utf8(b"2"), vector::singleton(string::utf8(b"ORDER_ORDERED")));
+        let version2 = connection_end::new_version(string::utf8(b"2"), vector::singleton(string::utf8(b"ORDER_ORDERED")));
 
         vector::push_back(&mut src_versions, version1);
         vector::push_back(&mut src_versions, version2);
@@ -128,8 +127,8 @@ module IBC::ConnectionTest {
         Core::copy_versions(&src_versions, &mut dst_versions);
 
         assert!(vector::length(&dst_versions) == vector::length(&src_versions), 7001);
-        assert!(Core::get_version_identifier(vector::borrow(&dst_versions, 0)) == string::utf8(b"1"), 7002);
-        assert!(Core::get_version_identifier(vector::borrow(&dst_versions, 1)) == string::utf8(b"2"), 7003);
+        assert!(*connection_end::version_identifier(vector::borrow(&dst_versions, 0)) == string::utf8(b"1"), 7002);
+        assert!(*connection_end::version_identifier(vector::borrow(&dst_versions, 1)) == string::utf8(b"2"), 7003);
     }
 
     #[test]
@@ -138,7 +137,7 @@ module IBC::ConnectionTest {
         let dst_versions = vector::empty<Version>();
 
         let version1 = Core::default_ibc_version();
-        let version2 = Core::new_version(string::utf8(b"2"), vector::singleton(string::utf8(b"ORDER_ORDERED")));
+        let version2 = connection_end::new_version(string::utf8(b"2"), vector::singleton(string::utf8(b"ORDER_ORDERED")));
 
         vector::push_back(&mut src_versions, version1);
         vector::push_back(&mut src_versions, version2);
@@ -147,21 +146,20 @@ module IBC::ConnectionTest {
         Core::copy_versions(&src_versions, &mut dst_versions);
 
         assert!(vector::length(&dst_versions) == vector::length(&src_versions), 7004);
-        assert!(Core::get_version_identifier(vector::borrow(&dst_versions, 0)) == string::utf8(b"1"), 7005);
-        assert!(Core::get_version_identifier(vector::borrow(&dst_versions, 1)) == string::utf8(b"2"), 7006);
+        assert!(*connection_end::version_identifier(vector::borrow(&dst_versions, 0)) == string::utf8(b"1"), 7005);
+        assert!(*connection_end::version_identifier(vector::borrow(&dst_versions, 1)) == string::utf8(b"2"), 7006);
     }
 
     #[test]
     public fun test_verify_client_state_success() {
         let client_id = string::utf8(b"client-0");
-        let counterparty_prefix = Core::new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"ibc")));
         let height = height::new(0, 0);
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
-            counterparty_prefix
+            b"ibc",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
             vector::empty<Version>(),
             0,
@@ -185,29 +183,28 @@ module IBC::ConnectionTest {
     #[test]
     public fun test_verify_connection_state_success() {
         let client_id = string::utf8(b"client-0");
-        let counterparty_prefix = Core::new_merkleprefix(IBCCommitment::keccak256(string::utf8(b"ibc")));
         let height = height::new(0, 0);
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
-            counterparty_prefix
+            b"ibc",
         );
-        let connection = Core::new_connection_end(
+        let connection = connection_end::new(
             client_id,
             vector::empty<Version>(),
             0,
             0,
             counterparty
         );
-        let counterparty_connection = Core::new_connection_end(
+        let counterparty_connection = connection_end::new(
             string::utf8(b"counterparty-client"),
             vector::empty<Version>(),
             1,
             0,
-            Core::new_connection_counterparty(
+            connection_end::new_counterparty(
                 string::utf8(b"client-0"),
                 string::utf8(b"connection-0"),
-                counterparty_prefix
+                b"ibc",
             )
         );
         let proof = any::pack(vector::empty<u8>());
@@ -236,18 +233,17 @@ module IBC::ConnectionTest {
         assert!(identifier2 == expected_identifier2, 10002);
     }
 
-    #[test(alice = @IBC, relayer=@mock_relayer_address, relayer_2=@mock_relayer_address)]
-    public fun test_connection_open_init_success(alice: &signer, relayer: address, relayer_2: address) {
+    #[test(alice = @IBC)]
+    public fun test_connection_open_init_success(alice: &signer) {
         Core::create_ibc_store(alice);
 
         let client_id = string::utf8(b"client-0");
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
-        let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
-            counterparty_prefix
+            b"ibc",
         );
 
         let connection_id_1 = Core::connection_open_init(
@@ -260,21 +256,20 @@ module IBC::ConnectionTest {
         let connection = Core::get_connection(connection_id_1);
         let commitment = Core::get_connection_commitment(connection_id_1);
 
-        assert!(Core::get_connection_client_id(&connection) == client_id, 1001);
-        assert!(vector::length(&Core::get_connection_versions(&connection)) > 0, 1002);
-        assert!(Core::get_connection_state(&connection) == 1, 1003);
-        assert!(Core::get_connection_delay_period(&connection) == delay_period, 1004);
+        assert!(*connection_end::client_id(&connection) == client_id, 1001);
+        assert!(vector::length(connection_end::versions(&connection)) > 0, 1002);
+        assert!(connection_end::state(&connection) == 1, 1003);
+        assert!(connection_end::delay_period(&connection) == delay_period, 1004);
         assert!(vector::length(&commitment) > 0, 1005);
 
         // Create a second connection
         let client_id_2 = string::utf8(b"client-1");
         let version_2 = Core::default_ibc_version();
         let delay_period_2: u64 = 0;
-        let counterparty_prefix_2 = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty_2 = Core::new_connection_counterparty(
+        let counterparty_2 = connection_end::new_counterparty(
             string::utf8(b"counterparty-client-1"),
             string::utf8(b"connection-1"),
-            counterparty_prefix_2
+            b"",
         );
 
         let connection_id_2 = Core::connection_open_init(
@@ -287,29 +282,28 @@ module IBC::ConnectionTest {
         let connection_2 = Core::get_connection(connection_id_2);
         let commitment_2 = Core::get_connection_commitment(connection_id_2);
 
-        assert!(Core::get_connection_client_id(&connection_2) == client_id_2, 2001);
-        assert!(vector::length(&Core::get_connection_versions(&connection_2)) > 0, 2002);
-        assert!(Core::get_connection_state(&connection_2) == 1, 2003);
-        assert!(Core::get_connection_delay_period(&connection_2) == delay_period_2, 2004);
+        assert!(*connection_end::client_id(&connection_2) == client_id_2, 2001);
+        assert!(vector::length(connection_end::versions(&connection_2)) > 0, 2002);
+        assert!(connection_end::state(&connection_2) == 1, 2003);
+        assert!(connection_end::delay_period(&connection_2) == delay_period_2, 2004);
         assert!(vector::length(&commitment_2) > 0, 2005);
 
         // Ensure that the connection IDs are unique
         assert!(connection_id_1 != connection_id_2, 2006);
     }
 
-    #[test(alice = @IBC, relayer=@mock_relayer_address)]
-    public fun test_connection_open_try_success(alice: &signer, relayer:address) {
+    #[test(alice = @IBC)]
+    public fun test_connection_open_try_success(alice: &signer) {
         // Initialize the IBC store
         Core::create_ibc_store(alice);
 
         let client_id = string::utf8(b"client-0");
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
-        let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
-            counterparty_prefix
+            b"",
         );
 
         // Mock data for proof
@@ -319,7 +313,6 @@ module IBC::ConnectionTest {
         let proof_consensus = vector::empty<u8>();
         let client_state_bytes = vector::empty<u8>();
         let counterparty_versions = vector::singleton(version);
-        let counterparty_connection_id = string::utf8(b"connection-0");
 
         // Call connection_open_try
         let connection_id = Core::connection_open_try(
@@ -340,22 +333,22 @@ module IBC::ConnectionTest {
         let commitment = Core::get_connection_commitment(connection_id);
 
         // Assertions
-        assert!(Core::get_connection_client_id(&connection) == client_id, 1001);
-        assert!(vector::length(&Core::get_connection_versions(&connection)) > 0, 1002);
-        assert!(Core::get_connection_state(&connection) == 2, 1003); // STATE_TRYOPEN
-        assert!(Core::get_connection_delay_period(&connection) == delay_period, 1004);
+        assert!(*connection_end::client_id(&connection) == client_id, 1001);
+        assert!(vector::length(connection_end::versions(&connection)) > 0, 1002);
+        assert!(connection_end::state(&connection) == 2, 1003); // STATE_TRYOPEN
+        assert!(connection_end::delay_period(&connection) == delay_period, 1004);
         assert!(vector::length(&commitment) > 0, 1005);
 
         // Verify that the counterparty fields are set correctly
-        assert!(Core::get_connection_counterparty_client_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"counterparty-client"), 1006);
-        assert!(Core::get_connection_counterparty_connection_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"connection-0"), 1007);
+        assert!(*connection_end::conn_counterparty_client_id(&connection) == string::utf8(b"counterparty-client"), 1006);
+        assert!(*connection_end::conn_counterparty_connection_id(&connection) == string::utf8(b"connection-0"), 1007);
 
         // Add second connection to check if the connection state is increasing
         let new_client_id = string::utf8(b"client-1");
-        let new_counterparty = Core::new_connection_counterparty(
+        let new_counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client-1"),
             string::utf8(b"connection-1"),
-            counterparty_prefix
+            b"",
         );
 
 
@@ -379,26 +372,25 @@ module IBC::ConnectionTest {
         let new_connection = Core::get_connection(new_connection_id);
 
         // Assertions for the second connection
-        assert!(Core::get_connection_client_id(&new_connection) == new_client_id, 1008);
-        assert!(vector::length(&Core::get_connection_versions(&new_connection)) > 0, 1009);
-        assert!(Core::get_connection_state(&new_connection) == 2, 1010); // STATE_TRYOPEN
-        assert!(Core::get_connection_delay_period(&new_connection) == delay_period, 1011);
+        assert!(*connection_end::client_id(&new_connection) == new_client_id, 1008);
+        assert!(vector::length(connection_end::versions(&new_connection)) > 0, 1009);
+        assert!(connection_end::state(&new_connection) == 2, 1010); // STATE_TRYOPEN
+        assert!(connection_end::delay_period(&new_connection) == delay_period, 1011);
     }
 
 
-    #[test(alice = @IBC, relayer=@mock_relayer_address)]   
-    public fun test_connection_open_ack_success(alice: &signer, relayer:address) {
+    #[test(alice = @IBC)]   
+    public fun test_connection_open_ack_success(alice: &signer) {
         // Initialize the IBC store
         Core::create_ibc_store(alice);
 
         let client_id = string::utf8(b"client-0");
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
-        let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
-            counterparty_prefix
+            b"",
         );
 
         // Call connection_open_init
@@ -435,22 +427,22 @@ module IBC::ConnectionTest {
         let commitment = Core::get_connection_commitment(connection_id);
 
         // Assertions
-        assert!(Core::get_connection_client_id(&connection) == client_id, 1001);
-        assert!(vector::length(&Core::get_connection_versions(&connection)) > 0, 1002);
-        assert!(Core::get_connection_state(&connection) == 3, 1003); // STATE_OPEN
-        assert!(Core::get_connection_delay_period(&connection) == delay_period, 1004);
+        assert!(*connection_end::client_id(&connection) == client_id, 1001);
+        assert!(vector::length(connection_end::versions(&connection)) > 0, 1002);
+        assert!(connection_end::state(&connection) == 3, 1003); // STATE_OPEN
+        assert!(connection_end::delay_period(&connection) == delay_period, 1004);
         assert!(vector::length(&commitment) > 0, 1005);
 
         // Verify that the counterparty fields are set correctly
-        assert!(Core::get_connection_counterparty_client_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"counterparty-client"), 1006);
-        assert!(Core::get_connection_counterparty_connection_id(&Core::get_connection_counterparty(&connection)) == string::utf8(b"connection-0"), 1007);
+        assert!(*connection_end::conn_counterparty_client_id(&connection) == string::utf8(b"counterparty-client"), 1006);
+        assert!(*connection_end::conn_counterparty_connection_id(&connection) == string::utf8(b"connection-0"), 1007);
 
         // Add second connection to check if the connection state is increasing
         let new_client_id = string::utf8(b"client-1");
-        let new_counterparty = Core::new_connection_counterparty(
+        let new_counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client-1"),
             string::utf8(b"connection-1"),
-            counterparty_prefix
+            b"",
         );
         let new_connection_id = Core::connection_open_init(
             new_client_id,
@@ -485,28 +477,28 @@ module IBC::ConnectionTest {
         let new_commitment = Core::get_connection_commitment(new_connection_id);
 
         // Assertions for the new connection
-        assert!(Core::get_connection_client_id(&new_connection) == new_client_id, 2001);
-        assert!(vector::length(&Core::get_connection_versions(&new_connection)) > 0, 2002);
-        assert!(Core::get_connection_state(&new_connection) == 3, 2003); // STATE_OPEN
-        assert!(Core::get_connection_delay_period(&new_connection) == delay_period, 2004);
+        assert!(*connection_end::client_id(&new_connection) == new_client_id, 2001);
+        assert!(vector::length(connection_end::versions(&new_connection)) > 0, 2002);
+        assert!(connection_end::state(&new_connection) == 3, 2003); // STATE_OPEN
+        assert!(connection_end::delay_period(&new_connection) == delay_period, 2004);
         assert!(vector::length(&new_commitment) > 0, 2005);
-        assert!(Core::get_connection_counterparty_client_id(&Core::get_connection_counterparty(&new_connection)) == string::utf8(b"counterparty-client-1"), 2006);
-        assert!(Core::get_connection_counterparty_connection_id(&Core::get_connection_counterparty(&new_connection)) == string::utf8(b"connection-1"), 2007);
+        assert!(*connection_end::conn_counterparty_client_id(&new_connection) == string::utf8(b"counterparty-client-1"), 2006);
+        assert!(*connection_end::conn_counterparty_connection_id(&new_connection) == string::utf8(b"connection-1"), 2007);
     }
    
 
-    #[test(alice = @IBC, relayer=@mock_relayer_address)]   
-    public fun test_connection_open_confirm_success(alice: &signer, relayer:address) {
+    #[test(alice = @IBC)]   
+    public fun test_connection_open_confirm_success(alice: &signer) {
         Core::create_ibc_store(alice);
 
         let client_id = string::utf8(b"client-0");
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
-        let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty_prefix = vector::empty<u8>();
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
-            counterparty_prefix
+            counterparty_prefix,
         );
 
         // Mock data for proof
@@ -541,27 +533,27 @@ module IBC::ConnectionTest {
         let commitment = Core::get_connection_commitment(connection_id);
 
         // Assertions
-        assert!(Core::get_connection_client_id(&updated_connection) == client_id, 1001);
-        assert!(vector::length(&Core::get_connection_versions(&updated_connection)) > 0, 1002);
-        assert!(Core::get_connection_state(&updated_connection) == 3, 1003); // STATE_OPEN
-        assert!(Core::get_connection_delay_period(&updated_connection) == delay_period, 1004);
+        assert!(*connection_end::client_id(&updated_connection) == client_id, 1001);
+        assert!(vector::length(connection_end::versions(&updated_connection)) > 0, 1002);
+        assert!(connection_end::state(&updated_connection) == 3, 1003); // STATE_OPEN
+        assert!(connection_end::delay_period(&updated_connection) == delay_period, 1004);
         assert!(vector::length(&commitment) > 0, 1005);
 
         // Verify that the counterparty fields are set correctly
-        assert!(Core::get_connection_counterparty_client_id(&Core::get_connection_counterparty(&updated_connection)) == string::utf8(b"counterparty-client"), 1006);
-        assert!(Core::get_connection_counterparty_connection_id(&Core::get_connection_counterparty(&updated_connection)) == string::utf8(b"connection-0"), 1007);
+        assert!(*connection_end::conn_counterparty_client_id(&updated_connection) == string::utf8(b"counterparty-client"), 1006);
+        assert!(*connection_end::conn_counterparty_connection_id(&updated_connection) == string::utf8(b"connection-0"), 1007);
     }
 
-    #[test(alice = @IBC, relayer=@mock_relayer_address)]   
+    #[test(alice = @IBC)]   
     #[expected_failure(abort_code = 1008)] // E_INVALID_CONNECTION_STATE
-    public fun test_connection_open_confirm_failure_invalid_state(alice: &signer, relayer:address) {
+    public fun test_connection_open_confirm_failure_invalid_state(alice: &signer) {
         Core::create_ibc_store(alice);
 
         let client_id = string::utf8(b"client-0");
         let version = Core::default_ibc_version();
         let delay_period: u64 = 0;
-        let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
-        let counterparty = Core::new_connection_counterparty(
+        let counterparty_prefix = vector::empty<u8>();
+        let counterparty = connection_end::new_counterparty(
             string::utf8(b"counterparty-client"),
             string::utf8(b"connection-0"),
             counterparty_prefix

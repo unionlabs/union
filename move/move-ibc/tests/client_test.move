@@ -1,15 +1,8 @@
 #[test_only]
 module IBC::ClientTest {
 
-    use std::signer;
-    use std::account;
-    use std::vector;
-    use std::debug;
-    use aptos_std::string::{Self, String};
-    use aptos_framework::coin::Coin;
-    use aptos_framework::aptos_coin::AptosCoin;
-    use aptos_framework::event;
-    use aptos_std::any::{Self, Any};
+    use aptos_std::string;
+    use aptos_std::any;
     use IBC::height;
     use IBC::Core;
     use IBC::LightClient;
@@ -42,7 +35,6 @@ module IBC::ClientTest {
 
         // Register the mock client type and address
         let client_type = string::utf8(b"mock_client");
-        let mock_address = @0x2; // This would be the address of the MockLightClient in a real scenario
 
         let expected_client_id = string::utf8(b"mock_client-0");
 
@@ -72,7 +64,6 @@ module IBC::ClientTest {
 
         // Register the mock client type and address
         let client_type2 = string::utf8(b"another_client");
-        let mock_address2 = @0x2; // This would be the address of the MockLightClient in a real scenario
 
         let expected_client_id2 = string::utf8(b"another_client-1");
 

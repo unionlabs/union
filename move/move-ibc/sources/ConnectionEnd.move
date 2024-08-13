@@ -57,6 +57,16 @@ module IBC::connection_end {
         }
     }
 
+    public fun new_version(
+        identifier: String,
+        features: vector<String>,
+    ): Version {
+        Version {
+            identifier,
+            features,
+        }
+    }
+
     public fun delay_period(connection_end: &ConnectionEnd): u64 {
         connection_end.delay_period
     }
@@ -81,24 +91,52 @@ module IBC::connection_end {
         &connection_end.client_id
     }
 
-    public fun counterparty_client_id(connection_end: &ConnectionEnd): &String {
+    public fun conn_counterparty_client_id(connection_end: &ConnectionEnd): &String {
         &connection_end.counterparty.client_id
     }
 
-    public fun counterparty_connection_id(connection_end: &ConnectionEnd): &String {
+    public fun conn_counterparty_connection_id(connection_end: &ConnectionEnd): &String {
         &connection_end.counterparty.connection_id
     }
 
-    public fun set_counterparty_connection_id(connection_end: &mut ConnectionEnd, connection_id: String) {
+    public fun set_conn_counterparty_connection_id(connection_end: &mut ConnectionEnd, connection_id: String) {
         connection_end.counterparty.connection_id = connection_id;
     }
 
-    public fun counterparty_key_prefix(connection_end: &ConnectionEnd): &vector<u8> {
+    public fun conn_counterparty_key_prefix(connection_end: &ConnectionEnd): &vector<u8> {
         &connection_end.counterparty.prefix.key_prefix
+    }
+
+    public fun counterparty_connection_id(counterparty: &Counterparty): &String {
+        &counterparty.connection_id
+    }
+
+    public fun counterparty_client_id(counterparty: &Counterparty): &String {
+        &counterparty.client_id
     }
 
     public fun version_features(version: &Version): &vector<String> {
         &version.features
+    }
+
+    public fun version_features_mut(version: &mut Version): &mut vector<String> {
+        &mut version.features
+    }
+
+    public fun version_identifier(version: &Version): &String {
+        &version.identifier
+    }
+
+    public fun version_identifier_mut(version: &mut Version): &mut String {
+        &mut version.identifier
+    }
+
+    public fun set_version_features(version: &mut Version, features: vector<String>) {
+        version.features = features;
+    } 
+
+    public fun set_version_identifier(version: &mut Version, identifier: String) {
+        version.identifier = identifier;
     }
 
     public fun default(): ConnectionEnd {
@@ -117,7 +155,7 @@ module IBC::connection_end {
         }
     }
 
-    fun default_version(): Version {
+    public fun default_version(): Version {
         Version {
             identifier: string::utf8(b""),
             features: vector::empty(),
@@ -353,8 +391,6 @@ module IBC::connection_end {
 
     #[test]
     fun test_proto() {
-        let encoded_s = x"0a0a636f6d6574626c732d311003186422200a0930382d7761736d2d30120c636f6e6e656374696f6e2d301a050a03010203";
-
         let conn_end = ConnectionEnd {
             client_id: string::utf8(b"cometbls-1"),
             versions: vector<Version>[
@@ -379,8 +415,6 @@ module IBC::connection_end {
         };
 
         let res = encode_proto(conn_end);
-
-        // assert!(res == encoded_s, 0);
 
         let conn = option::extract(&mut decode_proto(res));
         assert!(conn == conn_end,  0)

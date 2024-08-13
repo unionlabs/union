@@ -1,8 +1,5 @@
 module IBCModuleAddr::PingPong {
-    use std::signer;
-    use std::vector;
     use aptos_framework::event;
-    use aptos_framework::account::{Self as AptosAccount};
     // use aptos_framework::timestamp;
     use aptos_std::string::{Self, String};
     use IBC::Core;
@@ -48,8 +45,8 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun initiate(
-        packet: PingPongPacket,
-        local_timeout: u64
+        _packet: PingPongPacket,
+        _local_timeout: u64
     ) acquires PingPong {
         let pp = borrow_global<PingPong>(@0x1); // assuming @0x1 is the address of the PingPong instance
         if (string::length(&pp.channel_id) == 0) {
@@ -66,9 +63,9 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun on_recv_packet(
-        packet: Core::IbcCoreChannelV1Packet,
-        proof: Any,
-        proof_height: height::Height
+        _packet: Core::IbcCoreChannelV1Packet,
+        _proof: Any,
+        _proof_height: height::Height
     ) {
         // Here we'll call on_recv_packet of ibc module and it will return packet
 
@@ -85,45 +82,45 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun on_acknowledgement_packet(
-        packet: Core::IbcCoreChannelV1Packet,
+        _packet: Core::IbcCoreChannelV1Packet,
         acknowledgement: vector<u8>
     ) {
         if (acknowledgement != ACK_SUCCESS) {
-            abort ERR_INVALID_ACK;
+            abort ERR_INVALID_ACK
         };
         event::emit(AcknowledgedEvent {});
     }
 
     public fun on_timeout_packet(
-        packet: Core::IbcCoreChannelV1Packet
+        _packet: Core::IbcCoreChannelV1Packet
     )  {
         event::emit(TimedOutEvent {});
     }
 
     public fun on_chan_open_init(
-        port_id: String,
+        _port_id: String,
         channel_id: String
     ) acquires PingPong {
         if (string::length(&borrow_global<PingPong>(@0x1).channel_id) != 0) {
-            abort ERR_ONLY_ONE_CHANNEL;
+            abort ERR_ONLY_ONE_CHANNEL
         };
         // Store the channel_id
         borrow_global_mut<PingPong>(@0x1).channel_id = channel_id;
     }
 
     public fun on_chan_open_try(
-        port_id: String,
+        _port_id: String,
         channel_id: String
     ) acquires PingPong {
         if (string::length(&borrow_global<PingPong>(@0x1).channel_id) != 0) {
-            abort ERR_ONLY_ONE_CHANNEL;
+            abort ERR_ONLY_ONE_CHANNEL
         };
         // Store the channel_id
         borrow_global_mut<PingPong>(@0x1).channel_id = channel_id;
     }
 
     public fun on_chan_open_ack(
-        port_id: String,
+        _port_id: String,
         channel_id: String
     ) acquires PingPong {
         // Store the channel_id
@@ -142,17 +139,17 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun on_chan_close_init(
-        port_id: String,
-        channel_id: String
+        _port_id: String,
+        _channel_id: String
     ) {
-        abort ERR_INFINITE_GAME;
+        abort ERR_INFINITE_GAME
     }
 
     public fun on_chan_close_confirm(
-        port_id: String,
-        channel_id: String
+        _port_id: String,
+        _channel_id: String
     ) {
-        abort ERR_INFINITE_GAME;
+        abort ERR_INFINITE_GAME
     }
 
     public fun initialize(
