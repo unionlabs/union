@@ -8,9 +8,8 @@ import {
   type Account,
   publicActions,
   type Transport,
-  type WalletClientConfig,
   createWalletClient,
-  rpcSchema
+  type WalletClientConfig
 } from "viem"
 import {
   byteArrayToHex,
@@ -26,7 +25,8 @@ import {
   isValidEvmTxHash,
   isValidEvmAddress,
   isValidCosmosTxHash,
-  isValidBech32Address
+  isValidBech32Address,
+  extractBech32AddressPrefix
 } from "./utilities/address.ts"
 import {
   ibcTransfer,
@@ -68,7 +68,8 @@ export {
   isValidBech32Address,
   bech32ToBech32Address,
   hexStringToUint8Array,
-  uint8ArrayToHexString
+  uint8ArrayToHexString,
+  extractBech32AddressPrefix
 }
 
 export type * from "./types.ts"
@@ -97,14 +98,6 @@ export interface TransferAssetsParameters {
   evmSigner?: `0x${string}` | Account | undefined
 }
 
-export type CustomRpcSchema = [
-  {
-    Method: "Foo"
-    Parameters: [string]
-    ReturnType: string
-  }
-]
-
 export function createCosmosSdkClient({
   evm,
   cosmos
@@ -128,8 +121,7 @@ export function createCosmosSdkClient({
     ...evm,
     chain,
     transport,
-    account: evm?.account,
-    rpcSchema: rpcSchema<CustomRpcSchema>()
+    account: evm?.account
   })
     .extend(publicActions)
     .extend(() => ({ offchainQuery }))
@@ -142,8 +134,11 @@ export function createCosmosSdkClient({
       hexStringToUint8Array,
       uint8ArrayToHexString,
       truncateAddress,
+      isValidEvmTxHash,
       isValidEvmAddress,
-      isValidBech32Address
+      isValidCosmosTxHash,
+      isValidBech32Address,
+      extractBech32AddressPrefix
     }))
     .extend(() => ({
       createPfmMemo

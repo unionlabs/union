@@ -1,25 +1,17 @@
 <script lang="ts">
 import {
-  switchChain,
-  writeContract,
-  simulateContract,
-  getConnectorClient,
-  waitForTransactionReceipt
-} from "@wagmi/core"
-import {
   cosmosHttp,
   createPfmMemo,
   truncateAddress,
   bytesToBech32Address,
+  bech32ToBech32Address,
   createCosmosSdkClient,
   type TransactionResponse,
-  type TransferAssetsParameters,
-  bech32ToBech32Address
+  type TransferAssetsParameters
 } from "@union/client"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { toast } from "svelte-sonner"
-import { goto } from "$app/navigation"
 import Chevron from "./chevron.svelte"
 import { useMachine } from "@xstate/svelte"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
@@ -28,14 +20,12 @@ import { cosmosStore } from "$lib/wallet/cosmos"
 import { raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"
 import { userBalancesQuery } from "$lib/queries/balance"
-import { transferStateMachine } from "../state-machine.ts"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
+import { transferStateMachine } from "../state-machine.ts"
 import { userAddrOnChain } from "$lib/utilities/address.ts"
-import ChainsGate from "$lib/components/chains-gate.svelte"
 import { createBrowserInspector } from "@statelyai/inspect"
-import WalletGate from "$lib/components/wallet-gate.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
@@ -46,16 +36,16 @@ import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
 import { get, derived, writable, type Writable, type Readable } from "svelte/store"
 import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address } from "viem"
+import { userAddrEvm } from "$lib/wallet/evm"
 import ChainButton from "./chain-button.svelte"
 import ChainDialog from "./chain-dialog.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
+import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { truncate } from "$lib/utilities/format.ts"
 import DevTools from "$lib/components/dev-tools.svelte"
 import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
 
-export let connected: boolean
 export let chains: Array<Chain>
-export let userAddresses: UserAddresses
 export let rawChains: Array<ChainsQueryResult>
 
 const { inspect, ...inspector } = createBrowserInspector({
@@ -87,7 +77,22 @@ let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [false, false, f
 $: recipient = $snapshot.context?.["RECIPIENT"] ?? ""
 $: sourceChain = chains.find(({ chain_id }) => chain_id === $snapshot.context["SOURCE_CHAIN_ID"])
 
-let _assetBalances = userBalancesQuery({ chains, userAddresses, connected })
+let userAddress = derived(
+  [userAddrEvm, userAddrCosmos],
+  ([$userAddrEvm, $userAddrCosmos]) =>
+    ({
+      evm: $userAddrEvm,
+      cosmos: $userAddrCosmos
+    }) as UserAddresses
+)
+
+let _assetBalances = userBalancesQuery({
+  chains,
+  connected: true,
+  // @ts-expect-error
+  userAddresses: { evm: $userAddrEvm, cosmos: $userAddrCosmos }
+})
+
 let assetBalances = derived(_assetBalances, $_assetBalances => {
   const chainIndex = chains.findIndex(({ chain_id }) => chain_id === sourceChain?.chain_id)
   return $_assetBalances[chainIndex]?.data ?? []
@@ -361,9 +366,8 @@ async function transferASS() {
 </div>
 
 <ChainDialog
-  {connected}
   kind="from"
-  userAddr={userAddresses}
+  userAddr={$userAddress ?? null}
   bind:dialogOpen={dialogOpenFromChain}
   chains={chains.filter(c => c.enabled_staging)}
   selectedChain={`${$snapshot.context["SOURCE_CHAIN_ID"]}`}
@@ -379,8 +383,7 @@ async function transferASS() {
 
 <ChainDialog
   kind="to"
-  {connected}
-  userAddr={userAddresses}
+  userAddr={$userAddress ?? null}
   bind:dialogOpen={dialogOpenToChain}
   chains={chains.filter(c => c.enabled_staging)}
   selectedChain={`${$snapshot.context["DESTINATION_CHAIN_ID"]}`}

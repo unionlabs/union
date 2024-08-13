@@ -9,11 +9,11 @@ import { Button } from "$lib/components/ui/button/index.ts"
 type DialogChain = Pick<Chain, "chain_id" | "display_name" | "rpc_type">
 
 export let dialogOpen = false
-export let connected: boolean
 export let kind: "from" | "to"
 export let selectedChain: string
 export let chains: Array<DialogChain>
 export let userAddr: UserAddresses | null
+export let onChainSelect: (newSelectedChain: string) => void
 
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 

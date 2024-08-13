@@ -15,15 +15,15 @@ import {
   switchChain as _switchChain,
   createStorage as createWagmiStorage
 } from "@wagmi/core"
+import type { Address } from "viem"
 import { sleep } from "$lib/utilities"
-import { derived, writable, type Readable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
 import { APP_INFO } from "$lib/constants/app.ts"
-import type { ChainWalletStore } from "$lib/wallet/types"
-import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "@wagmi/core/chains"
-import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
 import type { UserAddressEvm } from "$lib/types"
-import type { Address } from "viem"
+import type { ChainWalletStore } from "$lib/wallet/types"
+import { derived, writable, type Readable } from "svelte/store"
+import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "@wagmi/core/chains"
 
 const chains = [sepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]

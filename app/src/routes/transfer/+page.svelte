@@ -1,14 +1,14 @@
 <script lang="ts">
+import Transfer from "./(components)/transfer.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
-import TransferForm from "./(components)/transfer-form.svelte"
 </script>
 
 <svelte:head>
   <title>Union | Send</title>
 </svelte:head>
 
-<ChainsGate let:chains>
+<ChainsGate let:chains let:rawChains>
   <div class="w-full flex flex-col items-center">
-    <TransferForm {chains}/>
+    <Transfer {rawChains} {chains} />
   </div>
 </ChainsGate>
