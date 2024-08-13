@@ -20,8 +20,6 @@ The upgradability of contracts on other chains, connections, token configuration
 
 ## Components
 
-This repository hosts a all core components of Union.
-
 | Component                          | Description                                        | Language(s)           |
 | ---------------------------------- | -------------------------------------------------- | --------------------- |
 | [`uniond`](./uniond)               | The Union node implementation, using [`CometBLS`]. | [Go]                  |
@@ -34,7 +32,29 @@ This repository hosts a all core components of Union.
 | [`app`](./app)                     | [app.union.build](https://app.union.build).        | [TypeScript] [Svelte] |
 | [`site`](./site)                   | [union.build](https://union.build).                | [TypeScript] [Astro]  |
 
-You can find these components in the [releases](https://github.com/unionlabs/union/releases).
+## Quickstart
+
+Install [Nix] to _reproducibly build any component_, and to enter a dev shell with _all dependencies_:
+```
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+```
+_(Note that some components are only buildable on Linux. If you are using macOS, we recommend using [OrbStack] to easily set up a [NixOS] VM within two minutes. Most Union developers use macOS with [OrbStack], and there is no need to install Nix inside of the NixOS VM.)_
+
+You can now _reproducibly_ build any of our componets from source:
+
+```
+nix build .#uniond -L
+nix build .#voyager -L
+nix build .#app -L
+# etc
+```
+
+The result of whatever you build will be in `result/`
+
+You can now also enter our devShell, which has all of the packages/dependencies you need to work on any Union component. Don't worry, this will not affect your system outside of this repo:
+```
+nix develop
+```
 
 ## Documentation
 
@@ -61,3 +81,6 @@ Please make sure to [set up your GitHub PAT](<https://github.com/unionlabs/union
 [`CometBLS`]: https://github.com/unionlabs/cometbls
 [Light Clients]: https://a16zcrypto.com/posts/article/an-introduction-to-light-clients/
 [Gnark]: https://github.com/ConsenSys/gnark
+[Nix]: https://zero-to-nix.com/
+[NixOS]: https://nixos.org
+[OrbStack]: https://orbstack.dev/
