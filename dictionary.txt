@@ -1023,6 +1023,7 @@ sprembo
 sqlx
 squoosh
 srcs
+srcset
 sslmode
 ssse
 stablecoins
