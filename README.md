@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./.github/images/union-logo-white.svg">
     <source media="(prefers-color-scheme: light)" srcset="./.github/images/union-logo-black.svg">
-    <img alt="The Rust Programming Language: A language empowering everyone to build reliable and efficient software"
+    <img alt="Union"
          src="./.github/images/union-logo-black.svg"
          width="50%">
   </picture>
