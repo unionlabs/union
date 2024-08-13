@@ -1,4 +1,4 @@
-module IBC::channel_end {
+module IBC::channel {
     use std::option::{Self, Option};
     use std::string::{String, utf8};
     use std::vector;
@@ -25,6 +25,54 @@ module IBC::channel_end {
     struct Counterparty has copy, store, drop {
         port_id: String,
         channel_id: String,
+    }
+
+    public fun state(channel: &Channel): u8 {
+        channel.state
+    }
+
+    public fun ordering(channel: &Channel): u8 {
+        channel.ordering
+    }
+
+    public fun chan_counterparty_port_id(channel: &Channel): &String {
+        &channel.counterparty.port_id
+    }
+
+    public fun chan_counterparty_channel_id(channel: &Channel): &String {
+        &channel.counterparty.channel_id
+    }
+
+    public fun connection_hops(channel: &Channel): &vector<String> {
+        &channel.connection_hops
+    }
+
+    public fun version(channel: &Channel): &String {
+        &channel.version
+    }
+
+    public fun counterparty_port_id(counterparty: &Counterparty): &String {
+        &counterparty.port_id
+    }
+
+    public fun counterparty_channel_id(counterparty: &Counterparty): &String {
+        &counterparty.channel_id
+    }
+
+    public fun set_state(channel: &mut Channel, state: u8) {
+        channel.state = state;
+    }
+
+    public fun set_version(channel: &mut Channel, version: String) {
+        channel.version = version;
+    }
+
+    public fun set_ordering(channel: &mut Channel, ordering: u8) {
+        channel.ordering = ordering;
+    }
+
+    public fun set_chan_counterparty_channel_id(channel: &mut Channel, channel_id: String) {
+        channel.counterparty.channel_id = channel_id;
     }
 
     public fun new(
