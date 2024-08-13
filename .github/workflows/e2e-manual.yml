@@ -22,6 +22,8 @@ jobs:
       - name: Set Secrets Output
         id: op-set-secret
         run: |
+          echo "UNION_ORG_PAT=$UNION_ORG_PAT"
+          echo "NIXBUILD_TOKEN=$NIXBUILD_TOKEN"
           echo "UNION_ORG_PAT=$UNION_ORG_PAT" >> $GITHUB_OUTPUT
           echo "NIXBUILD_TOKEN=$NIXBUILD_TOKEN" >> $GITHUB_OUTPUT
 
