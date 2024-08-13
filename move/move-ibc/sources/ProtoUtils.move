@@ -233,6 +233,12 @@ module IBC::proto_utils {
         prefix
     }
 
+    public fun encode_u32(field: u8, value: u32): vector<u8> {
+        let prefix = encode_prefix(field, 0);
+        vector::append(&mut prefix, encode_varint((value as u64)));
+        prefix
+    }
+
     #[test]
     public fun test_varint() {
         let exp = vector<u64> [
