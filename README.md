@@ -13,8 +13,7 @@
   [![Twitter handle][]][Twitter badge]
 </div>
 
-
-Union is a trust-minimized, decentralized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security, and usage in decentralized finance. It implements [IBC] for compatibility with Cosmos chains and connects to EVM chains like Ethereum, Berachain, Arbitrum, and more.
+Union is a hyper-efficient zero-knowledge infrastructure layer for general message passing, asset transfers, NFTs, and DeFi. It’s based on [Consensus Verification] and has no dependencies on trusted third parties, oracles, multi-signatures, or MPC. It implements [IBC] for compatibility with Cosmos chains and connects to EVM chains like Ethereum, Berachain, Arbitrum, and more.
 
 The upgradability of contracts on other chains, connections, token configurations, and evolution of the protocol will all be controlled by decentralized governance, aligning the priorities of Union with its users, validators, and operators.
 
@@ -34,25 +33,29 @@ The upgradability of contracts on other chains, connections, token configuration
 
 ## Quickstart
 
-Install [Nix] to _reproducibly build any component_, and to enter a dev shell with _all dependencies_:
+Install [Nix] to _[reproducibly build](https://en.wikipedia.org/wiki/Reproducible_builds) any component_, and to enter a devShell with _all dependencies_:
 ```
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 ```
-_(Note that some components are only buildable on Linux. If you are using macOS, we recommend using [OrbStack] to easily set up a [NixOS] VM within two minutes. Most Union developers use macOS with [OrbStack], and there is no need to install Nix inside of the NixOS VM.)_
+_(Note that some components can only be built on Linux. If you are using macOS, we recommend using [OrbStack] to easily set up a [NixOS] VM within two minutes. Most Union developers use macOS with [OrbStack], and there is no need to install Nix inside of the NixOS VM.)_
 
-You can now _reproducibly_ build any of our componets from source:
+You can now _reproducibly_ build any of Union's components from source:
 
-```
+```sh
 nix build .#uniond -L
 nix build .#voyager -L
 nix build .#app -L
-# etc
+
+# to see all packages, run:
+nix flake show
 ```
 
 The result of whatever you build will be in `result/`
 
-You can now also enter our devShell, which has all of the packages/dependencies you need to work on any Union component. Don't worry, this will not affect your system outside of this repo:
-```
+You can now also enter our devShell, which has all of the dependencies (`cargo`, `rustc`, `node`, `go`, etc.) you need to work on any component: 
+_(Don't worry, this will not affect your system outside of this repo)_
+
+```sh
 nix develop
 ```
 
@@ -84,3 +87,4 @@ Please make sure to [set up your GitHub PAT](<https://github.com/unionlabs/union
 [Nix]: https://zero-to-nix.com/
 [NixOS]: https://nixos.org
 [OrbStack]: https://orbstack.dev/
+[Consensus Verification]: https://union.build/docs/concepts/consensus-verification/
