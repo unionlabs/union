@@ -22,17 +22,17 @@ The upgradability of contracts on other chains, connections, token configuration
 
 This repository hosts a all core components of Union.
 
-| Component                          | Description                                        | Language(s)   |
-| ---------------------------------- | -------------------------------------------------- | ------------- |
-| [`uniond`](./uniond)               | The Union node implementation, using [`CometBLS`]. | [Go]          |
-| [`galoisd`](./galoisd)             | The zero-knowledge prover implementation.          | [Go]          |
-| [`voyager`](./voyager)             | Modualar hyper-performant cross-ecosystem relayer. | [Rust]        |
-| [`unionvisor`](./unionvisor)       | Node supervisor intended for production usage      | [Rust]        |
-| [`cosmwasm`](./cosmwasm)           | [CosmWasm] smart contract stack.                   | [Rust]        |
-| [`light-clients`](./light-clients) | [Light Clients] for various ecosystems.            | [Rust]        |
-| [`evm`](./evm)                     | [EVM] smart contract stack.                        | [Solidity]    |
-| [`app`](./app)                     | [app.union.build](https://app.union.build).        | [TypeScript]  |
-| [`site`](./site)                   | [union.build](https://union.build).                | [TypeScript]  |
+| Component                          | Description                                        | Language(s)           |
+| ---------------------------------- | -------------------------------------------------- | --------------------- |
+| [`uniond`](./uniond)               | The Union node implementation, using [`CometBLS`]. | [Go]                  |
+| [`galoisd`](./galoisd)             | The zero-knowledge prover implementation.          | [Go] [Gnark]          |
+| [`voyager`](./voyager)             | Modualar hyper-performant cross-ecosystem relayer. | [Rust]                |
+| [`unionvisor`](./unionvisor)       | Node supervisor intended for production usage      | [Rust]                |
+| [`cosmwasm`](./cosmwasm)           | [CosmWasm] smart contract stack.                   | [Rust]                |
+| [`light-clients`](./light-clients) | [Light Clients] for various ecosystems.            | [Rust]                |
+| [`evm`](./evm)                     | [EVM] smart contract stack.                        | [Solidity]            |
+| [`app`](./app)                     | [app.union.build](https://app.union.build).        | [TypeScript] [Svelte] |
+| [`site`](./site)                   | [union.build](https://union.build).                | [TypeScript] [Astro]  |
 
 You can find these components in the [releases](https://github.com/unionlabs/union/releases).
 
@@ -56,5 +56,8 @@ Please make sure to [set up your GitHub PAT](<https://github.com/unionlabs/union
 [Solidity]: https://soliditylang.org/
 [Go]: https://go.dev/
 [TypeScript]: https://www.typescriptlang.org/
+[Svelte]: https://svelte.dev
+[Astro]: https://astro.build
 [`CometBLS`]: https://github.com/unionlabs/cometbls
 [Light Clients]: https://a16zcrypto.com/posts/article/an-introduction-to-light-clients/
+[Gnark]: https://github.com/ConsenSys/gnark
