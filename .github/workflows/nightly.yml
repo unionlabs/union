@@ -28,7 +28,7 @@ jobs:
     uses: ./.github/workflows/e2e.yml
     secrets:
       nixbuild_token: ${{ needs.load-secrets.outputs.nixbuild-token }}
-      gh_token: ${{ secrets.GITHUB_TOKEN }}
+      github_token: ${{ secrets.GITHUB_TOKEN }}
       org_token: ${{ needs.load-secrets.outputs.union-org-pat }}
 
   create-issue:

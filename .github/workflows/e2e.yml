@@ -6,7 +6,7 @@ on:
     secrets:
       nixbuild_token:
         required: true
-      gh_token:
+      github_token:
         required: true
       org_token:
         required: true
