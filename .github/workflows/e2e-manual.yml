@@ -7,23 +7,18 @@ jobs:
   load-secrets:
     runs-on: ubuntu-latest
     outputs:
-      union-org-pat: ${{ steps.op-set-secret.UNION_ORG_PAT }}
-      nixbuild-token: ${{ steps.op-set-secret.NIXBUILD_TOKEN }}
+      union-org-pat: ${{ steps.op-load-secret.UNION_ORG_PAT }}
+      nixbuild-token: ${{ steps.op-load-secret.NIXBUILD_TOKEN }}
     steps:
       - name: Load Secrets
         id: op-load-secret
         uses: 1password/load-secrets-action@v2
         with:
-          export-env: true
+          export-env: false
         env: 
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           UNION_ORG_PAT: op://ci/union-org-pat/pat
           NIXBUILD_TOKEN: op://ci/nixbuild-token/token
-      - name: Set Secrets Output
-        id: op-set-secret
-        run: |
-          echo "UNION_ORG_PAT=$UNION_ORG_PAT" >> $GITHUB_OUTPUT
-          echo "NIXBUILD_TOKEN=$NIXBUILD_TOKEN" >> $GITHUB_OUTPUT
 
   build:
     needs: load-secrets
