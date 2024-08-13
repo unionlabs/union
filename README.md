@@ -1,10 +1,18 @@
-![Union Logo](./.github/images/union-logo-white.svg#gh-dark-mode-only)
-![Union Logo](./.github/images/union-logo-black.svg#gh-light-mode-only)
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./.github/images/union-logo-white.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./.github/images/union-logo-black.svg">
+    <img alt="Union"
+         src="./.github/images/union-logo-black.svg"
+         width="50%">
+  </picture>
 
-[![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
-[![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
-[![Discord badge][]](https://discord.union.build)
-[![Twitter handle][]][Twitter badge]
+  [![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
+  [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
+  [![Discord badge][]](https://discord.union.build)
+  [![Twitter handle][]][Twitter badge]
+</div>
+
 
 Union is a trust-minimized, zero-knowledge bridging protocol, designed for censorship resistance, extremely high security, and usage in decentralized finance. It implements [IBC] for compatibility with Cosmos chains and connects to Ethereum.
 
