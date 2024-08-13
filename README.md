@@ -1,3 +1,13 @@
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/unionlabs/union/6f464a971875744b7ae149183f13c0e4f86bd5a3/.github/images/union-logo-white.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/unionlabs/union/6f464a971875744b7ae149183f13c0e4f86bd5a3/.github/images/union-logo-black.svg">
+    <img alt="Union"
+         src="https://raw.githubusercontent.com/unionlabs/union/6f464a971875744b7ae149183f13c0e4f86bd5a3/.github/images/union-logo-black.svg"
+         width="50%">
+  </picture>
+</div>
+
 # Union
 
 [![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
