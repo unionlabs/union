@@ -8,5 +8,5 @@ jobs:
     uses: ./.github/workflows/e2e.yml
     secrets:
       nixbuild_token: ${{ secrets.NIXBUILD_TOKEN }}
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+      gh_token: ${{ secrets.GITHUB_TOKEN }}
       org_token: ${{ secrets.UNION_ORG_PAT }}
