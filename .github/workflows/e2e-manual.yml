@@ -4,26 +4,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  load-secrets:
-    runs-on: ubuntu-latest
-    outputs:
-      union-org-pat: ${{ steps.op-load-secret.UNION_ORG_PAT }}
-      nixbuild-token: ${{ steps.op-load-secret.NIXBUILD_TOKEN }}
-    steps:
-      - name: Load Secrets
-        id: op-load-secret
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: false
-        env: 
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          UNION_ORG_PAT: op://ci/union-org-pat/pat
-          NIXBUILD_TOKEN: op://ci/nixbuild-token/token
-
   build:
-    needs: load-secrets
     uses: ./.github/workflows/e2e.yml
     secrets:
-      nixbuild_token: ${{ needs.load-secrets.outputs.nixbuild-token }}
+      nixbuild_token: ${{ secrets.NIXBUILD_TOKEN }}
       github_token: ${{ secrets.GITHUB_TOKEN }}
-      org_token: ${{ needs.load-secrets.outputs.union-org-pat }}
+      org_token: ${{ secrets.UNION_ORG_PAT }}
