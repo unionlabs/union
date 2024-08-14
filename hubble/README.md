@@ -2,8 +2,13 @@
 
 Hubble is a multi-stage ETL indexer for various chains. Currently, it supports the:
 
-- CosmosSDK
-- EVM (HTTP)
+- CosmosSDK, with lightclient counterparty tracking
+- EVM (HTTP), with fork support
+- Consensus Height Tracking:
+  - Beacon
+  - Bera
+  - Arb
+  - Scroll
 
 ## Architecture
 
@@ -23,3 +28,6 @@ Hubble uses the following tables:
 - Blocks: extracted blocks from logs.
 - Transactions: extracted transactions from logs.
 - Chains: metadata on chains, created once on startup.
+- Clients: Counterparty chain-ids of lightclients.
+- Consensus Heights: consensus height mapping.
+- Contracts: updates of contract tracking height.
