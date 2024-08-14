@@ -61,6 +61,12 @@ _(Don't worry, this will not affect your system outside of this repo)_
 nix develop
 ```
 
+Run the following to format the entire repo and check your spelling before each PR:
+
+```sh
+nix run .#pre-commit -L
+```
+
 Check the `#developers` channel on [Union's discord](https://discord.union.build) if you need any help with this.
 
 ## Docs
