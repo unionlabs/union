@@ -1,4 +1,4 @@
-# Overview
+# Hubble
 
 Hubble is a multi-stage ETL indexer for various chains. Currently, it supports the:
 

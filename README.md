@@ -24,12 +24,14 @@ The upgradability of contracts on other chains, connections, token configuration
 | [`uniond`](./uniond)               | The Union node implementation, using [`CometBLS`]  | [Go]                  |
 | [`galoisd`](./galoisd)             | The zero-knowledge prover implementation           | [Go] [Gnark]          |
 | [`voyager`](./voyager)             | Modular hyper-performant cross-ecosystem relayer   | [Rust]                |
-| [`unionvisor`](./unionvisor)       | Node supervisor intended for production usage      | [Rust]                |
+| [`hubble`](./hubble)               | Multi-ecosystem, GMP-enabled chain indexer.        | [Rust]                |
 | [`cosmwasm`](./cosmwasm)           | [CosmWasm] smart contract stack                    | [Rust]                |
 | [`light-clients`](./light-clients) | [Light Clients] for various ecosystems             | [Rust]                |
+| [`unionvisor`](./unionvisor)       | Node supervisor intended for production usage      | [Rust]                |
+| [`drip`](./drip)                   | Faucet for Cosmos chains: [app.union.build/faucet] | [Rust]                |
 | [`evm`](./evm)                     | [EVM] smart contract stack                         | [Solidity]            |
-| [`app`](./app)                     | [app.union.build](https://app.union.build)         | [TypeScript] [Svelte] |
-| [`site`](./site)                   | [union.build](https://union.build)                 | [TypeScript] [Astro]  |
+| [`app`](./app)                     | [app.union.build]                                  | [TypeScript] [Svelte] |
+| [`site`](./site)                   | [union.build]                                      | [TypeScript] [Astro]  |
 
 ## Quickstart
 
@@ -87,3 +89,6 @@ The official docs are hosted [here][docs]. Each individual component also has ac
 [NixOS]: https://nixos.org
 [OrbStack]: https://orbstack.dev/
 [Consensus Verification]: https://union.build/docs/concepts/consensus-verification/
+[union.build]: https://union.build
+[app.union.build]: https://app.union.build
+[app.union.build/faucet]: https://app.union.build/faucet
