@@ -8,6 +8,7 @@ module IBC::ChannelTest {
     use IBC::height;
     use IBC::Core;
     use IBC::connection_end::{Self, Version};
+    use IBC::channel;
 
     const E_GENERATE_CLIENT_IDENTIFIER: u64 = 3001;
     const E_GET_CLIENT_IMPL: u64 = 3002;
@@ -185,19 +186,18 @@ module IBC::ChannelTest {
 
         // Prepare a mock channel
         let connection_hops = vector::singleton(connection_id);
-        let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
-        let channel = Core::new_channel(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = channel::new(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
 
         // Call channel_open_init function
         let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
 
         // Validate that the channel was added to the store
         let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
-        let (state, ordering, _, _, _) = Core::get_channel(&stored_channel);
 
         // Validate that the stored channel matches the expected channel
-        assert!(state == 1, 8001);
-        assert!(ordering == ORDER_ORDERED, 8002);
+        assert!(channel::state(&stored_channel) == 1, 8001);
+        assert!(channel::ordering(&stored_channel) == ORDER_ORDERED, 8002);
     }
 
     #[test(alice = @IBC)]
@@ -225,8 +225,8 @@ module IBC::ChannelTest {
 
         // Prepare a mock channel with an invalid state (not STATE_INIT)
         let connection_hops = vector::singleton(connection_id);
-        let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
-        let channel = Core::new_channel(3, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1")); // Invalid state
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = channel::new(3, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1")); // Invalid state
 
         Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
     }
@@ -256,8 +256,8 @@ module IBC::ChannelTest {
 
         // Prepare a mock channel with a non-empty counterparty channel ID
         let connection_hops = vector::singleton(connection_id);
-        let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b"channel-1"));
-        let channel = Core::new_channel(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1")); // Non-empty counterparty channel ID
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b"channel-1"));
+        let channel = channel::new(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1")); // Non-empty counterparty channel ID
 
         Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
     }
@@ -285,8 +285,8 @@ public fun test_channel_open_ack(alice: &signer) {
 
     // Prepare a mock channel
     let connection_hops = vector::singleton(connection_id);
-    let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
-    let channel = Core::new_channel(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
+    let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+    let channel = channel::new(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
     let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
 
     // Prepare mock proof data
@@ -305,12 +305,10 @@ public fun test_channel_open_ack(alice: &signer) {
 
     // Validate that the channel state has been updated to STATE_OPEN
     let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
-    let (state, _, counterparty, _, version) = Core::get_channel(&stored_channel);
-    let (_, channel_id) = Core::get_channel_counterparty(counterparty);
-    assert!(state == 3, 9001); // STATE_OPEN
-    assert!(version == string::utf8(b"counterparty-version-0"), 9002);
+    assert!(channel::state(&stored_channel) == 3, 9001); // STATE_OPEN
+    assert!(*channel::version(&stored_channel) == string::utf8(b"counterparty-version-0"), 9002);
     
-    assert!(channel_id == string::utf8(b"counterparty-channel-0"), 9003);
+    assert!(*channel::chan_counterparty_channel_id(&stored_channel) == string::utf8(b"counterparty-channel-0"), 9003);
 }
 
     #[test(alice = @IBC)]
@@ -338,8 +336,8 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Prepare a mock channel with an invalid state (not STATE_INIT)
         let connection_hops = vector::singleton(connection_id);
-        let counterparty = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
-        let channel = Core::new_channel(3, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = channel::new(3, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
         let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
 
         // Prepare mock proof data
@@ -380,8 +378,8 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Prepare a mock channel
         let connection_hops = vector::singleton(connection_id);
-        let counterparty_channel = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
-        let channel = Core::new_channel(2, 1, counterparty_channel, connection_hops, string::utf8(b"1")); // STATE_TRYOPEN
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = channel::new(2, 1, counterparty_channel, connection_hops, string::utf8(b"1")); // STATE_TRYOPEN
         let port_id = string::utf8(b"port-0");
         let channel_id = string::utf8(b"channel-0");
         Core::set_channel(port_id, channel_id, channel);
@@ -395,8 +393,7 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Validate the channel state after confirmation
         let updated_channel = Core::get_channel_from_store(port_id, channel_id);
-        let (state, _, _, _, _) = Core::get_channel(&updated_channel);
-        assert!(state == 3, 1001); // STATE_OPEN
+        assert!(channel::state(&updated_channel) == 3, 1001); // STATE_OPEN
     }
 
     #[test(alice = @IBC)]
@@ -424,8 +421,8 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Prepare a mock channel with an invalid state
         let connection_hops = vector::singleton(connection_id);
-        let counterparty_channel = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
-        let channel = Core::new_channel(1, 1, counterparty_channel, connection_hops, string::utf8(b"1")); // STATE_INIT (invalid state for confirm)
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = channel::new(1, 1, counterparty_channel, connection_hops, string::utf8(b"1")); // STATE_INIT (invalid state for confirm)
         let port_id = string::utf8(b"port-0");
         let channel_id = string::utf8(b"channel-0");
         Core::set_channel(port_id, channel_id, channel);
@@ -462,8 +459,8 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Prepare a mock channel
         let connection_hops = vector::singleton(connection_id);
-        let counterparty_channel = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
-        let channel = Core::new_channel(2, ORDER_ORDERED, counterparty_channel, connection_hops, string::utf8(b"1"));
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = channel::new(2, ORDER_ORDERED, counterparty_channel, connection_hops, string::utf8(b"1"));
 
         // Mock data for proof
         let proof_height = height::new(1, 1);
@@ -474,12 +471,11 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Validate that the channel was added to the store
         let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
-        let (state, ordering, counterparty, _, version) = Core::get_channel(&stored_channel);
 
         // Validate that the stored channel matches the expected channel
-        assert!(state == 2, 8001);
-        assert!(ordering == ORDER_ORDERED, 8002);
-        assert!(version == string::utf8(b"1"), 8003);
+        assert!(channel::state(&stored_channel) == 2, 8001);
+        assert!(channel::ordering(&stored_channel) == ORDER_ORDERED, 8002);
+        assert!(*channel::version(&stored_channel) == string::utf8(b"1"), 8003);
     }
 
     #[test(alice = @IBC)]
@@ -507,8 +503,8 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Prepare a mock channel with an invalid state (not STATE_TRYOPEN)
         let connection_hops = vector::singleton(connection_id);
-        let counterparty_channel = Core::new_channel_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
-        let channel = Core::new_channel(1, ORDER_ORDERED, counterparty_channel, connection_hops, string::utf8(b"1")); // Invalid state
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let channel = channel::new(1, ORDER_ORDERED, counterparty_channel, connection_hops, string::utf8(b"1")); // Invalid state
 
         // Mock data for proof
         let proof_height = height::new(1, 1);
