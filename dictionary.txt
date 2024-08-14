@@ -84,6 +84,7 @@ IHAVENOIDEA
 IIBC
 INLINES
 IOSVG
+IPFS
 Infima
 Infof
 Interchain

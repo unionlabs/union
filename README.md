@@ -13,25 +13,25 @@
   [![Twitter handle][]][Twitter badge]
 </div>
 
-Union is the hyper-efficient zero-knowledge infrastructure layer for general message passing, asset transfers, NFTs, and DeFi. It’s based on [Consensus Verification] and has no dependencies on trusted third parties, oracles, multi-signatures, or MPC. It implements [IBC] for compatibility with Cosmos chains and connects to EVM chains like [Ethereum], [Berachain (beacon-kit)](https://github.com/berachain/beacon-kit), [Arbitrum], and more.
+Union is the hyper-efficient zero-knowledge infrastructure layer for general message passing, asset transfers, NFTs, and DeFi. It’s based on [Consensus Verification] and has no dependencies on trusted third parties, oracles, multi-signatures, or MPC. It implements [IBC] for compatibility with [Cosmos] chains and connects to EVM chains like [Ethereum], [Berachain (beacon-kit)](https://github.com/berachain/beacon-kit), [Arbitrum], and more.
 
 The upgradability of contracts on other chains, connections, token configurations, and evolution of the protocol will all be controlled by decentralized governance, aligning the priorities of Union with its users, validators, and operators.
 
 ## Components
 
-| Component                          | Description                                        | Language(s)           |
-| ---------------------------------- | -------------------------------------------------- | --------------------- |
-| [`uniond`](./uniond)               | The Union node implementation, using [`CometBLS`]  | [Go]                  |
-| [`galoisd`](./galoisd)             | The zero-knowledge prover implementation           | [Go] [Gnark]          |
-| [`voyager`](./voyager)             | Modular hyper-performant cross-ecosystem relayer   | [Rust]                |
-| [`hubble`](./hubble)               | Multi-ecosystem, GMP-enabled chain indexer.        | [Rust]                |
-| [`cosmwasm`](./cosmwasm)           | [CosmWasm] smart contract stack                    | [Rust]                |
-| [`light-clients`](./light-clients) | [Light Clients] for various ecosystems             | [Rust]                |
-| [`unionvisor`](./unionvisor)       | Node supervisor intended for production usage      | [Rust]                |
-| [`drip`](./drip)                   | Faucet for Cosmos chains: [app.union.build/faucet] | [Rust]                |
-| [`evm`](./evm)                     | [EVM] smart contract stack                         | [Solidity]            |
-| [`app`](./app)                     | [app.union.build]                                  | [TypeScript] [Svelte] |
-| [`site`](./site)                   | [union.build]                                      | [TypeScript] [Astro]  |
+| Component                          | Description                                          | Language(s)           |
+| ---------------------------------- | ---------------------------------------------------- | --------------------- |
+| [`uniond`](./uniond)               | The Union node implementation, using [`CometBLS`]    | [Go]                  |
+| [`galoisd`](./galoisd)             | The zero-knowledge prover implementation             | [Go] [Gnark]          |
+| [`voyager`](./voyager)             | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
+| [`hubble`](./hubble)               | Multi-ecosystem, GMP-enabled chain indexer.          | [Rust]                |
+| [`cosmwasm`](./cosmwasm)           | [CosmWasm] smart contract stack                      | [Rust]                |
+| [`light-clients`](./light-clients) | [Light Clients] for various ecosystems               | [Rust]                |
+| [`unionvisor`](./unionvisor)       | Node supervisor intended for production usage        | [Rust]                |
+| [`drip`](./drip)                   | Faucet for [Cosmos] chains: [app.union.build/faucet] | [Rust]                |
+| [`evm`](./evm)                     | [EVM] smart contract stack                           | [Solidity]            |
+| [`app`](./app)                     | [app.union.build]                                    | [TypeScript] [Svelte] |
+| [`site`](./site)                   | [union.build]                                        | [TypeScript] [Astro]  |
 
 ## Quickstart
 
@@ -59,6 +59,12 @@ _(Don't worry, this will not affect your system outside of this repo)_
 
 ```sh
 nix develop
+```
+
+Run the following to format the entire repo and check your spelling before each PR:
+
+```sh
+nix run .#pre-commit -L
 ```
 
 Check the `#developers` channel on [Union's discord](https://discord.union.build) if you need any help with this.
@@ -92,3 +98,4 @@ The official docs are hosted [here][docs]. Each individual component also has ac
 [union.build]: https://union.build
 [app.union.build]: https://app.union.build
 [app.union.build/faucet]: https://app.union.build/faucet
+[Cosmos]: https://cosmos.network
