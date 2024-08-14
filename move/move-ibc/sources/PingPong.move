@@ -4,7 +4,8 @@ module IBCModuleAddr::PingPong {
     use aptos_std::string::{Self, String};
     use IBC::Core;
     use aptos_std::any::{Self, Any};
-    use IBC::height;
+    use IBC::height::Height;
+    use IBC::packet::Packet;
 
     const ACK_SUCCESS: vector<u8> = b"\x01";
     const ERR_ONLY_ONE_CHANNEL: u64 = 2001;
@@ -63,9 +64,9 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun on_recv_packet(
-        _packet: Core::IbcCoreChannelV1Packet,
+        _packet: Packet,
         _proof: Any,
-        _proof_height: height::Height
+        _proof_height: Height
     ) {
         // Here we'll call on_recv_packet of ibc module and it will return packet
 
@@ -82,7 +83,7 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun on_acknowledgement_packet(
-        _packet: Core::IbcCoreChannelV1Packet,
+        _packet: Packet,
         acknowledgement: vector<u8>
     ) {
         if (acknowledgement != ACK_SUCCESS) {
@@ -92,7 +93,7 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun on_timeout_packet(
-        _packet: Core::IbcCoreChannelV1Packet
+        _packet: Packet
     )  {
         event::emit(TimedOutEvent {});
     }
@@ -131,7 +132,7 @@ module IBCModuleAddr::PingPong {
         port_id: String,
         channel_id: String,
         proof_ack: Any,
-        proof_height: height::Height
+        proof_height: Height
     ) acquires PingPong {
         // Store the channel_id
         borrow_global_mut<PingPong>(@0x1).channel_id = channel_id;

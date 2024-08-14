@@ -2,6 +2,8 @@ module IBC::packet {
     use std::string::{Self, String, utf8};
     use std::vector;
     use std::option::{Self, Option};
+    use std::hash;
+    use std::bcs;
 
     use IBC::height::{Self, Height};
     use IBC::proto_utils;
@@ -47,6 +49,24 @@ module IBC::packet {
 
     public fun timeout_timestamp(packet: &Packet): u64 {
         packet.timeout_timestamp
+    }
+
+    public fun commitment(packet: &Packet): vector<u8> {
+        let buf = bcs::to_bytes(&packet.timeout_timestamp);
+        // bcs encodes little endian by default but we want big endian
+        vector::reverse(&mut buf);
+
+        let rev_num = bcs::to_bytes(&height::get_revision_number(&packet.timeout_height));
+        vector::reverse(&mut rev_num);
+        vector::append(&mut buf, rev_num);
+
+        let rev_height = bcs::to_bytes(&height::get_revision_height(&packet.timeout_height));
+        vector::reverse(&mut rev_height);
+        vector::append(&mut buf, rev_height);
+
+        vector::append(&mut buf, hash::sha2_256(packet.data));
+
+        hash::sha2_256(buf)
     }
 
     public fun new(

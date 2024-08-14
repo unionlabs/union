@@ -14,10 +14,11 @@ module IBC::Core {
     use aptos_std::from_bcs;
     use IBC::IBCCommitment;
     use IBC::LightClient;
-    use IBC::height;
+    use IBC::height::{Self, Height};
     use IBCModuleAddr::IBCModule;
     use IBC::connection_end::{Self, ConnectionEnd};
     use IBC::channel::{Self, Channel};
+    use IBC::packet::{Self, Packet};
 
     const CHAN_STATE_UNINITIALIZED: u8 = 0;
     const CHAN_STATE_INIT: u8 = 1;
@@ -154,7 +155,7 @@ module IBC::Core {
     
     #[event]
     struct RecvPacket has drop, store {
-        packet: IbcCoreChannelV1Packet
+        packet: Packet
     }
 
 
@@ -336,17 +337,6 @@ module IBC::Core {
         object::generate_signer_for_extending(&vault.self_ref)
     }
 
-
-    struct IbcCoreChannelV1Packet has copy, store, drop, key {
-        sequence: u64,
-        source_port: String,
-        source_channel: String,
-        destination_port: String,
-        destination_channel: String,
-        data: vector<u8>,
-        timeout_height: height::Height,
-        timeout_timestamp: u64,
-    }
 
     public fun default_ibc_version(): connection_end::Version {
         connection_end::new_version(
@@ -570,6 +560,25 @@ module IBC::Core {
         );
         assert!(error_code == 0, E_INVALID_CONNECTION_STATE);
         true
+    }
+
+    public fun verify_commitment(
+        connection: &ConnectionEnd,
+        height: Height,
+        proof: Any,
+        path: String,
+        commitment: vector<u8>,
+    ): u64 {
+        let (_, err) = LightClient::verify_membership(
+            *connection_end::client_id(connection),
+            height,
+            proof,
+            *connection_end::conn_counterparty_key_prefix(connection),
+            *string::bytes(&path),
+            commitment
+        );
+
+        err
     }
 
     public fun generate_connection_identifier(): String acquires IBCStore {
@@ -1382,7 +1391,7 @@ module IBC::Core {
 
         // Authenticate capability
         if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(source_port, source_channel))) {
-            abort E_UNAUTHORIZED;
+            abort E_UNAUTHORIZED
         };
 
         let channel = ensure_channel_state(source_port, source_channel);
@@ -1452,21 +1461,21 @@ module IBC::Core {
 
     // Receives and processes an IBC packet
     public fun recv_packet(
-        caller: &signer,
+        _caller: &signer,
         msg_port_id: String,
         msg_channel_id: String,
-        msg_packet: IbcCoreChannelV1Packet,
+        msg_packet: Packet,
         msg_proof: Any,
         msg_proof_height: height::Height,
-        acknowledgement: String
+        _acknowledgement: String
     ) acquires IBCStore {
         let channel = ensure_channel_state(msg_port_id, msg_channel_id);
 
-        if (&msg_packet.source_port != channel::chan_counterparty_port_id(&channel)) {
+        if (packet::source_port(&msg_packet) != channel::chan_counterparty_port_id(&channel)) {
             abort E_SOURCE_AND_COUNTERPARTY_PORT_MISMATCH
         };
 
-        if (&msg_packet.source_channel != channel::chan_counterparty_channel_id(&channel)) {
+        if (packet::source_channel(&msg_packet) != channel::chan_counterparty_channel_id(&channel)) {
             abort E_SOURCE_AND_COUNTERPARTY_CHANNEL_MISMATCH
         };
 
@@ -1482,41 +1491,34 @@ module IBC::Core {
             abort E_INVALID_CONNECTION_STATE
         };
 
-        if (height::get_revision_height(&msg_packet.timeout_height) != 0 && (timestamp::now_seconds() * 1000000000 >= height::get_revision_height(&msg_packet.timeout_height))) {
+        if (height::get_revision_height(&packet::timeout_height(&msg_packet)) != 0 && (timestamp::now_seconds() * 1000000000 >= height::get_revision_height(&packet::timeout_height(&msg_packet)))) {
             abort E_HEIGHT_TIMEOUT
         };
 
         let current_timestamp = timestamp::now_seconds() * 1000000000; // 1e9
-        if (msg_packet.timeout_timestamp != 0 && (current_timestamp >= msg_packet.timeout_timestamp)) {
+        if (packet::timeout_timestamp (&msg_packet)!= 0 && (current_timestamp >= packet::timeout_timestamp(&msg_packet))) {
             abort E_TIMESTAMP_TIMEOUT
         };
 
 
         // TODO: How can we implement this one? We need to agree on the implementation of
         // abi.encodePacked
-        // if (!verify_commitment(
-        //     connection,
-        //     msg_proof_height,
-        //     msg_proof,
-        //     IBCCommitment::packet_commitment_path(msg_packet.source_port, msg_packet.source_channel, msg_packet.sequence),
-        //     IBCCommitment::keccak256(
-        //         IBCCommitment::keccak256(
-        //             bcs::to_bytes(&(
-        //                 msg_packet.timeout_timestamp,
-        //                 height::get_revision_number(&msg_packet.timeout_height),
-        //                 height::get_revision_height(&msg_packet.timeout_height),
-        //                 IBCCommitment::keccak256(msg_packet.data)
-        //             ))
-        //         )
-        //     )
-        // )) {
-        //     abort E_INVALID_PROOF;
-        // }
+        let err = verify_commitment(
+            connection,
+            msg_proof_height,
+            msg_proof,
+            IBCCommitment::packet_commitment_path(*packet::source_port(&msg_packet), *packet::source_channel(&msg_packet), packet::sequence(&msg_packet)),
+            packet::commitment(&msg_packet),
+        );
+        
+        if (err != 0) {
+            abort err
+        };
 
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         if (channel::ordering(&channel) == CHAN_ORDERING_UNORDERED) {
-            let receipt_commitment_key = IBCCommitment::packet_receipt_commitment_key(msg_packet.destination_port, msg_packet.destination_channel, msg_packet.sequence);
+            let receipt_commitment_key = IBCCommitment::packet_receipt_commitment_key(*packet::destination_port(&msg_packet), *packet::destination_channel(&msg_packet), packet::sequence(&msg_packet));
             let receipt = smart_table::borrow_with_default(&store.commitments, receipt_commitment_key, &bcs::to_bytes(&0u8));
             if (*receipt != bcs::to_bytes(&0u8)) {
                 abort E_PACKET_ALREADY_RECEIVED
@@ -1526,16 +1528,16 @@ module IBC::Core {
             let expected_recv_sequence = from_bcs::to_u64(
                 *smart_table::borrow_with_default(
                     &store.commitments,
-                    IBCCommitment::next_sequence_recv_commitment_key(msg_packet.destination_port, msg_packet.destination_channel),
+                    IBCCommitment::next_sequence_recv_commitment_key(*packet::destination_port(&msg_packet), *packet::destination_channel(&msg_packet)),
                     &bcs::to_bytes(&0u64)
                 )
             );
-            if (expected_recv_sequence != msg_packet.sequence) {
+            if (expected_recv_sequence != packet::sequence(&msg_packet)) {
                 abort E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
             };
             smart_table::upsert(
                 &mut store.commitments,
-                IBCCommitment::next_sequence_recv_commitment_key(msg_packet.destination_port, msg_packet.destination_channel),
+                IBCCommitment::next_sequence_recv_commitment_key(*packet::destination_port(&msg_packet), *packet::destination_channel(&msg_packet)),
                 bcs::to_bytes(&(expected_recv_sequence + 1))
             );
         } else {
