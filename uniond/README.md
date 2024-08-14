@@ -38,16 +38,15 @@ graph LR
             ethereum-light-client["ethereum-light-client"]
             berachain-light-client["berachain-light-client"]
             arbitrum-light-client["arbitrum-light-client"]
-            ...
+            ...[...]
           end
         end
         subgraph x/wasm
           ucs01-relay["ucs01-relay"]
           ucs02-nft["ucs02-nft"]
-          ...
+          ...[...]
         end
-        x/etc
-        ...
+        ...[...]
     end
 ```
 
