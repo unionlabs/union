@@ -1,6 +1,6 @@
 # Union's Web App
 
-[Union's app](https://app.union.build) is built to be user friendly, extremely reliable, and blazing fast. It achieves this through a stack of optimized tools that do most processing at compile time (before you even use the app), and by connecting to our optimized [hubble](../hubble) indexer. 
+[app.union.build](https://app.union.build) is built to be user friendly, extremely reliable, and blazing fast. It achieves this through a stack of optimized tools that do most processing at compile time (before you even use the app), and by connecting to our optimized [hubble](../hubble) indexer. 
 
 ## Quickstart
 
