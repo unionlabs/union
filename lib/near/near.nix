@@ -7,7 +7,7 @@
         buildInputs = [ pkgs.makeWrapper ];
         src =
           (crane.buildWorkspaceMember {
-            crateDirFromRoot = "near/near-ibc-tests";
+            crateDirFromRoot = "lib/near/near-ibc-tests";
             extraEnv = {
               PROTOC = "${pkgs.protobuf}/bin/protoc";
               LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
@@ -94,19 +94,19 @@
       };
 
       near-light-client = (crane.buildWasmContract {
-        crateDirFromRoot = "near/near-light-client";
+        crateDirFromRoot = "lib/near/near-light-client";
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });
 
       dummy-ibc-app = (crane.buildWasmContract {
-        crateDirFromRoot = "near/dummy-ibc-app";
+        crateDirFromRoot = "lib/near/dummy-ibc-app";
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });
 
       near-ibc = (crane.buildWasmContract {
-        crateDirFromRoot = "near/near-ibc";
+        crateDirFromRoot = "lib/near/near-ibc";
         extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
         extraNativeBuildInputs = [ pkgs.clang ];
       });

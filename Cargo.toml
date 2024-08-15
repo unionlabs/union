@@ -11,8 +11,6 @@ members = [
 
   "e2e/ensure-blocks",
 
-  "fuzz",
-
   "generated/rust/contracts",
   "generated/rust/protos",
 
@@ -47,6 +45,11 @@ members = [
   "lib/voyager-message",
   "lib/zktrie-rs",
 
+  "lib/near/near-ibc",
+  "lib/near/near-light-client",
+  "lib/near/dummy-ibc-app",
+  "lib/near/near-ibc-tests",
+
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
   "lib/ethereum-verifier",
@@ -70,10 +73,6 @@ members = [
   "ucli",
   "unionvisor",
   "voyager",
-  "near/near-ibc",
-  "near/near-light-client",
-  "near/dummy-ibc-app",
-  "near/near-ibc-tests",
 
   "drip",
 ]

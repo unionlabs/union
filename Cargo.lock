@@ -4049,17 +4049,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuzz"
-version = "0.0.0"
-dependencies = [
- "block-message",
- "libfuzzer-sys",
- "queue-msg",
- "relay-message",
- "unionlabs",
-]
-
-[[package]]
 name = "fxhash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5165,17 +5154,6 @@ name = "libc"
 version = "0.2.153"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c198f91728a82281a64e1f4f9eeb25d82cb32a5de251c6bd1b5154d63a8e7bd"
-
-[[package]]
-name = "libfuzzer-sys"
-version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a96cfd5557eb82f2b83fed4955246c988d331975a002961b07c81584d107e7f7"
-dependencies = [
- "arbitrary",
- "cc",
- "once_cell",
-]
 
 [[package]]
 name = "libloading"
