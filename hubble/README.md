@@ -6,8 +6,8 @@ Hubble is a multi-stage ETL indexer for various chains. Currently, it supports t
 - EVM (HTTP), with fork support
 - Consensus Height Tracking:
   - Beacon
-  - Bera
-  - Arb
+  - BeaconKit (Berachain)
+  - Arbitrum
   - Scroll
 
 ## Architecture
