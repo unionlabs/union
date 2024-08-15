@@ -4,13 +4,19 @@
     <source media="(prefers-color-scheme: light)" srcset="./.github/images/union-logo-black.svg">
     <img alt="Union"
          src="./.github/images/union-logo-black.svg"
-         width="50%">
+         width="100%">
   </picture>
+</div>
+
+<br/>
+  
+<div align="center">
 
   [![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
   [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
   [![Discord badge][]](https://discord.union.build)
   [![Twitter handle][]][Twitter badge]
+
 </div>
 
 Union is the hyper-efficient zero-knowledge infrastructure layer for general message passing, asset transfers, NFTs, and DeFi. It’s based on [Consensus Verification] and has no dependencies on trusted third parties, oracles, multi-signatures, or MPC. It implements [IBC] for compatibility with [Cosmos] chains and connects to EVM chains like [Ethereum], [Berachain (beacon-kit)](https://github.com/berachain/beacon-kit), [Arbitrum], and more.
