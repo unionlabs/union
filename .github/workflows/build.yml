@@ -25,8 +25,8 @@ jobs:
     uses: unionlabs/workflows/.github/workflows/build.yml@8fdbd5d131725a503e1e8c7a415edf6726da25c5
     secrets:
       nixbuild_token: ${{ secrets.nixbuild_token }}
-      access-tokens: github.com=${{ secrets.GH_NIX_TOKEN }}
-      org_token: ${{ secrets.GH_NIX_TOKEN }}
+      access-tokens: github.com=${{ secrets.UNION_ORG_PAT }}
+      org_token: ${{ secrets.UNION_ORG_PAT }}
     with:
       eval_target: 'site'
       eval_top_attr: 'packages'
