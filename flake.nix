@@ -220,14 +220,10 @@
               };
               nightly = {
                 outputs = {
-                  checks.x86_64-linux.ensure-blocks =
-                    self.checks.x86_64-linux.ensure-blocks;
                   checks.x86_64-linux.epoch-completes =
                     self.checks.x86_64-linux.epoch-completes;
                   checks.x86_64-linux.forced-set-rotation =
                     self.checks.x86_64-linux.forced-set-rotation;
-                  checks.x86_64-linux.sepolia-runs =
-                    self.checks.x86_64-linux.sepolia-runs;
                   checks.x86_64-linux.union-runs =
                     self.checks.x86_64-linux.union-runs;
                   checks.x86_64-linux.upgrade-from-genesis =
