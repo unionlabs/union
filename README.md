@@ -24,7 +24,7 @@ The upgradability of contracts on other chains, connections, token configuration
 | [`uniond`](./uniond)               | The Union node implementation, using [`CometBLS`]    | [Go]                  |
 | [`galoisd`](./galoisd)             | The zero-knowledge prover implementation             | [Go] [Gnark]          |
 | [`voyager`](./voyager)             | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
-| [`hubble`](./hubble)               | Multi-ecosystem, GMP-enabled chain indexer.          | [Rust]                |
+| [`hubble`](./hubble)               | Multi-ecosystem, GMP-enabled chain indexer           | [Rust]                |
 | [`cosmwasm`](./cosmwasm)           | [CosmWasm] smart contract stack                      | [Rust]                |
 | [`light-clients`](./light-clients) | [Light Clients] for various ecosystems               | [Rust]                |
 | [`unionvisor`](./unionvisor)       | Node supervisor intended for production usage        | [Rust]                |
