@@ -1,24 +1,13 @@
 module IBCModuleAddr::IBCModule {
     use std::vector;
-    use IBC::height;
     use aptos_std::string::{String};
     // use IBC::Core;
+    use IBC::packet::{Packet};
+
 
     // Order Enums
     const ORDER_UNORDERED: u8 = 1;
     const ORDER_ORDERED: u8 = 2;
-    
-    struct IbcCoreChannelV1Packet has copy, store, drop, key { // TODO: if i try to use this from core, it creates cyclic dependency
-        sequence: u64,
-        source_port: String,
-        source_channel: String,
-        destination_port: String,
-        destination_channel: String,
-        data: vector<u8>,
-        timeout_height: height::Height,
-        timeout_timestamp: u64,
-    }
-
 
     public fun on_chan_open_init(
         _order: u8, // ORDER_ORDERED or ORDER_UNORDERED
@@ -82,7 +71,7 @@ module IBCModuleAddr::IBCModule {
     }
 
     public fun on_recv_packet(
-        _packet: IbcCoreChannelV1Packet,
+        _packet: Packet,
         _relayer: address
     ): vector<u8> {
         // Implement your logic here
@@ -90,7 +79,7 @@ module IBCModuleAddr::IBCModule {
     }
 
     public fun on_acknowledgement_packet(
-        _packet: IbcCoreChannelV1Packet,
+        _packet: Packet,
         _acknowledgement: vector<u8>,
         _relayer: address
     ): u8 {
@@ -99,7 +88,7 @@ module IBCModuleAddr::IBCModule {
     }
 
     public fun on_timeout_packet(
-        _packet: IbcCoreChannelV1Packet,
+        _packet: Packet,
         _relayer: address
     ): u8 {
         // Implement your logic here

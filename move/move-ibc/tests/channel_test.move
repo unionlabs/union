@@ -6,13 +6,20 @@ module IBC::ChannelTest {
     use aptos_std::string::{Self, String};
     use aptos_std::any;
     use IBC::height;
+    use std::hash;
     use IBC::Core;
+    use std::bcs;
     use IBC::connection_end::{Self, Version};
+    use IBC::IBCCommitment;
     use IBC::channel;
+    use IBC::packet;
 
     const E_GENERATE_CLIENT_IDENTIFIER: u64 = 3001;
     const E_GET_CLIENT_IMPL: u64 = 3002;
     const E_CREATE_CLIENT: u64 = 3003;
+
+    const E_ACKNOWLEDGEMENT_IS_EMPTY: u64 = 1028;
+    const E_ACKNOWLEDGEMENT_ALREADY_EXISTS: u64 = 1029;
 
     const ORDER_UNORDERED: u8 = 1;
     const ORDER_ORDERED: u8 = 2;
@@ -542,6 +549,379 @@ public fun test_channel_open_ack(alice: &signer) {
 
         // Attempt to claim the same capability again, should abort
         Core::claim_capability(capability_name, addr);
+    }
+
+    #[test(alice = @IBC)]
+    public fun test_write_acknowledgement_success(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock channel and set it in the IBCStore
+        let connection_id = string::utf8(b"connection-0");
+        let channel_id = string::utf8(b"channel-0");
+        let port_id = string::utf8(b"port-0");
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), channel_id);
+        let channel_data = channel::new(3, 2, counterparty, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Set the capability to allow writing the acknowledgment
+        let relayer_addr = signer::address_of(alice);
+        Core::claim_capability(IBCCommitment::channel_capability_path(port_id, channel_id), relayer_addr);
+
+        // Create a mock packet
+        let packet_data = packet::new(
+            1,
+            string::utf8(b""),
+            string::utf8(b""),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            1000000000);
+
+        // Create an acknowledgment
+        let acknowledgement = vector::singleton(1u8);
+
+        // Call write_acknowledgement function
+        Core::write_acknowledgement(alice, packet_data, acknowledgement);
+
+        // Verify that the acknowledgment was written
+        let ack_commitment_key = IBCCommitment::packet_acknowledgement_commitment_key(port_id, channel_id, 1);
+        let stored_ack = Core::get_commitment(ack_commitment_key);
+        assert!(stored_ack == hash::sha2_256(acknowledgement), 1101);
+    }
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1020)] // E_UNAUTHORIZED
+    public fun test_write_acknowledgement_unauthorized(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock channel and set it in the IBCStore
+        let connection_id = string::utf8(b"connection-0");
+        let channel_id = string::utf8(b"channel-0");
+        let port_id = string::utf8(b"port-0");
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), channel_id);
+        let channel_data = channel::new(3, 2, counterparty, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Create a mock packet
+        let packet_data = packet::new(
+            1,
+            string::utf8(b""),
+            string::utf8(b""),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            1000000000);
+
+        // Create an acknowledgment
+        let acknowledgement = vector::singleton(1u8);
+
+        // Call write_acknowledgement function without setting capability
+        Core::write_acknowledgement(alice, packet_data, acknowledgement);
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1028)] // E_ACKNOWLEDGEMENT_IS_EMPTY
+    public fun test_write_acknowledgement_empty_ack(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock channel and set it in the IBCStore
+        let connection_id = string::utf8(b"connection-0");
+        let channel_id = string::utf8(b"channel-0");
+        let port_id = string::utf8(b"port-0");
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), channel_id);
+        let channel_data = channel::new(3, 2, counterparty, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Set the capability to allow writing the acknowledgment
+        let relayer_addr = signer::address_of(alice);
+        Core::claim_capability(IBCCommitment::channel_capability_path(port_id, channel_id), relayer_addr);
+
+        // Create a mock packet
+        let packet_data = packet::new(
+            1,
+            string::utf8(b""),
+            string::utf8(b""),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            1000000000);
+
+        // Create an empty acknowledgment
+        let empty_acknowledgement = vector::empty<u8>();
+
+        // Call write_acknowledgement function with empty acknowledgment
+        Core::write_acknowledgement(alice, packet_data, empty_acknowledgement);
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1029)] // E_ACKNOWLEDGEMENT_ALREADY_EXISTS
+    public fun test_write_acknowledgement_already_exists(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock channel and set it in the IBCStore
+        let connection_id = string::utf8(b"connection-0");
+        let channel_id = string::utf8(b"channel-0");
+        let port_id = string::utf8(b"port-0");
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), channel_id);
+        let channel_data = channel::new(3, 2, counterparty, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Set the capability to allow writing the acknowledgment
+        let relayer_addr = signer::address_of(alice);
+        Core::claim_capability(IBCCommitment::channel_capability_path(port_id, channel_id), relayer_addr);
+
+        // Create a mock packet
+        let packet_data = packet::new(
+            1,
+            string::utf8(b""),
+            string::utf8(b""),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            1000000000);
+
+        // Create an acknowledgment
+        let acknowledgement = vector::singleton(1u8);
+
+        // Call write_acknowledgement function once
+        Core::write_acknowledgement(alice, packet_data, acknowledgement);
+
+        // Call write_acknowledgement function again to trigger the already exists error
+        Core::write_acknowledgement(alice, packet_data, acknowledgement);
+    }
+
+    #[test(alice = @IBC)]
+    public fun test_acknowledge_packet_success(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let port_id = string::utf8(b"counterparty-port");
+        let channel_id = string::utf8(b"counterparty-channel-0");
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b"counterparty-channel-0"));
+        let channel_data = channel::new(3, 2, counterparty_channel, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Verify that the channel is set correctly in the store
+        let stored_channel = Core::get_channel_from_store(port_id, channel_id);
+        assert!(channel::state(&stored_channel) == 3, 1102); // Ensure the channel is in STATE_OPEN
+
+        // Set a packet commitment for the mock packet
+        let packet_sequence = 0;
+        let packet_data = packet::new(
+            packet_sequence,
+            string::utf8(b"counterparty-port"),
+            string::utf8(b"counterparty-channel-0"),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            1000000000);
+
+        let packet_commitment_key = IBCCommitment::packet_commitment_key(port_id, channel_id, packet_sequence);
+        let packet_commitment_value = hash::sha2_256(packet::commitment(&packet_data));
+        Core::set_commitment(packet_commitment_key, packet_commitment_value);
+
+        // Prepare mock proof data
+        let proof_height = height::new(0, 1);
+        let proof = any::pack(vector::empty<u8>());
+        let acknowledgement = vector::singleton(1u8);
+
+        // Call acknowledge_packet function
+        Core::acknowledge_packet(packet_data, acknowledgement, proof, proof_height);
+
+        // Validate that the packet commitment has been removed
+        let retrieved_commitment = Core::get_commitment(packet_commitment_key);
+        assert!(vector::length(&retrieved_commitment) == 0, 1101);
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1032)] // E_PACKET_COMMITMENT_NOT_FOUND
+    public fun test_acknowledge_packet_commitment_not_found(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let port_id = string::utf8(b"counterparty-port");
+        let channel_id = string::utf8(b"counterparty-channel-0");
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b"counterparty-channel-0"));
+        let channel_data = channel::new(3, 2, counterparty_channel, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Prepare a packet without setting a corresponding commitment
+        let packet_sequence = 0;
+        let packet_data = packet::new(
+            packet_sequence,
+            string::utf8(b"counterparty-port"),
+            string::utf8(b"counterparty-channel-0"),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            1000000000);
+
+        // Prepare mock proof data
+        let proof_height = height::new(0, 1);
+        let proof = any::pack(vector::empty<u8>());
+        let acknowledgement = vector::singleton(1u8);
+
+        // Call acknowledge_packet function (should abort with E_PACKET_COMMITMENT_NOT_FOUND)
+        Core::acknowledge_packet(packet_data, acknowledgement, proof, proof_height);
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1033)] // E_INVALID_PACKET_COMMITMENT
+    public fun test_acknowledge_packet_invalid_commitment(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let port_id = string::utf8(b"counterparty-port");
+        let channel_id = string::utf8(b"counterparty-channel-0");
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b"counterparty-channel-0"));
+        let channel_data = channel::new(3, 2, counterparty_channel, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Set an incorrect packet commitment for the mock packet
+        let packet_sequence = 0;
+        let packet_data = packet::new(
+            packet_sequence,
+            string::utf8(b"counterparty-port"),
+            string::utf8(b"counterparty-channel-0"),
+            port_id,
+            channel_id,
+            vector::singleton(99u8), // Incorrect data to cause commitment mismatch
+            height::new(0, 1),
+            1000000000);
+
+        let packet_commitment_key = IBCCommitment::packet_commitment_key(port_id, channel_id, packet_sequence);
+        let incorrect_commitment_value = hash::sha2_256(vector::singleton(88u8)); // Incorrect commitment value
+        Core::set_commitment(packet_commitment_key, incorrect_commitment_value);
+
+        // Prepare mock proof data
+        let proof_height = height::new(0, 1);
+        let proof = any::pack(vector::empty<u8>());
+        let acknowledgement = vector::singleton(1u8);
+
+        // Call acknowledge_packet function (should abort with E_INVALID_PACKET_COMMITMENT)
+        Core::acknowledge_packet(packet_data, acknowledgement, proof, proof_height);
+    }
+
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1026)] // E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
+    public fun test_acknowledge_packet_sequence_mismatch(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let port_id = string::utf8(b"counterparty-port");
+        let channel_id = string::utf8(b"counterparty-channel-0");
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b"counterparty-channel-0"));
+        let channel_data = channel::new(3, 2, counterparty_channel, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN, ORDERED
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Set a correct packet commitment for the mock packet but with a different sequence
+        let packet_sequence = 1;
+        let packet_data = packet::new(
+            packet_sequence,
+            string::utf8(b"counterparty-port"),
+            string::utf8(b"counterparty-channel-0"),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            1000000000);
+
+        let packet_commitment_key = IBCCommitment::packet_commitment_key(port_id, channel_id, packet_sequence);
+        let packet_commitment_value = hash::sha2_256(packet::commitment(&packet_data));
+        Core::set_commitment(packet_commitment_key, packet_commitment_value);
+
+        // Set an expected sequence mismatch
+        let next_sequence_ack_key = IBCCommitment::next_sequence_ack_commitment_key(port_id, channel_id);
+        Core::set_commitment(next_sequence_ack_key, bcs::to_bytes(&2u64)); // Set to 2 instead of 1
+
+        // Prepare mock proof data
+        let proof_height = height::new(0, 1);
+        let proof = any::pack(vector::empty<u8>());
+        let acknowledgement = vector::singleton(1u8);
+
+        // Call acknowledge_packet function (should abort with E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH)
+        Core::acknowledge_packet(packet_data, acknowledgement, proof, proof_height);
     }
 
 }

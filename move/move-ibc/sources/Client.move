@@ -67,6 +67,12 @@ module IBC::Core {
     const E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH: u64 = 1026; 
     const E_UNKNOWN_CHANNEL_ORDERING: u64 = 1027;    
     const E_CONNECTION_DOES_NOT_EXIST: u64 = 1028;
+    const E_ACKNOWLEDGEMENT_IS_EMPTY: u64 = 1028;
+    const E_ACKNOWLEDGEMENT_ALREADY_EXISTS: u64 = 1029;
+    const E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH: u64 = 1030;
+    const E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH: u64 = 1031;
+    const E_PACKET_COMMITMENT_NOT_FOUND: u64 = 1032;
+    const E_INVALID_PACKET_COMMITMENT: u64 = 1033;
 
      
 
@@ -158,6 +164,18 @@ module IBC::Core {
         packet: Packet
     }
 
+    #[event]
+    struct WriteAcknowledgement has drop, store {
+        packet: Packet,
+        acknowledgement: vector<u8>
+    }   
+    
+    #[event]
+    struct AcknowledgePacket has drop, store {
+        packet: Packet,
+        acknowledgement: vector<u8>
+    }    
+    
 
     struct ChannelPort has copy, drop, store {
         port_id: String,
@@ -1553,12 +1571,143 @@ module IBC::Core {
 
         // TODO: What will be the type of that acknowledgement? String? bytes array?
         // if (vector::length(&acknowledgement) > 0) {
-        //     write_acknowledgement(msg_packet, acknowledgement);
+        //     write_ack_impl(msg_packet, acknowledgement);
         // }
 
         event::emit(RecvPacket {
             packet: msg_packet
         });
     }
+    public fun write_acknowledgement(
+        caller: &signer,
+        packet: packet::Packet,
+        acknowledgement: vector<u8>
+    ) acquires IBCStore {
+        if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(
+                *packet::destination_port(&packet),
+                *packet::destination_channel(&packet)
+            ))) {
+            abort E_UNAUTHORIZED
+        };
+        write_ack_impl(packet, acknowledgement);
+    }
+
+    public fun write_ack_impl(
+        packet: packet::Packet,
+        acknowledgement: vector<u8>
+    ) acquires IBCStore {
+        if (vector::length(&acknowledgement) == 0) {
+            abort E_ACKNOWLEDGEMENT_IS_EMPTY
+        };
+
+        ensure_channel_state(*packet::destination_port(&packet), *packet::destination_channel(&packet));
+
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let ack_commitment_key = IBCCommitment::packet_acknowledgement_commitment_key(
+            *packet::destination_port(&packet),
+            *packet::destination_channel(&packet),
+            packet::sequence(&packet)
+        );
+        let ack_commitment = smart_table::borrow_with_default(
+            &store.commitments,
+            ack_commitment_key,
+            &bcs::to_bytes(&0u8)
+        );
+        if (*ack_commitment != bcs::to_bytes(&0u8)) {
+            abort E_ACKNOWLEDGEMENT_ALREADY_EXISTS
+        };
+        smart_table::upsert(&mut store.commitments, ack_commitment_key, hash::sha2_256(acknowledgement));
+
+        event::emit(WriteAcknowledgement {
+            packet,
+            acknowledgement
+        });
+    }
+
+    public fun acknowledge_packet(
+        packet: packet::Packet,
+        acknowledgement: vector<u8>,
+        proof: Any,
+        proof_height: height::Height
+    ) acquires IBCStore, SignerRef {
+        let port_id = *packet::source_port(&packet);
+        let channel_id = *packet::source_channel(&packet);
+
+        let channel = ensure_channel_state(port_id, channel_id);
+
+        if (port_id != *channel::chan_counterparty_port_id(&channel)) {
+            abort E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH
+        };
+        if (channel_id != *channel::chan_counterparty_channel_id(&channel)) {
+            abort E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH
+        };
+
+        let connection = ensure_connection_state(*vector::borrow(channel::connection_hops(&channel), 0));
+
+        let packet_commitment_key = IBCCommitment::packet_commitment_key(port_id, channel_id, packet::sequence(&packet));
+        let expected_packet_commitment = get_commitment(packet_commitment_key);
+
+        if (vector::length(&expected_packet_commitment) == 0) {
+            abort E_PACKET_COMMITMENT_NOT_FOUND
+        };
+
+        let packet_commitment = hash::sha2_256(
+            packet::commitment(&packet)
+        );
+
+        if (expected_packet_commitment != packet_commitment) {
+            abort E_INVALID_PACKET_COMMITMENT
+        };
+
+        let ack_commitment_path = IBCCommitment::packet_acknowledgement_commitment_path(
+            *packet::destination_port(&packet),
+            *packet::destination_channel(&packet),
+            packet::sequence(&packet)
+        );
+
+        let err = verify_commitment(
+            &connection,
+            proof_height,
+            proof,
+            ack_commitment_path,
+            hash::sha2_256(acknowledgement)
+        );
+
+        if (err != 0) {
+            abort err
+        };
+
+        if (channel::ordering(&channel) == CHAN_ORDERING_ORDERED) {
+            let expected_ack_sequence = from_bcs::to_u64(
+                *smart_table::borrow_with_default(
+                    &borrow_global<IBCStore>(get_vault_addr()).commitments,
+                    IBCCommitment::next_sequence_ack_commitment_key(port_id, channel_id),
+                    &bcs::to_bytes(&0u64)
+                )
+            );
+
+            if (expected_ack_sequence != packet::sequence(&packet)) {
+                abort E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
+            };
+
+            smart_table::upsert(
+                &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
+                IBCCommitment::next_sequence_ack_commitment_key(port_id, channel_id),
+                bcs::to_bytes(&(expected_ack_sequence + 1))
+            );
+        };
+
+        smart_table::remove(&mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments, packet_commitment_key);
+        
+        event::emit(AcknowledgePacket {
+            packet,
+            acknowledgement
+        });
+        
+        IBCModule::on_acknowledgement_packet(packet, acknowledgement, signer::address_of(&get_ibc_signer()));
+
+    }
+
+
 
 }   
