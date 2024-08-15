@@ -240,7 +240,7 @@
         ./app/app.nix
         ./site/site.nix
         ./site/openapi.nix
-        ./near/near.nix
+        ./lib/near/near.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
         ./light-clients/cometbls-light-client/cometbls-light-client.nix
         ./light-clients/tendermint-light-client/tendermint-light-client.nix
@@ -274,10 +274,8 @@
         ./networks/simulation/simd.nix
         ./networks/stargaze.nix
         ./networks/osmosis.nix
-        ./testnet-validator.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
-        ./fuzz
         ./devnet-compose/devnet-compose.nix
         ./drip/drip.nix
         ./ucli/ucli.nix
@@ -295,7 +293,6 @@
         , system
         , lib
         , biome
-        , cargo-fuzz
         , ...
         }:
         let
@@ -489,7 +486,6 @@
             name = "union-devShell";
             buildInputs = [ rust.toolchains.dev ] ++ (with pkgs; [
               clang
-              cargo-fuzz
               cargo-llvm-cov
               bacon
               cargo-nextest
