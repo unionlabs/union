@@ -7,7 +7,7 @@
          width="50%">
   </picture>
 
-  [![Build](https://github.com/unionlabs/union/actions/workflows/build.yml/badge.svg)](https://github.com/unionlabs/union/actions/workflows/build.yml)
+  [![Build](https://hercules-ci.com/api/v1/site/github/account/unionlabs/project/union/badge)](https://hercules-ci.com/github/unionlabs/union/status)
   [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
   [![Discord badge][]](https://discord.union.build)
   [![Twitter handle][]][Twitter badge]
