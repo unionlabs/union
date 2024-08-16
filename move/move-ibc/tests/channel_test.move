@@ -197,7 +197,7 @@ module IBC::ChannelTest {
         let channel = channel::new(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
 
         // Call channel_open_init function
-        let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
+        let (_,_,_,channel_id,_,_,_) = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
 
         // Validate that the channel was added to the store
         let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);
@@ -294,7 +294,7 @@ public fun test_channel_open_ack(alice: &signer) {
     let connection_hops = vector::singleton(connection_id);
     let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
     let channel = channel::new(1, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
-    let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
+    let (_,_,_,channel_id,_,_,_) = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
 
     // Prepare mock proof data
     let proof_height = height::new(0, 1);
@@ -345,7 +345,7 @@ public fun test_channel_open_ack(alice: &signer) {
         let connection_hops = vector::singleton(connection_id);
         let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
         let channel = channel::new(3, ORDER_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
-        let channel_id = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
+        let (_,_,_,channel_id,_,_,_) = Core::channel_open_init(string::utf8(b"port-0"), channel, signer::address_of(alice));
 
         // Prepare mock proof data
         let proof_height = height::new(0, 1);
@@ -474,7 +474,7 @@ public fun test_channel_open_ack(alice: &signer) {
         let proof_init = any::pack(vector::empty<u8>());
 
         // Call channel_open_try function
-        let channel_id = Core::channel_open_try(string::utf8(b"port-0"), channel, string::utf8(b"1"), proof_init, proof_height);
+        let (_,_,_,channel_id,_,_,_,_) = Core::channel_open_try(string::utf8(b"port-0"), channel, string::utf8(b"1"), proof_init, proof_height);
 
         // Validate that the channel was added to the store
         let stored_channel = Core::get_channel_from_store(string::utf8(b"port-0"), channel_id);

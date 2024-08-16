@@ -15,7 +15,6 @@ module IBC::Core {
     use IBC::IBCCommitment;
     use IBC::LightClient;
     use IBC::height::{Self, Height};
-    use IBCModuleAddr::IBCModule;
     use IBC::connection_end::{Self, ConnectionEnd};
     use IBC::channel::{Self, Channel};
     use IBC::packet::{Self, Packet};
@@ -156,7 +155,7 @@ module IBC::Core {
         source_channel: String,
         timeout_height: height::Height,
         timeout_timestamp: u64,
-        data: String 
+        data: vector<u8>, 
     }    
     
     #[event]
@@ -1079,7 +1078,9 @@ module IBC::Core {
         msg_port_id: String,
         msg_channel: Channel,
         relayer: address
-    ): String acquires IBCStore {
+    ): (
+    u8, vector<String>, String, String, String, String, String,
+        ) acquires IBCStore {
         if (!is_lowercase(&msg_port_id)) {
             abort(E_PORT_ID_MUST_BE_LOWERCASE)
         };
@@ -1139,13 +1140,7 @@ module IBC::Core {
         // TODO(aeryz): this is going to happen the other way around, the module will call this function.
         // // Hardcoded call to IBCModule::on_chan_open_init
         // IBCModule::on_chan_open_init(
-        //     channel::ordering(&msg_channel),
-        //     channel::connection_hops(&msg_channel),
-        //     msg_port_id,
-        //     channel_id,
-        //     channel::chan_counterparty_port_id(&msg_channel),
-        //     channel::chan_counterparty_channel_id(&msg_channel),
-        //     channel::version(&msg_channel),
+            
         // );
 
         claim_capability(
@@ -1153,7 +1148,15 @@ module IBC::Core {
             relayer
         );
 
-        channel_id
+        (
+            channel::ordering(&msg_channel),
+            *channel::connection_hops(&msg_channel),
+            channel_port.port_id,
+            channel_port.channel_id,
+            *channel::chan_counterparty_port_id(&msg_channel),
+            *channel::chan_counterparty_channel_id(&msg_channel),
+            *channel::version(&msg_channel)
+        )
     }
 
     public fun channel_open_ack(
@@ -1163,7 +1166,9 @@ module IBC::Core {
         counterparty_version: String,
         proof_try: Any,
         proof_height: height::Height
-    ) acquires IBCStore {
+    ): (
+    String, String, String, String,
+        )  acquires IBCStore {
         // Retrieve the channel from the store
         let channel_port = ChannelPort { port_id, channel_id };
         let chan = *smart_table::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);
@@ -1196,13 +1201,6 @@ module IBC::Core {
 
         update_channel_commitment(port_id, channel_id);
 
-        IBCModule::on_chan_open_ack(
-            port_id,
-            channel_id,
-            counterparty_channel_id,
-            counterparty_version
-        );
-
         channel::set_state(&mut chan, CHAN_STATE_OPEN);
         channel::set_version(&mut chan, counterparty_version);
         channel::set_chan_counterparty_channel_id(&mut chan, counterparty_channel_id);
@@ -1219,6 +1217,12 @@ module IBC::Core {
             },
         );
 
+        (
+            port_id,
+            channel_id,
+            counterparty_channel_id,
+            counterparty_version
+        )
     }
 
     public fun channel_open_confirm(
@@ -1226,7 +1230,9 @@ module IBC::Core {
         channel_id: String,
         proof_ack: Any,
         proof_height: height::Height
-    ) acquires IBCStore {
+    ): (
+    String, String,
+        )acquires IBCStore {
         // Retrieve the channel from the store
         let channel_port = ChannelPort { port_id, channel_id };
         let channel = *smart_table::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);
@@ -1274,6 +1280,8 @@ module IBC::Core {
                 connection_id: *vector::borrow(channel::connection_hops(&channel), 0)
             },
         );
+
+        (port_id, channel_id)
     }
 
     public fun channel_open_try(
@@ -1282,7 +1290,9 @@ module IBC::Core {
         counterparty_version: String,
         proof_init: Any,
         proof_height: height::Height
-    ): String acquires IBCStore {
+    ): (
+    u8, vector<String>, String, String, String, String, String, String
+        ) acquires IBCStore {
         let (connection_id, connection) = ensure_connection_feature(*channel::connection_hops(&channel), channel::ordering(&channel));
         
         if (channel::state(&channel) != CHAN_STATE_TRYOPEN) {
@@ -1363,7 +1373,16 @@ module IBC::Core {
             @IBCModuleAddr
         );
 
-        channel_id
+        (
+            channel::ordering(&channel),
+            *channel::connection_hops(&channel),
+            port_id,
+            channel_id,
+            *channel::chan_counterparty_port_id(&channel),
+            *channel::chan_counterparty_channel_id(&channel),
+            *channel::version(&channel),
+            counterparty_version
+        )
     }
 
     // Ensures that the channel state is open
@@ -1401,7 +1420,7 @@ module IBC::Core {
         source_channel: String,
         timeout_height: height::Height,
         timeout_timestamp: u64,
-        data: String
+        data: vector<u8>
     ): u64 acquires IBCStore {
         let caller_addr = signer::address_of(caller);
         let source_port = string_utils::to_string(&caller_addr);
@@ -1479,14 +1498,14 @@ module IBC::Core {
 
     // Receives and processes an IBC packet
     public fun recv_packet(
-        _caller: &signer,
+        // _caller: &signer, // TODO: Do we need this?
         msg_port_id: String,
         msg_channel_id: String,
         msg_packet: Packet,
         msg_proof: Any,
         msg_proof_height: height::Height,
-        _acknowledgement: String
-    ) acquires IBCStore {
+        acknowledgement: vector<u8>
+    ): Packet acquires IBCStore {
         let channel = ensure_channel_state(msg_port_id, msg_channel_id);
 
         if (packet::source_port(&msg_packet) != channel::chan_counterparty_port_id(&channel)) {
@@ -1563,20 +1582,16 @@ module IBC::Core {
         };
 
 
-        // let acknowledgement = IBCModule::on_recv_packet(
-        //     msg_packet,
-        //     caller
-        // );
-
-
         // TODO: What will be the type of that acknowledgement? String? bytes array?
-        // if (vector::length(&acknowledgement) > 0) {
-        //     write_ack_impl(msg_packet, acknowledgement);
-        // }
+        if (vector::length(&acknowledgement) > 0) {
+            write_ack_impl(msg_packet, acknowledgement);
+        };
 
         event::emit(RecvPacket {
             packet: msg_packet
         });
+
+        msg_packet
     }
     public fun write_acknowledgement(
         caller: &signer,
@@ -1629,7 +1644,7 @@ module IBC::Core {
         acknowledgement: vector<u8>,
         proof: Any,
         proof_height: height::Height
-    ) acquires IBCStore, SignerRef {
+    ): (Packet, vector<u8>) acquires IBCStore {
         let port_id = *packet::source_port(&packet);
         let channel_id = *packet::source_channel(&packet);
 
@@ -1703,9 +1718,7 @@ module IBC::Core {
             packet,
             acknowledgement
         });
-        
-        IBCModule::on_acknowledgement_packet(packet, acknowledgement, signer::address_of(&get_ibc_signer()));
-
+        (packet, acknowledgement)
     }
 
 
