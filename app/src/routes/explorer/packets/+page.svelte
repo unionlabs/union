@@ -11,6 +11,7 @@ import { DurationUnits } from "svelte-ux"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 import CellDurationText from "$lib/components/table-cells/cell-duration-text.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
+import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 import type { UnwrapReadable } from "$lib/utilities/types"
 
 const packets = createQuery({
@@ -18,20 +19,21 @@ const packets = createQuery({
   refetchInterval: 5_000,
   queryFn: async () => request(URLS.GRAPHQL, packetsQuery, {}),
   select: data =>
-    data.v0_packets.map(channel => ({
+    data.v0_packets.map(packet => ({
       source: {
-        chain_id: channel.from_chain_id ?? "unknown",
-        connection_id: channel.from_connection_id ?? "unknown",
-        channel_id: channel.from_channel_id ?? "unknown",
-        port_id: channel.from_port_id ?? "unknown"
+        chain_id: packet.from_chain_id ?? "unknown",
+        connection_id: packet.from_connection_id ?? "unknown",
+        channel_id: packet.from_channel_id ?? "unknown",
+        port_id: packet.from_port_id ?? "unknown"
       },
       destination: {
-        chain_id: channel.to_chain_id ?? "unknown",
-        connection_id: channel.to_connection_id ?? "unknown",
-        channel_id: channel.to_channel_id ?? "unknown",
-        port_id: channel.to_port_id ?? "unknown"
+        chain_id: packet.to_chain_id ?? "unknown",
+        connection_id: packet.to_connection_id ?? "unknown",
+        channel_id: packet.to_channel_id ?? "unknown",
+        port_id: packet.to_port_id ?? "unknown"
       },
-      status: channel.status
+      source_time: packet.source_time,
+      destination_time: packet.destination_time
     }))
 })
 
@@ -62,28 +64,16 @@ const columns: Array<ColumnDef<PacketRow>> = [
       })
   },
   {
-    accessorKey: "source_time",
     header: () => "Source Time",
-    size: 200,
-    cell: info =>
-      flexRender(CellDurationText, {
-        totalUnits: 3,
-        variant: "short",
-        minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string)
-      })
+    accessorKey: "source_time",
+    // @ts-expect-error
+    cell: info => toPrettyDateTimeFormat(info.getValue(), { local: true })
   },
   {
-    accessorKey: "destination_time",
     header: () => "Destination Time",
-    size: 200,
-    cell: info =>
-      flexRender(CellDurationText, {
-        totalUnits: 3,
-        variant: "short",
-        minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string)
-      })
+    accessorKey: "destination_time",
+    // @ts-expect-error
+    cell: info => toPrettyDateTimeFormat(info.getValue(), { local: true })
   }
 ]
 </script>
