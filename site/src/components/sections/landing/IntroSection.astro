@@ -1,7 +1,9 @@
 ---
+import { Image } from 'astro:assets';
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
+import wave from "#/assets/images/spline-holders/wave-collateral.png"
 ---
 
 <section class="relative flex w-full py-14 md:py-28 md:pb-36">
@@ -27,7 +29,7 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
         </div>
     </div>
     <div class="absolute -mt-14 md:-mt-28 w-full">
-        <img src="/src/assets/images/spline-holders/wave-collateral.png" alt="Wave Collateral"
+        <Image src={wave} alt="Wave Collateral"
              class="object-cover w-full">
     </div>
 </section>

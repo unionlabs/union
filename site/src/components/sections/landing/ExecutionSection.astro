@@ -1,7 +1,9 @@
 ---
+import { Image } from 'astro:assets';
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
+import executionImage from "#/assets/images/spline-holders/execution.png"
 ---
 <section class="flex w-full">
     <div class="w-full max-w-[1920px] mx-auto z-10 px-6">
@@ -19,7 +21,7 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
                 <ButtonA>LEARN MORE >>></ButtonA>
             </div>
             <div class="flex justify-end">
-                <img src="/src/assets/images/spline-holders/execution.png" alt="Wave Collateral"></img>
+                <Image src={executionImage} alt="Wave Collateral"></Image>
             </div>
         </div>
     </div>

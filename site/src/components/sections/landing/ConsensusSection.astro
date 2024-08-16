@@ -1,8 +1,9 @@
 ---
+import { Image } from 'astro:assets';
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
-import Subtitle from "../../typography/subtitle.astro";
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
+import trails from "#/assets/images/spline-holders/union-trails.png"
 ---
 <section class="flex w-full">
     <div class="w-full max-w-[1920px] mx-auto z-10 px-6">
@@ -20,8 +21,8 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
                 <ButtonA>LEARN MORE >>></ButtonA>
             </div>
             <div class="flex justify-end order-first md:order-last">
-                <img src="/src/assets/images/spline-holders/union-trails.png" alt="Wave Collateral"
-                     class="h-auto"></img>
+                <Image src={trails} alt="Wave Collateral"
+                     class="h-auto"></Image>
             </div>
         </div>
     </div>
