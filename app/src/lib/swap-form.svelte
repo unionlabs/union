@@ -82,7 +82,7 @@ const swap = async () => {
                   tokens: [
                     {
                       address: "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
-                      amount: "7582832331538"
+                      amount: "718283233153"
                     }
                   ],
                   channel_id: "channel-3",
