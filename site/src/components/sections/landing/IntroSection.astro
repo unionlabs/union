@@ -1,25 +1,23 @@
 ---
-import H1 from "#/components/typography/h1.astro"
-import ButtonA from "#/components/ButtonA.astro"
-import QuoteSubTitle from "../typography/QuoteSubTitle.astro";
+import H1 from "../../typography/h1.astro"
+import ButtonA from "../../ButtonA.astro"
+import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
 ---
 
-<section class="relative flex w-full">
-    <div class="w-full max-w-[1920px] mx-auto px-4 sm:px-6 z-10">
+<section class="relative flex w-full py-14 md:py-28 md:pb-36">
+    <div class="w-full max-w-[1920px] mx-auto px-6 z-10">
         <div class="z-20 grid grid-cols-1 gap-16 w-full">
             <div class="flex flex-col text-left items-start">
                 <H1>The <br> Modular <br> <span class="text-accent-500">Ecosystem</span></H1>
             </div>
             <div class="flex flex-col items-end">
-                <div class="text-right flex flex-col gap-8">
+                <div class="text-right flex flex-col gap-4 md:gap-8">
                     <H1>The <br> interoperability <br> <span class="text-accent-500"><span
                             class="text-2xl">0_____________0</span> revolution</span></H1>
-                    <div class="max-w-[557px] text-left flex flex-col gap-8">
+                    <div class="max-w-[557px] text-left flex flex-col gap-4 md:gap-8">
                         <QuoteSubTitle>
                             Connecting every blockchain, without compromising on security, efficiency,
-                            decentralization,
-                            or
-                            speed.
+                            decentralization, or speed.
                         </QuoteSubTitle>
                         <ButtonA href="https://app.union.build">DIVE IN >>></ButtonA>
                     </div>

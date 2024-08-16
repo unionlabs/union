@@ -1,0 +1,109 @@
+---
+import H1 from "../../typography/h1.astro";
+
+const images = await Astro.glob("/src/assets/images/marquee/pods/*.{jpeg,jpg,png,gif}")
+
+const imageUrls = images.map(image => image.default.src);
+---
+
+<div class="pb-8">
+    <div class="text-center mb-8">
+        <H1>Our <span class="text-accent-500">Pod.</span></H1>
+    </div>
+    <article class="wrapper">
+        <div class="marquee">
+            <div class="marquee__group">
+                {
+                    imageUrls.map(url => (
+                            <img src={url} alt="pod logo">
+                    ))
+                }
+            </div>
+
+            <div aria-hidden="true" class="marquee__group">
+                {
+                    imageUrls.map(url => (
+                            <img src={url} alt="pod logo">
+                    ))
+                }
+            </div>
+        </div>
+    </article>
+</div>
+
+<style>
+    :root {
+        --size: clamp(10rem, 1rem + 40vmin, 30rem);
+        --gap: calc(var(--size) / 14);
+        --duration: 60s;
+        --scroll-start: 0;
+        --scroll-end: calc(-100% - var(--gap));
+    }
+
+    .marquee {
+        display: flex;
+        overflow: hidden;
+        user-select: none;
+        gap: var(--gap);
+        mask-image: linear-gradient(
+                var(--mask-direction, to right),
+                hsl(0 0% 0% / 0),
+                hsl(0 0% 0% / 1) 20%,
+                hsl(0 0% 0% / 1) 80%,
+                hsl(0 0% 0% / 0)
+        );
+    }
+
+    .marquee__group {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        gap: var(--gap);
+        min-width: 100%;
+        animation: scroll-x var(--duration) linear infinite;
+    }
+
+    .marquee--vertical {
+        --mask-direction: to bottom;
+    }
+
+    .marquee--vertical,
+    .marquee--vertical .marquee__group {
+        flex-direction: column;
+    }
+
+    .marquee--vertical .marquee__group {
+        animation-name: scroll-y;
+    }
+
+    .marquee--reverse .marquee__group {
+        animation-direction: reverse;
+        animation-delay: -3s;
+    }
+
+    @keyframes scroll-x {
+        from {
+            transform: translateX(var(--scroll-start));
+        }
+        to {
+            transform: translateX(var(--scroll-end));
+        }
+    }
+
+    .marquee img {
+        display: grid;
+        place-items: center;
+        width: var(--size);
+        padding: calc(var(--size) / 10);
+        border-radius: 0.5rem;
+    }
+
+
+    @keyframes fade {
+        to {
+            opacity: 0;
+            visibility: hidden;
+        }
+    }
+</style>
