@@ -10,7 +10,7 @@ export let selectedChainId: string
   variant="outline"
   data-transfer-from-chain=""
   on:click={() => (dialogOpen = !dialogOpen)}
-  class="flex flex-row items-center size-full"
+  class="flex flex-row items-center w-full"
 >
   <div class="flex items-center space-x-1.5 flex-1">
     <div class="flex flex-col items-start">
