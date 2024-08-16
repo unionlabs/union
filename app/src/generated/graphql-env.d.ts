@@ -13313,6 +13313,72 @@ export type introspection = {
             },
             "args": [],
             "isDeprecated": false
+          },
+          {
+            "name": "traces",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v0_traces"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v0_traces_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v0_traces_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v0_traces_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
           }
         ],
         "interfaces": []
@@ -13784,6 +13850,13 @@ export type introspection = {
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "traces",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_bool_exp"
             }
           }
         ],
@@ -17357,6 +17430,13 @@ export type introspection = {
             "type": {
               "kind": "ENUM",
               "name": "order_by"
+            }
+          },
+          {
+            "name": "traces_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v0_traces_aggregate_order_by"
             }
           }
         ],

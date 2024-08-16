@@ -8,6 +8,7 @@ const tables = [
   //
   "channels",
   "transfers",
+  "packets",
   "connections",
   "index-status"
 ] as const
@@ -25,6 +26,11 @@ export const load = (loadEvent => ({
       route: "transfers",
       icon: TransfersIcon,
       description: "All transfers"
+    },
+    {
+      route: "packets",
+      icon: TransfersIcon,
+      description: "All packets"
     },
     {
       route: "connections",
