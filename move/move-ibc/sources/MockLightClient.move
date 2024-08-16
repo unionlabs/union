@@ -234,6 +234,21 @@ module IBC::LightClient {
         )
     }
 
+    public fun verify_non_membership(
+        _client_id: String,
+        _height: height::Height,
+        _proof: Any,
+        _prefix: vector<u8>,
+        _path: vector<u8>,
+    ): (vector<height::Height>, u64) { // second parameter is error code        
+        (
+            vector<height::Height>[
+
+            ],
+            0
+        )
+    }
+
     fun get_client_address(client_id: &string::String): address {
         object::create_object_address(&@IBC, *string::bytes(client_id))
     }
@@ -433,6 +448,6 @@ module IBC::LightClient {
         _client_id: String,
         _height: height::Height
     ): u64 {
-        0
+        1
     }
 }

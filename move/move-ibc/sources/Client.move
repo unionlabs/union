@@ -72,6 +72,9 @@ module IBC::Core {
     const E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH: u64 = 1031;
     const E_PACKET_COMMITMENT_NOT_FOUND: u64 = 1032;
     const E_INVALID_PACKET_COMMITMENT: u64 = 1033;
+    const E_TIMESTAMP_TIMEOUT_NOT_REACHED: u64 = 1034;
+    const E_TIMEOUT_HEIGHT_NOT_REACHED: u64 = 1035;
+    const E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE: u64 = 1036;
 
      
 
@@ -160,6 +163,11 @@ module IBC::Core {
     
     #[event]
     struct RecvPacket has drop, store {
+        packet: Packet
+    }    
+
+    #[event]
+    struct TimeoutPacket has drop, store {
         packet: Packet
     }
 
@@ -1721,6 +1729,116 @@ module IBC::Core {
         (packet, acknowledgement)
     }
 
+    public fun timeout_packet(
+        port_id: String,
+        channel_id: String,
+        packet: Packet,
+        proof: Any,
+        proof_height: height::Height,
+        next_sequence_recv: u64
+    ) acquires IBCStore {
+        let channel = ensure_channel_state(port_id, channel_id);
+
+        if (*packet::destination_port(&packet) != *channel::chan_counterparty_port_id(&channel)) {
+            std::debug::print(packet::destination_port(&packet));
+            std::debug::print(channel::chan_counterparty_port_id(&channel));
+            abort E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH
+        };
+        if (*packet::destination_channel(&packet) != *channel::chan_counterparty_channel_id(&channel)) {
+            abort E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH
+        };
+
+        let connection_hop = *vector::borrow(channel::connection_hops(&channel), 0);
+        let connection = ensure_connection_state(connection_hop);
+
+        let packet_commitment_key = IBCCommitment::packet_commitment_key(
+            *packet::source_port(&packet),
+            *packet::source_channel(&packet),
+            packet::sequence(&packet)
+        );
+        let expected_packet_commitment = get_commitment(packet_commitment_key);
+        if (vector::length(&expected_packet_commitment) == 0) {
+            abort E_PACKET_COMMITMENT_NOT_FOUND
+        };
+
+        let packet_commitment = hash::sha2_256(
+            packet::commitment(&packet)
+        );
+        if (expected_packet_commitment != packet_commitment) {
+            abort E_INVALID_PACKET_COMMITMENT
+        };
+
+        let proof_timestamp = LightClient::get_timestamp_at_height(
+            *connection_end::client_id(&connection),
+            proof_height
+        );
+        if (proof_timestamp == 0) {
+            abort E_LATEST_TIMESTAMP_NOT_FOUND
+        };
+
+        if (packet::timeout_timestamp(&packet) != 0 && packet::timeout_timestamp(&packet) >= proof_timestamp) {
+            abort E_TIMESTAMP_TIMEOUT_NOT_REACHED
+        };
+        if (!height::is_zero(&packet::timeout_height(&packet)) && height::gte(&packet::timeout_height(&packet), &proof_height)) {
+            abort E_TIMEOUT_HEIGHT_NOT_REACHED
+        };
+
+        if (channel::ordering(&channel) == CHAN_ORDERING_ORDERED) {
+            if (next_sequence_recv <= packet::sequence(&packet)) {
+                abort E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE
+            };
+            let err = verify_commitment(
+                &connection,
+                proof_height,
+                proof,
+                IBCCommitment::next_sequence_recv_commitment_path(
+                    *packet::destination_port(&packet),
+                    *packet::destination_channel(&packet)
+                ),
+                bcs::to_bytes(&next_sequence_recv)
+            );
+            if (err != 0) {
+                abort E_INVALID_PROOF
+            };
+            channel::set_state(&mut channel, CHAN_STATE_CLOSED);
+        } else if (channel::ordering(&channel) == CHAN_ORDERING_UNORDERED) {
+            let err = verify_absent_commitment(
+                &connection,
+                proof_height,
+                proof,
+                IBCCommitment::packet_receipt_commitment_path(
+                    *packet::destination_port(&packet),
+                    *packet::destination_channel(&packet),
+                    packet::sequence(&packet)
+                )
+            );
+            if (err != 0) {
+                abort E_INVALID_PROOF
+            };
+        } else {
+            abort E_UNKNOWN_CHANNEL_ORDERING
+        };
+
+        smart_table::remove(&mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments, packet_commitment_key);
+
+        event::emit(TimeoutPacket { packet });
+    }
+
+    public fun verify_absent_commitment(
+        connection: &ConnectionEnd,
+        height: height::Height,
+        proof: Any,
+        path: String
+    ): u64 {
+        let (_, err) = LightClient::verify_non_membership(
+            *connection_end::client_id(connection),
+            height,
+            proof,
+            *connection_end::conn_counterparty_key_prefix(connection),
+            *string::bytes(&path)
+        );
+        err
+    }
 
 
 }   
