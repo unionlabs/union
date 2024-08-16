@@ -10,8 +10,8 @@ import CellStatus from "$lib/components/table-cells/cell-status.svelte"
 import { DurationUnits } from "svelte-ux"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 import CellDurationText from "$lib/components/table-cells/cell-duration-text.svelte"
+import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
-import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 import type { UnwrapReadable } from "$lib/utilities/types"
 
 const packets = createQuery({
@@ -55,25 +55,14 @@ const columns: Array<ColumnDef<PacketRow>> = [
     cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
   },
   {
-    accessorKey: "status",
-    header: () => "Status",
-    size: 200,
-    cell: info =>
-      flexRender(CellStatus, {
-        value: info.getValue()
-      })
-  },
-  {
     header: () => "Source Time",
     accessorKey: "source_time",
-    // @ts-expect-error
-    cell: info => toPrettyDateTimeFormat(info.getValue(), { local: true })
+    cell: info => flexRender(CellTimestamp, { value: info.getValue() })
   },
   {
     header: () => "Destination Time",
     accessorKey: "destination_time",
-    // @ts-expect-error
-    cell: info => toPrettyDateTimeFormat(info.getValue(), { local: true })
+    cell: info => flexRender(CellTimestamp, { value: info.getValue() })
   }
 ]
 </script>

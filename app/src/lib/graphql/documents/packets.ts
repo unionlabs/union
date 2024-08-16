@@ -2,7 +2,7 @@ import { graphql } from "gql.tada"
 
 export const packetsQuery = graphql(/* GraphQL */ `
 query PacketsQuery($limit: Int = 100) {
-  v0_packets(limit: $limit, order_by: {destination_time: desc_nulls_last, source_time: desc_nulls_last}) {
+  v0_packets(limit: $limit, order_by: {source_time: desc_nulls_last}) {
     from_chain_id
     from_connection_id
     from_channel_id
