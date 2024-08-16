@@ -30,6 +30,8 @@ builds:
     - 'packages.*.gen-proto'
     - 'packages.*.go-vendor'
     - 'packages.*.voyager-dev'
+    - 'packages.*.eth-upgrade-*'
+    - 'packages.*.eth-dryupgrade-*'
   include:
     - '*.x86_64-linux.*'
     - 'packages.aarch64-linux.*'
