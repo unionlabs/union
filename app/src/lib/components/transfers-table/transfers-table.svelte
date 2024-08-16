@@ -20,6 +20,7 @@ import type { Transfer, TransferAddress } from "./transfers-types.ts"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellAssets from "$lib/components/table-cells/cell-assets.svelte"
+import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
 import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
 import { derived, writable, type Readable, type Writable } from "svelte/store"
 import CellOriginTransfer from "$lib/components/table-cells/cell-origin-transfer.svelte"
@@ -152,8 +153,7 @@ const columns: Array<ColumnDef<DataRow>> = [
   {
     header: () => "Time",
     accessorKey: "timestamp",
-    // @ts-expect-error
-    cell: info => toPrettyDateTimeFormat(info.getValue(), { local: true })
+    cell: info => flexRender(CellTimestamp, { value: info.getValue() })
   }
 ]
 
