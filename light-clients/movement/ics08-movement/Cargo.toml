@@ -1,0 +1,23 @@
+[package]
+name = "ics08-movement"
+version = "0.1.0"
+edition.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[dependencies]
+hex = { workspace = true }
+aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core" }
+serde_json = { workspace = true }
+hex-literal = { workspace = true }
+bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
+sha3 = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
