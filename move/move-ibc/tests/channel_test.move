@@ -924,4 +924,191 @@ public fun test_channel_open_ack(alice: &signer) {
         Core::acknowledge_packet(packet_data, acknowledgement, proof, proof_height);
     }
 
+    #[test(alice = @IBC)]
+    public fun test_timeout_packet_success_ordered(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let port_id = string::utf8(b"port-0");
+        let channel_id = string::utf8(b"channel-0");
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"port-0"), string::utf8(b"channel-0"));
+        let channel_data = channel::new(3, 2, counterparty_channel, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN, ORDERED
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Set a packet commitment for the mock packet
+        let packet_sequence = 0;
+        let packet_data = packet::new(
+            packet_sequence,
+            string::utf8(b"port-0"),
+            string::utf8(b"channel-0"),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            0
+        );
+
+        let packet_commitment_key = IBCCommitment::packet_commitment_key(port_id, channel_id, packet_sequence);
+        let packet_commitment_value = hash::sha2_256(packet::commitment(&packet_data));
+        Core::set_commitment(packet_commitment_key, packet_commitment_value);
+
+        // Prepare mock proof data
+        let proof_height = height::new(0, 2);
+        let proof = any::pack(vector::empty<u8>());
+
+        // Call timeout_packet function
+        Core::timeout_packet(
+            port_id,
+            channel_id,
+            packet_data,
+            proof,
+            proof_height,
+            2 // next_sequence_recv
+        );
+
+        // Validate that the packet commitment has been removed
+        let retrieved_commitment = Core::get_commitment(packet_commitment_key);
+        assert!(vector::length(&retrieved_commitment) == 0, 1101);
+    }
+    #[test(alice = @IBC)]
+    public fun test_timeout_packet_success_unordered(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let port_id = string::utf8(b"port-0");
+        let channel_id = string::utf8(b"channel-0");
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"port-0"), string::utf8(b"channel-0"));
+        let channel_data = channel::new(3, 1, counterparty_channel, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN, UNORDERED
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Set a packet commitment for the mock packet
+        let packet_sequence = 0;
+        let packet_data = packet::new(
+            packet_sequence,
+            string::utf8(b"port-0"),
+            string::utf8(b"channel-0"),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            0
+        );
+
+        let packet_commitment_key = IBCCommitment::packet_commitment_key(port_id, channel_id, packet_sequence);
+        let packet_commitment_value = hash::sha2_256(packet::commitment(&packet_data));
+        Core::set_commitment(packet_commitment_key, packet_commitment_value);
+
+        // Prepare mock proof data
+        let proof_height = height::new(0, 2);
+        let proof = any::pack(vector::empty<u8>());
+
+        // Call timeout_packet function
+        Core::timeout_packet(
+            port_id,
+            channel_id,
+            packet_data,
+            proof,
+            proof_height,
+            0 // next_sequence_recv is not relevant for UNORDERED
+        );
+
+        // Validate that the packet commitment has been removed
+        let retrieved_commitment = Core::get_commitment(packet_commitment_key);
+        assert!(vector::length(&retrieved_commitment) == 0, 1102);
+    }
+    
+    #[test(alice = @IBC)]
+    #[expected_failure(abort_code = 1032)] // E_PACKET_COMMITMENT_NOT_FOUND
+    public fun test_timeout_packet_commitment_not_found(alice: &signer) {
+        // Initialize IBCStore for testing
+        Core::create_ibc_store(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(Core::default_ibc_version()),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        Core::set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let port_id = string::utf8(b"port-0");
+        let channel_id = string::utf8(b"channel-0");
+        let counterparty_channel = channel::new_counterparty(string::utf8(b"port-0"), string::utf8(b"channel-0"));
+        let channel_data = channel::new(3, 2, counterparty_channel, vector::singleton(connection_id), string::utf8(b"1")); // STATE_OPEN, ORDERED
+        Core::set_channel(port_id, channel_id, channel_data);
+
+        // Prepare a packet without setting a corresponding commitment
+        let packet_sequence = 0;
+        let packet_data = packet::new(
+            packet_sequence,
+            string::utf8(b"port-0"),
+            string::utf8(b"channel-0"),
+            port_id,
+            channel_id,
+            vector::empty<u8>(),
+            height::new(0, 1),
+            0
+        );
+
+        // Prepare mock proof data
+        let proof_height = height::new(0, 2);
+        let proof = any::pack(vector::empty<u8>());
+
+        // Call timeout_packet function, should abort due to missing commitment
+        Core::timeout_packet(
+            port_id,
+            channel_id,
+            packet_data,
+            proof,
+            proof_height,
+            2 // next_sequence_recv
+        );
+    }
+
 }
