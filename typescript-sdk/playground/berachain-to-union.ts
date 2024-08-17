@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio } from "viem/chains"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/berachain-to-union.ts --private-key "..."` */
 
@@ -48,7 +48,7 @@ try {
 
   const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
 
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     evm: {
       account: berachainAccount,
       chain: berachainTestnetbArtio,

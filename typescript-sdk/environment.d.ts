@@ -1,5 +1,6 @@
 interface EnvironmentVariables {
   readonly NODE_ENV: "development" | "production" | "test"
+  readonly CI: string
   readonly DRY_RUN: string
   readonly HUBBLE_URL: string
   readonly INFURA_URL: string

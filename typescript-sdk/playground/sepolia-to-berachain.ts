@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio, sepolia } from "viem/chains"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/sepolia-to-berachain.ts --private-key "..."` */
 
@@ -48,17 +48,14 @@ try {
 
   if (!forward) raise("Forward configuration not found")
 
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     evm: {
       chain: sepolia,
       account: evmAccount,
-      transport: fallback(
-        [
-          http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
-          http(sepolia?.rpcUrls.default.http.at(0))
-        ],
-        { rank: true, retryCount: 3 }
-      )
+      transport: fallback([http(sepolia?.rpcUrls.default.http.at(0))], {
+        rank: true,
+        retryCount: 3
+      })
     }
   })
 
@@ -80,6 +77,8 @@ try {
     denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   } satisfies TransferAssetsParameters
+
+  consola.info(`Payload ${JSON.stringify(transferAssetsParameters, undefined, 2)}`)
 
   const gasEstimationResponse = await client.simulateTransaction(transferAssetsParameters)
 

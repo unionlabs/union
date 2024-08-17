@@ -98,7 +98,7 @@ export interface TransferAssetsParameters {
   evmSigner?: `0x${string}` | Account | undefined
 }
 
-export function createCosmosSdkClient({
+export function createUnionClient({
   evm,
   cosmos
 }:
@@ -126,6 +126,7 @@ export function createCosmosSdkClient({
     .extend(publicActions)
     .extend(() => ({ offchainQuery }))
     .extend(() => ({
+      createPfmMemo,
       byteArrayToHex,
       bech32AddressToHex,
       hexAddressToBech32,
@@ -139,9 +140,6 @@ export function createCosmosSdkClient({
       isValidCosmosTxHash,
       isValidBech32Address,
       extractBech32AddressPrefix
-    }))
-    .extend(() => ({
-      createPfmMemo
     }))
     .extend(client => ({
       transferAssetFromEvm: async ({

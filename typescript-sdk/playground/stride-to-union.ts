@@ -2,7 +2,7 @@
 import {
   cosmosHttp,
   offchainQuery,
-  createCosmosSdkClient,
+  createUnionClient,
   type TransferAssetsParameters
 } from "#mod.ts"
 import { parseArgs } from "node:util"
@@ -47,7 +47,7 @@ try {
 
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "strd" },

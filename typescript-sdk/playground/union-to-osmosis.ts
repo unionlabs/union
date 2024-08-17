@@ -6,7 +6,7 @@ import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { consola, timestamp } from "../scripts/logger.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /**
  *
@@ -56,7 +56,7 @@ try {
 
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "muno" },

@@ -6,7 +6,7 @@ import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/union-to-berachain.ts --private-key "..."` --estimate-gas */
 
@@ -53,7 +53,7 @@ try {
 
   const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
 
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.0025", denom: "muno" },

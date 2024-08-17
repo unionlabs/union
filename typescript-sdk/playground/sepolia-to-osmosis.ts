@@ -4,7 +4,7 @@ import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { offchainQuery, createCosmosSdkClient } from "#mod.ts"
+import { offchainQuery, createUnionClient } from "#mod.ts"
 
 /**
  *
@@ -46,7 +46,7 @@ try {
 
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     evm: {
       chain: sepolia,
       account: evmAccount,

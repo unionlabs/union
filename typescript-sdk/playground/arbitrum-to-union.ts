@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/arbitrum-to-union.ts --private-key "..."` */
 
@@ -46,7 +46,7 @@ try {
 
   const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
 
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     evm: {
       account: evmAccount,
       chain: arbitrumSepolia,

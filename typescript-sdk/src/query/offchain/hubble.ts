@@ -13,8 +13,8 @@ const queryHeaders = new Headers({
 const hubbleRestFetch = ofetch.create({
   method: "GET",
   retry: 2,
-  retryDelay: 500,
   timeout: 6_000,
+  retryDelay: 500,
   headers: queryHeaders,
   baseURL: `${HUBBLE_URL}/api/rest`
 })

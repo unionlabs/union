@@ -5,7 +5,7 @@ import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/union-to-union.ts --private-key "..."` --estimate-gas */
 
@@ -27,7 +27,7 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
 )
 
 try {
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     cosmos: {
       account: cosmosAccount,
       gasPrice: { amount: "0.025", denom: "muno" },

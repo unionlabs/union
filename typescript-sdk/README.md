@@ -3,7 +3,7 @@
 <br />
 
 <p align="center">
-  <img width="675" src="https://i.imgur.com/yFpIuzm.jpeg" alt="Union logo" />
+  <img width="675" src="https://i.imgur.com/0h6fScq_d.webp?maxwidth=760&fidelity=grand" alt="Union logo" />
 </p>
 <br />
 <p align="center">

@@ -21,11 +21,11 @@
     "@tanstack/query-core": "^5.51.21",
     "@tanstack/query-sync-storage-persister": "^5.51.21",
     "@tanstack/svelte-query": "^5.51.21",
-    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.56",
     "@tanstack/svelte-query-persist-client": "^5.51.21",
     "@tanstack/svelte-table": "^8.20.1",
     "@tanstack/svelte-virtual": "^3.8.6",
     "@wagmi/connectors": "^5.1.5",
+    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.57",
     "@wagmi/core": "^2.13.4",
     "@xstate/svelte": "^3.0.3",
     "bits-ui": "^0.21.13",
@@ -41,8 +41,8 @@
     "three": "^0.167.1",
     "valibot": "^0.37.0",
     "vaul-svelte": "^0.3.2",
-    "viem": "^2.19.4",
-    "xstate": "^5.17.1"
+    "viem": "^2.19.6",
+    "xstate": "^5.17.4"
   },
   "devDependencies": {
     "@cosmjs/tendermint-rpc": "0.32.4",

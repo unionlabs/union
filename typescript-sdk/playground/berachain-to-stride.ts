@@ -5,7 +5,7 @@ import { raise } from "#utilities/index.ts"
 import { fallback, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio } from "viem/chains"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/berachain-to-stride.ts --private-key "..."` --estimate-gas */
 
@@ -51,7 +51,7 @@ try {
 
   if (!forward) raise("Forward configuration not found")
 
-  const client = createCosmosSdkClient({
+  const client = createUnionClient({
     evm: {
       account: berachainAccount,
       chain: berachainTestnetbArtio,
