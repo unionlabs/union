@@ -9,53 +9,16 @@ import {
   type CosmosClientParameters,
   type TransferAssetsParameters
 } from "@union/client"
-import { getAddress } from "viem"
+import { getAddress, http } from "viem"
 import { get } from "svelte/store"
 import { raise } from "$lib/utilities"
+import type { Chain } from "$lib/types.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { setup, assign, fromPromise } from "xstate"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { sepoliaStore, wagmiConfig } from "$lib/wallet/evm"
-import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
 
 type Network = "cosmos" | "evm"
-
-const setUcsConfiguration = fromPromise(
-  async ({
-    input
-  }: {
-    input: {
-      RECIPIENT: string
-      SOURCE_CHAIN_ID: string
-      DESTINATION_CHAIN_ID: string
-      chains: Array<ChainsQueryResult>
-    }
-  }) => {
-    const sourceChain = input.chains.find(chain => chain.chain_id === input.SOURCE_CHAIN_ID)
-    const destinationChain = input.chains.find(
-      chain => chain.chain_id === input.DESTINATION_CHAIN_ID
-    )
-    if (!(sourceChain && destinationChain)) return raise("Chain not found")
-
-    const ucsConfiguration = sourceChain.ucs1_configurations.find(
-      config => config.destination_chain.chain_id === destinationChain.chain_id
-    )
-    if (!ucsConfiguration) return raise("UCS configuration not found")
-
-    const forward = ucsConfiguration.forward.find(
-      item => item.destination_chain.chain_id === destinationChain.chain_id
-    )
-
-    if (!forward) return raise("Forward configuration not found")
-
-    const memo = createPfmMemo({
-      port: forward.port,
-      receiver: input.RECIPIENT,
-      channel: forward.channel_id
-    })
-    return {}
-  }
-)
 
 export const transferStateMachine = setup({
   actors: {
@@ -82,12 +45,13 @@ export const transferStateMachine = setup({
   },
   types: {
     input: {} as {
-      chains: ReadonlyArray<ChainsQueryResult>
+      chains: Array<Chain>
       sepoliaStore: ChainWalletStore<"evm"> | undefined
       cosmosStore: ChainWalletStore<"cosmos"> | undefined
     },
     context: {} as {
       error: unknown
+      chains: Array<Chain>
       AMOUNT: bigint | undefined
       RPC_URL: string | undefined
       NETWORK: Network | undefined
@@ -99,7 +63,6 @@ export const transferStateMachine = setup({
       sepoliaStore: ChainWalletStore<"evm">
       ASSET_DENOM_ADDRESS: string | undefined
       cosmosStore: ChainWalletStore<"cosmos">
-      chains: ReadonlyArray<ChainsQueryResult>
       DESTINATION_CHAIN_ID: string | undefined
       RELAY_CONTRACT_ADDRESS: string | undefined
       PAYLOAD: TransferAssetsParameters | undefined
@@ -123,7 +86,7 @@ export const transferStateMachine = setup({
       | { type: "TRANSFER_ASSET" }
       | { type: "APPROVE_TRANSFER" }
       | { type: "RECEIPT_RECEIVED" }
-      | { type: "CONSTRUCT_PAYLOAD" }
+      | { type: "CONSTRUCT_PAYLOAD"; value: { chains: Array<Chain> } }
       | {
           type: "CREATE_PFM_MEMO"
           value: { port: string; receiver: string; channelId: string }
@@ -191,42 +154,12 @@ export const transferStateMachine = setup({
         },
         SET_DESTINATION_CHAIN: {
           actions: assign(({ event, context }) => {
-            // const sourceNetwork = context.NETWORK
-
-            // const destinationChain = context.chains.find(chain => chain.chain_id === event.value)
-            // const prefix = destinationChain?.addr_prefix
-            // const destinationNetwork = destinationChain?.rpc_type
-
-            // const senderAddress =
-            //   sourceNetwork === "evm"
-            //     ? context.sepoliaStore.address ?? wagmiConfig.getClient().account?.address
-            //     : sourceNetwork === "cosmos"
-            //       ? context.cosmosStore.address
-            //       : raise("No account found")
-
-            // if (!senderAddress) return raise("No account found")
-            // // if (!prefix) return raise("No prefix found")
-
-            // const recipient =
-            //   sourceNetwork === "evm" && destinationNetwork === "evm"
-            //     ? senderAddress
-            //     : sourceNetwork === "cosmos" && destinationNetwork === "cosmos"
-            //       ? senderAddress
-            //       : sourceNetwork === "evm" && destinationNetwork === "cosmos"
-            //         ? hexAddressToBech32({
-            //             bech32Prefix: prefix,
-            //             address: getAddress(senderAddress)
-            //           })
-            //         : sourceNetwork === "cosmos" && destinationNetwork === "evm"
-            //           ? bech32AddressToHex({ address: senderAddress })
-            //           : raise("Invalid address")
             return {
               DESTINATION_CHAIN_ID: event.value,
               RECIPIENT: context.RECIPIENT // ?? recipient
             }
           })
         },
-
         SET_ASSET: {
           actions: assign(({ event }) => ({
             ASSET_SYMBOL: event.value.symbol,
@@ -237,7 +170,7 @@ export const transferStateMachine = setup({
           actions: assign(({ event }) => ({ AMOUNT: event.value }))
         },
         SET_RECIPIENT: {
-          // target: "CREATE_PFM_MEMO",
+          tags: ["set-recipient"],
           actions: assign(({ event, context }) => {
             const sourceNetwork = context.NETWORK
 
@@ -279,27 +212,34 @@ export const transferStateMachine = setup({
         },
 
         CONSTRUCT_PAYLOAD: {
-          actions: assign(({ context }) => {
+          target: "SET_CLIENT",
+          id: "#TRANSFER-MACHINE-CONSTRUCT-PAYLOAD",
+          tags: ["construct-payload"],
+          actions: assign(({ context, event }) => {
+            const chains = context.chains ?? event.value.chains
+            console.log("chains", chains)
             if (!context.RECIPIENT) return raise("Recipient not found")
             const sourceNetwork = context.NETWORK ?? raise("Network not found")
             const sourceChainId = context.SOURCE_CHAIN_ID ?? raise("Source chain not found")
             const destinationChainId =
               context.DESTINATION_CHAIN_ID ?? raise("Destination chain not found")
 
-            const sourceChain = context.chains.find(chain => chain.chain_id === sourceChainId)
-            const destinationChain = context.chains.find(
-              chain => chain.chain_id === destinationChainId
-            )
+            const sourceChain = chains.find(chain => chain.chain_id === sourceChainId)
+            // if (!sourceChain)
+            //   return raise(
+            //     `Source chain ${sourceChainId} not found ${sourceChainId} ${context.chains}`
+            //   )
+            const destinationChain = chains.find(chain => chain.chain_id === destinationChainId)
 
+            console.info("sourceChain", sourceChain)
+            console.info("destinationChain", destinationChain)
+
+            // if (!(sourceChain && destinationChain)) return raise("Chain not found")
             const prefix = destinationChain?.addr_prefix
 
-            const ucsConfiguration = sourceChain?.ucs1_configurations
-              .filter(config => config.destination_chain.chain_id === destinationChainId)
-              .at(0)
+            const ucsConfiguration = sourceChain?.ucs1_configurations["union-testnet-8"]
 
-            const forward = ucsConfiguration?.forward.find(
-              item => item.destination_chain.chain_id === destinationChainId
-            )
+            const forward = ucsConfiguration?.forward[destinationChainId]
 
             const memo = createPfmMemo({
               port: forward?.port ?? raise("Port not found"),
@@ -314,7 +254,7 @@ export const transferStateMachine = setup({
               PAYLOAD: {
                 memo,
                 network: sourceNetwork,
-                path: [sourceChainId, destinationChainId],
+                path: [sourceChainId, "union-testnet-8"],
                 amount: context.AMOUNT ?? raise("Amount not found"),
                 recipient: context.RECIPIENT ?? raise("Recipient not found"),
                 sourceChannel: ucsConfiguration?.channel_id ?? raise("Channel not found"),
@@ -325,31 +265,20 @@ export const transferStateMachine = setup({
             }
           })
         },
-        // CREATE_PFM_MEMO: {
-        //   actions: assign(({ event, context }) => ({
-        //     PAYLOAD: {
-        //       ...context.PAYLOAD,
-        //       memo: createPfmMemo({
-        //         port: context.PAYLOAD?..port ?? raise("Port not found"),
-        //         channel: context.PAYLOAD?.FORWARD.channel_id ?? raise("Channel not found"),
-        //         receiver: ''
-        //       }),
-        //     }
-        //   }))
-        // },
         SET_EVM_CLIENT_PARAMETERS: {
           guard: "IS_EVM",
           target: "SET_CLIENT",
           actions: assign(({ event, context }) => {
-            const account = event.value.account ?? wagmiConfig.getClient().account
+            const account =
+              event.value.account ?? wagmiConfig.getClient().account ?? raise("Account not found")
             return {
               evmClientParameters: {
                 account,
-                transport: event.value.transport || wagmiConfig.getClient().transport,
+                transport: http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
                 chain:
-                  wagmiConfig.chains.find(chain => chain.id === Number(context.SOURCE_CHAIN_ID)) ||
-                  event.value.chain ||
-                  wagmiConfig.getClient().chain
+                  (wagmiConfig.chains.find(chain => chain.id === Number(context.SOURCE_CHAIN_ID)) ||
+                    event.value.chain) ??
+                  raise("Chain not found")
               }
             }
           })
@@ -382,18 +311,77 @@ export const transferStateMachine = setup({
         }
       },
       target: "SET_CLIENT",
-      onDone: {
-        target: "SET_CLIENT",
-        guard: "ONE_OR_MORE_CLIENT_PARAMETERS_SET",
-        actions: assign({
-          client: ({ event, context }) =>
-            createCosmosSdkClient({
-              evm: context.evmClientParameters as EvmClientParameters,
-              cosmos: context.cosmosClientParameters as CosmosClientParameters
-            })
-        })
-      }
+      onDone: [
+        {
+          target: "SET_CLIENT",
+          guard: "ONE_OR_MORE_CLIENT_PARAMETERS_SET",
+          actions: assign({
+            client: ({ event, context }) =>
+              createCosmosSdkClient({
+                evm: context.evmClientParameters as EvmClientParameters,
+                cosmos: context.cosmosClientParameters as CosmosClientParameters
+              })
+          })
+        }
+      ]
     },
+    // CONSTRUCT_PAYLOAD: {
+    //   id: "#TRANSFER-MACHINE-CONSTRUCT-PAYLOAD",
+    //   tags: ["construct-payload"],
+    //   always: [
+    //     {
+    //       actions: assign(({ context }) => {
+    //         if (!context.RECIPIENT) return raise("Recipient not found")
+    //         const sourceNetwork = context.NETWORK ?? raise("Network not found")
+    //         const sourceChainId = context.SOURCE_CHAIN_ID ?? raise("Source chain not found")
+    //         const destinationChainId =
+    //           context.DESTINATION_CHAIN_ID ?? raise("Destination chain not found")
+
+    //         const sourceChain = context.chains.find(chain => chain.chain_id === sourceChainId)
+    //         const destinationChain = context.chains.find(
+    //           chain => chain.chain_id === destinationChainId
+    //         )
+
+    //         console.info("sourceChain", sourceChain)
+    //         console.info("destinationChain", destinationChain)
+
+    //         if (!(sourceChain && destinationChain)) return raise("Chain not found")
+    //         const prefix = destinationChain?.addr_prefix
+
+    //         const ucsConfiguration = sourceChain?.ucs1_configurations
+    //           .filter(config => config.destination_chain.chain_id === destinationChainId)
+    //           .at(0)
+
+    //         const forward = ucsConfiguration?.forward.find(
+    //           item => item.destination_chain.chain_id === destinationChainId
+    //         )
+
+    //         const memo = createPfmMemo({
+    //           port: forward?.port ?? raise("Port not found"),
+    //           channel: forward?.channel_id ?? raise("Channel not found"),
+    //           receiver:
+    //             sourceNetwork === "evm" ? context.RECIPIENT.slice(2) : context.RECIPIENT ?? ""
+    //         })
+
+    //         return {
+    //           sourceChainId,
+    //           destinationChainId,
+    //           PAYLOAD: {
+    //             memo,
+    //             network: sourceNetwork,
+    //             path: [sourceChainId, destinationChainId],
+    //             amount: context.AMOUNT ?? raise("Amount not found"),
+    //             recipient: context.RECIPIENT ?? raise("Recipient not found"),
+    //             sourceChannel: ucsConfiguration?.channel_id ?? raise("Channel not found"),
+    //             relayContractAddress:
+    //               ucsConfiguration?.contract_address ?? raise("Contract not found"),
+    //             denomAddress: context.ASSET_DENOM_ADDRESS ?? raise("Denom address not found")
+    //           }
+    //         }
+    //       })
+    //     }
+    //   ]
+    // },
     SET_CLIENT: {
       tags: ["set-client"],
       id: "#TRANSFER-MACHINE-SET-CLIENT",

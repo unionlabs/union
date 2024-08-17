@@ -82,12 +82,12 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
     }
   })
 })
-// @ts-expect-error
-let rawChains: ChainsQueryResult = ($chains?.data ?? []) as ChainsQueryResult
+
+$: console.info("chains", $checkedChains)
 </script>
 
 {#if !!$chains.data}
-  <slot chains={$checkedChains} {rawChains} />
+  <slot chains={$checkedChains} />
 {:else if $chains.isLoading}
   <LoadingLogo class="size-16" />
 {:else if $chains.isError}

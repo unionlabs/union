@@ -7,8 +7,8 @@ import ChainsGate from "$lib/components/chains-gate.svelte"
   <title>Union | Send</title>
 </svelte:head>
 
-<ChainsGate let:chains let:rawChains>
+<ChainsGate let:chains>
   <div class="w-full flex flex-col items-center">
-    <Transfer {rawChains} {chains} />
+    <Transfer {chains} />
   </div>
 </ChainsGate>

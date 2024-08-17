@@ -16,9 +16,16 @@ import Chevron from "./chevron.svelte"
 import { useMachine } from "@xstate/svelte"
 import { ucs01abi } from "$lib/abi/ucs-01.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { userAddrEvm } from "$lib/wallet/evm"
+import ChainButton from "./chain-button.svelte"
+import ChainDialog from "./chain-dialog.svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
+import AssetsDialog from "./assets-dialog.svelte"
+import { userAddrCosmos } from "$lib/wallet/cosmos"
+import { truncate } from "$lib/utilities/format.ts"
 import { raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"
+import DevTools from "$lib/components/dev-tools.svelte"
 import { userBalancesQuery } from "$lib/queries/balance"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -31,22 +38,15 @@ import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
+import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
 import { sepoliaStore, wagmiConfig, evmConnect } from "$lib/wallet/evm"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
 import { get, derived, writable, type Writable, type Readable } from "svelte/store"
-import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address } from "viem"
-import { userAddrEvm } from "$lib/wallet/evm"
-import ChainButton from "./chain-button.svelte"
-import ChainDialog from "./chain-dialog.svelte"
-import AssetsDialog from "./assets-dialog.svelte"
-import { userAddrCosmos } from "$lib/wallet/cosmos"
-import { truncate } from "$lib/utilities/format.ts"
-import DevTools from "$lib/components/dev-tools.svelte"
-import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
+import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address, http } from "viem"
+import { getConnections, getConnectorClient, getWalletClient } from "@wagmi/core"
 
 export let chains: Array<Chain>
-export let rawChains: Array<ChainsQueryResult>
 
 const { inspect, ...inspector } = createBrowserInspector({
   autoStart: true
@@ -55,7 +55,7 @@ const { inspect, ...inspector } = createBrowserInspector({
 const { snapshot, send } = useMachine(transferStateMachine, {
   inspect,
   input: {
-    chains: rawChains,
+    chains,
     cosmosStore: $cosmosStore,
     sepoliaStore: $sepoliaStore
   }
@@ -77,14 +77,14 @@ let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [false, false, f
 $: recipient = $snapshot.context?.["RECIPIENT"] ?? ""
 $: sourceChain = chains.find(({ chain_id }) => chain_id === $snapshot.context["SOURCE_CHAIN_ID"])
 
-let userAddress = derived(
-  [userAddrEvm, userAddrCosmos],
-  ([$userAddrEvm, $userAddrCosmos]) =>
-    ({
-      evm: $userAddrEvm,
-      cosmos: $userAddrCosmos
-    }) as UserAddresses
-)
+$: userAddress = derived([userAddrEvm, userAddrCosmos], ([$userAddrEvm, $userAddrCosmos]) => {
+  // console.info("userAddrEvm: ", $userAddrEvm)
+  // console.info("userAddrCosmos: ", $userAddrCosmos)
+  return {
+    evm: $userAddrEvm,
+    cosmos: $userAddrCosmos
+  } as UserAddresses
+})
 
 let _assetBalances = userBalancesQuery({
   chains,
@@ -93,10 +93,14 @@ let _assetBalances = userBalancesQuery({
   userAddresses: { evm: $userAddrEvm, cosmos: $userAddrCosmos }
 })
 
-let assetBalances = derived(_assetBalances, $_assetBalances => {
+$: assetBalances = derived(_assetBalances, $_assetBalances => {
   const chainIndex = chains.findIndex(({ chain_id }) => chain_id === sourceChain?.chain_id)
   return $_assetBalances[chainIndex]?.data ?? []
 })
+
+let amount = ""
+$: amount = amount.replaceAll(/[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g, "")
+$: Number.parseFloat(amount) > 0 && send({ type: "SET_AMOUNT", value: BigInt(amount) })
 
 let balanceCoversAmount = true
 
@@ -126,16 +130,20 @@ $: buttonDisabled = !(
 let ANIMATION_STATE: "FLIP" | "FLIPPED" | "UNFLIP" | "UNFLIPPED" = "UNFLIPPED"
 
 async function transferASS() {
+  // send({ type: "CONSTRUCT_PAYLOAD" })
   let client = $snapshot.context["client"]
   if (!client) send({ type: "SET_CLIENT" })
-  send({ type: "CONSTRUCT_PAYLOAD" })
   await sleep(1_000)
+  // send({ type: "CONSTRUCT_PAYLOAD" })
   client = $snapshot.context["client"]
 
   const payload = $snapshot.context["PAYLOAD"]
+  console.info("Payload: ", payload)
+
   if (!payload) return toast.error("No payload found")
 
   const transactionPayload = {
+    approve: true,
     path: payload["path"],
     memo: payload["memo"],
     amount: payload["amount"],
@@ -146,14 +154,43 @@ async function transferASS() {
     relayContractAddress: payload["relayContractAddress"]
   } satisfies TransferAssetsParameters
 
-  const result = await client?.simulateTransaction(transactionPayload)
+  console.info("Transaction Payload: ", transactionPayload)
+
+  console.info("Transaction Payload: ", transactionPayload)
+
+  const walletClient = await getWalletClient(wagmiConfig, {
+    chainId: Number($snapshot.context["SOURCE_CHAIN_ID"])
+  })
+  console.info("Account: ", walletClient.account)
+  const result = await client?.transferAsset({
+    evmSigner: walletClient.account,
+    ...transactionPayload
+  })
   console.info(JSON.stringify(result, undefined, 2))
 }
+
+// $: console.info($snapshot.context)
 </script>
 
 <DevTools>
   <pre class="text-left w-full">
-    {JSON.stringify($snapshot.context, null, 2)}
+    {JSON.stringify(
+      {
+        payload: $snapshot.context["PAYLOAD"],
+        sourceChain: $snapshot.context["SOURCE_CHAIN_ID"],
+        destinationChain: $snapshot.context["DESTINATION_CHAIN_ID"],
+        assetSymbol: $snapshot.context["ASSET_SYMBOL"],
+        amount: $snapshot.context["AMOUNT"],
+        recipient: $snapshot.context["RECIPIENT"],
+        // client: $snapshot.context["client"],
+        evmClient: $snapshot.context["evmClientParameters"],
+        cosmosClient: $snapshot.context["cosmosClientParameters"]
+        // assetBalances: $assetBalances,
+        // userAddress: $userAddress
+      },
+      null,
+      2
+    )}
   </pre>
 </DevTools>
 
@@ -200,17 +237,9 @@ async function transferASS() {
         </section>
         <section>
           <CardSectionHeading>Asset</CardSectionHeading>
-          <!-- {#if $sendableBalances !== undefined && $fromChainId}
-            {#if $sendableBalances === null}
-              Failed to load sendable balances for <b
-                >{$fromChain?.display_name}</b
-              >.
-            {:else if $sendableBalances && $sendableBalances.length === 0}
-              You don't have sendable assets on <b>{$fromChain?.display_name}</b
-              >. You can get some from
-              <a class="underline font-bold" href="/faucet">the faucet</a>
-            {:else} -->
-          {#if $assetBalances.length > 0}
+          {#if !$snapshot.context["SOURCE_CHAIN_ID"]}
+            Select a chain to send from.
+          {:else if $assetBalances.length > 0 && $snapshot.context["SOURCE_CHAIN_ID"] && $snapshot.context["SOURCE_CHAIN_ID"].length > 0}
             <Button
               class="w-full"
               variant="outline"
@@ -226,6 +255,7 @@ async function transferASS() {
               <Chevron />
             </Button>
           {:else}
+            You don't have sendable assets on <b>{""}</b>. You can get some from
             <a class="underline font-bold" href="/faucet">the faucet</a>
           {/if}
           <!-- 
@@ -265,13 +295,12 @@ async function transferASS() {
             placeholder="0.00"
             inputmode="decimal"
             autocapitalize="none"
-            class={cn()}
+            bind:value={amount}
+            class={cn(
+              !balanceCoversAmount && amount ? "border-red-500" : "",
+              "focus:ring-0 focus-visible:ring-0 disabled:bg-black/30"
+            )}
             pattern="^[0-9]*[.,]?[0-9]*$"
-            on:input={event => {
-              // @ts-expect-error
-              const value = event.target?.value
-              send({ type: "SET_AMOUNT", value: value })
-            }}
           />
         </section>
         <section>
@@ -296,6 +325,7 @@ async function transferASS() {
                     // @ts-expect-error
                     const value = `${event.target?.value}`.trim()
                     send({ value: value, type: "SET_RECIPIENT" })
+                    // send({ type: "CONSTRUCT_PAYLOAD" })
                   }}
                 />
               </div>
@@ -320,18 +350,31 @@ async function transferASS() {
           disabled={buttonDisabled}
           on:click={async event => {
             event.preventDefault()
-            ANIMATION_STATE = "FLIP"
-            await sleep(500)
-            let client = $snapshot.context["client"]
-            if (!client) send({ type: "SET_CLIENT" })
+            // ANIMATION_STATE = "FLIP"
+            send({ type: "CONSTRUCT_PAYLOAD", value: { chains } })
             await sleep(1_000)
-            client = $snapshot.context["client"]
-            await transferASS()
-            // client
 
-            // transferState.set({ kind: "FLIPPING" })
-            // await sleep(1200)
-            // transfer()
+            const walletClient = await getWalletClient(wagmiConfig, {
+              chainId: Number($snapshot.context["SOURCE_CHAIN_ID"])
+            })
+            const client = createCosmosSdkClient({
+              evm: {
+                chain: sepolia,
+                account: walletClient.account,
+                transport: custom(window.ethereum)
+              }
+            })
+            const transfer = await client.transferAsset({
+              approve: true,
+              path: ["11155111", "11155111"],
+              evmSigner: walletClient.account,
+              memo: "Test Transfer",
+              amount: BigInt(1),
+              network: "evm",
+              recipient: "0x8102282C1912725ae8b31e9b858d0e150efD264E",
+              denomAddress: $snapshot.context["ASSET_DENOM_ADDRESS"],
+              
+            })
           }}
         >
           {buttonText}

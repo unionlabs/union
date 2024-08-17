@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 import { fallback, http } from "viem"
-import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
+import { berachainTestnetbArtio, sepolia } from "viem/chains"
+import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/sepolia-to-berachain.ts --private-key "..."` */
 
@@ -30,7 +30,8 @@ const USDC_CONTRACT_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
 try {
   const {
     data: [sepoliaInfo]
-  } = await offchainQuery.chains({
+  } = await offchainQuery.chain({
+    chainId: "11155111",
     includeContracts: true,
     includeEndpoints: true
   })
@@ -41,36 +42,46 @@ try {
     .at(0)
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
+  const forward = ucsConfiguration.forward.find(
+    item => item.destination_chain.chain_id === `${berachainTestnetbArtio.id}`
+  )
+
+  if (!forward) raise("Forward configuration not found")
 
   const client = createCosmosSdkClient({
     evm: {
       chain: sepolia,
       account: evmAccount,
-      transport: fallback([
-        http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
-        http(sepolia?.rpcUrls.default.http.at(0))
-      ])
+      transport: fallback(
+        [
+          http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
+          http(sepolia?.rpcUrls.default.http.at(0))
+        ],
+        { rank: true, retryCount: 3 }
+      )
     }
   })
 
   const pfmMemo = client.createPfmMemo({
-    channel: "channel-80",
-    receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
-    port: "wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
+    port: forward.port,
+    channel: forward.channel_id,
+    receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
   })
 
-  const gasEstimationResponse = await client.simulateTransaction({
+  const transferAssetsParameters = {
     amount: 1n,
     memo: pfmMemo,
-    sourceChannel: channel_id,
+    approve: true,
     evmSigner: evmAccount.address,
     network: sepoliaInfo.rpc_type,
-    relayContractAddress: contract_address,
+    sourceChannel: ucsConfiguration.channel_id,
+    relayContractAddress: ucsConfiguration.contract_address,
     recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd", // "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
     denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
-    path: [source_chain.chain_id, destination_chain.chain_id]
-  })
+    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
+  } satisfies TransferAssetsParameters
+
+  const gasEstimationResponse = await client.simulateTransaction(transferAssetsParameters)
 
   consola.box("Sepolia to Berachain gas cost:", gasEstimationResponse)
 
@@ -81,16 +92,7 @@ try {
     process.exit(1)
   }
 
-  const transfer = await client.transferAsset({
-    amount: 1n,
-    memo: pfmMemo,
-    sourceChannel: channel_id,
-    network: sepoliaInfo.rpc_type,
-    relayContractAddress: contract_address,
-    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd", //"union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
-    path: [source_chain.chain_id, destination_chain.chain_id]
-  })
+  const transfer = await client.transferAsset(transferAssetsParameters)
 
   console.info(transfer)
 } catch (error) {

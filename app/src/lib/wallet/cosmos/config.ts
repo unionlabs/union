@@ -120,9 +120,12 @@ export const cosmosStore = createCosmosStore()
 export const userAddrCosmos: Readable<UserAddressCosmos | null> = derived(
   [cosmosStore],
   ([$cosmosStore]) => {
+    console.info("[cosmos] userAddrCosmos", $cosmosStore)
     if ($cosmosStore?.rawAddress && $cosmosStore?.address) {
       const bech32Prefix = extractBech32AddressPrefix($cosmosStore.address)
       if (!bech32Prefix) return null
+      console.info("[cosmos] bech32Prefix", bech32Prefix)
+      if (!($cosmosStore.rawAddress instanceof Uint8Array)) return null
       const cosmos_normalized = bytesToBech32Address({
         toPrefix: bech32Prefix,
         bytes: $cosmosStore.rawAddress
