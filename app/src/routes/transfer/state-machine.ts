@@ -121,13 +121,15 @@ export const transferStateMachine = setup({
           })
         },
         SET_ASSET: {
-          actions: assign(({ event }) => ({
-            ASSET_SYMBOL: event.value.symbol,
-            ASSET_DENOM_ADDRESS: event.value.denomAddress
-          }))
+          actions: [
+            assign(({ event }) => ({
+              ASSET_SYMBOL: event.value.symbol,
+              ASSET_DENOM_ADDRESS: event.value.denomAddress
+            }))
+          ]
         },
         SET_AMOUNT: {
-          actions: assign(({ event }) => ({ AMOUNT: event.value }))
+          actions: [assign(({ event }) => ({ AMOUNT: event.value }))]
         },
         SET_RECIPIENT: {
           tags: ["set-recipient"],
@@ -177,47 +179,29 @@ export const transferStateMachine = setup({
           actions: [
             assign(({ context, event }) => {
               const chains = context.chains ?? event.value.chains
+              const amount = context.AMOUNT ?? raise("amount not found")
+              const network = context.NETWORK ?? raise("Network not found")
+              const recipient = context.RECIPIENT ?? raise("recipient not found")
+              const denomAddress = context.ASSET_DENOM_ADDRESS ?? raise("denom address not found")
 
-              if (!context.RECIPIENT) return raise("Recipient not found")
-              const sourceNetwork = context.NETWORK ?? raise("Network not found")
               const sourceChainId = context.SOURCE_CHAIN_ID ?? raise("Source chain not found")
               const destinationChainId =
                 context.DESTINATION_CHAIN_ID ?? raise("Destination chain not found")
 
-              const SOURCE_IS_UNION = sourceChainId === "union-testnet-8"
-              const DESTINATION_IS_UNION = destinationChainId === "union-testnet-8"
-
-              const sourceChain = SOURCE_IS_UNION
-                ? "union-testnet-8"
-                : chains.find(chain => chain.chain_id === sourceChainId)
-              const destinationChain = DESTINATION_IS_UNION
-                ? "union-testnet-8"
-                : chains.find(chain => chain.chain_id === destinationChainId)
-
+              const sourceChain = chains.find(chain => chain.chain_id === sourceChainId)
+              const destinationChain = chains.find(chain => chain.chain_id === destinationChainId)
               if (!(sourceChain && destinationChain)) return raise("Chain not found")
 
-              const prefix = DESTINATION_IS_UNION ? "union" : destinationChain?.addr_prefix
-
-              const ucsConfiguration = sourceChain?.ucs1_configurations["union-testnet-8"]
-
-              const forward = ucsConfiguration?.forward[destinationChainId]
-
-              const memo = createPfmMemo({
-                port: forward?.port ?? raise("Port not found"),
-                channel: forward?.channel_id ?? raise("Channel not found"),
-                receiver:
-                  sourceNetwork === "evm" ? context.RECIPIENT.slice(2) : context.RECIPIENT ?? ""
-              })
+              const ucsConfiguration = sourceChain?.ucs1_configurations[sourceChainId]
 
               return {
                 sourceChainId,
                 destinationChainId,
                 PAYLOAD: {
-                  memo,
-                  network: sourceNetwork,
-                  path: [sourceChainId, "union-testnet-8"],
-                  amount: context.AMOUNT ?? raise("Amount not found"),
-                  recipient: context.RECIPIENT ?? raise("Recipient not found"),
+                  network,
+                  amount: amount,
+                  recipient: recipient,
+                  path: [sourceChainId, destinationChainId],
                   sourceChannel: ucsConfiguration?.channel_id ?? raise("Channel not found"),
                   relayContractAddress:
                     ucsConfiguration?.contract_address ?? raise("Contract not found"),
@@ -242,10 +226,6 @@ export const transferStateMachine = setup({
                 context.DESTINATION_CHAIN_ID ?? raise("Destination chain not found")
 
               const sourceChain = chains.find(chain => chain.chain_id === sourceChainId)
-              // if (!sourceChain)
-              //   return raise(
-              //     `Source chain ${sourceChainId} not found ${sourceChainId} ${context.chains}`
-              //   )
               const destinationChain = chains.find(chain => chain.chain_id === destinationChainId)
 
               console.info("sourceChain", sourceChain)
