@@ -26,7 +26,7 @@
     "@cosmjs/stargate": "0.32.4",
     "@scure/base": "^1.1.7",
     "ofetch": "^1.3.4",
-    "viem": "^2.19.6"
+    "viem": "^2.19.7"
   },
   "devDependencies": {
     "@cosmjs/tendermint-rpc": "^0.32.4",

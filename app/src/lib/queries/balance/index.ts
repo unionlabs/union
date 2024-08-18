@@ -33,8 +33,8 @@ export function userBalancesQuery({
         userAddresses?.evm?.normalized,
         userAddresses?.cosmos?.normalized
       ],
-      refetchOnWindowFocus: false,
       refetchInterval: 4_000,
+      refetchOnWindowFocus: false,
       queryFn: async () => {
         if (chain.rpc_type === "evm" && userAddresses.evm && connected) {
           const rpc = chain.rpcs

@@ -41,7 +41,7 @@
     "three": "^0.167.1",
     "valibot": "^0.37.0",
     "vaul-svelte": "^0.3.2",
-    "viem": "^2.19.6",
+    "viem": "^2.19.7",
     "xstate": "^5.17.4"
   },
   "devDependencies": {
