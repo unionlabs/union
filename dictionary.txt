@@ -459,6 +459,7 @@ dont
 downcasting
 drawio
 drpc
+dryupgrade
 dudx
 dydx
 dyld
