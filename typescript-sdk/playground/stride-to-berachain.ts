@@ -74,12 +74,14 @@ try {
     approve: true,
     denomAddress: "ustrd",
     network: strideTestnetInfo.rpc_type,
-    sourceChannel: ucsConfiguration.channel_id,
     // or `client.evm.account.address` if you want to send to yourself
     recipient: berachainAccount.address,
+    sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,
     path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
   } satisfies TransferAssetsParameters
+
+  consola.info(`Transaction payload: ${JSON.stringify(transactionPayload, undefined, 2)}`)
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

@@ -4,11 +4,12 @@ import {
   createPfmMemo,
   truncateAddress,
   createUnionClient,
+  bech32AddressToHex,
   bytesToBech32Address,
   bech32ToBech32Address,
   type TransactionResponse,
-  type TransferAssetsParameters,
-  type CosmosClientParameters
+  type CosmosClientParameters,
+  type TransferAssetsParameters
 } from "@union/client"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
@@ -43,8 +44,8 @@ import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
 import { sepoliaStore, wagmiConfig, evmConnect } from "$lib/wallet/evm"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
-import { getConnections, getConnectorClient, getWalletClient } from "@wagmi/core"
 import { get, derived, writable, type Writable, type Readable } from "svelte/store"
+import { getChainId, switchChain, getWalletClient, getConnectorClient } from "@wagmi/core"
 import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address, http } from "viem"
 
 export let chains: Array<Chain>
@@ -62,15 +63,6 @@ const { snapshot, send } = useMachine(transferStateMachine, {
   }
 })
 
-function swapChainsClick() {
-  const fromChain = $snapshot.context["SOURCE_CHAIN_ID"]
-  const toChain = $snapshot.context["DESTINATION_CHAIN_ID"]
-  const network = chains.find(c => c.chain_id === toChain)?.rpc_type
-  if (!(network && fromChain && toChain)) return
-  send({ type: "SET_DESTINATION_CHAIN", value: fromChain })
-  send({ type: "SET_SOURCE_CHAIN", value: { chainId: toChain, network } })
-}
-
 let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [false, false, false]
 
 $: network = $snapshot.context["NETWORK"]
@@ -86,9 +78,28 @@ $: relayContractAddress = $snapshot.context["RELAY_CONTRACT_ADDRESS"]
 $: denomAddress = $snapshot.context["ASSET_DENOM_ADDRESS"]
 $: assetSymbol = $snapshot.context["ASSET_SYMBOL"]
 
-$: ucsConfiguration = destinationChainId
-  ? sourceChain?.ucs1_configurations[destinationChainId]
-  : undefined
+$: pfmTransfer =
+  sourceChainId &&
+  sourceChainId !== "union-testnet-8" &&
+  destinationChainId &&
+  destinationChainId !== "union-testnet-8"
+
+$: path = (
+  pfmTransfer
+    ? [`${sourceChainId}`, "union-testnet-8"]
+    : [`${sourceChainId}`, `${destinationChainId}`]
+) satisfies [string, string]
+
+$: ucsConfiguration = pfmTransfer
+  ? sourceChain?.ucs1_configurations["union-testnet-8"]
+  : destinationChainId
+    ? sourceChain?.ucs1_configurations[destinationChainId]
+    : undefined
+
+$: forward =
+  pfmTransfer && destinationChainId
+    ? sourceChain?.ucs1_configurations["union-testnet-8"].forward?.[destinationChainId]
+    : undefined
 
 $: if (sourceChainId && destinationChainId && ucsConfiguration) {
   send({ type: "SET_SOURCE_CHANNEL", value: ucsConfiguration.channel_id })
@@ -104,6 +115,7 @@ $: userAddress = derived(
     }) as UserAddresses
 )
 
+$: console.info(JSON.stringify({ sourceChainId, destinationChainId }, undefined, 2))
 $: cosmosOfflineSigner = sourceChainId ? getCosmosOfflineSigner(sourceChainId) : undefined
 
 let _assetBalances = userBalancesQuery({
@@ -122,6 +134,17 @@ $: assetBalances = derived(_assetBalances, $_assetBalances => {
 let amount = ""
 $: amount = amount.replaceAll(/[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g, "")
 $: Number.parseFloat(amount) >= 0 && send({ type: "SET_AMOUNT", value: BigInt(amount) })
+
+$: memo = pfmTransfer
+  ? createPfmMemo({
+      receiver:
+        destinationChain?.rpc_type === "evm"
+          ? `${recipient}`
+          : bech32AddressToHex({ address: `${recipient}` }),
+      port: `${forward?.port}`,
+      channel: `${forward?.channel_id}`
+    })
+  : `transferring ${amount} ${assetSymbol}`
 
 let balanceCoversAmount = true
 
@@ -149,11 +172,17 @@ let ANIMATION_STATE: "FLIP" | "FLIPPED" | "UNFLIP" | "UNFLIPPED" = "UNFLIPPED"
 
 async function onTransferClick(event: MouseEvent) {
   event.preventDefault()
+  const currentChainId = getChainId(wagmiConfig)
+  if (network === "evm" && currentChainId !== Number(sourceChainId)) {
+    // @ts-expect-error
+    await switchChain(wagmiConfig, { chainId: Number(sourceChainId) })
+  }
 
   const params = [
     ["network", network],
     ["sourceChainId", sourceChainId],
     ["destinationChainId", destinationChainId],
+    ["path", ...path],
     ["relayContractAddress", relayContractAddress],
     ["sourceChannel", sourceChannel],
     ["amount", amount],
@@ -165,7 +194,17 @@ async function onTransferClick(event: MouseEvent) {
   })
 
   if (
-    !(((((((network &&sourceChainId ) &&destinationChainId ) &&relayContractAddress ) &&sourceChannel ) &&amount ) &&recipient ) &&denomAddress)
+    !(
+      network &&
+      sourceChainId &&
+      destinationChainId &&
+      path &&
+      relayContractAddress &&
+      sourceChannel &&
+      amount &&
+      recipient &&
+      denomAddress
+    )
   ) {
     return toast.error("Missing parameters")
   }
@@ -189,34 +228,55 @@ async function onTransferClick(event: MouseEvent) {
   //   transport: cosmosRpcURLs?.map(url => cosmosHttp(url)),
   // } satisfies CosmosClientParameters
 
+  const evmChain = wagmiConfig.chains.find(chain => chain.id === Number(sourceChainId)) ?? sepolia
+  console.info({
+    account: cosmosOfflineSigner,
+    gasPrice: {
+      amount: "0.0025",
+      denom: sourceChain?.assets.find(asset => asset.gas_token)?.denom
+    },
+    transport: cosmosHttp(`https://${sourceChain?.rpcs?.find(rpc => rpc.type === "rpc")?.url}`)
+  })
   const client = createUnionClient({
     evm: {
-      chain: sepolia,
+      chain: evmChain,
       account: walletClient.account,
       transport: custom(window.ethereum)
     },
     cosmos: {
       account: cosmosOfflineSigner,
-      gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet-8.union.build")
+      gasPrice: {
+        amount: "0.0025",
+        // @ts-expect-error
+        denom: sourceChain?.assets.find(asset => asset.gas_token)?.denom
+      },
+      transport: cosmosHttp(`https://${sourceChain?.rpcs?.find(rpc => rpc.type === "rpc")?.url}`)
     }
   })
   const transferAssetsParameters = {
+    memo,
+    path,
     network,
     recipient,
     denomAddress,
     sourceChannel,
     approve: true,
     relayContractAddress,
-    memo: "Test Transfer",
-    amount: BigInt(amount),
-    path: [sourceChainId, destinationChainId]
+    amount: BigInt(amount)
   } satisfies TransferAssetsParameters
 
   console.info(JSON.stringify(transferAssetsParameters, undefined, 2))
   const transfer = await client.transferAsset(transferAssetsParameters)
 
   console.info(transfer)
+}
+
+function swapChainsClick(_event: MouseEvent) {
+  const [fromChain, toChain] = [sourceChainId, destinationChainId]
+  const network = chains.find(chain => chain.chain_id === toChain)?.rpc_type
+  if (!(network && fromChain && toChain)) return
+  send({ type: "SET_DESTINATION_CHAIN", value: fromChain })
+  send({ type: "SET_SOURCE_CHAIN", value: { chainId: toChain, network } })
 }
 </script>
 
