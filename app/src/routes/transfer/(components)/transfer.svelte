@@ -3,9 +3,9 @@
     cosmosHttp,
     createPfmMemo,
     truncateAddress,
+    createUnionClient,
     bytesToBech32Address,
     bech32ToBech32Address,
-    createUnionClient,
     type TransactionResponse,
     type TransferAssetsParameters,
   } from '@union/client'
@@ -24,7 +24,6 @@
   import { userAddrCosmos } from '$lib/wallet/cosmos'
   import { truncate } from '$lib/utilities/format.ts'
   import { raise, sleep } from '$lib/utilities/index.ts'
-  import type { OfflineSigner } from '@leapwallet/types'
   import DevTools from '$lib/components/dev-tools.svelte'
   import { userBalancesQuery } from '$lib/queries/balance'
   import * as Card from '$lib/components/ui/card/index.ts'
@@ -45,6 +44,7 @@
   import { getConnections, getConnectorClient, getWalletClient } from '@wagmi/core'
   import { get, derived, writable, type Writable, type Readable } from 'svelte/store'
   import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address, http } from 'viem'
+  import { getCosmosOfflineSigner } from '$lib/wallet/cosmos/config.ts'
 
   export let chains: Array<Chain>
   // $: console.info(JSON.stringify({ chains }, undefined, 2))
@@ -73,14 +73,10 @@
 
   let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [false, false, false]
 
-  // $: console.info($snapshot.context)
-
   $: network = $snapshot.context['NETWORK']
   $: recipient = $snapshot.context?.['RECIPIENT']
-  // $: console.info(JSON.stringify({ recipient }, undefined, 2))
   $: sourceChainId = $snapshot.context['SOURCE_CHAIN_ID']
   $: sourceChain = chains.find(({ chain_id }) => chain_id === $snapshot.context['SOURCE_CHAIN_ID'])
-  $: console.info(JSON.stringify({ sourceChain }, undefined, 2))
   $: destinationChainId = $snapshot.context['DESTINATION_CHAIN_ID']
   $: destinationChain = chains.find(
     ({ chain_id }) => chain_id === $snapshot.context['DESTINATION_CHAIN_ID'],
@@ -89,21 +85,14 @@
   $: relayContractAddress = $snapshot.context['RELAY_CONTRACT_ADDRESS']
   $: denomAddress = $snapshot.context['ASSET_DENOM_ADDRESS']
 
+  $: ucsConfiguration = destinationChainId
+    ? sourceChain?.ucs1_configurations[destinationChainId]
+    : undefined
+
   $: {
-    if (sourceChainId !== undefined && destinationChainId !== undefined) {
-      if (sourceChain?.chain_id === 'union-testnet-8') {
-        const ucsConfiguration = sourceChain?.ucs1_configurations[destinationChainId]
-        if (ucsConfiguration) {
-          send({ type: 'SET_SOURCE_CHANNEL', value: ucsConfiguration.channel_id })
-          send({ type: 'SET_RELAY_CONTRACT_ADDRESS', value: ucsConfiguration.contract_address })
-        }
-      } else if (destinationChain?.chain_id === 'union-testnet-8') {
-        const ucsConfiguration = sourceChain?.ucs1_configurations[destinationChainId]
-        if (ucsConfiguration) {
-          send({ type: 'SET_SOURCE_CHANNEL', value: ucsConfiguration.channel_id })
-          send({ type: 'SET_RELAY_CONTRACT_ADDRESS', value: ucsConfiguration.contract_address })
-        }
-      }
+    if (sourceChainId && destinationChainId && ucsConfiguration) {
+      send({ type: 'SET_SOURCE_CHANNEL', value: ucsConfiguration.channel_id })
+      send({ type: 'SET_RELAY_CONTRACT_ADDRESS', value: ucsConfiguration.contract_address })
     }
   }
 
@@ -128,15 +117,7 @@
     return $_assetBalances[chainIndex]?.data ?? []
   })
 
-  $: cosmosSigner = (
-    sourceChainId
-      ? $cosmosStore.connectedWallet === 'keplr'
-        ? window.keplr?.getOfflineSigner(sourceChainId, { disableBalanceCheck: false })
-        : $cosmosStore.connectedWallet === 'leap'
-          ? window.leap?.getOfflineSigner(sourceChainId, { disableBalanceCheck: false })
-          : undefined
-      : undefined
-  ) as OfflineSigner
+  $: cosmosOfflineSigner = sourceChainId ? getCosmosOfflineSigner(sourceChainId) : undefined
 
   let amount = ''
   $: amount = amount.replaceAll(/[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g, '')
@@ -171,18 +152,7 @@
 
   async function onTransferClick(event: MouseEvent) {
     event.preventDefault()
-    // if (
-    //   !network ||
-    //   !sourceChainId ||
-    //   !destinationChainId ||
-    //   !relayContractAddress ||
-    //   !sourceChannel ||
-    //   !amount ||
-    //   !recipient ||
-    //   !denomAddress
-    // ) {
-    //   return toast.error('Missing parameters')
-    // }
+
     const params = [
       ['network', network],
       ['sourceChainId', sourceChainId],
@@ -221,7 +191,7 @@
         transport: custom(window.ethereum),
       },
       cosmos: {
-        account: cosmosSigner,
+        account: cosmosOfflineSigner,
         gasPrice: { amount: '0.0025', denom: 'muno' },
         transport: cosmosHttp('https://rpc.testnet-8.union.build'),
       },
