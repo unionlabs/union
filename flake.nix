@@ -475,7 +475,11 @@
               checkPhase = ''
                 cd $src/.
                 for i in `find . -name "*.nix" -type f`; do
-                    nil diagnostics "$i"
+                    if [[ $i =~ 'vendor' ]]; then
+                      echo "skipping $i"
+                    else
+                      nil diagnostics "$i"
+                    fi
                 done
                 touch $out
               '';
