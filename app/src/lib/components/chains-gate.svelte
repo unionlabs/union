@@ -3,7 +3,6 @@ import type { Chain } from "$lib/types"
 import LoadingLogo from "./loading-logo.svelte"
 import { chainsQuery } from "$lib/queries/chains"
 import { type Readable, derived } from "svelte/store"
-import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
 
 let chains = chainsQuery()
 
@@ -83,7 +82,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
   })
 })
 
-$: console.info("chains", $checkedChains)
+$: $checkedChains
 </script>
 
 {#if !!$chains.data}

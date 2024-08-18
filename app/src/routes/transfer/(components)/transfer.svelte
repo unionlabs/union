@@ -42,11 +42,12 @@
   import { sepoliaStore, wagmiConfig, evmConnect } from '$lib/wallet/evm'
   import { submittedTransfers } from '$lib/stores/submitted-transfers.ts'
   import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from 'viem/chains'
+  import { getConnections, getConnectorClient, getWalletClient } from '@wagmi/core'
   import { get, derived, writable, type Writable, type Readable } from 'svelte/store'
   import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address, http } from 'viem'
-  import { getConnections, getConnectorClient, getWalletClient } from '@wagmi/core'
 
   export let chains: Array<Chain>
+  // $: console.info(JSON.stringify({ chains }, undefined, 2))
 
   const { inspect, ...inspector } = createBrowserInspector({
     autoStart: true,
@@ -74,17 +75,46 @@
 
   // $: console.info($snapshot.context)
 
-  $: recipient = $snapshot.context?.['RECIPIENT'] ?? ''
+  $: network = $snapshot.context['NETWORK']
+  $: recipient = $snapshot.context?.['RECIPIENT']
+  // $: console.info(JSON.stringify({ recipient }, undefined, 2))
+  $: sourceChainId = $snapshot.context['SOURCE_CHAIN_ID']
   $: sourceChain = chains.find(({ chain_id }) => chain_id === $snapshot.context['SOURCE_CHAIN_ID'])
+  $: console.info(JSON.stringify({ sourceChain }, undefined, 2))
+  $: destinationChainId = $snapshot.context['DESTINATION_CHAIN_ID']
+  $: destinationChain = chains.find(
+    ({ chain_id }) => chain_id === $snapshot.context['DESTINATION_CHAIN_ID'],
+  )
+  $: sourceChannel = $snapshot.context['SOURCE_CHANNEL']
+  $: relayContractAddress = $snapshot.context['RELAY_CONTRACT_ADDRESS']
+  $: denomAddress = $snapshot.context['ASSET_DENOM_ADDRESS']
 
-  $: userAddress = derived([userAddrEvm, userAddrCosmos], ([$userAddrEvm, $userAddrCosmos]) => {
-    // console.info("userAddrEvm: ", $userAddrEvm)
-    // console.info("userAddrCosmos: ", $userAddrCosmos)
-    return {
-      evm: $userAddrEvm,
-      cosmos: $userAddrCosmos,
-    } as UserAddresses
-  })
+  $: {
+    if (sourceChainId !== undefined && destinationChainId !== undefined) {
+      if (sourceChain?.chain_id === 'union-testnet-8') {
+        const ucsConfiguration = sourceChain?.ucs1_configurations[destinationChainId]
+        if (ucsConfiguration) {
+          send({ type: 'SET_SOURCE_CHANNEL', value: ucsConfiguration.channel_id })
+          send({ type: 'SET_RELAY_CONTRACT_ADDRESS', value: ucsConfiguration.contract_address })
+        }
+      } else if (destinationChain?.chain_id === 'union-testnet-8') {
+        const ucsConfiguration = sourceChain?.ucs1_configurations[destinationChainId]
+        if (ucsConfiguration) {
+          send({ type: 'SET_SOURCE_CHANNEL', value: ucsConfiguration.channel_id })
+          send({ type: 'SET_RELAY_CONTRACT_ADDRESS', value: ucsConfiguration.contract_address })
+        }
+      }
+    }
+  }
+
+  $: userAddress = derived(
+    [userAddrEvm, userAddrCosmos],
+    ([$userAddrEvm, $userAddrCosmos]) =>
+      ({
+        evm: $userAddrEvm,
+        cosmos: $userAddrCosmos,
+      }) as UserAddresses,
+  )
 
   let _assetBalances = userBalancesQuery({
     chains,
@@ -97,6 +127,16 @@
     const chainIndex = chains.findIndex(({ chain_id }) => chain_id === sourceChain?.chain_id)
     return $_assetBalances[chainIndex]?.data ?? []
   })
+
+  $: cosmosSigner = (
+    sourceChainId
+      ? $cosmosStore.connectedWallet === 'keplr'
+        ? window.keplr?.getOfflineSigner(sourceChainId, { disableBalanceCheck: false })
+        : $cosmosStore.connectedWallet === 'leap'
+          ? window.leap?.getOfflineSigner(sourceChainId, { disableBalanceCheck: false })
+          : undefined
+      : undefined
+  ) as OfflineSigner
 
   let amount = ''
   $: amount = amount.replaceAll(/[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g, '')
@@ -129,40 +169,79 @@
 
   let ANIMATION_STATE: 'FLIP' | 'FLIPPED' | 'UNFLIP' | 'UNFLIPPED' = 'UNFLIPPED'
 
-  async function transferASS() {
-    // send({ type: "CONSTRUCT_PAYLOAD" })
+  async function onTransferClick(event: MouseEvent) {
+    event.preventDefault()
+    // if (
+    //   !network ||
+    //   !sourceChainId ||
+    //   !destinationChainId ||
+    //   !relayContractAddress ||
+    //   !sourceChannel ||
+    //   !amount ||
+    //   !recipient ||
+    //   !denomAddress
+    // ) {
+    //   return toast.error('Missing parameters')
+    // }
+    const params = [
+      ['network', network],
+      ['sourceChainId', sourceChainId],
+      ['destinationChainId', destinationChainId],
+      ['relayContractAddress', relayContractAddress],
+      ['sourceChannel', sourceChannel],
+      ['amount', amount],
+      ['recipient', recipient],
+      ['denomAddress', denomAddress],
+    ]
+    params.forEach(([param, value]) => {
+      if (!value) return toast.error(`Missing parameter: ${param} with value ${value}`)
+    })
+
+    if (
+      !network ||
+      !sourceChainId ||
+      !destinationChainId ||
+      !relayContractAddress ||
+      !sourceChannel ||
+      !amount ||
+      !recipient ||
+      !denomAddress
+    ) {
+      return toast.error('Missing parameters')
+    }
     await sleep(1_000)
 
-    const payload = $snapshot.context['PAYLOAD']
-    console.info('Payload: ', payload)
-
-    if (!payload) return toast.error('No payload found')
-
-    const transactionPayload = {
+    const walletClient = await getWalletClient(wagmiConfig, {
+      chainId: Number(sourceChainId),
+    })
+    const client = createUnionClient({
+      evm: {
+        chain: sepolia,
+        account: walletClient.account,
+        transport: custom(window.ethereum),
+      },
+      cosmos: {
+        account: cosmosSigner,
+        gasPrice: { amount: '0.0025', denom: 'muno' },
+        transport: cosmosHttp('https://rpc.testnet-8.union.build'),
+      },
+    })
+    const transferAssetsParameters = {
+      network,
+      recipient,
+      denomAddress,
+      sourceChannel,
       approve: true,
-      path: payload['path'],
-      memo: payload['memo'],
-      amount: payload['amount'],
-      network: payload['network'],
-      recipient: payload['recipient'],
-      denomAddress: payload['denomAddress'],
-      sourceChannel: payload['sourceChannel'],
-      relayContractAddress: payload['relayContractAddress'],
+      relayContractAddress,
+      memo: 'Test Transfer',
+      amount: BigInt(amount),
+      path: [sourceChainId, destinationChainId],
     } satisfies TransferAssetsParameters
 
-    console.info('Transaction Payload: ', transactionPayload)
+    console.info(JSON.stringify(transferAssetsParameters, undefined, 2))
+    const transfer = await client.transferAsset(transferAssetsParameters)
 
-    console.info('Transaction Payload: ', transactionPayload)
-
-    const walletClient = await getWalletClient(wagmiConfig, {
-      chainId: Number($snapshot.context['SOURCE_CHAIN_ID']),
-    })
-    console.info('Account: ', walletClient.account)
-    const result = await client?.transferAsset({
-      // evmSigner: walletClient.account,
-      ...transactionPayload,
-    })
-    console.info(JSON.stringify(result, undefined, 2))
+    console.info(transfer)
   }
 
   // $: console.info($snapshot.context)
@@ -172,12 +251,16 @@
   <pre class="text-left w-full">
     {JSON.stringify(
       {
-        payload: $snapshot.context['PAYLOAD'],
         sourceChain: $snapshot.context['SOURCE_CHAIN_ID'],
         destinationChain: $snapshot.context['DESTINATION_CHAIN_ID'],
+        network: $snapshot.context['NETWORK'],
         assetSymbol: $snapshot.context['ASSET_SYMBOL'],
+        assetContract: $snapshot.context['ASSET_DENOM_ADDRESS'],
         amount: $snapshot.context['AMOUNT'],
         recipient: $snapshot.context['RECIPIENT'],
+        relayContractAddress: $snapshot.context['RELAY_CONTRACT_ADDRESS'],
+        sourceChannel: $snapshot.context['SOURCE_CHANNEL'],
+
         // assetBalances: $assetBalances,
         // userAddress: $userAddress
       },
@@ -326,41 +409,7 @@
         </section>
       </Card.Content>
       <Card.Footer class="flex flex-col gap-4 items-start">
-        <Button
-          type="button"
-          disabled={buttonDisabled}
-          on:click={async event => {
-            event.preventDefault()
-            // ANIMATION_STATE = "FLIP"
-            send({ type: 'CONSTRUCT_PAYLOAD', value: { chains } })
-            await sleep(1_000)
-
-            const walletClient = await getWalletClient(wagmiConfig, {
-              chainId: Number($snapshot.context['SOURCE_CHAIN_ID']),
-            })
-            const client = createCosmosSdkClient({
-              evm: {
-                chain: sepolia,
-                account: walletClient.account,
-                transport: custom(window.ethereum),
-              },
-            })
-            const transfer = await client.transferAsset({
-              amount: 1n,
-              approve: true,
-              network: 'evm',
-              memo: 'Test Transfer',
-              sourceChannel: 'channel-90',
-              path: ['11155111', 'union-testnet-8'],
-              recipient: 'union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv',
-              relayContractAddress: '0xd0081080ae8493cf7340458eaf4412030df5feeb',
-              denomAddress:
-                $snapshot.context['ASSET_DENOM_ADDRESS'] ?? raise('denom address missing'),
-            })
-
-            console.info(transfer)
-          }}
-        >
+        <Button type="button" disabled={buttonDisabled} on:click={onTransferClick}>
           {buttonText}
         </Button>
       </Card.Footer>
@@ -443,12 +492,10 @@
     chain={sourceChain}
     assets={$assetBalances}
     bind:dialogOpen={dialogOpenToken}
-    onAssetSelect={asset => {
-      console.log('Selected Asset: ', asset)
+    onAssetSelect={asset =>
       send({
-        type: 'SET_ASSET',
+        type: 'SET_DENOM_ADDRESS_AND_SYMBOL',
         value: { symbol: asset.symbol, denomAddress: asset.address },
-      })
-    }}
+      })}
   />
 {/if}

@@ -67,9 +67,9 @@ try {
   const transferAssetsParameters = {
     amount: 1n,
     approve: true,
-    sourceChannel: ucsConfiguration.channel_id,
     network: sepoliaInfo.rpc_type,
     denomAddress: LINK_CONTRACT_ADDRESS,
+    sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",

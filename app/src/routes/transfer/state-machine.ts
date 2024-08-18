@@ -7,9 +7,9 @@ import {
 import { getAddress } from "viem"
 import { get } from "svelte/store"
 import { raise } from "$lib/utilities"
+import { setup, assign } from "xstate"
 import type { Chain } from "$lib/types.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import { setup, assign, fromPromise } from "xstate"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { sepoliaStore, wagmiConfig } from "$lib/wallet/evm"
 
@@ -46,10 +46,17 @@ export const transferStateMachine = setup({
           type: "SET_SOURCE_CHAIN"
           value: { chainId: string; network: Network }
         }
+      | { type: "SET_DESTINATION_CHAIN"; value: string }
       | {
-          type: "SET_ASSET"
+          type: "SET_DENOM_ADDRESS_AND_SYMBOL"
           value: { symbol: string; denomAddress: string }
         }
+      | { type: "SET_AMOUNT"; value: bigint }
+      | { type: "SET_RECIPIENT"; value: string }
+      | { type: "SET_RELAY_CONTRACT_ADDRESS"; value: string }
+      | { type: "SET_SOURCE_CHANNEL"; value: string }
+
+      //
       | { type: "SUCCESS" }
       | { type: "SHOW_RECEIPT" }
       | { type: "APPROVE_SPEND" }
@@ -62,12 +69,9 @@ export const transferStateMachine = setup({
           type: "CREATE_PFM_MEMO"
           value: { port: string; receiver: string; channelId: string }
         }
-      | { type: "SET_AMOUNT"; value: bigint }
       | { type: "APPROVAL_RECEIPT_RECEIVED" }
       | { type: "SWITCH_CHAIN"; value: string }
-      | { type: "SET_RECIPIENT"; value: string }
       | { type: "TRANSFER_SIMULATION_APPROVED" }
-      | { type: "SET_DESTINATION_CHAIN"; value: string }
   },
   guards: {
     IS_EVM: ({ context }) => context.NETWORK === "evm",
@@ -116,11 +120,11 @@ export const transferStateMachine = setup({
           actions: assign(({ event, context }) => {
             return {
               DESTINATION_CHAIN_ID: event.value,
-              RECIPIENT: context.RECIPIENT // ?? recipient
+              RECIPIENT: context.RECIPIENT
             }
           })
         },
-        SET_ASSET: {
+        SET_DENOM_ADDRESS_AND_SYMBOL: {
           actions: [
             assign(({ event }) => ({
               ASSET_SYMBOL: event.value.symbol,
@@ -172,6 +176,13 @@ export const transferStateMachine = setup({
             return { RECIPIENT: event.value ?? recipient() }
           })
         },
+        SET_RELAY_CONTRACT_ADDRESS: {
+          actions: [assign(({ event }) => ({ RELAY_CONTRACT_ADDRESS: event.value }))]
+        },
+        SET_SOURCE_CHANNEL: {
+          actions: [assign(({ event }) => ({ SOURCE_CHANNEL: event.value }))]
+        },
+
         CONSTRUCT_PAYLOAD: {
           guard: "IS_NOT_PFM",
           tags: ["construct-payload"],
@@ -193,19 +204,21 @@ export const transferStateMachine = setup({
               if (!(sourceChain && destinationChain)) return raise("Chain not found")
 
               const ucsConfiguration = sourceChain?.ucs1_configurations[sourceChainId]
+              const sourceChannel = ucsConfiguration?.channel_id ?? raise("Channel not found")
+              const relayContractAddress =
+                ucsConfiguration?.contract_address ?? raise("Contract not found")
 
               return {
                 sourceChainId,
                 destinationChainId,
                 PAYLOAD: {
+                  amount,
                   network,
-                  amount: amount,
-                  recipient: recipient,
-                  path: [sourceChainId, destinationChainId],
-                  sourceChannel: ucsConfiguration?.channel_id ?? raise("Channel not found"),
-                  relayContractAddress:
-                    ucsConfiguration?.contract_address ?? raise("Contract not found"),
-                  denomAddress: context.ASSET_DENOM_ADDRESS ?? raise("Denom address not found")
+                  recipient,
+                  denomAddress,
+                  sourceChannel,
+                  relayContractAddress,
+                  path: [sourceChainId, destinationChainId]
                 }
               }
             })
@@ -285,7 +298,7 @@ export const transferStateMachine = setup({
 // actor.send({ type: "SET_SOURCE_CHAIN", value: { chainId: "80084", network: "evm" } })
 // actor.send({ type: "SET_DESTINATION_CHAIN", value: "stride-internal-1" })
 // actor.send({
-//   type: "SET_ASSET",
+//   type: "SET_DENOM_ADDRESS_AND_SYMBOL",
 //   value: { denomAddress: "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03", symbol: "HONEY" }
 // })
 // actor.send({ type: "SET_AMOUNT", value: 1n })
