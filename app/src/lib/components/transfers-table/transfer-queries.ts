@@ -86,6 +86,5 @@ export async function transfersByTimestampForAddresses({
   )
 
   const allTransfers = [...newer.toReversed(), ...older]
-
   return allTransfers.map(transferTransform)
 }
