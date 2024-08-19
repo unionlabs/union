@@ -12,7 +12,7 @@
   
 <div align="center">
 
-  [![Build](https://hercules-ci.com/api/v1/site/github/account/unionlabs/project/union/badge)](https://hercules-ci.com/github/unionlabs/union/status)
+  [![built with garnix](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fgarnix.io%2Fapi%2Fbadges%2Funionlabs%2Funion%3Fbranch%3Dmain)](https://garnix.io)
   [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
   [![Discord badge][]](https://discord.union.build)
   [![Twitter handle][]][Twitter badge]
