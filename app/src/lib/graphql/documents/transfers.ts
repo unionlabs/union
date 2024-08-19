@@ -1,6 +1,6 @@
 import { graphql } from "../index.ts"
 
-export const TransferListDataFragment = graphql(`
+export const transferListDataFragment = graphql(`
   fragment TransferListData on v0_transfers {
     sender
     source_chain_id
@@ -49,7 +49,7 @@ export const transfersTimestampFilterQueryDocument = graphql(
     }
   }
 `,
-  [TransferListDataFragment]
+  [transferListDataFragment]
 )
 
 export const latestTransfersQueryDocument = graphql(
@@ -68,10 +68,11 @@ export const latestTransfersQueryDocument = graphql(
     }
   }  
 `,
-  [TransferListDataFragment]
+  [transferListDataFragment]
 )
 
-export const userTransfersQueryDocument = graphql(/* Graphql */ `
+export const userTransfersQueryDocument = graphql(
+  /* Graphql */ `
   query UserTransfersQuery($addr1: String!, $addr2: String!) @cached(ttl: 1) {
     v0_transfers(limit: 500, order_by: {source_timestamp: desc}, where: 
   {_or: [
@@ -83,7 +84,9 @@ export const userTransfersQueryDocument = graphql(/* Graphql */ `
       ...TransferListData
     }
   }
-`)
+`,
+  [transferListDataFragment]
+)
 
 export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
 query TransfersBySourceHashBase($source_transaction_hash: String!) @cached(ttl: 1) {
@@ -143,3 +146,82 @@ query TransfersBySourceHashTracesAndHops($source_transaction_hash: String!) @cac
   }
 }
 `)
+
+export const addressTransfersTimestampFilterQueryDocument = graphql(
+  /* graphql */ `
+  query AddressesTransfersTimestampFilterQuery(
+    $limit: Int!,
+    $addresses: [ String! ]!,
+    $timestamp: timestamptz!
+  ) @cached(ttl: 1000) {
+    newer: v0_transfers(
+      limit: $limit,
+      order_by: [
+        { source_timestamp: asc },
+        { source_transaction_hash: asc }
+      ],
+      where: {
+        _and: [
+          { source_timestamp: { _gte: $timestamp } },
+          {
+            _or: [
+              { normalized_sender: { _in: $addresses } },
+              { normalized_receiver: { _in: $addresses } }
+            ]
+          }
+        ]
+      }
+    ) { 
+    ...TransferListData
+    }
+
+  older: v0_transfers(
+      limit: $limit,
+      order_by: [
+        { source_timestamp: desc },
+        { source_transaction_hash: desc }
+      ],
+      where: {
+        _and: [
+          { source_timestamp: { _lt: $timestamp } },
+          {
+            _or: [
+              { normalized_sender: { _in: $addresses } },
+              { normalized_receiver: { _in: $addresses } }
+            ]
+          }
+        ]
+      }
+    ) { 
+    ...TransferListData
+    }
+  }
+`,
+  [transferListDataFragment]
+)
+
+export const latestAddressTransfersQueryDocument = graphql(
+  /* graphql */ `
+  query LatestAddressesTransfersQuery(
+    $limit: Int!,
+    $addresses: [ String! ]!
+  ) {
+    data: v0_transfers(
+      limit: $limit,
+      order_by: [
+        { source_timestamp: desc },
+        { source_transaction_hash: desc }
+      ],
+      where: {
+        _or: [
+          { normalized_sender: { _in: $addresses } },
+          { normalized_receiver: { _in: $addresses } }
+        ]
+      }
+    ) { 
+    ...TransferListData
+    }
+  }
+`,
+  [transferListDataFragment]
+)

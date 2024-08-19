@@ -3,18 +3,16 @@ import { URLS } from "$lib/constants"
 import {
   latestTransfersQueryDocument,
   transfersTimestampFilterQueryDocument,
-  TransferListDataFragment
-} from "$lib/graphql/documents/transfers.ts"
-import {
   latestAddressTransfersQueryDocument,
-  addressTransfersTimestampFilterQueryDocument
-} from "$lib/graphql/documents/address-transfers.ts"
+  addressTransfersTimestampFilterQueryDocument,
+  transferListDataFragment
+} from "$lib/graphql/documents/transfers.ts"
 import { raise } from "$lib/utilities/index.ts"
 
 import { readFragment, type FragmentOf } from "gql.tada"
 
-const transferTransform = (tx: FragmentOf<typeof TransferListDataFragment>) => {
-  const transfer = readFragment(TransferListDataFragment, tx)
+const transferTransform = (tx: FragmentOf<typeof transferListDataFragment>) => {
+  const transfer = readFragment(transferListDataFragment, tx)
   const lastForward = transfer.forwards?.at(-1)
   const receiver = lastForward?.receiver ?? transfer.receiver
   const destinationChainId = lastForward?.chain?.chain_id ?? transfer.destination_chain_id
@@ -35,16 +33,17 @@ const transferTransform = (tx: FragmentOf<typeof TransferListDataFragment>) => {
   }
 }
 
-export async function transfersLive({ limit = 12 }: { limit?: number } = {}) {
-  const { data } = await request(URLS.GRAPHQL, latestTransfersQueryDocument, { limit })
+type TransfersReturnType = Promise<Array<ReturnType<typeof transferTransform>>>
 
+export async function transfersLive({ limit = 12 }: { limit?: number } = {}): TransfersReturnType {
+  const { data } = await request(URLS.GRAPHQL, latestTransfersQueryDocument, { limit })
   return data.map(transferTransform)
 }
 
 export async function transfersByTimestamp({
   limit,
   timestamp
-}: { limit: number; timestamp: string }): Promise<PaginatedTransfers> {
+}: { limit: number; timestamp: string }): TransfersReturnType {
   const { older, newer } = await request(URLS.GRAPHQL, transfersTimestampFilterQueryDocument, {
     limit,
     timestamp
@@ -59,7 +58,7 @@ export async function transfersLiveByAddress({
 }: {
   limit: number
   addresses: Array<string>
-}): Promise<PaginatedTransfers> {
+}): TransfersReturnType {
   const { data } = await request(URLS.GRAPHQL, latestAddressTransfersQueryDocument, {
     limit,
     addresses
@@ -75,7 +74,7 @@ export async function transfersByTimestampForAddresses({
   limit: number
   timestamp: string
   addresses: Array<string>
-}): Promise<PaginatedTransfers> {
+}): TransfersReturnType {
   const { older, newer } = await request(
     URLS.GRAPHQL,
     addressTransfersTimestampFilterQueryDocument,
