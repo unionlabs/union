@@ -26,6 +26,7 @@ import { derived, writable, type Readable, type Writable } from "svelte/store"
 import CellOriginTransfer from "$lib/components/table-cells/cell-origin-transfer.svelte"
 import ExplorerPagination from "./explorer-pagination.svelte"
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
+import { decodeTimestampSearchParam, encodeTimestampSearchParam } from "$lib/timestamps"
 import {
   transfersLive,
   transfersByTimestamp,
@@ -36,8 +37,13 @@ import { toast } from "svelte-sonner"
 
 export let chains: Array<Chain>
 export let normalizedAddresses: Array<string> | null = null
-export let timestamp: Writable<string | null>
 export let pageSize: number // must be even
+
+const timestamp: Readable<string | null> = derived(page, $page => {
+  const urlTimestamp = $page.url.searchParams.get("timestamp")
+  if (!urlTimestamp) return null
+  return decodeTimestampSearchParam(urlTimestamp)
+})
 
 let transfers = createQuery(
   derived([timestamp], ([$timestamp]) =>
@@ -93,13 +99,8 @@ let transfers = createQuery(
 )
 
 let transfersDataStore: Readable<Array<Transfer>> = derived([transfers], ([$transfers]) => {
-  return $transfers?.data?.transfers ?? []
+  return $transfers?.data ?? []
 })
-
-let timestamps = derived([transfers], ([$liveTransfers]) => ({
-  oldestTimestamp: $liveTransfers?.data?.oldestTimestamp ?? "",
-  latestTimestamp: $liveTransfers?.data?.latestTimestamp ?? ""
-}))
 
 type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 const columns: Array<ColumnDef<DataRow>> = [
@@ -181,9 +182,6 @@ function assetHasInfoProperty(assets: TransferAsset) {
   const [[_, { info }]] = Object.entries(assets)
   return !!info
 }
-
-const encodeTimestampSearchParam = (timestamp: string) =>
-  `?timestamp=${toPrettyDateTimeFormat(timestamp)?.replaceAll("-", "").replaceAll(":", "").replaceAll(" ", "")}`
 </script>
 
 {#if $transfersDataStore?.length}
@@ -246,47 +244,16 @@ const encodeTimestampSearchParam = (timestamp: string) =>
       </Table.Body>
     </Table.Root>
   </Card.Root>
+  <div
+    class="flex sm:justify-start sm:flex-row flex-col justify-center gap-1 w-full"
+  >
+    <ExplorerPagination
+      explorerItems={transfersDataStore}
+      status={$transfers.status === "success" ? "done" : "pending"}
+    />
+  </div>
 {:else if $transfers.status  === "pending"}
   <LoadingLogo class="size-16" />
 {/if}
-<div
-  class="flex sm:justify-start sm:flex-row flex-col justify-center gap-1 w-full"
->
-  <ExplorerPagination
-    status={$transfers.status === "success" ? "done" : "pending"}
-    live={!$timestamp}
-    onOlderPage={async _ => {
-      const stamp = $transfers?.data?.oldestTimestamp
-      if (!stamp) {
-        toast.error("Invalid older timestamp");
-        return;
-      }
-      timestamp.set(stamp)
-      goto(encodeTimestampSearchParam(stamp), {
-        replaceState: true,
-        state: { timestamp: stamp }
-      })
-    }}
-    onCurrentClick={() => {
-      timestamp.set(null)
-      goto($page.url.pathname, { replaceState: true })
-    }}
-    onNewerPage={async _ => {
-      const stamp = $transfers?.data?.latestTimestamp
-      if (!stamp) {
-        toast.error("Invalid newer timestamp");
-        return;
-      }
-      timestamp.set(stamp)
-      goto(encodeTimestampSearchParam(stamp), {
-        replaceState: true,
-        state: { timestamp: stamp }
-      })
-    }}
-    timestamp={$timestamps.latestTimestamp
-      ? toPrettyDateTimeFormat($timestamps.latestTimestamp, { local: true })
-      : ""}
-  />
-</div>
 
 <style lang="postcss"></style>

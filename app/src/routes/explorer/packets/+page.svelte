@@ -5,7 +5,7 @@ import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import { derived, writable } from "svelte/store"
+import { derived, writable, type Writable } from "svelte/store"
 import CellStatus from "$lib/components/table-cells/cell-status.svelte"
 import { DurationUnits } from "svelte-ux"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
@@ -13,6 +13,12 @@ import CellDurationText from "$lib/components/table-cells/cell-duration-text.sve
 import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types"
+
+let timestamp: Writable<string | null> = writable(
+  $page.url.searchParams.has("timestamp")
+    ? decodeTimestampSearchParam(`${$page.url.searchParams.get("timestamp")}`)
+    : null
+)
 
 const packets = createQuery({
   queryKey: ["packets"],
