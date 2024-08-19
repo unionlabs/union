@@ -13,12 +13,7 @@ import CellDurationText from "$lib/components/table-cells/cell-duration-text.sve
 import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types"
-
-let timestamp: Writable<string | null> = writable(
-  $page.url.searchParams.has("timestamp")
-    ? decodeTimestampSearchParam(`${$page.url.searchParams.get("timestamp")}`)
-    : null
-)
+import ExplorerPagination from "$lib/components/transfers-table/explorer-pagination.svelte"
 
 const packets = createQuery({
   queryKey: ["packets"],
@@ -38,7 +33,7 @@ const packets = createQuery({
         channel_id: packet.to_channel_id ?? "unknown",
         port_id: packet.to_port_id ?? "unknown"
       },
-      source_time: packet.source_time,
+      timestamp: packet.source_time,
       destination_time: packet.destination_time
     }))
 })
@@ -62,7 +57,7 @@ const columns: Array<ColumnDef<PacketRow>> = [
   },
   {
     header: () => "Source Time",
-    accessorKey: "source_time",
+    accessorKey: "timestamp",
     cell: info => flexRender(CellTimestamp, { value: info.getValue() })
   },
   {
@@ -75,6 +70,7 @@ const columns: Array<ColumnDef<PacketRow>> = [
 
 {#if $packets.data}
   <Table bind:dataStore={packetsDataStore} {columns} />
+  <ExplorerPagination explorerItems={packetsDataStore}/> 
 {:else if $packets.isLoading}
   <LoadingLogo class="size-16" />
 {:else if $packets.isError}
