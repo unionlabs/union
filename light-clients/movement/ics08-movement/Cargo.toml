@@ -14,6 +14,7 @@ hex-literal = { workspace = true }
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 sha3 = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_bytes = "0.11.6"
 
 [lints]
 workspace = true

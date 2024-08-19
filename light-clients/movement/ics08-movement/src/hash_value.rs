@@ -52,6 +52,16 @@ impl fmt::LowerHex for HashValue {
     }
 }
 
+/// Will print shortened (4 bytes) hash
+impl fmt::Display for HashValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for byte in self.0.iter().take(4) {
+            write!(f, "{:02x}", byte)?;
+        }
+        Ok(())
+    }
+}
+
 impl fmt::Debug for HashValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "HashValue(")?;
