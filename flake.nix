@@ -469,17 +469,16 @@
             nil = mkCi (system == "x86_64") (pkgs.stdenv.mkDerivation {
               name = "nil";
               dontUnpack = true;
-              src = ./.;
+              src = builtins.filterSource
+                (path: type:
+                  type != "directory" || baseNameOf path != "vendor")
+                ./.;
               buildInputs = [ pkgs.nil ];
               doCheck = true;
               checkPhase = ''
                 cd $src/.
                 for i in `find . -name "*.nix" -type f`; do
-                    if [[ $i =~ 'vendor' ]]; then
-                      echo "skipping $i"
-                    else
-                      nil diagnostics "$i"
-                    fi
+                  nil diagnostics "$i"
                 done
                 touch $out
               '';
