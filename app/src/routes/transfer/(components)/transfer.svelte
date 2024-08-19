@@ -31,7 +31,6 @@ import { userBalancesQuery } from "$lib/queries/balance"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
-import { transferStateMachine } from "../state-machine.ts"
 import { userAddrOnChain } from "$lib/utilities/address.ts"
 import { createBrowserInspector } from "@statelyai/inspect"
 import { Button } from "$lib/components/ui/button/index.ts"
@@ -45,6 +44,7 @@ import { sepoliaStore, wagmiConfig, evmConnect } from "$lib/wallet/evm"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
 import { get, derived, writable, type Writable, type Readable } from "svelte/store"
+import { transferStateMachine, transferAnimationMachine } from "../state-machine.ts"
 import { getChainId, switchChain, getWalletClient, getConnectorClient } from "@wagmi/core"
 import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address, http } from "viem"
 
@@ -55,12 +55,17 @@ const { inspect, ...inspector } = createBrowserInspector({
 })
 
 const { snapshot, send } = useMachine(transferStateMachine, {
-  inspect,
+  // inspect,
   input: {
     chains,
     cosmosStore: $cosmosStore,
     sepoliaStore: $sepoliaStore
   }
+})
+
+const { snapshot: animationSnapshot, send: animationSend } = useMachine(transferAnimationMachine, {
+  inspect,
+  input: { defaultDelay: 1_000 }
 })
 
 let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [false, false, false]
@@ -75,8 +80,10 @@ $: destinationChain = chains.find(({ chain_id }) => chain_id === destinationChai
 
 $: sourceChannel = $snapshot.context["SOURCE_CHANNEL"]
 $: relayContractAddress = $snapshot.context["RELAY_CONTRACT_ADDRESS"]
-$: denomAddress = $snapshot.context["ASSET_DENOM_ADDRESS"]
-$: assetSymbol = $snapshot.context["ASSET_SYMBOL"]
+$: denomAddress = $snapshot.context["ASSET"]?.denom
+$: assetSymbol = $snapshot.context["ASSET"]?.display_symbol
+
+$: selectedAsset = sourceChain?.assets.find(asset => asset.denom === denomAddress)
 
 $: pfmTransfer =
   sourceChainId &&
@@ -115,10 +122,9 @@ $: userAddress = derived(
     }) as UserAddresses
 )
 
-$: console.info(JSON.stringify({ sourceChainId, destinationChainId }, undefined, 2))
 $: cosmosOfflineSigner = sourceChainId ? getCosmosOfflineSigner(sourceChainId) : undefined
 
-let _assetBalances = userBalancesQuery({
+$: _allSourceChainAssetBalances = userBalancesQuery({
   chains,
   // @ts-expect-error
   userAddresses: { evm: $userAddrEvm, cosmos: $userAddrCosmos },
@@ -126,14 +132,32 @@ let _assetBalances = userBalancesQuery({
     $cosmosStore.connectionStatus === "connected" || $sepoliaStore.connectionStatus === "connected"
 })
 
-$: assetBalances = derived(_assetBalances, $_assetBalances => {
-  const chainIndex = chains.findIndex(({ chain_id }) => chain_id === sourceChain?.chain_id)
-  return $_assetBalances[chainIndex]?.data ?? []
+$: allSourceChainAssetBalances = derived(
+  _allSourceChainAssetBalances,
+  $_allSourceChainAssetBalances => {
+    const chainIndex = chains.findIndex(({ chain_id }) => chain_id === sourceChain?.chain_id)
+    return $_allSourceChainAssetBalances[chainIndex]?.data ?? []
+  }
+)
+
+$: assetBalance = derived(allSourceChainAssetBalances, $allSourceChainAssetBalances => {
+  const asset = $allSourceChainAssetBalances.find(asset => asset.address === denomAddress)
+  if (!(asset && selectedAsset)) return
+  return {
+    address: asset.address,
+    balance: asset.balance,
+    name: selectedAsset.display_name,
+    symbol: selectedAsset.display_symbol,
+    formattedBalance: formatUnits(asset.balance, selectedAsset.decimals)
+  }
 })
 
-let amount = ""
-$: amount = amount.replaceAll(/[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g, "")
-$: Number.parseFloat(amount) >= 0 && send({ type: "SET_AMOUNT", value: BigInt(amount) })
+$: console.info($assetBalance)
+
+let inputAmount = ""
+$: inputAmount = inputAmount.replaceAll(/[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g, "")
+$: Number.parseFloat(inputAmount) >= 0 && send({ type: "SET_AMOUNT", value: BigInt(inputAmount) })
+$: amount = $snapshot.context["AMOUNT"]
 
 $: memo = pfmTransfer
   ? createPfmMemo({
@@ -144,34 +168,77 @@ $: memo = pfmTransfer
       port: `${forward?.port}`,
       channel: `${forward?.channel_id}`
     })
-  : `transferring ${amount} ${assetSymbol}`
+  : `transferring ${inputAmount} ${assetSymbol}`
 
-let balanceCoversAmount = true
+/**
+ * TODO: this doesn't take gas and fees in general into account
+ */
+$: balanceCoversAmount = derived(assetBalance, $assetBalance => {
+  if (!(inputAmount && $assetBalance?.balance && selectedAsset?.decimals)) return false
+  const amount = parseUnits(inputAmount, selectedAsset?.decimals)
+  return amount <= $assetBalance?.balance
+})
+
+// $: console.info(
+//   JSON.stringify(
+//     {
+//       $balanceCoversAmount,
+//       amount,
+//       formattedAmount: amount ? formatUnits(amount, selectedAsset?.decimals ?? 0) : 0n,
+//       balance: $assetBalance?.balance,
+//       formattedBalance: $assetBalance?.formattedBalance,
+//     },
+//     undefined,
+//     2,
+//   ),
+// )
 
 $: buttonText =
-  assetSymbol && amount
-    ? balanceCoversAmount
-      ? "transfer"
+  denomAddress && inputAmount
+    ? $balanceCoversAmount
+      ? destinationChainId
+        ? "transfer"
+        : "select destination chain"
       : "insufficient balance"
-    : assetSymbol && !amount
+    : denomAddress && !inputAmount
       ? "enter amount"
       : "select asset and enter amount"
 
 $: disableRecipientField = sourceChainId === undefined || destinationChainId === undefined
 
 $: buttonDisabled = !(
-  amount &&
-  assetSymbol &&
+  inputAmount &&
+  denomAddress &&
+  sourceChainId &&
   destinationChainId &&
   recipient &&
-  sourceChainId &&
-  balanceCoversAmount
+  $balanceCoversAmount
 )
 
-let ANIMATION_STATE: "FLIP" | "FLIPPED" | "UNFLIP" | "UNFLIPPED" = "UNFLIPPED"
+function swapChainsClick(_event: MouseEvent) {
+  const [fromChain, toChain] = [sourceChainId, destinationChainId]
+  const network = chains.find(chain => chain.chain_id === toChain)?.rpc_type
+  if (!(network && fromChain && toChain)) return
+  send({ type: "SET_DESTINATION_CHAIN", value: fromChain })
+  send({ type: "SET_SOURCE_CHAIN", value: { chainId: toChain, network } })
+}
 
 async function onTransferClick(event: MouseEvent) {
   event.preventDefault()
+
+  animationSend({
+    delay: 4_000,
+    type: "advance",
+    target: "FLIPPING"
+  })
+  console.info($animationSnapshot.context)
+  // animationSend({
+  //   type: 'nextStep',
+  //   value: {
+  //     state: 'SWITCHING_TO_CHAIN',
+  //   },
+  // })
+
   const currentChainId = getChainId(wagmiConfig)
   if (network === "evm" && currentChainId !== Number(sourceChainId)) {
     // @ts-expect-error
@@ -185,7 +252,7 @@ async function onTransferClick(event: MouseEvent) {
     ["path", ...path],
     ["relayContractAddress", relayContractAddress],
     ["sourceChannel", sourceChannel],
-    ["amount", amount],
+    ["inputAmount", inputAmount],
     ["recipient", recipient],
     ["denomAddress", denomAddress]
   ]
@@ -201,7 +268,7 @@ async function onTransferClick(event: MouseEvent) {
       path &&
       relayContractAddress &&
       sourceChannel &&
-      amount &&
+      inputAmount &&
       recipient &&
       denomAddress
     )
@@ -224,7 +291,7 @@ async function onTransferClick(event: MouseEvent) {
 
   // const cosmos = {
   //   account: cosmosOfflineSigner,
-  //   gasPrice: { amount: '0.0025', denom: cosmosGasDenom },
+  //   gasPrice: { inputAmount: '0.0025', denom: cosmosGasDenom },
   //   transport: cosmosRpcURLs?.map(url => cosmosHttp(url)),
   // } satisfies CosmosClientParameters
 
@@ -232,7 +299,7 @@ async function onTransferClick(event: MouseEvent) {
   console.info({
     account: cosmosOfflineSigner,
     gasPrice: {
-      amount: "0.0025",
+      inputAmount: "0.0025",
       denom: sourceChain?.assets.find(asset => asset.gas_token)?.denom
     },
     transport: cosmosHttp(`https://${sourceChain?.rpcs?.find(rpc => rpc.type === "rpc")?.url}`)
@@ -246,12 +313,18 @@ async function onTransferClick(event: MouseEvent) {
     cosmos: {
       account: cosmosOfflineSigner,
       gasPrice: {
-        amount: "0.0025",
+        inputAmount: "0.0025",
         // @ts-expect-error
         denom: sourceChain?.assets.find(asset => asset.gas_token)?.denom
       },
       transport: cosmosHttp(`https://${sourceChain?.rpcs?.find(rpc => rpc.type === "rpc")?.url}`)
     }
+  })
+
+  animationSend({
+    delay: 2_000,
+    type: "advance",
+    target: "APPROVING_ASSET"
   })
   const transferAssetsParameters = {
     memo,
@@ -260,24 +333,30 @@ async function onTransferClick(event: MouseEvent) {
     recipient,
     denomAddress,
     sourceChannel,
-    approve: true,
+    approve: false,
     relayContractAddress,
-    amount: BigInt(amount)
+    amount: BigInt(inputAmount)
   } satisfies TransferAssetsParameters
 
   console.info(JSON.stringify(transferAssetsParameters, undefined, 2))
+
+  // @ts-expect-errorq
+  const approvalResponse = await client.approveTransaction(transferAssetsParameters)
+
+  animationSend({
+    delay: 2_000,
+    type: "advance",
+    target: "AWAITING_APPROVAL_RECEIPT",
+    data: approvalResponse.success ? approvalResponse.data : undefined,
+    error: approvalResponse.success ? undefined : new Error(approvalResponse.data)
+  })
   const transfer = await client.transferAsset(transferAssetsParameters)
 
   console.info(transfer)
 }
 
-function swapChainsClick(_event: MouseEvent) {
-  const [fromChain, toChain] = [sourceChainId, destinationChainId]
-  const network = chains.find(chain => chain.chain_id === toChain)?.rpc_type
-  if (!(network && fromChain && toChain)) return
-  send({ type: "SET_DESTINATION_CHAIN", value: fromChain })
-  send({ type: "SET_SOURCE_CHAIN", value: { chainId: toChain, network } })
-}
+$: _animationSnapshot = $animationSnapshot["context"]
+$: console.info(JSON.stringify(_animationSnapshot, undefined, 2))
 </script>
 
 <DevTools>
@@ -289,7 +368,7 @@ function swapChainsClick(_event: MouseEvent) {
         network: $snapshot.context['NETWORK'],
         assetSymbol: $snapshot.context['ASSET_SYMBOL'],
         assetContract: $snapshot.context['ASSET_DENOM_ADDRESS'],
-        amount: $snapshot.context['AMOUNT'],
+        inputAmount: $snapshot.context['AMOUNT'],
         recipient: $snapshot.context['RECIPIENT'],
         relayContractAddress: $snapshot.context['RELAY_CONTRACT_ADDRESS'],
         sourceChannel: $snapshot.context['SOURCE_CHANNEL'],
@@ -306,7 +385,21 @@ function swapChainsClick(_event: MouseEvent) {
     $snapshot.matches('START') ? 'bg-black/60' : '',
   )}
 ></div>
-
+<Button
+  on:click={() => {
+    animationSend({
+      type: 'advance',
+      delay: 4_000,
+    })
+    // console.info(DELAY, LAST_EVENT, ANIMATION_STATE, ANIMATION_STEP)
+    animationSend({
+      type: 'advance',
+    })
+    // console.info(DELAY, LAST_EVENT, ANIMATION_STATE, ANIMATION_STEP)
+  }}
+>
+  b
+</Button>
 <div class="cube-scene" id="scene">
   <div class={cn('cube ', !$snapshot.matches('START') ? 'cube--flipped' : 'no-transition')}>
     <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">
@@ -336,14 +429,15 @@ function swapChainsClick(_event: MouseEvent) {
           <CardSectionHeading>Asset</CardSectionHeading>
           {#if !$snapshot.context['SOURCE_CHAIN_ID']}
             Select a chain to send from.
-          {:else if $assetBalances.length > 0 && $snapshot.context['SOURCE_CHAIN_ID'] && $snapshot.context['SOURCE_CHAIN_ID'].length > 0}
+          {:else if $allSourceChainAssetBalances.length > 0 && $snapshot.context['SOURCE_CHAIN_ID'] && $snapshot.context['SOURCE_CHAIN_ID'].length > 0}
+            {@const assetName = $snapshot.context['ASSET']?.display_symbol}
             <Button
               class="w-full"
               variant="outline"
               on:click={() => (dialogOpenToken = !dialogOpenToken)}
             >
               <div class="flex-1 text-left font-bold text-md">
-                {truncate($snapshot.context['ASSET_SYMBOL'] ?? 'Select Asset', 12)}
+                {truncate(assetName ?? 'Select Asset', 12)}
               </div>
 
               <Chevron />
@@ -352,29 +446,14 @@ function swapChainsClick(_event: MouseEvent) {
             You don't have sendable assets on <b>{sourceChainId}</b>. You can get some from
             <a class="underline font-bold" href="/faucet">the faucet</a>
           {/if}
-          <!-- 
-            {/if}
-          {:else}
-            Select a chain to send from.
-          {/if}
-          {#if $assetSymbol !== "" && $sendableBalances !== null && $asset?.address}
+          {#if denomAddress && assetSymbol && $assetBalance?.balance}
             <div class="mt-4 text-xs text-muted-foreground">
-              <b
-                >{truncate(
-                  supportedAsset
-                    ? supportedAsset?.display_symbol
-                    : $assetSymbol,
-                  12
-                )}</b
-              >
+              <b>{truncate(assetSymbol, 12)}</b>
               balance on
-              <b>{$fromChain?.display_name}</b> is
-              {formatUnits(
-                BigInt($asset.balance),
-                supportedAsset?.decimals ?? 0
-              )}
+              <b>{sourceChain?.display_name}</b> is
+              {$assetBalance?.formattedBalance}
             </div>
-          {/if} -->
+          {/if}
         </section>
         <section>
           <CardSectionHeading>Amount</CardSectionHeading>
@@ -388,10 +467,10 @@ function swapChainsClick(_event: MouseEvent) {
             autocomplete="off"
             placeholder="0.00"
             inputmode="decimal"
-            bind:value={amount}
+            bind:value={inputAmount}
             autocapitalize="none"
             class={cn(
-              !balanceCoversAmount && amount ? 'border-red-500' : '',
+              inputAmount && !$balanceCoversAmount ? 'border-red-500' : '',
               'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
             )}
             pattern="^[0-9]*[.,]?[0-9]*$"
@@ -515,15 +594,15 @@ function swapChainsClick(_event: MouseEvent) {
   }}
 />
 
-{#if sourceChain && $assetBalances.length > 0}
+{#if sourceChain && $allSourceChainAssetBalances.length > 0}
   <AssetsDialog
     chain={sourceChain}
-    assets={$assetBalances}
     bind:dialogOpen={dialogOpenToken}
-    onAssetSelect={asset =>
-      send({
-        type: 'SET_DENOM_ADDRESS_AND_SYMBOL',
-        value: { symbol: asset.symbol, denomAddress: asset.address },
-      })}
+    assets={$allSourceChainAssetBalances}
+    onAssetSelect={asset => {
+      const selectedAsset = sourceChain.assets.find(({ denom }) => denom === asset['address'])
+      if (!selectedAsset) return
+      send({ type: 'SET_ASSET', value: selectedAsset })
+    }}
   />
 {/if}

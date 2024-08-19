@@ -32,6 +32,18 @@ export type UserAddressEvm = {
   normalized_prefixed: Address
 }
 
+export type Asset = {
+  denom: string
+  display_symbol: string
+  display_name: string | null
+  decimals: number
+  faucets: Array<{
+    url: string
+    display_name: string
+  }>
+  gas_token: boolean
+}
+
 export type Chain = {
   chain_id: string
   display_name: string
@@ -63,15 +75,5 @@ export type Chain = {
     address_url: string
   }>
   addr_prefix: string
-  assets: Array<{
-    denom: string
-    display_symbol: string
-    display_name: string | null
-    decimals: number
-    faucets: Array<{
-      url: string
-      display_name: string
-    }>
-    gas_token: boolean
-  }>
+  assets: Array<Asset>
 }

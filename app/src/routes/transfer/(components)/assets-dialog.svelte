@@ -1,6 +1,6 @@
 <script lang="ts">
 import { formatUnits } from "viem"
-import type { Chain } from "$lib/types.ts"
+import type { Asset, Chain } from "$lib/types.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import * as Dialog from "$lib/components/ui/dialog"
@@ -9,8 +9,8 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import type { TokenBalance } from "$lib/queries/balance/index.ts"
 
-export let dialogOpen = false
 export let chain: Chain
+export let dialogOpen = false
 export let assets: Array<TokenBalance>
 
 export let onAssetSelect: (data: { address: string; symbol: string }) => void

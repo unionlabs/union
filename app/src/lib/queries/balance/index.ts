@@ -6,7 +6,7 @@ import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
 import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 
-export interface TokenBalance {
+export type TokenBalance = {
   name: string
   symbol: string
   address: string
