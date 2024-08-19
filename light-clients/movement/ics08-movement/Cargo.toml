@@ -6,9 +6,9 @@ license-file.workspace = true
 repository.workspace = true
 
 [dependencies]
-hex = { workspace = true }
-aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core" }
-aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core" }
+hex = { workspace = true, features = ["alloc"] }
+# aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core" }
+# aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core" }
 serde_json = { workspace = true }
 hex-literal = { workspace = true }
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }

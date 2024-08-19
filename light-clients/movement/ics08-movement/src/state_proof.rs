@@ -5,10 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    block_info::BlockInfo,
-    epoch_change::EpochChangeProof,
-    hash_value::HashValue,
-    ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
+    block_info::BlockInfo, epoch_change::EpochChangeProof, hash_value::HashValue, types::Signature,
 };
 
 /// A convenience type for the collection of sub-proofs that consistitute a
@@ -80,15 +77,9 @@ pub struct LedgerInfo {
     consensus_data_hash: HashValue,
 }
 
-#[derive(Clone, Default, Debug, Eq, Hash, PartialEq, Serialize)]
+// TODO(aeryz): custom deserialize
+#[derive(Clone, Default, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct BitVec {
     #[serde(with = "serde_bytes")]
     inner: Vec<u8>,
-}
-
-#[derive(Clone, Eq, PartialEq, SerializeKey, DeserializeKey)]
-/// Either (1) a BLS signature share from an individual signer, (2) a BLS multisignature or (3) a
-/// BLS aggregate signature
-pub struct Signature {
-    pub sig: [u8; 96],
 }

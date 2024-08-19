@@ -24,7 +24,6 @@ pub const GENESIS_TIMESTAMP_USECS: u64 = 0;
 /// without having access to the block or its execution output state. It
 /// assumes that the block is the last block executed within the ledger.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct BlockInfo {
     /// The epoch to which the block belongs.
     epoch: u64,
@@ -40,22 +39,6 @@ pub struct BlockInfo {
     timestamp_usecs: u64,
     /// An optional field containing the next epoch info
     next_epoch_state: Option<EpochState>,
-}
-
-impl Display for BlockInfo {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(
-        f,
-        "BlockInfo: [epoch: {}, round: {}, id: {}, executed_state_id: {}, version: {}, timestamp (us): {}, next_epoch_state: {}]",
-        self.epoch(),
-        self.round(),
-        self.id(),
-        self.executed_state_id(),
-        self.version(),
-        self.timestamp_usecs(),
-        self.next_epoch_state.as_ref().map_or("None".to_string(), |epoch_state| format!("{}", epoch_state)),
-    )
-    }
 }
 
 /// A continuously increasing sequence number for committed blocks.
