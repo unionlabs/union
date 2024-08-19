@@ -2,16 +2,19 @@ import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import {
   latestTransfersQueryDocument,
-  transfersTimestampFilterQueryDocument
+  transfersTimestampFilterQueryDocument,
+  TransferListDataFragment
 } from "$lib/graphql/documents/transfers.ts"
 import {
   latestAddressTransfersQueryDocument,
   addressTransfersTimestampFilterQueryDocument
 } from "$lib/graphql/documents/address-transfers.ts"
 import { raise } from "$lib/utilities/index.ts"
-import type { PaginatedTransfers } from "../../transfers-types.ts"
 
-const transferTransform = transfer => {
+import { readFragment, type FragmentOf } from "gql.tada"
+
+const transferTransform = (tx: FragmentOf<typeof TransferListDataFragment>) => {
+  const transfer = readFragment(TransferListDataFragment, tx)
   const lastForward = transfer.forwards?.at(-1)
   const receiver = lastForward?.receiver ?? transfer.receiver
   const destinationChainId = lastForward?.chain?.chain_id ?? transfer.destination_chain_id
@@ -32,9 +35,7 @@ const transferTransform = transfer => {
   }
 }
 
-export async function transfersLive({
-  limit = 12
-}: { limit?: number } = {}): Promise<PaginatedTransfers> {
+export async function transfersLive({ limit = 12 }: { limit?: number } = {}) {
   const { data } = await request(URLS.GRAPHQL, latestTransfersQueryDocument, { limit })
 
   return data.map(transferTransform)

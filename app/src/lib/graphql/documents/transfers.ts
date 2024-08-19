@@ -1,6 +1,28 @@
 import { graphql } from "../index.ts"
 
-export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
+export const TransferListDataFragment = graphql(`
+  fragment TransferListData on v0_transfers {
+    sender
+    source_chain_id
+    source_timestamp
+    source_transaction_hash
+    receiver
+    destination_chain_id
+    destination_timestamp
+    destination_transaction_hash
+    assets
+
+    forwards {
+      port
+      channel
+      receiver
+      chain { chain_id }
+    }
+  } 
+`)
+
+export const transfersTimestampFilterQueryDocument = graphql(
+  /* GraphQL */ `
   query TransfersQueryTimestampFilter(
     $limit: Int!,
     $timestamp: timestamptz!
@@ -13,22 +35,7 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
       ],
       where: { source_timestamp: { _gte: $timestamp } },
     ) {
-      sender
-      source_chain_id
-      source_timestamp
-      source_transaction_hash
-      receiver
-      destination_chain_id
-      destination_timestamp
-      destination_transaction_hash
-      assets
-
-      forwards {
-        port
-        channel
-        receiver
-        chain { chain_id }
-      }
+      ...TransferListData
     }
     older: v0_transfers(
       limit: $limit,
@@ -38,27 +45,15 @@ export const transfersTimestampFilterQueryDocument = graphql(/* GraphQL */ `
       ],
       where: { source_timestamp: { _lt: $timestamp } },
     ) {
-      sender
-      source_chain_id
-      source_timestamp
-      source_transaction_hash
-      receiver
-      destination_chain_id
-      destination_timestamp
-      destination_transaction_hash
-      assets
-
-      forwards {
-        port
-        channel
-        receiver
-        chain { chain_id }
-      }
+      ...TransferListData
     }
   }
-`)
+`,
+  [TransferListDataFragment]
+)
 
-export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
+export const latestTransfersQueryDocument = graphql(
+  /* GraphQL */ `
   query TransfersQuery(
     $limit: Int! = 8,
   ) {
@@ -69,25 +64,12 @@ export const latestTransfersQueryDocument = graphql(/* GraphQL */ `
         { source_transaction_hash: desc }
       ],
     ) {
-      sender
-      source_chain_id
-      source_timestamp
-      source_transaction_hash
-      receiver
-      destination_chain_id
-      destination_timestamp
-      destination_transaction_hash
-      assets
-
-      forwards {
-        port
-        channel
-        receiver
-        chain { chain_id }
-      }
+      ...TransferListData
     }
   }  
-`)
+`,
+  [TransferListDataFragment]
+)
 
 export const userTransfersQueryDocument = graphql(/* Graphql */ `
   query UserTransfersQuery($addr1: String!, $addr2: String!) @cached(ttl: 1) {
@@ -98,19 +80,7 @@ export const userTransfersQueryDocument = graphql(/* Graphql */ `
   	{normalized_sender: {_eq: $addr2}}, 
     {normalized_receiver: {_eq: $addr2}}
   ]}) {
-      sender
-      normalized_sender
-      source_chain_id
-      source_connection_id
-      source_channel_id
-      receiver
-      normalized_receiver
-      destination_chain_id
-      destination_connection_id
-      destination_channel_id
-      assets
-      source_timestamp
-      destination_timestamp
+      ...TransferListData
     }
   }
 `)
