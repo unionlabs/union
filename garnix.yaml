@@ -85,6 +85,7 @@ builds:
     - 'packages.*.hubble-abis'
     - 'packages.*.rust-sol-bindings'
     - 'packages.*.site'
+    - 'packages.*.voyager'
     - 'packages.*.voyager-dev'
   include:
     - '*.x86_64-linux.*'
