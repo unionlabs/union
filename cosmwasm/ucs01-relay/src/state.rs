@@ -19,12 +19,9 @@ pub const CHANNEL_STATE: Map<(&str, &str), ChannelState> = Map::new("channel_sta
 pub const IN_FLIGHT_PFM_PACKETS: Map<PfmRefundPacketKey, InFlightPfmPacket> =
     Map::new("in_flight_pfm_packets");
 
-// TokenFactory limitation
-// MaxSubdenomLength = 44
-// HASH_LENGTH = (MaxSubdenomLength - size_of("0x")) / 2 = 42
-pub const HASH_LENGTH: usize = 21;
+pub const MAX_SUBDENOM_LENGTH: usize = 44;
 
-pub type Hash = [u8; HASH_LENGTH];
+pub type Hash = [u8; 32];
 
 /// Used for indexing in flight packets for refunds and acknowledgements.
 ///
@@ -122,11 +119,13 @@ impl<'a> PrimaryKey<'a> for IbcEndpointKey {
     }
 }
 
-pub const FOREIGN_DENOM_TO_HASH: Map<(IbcEndpointKey, String), Hash> =
+/// Mapping from `source_port/source_channel/denom` to `h(source_port/source_channel/denom)`.
+/// This exists in order to verify whether we already created the voucher denom or not.
+pub const FOREIGN_DENOM_TO_HASH: Map<(IbcEndpointKey, String), Vec<u8>> =
     Map::new("foreign_denom_to_hash");
 
-pub const HASH_TO_FOREIGN_DENOM: Map<(IbcEndpointKey, Hash), String> =
-    Map::new("hash_to_foreign_denom");
+/// Mapping from `h(source_port/source_channel/denom)` to `denom`.
+pub const HASH_TO_FOREIGN_DENOM: Map<Vec<u8>, String> = Map::new("hash_to_foreign_denom");
 
 #[cw_serde]
 #[derive(Default)]

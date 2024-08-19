@@ -91,11 +91,7 @@ pub fn execute(
                     (local_endpoint.clone().into(), denom.clone()),
                     &normalized_hash,
                 )?;
-                HASH_TO_FOREIGN_DENOM.save(
-                    deps.storage,
-                    (local_endpoint.into(), normalized_hash),
-                    &denom,
-                )?;
+                HASH_TO_FOREIGN_DENOM.save(deps.storage, normalized_hash, &denom)?;
                 Ok(Response::default())
             }
         }

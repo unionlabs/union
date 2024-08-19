@@ -2,7 +2,8 @@ use std::collections::BTreeMap;
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    Binary, CheckedMultiplyRatioError, Coin, HexBinary, IbcEndpoint, StdError, Uint128, Uint256,
+    Addr, Binary, CheckedMultiplyRatioError, Coin, HexBinary, IbcEndpoint, StdError, Uint128,
+    Uint256,
 };
 use ethabi::{ParamType, Token};
 use unionlabs::{
@@ -402,6 +403,11 @@ impl TryFrom<TransferPacketCommon<String>> for Ics20Packet {
 // SPEC: {ics20Port}/{ics20Channel}/{denom}
 pub fn make_foreign_denom(endpoint: &IbcEndpoint, denom: &str) -> String {
     format!("{}/{}/{}", endpoint.port_id, endpoint.channel_id, denom)
+}
+
+// Token factory specific
+pub fn make_factory_denom(contract_address: &Addr, denom: &str) -> String {
+    format!("factory/{}/{}", contract_address, denom)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
