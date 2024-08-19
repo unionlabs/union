@@ -49,14 +49,6 @@ func (h Header) ValidateBasic() error {
 	if h.SignedHeader == nil {
 		return errorsmod.Wrap(clienttypes.ErrInvalidHeader, "tendermint signed header cannot be nil")
 	}
-	// tmSignedHeader, err := tmtypes.SignedHeaderFromProto(h.SignedHeader)
-	// if err != nil {
-	// 	return errorsmod.Wrap(err, "header is not a tendermint header")
-	// }
-	// if err := tmSignedHeader.ValidateBasic(h.SignedHeader.Header.GetChainID()); err != nil {
-	// 	return errorsmod.Wrap(err, "header failed basic validation")
-	// }
-	// TODO(aeryz): impl validatebasic for lightheader
 
 	// TrustedHeight is less than Header for updates and misbehaviour
 	if h.TrustedHeight.GTE(h.GetHeight()) {

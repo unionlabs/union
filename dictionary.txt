@@ -1127,11 +1127,8 @@ tiny-hderive
 tiny_hderive
 tkey
 tkeys
-<<<<<<< HEAD
 tlsv
-=======
 tmbytes
->>>>>>> 3834e6e06 (chore(11-cometbls): spellcheck fixes)
 tmcfg
 tmcli
 tmcmlewuyt

@@ -35,10 +35,8 @@ message ConsensusState {
 }
 
 message Misbehaviour {
-  LightHeader header_1  = 1;
-  LightHeader header_2  = 2;
-  bytes header_1_zkp = 3;
-  bytes header_2_zkp = 4;
+  Header header_1  = 1;
+  Header header_2  = 2;
 }
 
 message LightHeader {
