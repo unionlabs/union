@@ -9,14 +9,9 @@ import { toast } from "svelte-sonner"
 import { encodeTimestampSearchParam, decodeTimestampSearchParam } from "$lib/timestamps"
 import { goto } from "$app/navigation"
 import { page } from "$app/stores"
+import { timestamp } from "$lib/stores/page.ts"
 
 export let explorerItems: Readable<Array<{ timestamp: any }>>
-
-let timestamp: Readable<string | null> = derived(page, $page => {
-  const urlTimestamp = $page.url.searchParams.get("timestamp")
-  if (!urlTimestamp) return null
-  return decodeTimestampSearchParam(urlTimestamp)
-})
 $: live = $timestamp === null
 
 const onOlderPage = () => {
@@ -65,11 +60,7 @@ const onCurrentClick = () => {
       <ChevronLeft class="size-6" />
       Newer
     </Button>
-    <Label class="w-full">
-      <time class="font-normal text-sm uppercase font-mono w-full">
-        {$timestamp}
-      </time>
-    </Label>
+    <time class="font-normal text-sm font-mono">{$timestamp}</time>
   {/if}
   <Button
     size="sm"

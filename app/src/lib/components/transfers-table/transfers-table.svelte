@@ -5,12 +5,9 @@ import {
   getCoreRowModel,
   type CellContext,
   createSvelteTable,
-  type TableOptions,
   getFilteredRowModel,
   getPaginationRowModel
 } from "@tanstack/svelte-table"
-import { page } from "$app/stores"
-import { goto } from "$app/navigation"
 import { cn } from "$lib/utilities/shadcn.ts"
 import * as Table from "$lib/components/ui/table"
 import { showUnsupported } from "$lib/stores/user.ts"
@@ -21,29 +18,21 @@ import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellAssets from "$lib/components/table-cells/cell-assets.svelte"
 import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
-import { toPrettyDateTimeFormat } from "$lib/utilities/date.ts"
-import { derived, writable, type Readable, type Writable } from "svelte/store"
+import { derived, type Readable } from "svelte/store"
 import CellOriginTransfer from "$lib/components/table-cells/cell-origin-transfer.svelte"
 import ExplorerPagination from "./explorer-pagination.svelte"
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
-import { decodeTimestampSearchParam, encodeTimestampSearchParam } from "$lib/timestamps"
 import {
   transfersLive,
   transfersByTimestamp,
   transfersLiveByAddress,
   transfersByTimestampForAddresses
 } from "./transfer-queries.ts"
-import { toast } from "svelte-sonner"
+import { timestamp } from "$lib/stores/page.ts"
 
 export let chains: Array<Chain>
 export let normalizedAddresses: Array<string> | null = null
 export let pageSize: number // must be even
-
-const timestamp: Readable<string | null> = derived(page, $page => {
-  const urlTimestamp = $page.url.searchParams.get("timestamp")
-  if (!urlTimestamp) return null
-  return decodeTimestampSearchParam(urlTimestamp)
-})
 
 let transfers = createQuery(
   derived([timestamp], ([$timestamp]) =>
@@ -244,14 +233,7 @@ function assetHasInfoProperty(assets: TransferAsset) {
       </Table.Body>
     </Table.Root>
   </Card.Root>
-  <div
-    class="flex sm:justify-start sm:flex-row flex-col justify-center gap-1 w-full"
-  >
-    <ExplorerPagination
-      explorerItems={transfersDataStore}
-      status={$transfers.status === "success" ? "done" : "pending"}
-    />
-  </div>
+  <ExplorerPagination explorerItems={transfersDataStore} />
 {:else if $transfers.status  === "pending"}
   <LoadingLogo class="size-16" />
 {/if}
