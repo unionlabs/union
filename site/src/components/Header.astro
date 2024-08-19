@@ -3,7 +3,7 @@ import unionLogo from "#/assets/union-logo/logo.svg"
 import { Icon } from "astro-icon/components"
 const menuItems = [
   {
-    url: "/",
+    url: "/learn",
     name: "learn",
     highlight: false
   },
@@ -13,12 +13,12 @@ const menuItems = [
     highlight: false
   },
   {
-    url: "/",
+    url: "/ecosystem",
     name: "ecosystem",
     highlight: false
   },
   {
-    url: "/",
+    url: "https://app.union.build",
     name: "testnet",
     highlight: true
   }
@@ -88,7 +88,7 @@ const menuItems = [
     >
     </div>
 
-    <nav class="hidden sm:block flex-1 justify-end">
+    <nav class="hidden lg:block flex-1 justify-end">
       <ul
         class="flex flex-row gap-14 justify-end items-center left-0 top-[62px] shadow-3xl p-0 m-0 font-normal list-none sm:align-middle text-white"
       >
@@ -132,13 +132,13 @@ const menuItems = [
       </ul>
     </nav>
 
-    <nav class="sm:hidden flex flex-1 justify-end">
+    <nav class="lg:hidden flex flex-1 justify-end">
       <button
         id="menu-button"
         name="menu-button"
         aria-label="Menu"
         title="Menu"
-        class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
+        class="bg-white h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
       >
         <Icon name="tabler:menu-2" color="#000000" size="1.2rem" />
       </button>
@@ -150,7 +150,7 @@ const menuItems = [
         {
           menuItems.map(menuItem => (
             <li class="py-2 px-4">
-              <a href={menuItem.url} class="text-white !text-lg text-normal flex flex-col flex-1">
+              <a href={menuItem.url} class="text-white !text-lg text-normal flex flex-col flex-1 uppercase">
                 {menuItem.name}
               </a>
             </li>
@@ -161,7 +161,7 @@ const menuItems = [
             target="_blank"
             rel="noopener noreferrer"
             href="https://discord.union.build"
-            class="flex gap-2 text-lg px-4 py-2"
+            class="flex gap-2 text-lg px-4 py-2 uppercase"
           >
             <label>Discord</label>
             <Icon name="tabler:brand-discord-filled" color="#fff" size="1rem" class="my-auto" />
@@ -172,7 +172,7 @@ const menuItems = [
             target="_blank"
             rel="noopener noreferrer"
             href="https://x.com/union_build"
-            class="flex gap-2 text-lg px-4 py-2"
+            class="flex gap-2 text-lg px-4 py-2 uppercase"
           >
             <label>X.com</label>
             <Icon name="fa6-brands:x-twitter" color="#fff" size="1.1rem" class="my-auto" />
