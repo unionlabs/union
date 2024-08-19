@@ -513,6 +513,7 @@ fuzzer
 galois
 galoisd
 gapless
+garnix
 gascap
 gcmode
 genbn
