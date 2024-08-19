@@ -16,7 +16,6 @@ let timestamp: Readable<string | null> = derived(page, $page => {
   if (!urlTimestamp) return null
   return decodeTimestampSearchParam(urlTimestamp)
 })
-export let status: "pending" | "done" = "done"
 export let explorerItems: Readable<Array<{ timestamp: any }>>
 
 $: live = $timestamp === null
@@ -35,12 +34,11 @@ const onOlderPage = () => {
   })
 }
 
-export let olderDisabled = false
 const onNewerPage = () => {
   const stamp = $explorerItems.at(0)?.timestamp
 
   if (!stamp) {
-    toast.error("Invalid older timestamp")
+    toast.error("Invalid newer timestamp")
     return
   }
 
@@ -54,8 +52,6 @@ const onNewerPage = () => {
 const onCurrentClick = () => {
   goto($page.url.pathname, { replaceState: true })
 }
-
-export let newerDisabled = false
 </script>
 
 <Pagination.Root
@@ -75,12 +71,9 @@ export let newerDisabled = false
         on:click={(event) => {
           onCurrentClick()
         }}
-        disabled={status === "pending" || live}
+        disabled={live}
         title={live ? "Already on the newest page" : "Go to the first page"}
-        class={cn(
-          "hover:bg-accent hover:text-black",
-          status === "pending" && "cursor-not-allowed"
-        )}
+        class="hover:bg-accent hover:text-black"
       >
         {live ? "live" : "current"}
       </Button>
@@ -88,12 +81,12 @@ export let newerDisabled = false
     {#if $timestamp}
       <Pagination.Item>
         <Pagination.PrevButton
-          disabled={status === "pending" || newerDisabled || live}
+          disabled={status === "pending" || live}
           title={live ? "Already on the newest page" : "Go to the previous page"}
           on:click={onNewerPage}
           class={cn(
             "text-sm",
-            status === "pending" || newerDisabled
+            status === "pending" 
               ? "cursor-not-allowed disabled"
               : ""
           )}
@@ -112,12 +105,9 @@ export let newerDisabled = false
     {/if}
     <Pagination.Item>
       <Pagination.NextButton
-        disabled={status === "pending" || olderDisabled}
+        disabled={status === "pending"}
         on:click={onOlderPage}
-        class={cn(
-          "pr-0",
-          status === "pending" || olderDisabled ? "cursor-not-allowed" : ""
-        )}
+        class="pr-0"
       >
         <span class="text-sm uppercase font-supermolot">Older</span>
         <ChevronRight class="size-6" />
