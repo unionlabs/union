@@ -26,8 +26,8 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, TransferMsg},
     state::{
-        ChannelInfo, Hash, PfmRefundPacketKey, CHANNEL_INFO, CHANNEL_STATE, FOREIGN_DENOM_TO_HASH,
-        HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS, MAX_SUBDENOM_LENGTH,
+        ChannelInfo, DenomHash, PfmRefundPacketKey, CHANNEL_INFO, CHANNEL_STATE,
+        FOREIGN_DENOM_TO_HASH, HASH_TO_FOREIGN_DENOM, IN_FLIGHT_PFM_PACKETS, MAX_SUBDENOM_LENGTH,
     },
 };
 
@@ -229,17 +229,17 @@ impl<'a> TransferProtocolExt<'a> for Ics20Protocol<'a> {
     }
 }
 
-pub fn hash_denom(denom: &str) -> Hash {
+pub fn hash_denom(denom: &str) -> DenomHash {
     let mut hasher = Sha256::new();
     hasher.update(denom);
-    hasher.finalize().try_into().expect("impossible")
+    DenomHash(<[u8; 32]>::from(hasher.finalize()).into())
 }
 
-pub fn encode_denom_hash(denom_hash: Hash) -> String {
-    let result = format!("{}", denom_hash.to_base58());
+pub fn encode_denom_hash(denom_hash: DenomHash) -> String {
+    let result = denom_hash.0 .0.to_base58().to_string();
+    // https://en.wikipedia.org/wiki/Binary-to-text_encoding
     // Luckily, base58 encoding has ~0.73 efficiency:
     // (1 / 0.73) * 32 = 43.8356164384
-    // https://en.wikipedia.org/wiki/Binary-to-text_encoding
     assert!(result.len() <= MAX_SUBDENOM_LENGTH);
     result
 }
@@ -313,7 +313,7 @@ fn decrease_outstanding(
 }
 
 fn normalize_for_ibc_transfer(
-    mut hash_to_denom: impl FnMut(Hash) -> Result<Option<String>, ContractError>,
+    mut hash_to_denom: impl FnMut(DenomHash) -> Result<Option<String>, ContractError>,
     contract_address: &str,
     endpoint: &IbcEndpoint,
     token: TransferToken,
@@ -325,13 +325,13 @@ fn normalize_for_ibc_transfer(
         .and_then(|denom| denom.strip_prefix("/"))
     {
         Some(denom_hash) => {
-            if let Some(normalized_denom) = hash_to_denom(
+            if let Some(normalized_denom) = hash_to_denom(DenomHash(unionlabs::hash::H256(
                 denom_hash
                     .from_base58()
                     .expect("impossible")
                     .try_into()
                     .expect("impossible"),
-            )? {
+            )))? {
                 // This is the POV of the counterparty chain, where we transfer from A to B. It's a similar check than in receive_phase1.
                 // If the denom is prefixed by the source chain path (A), it means it was local (originating from B and minted on A).
                 // If the denom isn't prefixed by the source chain path (A), it means it was remote (originating from A chain).
@@ -359,7 +359,7 @@ trait OnReceive {
         contract_address: &Addr,
         local_endpoint: &IbcEndpoint,
         denom: &str,
-    ) -> Result<(bool, Hash, CosmosMsg<TokenFactoryMsg>), ContractError>;
+    ) -> Result<(bool, DenomHash, CosmosMsg<TokenFactoryMsg>), ContractError>;
 
     fn local_unescrow(
         &mut self,
@@ -520,7 +520,7 @@ impl<'a> OnReceive for StatefulOnReceive<'a> {
         contract_address: &Addr,
         local_endpoint: &IbcEndpoint,
         denom: &str,
-    ) -> Result<(bool, Hash, CosmosMsg<TokenFactoryMsg>), ContractError> {
+    ) -> Result<(bool, DenomHash, CosmosMsg<TokenFactoryMsg>), ContractError> {
         let exists = FOREIGN_DENOM_TO_HASH.has(
             self.deps.storage,
             (local_endpoint.clone().into(), denom.to_string()),
@@ -528,13 +528,13 @@ impl<'a> OnReceive for StatefulOnReceive<'a> {
         let hash = hash_denom(denom);
         Ok((
             exists,
-            hash.into(),
+            hash,
             wasm_execute(
                 contract_address,
                 &ExecuteMsg::RegisterDenom {
                     local_endpoint: local_endpoint.clone(),
                     denom: denom.to_string(),
-                    hash: hash.into(),
+                    hash: hash.0 .0.into(),
                 },
                 Default::default(),
             )?
@@ -815,7 +815,7 @@ impl<'a> TransferProtocol for Ics20Protocol<'a> {
         normalize_for_ibc_transfer(
             |hash| {
                 HASH_TO_FOREIGN_DENOM
-                    .may_load(self.common.deps.storage, hash.to_vec())
+                    .may_load(self.common.deps.storage, hash)
                     .map_err(Into::into)
             },
             self.common.env.contract.address.as_str(),
@@ -1027,7 +1027,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
         normalize_for_ibc_transfer(
             |hash| {
                 HASH_TO_FOREIGN_DENOM
-                    .may_load(self.common.deps.storage, hash.to_vec())
+                    .may_load(self.common.deps.storage, hash)
                     .map_err(Into::into)
             },
             self.common.env.contract.address.as_str(),
@@ -1143,7 +1143,7 @@ mod tests {
         error::ContractError,
         msg::ExecuteMsg,
         protocol::{encode_denom_hash, normalize_for_ibc_transfer, Ics20Protocol},
-        state::{ChannelInfo, Hash},
+        state::{ChannelInfo, DenomHash},
     };
 
     #[test]
@@ -1185,7 +1185,7 @@ mod tests {
             contract_address: &Addr,
             local_endpoint: &IbcEndpoint,
             denom: &str,
-        ) -> Result<(bool, Hash, CosmosMsg<TokenFactoryMsg>), ContractError> {
+        ) -> Result<(bool, DenomHash, CosmosMsg<TokenFactoryMsg>), ContractError> {
             let mut deps = mock_dependencies();
             let (_, hash, msg) = StatefulOnReceive {
                 deps: deps.as_mut(),
@@ -1240,7 +1240,10 @@ mod tests {
                             channel_id: "channel-1".into(),
                         },
                         denom: "wasm.0xDEADC0DE/channel-1/from-counterparty".into(),
-                        hash: hash_denom("wasm.0xDEADC0DE/channel-1/from-counterparty").into(),
+                        hash: hash_denom("wasm.0xDEADC0DE/channel-1/from-counterparty")
+                            .0
+                             .0
+                            .into(),
                     },
                     Default::default()
                 )

@@ -67,6 +67,11 @@ pub enum QueryMsg {
     Config {},
     #[returns(cw_controllers::AdminResponse)]
     Admin {},
+    #[returns(String)]
+    ForeignDenomToLocal {
+        source_channel: String,
+        denom: String,
+    },
 }
 
 #[cw_serde]
