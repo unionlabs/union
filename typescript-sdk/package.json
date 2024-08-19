@@ -35,7 +35,7 @@
     "@cosmjs/amino": "0.32.4",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/bun": "^1.1.6",
-    "@types/node": "^22.4.0",
+    "@types/node": "^22.4.1",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.1",
