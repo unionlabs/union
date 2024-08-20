@@ -1,8 +1,7 @@
 import { graphql } from "gql.tada"
 
-export const packetsQuery = graphql(/* GraphQL */ `
-query PacketsQuery($limit: Int = 100) {
-  v0_packets(limit: $limit, order_by: {source_time: desc_nulls_last}) {
+export const packetListDataFragment = graphql(/* GraphQL */ `
+  fragment PacketListData on v0_packets {
     from_chain_id
     from_connection_id
     from_channel_id
@@ -18,5 +17,15 @@ query PacketsQuery($limit: Int = 100) {
     source_data
     status
   }
-}
 `)
+
+export const packetsQuery = graphql(
+  /* GraphQL */ `
+    query PacketsQuery($limit: Int = 100) {
+      v0_packets(limit: $limit, order_by: { source_time: desc_nulls_last }) {
+        ...PacketListData
+      }
+    }
+  `,
+  [packetListDataFragment]
+)
