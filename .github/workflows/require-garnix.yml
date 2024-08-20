@@ -1,0 +1,14 @@
+on:
+  check_suite:
+    types: [completed]
+
+permissions:
+  checks: read
+
+jobs:
+  evaluate-garnix:
+    steps:
+      - env:
+          EVENT: ${{ github.event }}
+        run: |
+          echo $EVENT | jq .
