@@ -74,6 +74,7 @@ onDestroy(unsubscribe)
       <Table.Header>
         {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
           <Table.Row>
+            <th aria-label="Search Engine Links"></th>
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
@@ -94,13 +95,19 @@ onDestroy(unsubscribe)
             {@const isSupported = hasInfoProperty(containsAsset)}
             {#if $showUnsupported || isSupported}
               <Table.Row
-                class={cn(onClick !== undefined ? 'cursor-pointer' : '',
+                class={cn("relative", onClick !== undefined ? 'cursor-pointer' : '',
               index % 2 === 0 ? 'bg-secondary/10 dark:bg-secondary/30 ' : 'bg-transparent',
               isSupported ? '' : 'opacity-50'
 
             )}
                 on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
               >
+                <td>
+                  <a
+                    href="https://google.com"
+                    class="row-link"
+                  ></a>
+                </td>
                 {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
                   <Table.Cell>
                     <svelte:component
@@ -117,6 +124,12 @@ onDestroy(unsubscribe)
             )}
               on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
             >
+              <td>
+                <a
+                  href="https://google.com"
+                  class="row-link"
+                ></a>
+              </td>
               {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
                 <Table.Cell>
                   <svelte:component
@@ -131,3 +144,14 @@ onDestroy(unsubscribe)
     </Table.Root>
   </div>
 </Card.Root>
+
+<style lang="postcss">
+  .row-link {
+    position: absolute;
+    top: 0;
+    left: 0;
+    content: "";
+    width: 100%;
+    height: 100%;
+  }
+</style>

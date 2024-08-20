@@ -45,13 +45,11 @@ type PacketRow = UnwrapReadable<typeof packetsDataStore>[number]
 const columns: Array<ColumnDef<PacketRow>> = [
   {
     accessorKey: "source",
-    header: () => "Source",
     size: 200,
     cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
   },
   {
     accessorKey: "destination",
-    header: () => "Destination",
     size: 200,
     cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
   },

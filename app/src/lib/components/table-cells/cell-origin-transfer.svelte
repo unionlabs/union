@@ -2,17 +2,18 @@
 import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import * as Tooltip from "$lib/components/ui/tooltip"
-import type { Chain } from "$lib/types";
+import type { Chain } from "$lib/types"
 
-export let chains: Array<Chain>;
+export let chains: Array<Chain>
 export let value: {
-  chainId: string,
+  chainId: string
   address: string
 }
 
 const chainDisplayName =
-  chains.find(chain => chain.chain_id == value.chainId)?.display_name ?? value.chainId ?? "unknown chain";
-
+  chains.find(chain => chain.chain_id == value.chainId)?.display_name ??
+  value.chainId ??
+  "unknown chain"
 </script>
 
 <div class={cn("flex flex-col items-start")} {...$$restProps}>
