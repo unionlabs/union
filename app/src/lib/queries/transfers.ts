@@ -97,7 +97,7 @@ export async function transfersByTimestampForAddresses({
 }
 
 export const transfersQuery = (
-  normalizedAddresses: string[] | null,
+  normalizedAddresses: Array<string> | null,
   timestamp: Readable<string | null>,
   pageSize: number
 ) =>

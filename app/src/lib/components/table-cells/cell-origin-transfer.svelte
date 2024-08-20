@@ -11,7 +11,7 @@ export let value: {
 }
 
 const chainDisplayName =
-  chains.find(chain => chain.chain_id == value.chainId)?.display_name ??
+  chains.find(chain => chain.chain_id === value.chainId)?.display_name ??
   value.chainId ??
   "unknown chain"
 </script>
