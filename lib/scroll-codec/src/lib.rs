@@ -4,11 +4,35 @@
 
 //! Scroll types, as specified in <https://github.com/scroll-tech/scroll/tree/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/libraries/codec>, with the commit from [this announcement](https://scroll.io/blog/blobs-are-here-scrolls-bernoulli-upgrade).
 
+use serde::{Deserialize, Serialize};
 use unionlabs::hash::H256;
 
 use crate::batch_header::{BatchHeaderV3, BatchHeaderV3DecodeError};
 
 pub mod batch_header;
+
+/// See <https://github.com/scroll-tech/scroll-contracts/blob/7bb751f9cf1b5fdde95297049e3407ce23d56ac6/src/L1/rollup/ScrollChain.sol#L537>
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    ::ethers::contract::EthCall,
+    ::ethers::contract::EthDisplay,
+    Serialize,
+    Deserialize,
+)]
+#[ethcall(
+    name = "finalizeBundleWithProof",
+    abi = "finalizeBundleWithProof(bytes,bytes32,bytes32,bytes)"
+)]
+pub struct FinalizeBundleWithProof {
+    #[serde(with = "::serde_utils::hex_string")]
+    pub batch_header: ethers::core::types::Bytes,
+    pub post_state_root: H256,
+    pub withdraw_root: H256,
+    pub aggr_proof: ethers::core::types::Bytes,
+}
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum HashBatchError {
@@ -18,6 +42,11 @@ pub enum HashBatchError {
 
 /// Reconstruct a batch hash given a batch header.
 /// Partial function only valid for batch header V3+.
+///
+/// # Errors
+///
+/// Fails if the batch header can't be decoded.
+///
 pub fn hash_batch(batch_header: Vec<u8>) -> Result<H256, HashBatchError> {
     let batch_header = BatchHeaderV3::decode(batch_header)?;
     Ok(batch_header.compute_batch_hash())

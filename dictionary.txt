@@ -225,6 +225,7 @@ adce
 addresscodec
 adipiscing
 aeryz
+aggr
 agoric
 aitlahcen
 akash
@@ -1042,6 +1043,7 @@ starsd
 statedb
 statemachine
 stateproof
+stateroot
 statesync
 staticcheck
 staticlib

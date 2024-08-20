@@ -9,9 +9,13 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
-sha3      = { workspace = true }
-thiserror = { workspace = true }
-unionlabs = { workspace = true, features = ["ethabi"] }
+ethers      = { workspace = true }
+serde       = { workspace = true, features = ["derive"] }
+serde-utils = { workspace = true }
+serde_json  = { workspace = true, optional = true }
+sha3        = { workspace = true }
+thiserror   = { workspace = true }
+unionlabs   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

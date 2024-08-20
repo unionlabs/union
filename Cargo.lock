@@ -8647,7 +8647,11 @@ dependencies = [
 name = "scroll-codec"
 version = "0.1.0"
 dependencies = [
+ "ethers",
  "hex-literal",
+ "serde",
+ "serde-utils",
+ "serde_json",
  "sha3",
  "thiserror",
  "unionlabs",

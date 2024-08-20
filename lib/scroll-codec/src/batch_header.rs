@@ -52,6 +52,12 @@ impl BatchHeaderV3 {
     const VERSION: u8 = 3;
     const FIXED_LENGTH: usize = 193;
 
+    /// Try to decode the batch header from the input stream.
+    ///
+    /// # Errors
+    ///
+    /// Fails if the length of the stream doesn't match the expected length.
+    ///
     pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self, BatchHeaderV3DecodeError> {
         let bz = bz.as_ref();
 
@@ -77,6 +83,7 @@ impl BatchHeaderV3 {
         })
     }
 
+    #[must_use]
     pub fn compute_batch_hash(&self) -> H256 {
         let mut hasher = Keccak256::new();
 
