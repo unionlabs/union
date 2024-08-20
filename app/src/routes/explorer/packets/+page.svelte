@@ -1,6 +1,6 @@
 <script lang="ts">
 import request from "graphql-request"
-import { packetsQuery } from "$lib/graphql/documents/packets.ts"
+import { packetsQuery } from "$lib/graphql/queries/packets.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
@@ -70,10 +70,9 @@ const columns: Array<ColumnDef<PacketRow>> = [
 
 {#if $packets.data}
   <Table bind:dataStore={packetsDataStore} {columns} />
-  <ExplorerPagination explorerItems={packetsDataStore}/> 
+  <ExplorerPagination explorerItems={packetsDataStore}/>
 {:else if $packets.isLoading}
   <LoadingLogo class="size-16" />
 {:else if $packets.isError}
   Error fetching packets...
 {/if}
-

@@ -11,7 +11,7 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { derived, writable, type Writable } from "svelte/store"
-import { strideFaucetMutation } from "$lib/graphql/documents/faucet"
+import { strideFaucetMutation } from "$lib/graphql/queries/faucet"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
@@ -169,12 +169,12 @@ let strideBalance = createQuery(
       <p class="mb-4">
         {$strideFaucetState.error}
       </p>
-      <Button 
-        
+      <Button
+
       class={cn(
                     "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
                     "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0"
-                  )}        
+                  )}
         on:click={() => strideFaucetState.set({ kind: "IDLE" })}>
         Retry
       </Button>

@@ -26,68 +26,18 @@ import {
   transfersLive,
   transfersByTimestamp,
   transfersLiveByAddress,
-  transfersByTimestampForAddresses
-} from "./transfer-queries.ts"
+  transfersByTimestampForAddresses,
+  transfersQuery
+} from "$lib/queries/transfers.ts"
 import { timestamp } from "$lib/stores/page.ts"
 
 export let chains: Array<Chain>
 export let normalizedAddresses: Array<string> | null = null
 export let pageSize: number // must be even
 
-let transfers = createQuery(
-  derived([timestamp], ([$timestamp]) =>
-    normalizedAddresses
-      ? $timestamp
-        ? {
-            queryKey: ["transfers", $timestamp, ...normalizedAddresses],
-            refetchOnMount: false,
-            refetchOnReconnect: false,
-            placeholderData: keepPreviousData,
-            staleTime: Number.POSITIVE_INFINITY,
-            queryFn: async () =>
-              await transfersByTimestampForAddresses({
-                limit: pageSize / 2,
-                timestamp: $timestamp as string,
-                addresses: normalizedAddresses
-              })
-          }
-        : {
-            queryKey: ["transfers", "live", ...normalizedAddresses],
-            refetchOnMount: true,
-            placeholderData: keepPreviousData,
-            refetchOnReconnect: true,
-            refetchInterval: () => 5_000,
-            queryFn: async () =>
-              await transfersLiveByAddress({
-                limit: pageSize,
-                addresses: normalizedAddresses
-              })
-          }
-      : $timestamp
-        ? {
-            queryKey: ["transfers", $timestamp],
-            refetchOnMount: false,
-            refetchOnReconnect: false,
-            placeholderData: keepPreviousData,
-            staleTime: Number.POSITIVE_INFINITY,
-            queryFn: async () =>
-              await transfersByTimestamp({
-                timestamp: $timestamp as string, // otherwise its disabled
-                limit: pageSize / 2
-              })
-          }
-        : {
-            queryKey: ["transfers", "live"],
-            refetchOnMount: true,
-            placeholderData: keepPreviousData,
-            refetchOnReconnect: true,
-            refetchInterval: () => 5_000,
-            queryFn: async () => await transfersLive({ limit: pageSize })
-          }
-  )
-)
+const transfers = transfersQuery(normalizedAddresses, timestamp, pageSize)
 
-let transfersDataStore: Readable<Array<Transfer>> = derived([transfers], ([$transfers]) => {
+const transfersDataStore: Readable<Array<Transfer>> = derived([transfers], ([$transfers]) => {
   return $transfers?.data ?? []
 })
 

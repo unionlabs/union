@@ -10,7 +10,7 @@ import { createQuery } from "@tanstack/svelte-query"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import CellText from "$lib/components/table-cells/cell-plain-text.svelte"
 import CellDurationText from "$lib/components/table-cells/cell-duration-text.svelte"
-import { cosmosBlocksQuery } from "$lib/graphql/documents/cosmos-blocks.ts"
+import { cosmosBlocksQuery } from "$lib/graphql/queries/cosmos-blocks.ts"
 import Table from "../(components)/table.svelte"
 import { truncate } from "$lib/utilities/format"
 
@@ -70,4 +70,3 @@ const columns: Array<ColumnDef<DataRow>> = [
 {:else if $cosmosBlocks.isError}
   Error fetching blocks...
 {/if}
-
