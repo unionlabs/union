@@ -45,49 +45,14 @@ type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
 const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "source",
-    header: () => "Source",
-    accessorFn: (originalRow, _index) => originalRow.source,
-    cell: _info => {
-      const info = _info as CellContext<DataRow, TransferAddress> & {
-        chains: Array<Chain>
-      }
-      const { chainId, address } = info.getValue()
-      const chainDisplayName =
-        info.chains.find(chain => chain.chain_id === chainId)?.display_name ??
-        chainId ??
-        "unknown chain"
-      return flexRender(CellOriginTransfer, {
-        value: {
-          address,
-          chain_display_name: chainDisplayName
-        }
-      })
-    }
+    cell: info => flexRender(CellOriginTransfer, { chains, value: info.getValue() })
   },
   {
     accessorKey: "destination",
-    header: () => "Destination",
-    accessorFn: (originalRow, _index) => originalRow.destination,
-    cell: _info => {
-      const info = _info as CellContext<DataRow, TransferAddress> & {
-        chains: Array<Chain>
-      }
-      const { chainId, address } = info.getValue()
-      const chainDisplayName =
-        info.chains.find(chain => chain.chain_id === chainId)?.display_name ??
-        chainId ??
-        "unknown chain"
-      return flexRender(CellOriginTransfer, {
-        value: {
-          address,
-          chain_display_name: chainDisplayName
-        }
-      })
-    }
+    cell: info => flexRender(CellOriginTransfer, { chains, value: info.getValue() })
   },
   {
     accessorKey: "assets",
-    header: () => "Asset",
     cell: info => flexRender(CellAssets, { value: info.getValue() })
   },
   {
