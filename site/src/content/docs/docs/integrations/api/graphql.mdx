@@ -1,28 +1,48 @@
 ---
-title: "Graphql"
+title: "GraphQL"
 sidebar:
   order: 1
 ---
+import GraphQL from '#/components/GraphQL.astro'
+
+
+<GraphQL
+  query={/* graphql */ `
+    query ThreeBlocksQuery {
+      v0_blocks(limit: 3) {
+        hash
+      }
+    }
+  `}
+/>
+
 
 Unionlabs provides a hosted indexing service for all connected chains, served at [graphql.union.build](https://graphql.union.build/v1/graphql). 
 A [UI](https://cloud.hasura.io/public/graphiql?endpoint=https://graphql.union.build/v1/graphql) is also provided, which can be used 
 to explore all available data. This guide goes through the most useful queries and types.
 
-Although most HTTP clients can be used to query our API, we recommend [Apollo](https://www.apollographql.com/docs/react/). Our graphql schema can
-be downloaded using [graphqurl](https://github.com/hasura/graphqurl) or the [Apollo CLI](https://www.apollographql.com/docs/devtools/cli/):
+Although most HTTP clients can be used to query our API, we recommend [URQL](https://commerce.nearform.com/open-source/urql/). Our GraphQL schema can
+be downloaded using [`graphqurl`](https://github.com/hasura/graphqurl) or [`graphql-inspector`](https://the-guild.dev/graphql/inspector):
 
-```console
+```bash title="introspecting the schema"
+export npm_config_yes=true
+
 # using graphqurl
-npm install -g graphqurl
+npx graphqurl https://graphql.union.build/v1/graphql \
+  --introspect > schema.graphql
 
-gq https://graphql.union.build/v1/graphql --introspect > schema.graphql
+# some clients require a JSON schema
+npx graphqurl https://graphql.union.build/v1/graphql \
+  --introspect \
+  --format json > schema.json
 
-# using Apollo CLI
-npm install -g apollo
-apollo schema:download --endpoint https://graphql.union.build/v1/graphql
+# using graphql-inspector
+npx @graphql-inspector/cli \
+  introspect https://graphql.union.build/v1/graphql \
+  --write schema.graphql
 ```
 
-This schema can be used by API clients and editors like VsCode to provide a better developer experience.
+This schema can be used by API clients and editors like VSCode to provide a better developer experience.
 
 ## Concepts
 
@@ -51,10 +71,13 @@ Transfers facilitated by Union (either `ucs-relay-1` or `ics20-1`) are queryable
 
 ```graphql
 query GetLatest10Transfers @cached(ttl: 1) {
-  v1_transfers(limit: 10, order_by: {source_timestamp: desc}) {
+  v1_transfers(
+    limit: 10,
+    order_by: { source_timestamp: desc }
+  ) {
     assets
-	  receiver
 	  sender
+	  receiver
   }
 }
 ```
@@ -66,22 +89,19 @@ To query for specific addresses, add the `sender` and `receiver` to the where cl
 ```graphql
 query GetAllUserTransfers @cached(ttl: 1) {
   v1_transfers(
-    order_by: {source_timestamp: desc}, 
+    order_by: { source_timestamp: desc }, 
     where: {
       _or: [
-        {sender: {_eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu"}}, 
-        {receiver: {_eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu"}}
-    ]}) 
-    {
-      assets
-      receiver
-      sender
-      source_chain {
-        display_name
-      }
-      destination_chain {
-        display_name
-      }
+        { sender: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }},  
+        { receiver: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }}
+      ]
+    }
+  ) {
+    assets
+    receiver
+    sender
+    source_chain { display_name }
+    destination_chain { display_name }
   }
 }
 
@@ -104,16 +124,15 @@ Packets, used in general message passing, can be tracked using v1_packets, simil
 
 ```graphql
 query GetLatest10Packets @cached(ttl: 1) {
-  v1_packets(limit: 10, order_by: {source_time: desc}) {
-    source_chain {
-      display_name
-    }
-    destination_chain {
-      display_name
-    }
+  v1_packets(
+    limit: 10,
+    order_by: { source_time: desc }
+  ) {
+    source_chain { display_name }
+    destination_chain { display_name }
+		source_data
 		source_sequence
     destination_sequence
-		source_data
   }
 }
 ```
@@ -131,13 +150,17 @@ For a specific transaction hash, you can obtain all traces of transfers and pack
 
 ```graphql
 query GetTracesByHash @cached(ttl: 1) {
-  v1_traces(where: {initiating_transaction_hash: {_eq: "91C934788FD13D5325F5A1D9CF1634D1861E318D6DDD2C141E91CBE8A68A053D"}}) {
-    type
-	  transaction_hash
-    chain {
-      display_name
+  v1_traces(
+    where: {
+      initiating_transaction_hash: {
+        _eq: "91C934788FD13D5325F5A1D9CF1634D1861E318D6DDD2C141E91CBE8A68A053D"
+      }
     }
+  ) {
+    type
     data
+	  transaction_hash
+    chain { display_name }
   }
 }
 ```
@@ -147,17 +170,20 @@ also have a relation to traces, to allow for all info of a specific transfer or 
 
 ```graphql
 query GetLatest10TransfersWithTraces @cached(ttl: 1) {
-  v1_transfers(limit: 10, order_by: {source_timestamp: desc}) {
+  v1_transfers(
+    limit: 10,
+    order_by: {
+      source_timestamp: desc
+    }
+  ) {
     assets
     receiver
     sender
     traces {
       type
-      transaction_hash
-      chain {
-        display_name
-      }
       data
+      transaction_hash
+      chain { display_name }
     }
   }
 }
