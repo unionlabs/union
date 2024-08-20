@@ -1,0 +1,23 @@
+on:
+  check_suite:
+    types: [completed]
+
+jobs:
+  evaluate-garnix:
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        env:
+          NAME: ${{ github.event.check_suite.app.name }}
+          CONCLUSION: ${{ github.event.check_suite.conclusion }}
+        run: |
+          case $CONCLUSION in
+            failure | cancelled | timed_out | action_required | startup_failure | stale)
+              echo "ERROR: '$NAME' concluded with status '$CONCLUSION'"  
+              exit 1
+              ;;
+            *)
+              echo "INFO: '$NAME' concluded with status '$CONCLUSION'"  
+              ;;
+          esac
+
