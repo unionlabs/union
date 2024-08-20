@@ -875,6 +875,14 @@ pub mod union {
                     // @@protoc_insertion_point(union.ibc.lightclients.cometbls.v1)
                 }
             }
+            pub mod cosmosincosmos {
+                #[cfg(feature = "union+ibc+lightclients+cosmosincosmos+v1")]
+                // @@protoc_insertion_point(attribute:union.ibc.lightclients.cosmosincosmos.v1)
+                pub mod v1 {
+                    include!("union.ibc.lightclients.cosmosincosmos.v1.rs");
+                    // @@protoc_insertion_point(union.ibc.lightclients.cosmosincosmos.v1)
+                }
+            }
             pub mod ethereum {
                 #[cfg(feature = "union+ibc+lightclients+ethereum+v1")]
                 // @@protoc_insertion_point(attribute:union.ibc.lightclients.ethereum.v1)

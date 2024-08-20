@@ -1,9 +1,7 @@
 use core::fmt::Debug;
-use std::sync::Arc;
 
 use ethereum_verifier::verify::{verify_account_storage_root, verify_storage_proof};
-use ethers_core::abi::{AbiDecode, AbiError};
-use scroll_codec::CommitBatchError;
+use scroll_codec::{hash_batch, HashBatchError};
 use unionlabs::{
     ethereum::slot::{MappingKey, Slot},
     hash::{H160, H256},
@@ -16,19 +14,28 @@ use zktrie::{decode_smt_proofs, Byte32, Database, Hash, MemDB, PoseidonHash, Tri
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    InvalidContractAddressProof(ethereum_verifier::error::Error),
-    #[error("{0}")]
-    InvalidRollupProof(ethereum_verifier::error::Error),
-    #[error("invalid zktrie ({0:?})")]
-    ZkTrie(zktrie::Error),
+    InvalidL1AccountProof(ethereum_verifier::error::Error),
+    #[error(transparent)]
+    InvalidLastBatchIndexProof(ethereum_verifier::error::Error),
+    #[error(transparent)]
+    InvalidL2FinalizedStateRootProof(ethereum_verifier::error::Error),
+    #[error(transparent)]
+    InvalidBatchHashProof(ethereum_verifier::error::Error),
+    #[error(transparent)]
+    ZkTrie(#[from] zktrie::Error),
     #[error("node value mismatch")]
     ValueMismatch,
-    #[error("unable to decode commit batch calldata")]
-    CommitBatchCallDecode(#[source] Arc<AbiError>),
-    #[error("error while calculating batch hash")]
-    CommitBatch(#[from] CommitBatchError),
+    #[error(transparent)]
+    HashBatch(#[from] HashBatchError),
 }
 
+/*
+   1. rollupContractOnL1 ∈ L1Stateroot
+   2. lastBatchIndex ≡ rollupContractOnL1.lastBatchIndex
+   3. L2stateRoot ≡ rollupContractOnL1.finalized[lastBatchIndex]
+   4. batchHash ≡ rollupContractOnL1.batchHashes[lastBatchIndex]
+   5. ibcContractOnL2 ∈ L2StateRoot
+*/
 pub fn verify_header(
     client_state: ClientState,
     header: Header,
@@ -37,64 +44,60 @@ pub fn verify_header(
     // Verify that the rollup account root is part of the L1 root
     verify_account_storage_root(
         l1_state_root,
-        &client_state.rollup_contract_address,
+        &client_state.l2_contract_address,
         &header.l1_account_proof.proof,
         &header.l1_account_proof.storage_root,
     )
-    .map_err(Error::InvalidContractAddressProof)?;
+    .map_err(Error::InvalidL1AccountProof)?;
 
     // Verify that the latest batch index is part of the rollup account root
     verify_storage_proof(
         header.l1_account_proof.storage_root,
         client_state.latest_batch_index_slot,
-        &rlp::encode(&header.last_batch_index),
+        &rlp::encode(&header.last_batch_index_proof.value),
         &header.last_batch_index_proof.proof,
     )
-    .map_err(Error::InvalidRollupProof)?;
+    .map_err(Error::InvalidLastBatchIndexProof)?;
 
     // Verify that the rollup finalized state root is part of the rollup account root
     verify_storage_proof(
         header.l1_account_proof.storage_root,
-        batch_index_mapping_key(
-            client_state.rollup_finalized_state_roots_slot,
-            header.last_batch_index.into(),
+        mapping_index_to_slot_key(
+            client_state.l2_finalized_state_roots_slot,
+            header.last_batch_index_proof.value,
         ),
-        &rlp::encode(&U256::from_be_bytes(header.l2_state_root.into())),
-        &header.l2_state_proof.proof,
+        &rlp::encode(&header.l2_state_root_proof.value),
+        &header.l2_state_root_proof.proof,
     )
-    .map_err(Error::InvalidRollupProof)?;
+    .map_err(Error::InvalidL2FinalizedStateRootProof)?;
 
-    let batch_hash = scroll_codec::commit_batch(
-        <scroll_codec::CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)
-            .map_err(|err| Error::CommitBatchCallDecode(Arc::new(err)))?,
-        header.blob_versioned_hash,
-        header.l1_message_hashes,
-    )?;
+    let batch_hash = hash_batch(header.batch_header)?;
 
     // Verify that the batch hash is part of the rollup account root
     verify_storage_proof(
         header.l1_account_proof.storage_root,
-        batch_index_mapping_key(
-            client_state.rollup_committed_batches_slot,
-            header.last_batch_index.into(),
+        mapping_index_to_slot_key(
+            client_state.l2_committed_batches_slot,
+            header.last_batch_index_proof.value,
         ),
         &rlp::encode(&U256::from_be_bytes(batch_hash.into())),
         &header.batch_hash_proof.proof,
     )
-    .map_err(Error::InvalidRollupProof)?;
+    .map_err(Error::InvalidBatchHashProof)?;
 
     // Verify that the ibc account root is part of the rollup root
     scroll_verify_zktrie_account_storage_root(
-        header.l2_state_root,
+        header.l2_state_root_proof.value.to_be_bytes().into(),
         &client_state.ibc_contract_address,
         &header.l2_ibc_account_proof.proof,
         &header.l2_ibc_account_proof.storage_root,
     )?;
+
     Ok(())
 }
 
 /// Storage slot of a `mapping(uint256 => bytes32)` mapping, where the mapping is at slot `slot` and the `uint256` is the `batch_index`.
-pub fn batch_index_mapping_key(slot: U256, batch_index: U256) -> U256 {
+pub fn mapping_index_to_slot_key(slot: U256, batch_index: U256) -> U256 {
     Slot::Mapping(&Slot::Offset(slot), MappingKey::Uint256(batch_index)).slot()
 }
 
@@ -183,24 +186,23 @@ mod tests {
                 revision_number: 0,
                 revision_height: 0,
             },
-            rollup_contract_address: H160(hex!("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0")),
-            rollup_finalized_state_roots_slot: 158.into(),
-            rollup_committed_batches_slot: 157.into(),
+            l2_contract_address: H160(hex!("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0")),
+            l2_finalized_state_roots_slot: 158.into(),
+            l2_committed_batches_slot: 157.into(),
+            // Dummy contract address for the sake of testing
             ibc_contract_address: H160(hex!("0000000000000000000000000000000000000000")),
             ibc_commitment_slot: 0.into(),
         };
         let scroll_header: Header =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_header.json").unwrap())
                 .unwrap();
-
         let l1_state_root = H256(hex!(
-            "4d47173201f8ded2c250d7f7f572a22d13061ed83009f451d271e0fabfa44425"
+            "40ab3b90af84c30c31eb0fe9fc8cc5260b59f619d770706750ea3e474ca47c59"
         ));
-
-        assert!(matches!(
+        assert_eq!(
             verify_header(scroll_client_state, scroll_header, l1_state_root),
             Ok(())
-        ));
+        );
     }
 
     #[test]

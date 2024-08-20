@@ -99,16 +99,26 @@ pub fn to_secure_key<H: HashScheme>(key: &[u8]) -> Result<Fr, Error> {
     word.hash::<H>().map_err(Error::NotInField)
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
+    #[error("max level reached")]
     ReachedMaxLevel,
+    #[error("entry index already exists")]
     EntryIndexAlreadyExists,
+    #[error("node key already exists")]
     NodeKeyAlreadyExists,
+    #[error("node not found {0:?}")]
     NodeNotFound((usize, Hash)),
+    #[error("key not found")]
     KeyNotFound,
+    #[error("invalid field")]
     InvalidField,
+    #[error("invalid node serialization")]
     NodeBytesBadSize,
+    #[error("invalid node {0}")]
     InvalidNodeFound(u8),
+    #[error("not in scalar field {0}")]
     NotInField(String),
+    #[error("expected a leaf node")]
     ExpectedLeafNode,
 }

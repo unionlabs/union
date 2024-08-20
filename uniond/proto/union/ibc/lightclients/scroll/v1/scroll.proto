@@ -5,41 +5,41 @@ option go_package = "union/ibc/lightclients/scroll";
 import "ibc/core/client/v1/client.proto";
 import "union/ibc/lightclients/ethereum/v1/ethereum.proto";
 
-// TODO: l2_ instead of rollup_
 message ClientState {
   string l1_client_id = 1;
   string chain_id = 2;
   uint64 latest_slot = 3;
-  // TODO: Should be rollup_
-  bytes latest_batch_index_slot = 4;
-  .ibc.core.client.v1.Height frozen_height = 5;
-  bytes rollup_contract_address = 6;
-  bytes rollup_finalized_state_roots_slot = 7;
-  bytes rollup_committed_batches_slot = 8;
+  .ibc.core.client.v1.Height frozen_height = 4;
+  bytes latest_batch_index_slot = 5;
+  bytes l2_contract_address = 6;
+  bytes l2_finalized_state_roots_slot = 7;
+  bytes l2_committed_batches_slot = 8;
   bytes ibc_contract_address = 9;
   bytes ibc_commitment_slot = 10;
 }
 
 message ConsensusState {
-  bytes ibc_storage_root = 1;
+  // Scroll state root
+  bytes state_root = 1;
+  // Scroll timestamp
   uint64 timestamp = 2;
+  // IBC stack on Scroll contract storage root
+  bytes ibc_storage_root = 3;
 }
 
 message Header {
   .ibc.core.client.v1.Height l1_height = 1;
+  // rollupContractOnL1 ∈ L1Stateroot
   .union.ibc.lightclients.ethereum.v1.AccountProof l1_account_proof = 2;
-  bytes l2_state_root = 3;
-  .union.ibc.lightclients.ethereum.v1.StorageProof l2_state_proof = 4;
-  uint64 last_batch_index = 5;
-  .union.ibc.lightclients.ethereum.v1.StorageProof last_batch_index_proof = 6;
-  .union.ibc.lightclients.ethereum.v1.StorageProof batch_hash_proof = 7;
-  .union.ibc.lightclients.ethereum.v1.AccountProof l2_ibc_account_proof = 8;
-  bytes commit_batch_calldata = 9;
-  repeated IdentifiedL1MessageHash l1_message_hashes = 10;
-  bytes blob_versioned_hash = 11;
-}
-
-message IdentifiedL1MessageHash {
-  uint64 queue_index = 1;
-  bytes message_hash = 2;
+  // lastBatchIndex ≡ rollupContractOnL1.lastBatchIndex
+  .union.ibc.lightclients.ethereum.v1.StorageProof last_batch_index_proof = 3;
+  // L2stateRoot ≡ rollupContractOnL1.finalized[lastBatchIndex]
+  .union.ibc.lightclients.ethereum.v1.StorageProof l2_state_root_proof = 4;
+  // ibcContractOnL2 ∈ L2StateRoot
+  .union.ibc.lightclients.ethereum.v1.AccountProof l2_ibc_account_proof = 5;
+  // batchHash ≡ rollupContractOnL1.batchHashes[lastBatchIndex]
+  .union.ibc.lightclients.ethereum.v1.StorageProof batch_hash_proof = 6;
+  // The batch header from where we extract the L2 timestamp, then proving:
+  // hash(batchHeader) ≡ batchHash
+  bytes batch_header = 7;
 }
