@@ -128,9 +128,6 @@ $: asset = derived(
 )
 
 let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
-  return "0x590f0e6a1B44223e8a1FA9Dd1c29ab365373e9d6"
-
-  // @ts-ignore
   switch ($toChain?.rpc_type) {
     case "evm": {
       const evmAddr = $userAddr.evm
