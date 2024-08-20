@@ -17,6 +17,7 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
+base58            = { version = "0.2" }
 cosmwasm-schema   = { version = "2.0.0" }
 cosmwasm-std      = { version = "2.0.0", features = ["stargate", "cosmwasm_2_0", "abort"] }
 cw-controllers    = { version = "2.0.0" }

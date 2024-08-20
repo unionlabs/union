@@ -1,15 +1,16 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Coins, Deps, DepsMut, Env, IbcQuery, MessageInfo, Order,
-    PortIdResponse, Response, StdError, StdResult,
+    to_json_binary, Addr, Binary, Coins, Deps, DepsMut, Env, IbcEndpoint, IbcQuery, MessageInfo,
+    Order, PortIdResponse, Response, StdError, StdResult,
 };
 use cw2::set_contract_version;
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
     protocol::{TransferInput, TransferProtocol},
-    types::{FeePerU128, TransferToken},
+    types::{make_factory_denom, FeePerU128, TransferToken},
 };
+use unionlabs::hash::H256;
 
 use crate::{
     error::ContractError,
@@ -18,7 +19,7 @@ use crate::{
         ChannelResponse, ConfigResponse, ExecuteMsg, InstantiateMsg, ListChannelsResponse,
         MigrateMsg, PortResponse, QueryMsg, TransferMsg,
     },
-    protocol::{Ics20Protocol, ProtocolCommon, Ucs01Protocol},
+    protocol::{encode_denom_hash, Ics20Protocol, ProtocolCommon, Ucs01Protocol},
     state::{
         ChannelInfo, Config, ADMIN, CHANNEL_INFO, CHANNEL_STATE, CONFIG, FOREIGN_DENOM_TO_HASH,
         HASH_TO_FOREIGN_DENOM,
@@ -85,17 +86,13 @@ pub fn execute(
             if info.sender != env.contract.address {
                 Err(ContractError::Unauthorized)
             } else {
-                let normalized_hash = hash.as_slice().try_into().expect("impossible");
+                let hash = H256::try_from(hash.as_slice()).expect("impossible");
                 FOREIGN_DENOM_TO_HASH.save(
                     deps.storage,
                     (local_endpoint.clone().into(), denom.clone()),
-                    &normalized_hash,
+                    &hash.into(),
                 )?;
-                HASH_TO_FOREIGN_DENOM.save(
-                    deps.storage,
-                    (local_endpoint.into(), normalized_hash),
-                    &denom,
-                )?;
+                HASH_TO_FOREIGN_DENOM.save(deps.storage, hash.into(), &denom)?;
                 Ok(Response::default())
             }
         }
@@ -179,13 +176,36 @@ pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Port {} => to_json_binary(&query_port(deps)?),
         QueryMsg::ListChannels {} => to_json_binary(&query_list(deps)?),
         QueryMsg::Channel { id } => to_json_binary(&query_channel(deps, id)?),
         QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
         QueryMsg::Admin {} => to_json_binary(&ADMIN.query_admin(deps)?),
+        QueryMsg::ForeignDenomToLocal {
+            source_channel,
+            denom,
+        } => {
+            let foreign_denom_hash = FOREIGN_DENOM_TO_HASH
+                .may_load(
+                    deps.storage,
+                    (
+                        IbcEndpoint {
+                            port_id: format!("wasm.{}", env.contract.address),
+                            channel_id: source_channel,
+                        }
+                        .into(),
+                        denom,
+                    ),
+                )?
+                .ok_or(StdError::generic_err("foreign denom not found"))?;
+            let factory_denom = make_factory_denom(
+                &env.contract.address,
+                &encode_denom_hash(foreign_denom_hash),
+            );
+            to_json_binary(&factory_denom)
+        }
     }
 }
 

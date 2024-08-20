@@ -2,7 +2,9 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{IbcEndpoint, Uint512};
 use cw_controllers::Admin;
 use cw_storage_plus::{Item, KeyDeserialize, Map, Prefixer, PrimaryKey};
+use serde::{Deserialize, Serialize};
 use ucs01_relay_api::middleware::InFlightPfmPacket;
+use unionlabs::hash::H256;
 
 pub const ADMIN: Admin = Admin::new("admin");
 
@@ -19,12 +21,7 @@ pub const CHANNEL_STATE: Map<(&str, &str), ChannelState> = Map::new("channel_sta
 pub const IN_FLIGHT_PFM_PACKETS: Map<PfmRefundPacketKey, InFlightPfmPacket> =
     Map::new("in_flight_pfm_packets");
 
-// TokenFactory limitation
-// MaxSubdenomLength = 44
-// HASH_LENGTH = (MaxSubdenomLength - size_of("0x")) / 2 = 42
-pub const HASH_LENGTH: usize = 21;
-
-pub type Hash = [u8; HASH_LENGTH];
+pub const MAX_SUBDENOM_LENGTH: usize = 44;
 
 /// Used for indexing in flight packets for refunds and acknowledgements.
 ///
@@ -122,11 +119,37 @@ impl<'a> PrimaryKey<'a> for IbcEndpointKey {
     }
 }
 
-pub const FOREIGN_DENOM_TO_HASH: Map<(IbcEndpointKey, String), Hash> =
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(transparent)]
+pub struct DenomHash(pub(crate) H256);
+
+impl From<H256> for DenomHash {
+    fn from(value: H256) -> Self {
+        Self(value)
+    }
+}
+
+impl<'a> PrimaryKey<'a> for DenomHash {
+    type Prefix = <[u8; 32] as PrimaryKey<'a>>::Prefix;
+
+    type SubPrefix = <[u8; 32] as PrimaryKey<'a>>::SubPrefix;
+
+    type Suffix = <[u8; 32] as PrimaryKey<'a>>::Suffix;
+
+    type SuperSuffix = <[u8; 32] as PrimaryKey<'a>>::SuperSuffix;
+
+    fn key(&self) -> Vec<cw_storage_plus::Key> {
+        self.0 .0.key()
+    }
+}
+
+/// Mapping from `source_port/source_channel/denom` to `h(source_port/source_channel/denom)`.
+/// This exists in order to verify whether we already created the voucher denom or not.
+pub const FOREIGN_DENOM_TO_HASH: Map<(IbcEndpointKey, String), DenomHash> =
     Map::new("foreign_denom_to_hash");
 
-pub const HASH_TO_FOREIGN_DENOM: Map<(IbcEndpointKey, Hash), String> =
-    Map::new("hash_to_foreign_denom");
+/// Mapping from `h(source_port/source_channel/denom)` to `denom`.
+pub const HASH_TO_FOREIGN_DENOM: Map<DenomHash, String> = Map::new("hash_to_foreign_denom");
 
 #[cw_serde]
 #[derive(Default)]
