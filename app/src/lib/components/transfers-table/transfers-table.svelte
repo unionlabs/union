@@ -20,7 +20,7 @@ export let pageSize: number // must be even
 const transfers = transfersQuery(normalizedAddresses, timestamp, pageSize)
 
 const transfersDataStore: Readable<Array<Transfer>> = derived([transfers], ([$transfers]) => {
-  return $transfers?.data ?? []
+  return $transfers?.data?.map(d => ({ url: `/explorer/transfers/${d.hash}`, ...d })) ?? []
 })
 
 type DataRow = UnwrapReadable<typeof transfersDataStore>[number]
