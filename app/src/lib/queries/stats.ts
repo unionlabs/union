@@ -4,7 +4,7 @@ import {
   packetCountQueryDocument,
   transfersPerDayQueryDocument,
   transferCountQueryDocument
-} from "$lib/graphql/documents/stats.ts"
+} from "$lib/graphql/queries/stats.ts"
 
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"

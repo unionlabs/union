@@ -1,5 +1,5 @@
 import { createQuery } from "@tanstack/svelte-query"
-import { chainsQueryDocument } from "$lib/graphql/documents/chains"
+import { chainsQueryDocument } from "$lib/graphql/queries/chains"
 
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"

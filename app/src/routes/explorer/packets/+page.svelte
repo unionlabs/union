@@ -1,101 +1,76 @@
 <script lang="ts">
 import request from "graphql-request"
-import { packetsQuery } from "$lib/graphql/documents/packets.ts"
+import { packetsQuery } from "$lib/graphql/queries/packets.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import { writable } from "svelte/store"
+import { derived, writable, type Writable } from "svelte/store"
 import CellStatus from "$lib/components/table-cells/cell-status.svelte"
 import { DurationUnits } from "svelte-ux"
+import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 import CellDurationText from "$lib/components/table-cells/cell-duration-text.svelte"
+import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
+import LoadingLogo from "$lib/components/loading-logo.svelte"
+import type { UnwrapReadable } from "$lib/utilities/types"
+import ExplorerPagination from "$lib/components/transfers-table/explorer-pagination.svelte"
 
-$: packets = createQuery({
+const packets = createQuery({
   queryKey: ["packets"],
   refetchInterval: 5_000,
-  queryFn: async () => request(URLS.GRAPHQL, packetsQuery, {})
+  queryFn: async () => request(URLS.GRAPHQL, packetsQuery, {}),
+  select: data =>
+    data.v0_packets.map(packet => ({
+      source: {
+        chain_id: packet.from_chain_id ?? "unknown",
+        connection_id: packet.from_connection_id ?? "unknown",
+        channel_id: packet.from_channel_id ?? "unknown",
+        port_id: packet.from_port_id ?? "unknown"
+      },
+      destination: {
+        chain_id: packet.to_chain_id ?? "unknown",
+        connection_id: packet.to_connection_id ?? "unknown",
+        channel_id: packet.to_channel_id ?? "unknown",
+        port_id: packet.to_port_id ?? "unknown"
+      },
+      timestamp: packet.source_time,
+      destination_time: packet.destination_time
+    }))
 })
 
-$: packetsData = $packets?.data?.v0_packets ?? []
+let packetsDataStore = derived(packets, $packets => $packets.data ?? [])
 
-type Packet = (typeof packetsData)[number]
+type PacketRow = UnwrapReadable<typeof packetsDataStore>[number]
 
-$: packetsStore = writable<Array<Packet>>(packetsData as Array<Packet>)
-$: if (packets) {
-  packetsStore.update(packets => packets)
-}
-
-const columns: Array<ColumnDef<{ chain_id: string }>> = [
+const columns: Array<ColumnDef<PacketRow>> = [
   {
-    accessorKey: "source_chain_id",
-    header: () => "Source Chain",
+    accessorKey: "source",
     size: 200,
-    cell: info => info.getValue()
+    cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
   },
   {
-    accessorKey: "source_channel_id",
-    header: () => "Source Channel",
+    accessorKey: "destination",
     size: 200,
-    cell: info => info.getValue()
+    cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
   },
   {
-    accessorKey: "source_port",
-    header: () => "Source Port",
-    size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "destination_chain_id",
-    header: () => "Destination Chain",
-    size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "destination_channel_id",
-    header: () => "Destination Channel",
-    size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "destination_port_id",
-    header: () => "Destination Port",
-    size: 200,
-    cell: info => info.getValue()
-  },
-  {
-    accessorKey: "status",
-    header: () => "Status",
-    size: 200,
-    cell: info =>
-      flexRender(CellStatus, {
-        value: info.getValue()
-      })
-  },
-  {
-    accessorKey: "source_time",
     header: () => "Source Time",
-    size: 200,
-    cell: info =>
-      flexRender(CellDurationText, {
-        totalUnits: 3,
-        variant: "short",
-        minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string)
-      })
+    accessorKey: "timestamp",
+    cell: info => flexRender(CellTimestamp, { value: info.getValue() })
   },
   {
-    accessorKey: "destination_time",
     header: () => "Destination Time",
-    size: 200,
-    cell: info =>
-      flexRender(CellDurationText, {
-        totalUnits: 3,
-        variant: "short",
-        minUnits: DurationUnits.Second,
-        start: new Date(info.getValue() as string)
-      })
+    accessorKey: "destination_time",
+    cell: info => flexRender(CellTimestamp, { value: info.getValue() })
   }
 ]
 </script>
 
-<Table bind:dataStore={packetsStore} {columns} />
+{#if $packets.data}
+  <Table bind:dataStore={packetsDataStore} {columns} />
+  <ExplorerPagination explorerItems={packetsDataStore}/>
+{:else if $packets.isLoading}
+  <LoadingLogo class="size-16" />
+{:else if $packets.isError}
+  Error fetching packets...
+{/if}

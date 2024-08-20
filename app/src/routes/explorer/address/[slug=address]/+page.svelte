@@ -7,12 +7,6 @@ import { decodeTimestampSearchParam } from "$lib/timestamps.ts"
 import TableTransfers from "$lib/components/transfers-table/transfers-table.svelte"
 import AddressMultichain from "$lib/components/address-multichain.svelte"
 
-let timestamp = writable(
-  $page.url.searchParams.has("timestamp")
-    ? decodeTimestampSearchParam(`${$page.url.searchParams.get("timestamp")}`)
-    : null
-)
-
 let addresses =
   getContext<Readable<Array<{ address: string; normalizedAddress: string }>>>("addresses")
 
@@ -30,7 +24,6 @@ let normalizedAddresses = derived(addresses, $addresses =>
   </section>
   <TableTransfers
     {chains}
-    {timestamp}
     pageSize={24}
     normalizedAddresses={$normalizedAddresses}
   />

@@ -132,14 +132,8 @@ const DISABLE_TAB_INDEX = -1
 <Command.Dialog
   preventScroll={true}
   closeOnEscape={true}
-  label="Search Dialog"
-  onKeydown={onEnterPress}
   closeOnOutsideClick={true}
   bind:open={commandDialogOpen}
-  class={cn(
-    ' w-full',
-    'border-solid shadow-2xl',
-  )}
 >
   <Command.Root
     loop={true}

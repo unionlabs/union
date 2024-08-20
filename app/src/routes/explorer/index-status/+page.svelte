@@ -10,7 +10,7 @@ import CellStatus from "$lib/components/table-cells//cell-status.svelte"
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import CellDurationText from "$lib/components/table-cells//cell-duration-text.svelte"
 import CellChainIndex from "$lib/components/table-cells//cell-chain-index.svelte"
-import { indexStatusQuery } from "$lib/graphql/documents/index-status.ts"
+import { indexStatusQuery } from "$lib/graphql/queries/index-status.ts"
 
 let indexStatus = createQuery({
   queryKey: ["index-status"],

@@ -2,19 +2,24 @@
 import { cn } from "$lib/utilities/shadcn.ts"
 import { truncate } from "$lib/utilities/format"
 import * as Tooltip from "$lib/components/ui/tooltip"
+import type { Chain } from "$lib/types"
 
+export let chains: Array<Chain>
 export let value: {
+  chainId: string
   address: string
-  chain_display_name: string
 }
+
+const chainDisplayName =
+  chains.find(chain => chain.chain_id === value.chainId)?.display_name ??
+  value.chainId ??
+  "unknown chain"
 </script>
 
 <div class={cn("flex flex-col items-start")} {...$$restProps}>
-  {#if value.chain_display_name}
     <div class="font-bold">
-      {value.chain_display_name}
+        {chainDisplayName}
     </div>
-  {/if}
   <Tooltip.Root>
     <Tooltip.Trigger>
       <div>{truncate(value.address, 8)}</div>

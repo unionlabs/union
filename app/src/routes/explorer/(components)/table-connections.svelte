@@ -1,6 +1,6 @@
 <script lang="ts">
 import request from "graphql-request"
-import { connectionsQuery } from "$lib/graphql/documents/connections.ts"
+import { connectionsQuery } from "$lib/graphql/queries/connections.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import Table from "../(components)/table.svelte"

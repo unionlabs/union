@@ -18,7 +18,7 @@ import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import TokenBalance from "./(components)/token-balance.svelte"
 import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
-import { faucetUnoMutation2 } from "$lib/graphql/documents/faucet.ts"
+import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 

@@ -48,6 +48,8 @@ let virtualListElement: HTMLDivElement
 const table = createSvelteTable(options)
 const rows = derived(table, $t => $t.getRowModel().rows)
 
+const hasUrls = derived(rows, $rows => typeof $rows[0].original.url === "string")
+
 $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
   overscan: 20,
   count: $rows.length,
@@ -74,6 +76,10 @@ onDestroy(unsubscribe)
       <Table.Header>
         {#each $table.getHeaderGroups() as headerGroup (headerGroup.id)}
           <Table.Row>
+
+            {#if $hasUrls}
+              <th aria-label="Item Detail Links"></th>
+            {/if}
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
@@ -87,20 +93,32 @@ onDestroy(unsubscribe)
           </Table.Row>
         {/each}
       </Table.Header>
+      <!-- TODO: make this DRY !-->
       <Table.Body class={cn(`h-[${$virtualizer.getTotalSize()}px]] whitespace-nowrap`)}>
         {#each $virtualizer.getVirtualItems() as row, index (row.index)}
+          {@const url = $rows[row.index].original.url ?? undefined}
+
           {@const containsAsset = $rows[row.index].original.assets}
           {#if containsAsset}
             {@const isSupported = hasInfoProperty(containsAsset)}
             {#if $showUnsupported || isSupported}
               <Table.Row
-                class={cn(onClick !== undefined ? 'cursor-pointer' : '',
+                class={cn("relative", onClick !== undefined ? 'cursor-pointer' : '',
               index % 2 === 0 ? 'bg-secondary/10 dark:bg-secondary/30 ' : 'bg-transparent',
               isSupported ? '' : 'opacity-50'
 
             )}
                 on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
               >
+                {#if $hasUrls}
+                <td>
+                  <a
+                    href={url}
+                    aria-label={url}
+                    class="row-link"
+                  ></a>
+                </td>
+                {/if}
                 {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
                   <Table.Cell>
                     <svelte:component
@@ -117,6 +135,15 @@ onDestroy(unsubscribe)
             )}
               on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}
             >
+              {#if $hasUrls}
+                <td>
+                  <a
+                    href={url}
+                    aria-label={url}
+                    class="row-link"
+                  ></a>
+                </td>
+              {/if}
               {#each $rows[row.index].getVisibleCells() as cell, index (cell.id)}
                 <Table.Cell>
                   <svelte:component
@@ -131,3 +158,14 @@ onDestroy(unsubscribe)
     </Table.Root>
   </div>
 </Card.Root>
+
+<style lang="postcss">
+  .row-link {
+    position: absolute;
+    top: 0;
+    left: 0;
+    content: "";
+    width: 100%;
+    height: 100%;
+  }
+</style>

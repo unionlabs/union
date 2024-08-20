@@ -3476,6 +3476,24 @@ type v0_packets {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+
+  """An array relationship"""
+  traces(
+    """distinct select on columns"""
+    distinct_on: [v0_traces_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v0_traces_order_by!]
+
+    """filter the rows returned"""
+    where: v0_traces_bool_exp
+  ): [v0_traces!]!
 }
 
 """
@@ -3549,6 +3567,7 @@ input v0_packets_bool_exp {
   source_transaction_hash: String_comparison_exp
   source_transaction_index: String_comparison_exp
   status: String_comparison_exp
+  traces: v0_traces_bool_exp
 }
 
 """
@@ -4153,6 +4172,7 @@ input v0_packets_order_by {
   source_transaction_hash: order_by
   source_transaction_index: order_by
   status: order_by
+  traces_aggregate: v0_traces_aggregate_order_by
 }
 
 """
