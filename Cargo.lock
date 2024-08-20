@@ -6197,7 +6197,7 @@ dependencies = [
 [[package]]
 name = "near-sandbox-utils"
 version = "0.7.1"
-source = "git+https://github.com/unionlabs/near-sandbox?branch=near-ibc#95d4e807aef874f3467b163b72cc634e59c0be0b"
+source = "git+https://github.com/unionlabs/near-sandbox-union?branch=near-ibc#cb6d805a82e52dbc3badc34b55c6bb70b6ca45bf"
 dependencies = [
  "anyhow",
  "binary-install",
@@ -6449,7 +6449,7 @@ dependencies = [
 [[package]]
 name = "near-workspaces"
 version = "0.10.0"
-source = "git+https://github.com/unionlabs/near-workspace-rs?branch=near-ibc#1b68c7848ae538d0d9bbf64e60011924b01b9309"
+source = "git+https://github.com/unionlabs/near-workspaces-rs-union?branch=near-ibc#d9ec09801eb8c1f745080d267daa46f4b71062f4"
 dependencies = [
  "async-trait",
  "base64 0.21.7",

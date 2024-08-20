@@ -144,7 +144,7 @@ ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branc
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 
-near-workspaces = { git = "https://github.com/unionlabs/near-workspace-rs", branch = "near-ibc", default-features = false }
+near-workspaces = { git = "https://github.com/unionlabs/near-workspaces-rs-union", branch = "near-ibc", default-features = false }
 
 arbitrary                = { version = "1.3.0", default-features = false }
 axum                     = { version = "0.6.20", default-features = false }
