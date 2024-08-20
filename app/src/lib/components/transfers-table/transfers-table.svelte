@@ -1,17 +1,16 @@
 <script lang="ts">
 import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
-import Table from "../../../routes/explorer/(components)/table.svelte"
 import type { Chain } from "$lib/types.ts"
 import type { Transfer } from "./transfers-types.ts"
-import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellAssets from "$lib/components/table-cells/cell-assets.svelte"
 import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
-import { derived, type Readable } from "svelte/store"
 import CellOriginTransfer from "$lib/components/table-cells/cell-origin-transfer.svelte"
-import ExplorerPagination from "./explorer-pagination.svelte"
+import { derived, type Readable } from "svelte/store"
 import { transfersQuery } from "$lib/queries/transfers.ts"
 import { timestamp } from "$lib/stores/page.ts"
+
+import ExplorerTablePaginated from "$lib/components/explorer-table-paginated.svelte"
 
 export let chains: Array<Chain>
 export let normalizedAddresses: Array<string> | null = null
@@ -45,11 +44,4 @@ const columns: Array<ColumnDef<DataRow>> = [
 ]
 </script>
 
-{#if $transfers.data}
-  <Table dataStore={transfersDataStore} {columns} />
-  <ExplorerPagination explorerItems={transfersDataStore} />
-{:else if $transfers.status  === "pending"}
-  <LoadingLogo class="size-16" />
-{/if}
-
-<style lang="postcss"></style>
+<ExplorerTablePaginated queryResult={transfers} dataStore={transfersDataStore} {columns}/>
