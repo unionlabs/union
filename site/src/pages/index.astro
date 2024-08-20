@@ -4,8 +4,7 @@ import IntroSection from "../components/sections/landing/IntroSection.astro"
 import ConsensusSection from "../components/sections/landing/ConsensusSection.astro";
 import ZkSection from "../components/sections/landing/ZkSection.astro";
 import ExecutionSection from "../components/sections/landing/ExecutionSection.astro";
-import OurPodSection from "../components/sections/landing/OurPodSection.astro";
-import OurPartnersSection from "../components/sections/landing/OurPartnersSection.astro";
+import MarqueeSection from "../components/sections/landing/OurPodSection.astro";
 import ComeSwimSection from "../components/sections/landing/ComeSwimSection.astro";
 
 export const prerender = false
@@ -21,11 +20,11 @@ Astro.response.headers.set("netlify-cache-tag", "blog")
 ---
 
 <SectionsLayout gapless>
-  <IntroSection/>
-  <ConsensusSection />
-  <ZkSection />
-  <ExecutionSection />
-  <OurPodSection />
-  <OurPartnersSection />
-  <ComeSwimSection />
+    <IntroSection/>
+    <ConsensusSection/>
+    <ZkSection/>
+    <ExecutionSection/>
+    <MarqueeSection title={"Our pod"} reverse={false} imageFolder={"pods"}/>
+    <MarqueeSection title={"Our pod"} reverse={true} imageFolder={"pods"}/>
+    <ComeSwimSection/>
 </SectionsLayout>
