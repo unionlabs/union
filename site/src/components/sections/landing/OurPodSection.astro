@@ -5,6 +5,10 @@ import '../../../styles/marquee.css'
 
 const { title, imageFolder, reverse } = Astro.props
 
+const words = title.split(' ');
+const lastWord = words.pop();
+const restOfTitle = words.join(' ');
+
 let images;
 
 if (imageFolder === 'pods') {
@@ -18,7 +22,11 @@ const imageUrls = images.map(image => image.default.src);
 
 <div class="pb-8">
     <div class="text-center mb-8">
-        <H1>Our <span class="text-accent-500">Pod.</span></H1>
+        <H1>
+            {restOfTitle}
+            {restOfTitle && ' '}
+            <span class="text-accent-500">{lastWord}</span>
+        </H1>
     </div>
     <article class="wrapper">
         <div class:list={[
