@@ -3625,19 +3625,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "658bd65b1cf4c852a3cc96f18a8ce7b5640f6b703f905c7d74532294c2a63984"
 
 [[package]]
-name = "fetch-scroll-codec-test-vectors"
-version = "0.0.0"
-dependencies = [
- "clap 4.5.4",
- "ethers",
- "scroll-api",
- "scroll-codec",
- "serde_json",
- "tokio",
- "url",
-]
-
-[[package]]
 name = "ff"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8660,22 +8647,14 @@ dependencies = [
 name = "scroll-codec"
 version = "0.1.0"
 dependencies = [
- "enumorph",
  "ethers",
- "futures",
- "hex",
  "hex-literal",
- "macros",
- "num-bigint 0.4.4",
- "scroll-api",
  "serde",
  "serde-utils",
  "serde_json",
  "sha3",
  "thiserror",
- "tokio",
  "unionlabs",
- "url",
 ]
 
 [[package]]
@@ -11840,6 +11819,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "poseidon-rs",
+ "thiserror",
  "unionlabs",
 ]
 

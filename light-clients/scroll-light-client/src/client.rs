@@ -1,8 +1,5 @@
-use std::sync::Arc;
-
 use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
-use ethers_core::abi::AbiDecode;
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
@@ -10,11 +7,7 @@ use ics008_wasm_client::{
     },
     IbcClient, IbcClientError, Status, StorageState,
 };
-use scroll_codec::{
-    batch_header::BatchHeader,
-    chunk::{ChunkV0, ChunkV1},
-    CommitBatchCall,
-};
+use scroll_codec::batch_header::BatchHeaderV3;
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::{DecodeAs, Proto},
@@ -135,32 +128,10 @@ impl IbcClient for ScrollLightClient {
     ) -> Result<Vec<Height>, IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
 
-        let call = <CommitBatchCall as AbiDecode>::decode(header.commit_batch_calldata)
-            .map_err(|err| Error::CommitBatchDecode(Arc::new(err)))?;
+        let batch_header =
+            BatchHeaderV3::decode(&header.batch_header).map_err(Error::BatchHeaderDecode)?;
 
-        let timestamp = match BatchHeader::decode(call.parent_batch_header)
-            .map_err(Error::BatchHeaderDecode)?
-        {
-            BatchHeader::V0(_) => {
-                call.chunks
-                    .last()
-                    .map(ChunkV0::decode)
-                    .ok_or(Error::EmptyBatch)?
-                    .map_err(Error::ChunkV0Decode)?
-                    .blocks
-            }
-            BatchHeader::V1(_) => {
-                call.chunks
-                    .last()
-                    .map(ChunkV1::decode)
-                    .ok_or(Error::EmptyBatch)?
-                    .map_err(Error::ChunkV1Decode)?
-                    .blocks
-            }
-        }
-        .pop()
-        .ok_or(Error::EmptyBatch)?
-        .timestamp;
+        let timestamp = batch_header.last_block_timestamp;
 
         let updated_height = Height {
             revision_number: client_state.latest_height.revision_number,
@@ -178,9 +149,10 @@ impl IbcClient for ScrollLightClient {
 
         let consensus_state = WasmConsensusState {
             data: ConsensusState {
-                ibc_storage_root: header.l2_ibc_account_proof.storage_root,
+                state_root: header.l2_state_root_proof.value.to_be_bytes().into(),
                 // must be nanos
                 timestamp: 1_000_000_000 * timestamp,
+                ibc_storage_root: header.l2_ibc_account_proof.storage_root,
             },
         };
         save_consensus_state::<Self>(deps, consensus_state, &updated_height);

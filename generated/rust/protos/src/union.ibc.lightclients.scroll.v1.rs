@@ -1,5 +1,4 @@
 // @generated
-/// TODO: l2_ instead of rollup_
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
@@ -9,18 +8,17 @@ pub struct ClientState {
     pub chain_id: ::prost::alloc::string::String,
     #[prost(uint64, tag = "3")]
     pub latest_slot: u64,
-    /// TODO: Should be rollup_
-    #[prost(bytes = "vec", tag = "4")]
-    pub latest_batch_index_slot: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
+    #[prost(bytes = "vec", tag = "5")]
+    pub latest_batch_index_slot: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "6")]
-    pub rollup_contract_address: ::prost::alloc::vec::Vec<u8>,
+    pub l2_contract_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "7")]
-    pub rollup_finalized_state_roots_slot: ::prost::alloc::vec::Vec<u8>,
+    pub l2_finalized_state_roots_slot: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "8")]
-    pub rollup_committed_batches_slot: ::prost::alloc::vec::Vec<u8>,
+    pub l2_committed_batches_slot: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "9")]
     pub ibc_contract_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "10")]
@@ -36,10 +34,15 @@ impl ::prost::Name for ClientState {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
+    /// Scroll state root
     #[prost(bytes = "vec", tag = "1")]
-    pub ibc_storage_root: ::prost::alloc::vec::Vec<u8>,
+    pub state_root: ::prost::alloc::vec::Vec<u8>,
+    /// Scroll timestamp
     #[prost(uint64, tag = "2")]
     pub timestamp: u64,
+    /// IBC stack on Scroll contract storage root
+    #[prost(bytes = "vec", tag = "3")]
+    pub ibc_storage_root: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ConsensusState {
     const NAME: &'static str = "ConsensusState";
@@ -54,44 +57,28 @@ pub struct Header {
     #[prost(message, optional, tag = "1")]
     pub l1_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
+    /// rollupContractOnL1 ∈ L1Stateroot
     #[prost(message, optional, tag = "2")]
     pub l1_account_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
-    #[prost(bytes = "vec", tag = "3")]
-    pub l2_state_root: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "4")]
-    pub l2_state_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
-    #[prost(uint64, tag = "5")]
-    pub last_batch_index: u64,
-    #[prost(message, optional, tag = "6")]
+    /// lastBatchIndex ≡ rollupContractOnL1.lastBatchIndex
+    #[prost(message, optional, tag = "3")]
     pub last_batch_index_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
-    #[prost(message, optional, tag = "7")]
-    pub batch_hash_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
-    #[prost(message, optional, tag = "8")]
+    /// L2stateRoot ≡ rollupContractOnL1.finalized\[lastBatchIndex\]
+    #[prost(message, optional, tag = "4")]
+    pub l2_state_root_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
+    /// ibcContractOnL2 ∈ L2StateRoot
+    #[prost(message, optional, tag = "5")]
     pub l2_ibc_account_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
-    #[prost(bytes = "vec", tag = "9")]
-    pub commit_batch_calldata: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, repeated, tag = "10")]
-    pub l1_message_hashes: ::prost::alloc::vec::Vec<IdentifiedL1MessageHash>,
-    #[prost(bytes = "vec", tag = "11")]
-    pub blob_versioned_hash: ::prost::alloc::vec::Vec<u8>,
+    /// batchHash ≡ rollupContractOnL1.batchHashes\[lastBatchIndex\]
+    #[prost(message, optional, tag = "6")]
+    pub batch_hash_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
+    /// The batch header from where we extract the L2 timestamp, then proving:
+    /// hash(batchHeader) ≡ batchHash
+    #[prost(bytes = "vec", tag = "7")]
+    pub batch_header: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for Header {
     const NAME: &'static str = "Header";
-    const PACKAGE: &'static str = "union.ibc.lightclients.scroll.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("union.ibc.lightclients.scroll.v1.{}", Self::NAME)
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IdentifiedL1MessageHash {
-    #[prost(uint64, tag = "1")]
-    pub queue_index: u64,
-    #[prost(bytes = "vec", tag = "2")]
-    pub message_hash: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for IdentifiedL1MessageHash {
-    const NAME: &'static str = "IdentifiedL1MessageHash";
     const PACKAGE: &'static str = "union.ibc.lightclients.scroll.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.ibc.lightclients.scroll.v1.{}", Self::NAME)

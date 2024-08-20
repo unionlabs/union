@@ -281,6 +281,7 @@ proto_full = [
   "union+ibc+lightclients+arbitrum+v1",
   "union+ibc+lightclients+berachain+v1",
   "union+ibc+lightclients+cometbls+v1",
+  "union+ibc+lightclients+cosmosincosmos+v1",
   "union+ibc+lightclients+ethereum+v1",
   "union+ibc+lightclients+evmincosmos+v1",
   "union+ibc+lightclients+linea+v1",
@@ -325,6 +326,7 @@ proto_full = [
   "ibc+core+client+v1",
   "ibc+core+commitment+v1",
 ]
+"union+ibc+lightclients+cosmosincosmos+v1" = ["ibc+core+client+v1", "ibc+core+commitment+v1"]
 "union+ibc+lightclients+ethereum+v1" = ["ibc+core+client+v1"]
 "union+ibc+lightclients+evmincosmos+v1" = [
   "ibc+core+client+v1",

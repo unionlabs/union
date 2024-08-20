@@ -506,6 +506,7 @@
               self'.packages.voy-send-msg
               yq
             ]) ++ (with unstablePkgs; [
+              wasm-tools
               bun # for running TypeScript files on the fly
               postgresql
               emmet-language-server

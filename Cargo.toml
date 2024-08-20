@@ -35,7 +35,6 @@ members = [
   "lib/relay-message",
   "lib/scroll-api",
   "lib/scroll-codec",
-  "lib/scroll-codec/fetch-test-vectors",
   "lib/scroll-rpc",
   "lib/serde-utils",
   "lib/ssz",

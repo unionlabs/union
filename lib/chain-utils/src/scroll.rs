@@ -313,11 +313,11 @@ impl Chain for Scroll {
                 revision_number: 0,
                 revision_height: 0,
             },
-            rollup_contract_address: self.rollup_contract_address,
-            rollup_finalized_state_roots_slot: self.rollup_finalized_state_roots_slot,
+            l2_contract_address: self.rollup_contract_address,
+            l2_finalized_state_roots_slot: self.rollup_finalized_state_roots_slot,
             ibc_contract_address: self.ibc_handler_address,
             ibc_commitment_slot: U256::from(0),
-            rollup_committed_batches_slot: self.rollup_committed_batches_slot,
+            l2_committed_batches_slot: self.rollup_committed_batches_slot,
         }
     }
 
@@ -326,6 +326,15 @@ impl Chain for Scroll {
             .batch_index_of_beacon_slot(height.revision_height)
             .await;
         let scroll_height = self.scroll_height_of_batch_index(batch_index).await;
+
+        let block = self
+            .provider
+            .get_block(ethers::types::BlockId::Number(
+                ethers::types::BlockNumber::Number(scroll_height.into()),
+            ))
+            .await
+            .unwrap()
+            .unwrap();
 
         let storage_root = self
             .provider
@@ -340,20 +349,10 @@ impl Chain for Scroll {
             .unwrap();
 
         scroll::consensus_state::ConsensusState {
-            ibc_storage_root: storage_root.into(),
+            state_root: block.state_root.into(),
             // Normalize to nanoseconds to be ibc-go compliant
-            // FIXME: must be scroll timestamp, not L1
-            timestamp: self
-                .l1
-                .beacon_api_client
-                .bootstrap_for_slot(height.revision_height)
-                .await
-                .unwrap()
-                .data
-                .header
-                .execution
-                .timestamp
-                * 1_000_000_000,
+            timestamp: block.timestamp.as_u64() * 1_000_000_000,
+            ibc_storage_root: storage_root.into(),
         }
     }
 }

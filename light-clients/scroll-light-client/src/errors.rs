@@ -1,11 +1,6 @@
-use std::sync::Arc;
-
 use ethereum_light_client::errors::{CanonicalizeStoredValueError, InvalidCommitmentKey};
 use ics008_wasm_client::IbcClientError;
-use scroll_codec::{
-    batch_header::BatchHeaderDecodeError,
-    chunk::{ChunkV0DecodeError, ChunkV1DecodeError},
-};
+use scroll_codec::batch_header::BatchHeaderV3DecodeError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
     google::protobuf::any::Any,
@@ -88,17 +83,8 @@ pub enum Error {
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
 
-    // TODO: Condense all of these together?
-    #[error("error decoding commit batch calldata")]
-    CommitBatchDecode(#[source] Arc<ethers_core::abi::AbiError>),
-    #[error("empty batch")]
-    EmptyBatch,
-    #[error("error decoding v0 chunk")]
-    ChunkV0Decode(#[from] ChunkV0DecodeError),
-    #[error("error decoding v1 chunk")]
-    ChunkV1Decode(#[from] ChunkV1DecodeError),
     #[error("error decoding batch header")]
-    BatchHeaderDecode(#[from] BatchHeaderDecodeError),
+    BatchHeaderDecode(#[from] BatchHeaderV3DecodeError),
 }
 
 impl From<Error> for IbcClientError<ScrollLightClient> {

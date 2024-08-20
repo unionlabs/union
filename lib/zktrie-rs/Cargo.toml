@@ -12,4 +12,5 @@ workspace = true
 hex         = { workspace = true }
 lazy_static = { workspace = true }
 poseidon-rs = { workspace = true }
+thiserror   = { workspace = true }
 unionlabs   = { workspace = true }
