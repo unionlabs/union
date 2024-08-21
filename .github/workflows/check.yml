@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
+  merge_group:
 
 permissions: read-all
 
@@ -13,15 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  fail-on-draft:
-    if: github.event.pull_request.draft == true
-    runs-on: ubuntu-latest
-    steps:
-      - run: exit 1
   check:
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
