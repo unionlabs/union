@@ -13,7 +13,7 @@ let alwaysCollapsedWidth = 580
 </script>
 
 <nav
-  class={cn("rounded-none flex flex-col items-start h-full dark:bg-background")}
+  class="rounded-none flex flex-col items-start h-full dark:bg-background"
 >
   {#each tableRoutes as { route, icon }}
     <Button
