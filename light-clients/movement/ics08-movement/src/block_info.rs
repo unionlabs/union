@@ -26,19 +26,19 @@ pub const GENESIS_TIMESTAMP_USECS: u64 = 0;
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BlockInfo {
     /// The epoch to which the block belongs.
-    epoch: u64,
+    pub epoch: u64,
     /// The consensus protocol is executed in rounds, which monotonically increase per epoch.
-    round: Round,
+    pub round: Round,
     /// The identifier (hash) of the block.
-    id: HashValue,
+    pub id: HashValue,
     /// The accumulator root hash after executing this block.
-    executed_state_id: HashValue,
+    pub executed_state_id: HashValue,
     /// The version of the latest transaction after executing this block.
-    version: Version,
+    pub version: Version,
     /// The timestamp this block was proposed by a proposer.
-    timestamp_usecs: u64,
+    pub timestamp_usecs: u64,
     /// An optional field containing the next epoch info
-    next_epoch_state: Option<EpochState>,
+    pub next_epoch_state: Option<EpochState>,
 }
 
 /// A continuously increasing sequence number for committed blocks.

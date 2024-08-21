@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 
 use crate::{
     block_info::BlockInfo, epoch_change::EpochChangeProof, hash_value::HashValue, types::Signature,
@@ -34,12 +35,15 @@ impl StateProof {
         }
     }
 
-    pub fn into_inner(self) -> (LedgerInfoWithSignatures, EpochChangeProof) {
-        (self.latest_li_w_sigs, self.epoch_changes)
+    pub fn hash(&self) -> [u8; 32] {
+        let mut hasher = sha2::Sha256::new();
+        bcs::serialize_into(&mut hasher, self).expect("unexpected serialization error");
+        hasher.finalize().into()
     }
 
-    pub fn as_inner(&self) -> (&LedgerInfoWithSignatures, &EpochChangeProof) {
-        (&self.latest_li_w_sigs, &self.epoch_changes)
+    pub fn latest_ledger_info(&self) -> &LedgerInfo {
+        let LedgerInfoWithSignatures::V0(ledger_info) = &self.latest_li_w_sigs;
+        &ledger_info.ledger_info
     }
 }
 
@@ -70,11 +74,11 @@ pub struct AggregateSignature {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct LedgerInfo {
-    commit_info: BlockInfo,
+    pub commit_info: BlockInfo,
 
     /// Hash of consensus specific data that is opaque to all parts of the system other than
     /// consensus.
-    consensus_data_hash: HashValue,
+    pub consensus_data_hash: HashValue,
 }
 
 // TODO(aeryz): custom deserialize

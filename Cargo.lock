@@ -4715,7 +4715,9 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
+ "sha2 0.10.8",
  "sha3",
+ "thiserror",
 ]
 
 [[package]]
