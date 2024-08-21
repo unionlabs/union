@@ -1,7 +1,12 @@
 ---
+import { Image } from "astro:assets"
 import H1 from "../../typography/h1.astro";
+import swim from "#/assets/images/spline-holders/come-swim.png"
 ---
 
-<div class="text-center pb-16">
+<div class="flex flex-col w-full items-center text-center pb-16">
     <H1>COME SWIM WITH US.<br> <span class="text-accent-500">0_______0</span></H1>
+    <div class="max-w-[1440px] px-6">
+      <Image src={swim} alt="come swim with us" class="object-contain h-auto"></Image>
+    </div>
 </div>

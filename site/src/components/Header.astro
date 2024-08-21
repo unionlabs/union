@@ -60,13 +60,13 @@ const menuItems = [
 <header
   class="z-[100] w-full flex justify-around pt-3 sticky top-0 py-3"
 >
-  <div class="max-w-[1920px] flex flex-1 items-center px-4 sm:px-6">
+  <div class="max-w-[1440px] flex flex-1 items-center px-4 sm:px-6">
     <a
       href="/"
       id="union-logo"
       class="flex items-center gap-2 decoration-transparent visited:text-white"
     >
-      <svg class="h-8 md:h-14" viewBox="0 0 656 182" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="h-8 md:h-14 py-1" viewBox="0 0 656 182" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M484.174 141.239C476.957 141.239 471.094 139.882 466.57 136.014C462.154 132.051 460.283 126.659 460.283 120.338V60.2464C460.283 53.8308 462.154 48.4386 466.57 44.5704C471.094 40.7022 476.957 39.3451 484.174 39.3451H523.154C530.478 39.3451 536.341 40.7022 540.757 44.5704C545.173 48.4386 547.044 53.8308 547.044 60.2464V120.338C547.044 126.659 545.173 132.051 540.757 136.014C536.341 139.882 530.478 141.239 523.154 141.239H484.174ZM514.352 121.644C516.937 121.644 519.239 121.564 520.639 120.338C522.147 119.111 523.154 117.377 523.154 115.112V65.4717C523.154 63.2074 522.147 61.4729 520.639 60.2464C519.239 59.0199 516.937 58.94 514.352 58.94H492.976C490.283 58.94 488.089 59.0199 486.689 60.2464C485.289 61.4729 484.174 63.2074 484.174 65.4717V115.112C484.174 117.377 485.289 119.111 486.689 120.338C488.089 121.564 490.283 121.644 492.976 121.644H514.352Z" fill="white"/>
         <path d="M438.089 140.23H413.876V40.354H438.089V140.23Z" fill="white"/>
         <path d="M328.811 140.23H304.921V40.354H330.069L367.791 101.389L367.791 83.7212V40.354H391.682V140.23H366.534L328.811 79.1947L328.811 96.8628V140.23Z" fill="white"/>
@@ -98,7 +98,7 @@ const menuItems = [
                 <a
                     href={menuItem.url}
                     class:list={[
-                      "!text-2xl text-normal flex flex-col flex-1 uppercase font-mono",
+                      "!text-lg text-normal flex flex-col flex-1 uppercase font-mono font-bold",
                       { "text-accent-500": menuItem.highlight },
                     ]}
                 >
