@@ -1,4 +1,4 @@
-name: Require App Success
+name: Require Garnix CI Success
 
 on:
   pull_request:
