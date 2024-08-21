@@ -1,23 +1,56 @@
+name: Require App Success
+
 on:
-  check_suite:
-    types: [completed]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - v0.50.5-bn254
+
+permissions:
+  checks: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
-  evaluate-garnix:
+  fail-on-draft:
+    if: github.event.pull_request.draft == true
     runs-on: ubuntu-latest
     steps:
-      - 
+      - run: exit 1
+  evaluate-app-status:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate Checks
         env:
-          NAME: ${{ github.event.check_suite.app.name }}
-          CONCLUSION: ${{ github.event.check_suite.conclusion }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.head_ref }}
         run: |
-          case $CONCLUSION in
-            failure | cancelled | timed_out | action_required | startup_failure | stale)
-              echo "ERROR: '$NAME' concluded with status '$CONCLUSION'"  
+          sleep 60
+
+          status=''
+
+          while [[ $status != 'completed' ]]; do
+            check_suites=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$REPO/commits/$REF/check-suites")
+
+            status=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .status')
+            sleep 15
+          done
+
+          conclusion=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .conclusion')
+
+          case "$conclusion" in
+            failure | timed_out | action_required | stale | startup_failure)
+              echo "ERROR: Garnix CI concluded with $conclusion"
               exit 1
               ;;
             *)
-              echo "INFO: '$NAME' concluded with status '$CONCLUSION'"  
+              echo "INFO: Garnix CI concluded with $conclusion"
               ;;
           esac
-
