@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
-      - v0.50.5-bn254
+      - main
   merge_group:
 
 permissions:
