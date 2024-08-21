@@ -6,17 +6,17 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
 import wave from "#/assets/images/spline-holders/wave-collateral.png"
 ---
 
-<section class="relative flex w-full justify-center pt-16 md:pb-36">
+<section class="relative flex w-full justify-center pt-8 sm:pt-16 pb-24 lg:pb-48">
     <div class="w-full max-w-[1440px] px-6 z-10">
         <div class="z-20 grid grid-cols-1 gap-16 w-full">
             <div class="flex flex-col text-left items-start">
                 <H1>The <br> Modular <br> <span class="text-accent-500">Ecosystem</span></H1>
             </div>
             <div class="flex flex-col items-end">
-                <div class="text-right flex flex-col gap-4 md:gap-8">
+                <div class="text-right flex flex-col gap-4 md:gap-6">
                     <H1>The <br> interoperability <br> <span class="text-accent-500"><span
                             class="text-2xl">0_____________0</span> revolution</span></H1>
-                    <div class="max-w-[557px] text-left flex flex-col gap-4 md:gap-8">
+                    <div class="max-w-[557px] text-left flex flex-col gap-4 md:gap-6">
                         <QuoteSubTitle>
                             Connecting every blockchain, without compromising on security, efficiency,
                             decentralization, or speed.
@@ -24,11 +24,10 @@ import wave from "#/assets/images/spline-holders/wave-collateral.png"
                         <ButtonA href="https://app.union.build">DIVE IN >>></ButtonA>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
-    <div class="absolute -mt-14 md:-mt-28 w-full">
-        <Image src={wave} alt="Wave Collateral" class="w-full h-auto"></Image>
+    <div class="absolute -mt-14 md:-mt-28 self-center h-full">
+        <Image src={wave} alt="Wave Collateral" class="object-cover h-full"></Image>
     </div>
 </section>

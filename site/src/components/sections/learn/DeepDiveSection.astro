@@ -7,7 +7,8 @@ import useCase from "#/assets/images/spline-holders/use-case.png"
 import unionWorks from "#/assets/images/spline-holders/union-works.png"
 import trust from "#/assets/images/spline-holders/trust.png"
 import TextP from "../../typography/TextP.astro";
-
+import bubbles from "#/assets/images/spline-holders/bubbles.png"
+import divingBubbles from "#/assets/images/spline-holders/diving-bubbles.png"
 
 const diver = [
   {text: "What is Union?", meter: '200m'},
@@ -22,14 +23,16 @@ const diver = [
 ]
 ---
 
-<div class="flex justify-center learn-gradient">
+<div class="flex justify-center  learn-gradient pb-24">
+    <Image src={bubbles} alt="bubbles" class="absolute inset-0 w-full h-full object-cover object-center mix-blend-soft-light"></Image>
+
     <div class="relative grid grid-cols-4 gap-4 max-w-[1440px] px-6">
-        <div class="flex flex-col p-4 col-span-full lg:col-span-3 gap-12">
+        <div class="flex flex-col col-span-full md:col-span-3 gap-12 md:gap-24 lg:gap-48">
 
             <div>
                 <H1>What is <span class="text-accent-500">union?</span></H1>
-                <div class="flex flex-col 2xl:flex-row gap-4 w-full pt-5">
-                    <div class="flex flex-col lg:max-w-[691px] w-full gap-8">
+                <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
+                    <div class="flex flex-col md:max-w-[576px] w-full gap-8">
                         <TextP>Union is a modular interoperability protocol which facilitates the exchange of
                             assets and
                             messages between execution environments.</TextP>
@@ -54,8 +57,8 @@ const diver = [
 
             <div>
                 <H1>What is <br><span class="text-accent-500">Interoperability?</span></H1>
-                <div class="flex flex-col 2xl:flex-row gap-4 w-full pt-5">
-                    <div class="flex flex-col lg:max-w-[691px] w-full gap-8">
+                <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
+                    <div class="flex flex-col md:max-w-[576px] w-full gap-8">
                         <TextP>Interoperability in reference to blockchains, is their ability to pass messages
                             and communicate with each other. </TextP>
                         <TextP>Union enables developers to build with any stack and connect with any execution
@@ -86,8 +89,8 @@ const diver = [
 
             <div>
                 <H1>Union <span class="text-accent-500">use cases.</span></H1>
-                <div class="flex flex-col 2xl:flex-row gap-4 w-full pt-5">
-                    <div class="flex flex-col lg:max-w-[691px] w-full gap-8">
+                <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
+                    <div class="flex flex-col md:max-w-[576px] w-full gap-8">
                         <TextP><span class="text-accent-500">Message Passing:</span> Securely transmit messages
                             between chains to enable applications like decentralized exchanges (DEXs) and lending
                             protocols to work together.</TextP>
@@ -105,10 +108,10 @@ const diver = [
             </div>
 
             <div>
-                <div class="flex flex-col 2xl:flex-row gap-4 w-full pt-5">
+                <div class="flex flex-col 2xl:flex-row gap-8 w-full pt-5">
                     <div>
                         <H1>How union <br><span class="text-accent-500">works.</span></H1>
-                        <div class="flex flex-col lg:max-w-[691px] w-full pt-5 gap-8">
+                        <div class="flex flex-col md:max-w-[576px] w-full pt-5 gap-8">
                             <TextP>Think of Union as a zero-knowledge proof (ZKP) network where the state of each
                                 chain resides.
                                 When a new blockchain integrates with Union, it gets a Union light client that verifies
@@ -145,10 +148,10 @@ const diver = [
             </div>
 
             <div>
-                <div class="flex flex-col 2xl:flex-row gap-4 w-full">
+                <div class="flex flex-col 2xl:flex-row gap-8 w-full">
                     <div>
                         <H1>Trust <br><span class="text-accent-500">verification.</span></H1>
-                        <div class="flex flex-col lg:max-w-[691px] w-full pt-5 gap-8">
+                        <div class="flex flex-col md:max-w-[576px] w-full pt-5 gap-8">
                             <TextP>State verification between blockchains is often gas-intensive due to the
                                 complexity of
                                 verifying consensus on other chains with varied structures and execution environments.
@@ -176,59 +179,63 @@ const diver = [
                 </div>
             </div>
 
-            <div>
-                <H1>What is <span class="text-accent-500">galois.</span></H1>
-                <div class="flex flex-col 2xl:flex-row gap-4 w-full pt-5">
-                    <div class="flex flex-col lg:max-w-[691px] w-full gap-8">
-                        <TextP>Galois is the umbrella term of Union's ZK efforts. It currently has one
+            <div class="flex flex-col gap-12 md:gap-24">
+                <div>
+                    <H1>What is <span class="text-accent-500">galois.</span></H1>
+                    <div class="flex flex-col 2xl:flex-row w-full pt-5">
+                        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+                            <TextP>Galois is the umbrella term of Union's ZK efforts. It currently has one
                             purpose: consensus verification.</TextP>
-                        <TextP>We've built Galois around three fundamental principles: fast execution,
+                            <TextP>We've built Galois around three fundamental principles: fast execution,
                             low-cost operation, and decentralization. The architecture involves three key steps for
                             transactions through Union: Emitting a send-packet event, generating a Zero-Knowledge
                             Proof (ZKP) of the Union state, and updating the counterparty with the Union state,
                             which promotes accessibility for all participants in the system.</TextP>
-                        <TextP>Galois can outperform other zero-knowledge bridges while operating on a
+                            <TextP>Galois can outperform other zero-knowledge bridges while operating on a
                             single machine, avoiding the need for large clusters.</TextP>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div>
-                <H1>What is <span class="text-accent-500">cometbls.</span></H1>
-                <div class="flex flex-col 2xl:flex-row gap-4 w-full pt-5">
-                    <div class="flex flex-col lg:max-w-[691px] w-full gap-8">
-                        <TextP>Introducing CometBLS, an enhanced blockchain consensus engine building upon
+                <div>
+                    <H1>What is <span class="text-accent-500">cometbls.</span></H1>
+                    <div class="flex flex-col 2xl:flex-row w-full pt-5">
+                        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+                            <TextP>Introducing CometBLS, an enhanced blockchain consensus engine building upon
                             Tendermint to address the challenges of secure bridging and consensus verification.</TextP>
-                        <TextP>Unlike Tendermint, CometBLS is tailored for efficient zero-knowledge
+                            <TextP>Unlike Tendermint, CometBLS is tailored for efficient zero-knowledge
                             proving, which is crucial for bridging to blockspace-restricted chains like Ethereum.
                             Leveraging BLS signatures as its foundation, CometBLS reduces proving times,
                             facilitating faster and cost-effective bridging transfers. The utilization of BLS
                             signatures enables the aggregation of public keys and signatures, minimizing transaction
                             size and on-chain computation costs.</TextP>
-                        <TextP>Under CometBLS, the Union network can seamlessly scale to over a hundred
+                            <TextP>Under CometBLS, the Union network can seamlessly scale to over a hundred
                             validators without compromising performance or bridging latency, ushering in a new era
                             of secure and scalable blockchain consensus.</TextP>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div>
-                <H1>What is <span class="text-accent-500">voyager.</span></H1>
-                <div class="flex flex-col 2xl:flex-row gap-4 w-full pt-5">
-                    <div class="flex flex-col lg:max-w-[691px] w-full gap-8">
-                        <TextP>The Inter-Blockchain Communication Protocol (IBC) relies on off-chain actors
+                <div>
+                    <H1>What is <span class="text-accent-500">voyager.</span></H1>
+                    <div class="flex flex-col 2xl:flex-row w-full pt-5">
+                        <div class="flex flex-col md:max-w-[576px] w-full gap-8">
+                            <TextP>The Inter-Blockchain Communication Protocol (IBC) relies on off-chain actors
                             for the transfer of packets and proofs between chains. Union’s in-house relayer,
                             Voyager, facilitates the support of new networks independently of upstream
                             assistance.</TextP>
-                        <TextP>Voyager’s architecture is event-driven, employing an internal memory queue
+                            <TextP>Voyager’s architecture is event-driven, employing an internal memory queue
                             for observed events and I/O processes. Voyager integrates with Galois through gRPC,
                             enabling the offloading of computation to dedicated hardware, with upcoming support for
                             proving markets.</TextP>
-                        <TextP>This design ensures efficient communication and flexibility in supporting
+                            <TextP>This design ensures efficient communication and flexibility in supporting
                             diverse blockchain networks.</TextP>
+                        </div>
                     </div>
                 </div>
+
             </div>
+            
         </div>
 
         <div class="relative col-span-1 hidden lg:block">

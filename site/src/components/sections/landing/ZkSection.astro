@@ -6,10 +6,10 @@ import Subtitle from "../../typography/subtitle.astro";
 import whale from "#/assets/images/spline-holders/whale.png"
 ---
 
-<section class="relative flex w-full justify-center">
+<section class="relative flex w-full justify-center pb-24 lg:pb-48">
     <div class="w-full max-w-[1440px] px-6">
         <div class="relative flex w-full h-fit">
-            <div class="absolute inset-0 flex md:items-center justify-center flex-col md:text-center z-10">
+            <div class="absolute inset-0 flex items-center justify-center flex-col text-center z-10 h-full">
                 <H1><span class="text-accent-500">
                     Z</span>ero <span class="text-accent-500">k</span>nowledge cryptography <br>
                     = <br>
@@ -22,7 +22,7 @@ import whale from "#/assets/images/spline-holders/whale.png"
                 </div>
                 <ButtonA>START SWIMMING >>></ButtonA>
             </div>
-            <Image src={whale} alt="Wave Collateral" class="w-full h-auto"></Image>
+            <Image src={whale} alt="Wave Collateral" class="object-contain h-auto opacity-60"></Image>
         </div>
     </div>
 </section>

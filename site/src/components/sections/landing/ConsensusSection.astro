@@ -6,19 +6,17 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
 import trails from "#/assets/images/spline-holders/union-trails.png"
 ---
 
-<section class="flex w-full justify-center">
+<section class="flex w-full justify-center pb-16 md:pb-0">
     <div class="w-full max-w-[1440px] z-10 px-6">
         <div class="grid grid-cols-1 lg:grid-cols-2">
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-4 pb-16">
                 <H1>Consensus <br> verification <br> for security <br> and <span class="text-accent-500">stability</span></H1>
-                <div class="max-w-[672px]">
+                <div class="max-w-[438px]">
                     <QuoteSubTitle>Union eliminates intermediaries and connects blockchains directly. With Union light clients, you get secure, censorship-resistant connections to any ecosystem.</QuoteSubTitle>
                 </div>
                 <ButtonA>LEARN MORE >>></ButtonA>
             </div>
-            <div class="flex justify-end order-first md:order-last">
-                <Image src={trails} alt="Wave Collateral" class="h-auto object-contain"></Image>
-            </div>
+            <Image src={trails} alt="Wave Collateral" class="h-auto object-contain"></Image>
         </div>
     </div>
 </section>
