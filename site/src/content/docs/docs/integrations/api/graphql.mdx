@@ -75,7 +75,10 @@ query GetLatest10Transfers @cached(ttl: 1) {
     limit: 10,
     order_by: { source_timestamp: desc }
   ) {
-    assets
+    tokens {
+      denom
+      amount
+    }
 	  sender
 	  receiver
   }
