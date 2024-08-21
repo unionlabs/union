@@ -100,7 +100,10 @@ query GetAllUserTransfers @cached(ttl: 1) {
       ]
     }
   ) {
-    assets
+    tokens {
+      denom
+      amount
+    }
     receiver
     sender
     source_chain { display_name }
@@ -129,7 +132,7 @@ Packets, used in general message passing, can be tracked using v1_packets, simil
 query GetLatest10Packets @cached(ttl: 1) {
   v1_packets(
     limit: 10,
-    order_by: { source_time: desc }
+    order_by: { source_timestamp: desc }
   ) {
     source_chain { display_name }
     destination_chain { display_name }
@@ -168,7 +171,7 @@ query GetTracesByHash @cached(ttl: 1) {
 }
 ```
 
-The `v0_traces.data` field is dependent on the type and may contain chain-specific information as well. The `v1_transfers` and `v1_packets` 
+The `v1_traces.data` field is dependent on the type and may contain chain-specific information as well. The `v1_transfers` and `v1_packets` 
 also have a relation to traces, to allow for all info of a specific transfer or packet.
 
 ```graphql
@@ -179,7 +182,10 @@ query GetLatest10TransfersWithTraces @cached(ttl: 1) {
       source_timestamp: desc
     }
   ) {
-    assets
+    tokens {
+      denom
+      amount
+    }
     receiver
     sender
     traces {
