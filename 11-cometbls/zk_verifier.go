@@ -132,8 +132,6 @@ func (zkp ZKP) Verify(trustedValidatorsHash []byte, header ProverLightHeader) er
 	delta := verifyingKey.G2.Delta
 	beta := verifyingKey.G2.Beta
 
-	// NOTE(aeryz): We didn't use fiat-shamir here since we don't batch two pairings. I'm not sure
-	// if we still need it though.
 	result, err := curve.PairingCheck([]curve.G1Affine{
 		zkp.Proof.A,
 		publicInputsMsm,
