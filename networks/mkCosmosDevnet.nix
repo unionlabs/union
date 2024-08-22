@@ -320,7 +320,8 @@ let
             "06-solomachine",
             "07-tendermint",
             "08-wasm",
-            "09-localhost"
+            "09-localhost",
+            "11-cometbls"
           ]' \
           $out/config/genesis.json | sponge $out/config/genesis.json
       '';

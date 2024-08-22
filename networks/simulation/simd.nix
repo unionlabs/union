@@ -4,12 +4,16 @@
       packages = {
         simd = goPkgs.pkgsStatic.buildGoModule ({
           name = "simd";
+          # src = builtins.fetchGit {
+          #   url = "git@github.com:unionlabs/wasmd.git";
+          #   rev = "a2e7048bbdd43206c69fb9353c6aff219aecefda";
+          # };
           src = pkgs.fetchFromGitHub {
-            owner = "aeryz";
+            owner = "unionlabs";
             repo = "wasmd";
             # rev = "wasm-clients-v0.50.0";
-            rev = "8430bd3a9c8908f7c12eb8939d9126ddeba0f4d2";
-            sha256 = "sha256-+S/0zM4CBGYHXRhbkNwcqwmZeh6RUBhWt5Ya2QQWKH8=";
+            rev = "a2e7048bbdd43206c69fb9353c6aff219aecefda";
+            sha256 = "sha256-b0JPYyk7VhuaEAeQmrbAU6i1UO242oV1DzW8QjOFIak=";
           };
           vendorHash = null;
           doCheck = false;

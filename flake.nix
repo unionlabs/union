@@ -483,6 +483,7 @@
                 uniond = ./uniond/proto;
                 galoisd = ./galoisd/proto;
                 cometbls = inputs.cometbls;
+                cometbls-lc = ./11-cometbls/proto;
                 cosmossdk = inputs.cosmossdk;
               };
 

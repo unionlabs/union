@@ -285,6 +285,7 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                     Cosmos => {
                         ClientType::Wasm(WasmClientType::Cometbls)        => (Wasm<Cosmos>, Cosmos, Union),
                         ClientType::Tendermint                            => (Cosmos, Cosmos, Cosmos),
+                        ClientType::_11Cometbls                           => (Cosmos, Cosmos, Union),
                     }
                     Union => {
                         ClientType::Wasm(WasmClientType::EthereumMinimal) => (Wasm<Union>, Union, Ethereum<Minimal>),

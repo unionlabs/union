@@ -310,9 +310,11 @@ bitvec
 bitvector
 blabla
 blcok
+blockid
 blockquote
 blockscout
 blocksync
+blocktime
 blst
 boneh
 bonlulu
@@ -547,6 +549,7 @@ gopls
 goprivate
 goroutines
 gosec
+gosimple
 gotest
 gotools
 govclient
@@ -598,10 +601,12 @@ ibcchannels
 ibcclient
 ibcclientclient
 ibcclienttypes
+ibccomet
 ibccometblsclient
 ibcconnectionkeeper
 ibcconnections
 ibcconnectiontypes
+ibcerrors
 ibcexported
 ibcfee
 ibcfeekeeper
@@ -707,6 +712,7 @@ libwasmvmstatic
 lifecycles
 lightclient
 lightclients
+lightheader
 linea
 linkmode
 livenesses
@@ -840,6 +846,7 @@ paramstore
 paramstypes
 paramtypes
 paren
+parseable
 partset
 partytown
 passthru
@@ -998,6 +1005,7 @@ settl
 sgxlib
 shacham
 shadcn
+shamir
 shazow
 shentu
 shiki
@@ -1120,6 +1128,7 @@ tiny_hderive
 tkey
 tkeys
 tlsv
+tmbytes
 tmcfg
 tmcli
 tmcmlewuyt
@@ -1227,6 +1236,7 @@ valconspub
 valeyo
 valgentx
 valibot
+validatebasic
 validatordata
 validatorsets
 valkey
