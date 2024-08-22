@@ -118,3 +118,47 @@ export const packetsByConnectionIdLatestQuery = graphql(
   `,
   [packetListDataFragment]
 )
+
+export const packetsByConnectionIdTimestampQuery = graphql(
+  /* GraphQL */ `
+    query PacketsByConnectionIdTimestampQuery($limit: Int!, $chain_id: String!, $connection_id: String!, $timestamp: timestamptz!) @cached(ttl: 1000) {
+      newer: v0_packets(
+        limit: $limit
+        order_by: [{ source_time: asc }, { destination_time: asc }]
+        where: {
+          _and: [
+            { source_time: { _gte: $timestamp } }
+            {
+              _or: [
+                { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }}] }
+                { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }}] }
+              ]
+            }
+          ]
+        }
+
+      ) {
+        ...PacketListData
+      }
+      older: v0_packets(
+        limit: $limit
+        order_by: [ { source_time: desc } { destination_time: desc } ]
+        where: {
+          _and: [
+            { source_time: { _lt: $timestamp } }
+            {
+              _or: [
+                { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }}] }
+                { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }}] }
+              ]
+            }
+          ]
+        }
+      ) {
+        ...PacketListData
+      }
+    }
+  `,
+  [packetListDataFragment]
+)
+
