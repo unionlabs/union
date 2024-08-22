@@ -84,15 +84,11 @@ export async function transfersByAddressesTimestamp({
   timestamp: string
   addresses: Array<string>
 }): TransfersReturnType {
-  const { older, newer } = await request(
-    URLS.GRAPHQL,
-    transfersByAddressesTimestampQuery,
-    {
-      limit: limit / 2,
-      timestamp,
-      addresses
-    }
-  )
+  const { older, newer } = await request(URLS.GRAPHQL, transfersByAddressesTimestampQuery, {
+    limit: limit / 2,
+    timestamp,
+    addresses
+  })
 
   const allTransfers = [...newer.toReversed(), ...older]
   return allTransfers.map(transferTransform)
