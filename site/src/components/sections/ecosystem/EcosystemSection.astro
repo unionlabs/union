@@ -160,13 +160,15 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
       .map(cb => cb.value);
 
     cards.forEach(card => {
-      const name = card.querySelector('h3')!.textContent!.toLowerCase();
-      const category = card.querySelector('p')!.textContent!;
+        const name = card.querySelector('h3').textContent.toLowerCase();
+        const categoryElements = card.querySelectorAll('p');
+        const categories = Array.from(categoryElements).map(el => el.textContent.toLowerCase());
 
-      const matchesSearch = name.includes(searchTerm);
-      const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(category);
+        const matchesSearch = name.includes(searchTerm);
+        const matchesCategory = selectedCategories.length === 0 ||
+          categories.some(cat => selectedCategories.includes(cat));
 
-      card.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
+        matchesSearch && matchesCategory ?  card.classList.remove("hidden"): card.classList.add("hidden");
     });
   }
 
