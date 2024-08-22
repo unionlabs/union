@@ -3,21 +3,11 @@ import H1 from "../../typography/h1.astro";
 
 import '../../../styles/marquee.css'
 
-const { title, imageFolder, reverse } = Astro.props
+const { title, data, reverse } = Astro.props
 
 const words = title.split(' ');
 const lastWord = words.pop();
 const restOfTitle = words.join(' ');
-
-let images;
-
-if (imageFolder === 'pods') {
-  images = await Astro.glob('/src/assets/images/marquee/pods/*.{jpeg,jpg,png,gif}');
-} else if (imageFolder === 'partners') {
-  images = await Astro.glob('/src/assets/images/marquee/partners/*.{jpeg,jpg,png,gif}');
-}
-
-const imageUrls = images.map(image => image.default.src);
 ---
 
 <div class="flex flex-col w-full items-center">
@@ -36,16 +26,16 @@ const imageUrls = images.map(image => image.default.src);
           ]}>
               <div class="marquee__group">
                 {
-                  imageUrls.map(url => (
-                          <img src={url} alt="logo"></img>
+                  data.map(item => (
+                          <img src={item.logo.src} alt={item.name}></img>
                   ))
                 }
               </div>
 
               <div aria-hidden="true" class="marquee__group">
                 {
-                  imageUrls.map(url => (
-                          <img src={url} alt="logo"></img>
+                  data.map(item => (
+                          <img src={item.logo.src} alt={item.name}></img>
                   ))
                 }
               </div>
