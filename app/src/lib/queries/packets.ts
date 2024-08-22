@@ -2,6 +2,7 @@ import { URLS } from "$lib/constants"
 import { packetListDataFragment } from "$lib/graphql/fragments/packets"
 import {
   packetsByChainLatestQuery,
+  packetsByChainTimestampQuery,
   packetsLatestQuery,
   packetsTimestampQuery
 } from "$lib/graphql/queries/packets"
@@ -51,7 +52,7 @@ export async function packetsTimestamp({
   return [...newer.toReversed(), ...older].map(packetTransform)
 }
 
-export async function packetsByChainLatest({
+export async function packetsByChainIdLatest({
   limit,
   chain_id
 }: { limit: number; chain_id: string }): PacketsReturnType {
@@ -60,6 +61,19 @@ export async function packetsByChainLatest({
     chain_id
   })
   return v0_packets.map(packetTransform)
+}
+
+export async function packetsByChainIdTimestamp({
+  limit,
+  chain_id,
+  timestamp
+}: { limit: number; chain_id: string; timestamp: string }): PacketsReturnType {
+  const { newer, older } = await request(URLS.GRAPHQL, packetsByChainTimestampQuery, {
+    limit,
+    chain_id,
+    timestamp
+  })
+  return [...newer.toReversed(), ...older].map(packetTransform)
 }
 
 export const packetsByChainIdQuery = (
@@ -76,13 +90,14 @@ export const packetsByChainIdQuery = (
             refetchOnReconnect: false,
             placeholderData: keepPreviousData,
             staleTime: Number.POSITIVE_INFINITY,
-            queryFn: async () => await packetsTimestamp({ limit, timestamp: $timestamp })
+            queryFn: async () =>
+              await packetsByChainIdTimestamp({ limit, chain_id, timestamp: $timestamp })
           }
         : {
             queryKey: ["packets", chain_id, "latest"],
             refetchInterval: 5_000,
             placeholderData: keepPreviousData,
-            queryFn: async () => await packetsByChainLatest({ limit, chain_id })
+            queryFn: async () => await packetsByChainIdLatest({ limit, chain_id })
           }
     )
   )
