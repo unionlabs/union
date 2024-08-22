@@ -4,6 +4,14 @@ pub struct PublicKey {
     pub pubkey: Vec<u8>,
 }
 
+impl From<PublicKey> for protos::union::ibc::lightclients::movement::v1::PublicKey {
+    fn from(value: PublicKey) -> Self {
+        Self {
+            pubkey: value.pubkey,
+        }
+    }
+}
+
 impl serde::Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where

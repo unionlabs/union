@@ -7,6 +7,12 @@ pub struct Signature {
     pub sig: Vec<u8>,
 }
 
+impl From<Signature> for protos::union::ibc::lightclients::movement::v1::Signature {
+    fn from(value: Signature) -> Self {
+        Self { sig: value.sig }
+    }
+}
+
 impl serde::Serialize for Signature {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -51,4 +57,15 @@ impl<'de> serde::Deserialize<'de> for Signature {
 pub struct AggregateSignature {
     validator_bitmask: BitVec,
     sig: Option<Signature>,
+}
+
+impl From<AggregateSignature>
+    for protos::union::ibc::lightclients::movement::v1::AggregateSignature
+{
+    fn from(value: AggregateSignature) -> Self {
+        Self {
+            validator_bitmask: value.validator_bitmask.inner,
+            sig: value.sig.map(Into::into),
+        }
+    }
 }

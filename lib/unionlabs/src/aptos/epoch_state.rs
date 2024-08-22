@@ -32,3 +32,12 @@ impl fmt::Display for EpochState {
         )
     }
 }
+
+impl From<EpochState> for protos::union::ibc::lightclients::movement::v1::EpochState {
+    fn from(value: EpochState) -> Self {
+        Self {
+            epoch: value.epoch,
+            verifier: Some(value.verifier.into()),
+        }
+    }
+}

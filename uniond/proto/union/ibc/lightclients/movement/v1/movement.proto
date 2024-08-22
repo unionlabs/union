@@ -63,13 +63,21 @@ message ValidatorVerifier {
 
 message ValidatorConsensusInfo {
   bytes address = 1;
-  bytes public_key = 2;
+  PublicKey public_key = 2;
   uint64 voting_power = 3;
+}
+
+message PublicKey {
+  bytes pubkey = 1;
 }
 
 message AggregateSignature {
   bytes validator_bitmask = 1;
-  bytes sig = 2;
+  Signature sig = 2;
+}
+
+message Signature {
+  bytes sig = 1;
 }
 
 message EpochChangeProof {

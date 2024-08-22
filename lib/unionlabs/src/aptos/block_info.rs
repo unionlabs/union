@@ -12,6 +12,9 @@ pub type Round = u64;
 
 pub type Version = u64;
 
+/// A continuously increasing sequence number for committed blocks.
+pub type BlockHeight = u64;
+
 // Constants for the initial genesis block.
 pub const GENESIS_EPOCH: u64 = 0;
 pub const GENESIS_ROUND: Round = 0;
@@ -39,5 +42,16 @@ pub struct BlockInfo {
     pub next_epoch_state: Option<EpochState>,
 }
 
-/// A continuously increasing sequence number for committed blocks.
-pub type BlockHeight = u64;
+impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockInfo {
+    fn from(value: BlockInfo) -> Self {
+        Self {
+            epoch: value.epoch,
+            round: value.round,
+            id: value.id.0.to_vec(),
+            executed_state_id: value.executed_state_id.0.to_vec(),
+            version: value.version,
+            timestamp_usecs: value.timestamp_usecs,
+            next_epoch_state: value.next_epoch_state.map(Into::into),
+        }
+    }
+}

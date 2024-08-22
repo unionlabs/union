@@ -29,3 +29,24 @@ pub struct LedgerInfo {
     /// consensus.
     pub consensus_data_hash: HashValue,
 }
+
+impl From<LedgerInfoWithSignatures>
+    for protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures
+{
+    fn from(value: LedgerInfoWithSignatures) -> Self {
+        let LedgerInfoWithSignatures::V0(value) = value;
+        Self {
+            ledger_info: Some(value.ledger_info.into()),
+            signatures: Some(value.signatures.into()),
+        }
+    }
+}
+
+impl From<LedgerInfo> for protos::union::ibc::lightclients::movement::v1::LedgerInfo {
+    fn from(value: LedgerInfo) -> Self {
+        Self {
+            commit_info: Some(value.commit_info.into()),
+            consensus_data_hash: value.consensus_data_hash.0.to_vec(),
+        }
+    }
+}
