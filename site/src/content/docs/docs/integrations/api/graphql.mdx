@@ -3,20 +3,6 @@ title: "GraphQL"
 sidebar:
   order: 1
 ---
-import GraphQL from '#/components/GraphQL.astro'
-
-
-<GraphQL
-  query={/* graphql */ `
-    query ThreeBlocksQuery {
-      v0_blocks(limit: 3) {
-        hash
-      }
-    }
-  `}
-/>
-
-
 Unionlabs provides a hosted indexing service for all connected chains, served at [graphql.union.build](https://graphql.union.build/v1/graphql). 
 A [UI](https://cloud.hasura.io/public/graphiql?endpoint=https://graphql.union.build/v1/graphql) is also provided, which can be used 
 to explore all available data. This guide goes through the most useful queries and types.
