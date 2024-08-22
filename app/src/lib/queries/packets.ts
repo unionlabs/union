@@ -1,6 +1,7 @@
 import { URLS } from "$lib/constants"
 import { packetListDataFragment } from "$lib/graphql/fragments/packets"
-import { packetsLatestQueryDocument } from "$lib/graphql/queries/packets"
+import { packetsLatestQuery } from "$lib/graphql/queries/packets"
+import { derived, type Readable } from "svelte/store"
 import { createQuery } from "@tanstack/svelte-query"
 import { readFragment, type FragmentOf } from "gql.tada"
 import request from "graphql-request"
@@ -25,10 +26,20 @@ const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
   }
 }
 
-export const packetsQuery = () =>
-  createQuery({
-    queryKey: ["packets"],
-    refetchInterval: 5_000,
-    queryFn: async () => request(URLS.GRAPHQL, packetsLatestQueryDocument, {}),
-    select: data => data.v0_packets.map(packetTransform)
+type PacketsReturnType = Promise<Array<ReturnType<typeof packetTransform>>>
+
+export async function packetsLatest({ limit = 12 }: { limit?: number } = {}): PacketsReturnType {
+  const { v0_packets } = await request(URLS.GRAPHQL, packetsLatestQuery, {
+    limit
   })
+  return v0_packets.map(packetTransform)
+}
+
+export const packetsQuery = (timestamp: Readable<string | null>) =>
+  createQuery(
+    derived([timestamp], ([$timestamp]) => ({
+      queryKey: ["packets", "latest"],
+      refetchInterval: 5_000,
+      queryFn: async () => await packetsLatest({})
+    }))
+  )

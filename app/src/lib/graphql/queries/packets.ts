@@ -1,10 +1,36 @@
 import { graphql } from "gql.tada"
 import { packetListDataFragment } from "$lib/graphql/fragments/packets"
 
-export const packetsLatestQueryDocument = graphql(
+export const packetsLatestQuery = graphql(
   /* GraphQL */ `
     query PacketsLatestQuery($limit: Int = 100) {
       v0_packets(limit: $limit, order_by: { source_time: desc_nulls_last }) {
+        ...PacketListData
+      }
+    }
+  `,
+  [packetListDataFragment]
+)
+
+export const packetsTimestampQuery = graphql(
+  /* GraphQL */ `
+  query PacketsTimestampQuery($limit: Int! = 100, $timestamp: timestamptz!)
+    @cached(ttl: 1000) {
+      newer: v0_packets(
+        limit: $limit
+        order_by: [{ source_time: asc }, { dest_time: asc }]
+        where: { source_time: { _gte: $timestamp } }
+      ) {
+        ...PacketListData
+      }
+      older: v0_packets(
+        limit: $limit
+        order_by: [
+          { source_time: desc }
+          { dest_time: desc }
+        ]
+        where: { source_time: { _lt: $timestamp } }
+      ) {
         ...PacketListData
       }
     }

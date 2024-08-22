@@ -9,11 +9,12 @@ import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.s
 
 import ExplorerTablePaginated from "$lib/components/explorer-table-paginated.svelte"
 import { packetsQuery } from "$lib/queries/packets"
+import { timestamp } from "$lib/stores/page.ts"
 
 // export let chains: Array<Chain>
 // export let pageSize: number // must be even
 
-let packets = packetsQuery()
+let packets = packetsQuery(timestamp)
 let packetsDataStore = derived(packets, $packets => $packets.data ?? [])
 
 type PacketRow = UnwrapReadable<typeof packetsDataStore>[number]

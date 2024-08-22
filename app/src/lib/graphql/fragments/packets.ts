@@ -14,7 +14,6 @@ export const packetListDataFragment = graphql(/* GraphQL */ `
     to_port_id
     destination_block_hash
     destination_time
-    source_data
     status
   }
 `)
