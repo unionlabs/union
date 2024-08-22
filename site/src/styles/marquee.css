@@ -62,6 +62,7 @@
     place-items: center;
     width: var(--size);
     padding: calc(var(--size) / 20);
+    max-height: 130px;
 }
 
 

@@ -1,0 +1,88 @@
+---
+type Category = "defi" | "infrastructure" | "interchain token" | "wallet" | "enterprise" | "rwa" | "nft" | "dex" | "interchain native" | "";
+
+interface ItemData {
+    name: string;
+    logo: string;
+    cover: string;
+    category: Category;
+}
+
+const data: ItemData[] = [
+    {name: "Skip", logo: "", cover: "", category: ""},
+    {name: "Landslide", logo: "", cover: "", category: "wallet"},
+    {name: "Bera", logo: "", cover: "", category: "nft"},
+    {name: "Arbitrum", logo: "", cover: "", category: "dex"},
+    {name: "Polygon", logo: "", cover: "", category: "rwa"},
+];
+
+const categories: Category[] = ["defi", "infrastructure", "interchain token", "wallet", "enterprise", "rwa", "nft", "dex", "interchain native"];
+---
+
+<main class="container mx-auto px-4 py-8">
+    <!-- Search Bar Component -->
+    <div class="mb-4">
+        <label for="searchInput"></label><input
+            type="text"
+            id="searchInput"
+            placeholder="Search by name..."
+            class="w-full px-4 py-2 border rounded-md"
+    />
+    </div>
+
+    <div class="grid grid-cols-4 gap-4 mt-8">
+        <!-- Filter Checkboxes -->
+        <div class="col-span-1">
+            <h2 class="text-xl font-bold mb-4">Filter by Category</h2>
+          {categories.map(category => (
+                  <div class="mb-2">
+                      <label class="flex items-center">
+                          <input type="checkbox" value={category} class="mr-2"/>
+                        {category}
+                      </label>
+                  </div>
+          ))}
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="col-span-3 grid grid-cols-3 gap-4">
+          {data.map(item => (
+                  <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                      <img src={item.cover} alt={item.name} class="w-full h-48 object-cover"/>
+                      <div class="p-4">
+                          <img src={item.logo} alt={`${item.name} logo`} class="w-12 h-12 mb-2"/>
+                          <h3 class="text-lg font-semibold">{item.name}</h3>
+                          <p class="text-sm text-gray-600">{item.category}</p>
+                      </div>
+                  </div>
+          ))}
+        </div>
+    </div>
+</main>
+
+
+<script>
+    const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+    const cards = document.querySelectorAll('.col-span-3 > div') as NodeListOf<HTMLDivElement>;
+
+    function filterCards(): void {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCategories = Array.from(checkboxes)
+          .filter(cb => cb.checked)
+          .map(cb => cb.value);
+
+        cards.forEach(card => {
+            const name = card.querySelector('h3')!.textContent!.toLowerCase();
+            const category = card.querySelector('p')!.textContent!;
+
+            const matchesSearch = name.includes(searchTerm);
+            const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(category);
+
+            card.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('input', filterCards);
+    checkboxes.forEach(checkbox => checkbox.addEventListener('change', filterCards));
+</script>
