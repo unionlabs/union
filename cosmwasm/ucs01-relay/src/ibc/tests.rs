@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use core::hash;
+
     use cosmwasm_std::{
         coin, coins,
         testing::{MockApi, MockStorage},
@@ -34,7 +36,7 @@ mod tests {
             ibc_packet_ack, ibc_packet_receive, ibc_packet_timeout, reply, IbcChannel,
         },
         msg::{ExecuteMsg, InstantiateMsg, TransferMsg},
-        protocol::{hash_denom, Ics20Protocol, Ucs01Protocol},
+        protocol::{hash_denom,encode_denom_hash, Ics20Protocol, Ucs01Protocol},
         state::{ChannelInfo, CHANNEL_INFO},
     };
 
@@ -256,8 +258,9 @@ mod tests {
 
     fn create_factory_denom(contract_addr: &Addr, foreign_denom: &str) -> String {
         let hashed_denom = hash_denom(foreign_denom);
+        
 
-        let normalized_denom: String = format!("0x{}", hex::encode(hashed_denom));
+        let normalized_denom: String = encode_denom_hash(hashed_denom);
         format!("factory/{}/{}", contract_addr, normalized_denom)
     }
     fn send_ibc_packet(
