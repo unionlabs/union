@@ -18,7 +18,7 @@ export const packetsTimestampQuery = graphql(
     @cached(ttl: 1000) {
       newer: v0_packets(
         limit: $limit
-        order_by: [{ source_time: asc }, { dest_time: asc }]
+        order_by: [{ source_time: asc }, { destination_time: asc }]
         where: { source_time: { _gte: $timestamp } }
       ) {
         ...PacketListData
@@ -27,7 +27,7 @@ export const packetsTimestampQuery = graphql(
         limit: $limit
         order_by: [
           { source_time: desc }
-          { dest_time: desc }
+          { destination_time: desc }
         ]
         where: { source_time: { _lt: $timestamp } }
       ) {

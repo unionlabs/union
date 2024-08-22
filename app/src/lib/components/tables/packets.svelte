@@ -14,7 +14,7 @@ import { timestamp } from "$lib/stores/page.ts"
 // export let chains: Array<Chain>
 // export let pageSize: number // must be even
 
-let packets = packetsQuery(timestamp)
+let packets = packetsQuery(12, timestamp)
 let packetsDataStore = derived(packets, $packets => $packets.data ?? [])
 
 type PacketRow = UnwrapReadable<typeof packetsDataStore>[number]

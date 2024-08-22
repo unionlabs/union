@@ -1,8 +1,8 @@
 import { URLS } from "$lib/constants"
 import { packetListDataFragment } from "$lib/graphql/fragments/packets"
-import { packetsLatestQuery } from "$lib/graphql/queries/packets"
+import { packetsLatestQuery, packetsTimestampQuery } from "$lib/graphql/queries/packets"
 import { derived, type Readable } from "svelte/store"
-import { createQuery } from "@tanstack/svelte-query"
+import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
 import { readFragment, type FragmentOf } from "gql.tada"
 import request from "graphql-request"
 
@@ -35,11 +35,35 @@ export async function packetsLatest({ limit = 12 }: { limit?: number } = {}): Pa
   return v0_packets.map(packetTransform)
 }
 
-export const packetsQuery = (timestamp: Readable<string | null>) =>
+export async function packetsTimestamp({
+  limit,
+  timestamp
+}: { limit: number; timestamp: string }): PacketsReturnType {
+  const { newer, older } = await request(URLS.GRAPHQL, packetsTimestampQuery, {
+    timestamp,
+    limit: limit / 2
+  })
+
+  return [...newer.toReversed(), ...older].map(packetTransform)
+}
+
+export const packetsQuery = (limit: number, timestamp: Readable<string | null>) =>
   createQuery(
-    derived([timestamp], ([$timestamp]) => ({
-      queryKey: ["packets", "latest"],
-      refetchInterval: 5_000,
-      queryFn: async () => await packetsLatest({})
-    }))
+    derived([timestamp], ([$timestamp]) =>
+      $timestamp
+        ? {
+            queryKey: ["packets", $timestamp],
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            placeholderData: keepPreviousData,
+            staleTime: Number.POSITIVE_INFINITY,
+            queryFn: async () => await packetsTimestamp({ limit, timestamp: $timestamp })
+          }
+        : {
+            queryKey: ["packets", "latest"],
+            refetchInterval: 5_000,
+            placeholderData: keepPreviousData,
+            queryFn: async () => await packetsLatest({ limit })
+          }
+    )
   )

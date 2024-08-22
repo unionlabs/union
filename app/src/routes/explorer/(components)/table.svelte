@@ -48,7 +48,7 @@ let virtualListElement: HTMLDivElement
 const table = createSvelteTable(options)
 const rows = derived(table, $t => $t.getRowModel().rows)
 
-const hasUrls = derived(rows, $rows => typeof $rows[0].original.url === "string")
+const hasUrls = derived(rows, $rows => typeof $rows.at(0)?.original.url === "string")
 
 $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
   overscan: 20,
