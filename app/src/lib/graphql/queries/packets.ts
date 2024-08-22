@@ -55,9 +55,10 @@ export const packetsByChainLatestQuery = graphql(
   `,
   [packetListDataFragment]
 )
+
 export const packetsByChainTimestampQuery = graphql(
   /* GraphQL */ `
-    query PacketsByChainTimestampQuery($limit: Int, $chain_id: String!, $timestamp: timestamptz!) @cached(ttl: 1000) {
+    query PacketsByChainTimestampQuery($limit: Int!, $chain_id: String!, $timestamp: timestamptz!) @cached(ttl: 1000) {
       newer: v0_packets(
         limit: $limit
         order_by: [{ source_time: asc }, { destination_time: asc }]
@@ -91,6 +92,26 @@ export const packetsByChainTimestampQuery = graphql(
           ]
         }
       ) {
+        ...PacketListData
+      }
+    }
+  `,
+  [packetListDataFragment]
+)
+
+export const packetsByConnectionIdLatestQuery = graphql(
+  /* GraphQL */ `
+    query PacketsByConnectionIdLatestQuery($limit: Int!, $chain_id: String!, $connection_id: String!) {
+      v0_packets(
+        limit: $limit 
+        order_by: { source_time: desc_nulls_last }
+        where: { 
+          _or: [
+            { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }}] }
+            { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }}] }
+          ]
+        }
+        ) {
         ...PacketListData
       }
     }

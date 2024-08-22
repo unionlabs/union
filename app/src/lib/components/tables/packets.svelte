@@ -8,15 +8,17 @@ import { derived, type Readable } from "svelte/store"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 
 import ExplorerTablePaginated from "$lib/components/explorer-table-paginated.svelte"
-import { packetsQuery, packetsByChainIdQuery } from "$lib/queries/packets"
+import { packetsQuery, packetsByChainIdQuery, packetsByConnectionIdQuery } from "$lib/queries/packets"
 import { timestamp } from "$lib/stores/page.ts"
 
 // export let chains: Array<Chain>
 export let chain_id: string | undefined = undefined
+export let connection_id: string | undefined = undefined
 // export let pageSize: number // must be even
 
 let packets = chain_id
-  ? packetsByChainIdQuery(12, chain_id, timestamp)
+  ? connection_id ? packetsByConnectionIdQuery(12, chain_id, connection_id, timestamp)
+    : packetsByChainIdQuery(12, chain_id, timestamp)
   : packetsQuery(12, timestamp)
 let packetsDataStore = derived(packets, $packets => $packets.data ?? [])
 
