@@ -64,6 +64,9 @@ pub mod linea;
 /// Types specific to the berachain protocol.
 pub mod berachain;
 
+/// Types specific to aptos.
+pub mod aptos;
+
 /// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
 pub mod bls;
 

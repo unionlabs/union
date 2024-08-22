@@ -907,6 +907,14 @@ pub mod union {
                     // @@protoc_insertion_point(union.ibc.lightclients.linea.v1)
                 }
             }
+            pub mod movement {
+                #[cfg(feature = "union+ibc+lightclients+movement+v1")]
+                // @@protoc_insertion_point(attribute:union.ibc.lightclients.movement.v1)
+                pub mod v1 {
+                    include!("union.ibc.lightclients.movement.v1.rs");
+                    // @@protoc_insertion_point(union.ibc.lightclients.movement.v1)
+                }
+            }
             pub mod scroll {
                 #[cfg(feature = "union+ibc+lightclients+scroll+v1")]
                 // @@protoc_insertion_point(attribute:union.ibc.lightclients.scroll.v1)

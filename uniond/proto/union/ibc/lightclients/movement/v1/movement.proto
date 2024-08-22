@@ -12,14 +12,70 @@ message ClientState {
   .ibc.core.client.v1.Height frozen_height = 4;
 }
 
-// message ConsensusState {
-//   // Scroll state root
-//   bytes state_root = 1;
-//   // Scroll timestamp
-//   uint64 timestamp = 2;
-//   // IBC stack on Scroll contract storage root
-//   bytes ibc_storage_root = 3;
-// }
+message ConsensusState {
+  // Aptos state root
+  bytes state_root = 1;
+  // Movement timestamp
+  uint64 timestamp = 2;
+  // Hash of the `StateProof` which is committed to l1
+  bytes state_proof_hash = 3;
+}
+
+message Header {
+  StateProof state_proof = 1;
+}
+
+message StateProof {
+  LedgerInfoWithSignatures latest_li_w_sigs = 1;
+  EpochChangeProof epoch_changes = 2;
+}
+
+message LedgerInfoWithSignatures {
+  LedgerInfo ledger_info = 1;
+  /// Aggregated BLS signature of all the validators that signed the message. The bitmask in the
+  /// aggregated signature can be used to find out the individual validators signing the message
+  AggregateSignature signatures = 2;
+}
+
+message LedgerInfo {
+  BlockInfo commit_info = 1;
+  bytes consensus_data_hash = 2;
+}
+
+message BlockInfo {
+  uint64 epoch = 1;
+  uint64 round = 2;
+  bytes id = 3;
+  bytes executed_state_id = 4;
+  uint64 version = 5;
+  uint64 timestamp_usecs = 6;
+  EpochState next_epoch_state = 7;
+}
+
+message EpochState {
+  uint64 epoch = 1;
+  ValidatorVerifier verifier = 2;
+}
+
+message ValidatorVerifier {
+  repeated ValidatorConsensusInfo validator_infos = 1;
+}
+
+message ValidatorConsensusInfo {
+  bytes address = 1;
+  bytes public_key = 2;
+  uint64 voting_power = 3;
+}
+
+message AggregateSignature {
+  bytes validator_bitmask = 1;
+  bytes sig = 2;
+}
+
+message EpochChangeProof {
+  repeated LedgerInfoWithSignatures ledger_info_with_sigs = 1;
+  bool more = 2;
+}
 
 // message Header {
 //   .ibc.core.client.v1.Height l1_height = 1;

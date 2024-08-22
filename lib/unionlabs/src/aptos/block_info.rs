@@ -2,11 +2,9 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt::{Display, Formatter};
-
 use serde::{Deserialize, Serialize};
 
-use crate::{epoch_state::EpochState, hash_value::HashValue};
+use super::{epoch_state::EpochState, hash_value::HashValue};
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
 /// monotonically.

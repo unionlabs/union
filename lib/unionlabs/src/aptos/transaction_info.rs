@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use sha3::Sha3_256;
 
-use crate::{hash_value::HashValue, types::AccountAddress};
+use super::{account::AccountAddress, hash_value::HashValue};
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
 /// transaction as well as the execution result of this transaction.

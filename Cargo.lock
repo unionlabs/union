@@ -4710,14 +4710,17 @@ name = "ics08-movement"
 version = "0.1.0"
 dependencies = [
  "bcs",
+ "cosmwasm-std 1.5.2",
  "hex",
  "hex-literal",
+ "ics008-wasm-client",
+ "protos",
  "serde",
- "serde_bytes",
  "serde_json",
  "sha2 0.10.8",
  "sha3",
  "thiserror",
+ "unionlabs",
 ]
 
 [[package]]
@@ -11055,6 +11058,7 @@ name = "unionlabs"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "bcs",
  "bip32",
  "bitvec",
  "borsh 1.5.1",
@@ -11089,6 +11093,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde-utils",
+ "serde_bytes",
  "serde_json",
  "sha2 0.10.8",
  "sha3",

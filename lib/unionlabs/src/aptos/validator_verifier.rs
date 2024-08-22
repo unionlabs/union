@@ -1,8 +1,7 @@
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
-use serde::{Deserialize, Deserializer, Serialize};
-
-use crate::types::{AccountAddress, PublicKey};
+use super::public_key::PublicKey;
+use crate::aptos::account::AccountAddress;
 
 /// Supports validation of signatures for known authors with individual voting powers. This struct
 /// can be used for all signature verification operations including block and network signature

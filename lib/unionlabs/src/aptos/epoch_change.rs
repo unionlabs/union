@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::state_proof::LedgerInfoWithSignatures;
+use super::ledger_info::LedgerInfoWithSignatures;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 /// A vector of LedgerInfo with contiguous increasing epoch numbers to prove a sequence of

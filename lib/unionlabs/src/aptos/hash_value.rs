@@ -1,16 +1,7 @@
-// Copyright © Aptos Foundation
-// Parts of the project are originally copyright © Meta Platforms, Inc.
-// SPDX-License-Identifier: Apache-2.0
-//
-// Disclaimer: This file is mostly copied from Aptos Foundation's codebase. There are some missing parts and
-// some alterations.
-
-use std::fmt;
+use core::fmt;
 
 use hex::FromHex;
-use hex_literal::hex;
 use serde::{de, ser, Deserialize, Serialize};
-use sha3::{Digest, Sha3_256};
 
 impl AsRef<[u8; HashValue::LENGTH]> for HashValue {
     fn as_ref(&self) -> &[u8; HashValue::LENGTH] {

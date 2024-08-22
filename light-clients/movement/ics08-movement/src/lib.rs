@@ -1,4 +1,6 @@
 mod block_info;
+mod client;
+mod contract;
 mod epoch_change;
 mod epoch_state;
 mod hash_value;
@@ -10,7 +12,6 @@ mod types;
 mod validator_verifier;
 
 // use aptos_types::{proof::TransactionInfoWithProof, state_proof::StateProof};
-use hash_value::HashValue;
 // use aptos_crypto::{hash::CryptoHash, HashValue};
 // use aptos_types::{
 //     account_address::AccountAddress,
@@ -20,14 +21,15 @@ use hash_value::HashValue;
 //     state_proof::StateProof,
 //     state_store::{state_key::StateKey, table::TableHandle},
 // };
-use hex_literal::hex;
-use sparse_merkle_proof::SparseMerkleProof;
-use state_proof::StateProof;
-use transaction_proof::TransactionInfoWithProof;
 // use sparse_merkle_proof::*;
 
 #[test]
 fn merkle_proof() {
+    use hash_value::HashValue;
+    use hex_literal::hex;
+    use sparse_merkle_proof::SparseMerkleProof;
+    use state_proof::StateProof;
+    use transaction_proof::TransactionInfoWithProof;
     // let internal = SparseMerkleInternalNode::new(HashValue::zero(), HashValue::zero()).hash();
     // let mine = sparse_merkle_proof::SparseMerkleInternalNode::new(
     //     sparse_merkle_proof::HashValue::zero(),

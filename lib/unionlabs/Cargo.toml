@@ -58,6 +58,8 @@ bs58                 = "0.4"
 near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
+serde_bytes = "0.11.6"
+bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 
 [dev-dependencies]
 rand       = "0.8.5"

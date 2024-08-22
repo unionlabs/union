@@ -6,7 +6,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::validator_verifier::ValidatorVerifier;
+use super::validator_verifier::ValidatorVerifier;
 
 /// EpochState represents a trusted validator set to validate messages from the specific epoch,
 /// it could be updated with EpochChangeProof.
