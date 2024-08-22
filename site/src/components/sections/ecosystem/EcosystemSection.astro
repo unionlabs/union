@@ -17,28 +17,29 @@ type Category =
 
 interface ItemData {
   name: string;
+  url: string;
   logo: string;
   cover: string;
   category: Category[]
 }
 
 const data: ItemData[] = [
-  {name: "Skip", logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png", cover: "https://walker-web.imgix.net/cms/Gradient_builder_2.jpg?auto=format,compress&w=1920&h=1200&fit=crop&dpr=1.5", category: ["nft", "dex", "wallet"]},
-  {name: "Landslide", logo: "", cover: "", category: ["interchain native", "defi"]},
-  {name: "Bera", logo: "", cover: "", category: ["interchain token", "wallet"]},
-  {name: "Arbitrum Token", logo: "", cover: "", category: ["rwa", "interchain token"]},
-  {name: "Polygon", logo: "", cover: "", category: ["nft"]},
-  {name: "Skip", logo: "", cover: "", category: ["nft"]},
-  {name: "Landslide", logo: "", cover: "", category: ["nft"]},
-  {name: "Bera", logo: "", cover: "", category: ["nft"]},
-  {name: "Skip", logo: "", cover: "", category: ["nft"]},
-  {name: "Landslide", logo: "", cover: "", category: ["nft"]},
-  {name: "Bera", logo: "", cover: "", category: ["nft"]},
-  {name: "Arbitrum", logo: "", cover: "", category: ["nft"]},
-  {name: "Polygon", logo: "", cover: "", category: ["nft"]},
-  {name: "Skip", logo: "", cover: "", category: ["nft"]},
-  {name: "Landslide", logo: "", cover: "", category: ["nft"]},
-  {name: "Bera", logo: "", cover: "", category: ["nft"]},
+  {name: "Skip", url: "https://google.com", logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png", cover: "https://walker-web.imgix.net/cms/Gradient_builder_2.jpg?auto=format,compress&w=1920&h=1200&fit=crop&dpr=1.5", category: ["nft", "dex", "wallet"]},
+  {name: "Landslide", url: "https://google.com", logo: "", cover: "", category: ["interchain native", "defi"]},
+  {name: "Bera", url: "https://google.com", logo: "", cover: "", category: ["interchain token", "wallet"]},
+  {name: "Arbitrum Token", url: "https://google.com", logo: "", cover: "", category: ["rwa", "interchain token"]},
+  {name: "Polygon", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Skip", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Landslide", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Bera", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Skip", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Landslide", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Bera", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Arbitrum", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Polygon", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Skip", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Landslide", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
+  {name: "Bera", url: "https://google.com", logo: "", cover: "", category: ["nft"]},
 ];
 
 const categories: Category[] = ["defi", "infrastructure", "interchain token", "wallet", "enterprise", "rwa", "nft", "dex", "interchain native"];
@@ -125,7 +126,7 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
         <!-- Cards Grid -->
         <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.map(item => (
-                  <div class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96">
+                  <a class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96" href={item.url}>
                       <img src={item.cover} alt={item.name} class="absolute w-full h-full object-cover object-center"/>
                       <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
                           <div class="flex w-full justify-between items-center">
@@ -140,7 +141,7 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
                           </div>
                           <H3 class="text-lg font-semibold">{item.name}</H3>
                       </div>
-                  </div>
+                  </a>
           ))}
         </div>
 
