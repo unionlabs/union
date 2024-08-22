@@ -121,7 +121,7 @@ query GetLatest10Packets @cached(ttl: 1) {
   ) {
     source_chain { display_name }
     destination_chain { display_name }
-		source_data
+		source_packet_hex
 		source_sequence
     destination_sequence
   }
