@@ -16,5 +16,5 @@ export let value: {
   {#if value.chain_id}<CellCopy value={value.chain_id}/>{/if}
   {#if value.connection_id}<CellCopy value={value.connection_id}/>{/if}
   {#if value.channel_id}<CellCopy value={value.channel_id}/>{/if}
-  {#if value.port_id}<CellCopy trunc={10} value={value.port_id}/>{/if}
+  <div class="text-muted-foreground">{#if value.port_id}<CellCopy trunc={10} value={value.port_id}/>{/if}</div>
 </div>

@@ -13181,6 +13181,42 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "from_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "source_block_hash",
             "type": {
               "kind": "SCALAR",
@@ -13307,6 +13343,42 @@ export type introspection = {
           },
           {
             "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_port_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -13755,6 +13827,34 @@ export type introspection = {
             }
           },
           {
+            "name": "from_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "from_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "from_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "from_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
             "name": "source_block_hash",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -13847,6 +13947,34 @@ export type introspection = {
           },
           {
             "name": "status",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "to_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "to_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "to_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "to_port_id",
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "String_comparison_exp"
@@ -16915,6 +17043,42 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "from_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "source_block_hash",
             "type": {
               "kind": "SCALAR",
@@ -17015,6 +17179,42 @@ export type introspection = {
           },
           {
             "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_port_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"
@@ -17129,6 +17329,42 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "from_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "from_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "source_block_hash",
             "type": {
               "kind": "SCALAR",
@@ -17235,6 +17471,42 @@ export type introspection = {
             },
             "args": [],
             "isDeprecated": false
+          },
+          {
+            "name": "to_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "to_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
           }
         ],
         "interfaces": []
@@ -17329,6 +17601,34 @@ export type introspection = {
           },
           {
             "name": "destination_transaction_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "from_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "from_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "from_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "from_port_id",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -17433,6 +17733,34 @@ export type introspection = {
             }
           },
           {
+            "name": "to_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "to_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "to_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "to_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "traces_aggregate",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -17495,6 +17823,22 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "from_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "from_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "from_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "from_port_id",
+            "isDeprecated": false
+          },
+          {
             "name": "source_block_hash",
             "isDeprecated": false
           },
@@ -17544,6 +17888,22 @@ export type introspection = {
           },
           {
             "name": "status",
+            "isDeprecated": false
+          },
+          {
+            "name": "to_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "to_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "to_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "to_port_id",
             "isDeprecated": false
           }
         ]
@@ -17898,6 +18258,34 @@ export type introspection = {
             }
           },
           {
+            "name": "from_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "from_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "from_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "from_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
             "name": "source_block_hash",
             "type": {
               "kind": "SCALAR",
@@ -17983,6 +18371,34 @@ export type introspection = {
           },
           {
             "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "to_port_id",
             "type": {
               "kind": "SCALAR",
               "name": "String"

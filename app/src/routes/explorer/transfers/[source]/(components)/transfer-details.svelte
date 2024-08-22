@@ -4,7 +4,7 @@ import request from "graphql-request"
 import {
   transfersBySourceHashBaseQueryDocument,
   transfersBySourceHashTracesAndHopsQueryDocument
-} from "$lib/graphql/queries/transfers.ts"
+} from "$lib/graphql/queries/transfer-details.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
 import MoveRightIcon from "virtual:icons/lucide/move-right"

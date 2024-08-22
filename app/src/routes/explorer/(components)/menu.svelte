@@ -3,16 +3,17 @@ import { page } from "$app/stores"
 import { cn } from "$lib/utilities/shadcn.ts"
 import type { LayoutData } from "../$types.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
+import { derived } from "svelte/store"
 
 export let tableRoutes: LayoutData["tables"]
 
-$: selectedTable = $page.route.id?.split("/").at(-1) || "transfers"
+const selectedTable = derived(page, $page => $page.route.id?.split("/").at(2))
 
 let alwaysCollapsedWidth = 580
 </script>
 
 <nav
-  class={cn("rounded-none flex flex-col items-start h-full dark:bg-background")}
+  class="rounded-none flex flex-col items-start h-full dark:bg-background"
 >
   {#each tableRoutes as { route, icon }}
     <Button
@@ -20,10 +21,9 @@ let alwaysCollapsedWidth = 580
       title={route}
       variant="link"
       href={`/explorer/${route}`}
-      data-sveltekit-reload={route === "transfers" ? true : "off"}
       class={cn(
         "mb-2 w-full flex justify-start gap-x-1",
-        selectedTable === route
+        $selectedTable === route
           ? "bg-foreground text-primary-foreground"
           : "bg-transparent"
       )}

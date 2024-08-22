@@ -3457,6 +3457,10 @@ type v0_packets {
   destination_timeout_timestamp: numeric
   destination_transaction_hash: String
   destination_transaction_index: String
+  from_chain_id: String
+  from_channel_id: String
+  from_connection_id: String
+  from_port_id: String
   source_block_hash: String
 
   """An object relationship"""
@@ -3476,6 +3480,10 @@ type v0_packets {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+  to_chain_id: String
+  to_channel_id: String
+  to_connection_id: String
+  to_port_id: String
 
   """An array relationship"""
   traces(
@@ -3553,6 +3561,10 @@ input v0_packets_bool_exp {
   destination_timeout_timestamp: numeric_comparison_exp
   destination_transaction_hash: String_comparison_exp
   destination_transaction_index: String_comparison_exp
+  from_chain_id: String_comparison_exp
+  from_channel_id: String_comparison_exp
+  from_connection_id: String_comparison_exp
+  from_port_id: String_comparison_exp
   source_block_hash: String_comparison_exp
   source_chain: v0_chains_bool_exp
   source_chain_id: Int_comparison_exp
@@ -3567,6 +3579,10 @@ input v0_packets_bool_exp {
   source_transaction_hash: String_comparison_exp
   source_transaction_index: String_comparison_exp
   status: String_comparison_exp
+  to_chain_id: String_comparison_exp
+  to_channel_id: String_comparison_exp
+  to_connection_id: String_comparison_exp
+  to_port_id: String_comparison_exp
   traces: v0_traces_bool_exp
 }
 
@@ -4102,6 +4118,10 @@ type v0_packets_max_fields {
   destination_timeout_timestamp: numeric
   destination_transaction_hash: String
   destination_transaction_index: String
+  from_chain_id: String
+  from_channel_id: String
+  from_connection_id: String
+  from_port_id: String
   source_block_hash: String
   source_chain_id: Int
   source_channel: String
@@ -4114,6 +4134,10 @@ type v0_packets_max_fields {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+  to_chain_id: String
+  to_channel_id: String
+  to_connection_id: String
+  to_port_id: String
 }
 
 """aggregate min on columns"""
@@ -4129,6 +4153,10 @@ type v0_packets_min_fields {
   destination_timeout_timestamp: numeric
   destination_transaction_hash: String
   destination_transaction_index: String
+  from_chain_id: String
+  from_channel_id: String
+  from_connection_id: String
+  from_port_id: String
   source_block_hash: String
   source_chain_id: Int
   source_channel: String
@@ -4141,6 +4169,10 @@ type v0_packets_min_fields {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+  to_chain_id: String
+  to_channel_id: String
+  to_connection_id: String
+  to_port_id: String
 }
 
 """Ordering options when selecting data from "v0.packets"."""
@@ -4158,6 +4190,10 @@ input v0_packets_order_by {
   destination_timeout_timestamp: order_by
   destination_transaction_hash: order_by
   destination_transaction_index: order_by
+  from_chain_id: order_by
+  from_channel_id: order_by
+  from_connection_id: order_by
+  from_port_id: order_by
   source_block_hash: order_by
   source_chain: v0_chains_order_by
   source_chain_id: order_by
@@ -4172,6 +4208,10 @@ input v0_packets_order_by {
   source_transaction_hash: order_by
   source_transaction_index: order_by
   status: order_by
+  to_chain_id: order_by
+  to_channel_id: order_by
+  to_connection_id: order_by
+  to_port_id: order_by
   traces_aggregate: v0_traces_aggregate_order_by
 }
 
@@ -4216,6 +4256,18 @@ enum v0_packets_select_column {
   destination_transaction_index
 
   """column name"""
+  from_chain_id
+
+  """column name"""
+  from_channel_id
+
+  """column name"""
+  from_connection_id
+
+  """column name"""
+  from_port_id
+
+  """column name"""
   source_block_hash
 
   """column name"""
@@ -4253,6 +4305,18 @@ enum v0_packets_select_column {
 
   """column name"""
   status
+
+  """column name"""
+  to_chain_id
+
+  """column name"""
+  to_channel_id
+
+  """column name"""
+  to_connection_id
+
+  """column name"""
+  to_port_id
 }
 
 """aggregate stddev on columns"""
@@ -4316,6 +4380,10 @@ input v0_packets_stream_cursor_value_input {
   destination_timeout_timestamp: numeric
   destination_transaction_hash: String
   destination_transaction_index: String
+  from_chain_id: String
+  from_channel_id: String
+  from_connection_id: String
+  from_port_id: String
   source_block_hash: String
   source_chain_id: Int
   source_channel: String
@@ -4329,6 +4397,10 @@ input v0_packets_stream_cursor_value_input {
   source_transaction_hash: String
   source_transaction_index: String
   status: String
+  to_chain_id: String
+  to_channel_id: String
+  to_connection_id: String
+  to_port_id: String
 }
 
 """aggregate sum on columns"""

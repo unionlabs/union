@@ -1,10 +1,10 @@
 import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import {
-  latestTransfersQueryDocument,
-  transfersTimestampFilterQueryDocument,
-  latestAddressTransfersQueryDocument,
-  addressTransfersTimestampFilterQueryDocument
+  transfersLatestQuery,
+  transfersTimestampQuery,
+  transfersByAddressesLatestQuery,
+  transfersByAddressesTimestampQuery
 } from "$lib/graphql/queries/transfers.ts"
 import { transferListDataFragment } from "$lib/graphql/fragments/transfers"
 import { raise } from "$lib/utilities/index.ts"
@@ -37,21 +37,23 @@ const transferTransform = (tx: FragmentOf<typeof transferListDataFragment>) => {
 
 type TransfersReturnType = Promise<Array<ReturnType<typeof transferTransform>>>
 
-export async function transfersLive({ limit = 12 }: { limit?: number } = {}): TransfersReturnType {
-  const { data } = await request(URLS.GRAPHQL, latestTransfersQueryDocument, {
+export async function transfersLatest({
+  limit = 12
+}: { limit?: number } = {}): TransfersReturnType {
+  const { data } = await request(URLS.GRAPHQL, transfersLatestQuery, {
     limit
   })
   return data.map(transferTransform)
 }
 
-export async function transfersByTimestamp({
+export async function transfersTimestamp({
   limit,
   timestamp
 }: {
   limit: number
   timestamp: string
 }): TransfersReturnType {
-  const { older, newer } = await request(URLS.GRAPHQL, transfersTimestampFilterQueryDocument, {
+  const { older, newer } = await request(URLS.GRAPHQL, transfersTimestampQuery, {
     limit: limit / 2,
     timestamp
   })
@@ -59,21 +61,21 @@ export async function transfersByTimestamp({
   return allTransfers.map(transferTransform)
 }
 
-export async function transfersLiveByAddress({
+export async function transfersByAddressesLatest({
   limit,
   addresses
 }: {
   limit: number
   addresses: Array<string>
 }): TransfersReturnType {
-  const { data } = await request(URLS.GRAPHQL, latestAddressTransfersQueryDocument, {
+  const { data } = await request(URLS.GRAPHQL, transfersByAddressesLatestQuery, {
     limit,
     addresses
   })
   return data.map(transferTransform)
 }
 
-export async function transfersByTimestampForAddresses({
+export async function transfersByAddressesTimestamp({
   limit,
   addresses,
   timestamp
@@ -82,15 +84,11 @@ export async function transfersByTimestampForAddresses({
   timestamp: string
   addresses: Array<string>
 }): TransfersReturnType {
-  const { older, newer } = await request(
-    URLS.GRAPHQL,
-    addressTransfersTimestampFilterQueryDocument,
-    {
-      limit: limit / 2,
-      timestamp,
-      addresses
-    }
-  )
+  const { older, newer } = await request(URLS.GRAPHQL, transfersByAddressesTimestampQuery, {
+    limit: limit / 2,
+    timestamp,
+    addresses
+  })
 
   const allTransfers = [...newer.toReversed(), ...older]
   return allTransfers.map(transferTransform)
@@ -112,20 +110,20 @@ export const transfersQuery = (
               placeholderData: keepPreviousData,
               staleTime: Number.POSITIVE_INFINITY,
               queryFn: async () =>
-                await transfersByTimestampForAddresses({
+                await transfersByAddressesTimestamp({
                   limit: pageSize,
                   timestamp: $timestamp as string,
                   addresses: normalizedAddresses
                 })
             }
           : {
-              queryKey: ["transfers", "live", ...normalizedAddresses],
+              queryKey: ["transfers", "latest", ...normalizedAddresses],
               refetchOnMount: true,
               placeholderData: keepPreviousData,
               refetchOnReconnect: true,
               refetchInterval: () => 5_000,
               queryFn: async () =>
-                await transfersLiveByAddress({
+                await transfersByAddressesLatest({
                   limit: pageSize,
                   addresses: normalizedAddresses
                 })
@@ -138,18 +136,18 @@ export const transfersQuery = (
               placeholderData: keepPreviousData,
               staleTime: Number.POSITIVE_INFINITY,
               queryFn: async () =>
-                await transfersByTimestamp({
+                await transfersTimestamp({
                   timestamp: $timestamp as string, // otherwise its disabled
                   limit: pageSize
                 })
             }
           : {
-              queryKey: ["transfers", "live"],
+              queryKey: ["transfers", "latest"],
               refetchOnMount: true,
               placeholderData: keepPreviousData,
               refetchOnReconnect: true,
               refetchInterval: () => 5_000,
-              queryFn: async () => await transfersLive({ limit: pageSize })
+              queryFn: async () => await transfersLatest({ limit: pageSize })
             }
     )
   )
