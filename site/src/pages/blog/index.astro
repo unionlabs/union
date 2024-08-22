@@ -40,15 +40,15 @@ const imageWithProtocol = (url: string) => `https:${url}`
 
 <SectionsLayout title="Union Blog" gapless>
 <BlogIntroSection />
-<div class="flex w-full justify-center">
+<div class="flex w-full justify-center pb-24">
   <div class="max-w-[1440px]">
-    <H1>The <span class="text-accent-500">latest.</span></h1>
+    <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
     <div class="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3">
       {
         publishedBlogPosts.map((blogPostEntry) => (
           <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
             <Card class="size-full border-none" padded>
-              <div class="border-2 w-full h-[12rem] rounded-tl-[6rem] overflow-hidden mb-2">
+              <div class="border-2 w-full h-[14rem] rounded-tl-[7rem] overflow-hidden mb-2">
                 <img 
                   src={blogPostEntry.cover}
                   class="w-full h-full object-cover border-none"
@@ -67,9 +67,9 @@ const imageWithProtocol = (url: string) => `https:${url}`
                     {saneDateTime(blogPostEntry?.fields?.date)}
                   </time>
                   <div class="h-full w-1 bg-white"/>
-                  <p class="uppercase font-mono truncate"><span class="hidden lg:inline-block">Author: </span>{blogPostEntry.fields.author}</p>
+                  <p class="uppercase font-mono truncate"><span class="hidden lg:inline-block mr-2">Author: </span>{blogPostEntry.fields.author}</p>
                 </div>
-                <p class="sm:text-lg text-white font-mono">
+                <p class="text-base text-white font-mono">
                   {blogPostEntry.fields.description}
                 </p>
               </div>
@@ -80,7 +80,6 @@ const imageWithProtocol = (url: string) => `https:${url}`
     </div>
   </div>
   </div>
-  <SocialsSection />
 </SectionsLayout>
 
 <style is:inline>
