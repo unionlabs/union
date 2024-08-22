@@ -23,7 +23,7 @@ interface ItemData {
 }
 
 const data: ItemData[] = [
-  {name: "Skip", logo: "", cover: "", category: ["nft", "dex", "wallet"]},
+  {name: "Skip", logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png", cover: "https://walker-web.imgix.net/cms/Gradient_builder_2.jpg?auto=format,compress&w=1920&h=1200&fit=crop&dpr=1.5", category: ["nft", "dex", "wallet"]},
   {name: "Landslide", logo: "", cover: "", category: ["interchain native", "defi"]},
   {name: "Bera", logo: "", cover: "", category: ["interchain token", "wallet"]},
   {name: "Arbitrum Token", logo: "", cover: "", category: ["rwa", "interchain token"]},
@@ -66,7 +66,7 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
         <div class="col-span-1">
             <button
                     id="filterToggle"
-                    class="w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center md:hidden"
+                    class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center md:hidden"
             >
                 Filter
                 <svg
@@ -125,16 +125,16 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
         <!-- Cards Grid -->
         <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.map(item => (
-                  <div class="border-2 rounded-tl-[6rem] shadow-md rounded-lg overflow-hidden">
-                      <img src={item.cover} alt={item.name} class="w-full h-48 object-cover"/>
-                      <div class="p-4">
-                          <div class="flex w-full justify-between">
+                  <div class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96">
+                      <img src={item.cover} alt={item.name} class="absolute w-full h-full object-cover object-center"/>
+                      <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
+                          <div class="flex w-full justify-between items-center">
                               <div class="flex flex-col gap-1">
                                 {item.category.map(cat => (
                                         <p class="text-sm w-fit bg-white text-black uppercase text-center font-mono font-bold px-2">{cat}</p>
                                 ))}
                               </div>
-                              <div class="rounded-full border-2 h-28 w-28 mb-2">
+                              <div class="rounded-full border-2 h-28 w-28 mb-2 flex items-center justify-center items-center">
                                   <img src={item.logo} alt={`${item.name} logo`} class="w-12 h-12 mb-2"/>
                               </div>
                           </div>
