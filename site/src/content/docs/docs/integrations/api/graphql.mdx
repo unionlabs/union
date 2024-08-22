@@ -98,14 +98,13 @@ query GetAllUserTransfers @cached(ttl: 1) {
 }
 
 ```
-Aggregate statistics about all transfers and packets are also available, such as the total amount of transfers:
+Aggregate statistics about all transfers and packets are also available, such as the total amount of transfers and packets:
 
 ```graphql
-query GetTransferCount @cached(ttl: 1) {
-  v1_transfers_aggregate {
-    aggregate {
-      count
-    }
+query {
+ 	v1_statistics {
+    name
+    value
   }
 }
 ```
