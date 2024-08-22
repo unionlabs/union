@@ -19,6 +19,7 @@ import { packetDetailsQueryDocument } from "$lib/graphql/queries/packet-details"
 const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
   const packet = readFragment(packetListDataFragment, p)
   return {
+    url: `/explorer/packets/${packet.from_chain_id}/${packet.from_connection_id}/${packet.from_channel_id}/${packet.source_sequence}`,
     source: {
       chain_id: packet.from_chain_id ?? "unknown",
       connection_id: packet.from_connection_id ?? "unknown",
