@@ -53,7 +53,7 @@ Caching can dramatically improve performance. Always add at least `@cached(ttl: 
 
 ### Transfers
 
-Transfers facilitated by Union (either `ucs-relay-1` or `ics20-1`) are queryable using v1_transfers.
+Transfers facilitated by Union (either `ucs01-relay-1` or `ics20-1`) are queryable using v1_transfers.
 
 ```graphql
 query GetLatest10Transfers @cached(ttl: 1) {
@@ -198,6 +198,24 @@ query GetAllSupportedAssets @cached(ttl: 1) {
     display_name
     display_symbol
     logo_uri
+  }
+}
+```
+
+The assets can also be grouped and filtered by specific chains.
+
+```graphql
+query GetAllSupportedAssetsByChain @cached(ttl: 1) {
+  v1_chains {
+    assets {
+      decimals
+      denom
+      display_name
+      display_symbol
+      gas_token
+      internal_chain_id
+      logo_uri
+    }
   }
 }
 ```
