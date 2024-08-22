@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use core::hash;
-
     use cosmwasm_std::{
         coin, coins,
         testing::{MockApi, MockStorage},
@@ -36,9 +34,13 @@ mod tests {
             ibc_packet_ack, ibc_packet_receive, ibc_packet_timeout, reply, IbcChannel,
         },
         msg::{ExecuteMsg, InstantiateMsg, TransferMsg},
-        protocol::{hash_denom,encode_denom_hash, Ics20Protocol, Ucs01Protocol},
+        protocol::{encode_denom_hash, hash_denom, Ics20Protocol, Ucs01Protocol},
         state::{ChannelInfo, CHANNEL_INFO},
     };
+
+    // cspell:ignore jvcc
+    const MOCK_CREATOR: &str = "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z";
+    const MOCK_CREATOR_DEST: &str = "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z";
 
     /// Creates a new BasicApp instance with a custom message type.
     ///
@@ -258,7 +260,6 @@ mod tests {
 
     fn create_factory_denom(contract_addr: &Addr, foreign_denom: &str) -> String {
         let hashed_denom = hash_denom(foreign_denom);
-        
 
         let normalized_denom: String = encode_denom_hash(hashed_denom);
         format!("factory/{}/{}", contract_addr, normalized_denom)
@@ -386,18 +387,14 @@ mod tests {
         let mut dst_app = create_app("dst");
 
         // Store and instantiate contracts in both apps
-        let (src_creator_addr, src_contract_addr) = store_and_instantiate_contract(
-            &mut src_app,
-            "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
-            funds.clone(),
-            "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
-        );
+        let (src_creator_addr, src_contract_addr) =
+            store_and_instantiate_contract(&mut src_app, MOCK_CREATOR, funds.clone(), MOCK_CREATOR);
 
         let (_, dst_contract_addr) = store_and_instantiate_contract(
             &mut dst_app,
-            "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
+            MOCK_CREATOR_DEST,
             vec![],
-            "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
+            MOCK_CREATOR_DEST,
         );
 
         // Create IBC connection and channel
@@ -472,18 +469,14 @@ mod tests {
         let mut src_app = create_app("src");
         let mut dst_app = create_app("dst");
 
-        let (src_creator_addr, src_contract_addr) = store_and_instantiate_contract(
-            &mut src_app,
-            "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
-            funds.clone(),
-            "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
-        );
+        let (src_creator_addr, src_contract_addr) =
+            store_and_instantiate_contract(&mut src_app, MOCK_CREATOR, funds.clone(), MOCK_CREATOR);
 
         let (_, dst_contract_addr) = store_and_instantiate_contract(
             &mut dst_app,
-            "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
+            MOCK_CREATOR_DEST,
             vec![],
-            "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
+            MOCK_CREATOR_DEST,
         );
 
         let (_, _, src_channel, dst_channel, src_port, dst_port) =
@@ -568,18 +561,14 @@ mod tests {
         let mut dst_app = create_app("dst");
         let mut fwd_app = create_app("fwd");
 
-        let (src_creator_addr, src_contract_addr) = store_and_instantiate_contract(
-            &mut src_app,
-            "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
-            funds.clone(),
-            "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
-        );
+        let (src_creator_addr, src_contract_addr) =
+            store_and_instantiate_contract(&mut src_app, MOCK_CREATOR, funds.clone(), MOCK_CREATOR);
 
         let (_, dst_contract_addr) = store_and_instantiate_contract(
             &mut dst_app,
-            "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
+            MOCK_CREATOR_DEST,
             vec![],
-            "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
+            MOCK_CREATOR_DEST,
         );
 
         let (_, fwd_contract_addr) = store_and_instantiate_contract(
@@ -749,18 +738,14 @@ mod tests {
         let mut dst_app = create_app("dst");
         let mut fwd_app = create_app("fwd");
 
-        let (src_creator_addr, src_contract_addr) = store_and_instantiate_contract(
-            &mut src_app,
-            "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
-            funds.clone(),
-            "src1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
-        );
+        let (src_creator_addr, src_contract_addr) =
+            store_and_instantiate_contract(&mut src_app, MOCK_CREATOR, funds.clone(), MOCK_CREATOR);
 
         let (_, dst_contract_addr) = store_and_instantiate_contract(
             &mut dst_app,
-            "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
+            MOCK_CREATOR_DEST,
             vec![],
-            "dst1a0j2w49wgs4f9wwk09t4qp35ls2vpx88jvcc2z",
+            MOCK_CREATOR_DEST,
         );
 
         let (_, fwd_contract_addr) = store_and_instantiate_contract(
@@ -822,7 +807,7 @@ mod tests {
             .unwrap();
 
         let broken_memo: String = format!(
-            "{{\"forward\":{{\"receiver\":\"{}\",\"port\":\"{}\",\"channel\":\"{}\"}}}}Thisis_broken_json",
+            "{{\"forward\":{{\"receiver\":\"{}\",\"port\":\"{}\",\"channel\":\"{}\"}}}}This_is_broken_json",
             fwd_contract_addr,
             fwd_dst_port,
             fwd_dst_channel
