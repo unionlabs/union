@@ -1,6 +1,10 @@
 import { URLS } from "$lib/constants"
 import { packetListDataFragment } from "$lib/graphql/fragments/packets"
-import { packetsLatestQuery, packetsTimestampQuery } from "$lib/graphql/queries/packets"
+import {
+  packetsByChainLatestQuery,
+  packetsLatestQuery,
+  packetsTimestampQuery
+} from "$lib/graphql/queries/packets"
 import { derived, type Readable } from "svelte/store"
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
 import { readFragment, type FragmentOf } from "gql.tada"
@@ -46,6 +50,42 @@ export async function packetsTimestamp({
 
   return [...newer.toReversed(), ...older].map(packetTransform)
 }
+
+export async function packetsByChainLatest({
+  limit,
+  chain_id
+}: { limit: number; chain_id: string }): PacketsReturnType {
+  const { v0_packets } = await request(URLS.GRAPHQL, packetsByChainLatestQuery, {
+    limit,
+    chain_id
+  })
+  return v0_packets.map(packetTransform)
+}
+
+export const packetsByChainIdQuery = (
+  limit: number,
+  chain_id: string,
+  timestamp: Readable<string | null>
+) =>
+  createQuery(
+    derived([timestamp], ([$timestamp]) =>
+      $timestamp
+        ? {
+            queryKey: ["packets", chain_id, $timestamp],
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            placeholderData: keepPreviousData,
+            staleTime: Number.POSITIVE_INFINITY,
+            queryFn: async () => await packetsTimestamp({ limit, timestamp: $timestamp })
+          }
+        : {
+            queryKey: ["packets", chain_id, "latest"],
+            refetchInterval: 5_000,
+            placeholderData: keepPreviousData,
+            queryFn: async () => await packetsByChainLatest({ limit, chain_id })
+          }
+    )
+  )
 
 export const packetsQuery = (limit: number, timestamp: Readable<string | null>) =>
   createQuery(

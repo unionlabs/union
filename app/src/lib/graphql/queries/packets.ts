@@ -37,3 +37,21 @@ export const packetsTimestampQuery = graphql(
   `,
   [packetListDataFragment]
 )
+
+export const packetsByChainLatestQuery = graphql(
+  /* GraphQL */ `
+    query PacketsByChainLatestQuery($limit: Int, $chain_id: String!) {
+      v0_packets(
+        limit: $limit 
+        order_by: { source_time: desc_nulls_last }
+        where: { _or: [
+          { from_chain_id: { _eq: $chain_id }}
+          { to_chain_id: { _eq: $chain_id }}
+        ]}
+        ) {
+        ...PacketListData
+      }
+    }
+  `,
+  [packetListDataFragment]
+)

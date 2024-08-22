@@ -4,17 +4,20 @@ import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import type { Chain } from "$lib/types.ts"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
-import { derived } from "svelte/store"
+import { derived, type Readable } from "svelte/store"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 
 import ExplorerTablePaginated from "$lib/components/explorer-table-paginated.svelte"
-import { packetsQuery } from "$lib/queries/packets"
+import { packetsQuery, packetsByChainIdQuery } from "$lib/queries/packets"
 import { timestamp } from "$lib/stores/page.ts"
 
 // export let chains: Array<Chain>
+export let chain_id: string | undefined = undefined
 // export let pageSize: number // must be even
 
-let packets = packetsQuery(12, timestamp)
+let packets = chain_id
+  ? packetsByChainIdQuery(12, chain_id, timestamp)
+  : packetsQuery(12, timestamp)
 let packetsDataStore = derived(packets, $packets => $packets.data ?? [])
 
 type PacketRow = UnwrapReadable<typeof packetsDataStore>[number]
