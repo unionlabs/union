@@ -3,6 +3,8 @@ import { packetListDataFragment } from "$lib/graphql/fragments/packets"
 import {
   packetsByChainLatestQuery,
   packetsByChainTimestampQuery,
+  packetsByChannelIdLatestQuery,
+  packetsByChannelIdTimestampQuery,
   packetsByConnectionIdLatestQuery,
   packetsByConnectionIdTimestampQuery,
   packetsLatestQuery,
@@ -82,7 +84,7 @@ export async function packetsByConnectionIdLatest({
   limit,
   chain_id,
   connection_id
-}: { limit: number; chain_id: string, connection_id: string }): PacketsReturnType {
+}: { limit: number; chain_id: string; connection_id: string }): PacketsReturnType {
   const { v0_packets } = await request(URLS.GRAPHQL, packetsByConnectionIdLatestQuery, {
     limit,
     chain_id,
@@ -96,7 +98,12 @@ export async function packetsByConnectionIdTimestamp({
   chain_id,
   connection_id,
   timestamp
-}: { limit: number; chain_id: string, connection_id: string, timestamp: string }): PacketsReturnType {
+}: {
+  limit: number
+  chain_id: string
+  connection_id: string
+  timestamp: string
+}): PacketsReturnType {
   const { newer, older } = await request(URLS.GRAPHQL, packetsByConnectionIdTimestampQuery, {
     limit,
     chain_id,
@@ -105,6 +112,70 @@ export async function packetsByConnectionIdTimestamp({
   })
   return [...newer.toReversed(), ...older].map(packetTransform)
 }
+
+export async function packetsByChannelIdLatest({
+  limit,
+  chain_id,
+  connection_id,
+  channel_id
+}: {
+  limit: number
+  chain_id: string
+  connection_id: string
+  channel_id: string
+}): PacketsReturnType {
+  const { v0_packets } = await request(URLS.GRAPHQL, packetsByChannelIdLatestQuery, {
+    limit,
+    chain_id,
+    connection_id,
+    channel_id
+  })
+  return v0_packets.map(packetTransform)
+}
+
+export async function packetsByChannelIdTimestamp({
+  limit,
+  chain_id,
+  connection_id,
+  channel_id,
+  timestamp
+}: {
+  limit: number
+  chain_id: string
+  connection_id: string
+  channel_id: string
+  timestamp: string
+}): PacketsReturnType {
+  const { newer, older } = await request(URLS.GRAPHQL, packetsByChannelIdTimestampQuery, {
+    limit,
+    chain_id,
+    connection_id,
+    channel_id,
+    timestamp
+  })
+  return [...newer.toReversed(), ...older].map(packetTransform)
+}
+
+export const packetsQuery = (limit: number, timestamp: Readable<string | null>) =>
+  createQuery(
+    derived([timestamp], ([$timestamp]) =>
+      $timestamp
+        ? {
+            queryKey: ["packets", $timestamp],
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            placeholderData: keepPreviousData,
+            staleTime: Number.POSITIVE_INFINITY,
+            queryFn: async () => await packetsTimestamp({ limit, timestamp: $timestamp })
+          }
+        : {
+            queryKey: ["packets", "latest"],
+            refetchInterval: 5_000,
+            placeholderData: keepPreviousData,
+            queryFn: async () => await packetsLatest({ limit })
+          }
+    )
+  )
 
 export const packetsByChainIdQuery = (
   limit: number,
@@ -148,34 +219,54 @@ export const packetsByConnectionIdQuery = (
             placeholderData: keepPreviousData,
             staleTime: Number.POSITIVE_INFINITY,
             queryFn: async () =>
-              await packetsByConnectionIdTimestamp({ limit, chain_id, connection_id, timestamp: $timestamp })
+              await packetsByConnectionIdTimestamp({
+                limit,
+                chain_id,
+                connection_id,
+                timestamp: $timestamp
+              })
           }
         : {
             queryKey: ["packets", chain_id, connection_id, "latest"],
             refetchInterval: 5_000,
             placeholderData: keepPreviousData,
-            queryFn: async () => await packetsByConnectionIdLatest({ limit, chain_id, connection_id })
+            queryFn: async () =>
+              await packetsByConnectionIdLatest({ limit, chain_id, connection_id })
           }
     )
   )
 
-export const packetsQuery = (limit: number, timestamp: Readable<string | null>) =>
+export const packetsByChannelIdQuery = (
+  limit: number,
+  chain_id: string,
+  connection_id: string,
+  channel_id: string,
+  timestamp: Readable<string | null>
+) =>
   createQuery(
     derived([timestamp], ([$timestamp]) =>
       $timestamp
         ? {
-            queryKey: ["packets", $timestamp],
+            queryKey: ["packets", chain_id, connection_id, channel_id, $timestamp],
             refetchOnMount: false,
             refetchOnReconnect: false,
             placeholderData: keepPreviousData,
             staleTime: Number.POSITIVE_INFINITY,
-            queryFn: async () => await packetsTimestamp({ limit, timestamp: $timestamp })
+            queryFn: async () =>
+              await packetsByChannelIdTimestamp({
+                limit,
+                chain_id,
+                connection_id,
+                channel_id,
+                timestamp: $timestamp
+              })
           }
         : {
-            queryKey: ["packets", "latest"],
+            queryKey: ["packets", chain_id, connection_id, channel_id, "latest"],
             refetchInterval: 5_000,
             placeholderData: keepPreviousData,
-            queryFn: async () => await packetsLatest({ limit })
+            queryFn: async () =>
+              await packetsByChannelIdLatest({ limit, chain_id, connection_id, channel_id })
           }
     )
   )
