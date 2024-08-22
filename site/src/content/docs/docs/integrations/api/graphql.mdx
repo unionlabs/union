@@ -207,13 +207,13 @@ The assets can also be grouped and filtered by specific chains.
 ```graphql
 query GetAllSupportedAssetsByChain @cached(ttl: 1) {
   v1_chains {
+    chain_id
     assets {
       decimals
       denom
       display_name
       display_symbol
       gas_token
-      internal_chain_id
       logo_uri
     }
   }
