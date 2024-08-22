@@ -45,3 +45,4 @@ ucs01-relay        = { workspace = true, features = ["library"] }
 ucs01-relay-api    = { workspace = true }
 unionlabs          = { workspace = true, features = ["ethabi"] }
 uuid               = { version = "1.5.0", features = ["serde", "v4"] }
+pin-utils = "0.1"

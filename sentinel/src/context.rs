@@ -17,7 +17,7 @@ use unionlabs::hash::H160;
 
 use crate::{
     chains::{Chain, Cosmos, Ethereum, IbcListen as _, IbcTransfer as _},
-    config::{AnyChainConfig, Config, EventTrackerConfig, IbcInteraction},
+    config::{AnyChainConfig, Config, EventTrackerConfig, IbcInteraction, Finalities},
 };
 
 pub type EventStateMap = Arc<DashMap<String, HashMap<i32, HashMap<u64, EventTrackerConfig>>>>;
@@ -26,9 +26,8 @@ pub type EventStateMap = Arc<DashMap<String, HashMap<i32, HashMap<u64, EventTrac
 pub struct Context {
     pub chains: HashMap<String, Chain>,
     pub interactions: Vec<IbcInteraction>,
-    pub event_state_map: EventStateMap,
-    pub arbitrum_forward_channel_id: String,
-    pub arbitrum_forward_expect_full_cycle: u64,
+    pub finalities: Vec<Finalities>,
+    pub event_state_map: EventStateMap
 }
 
 impl Context {
@@ -62,9 +61,8 @@ impl Context {
         Ok(Self {
             chains,
             interactions: config.interactions,
+            finalities: config.finalities,
             event_state_map, // Set the event_state_map field
-            arbitrum_forward_channel_id: config.arbitrum_forward_channel_id,
-            arbitrum_forward_expect_full_cycle: config.arbitrum_forward_expect_full_cycle,
         })
     }
 
@@ -267,14 +265,11 @@ impl Context {
 
     pub async fn check_packet_sequence(
         &self,
-        mut expect_full_cycle: u64,
-        key: &str,
-        arbitrum_forward_channel_id: &str,
-        arbitrum_forward_expect_full_cycle: u64,
+        finalities: Vec<Finalities>,
+        key: &str
     ) -> JoinHandle<()> {
         let event_state_map = Arc::clone(&self.event_state_map);
         let key = key.to_string(); // Clone the key to extend its lifetime
-        let arbitrum_forward_channel_id = arbitrum_forward_channel_id.to_string(); // Clone the channel ID to extend its lifetime
         tokio::spawn(async move {
             let mut interval = interval(Duration::from_secs(10)); // TODO: Make this configurable (?)
 
@@ -299,20 +294,26 @@ impl Context {
                                 tracing::info!("All events received for sequence: {}", sequence);
                                 Some(sequence)
                             } else {
+                                let mut total_expect_full_cycle = 2*56; // 36 second for union side, 2x block + proof = 2*3+30
+                                // + 20 second for we dont batch updates with msgs and x2 for the acknowledge part for entire other lc
+                                // update and packet tx submission
                                 if let Some(event_data) = event_map.get(&0) {
                                     if let Some(send_packet_time) = event_data.arrived_time {
                                         let now = chrono::Utc::now();
                                         let duration = now.signed_duration_since(send_packet_time);
-
-                                        if event_data.forwarded != "" {
-
-                                            let channel_hex = hex::encode(&arbitrum_forward_channel_id);
-                                            if event_data.forwarded.contains(&channel_hex){
-                                                expect_full_cycle = arbitrum_forward_expect_full_cycle;
-                                                tracing::info!("Expecting full cycle for arbitrum forward channel overwritten with: {}", expect_full_cycle);
+                                        for finality in &finalities {
+                                            if finality.channel == key {
+                                                total_expect_full_cycle += finality.finality;
+                                            }
+                                            if event_data.forwarded != "" {
+                                                let channel_hex = hex::encode(&finality.channel);
+                                                let channel_forwarded_hex = hex::encode(&finality.forward_channel);
+                                                if event_data.forwarded.contains(&channel_hex) || event_data.forwarded.contains(&channel_forwarded_hex) {
+                                                    total_expect_full_cycle += finality.finality;
+                                                }
                                             }
                                         }
-                                        if duration.num_seconds() >= (expect_full_cycle as i64) {
+                                        if duration.num_seconds() >= ((total_expect_full_cycle as f64) * 3.5) as i64 { // 3.5 times is the error case{
                                             tracing::error!(
                                                 "[TRANSFER FAILED] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
                                                 sequence,
@@ -320,6 +321,14 @@ impl Context {
                                                 event_map
                                             );
                                             Some(sequence)
+                                        } else if duration.num_seconds() >= (total_expect_full_cycle * 2) as i64 && duration.num_seconds() < (total_expect_full_cycle * 2) as i64 + 20  { //  times is the error case{
+                                            tracing::error!(
+                                                "[WARNING TRANSFER FAILED] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
+                                                sequence,
+                                                duration.num_seconds(),
+                                                event_map
+                                            );
+                                            None
                                         } else {
                                             None
                                         }
@@ -353,23 +362,11 @@ impl Context {
 
     pub async fn check_packet_sequences(&self) -> Vec<JoinHandle<()>> {
         let mut handles = vec![];
-        for interaction in &self.interactions {
-            let key = format!(
-                "{}->{}",
-                interaction.destination.channel, interaction.source.channel
-            );
-            let expect_full_cycle = interaction.expect_full_cycle;
-            tracing::info!(
-                "Calling check_packet_sequence for key: {}, {:?}",
-                key,
-                expect_full_cycle
-            );
+        for interaction in &self.finalities {
             let handle = self
                 .check_packet_sequence(
-                    expect_full_cycle,
-                    &key,
-                    self.arbitrum_forward_channel_id.clone().as_str(),
-                    self.arbitrum_forward_expect_full_cycle.clone(),
+                    self.finalities.clone(),
+                    &interaction.channel
                 )
                 .await;
             handles.push(handle);

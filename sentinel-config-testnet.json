@@ -36,17 +36,17 @@
     },
     "bera": {
       "ethereum": {
-        "enabled": false,
-        "ibc_handler_address": "0x4e86d3eb0f4d8ddccec2b8fa5ccfc8170e8ac3dc",
+        "enabled": true,
+        "ibc_handler_address": "0x851c0EB711fe5C7c8fe6dD85d9A0254C8dd11aFD",
         "signers": [
           {
             "raw": "0x09368c5c0c4d6427bea98bc2ef0ee4a25442fb798633d2d91437a9dcc64fc5b9"
           }
         ],
-        "eth_rpc_api": "wss://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1",
+        "eth_rpc_api": "wss://indulgent-summer-meme.bera-bartio.quiknode.pro/05bc1f67a8b1031882ce0215d37a195e2199c4da/",
         "transfer_module": {
           "type": "contract",
-          "address": "0x0e7aee8a4109b1c1916281d25f43b937f103a409"
+          "address": "0x6F270608fB562133777AF0f71F6386ffc1737C30"
         },
         "master_account": {
           "raw": "0xc56de6bf91c78afb4757055a080e6c3a53f83e588750e39196f4e65931bc86a2"
@@ -113,6 +113,36 @@
           "address": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h"
         }
       }
+    },
+    "stride": {
+      "cosmos": {
+        "enabled": true,
+        "chain_config": {
+          "keyring": {
+            "name": "stride-testnet",
+            "keys": [
+              {
+                "type": "raw",
+                "name": "stride-testnet-key0",
+                "key": "0xe6b7f3906f38ea3547c91ed2f5eab850d27dd5672424fa4759e471be45598860"
+              }
+            ]
+          },
+
+          "gas_config": {
+            "gas_price": "1.0",
+            "gas_denom": "ustrd",
+            "gas_multiplier": "1.1",
+            "max_gas": 400000
+          },
+          "fee_denom": "ustrd",
+          "ws_url": "wss://stride-testnet-rpc.polkachu.com/websocket",
+          "grpc_url": "http://stride-testnet-grpc.polkachu.com:12290"
+        },
+        "transfer_module": {
+          "type": "native"
+                }
+      }
     }
   },
   "interactions": [
@@ -165,7 +195,11 @@
     "amount_max": 10000000,
     "max_retry": 3
   },
-
-  "arbitrum_forward_channel_id": "channel-141",
-  "arbitrum_forward_expect_full_cycle": 5400
+  "finalities":[
+    {"chain": "arbitrum", "channel": "channel-141", "forward_channel": "channel-0", "finality": 7200},
+    {"chain": "bera", "channel": "channel-86", "forward_channel": "channel-3", "finality": 60},
+    {"chain": "sepolia", "channel": "channel-82", "forward_channel": "channel-90", "finality": 720},
+    {"chain": "osmosis", "channel": "channel-40", "forward_channel": "channel-8075", "finality": 60},
+    {"chain": "stride", "channel": "channel-103", "forward_channel": "channel-50", "finality": 60}
+  ]
 }

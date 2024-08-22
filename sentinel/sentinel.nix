@@ -27,11 +27,8 @@
         chain_configs = mkOption {
           type = types.attrs;
         };
-        arbitrum_forward_expect_full_cycle = mkOption {
-          type = types.int;
-        };
-        arbitrum_forward_channel_id = mkOption {
-          type = types.str;
+        finalities = mkOption {
+          type = types.listOf types.attrs;
         };
         interactions = mkOption {
           type = types.listOf types.attrs;
@@ -53,8 +50,7 @@
           configJson = pkgs.writeText "config.json" (builtins.toJSON {
             chain_configs = cfg.chain_configs;
             interactions = cfg.interactions;
-            arbitrum_forward_expect_full_cycle = cfg.arbitrum_forward_expect_full_cycle;
-            arbitrum_forward_channel_id = cfg.arbitrum_forward_channel_id;
+            finalities = cfg.finalities;
           });
 
         in

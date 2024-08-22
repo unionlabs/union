@@ -162,22 +162,30 @@ pub trait IbcListen: Send + Sync {
         }
 
         Box::pin(async move {
-            let (packet_sequence, key) = match &ibc_event {
+            let (packet_sequence, key_src, key_dst) = match &ibc_event {
                 IbcEvent::SendPacket(e) => (
                     e.packet_sequence,
-                    format!("{}->{}", e.packet_src_channel, e.packet_dst_channel),
+                    format!("{}",e.packet_src_channel),
+                    format!("{}",e.packet_dst_channel)
+                    // format!("{}->{}", e.packet_src_channel, e.packet_dst_channel),
                 ),
                 IbcEvent::RecvPacket(e) => (
                     e.packet_sequence,
-                    format!("{}->{}", e.packet_src_channel, e.packet_dst_channel),
+                    format!("{}",e.packet_dst_channel),
+                    format!("{}",e.packet_src_channel)
+                    // format!("{}->{}", e.packet_src_channel, e.packet_dst_channel),
                 ),
                 IbcEvent::WriteAcknowledgement(e) => (
                     e.packet_sequence,
-                    format!("{}->{}", e.packet_src_channel, e.packet_dst_channel),
+                    format!("{}",e.packet_dst_channel),
+                    format!("{}",e.packet_src_channel)
+                    // format!("{}->{}", e.packet_src_channel, e.packet_dst_channel),
                 ),
                 IbcEvent::AcknowledgePacket(e) => (
                     e.packet_sequence,
-                    format!("{}->{}", e.packet_src_channel, e.packet_dst_channel),
+                    format!("{}",e.packet_src_channel),
+                    format!("{}",e.packet_dst_channel)
+                    // format!("{}->{}", e.packet_src_channel, e.packet_dst_channel),
                 ),
                 // Handle other events if necessary,
                 _ => {
@@ -185,6 +193,10 @@ pub trait IbcListen: Send + Sync {
                 }
             };
 
+            let mut key = &key_dst;
+            if chain_id == "union-testnet-8" {
+                key = &key_src;
+            }
             let sequence: i32 = packet_sequence.get() as i32;
 
             let mut entry = event_state_map
@@ -210,18 +222,42 @@ pub trait IbcListen: Send + Sync {
 
             match ibc_event {
                 IbcEvent::SendPacket(event) => {
+
+                    // tracing::info!("whole_data: {:?}", whole_data);
+                    // tracing::info!("forward_hex: {:?}", forward_hex);
                     if let Some(event_data) = sequence_entry.get_mut(&0) {
-                        if event.packet_data_hex.len() >= 72 {
-                            match std::str::from_utf8(&event.packet_data_hex[72..]) {
+                        // match std::str::from_utf8(&event.packet_data_hex) {
+                        //     Ok(pfm_part) => {
+                        //         tracing::info!("pfm_part {:?}----{:?}", pfm_part, &event.packet_data_hex);
+                        //     }
+                        //     Err(e) => {tracing::warn!("some err: {:?}. data: {:?}, length:{:?}", e, &event.packet_data_hex, event.packet_data_hex.len());}
+                        // }
+
+                        // if event.packet_data_hex.len() >= 72 {
+                        //     match std::str::from_utf8(&event.packet_data_hex[72..]) {
+                        //         Ok(pfm_part) => {
+                        //             let forward_hex = hex::encode("forward");
+                        //             if pfm_part.contains(&forward_hex) {
+                        //                 tracing::info!("Pfm part contains forward: {:?}", pfm_part);
+                        //                 event_data.forwarded = pfm_part.to_string();
+                        //             }
+                        //         }
+                        //         Err(_) => {}
+                        //     }
+                        // }
+                        let forward_hex = hex::encode("forward");
+                        let whole_data = hex::encode(&event.packet_data_hex);
+
+                        if whole_data.contains(&forward_hex) {
+                            event_data.forwarded = whole_data.to_string();
+                        } else {
+                            match std::str::from_utf8(&event.packet_data_hex) {
                                 Ok(pfm_part) => {
-                                    let forward_hex = hex::encode("forward");
-                                    if pfm_part.contains(&forward_hex) {
-                                        tracing::info!("Pfm part contains forward: {:?}", pfm_part);
-                                        event_data.forwarded = pfm_part.to_string();
-                                    }
+                                    event_data.forwarded = pfm_part.to_string();
                                 }
                                 Err(_) => {}
                             }
+
                         }
                         event_data.arrived = true;
                         event_data.arrived_time = Some(chrono::Utc::now());
@@ -623,51 +659,58 @@ impl IbcListen for Ethereum {
 }
 impl IbcListen for Cosmos {
     async fn listen(&self, event_state_map: &EventStateMap) {
-        tracing::info!("Listening to Cosmos chain events");
-        let mut subs = self
-            .chain
-            .tm_client
-            .subscribe(tendermint_rpc::query::EventType::Tx.into())
-            .await
-            .unwrap();
         loop {
-            tokio::select! {
-                Some(event_result) = subs.next() => {
-                    match event_result {
-                        Ok(event) => {
-                            if let Some(ref events) = event.events {
-                                if let Some(heights) = events.get("tx.height") {
-                                    if let Some(height) = heights.first() {
-                                        let block_number: u64 = height.parse().expect("Failed to parse block number");
-                                        // tracing::info!("Fetched cosmos Block number: {}", block_number);
-
-                                        if let Some(tx_hashes) = events.get("tx.hash") {
-                                            if let Some(tx_hash) = tx_hashes.first() {
-                                                let tx_hash = H256::from_str(tx_hash).expect("Failed to parse transaction hash");
-
-                                                match event.data {
-                                                    EventData::Tx { tx_result, .. } => {
-                                                        for event in tx_result.result.events {
-                                                            let some_event = IbcEvent::try_from_tendermint_event(TendermintEvent {
-                                                                ty: event.kind,
-                                                                attributes: event.attributes
-                                                                    .into_iter()
-                                                                    .map(|attr| EventAttribute {
-                                                                        key: attr.key,
-                                                                        value: attr.value,
-                                                                        index: attr.index,
-                                                                    })
-                                                                    .collect(),
-                                                            });
-
-                                                            if let Some(Ok(ibc_event)) = some_event {
-                                                                self.handle_ibc_event(ibc_event, &event_state_map, block_number, tx_hash.into(), self.chain.chain_id.clone()).await;
-                                                            }
+            tracing::info!("Listening to Cosmos chain events: {:?} -- {:?}", self.chain, self.chain.tm_client);
+            // crash by design? loop is not fixing the issue.
+            // let mut subs = self.chain.tm_client.subscribe(tendermint_rpc::query::EventType::Tx.into()).await;
+            
+            
+            let subs = match self.chain.tm_client.subscribe(tendermint_rpc::query::EventType::Tx.into()).await {
+                Ok(subs) => subs,
+                Err(e) => {
+                    tracing::error!("Failed to subscribe: {:?}", e);
+                    let new_chain = chain_utils::cosmos::Cosmos::new(self.chain_config.clone().chain_config).await.unwrap();
+                    new_chain.tm_client.subscribe(tendermint_rpc::query::EventType::Tx.into()).await.unwrap()
+                    // continue; // Optionally add a delay here for reconnection attempts
+                }
+            };
+            
+            pin_utils::pin_mut!(subs);
+            
+            while let Some(event_result) = subs.next().await {
+                match event_result {
+                    Ok(event) => {
+                        if let Some(ref events) = event.events {
+                            if let Some(heights) = events.get("tx.height") {
+                                if let Some(height) = heights.first() {
+                                    let block_number: u64 = height.parse().expect("Failed to parse block number");
+                                    
+                                    if let Some(tx_hashes) = events.get("tx.hash") {
+                                        if let Some(tx_hash) = tx_hashes.first() {
+                                            let tx_hash = H256::from_str(tx_hash).expect("Failed to parse transaction hash");
+    
+                                            match event.data {
+                                                EventData::Tx { tx_result, .. } => {
+                                                    for event in tx_result.result.events {
+                                                        let some_event = IbcEvent::try_from_tendermint_event(TendermintEvent {
+                                                            ty: event.kind,
+                                                            attributes: event.attributes
+                                                                .into_iter()
+                                                                .map(|attr| EventAttribute {
+                                                                    key: attr.key,
+                                                                    value: attr.value,
+                                                                    index: attr.index,
+                                                                })
+                                                                .collect(),
+                                                        });
+    
+                                                        if let Some(Ok(ibc_event)) = some_event {
+                                                            self.handle_ibc_event(ibc_event, &event_state_map, block_number, tx_hash.into(), self.chain.chain_id.clone()).await;
                                                         }
                                                     }
-                                                    _ => {
-                                                        tracing::error!("Unhandled event type: {:?}", event);
-                                                    }
+                                                }
+                                                _ => {
+                                                    tracing::error!("Unhandled event type: {:?}", event);
                                                 }
                                             }
                                         }
@@ -675,13 +718,15 @@ impl IbcListen for Cosmos {
                                 }
                             }
                         }
-                        Err(e) => {
-                            tracing::error!("Error while receiving event: {:?}", e);
-                        }
                     }
-                },
-                else => break,
+                    Err(e) => {
+                        tracing::error!("Error while receiving event: {:?}", e);
+                        break; // Exit the inner loop to restart the subscription
+                    }
+                }
             }
+    
+            tracing::error!("Subscription ended. Reconnecting...");
         }
     }
 
@@ -1305,6 +1350,7 @@ impl Ethereum {
 #[derive(Debug, Clone)]
 pub struct Cosmos {
     pub chain: chain_utils::cosmos::Cosmos,
+    pub chain_config: CosmosConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -1480,11 +1526,11 @@ impl IbcTransfer for Cosmos {
 
 impl Cosmos {
     pub async fn new(config: CosmosConfig) -> Self {
-        let cosmos = chain_utils::cosmos::Cosmos::new(config.chain_config)
+        let cosmos = chain_utils::cosmos::Cosmos::new(config.clone().chain_config)
             .await
             .unwrap();
 
-        Cosmos { chain: cosmos }
+        Cosmos { chain: cosmos, chain_config: config.clone()}
     }
 }
 

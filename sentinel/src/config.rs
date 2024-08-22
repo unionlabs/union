@@ -13,8 +13,7 @@ pub struct Config {
     pub chain_configs: HashMap<String, AnyChainConfig>,
     pub interactions: Vec<IbcInteraction>,
     pub single_interaction: Option<IbcInteraction>, // This is just to send single transaction and close the program
-    pub arbitrum_forward_channel_id: String,
-    pub arbitrum_forward_expect_full_cycle: u64,
+    pub finalities: Vec<Finalities>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -34,6 +33,14 @@ pub struct EthereumConfig {
     pub signers: Vec<PrivateKey<ecdsa::SigningKey>>,
     pub enabled: bool,
     pub master_account: PrivateKey<ecdsa::SigningKey>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Finalities {
+    pub chain: String,
+    pub channel: String,
+    pub forward_channel: String,
+    pub finality: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

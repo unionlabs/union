@@ -8350,6 +8350,7 @@ dependencies = [
  "futures",
  "hex",
  "parking_lot 0.11.2",
+ "pin-utils",
  "prost 0.12.6",
  "protos",
  "queue-msg",
