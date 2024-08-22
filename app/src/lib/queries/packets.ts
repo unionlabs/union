@@ -14,6 +14,7 @@ import { derived, type Readable } from "svelte/store"
 import { createQuery, keepPreviousData } from "@tanstack/svelte-query"
 import { readFragment, type FragmentOf } from "gql.tada"
 import request from "graphql-request"
+import { packetDetailsQueryDocument } from "$lib/graphql/queries/packet-details"
 
 const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
   const packet = readFragment(packetListDataFragment, p)
@@ -280,3 +281,22 @@ export const packetsByChannelIdQuery = (
           }
     )
   )
+
+export const packetDetailsQuery = (
+  chain_id: string,
+  connection_id: string,
+  channel_id: string,
+  sequence: number
+) =>
+  createQuery({
+    queryKey: ["packets", chain_id, connection_id, channel_id, sequence],
+    refetchInterval: 5_000,
+    placeholderData: keepPreviousData,
+    queryFn: async () =>
+      await request(URLS.GRAPHQL, packetDetailsQueryDocument, {
+        chain_id,
+        connection_id,
+        channel_id,
+        sequence
+      })
+  })
