@@ -8,12 +8,14 @@ export const packetListDataFragment = graphql(/* GraphQL */ `
     from_port_id
     source_block_hash
     source_time
+    source_sequence
     to_chain_id
     to_connection_id
     to_channel_id
     to_port_id
     destination_block_hash
     destination_time
+    destination_sequence
     status
   }
 `)

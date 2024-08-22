@@ -22,13 +22,23 @@ const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
       chain_id: packet.from_chain_id ?? "unknown",
       connection_id: packet.from_connection_id ?? "unknown",
       channel_id: packet.from_channel_id ?? "unknown",
-      port_id: packet.from_port_id ?? "unknown"
+      port_id: packet.from_port_id ?? "unknown",
+      sequence: packet.source_sequence ?? "unknown"
     },
     destination: {
       chain_id: packet.to_chain_id ?? "unknown",
       connection_id: packet.to_connection_id ?? "unknown",
       channel_id: packet.to_channel_id ?? "unknown",
-      port_id: packet.to_port_id ?? "unknown"
+      port_id: packet.to_port_id ?? "unknown",
+      sequence: packet.destination_sequence ?? "unknown"
+    },
+    source_sequence: {
+      sequence: packet.source_sequence,
+      timestamp: packet.source_time
+    },
+    destination_sequence: {
+      sequence: packet.destination_sequence,
+      timestamp: packet.destination_time
     },
     timestamp: packet.source_time,
     destination_time: packet.destination_time

@@ -4,6 +4,7 @@ import { flexRender, type ColumnDef } from "@tanstack/svelte-table"
 import type { Chain } from "$lib/types.ts"
 import type { UnwrapReadable } from "$lib/utilities/types.ts"
 import CellTimestamp from "$lib/components/table-cells/cell-timestamp.svelte"
+import CellSequence from "$lib/components/table-cells/cell-sequence.svelte"
 import { derived, type Readable } from "svelte/store"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 
@@ -45,14 +46,14 @@ const columns: Array<ColumnDef<PacketRow>> = [
     cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
   },
   {
-    header: () => "Source Time",
-    accessorKey: "timestamp",
-    cell: info => flexRender(CellTimestamp, { value: info.getValue() })
+    header: () => "Source Sequence",
+    accessorKey: "source_sequence",
+    cell: info => flexRender(CellSequence, { value: info.getValue() })
   },
   {
-    header: () => "Destination Time",
-    accessorKey: "destination_time",
-    cell: info => flexRender(CellTimestamp, { value: info.getValue() })
+    header: () => "Destination Sequence",
+    accessorKey: "destination_sequence",
+    cell: info => flexRender(CellSequence, { value: info.getValue() })
   }
 ]
 </script>
