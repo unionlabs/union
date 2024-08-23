@@ -4,13 +4,12 @@ use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
 use queue_msg::{
     aggregation::{SubsetOf, UseAggregate},
-    fetch, queue_msg,
+    call, queue_msg,
 };
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
-    data::{Data, DecodedClientStateMeta, IbcMessage, OrderedMsgUpdateClients},
-    effect::{Effect, Msg, WithChainId},
-    fetch::FetchUpdateHeaders,
+    call::FetchUpdateHeaders,
+    data::{Data, DecodedClientStateMeta, IbcMessage, OrderedMsgUpdateClients, WithChainId},
     VoyagerMessage,
 };
 
@@ -43,7 +42,7 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
         Self { target_height }: Self,
         hlist_pat![client_meta]: Self::AggregatedData,
     ) -> queue_msg::Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
-        fetch(FetchUpdateHeaders {
+        call(FetchUpdateHeaders {
             chain_id: client_meta.state.chain_id,
             update_from: client_meta.state.height,
             update_to: target_height,
@@ -63,7 +62,11 @@ pub struct MakeBatchTransaction {
 }
 
 impl MakeBatchTransaction {
-    pub fn do_aggregate(self, chain_id: String, datas: VecDeque<Data<ModuleData>>) -> Effect {
+    pub fn do_aggregate(
+        self,
+        chain_id: String,
+        datas: VecDeque<Data<ModuleData>>,
+    ) -> Data<ModuleData> {
         let msgs = datas
             .into_iter()
             .map(|d| IbcMessage::try_from_super(d).unwrap())
@@ -82,25 +85,14 @@ impl MakeBatchTransaction {
         //     (IbcMessage::TimeoutPacket(_), IbcMessage::TimeoutPacket(_)) => todo!(),
         // });
 
-        Effect::Batch(WithChainId {
+        Data::IdentifiedIbcMessageBatch(WithChainId {
             chain_id,
             message: self
                 .updates
                 .updates
                 .into_iter()
-                .map(|(_, msg)| Msg::from(msg))
-                .chain(msgs.into_iter().map(|msg| match msg {
-                    IbcMessage::ConnectionOpenTry(msg) => Msg::ConnectionOpenTry(msg),
-                    IbcMessage::ConnectionOpenAck(msg) => Msg::ConnectionOpenAck(msg),
-                    IbcMessage::ConnectionOpenConfirm(msg) => Msg::ConnectionOpenConfirm(msg),
-                    IbcMessage::ChannelOpenTry(msg) => Msg::ChannelOpenTry(msg),
-                    IbcMessage::ChannelOpenAck(msg) => Msg::ChannelOpenAck(msg),
-                    IbcMessage::ChannelOpenConfirm(msg) => Msg::ChannelOpenConfirm(msg),
-                    IbcMessage::RecvPacket(msg) => Msg::RecvPacket(msg),
-                    IbcMessage::AcknowledgePacket(msg) => Msg::AckPacket(msg),
-                    IbcMessage::TimeoutPacket(msg) => Msg::TimeoutPacket(msg),
-                    _ => panic!("unexpected ibc message: {msg:?}"),
-                }))
+                .map(|(_, msg)| IbcMessage::from(msg))
+                .chain(msgs)
                 .collect::<Vec<_>>(),
         })
     }

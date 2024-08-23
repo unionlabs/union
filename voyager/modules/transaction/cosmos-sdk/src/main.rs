@@ -12,7 +12,7 @@ use jsonrpsee::{
     types::ErrorObject,
 };
 use prost::Message;
-use queue_msg::{effect, noop, Op};
+use queue_msg::{call, noop, optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tracing::{debug, error, info, instrument, warn};
@@ -35,9 +35,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    data::Data,
-    effect::{Effect, Msg, WithChainId},
-    plugin::{PluginInfo, PluginKind, PluginModuleServer, TransactionSubmissionModuleServer},
+    call::Call,
+    data::{Data, IbcMessage, WithChainId},
+    plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
     run_module_server, VoyagerMessage,
 };
 
@@ -53,7 +53,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    run_module_server(Module::new, TransactionSubmissionModuleServer::into_rpc).await
+    run_module_server(Module::new, OptimizationPassPluginServer::into_rpc).await
 }
 
 #[derive(Debug, Clone)]
@@ -126,7 +126,7 @@ impl Module {
 
     pub async fn do_send_transaction(
         &self,
-        mut msgs: Vec<Msg>,
+        msgs: Vec<IbcMessage>,
     ) -> Result<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>, BroadcastTxCommitError>
     {
         let res = self
@@ -251,41 +251,27 @@ impl Module {
             })
             .await;
 
-        let rewrap_msg = || {
-            if msgs.len() > 1 {
-                Effect::Batch(WithChainId {
-                    chain_id: self.chain_id.clone(),
-                    message: msgs,
-                })
-            } else {
-                Effect::Single(WithChainId {
-                    chain_id: self.chain_id.clone(),
-                    message: msgs.pop().unwrap(),
-                })
-            }
-        };
+        let rewrap_msg = || Call::plugin(self.plugin_name(), ModuleFetch::SubmitTransaction(msgs));
 
         match res {
-            Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => {
-                Ok(effect(rewrap_msg()))
-            }
-            Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(effect(rewrap_msg())),
+            Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => Ok(call(rewrap_msg())),
+            Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(call(rewrap_msg())),
             Some(Err(BroadcastTxCommitError::SimulateTx(err))) => {
                 error!(
                     error = %ErrorReporter(err),
                     "transaction simulation failed, message will be requeued and retried"
                 );
 
-                Ok(effect(rewrap_msg()))
+                Ok(call(rewrap_msg()))
             }
             Some(Err(BroadcastTxCommitError::QueryLatestHeight(err))) => {
                 error!(error = %ErrorReporter(err), "error querying latest height");
 
-                Ok(effect(rewrap_msg()))
+                Ok(call(rewrap_msg()))
             }
             Some(res) => res.map(|()| noop()),
             // None => Ok(seq([defer_relative(1), effect(WithChainId{chain_id: self.chain_id.clone(), message: msg})])),
-            None => Ok(effect(rewrap_msg())),
+            None => Ok(call(rewrap_msg())),
         }
     }
 
@@ -579,7 +565,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
             name: self.plugin_name(),
-            kind: Some(PluginKind::Transaction),
+            kind: None,
             interest_filter: None,
         })
     }
@@ -589,7 +575,12 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
         &self,
         msg: ModuleFetch,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        match msg {}
+        match msg {
+            ModuleFetch::SubmitTransaction(msgs) => self
+                .do_send_transaction(msgs)
+                .await
+                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)),
+        }
     }
 
     #[instrument]
@@ -603,29 +594,61 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
 }
 
 #[async_trait]
-impl TransactionSubmissionModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
-    fn register(&self) -> RpcResult<String> {
-        Ok(self.chain_id.clone())
-    }
-
-    async fn send_transaction(
+impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+    #[instrument]
+    fn run_pass(
         &self,
-        msg: Vec<Msg>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        self.do_send_transaction(msg)
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>
+    {
+        Ok(OptimizationResult {
+            optimize_further: vec![],
+            ready: msgs
+                .into_iter()
+                .enumerate()
+                .map(|(idx, msg)| {
+                    (
+                        vec![idx],
+                        match msg {
+                            Op::Data(Data::IdentifiedIbcMessage(WithChainId {
+                                chain_id,
+                                message,
+                            })) => {
+                                assert_eq!(chain_id, self.chain_id.to_string());
+
+                                call(Call::plugin(
+                                    self.plugin_name(),
+                                    ModuleFetch::SubmitTransaction(vec![message]),
+                                ))
+                            }
+                            Op::Data(Data::IdentifiedIbcMessageBatch(WithChainId {
+                                chain_id,
+                                message,
+                            })) => {
+                                assert_eq!(chain_id, self.chain_id.to_string());
+
+                                call(Call::plugin(
+                                    self.plugin_name(),
+                                    ModuleFetch::SubmitTransaction(message),
+                                ))
+                            }
+                            _ => panic!("unexpected message: {msg:?}"),
+                        },
+                    )
+                })
+                .collect(),
+        })
     }
 }
 
 fn process_msgs(
-    msgs: Vec<Msg>,
+    msgs: Vec<IbcMessage>,
     signer: &CosmosSigner,
-) -> Vec<(Msg, protos::google::protobuf::Any)> {
+) -> Vec<(IbcMessage, protos::google::protobuf::Any)> {
     msgs.into_iter()
         .map(|msg| {
             let encoded = match msg.clone() {
-                Msg::ConnectionOpenInit(message) => {
+                IbcMessage::ConnectionOpenInit(message) => {
                     mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenInit {
                         client_id: message.client_id.to_string(),
                         counterparty: Some(message.counterparty.into()),
@@ -634,7 +657,7 @@ fn process_msgs(
                         delay_period: message.delay_period,
                     })
                 }
-                Msg::ConnectionOpenTry(message) => {
+                IbcMessage::ConnectionOpenTry(message) => {
                     mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenTry {
                         client_id: message.client_id.to_string(),
                         client_state: Some(
@@ -658,7 +681,7 @@ fn process_msgs(
                         ..Default::default()
                     })
                 }
-                Msg::ConnectionOpenAck(message) => {
+                IbcMessage::ConnectionOpenAck(message) => {
                     mk_any(&protos::ibc::core::connection::v1::MsgConnectionOpenAck {
                         client_state: Some(
                             protos::google::protobuf::Any::decode(&*message.client_state)
@@ -676,7 +699,7 @@ fn process_msgs(
                         proof_try: message.proof_try,
                     })
                 }
-                Msg::ConnectionOpenConfirm(message) => mk_any(
+                IbcMessage::ConnectionOpenConfirm(message) => mk_any(
                     &protos::ibc::core::connection::v1::MsgConnectionOpenConfirm {
                         connection_id: message.connection_id.to_string(),
                         proof_ack: message.proof_ack,
@@ -684,14 +707,14 @@ fn process_msgs(
                         signer: signer.to_string(),
                     },
                 ),
-                Msg::ChannelOpenInit(message) => {
+                IbcMessage::ChannelOpenInit(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
                         port_id: message.port_id.to_string(),
                         channel: Some(message.channel.into()),
                         signer: signer.to_string(),
                     })
                 }
-                Msg::ChannelOpenTry(message) => {
+                IbcMessage::ChannelOpenTry(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenTry {
                         port_id: message.port_id.to_string(),
                         channel: Some(message.channel.into()),
@@ -702,7 +725,7 @@ fn process_msgs(
                         ..Default::default()
                     })
                 }
-                Msg::ChannelOpenAck(message) => {
+                IbcMessage::ChannelOpenAck(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenAck {
                         port_id: message.port_id.to_string(),
                         channel_id: message.channel_id.to_string(),
@@ -713,7 +736,7 @@ fn process_msgs(
                         signer: signer.to_string(),
                     })
                 }
-                Msg::ChannelOpenConfirm(message) => {
+                IbcMessage::ChannelOpenConfirm(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenConfirm {
                         port_id: message.port_id.to_string(),
                         channel_id: message.channel_id.to_string(),
@@ -722,7 +745,7 @@ fn process_msgs(
                         proof_ack: message.proof_ack,
                     })
                 }
-                Msg::RecvPacket(message) => {
+                IbcMessage::RecvPacket(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
                         packet: Some(message.packet.into()),
                         proof_height: Some(message.proof_height.into()),
@@ -730,7 +753,7 @@ fn process_msgs(
                         proof_commitment: message.proof_commitment,
                     })
                 }
-                Msg::AckPacket(message) => {
+                IbcMessage::AcknowledgePacket(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgAcknowledgement {
                         packet: Some(message.packet.into()),
                         acknowledgement: message.acknowledgement,
@@ -739,7 +762,7 @@ fn process_msgs(
                         signer: signer.to_string(),
                     })
                 }
-                Msg::TimeoutPacket(message) => {
+                IbcMessage::TimeoutPacket(message) => {
                     mk_any(&protos::ibc::core::channel::v1::MsgTimeout {
                         packet: Some(message.packet.into()),
                         proof_unreceived: message.proof_unreceived,
@@ -748,7 +771,7 @@ fn process_msgs(
                         signer: signer.to_string(),
                     })
                 }
-                Msg::CreateClient(message) => {
+                IbcMessage::CreateClient(message) => {
                     mk_any(&protos::ibc::core::client::v1::MsgCreateClient {
                         client_state: Some(
                             protos::google::protobuf::Any::decode(&*message.msg.client_state)
@@ -761,7 +784,7 @@ fn process_msgs(
                         signer: signer.to_string(),
                     })
                 }
-                Msg::UpdateClient(message) => {
+                IbcMessage::UpdateClient(message) => {
                     mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
                         signer: signer.to_string(),
                         client_id: message.client_id.to_string(),

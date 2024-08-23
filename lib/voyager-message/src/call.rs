@@ -1,7 +1,7 @@
 use enumorph::Enumorph;
 use macros::apply;
 use queue_msg::{
-    aggregate, conc, data, effect, fetch, queue_msg, wait, HandleFetch, Op, QueueError,
+    call, conc, data, defer_absolute, now, promise, queue_msg, seq, HandleCall, Op, QueueError,
 };
 use serde_json::Value;
 use serde_utils::Hex;
@@ -35,27 +35,24 @@ use unionlabs::{
 };
 
 use crate::{
-    aggregate::AggregateFetchBlockRange,
+    callback::AggregateFetchBlockRange,
     data::{
         ClientInfo, DecodedClientStateMeta, DecodedConsensusStateMeta, EncodedClientState,
         EncodedConsensusState, EncodedHeader, IbcMessage, IbcProof, IbcState, LatestHeight,
-        RawIbcProof, SelfClientState, SelfConsensusState,
+        MsgCreateClientData, RawIbcProof, SelfClientState, SelfConsensusState, WithChainId,
     },
-    effect::{Effect, Msg, MsgCreateClientData, WithChainId},
     json_rpc_error_to_queue_error,
     plugin::{
         ChainModuleClient, ChainModuleClientExt, ClientModuleClient, ConsensusModuleClient,
         PluginModuleClient,
     },
-    top_level_identifiable_enum,
-    wait::WaitForHeight,
-    Context, IbcInterface, PluginMessage, VoyagerMessage,
+    top_level_identifiable_enum, Context, IbcInterface, PluginMessage, VoyagerMessage,
 };
 
 #[apply(top_level_identifiable_enum)]
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum Fetch<F = serde_json::Value> {
+pub enum Call<C = serde_json::Value> {
     FetchBlock(FetchBlock),
     FetchBlockRange(FetchBlockRange),
 
@@ -95,7 +92,12 @@ pub enum Fetch<F = serde_json::Value> {
     MakeMsgAcknowledgement(MakeMsgAcknowledgement),
     MakeMsgRecvPacket(MakeMsgRecvPacket),
 
-    Plugin(PluginMessage<F>),
+    Height(WaitForHeight),
+    HeightRelative(WaitForHeightRelative),
+    Timestamp(WaitForTimestamp),
+    TrustedHeight(WaitForTrustedHeight),
+
+    Plugin(PluginMessage<C>),
 }
 
 #[queue_msg]
@@ -324,15 +326,49 @@ pub struct MakeMsgAcknowledgement {
     pub write_acknowledgement_event: crate::data::WriteAcknowledgement,
 }
 
-impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for Fetch<F> {
+#[queue_msg]
+pub struct WaitForHeight {
+    pub chain_id: String,
+    pub height: Height,
+}
+
+#[queue_msg]
+pub struct WaitForHeightRelative {
+    pub chain_id: String,
+    pub height: u64,
+}
+
+#[queue_msg]
+pub struct WaitForTimestamp {
+    pub chain_id: String,
+    pub timestamp: i64,
+}
+
+/// Wait for the client `.client_id` on `Hc` to trust a height >= `.height`,
+/// returning the counterparty's client state at that height when it's reached.
+#[queue_msg]
+pub struct WaitForTrustedHeight {
+    pub chain_id: String,
+    /// The id of the client on `Hc` who's [`ClientState::height()`] we're
+    /// waiting to be >= `.height`.
+    pub client_id: ClientId,
+    /// The id of the counterparty client on `Tr`, who's state will be fetched
+    /// at [`ClientState::height()`] when `.client_id` on `Hc` trusts a height
+    /// >= `.height`.
+    pub counterparty_client_id: ClientId,
+    pub counterparty_chain_id: String,
+    pub height: Height,
+}
+
+impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Call<F> {
     // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn handle(self, ctx: &Context) -> Result<Op<VoyagerMessage<D, F, A>>, QueueError> {
         match self {
-            Fetch::FetchBlock(FetchBlock { height, chain_id }) => {
+            Call::FetchBlock(FetchBlock { height, chain_id }) => {
                 info!(%height, "fetch_block");
 
-                Ok(aggregate(
-                    [wait(WaitForHeight {
+                Ok(promise(
+                    [call(WaitForHeight {
                         chain_id,
                         height: height.increment(),
                     })],
@@ -343,7 +379,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 ))
             }
 
-            Fetch::FetchBlockRange(FetchBlockRange {
+            Call::FetchBlockRange(FetchBlockRange {
                 chain_id,
                 from_height,
                 to_height,
@@ -355,14 +391,14 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                         .fetch_block_range(from_height, to_height)
                         .await
                         .map_err(json_rpc_error_to_queue_error)?,
-                    fetch(FetchBlock {
+                    call(FetchBlock {
                         chain_id,
                         height: to_height,
                     }),
                 ]))
             }
 
-            Fetch::RawProof(FetchRawProof { chain_id, at, path }) => Ok(data(RawIbcProof {
+            Call::RawProof(FetchRawProof { chain_id, at, path }) => Ok(data(RawIbcProof {
                 path: path.clone(),
                 height: at,
                 proof: ctx
@@ -372,8 +408,8 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                     .map_err(json_rpc_error_to_queue_error)?,
             })),
 
-            Fetch::State(FetchState { chain_id, at, path }) => match at {
-                QueryHeight::Latest => Ok(fetch(FetchState {
+            Call::State(FetchState { chain_id, at, path }) => match at {
+                QueryHeight::Latest => Ok(call(FetchState {
                     at: QueryHeight::Specific(
                         ctx.chain_module::<D, F, A>(&chain_id)?
                             .query_latest_height()
@@ -467,7 +503,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 }
             },
 
-            Fetch::LatestHeight(FetchLatestHeight { chain_id }) => Ok(data(LatestHeight {
+            Call::LatestHeight(FetchLatestHeight { chain_id }) => Ok(data(LatestHeight {
                 height: ctx
                     .chain_module::<D, F, A>(&chain_id)?
                     .query_latest_height()
@@ -476,7 +512,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 chain_id,
             })),
 
-            Fetch::ClientInfo(FetchClientInfo {
+            Call::ClientInfo(FetchClientInfo {
                 chain_id,
                 client_id,
             }) => Ok(data(
@@ -488,7 +524,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
 
             // TODO: This is currently unused, but there is a wait that uses this call that needs to
             // be refactored to be an aggregation using this
-            Fetch::UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState {
+            Call::UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState {
                 chain_id: _,
                 client_id: _,
             }) => {
@@ -516,7 +552,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 todo!()
             }
 
-            Fetch::SelfClientState(FetchSelfClientState {
+            Call::SelfClientState(FetchSelfClientState {
                 chain_id,
                 at: height,
                 ibc_interface,
@@ -558,7 +594,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 Ok(data(SelfClientState { self_client_state }))
             }
 
-            Fetch::SelfConsensusState(FetchSelfConsensusState {
+            Call::SelfConsensusState(FetchSelfConsensusState {
                 chain_id,
                 at: height,
                 ibc_interface,
@@ -597,7 +633,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 }))
             }
 
-            Fetch::DecodeClientStateMeta(DecodeClientStateMeta {
+            Call::DecodeClientStateMeta(DecodeClientStateMeta {
                 ibc_state,
                 client_info,
             }) => {
@@ -621,7 +657,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 }))
             }
 
-            Fetch::DecodeConsensusStateMeta(DecodeConsensusStateMeta {
+            Call::DecodeConsensusStateMeta(DecodeConsensusStateMeta {
                 ibc_state,
                 client_info,
             }) => Ok(data(DecodedConsensusStateMeta {
@@ -634,7 +670,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                     .map_err(json_rpc_error_to_queue_error)?,
             })),
 
-            Fetch::EncodeClientState(EncodeClientState {
+            Call::EncodeClientState(EncodeClientState {
                 client_state,
                 client_info,
             }) => Ok(data(EncodedClientState {
@@ -645,7 +681,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                     .map_err(json_rpc_error_to_queue_error)?,
             })),
 
-            Fetch::EncodeConsensusState(EncodeConsensusState {
+            Call::EncodeConsensusState(EncodeConsensusState {
                 consensus_state,
                 client_info,
             }) => Ok(data(EncodedConsensusState {
@@ -656,7 +692,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                     .map_err(json_rpc_error_to_queue_error)?,
             })),
 
-            Fetch::EncodeHeader(EncodeHeader {
+            Call::EncodeHeader(EncodeHeader {
                 header,
                 client_info,
             }) => Ok(data(EncodedHeader {
@@ -667,7 +703,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                     .map_err(json_rpc_error_to_queue_error)?,
             })),
 
-            Fetch::EncodeProof(EncodeProof {
+            Call::EncodeProof(EncodeProof {
                 raw_proof:
                     RawIbcProof {
                         path,
@@ -702,7 +738,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 r
             }
 
-            Fetch::MakeMsgConnectionOpenTry(MakeMsgConnectionOpenTry {
+            Call::MakeMsgConnectionOpenTry(MakeMsgConnectionOpenTry {
                 origin_chain_id,
                 origin_chain_proof_height,
                 target_chain_id,
@@ -748,7 +784,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 })))
             }
 
-            Fetch::MakeMsgConnectionOpenAck(MakeMsgConnectionOpenAck {
+            Call::MakeMsgConnectionOpenAck(MakeMsgConnectionOpenAck {
                 origin_chain_id,
                 origin_chain_proof_height,
                 target_chain_id,
@@ -785,7 +821,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 })))
             }
 
-            Fetch::MakeMsgConnectionOpenConfirm(MakeMsgConnectionOpenConfirm {
+            Call::MakeMsgConnectionOpenConfirm(MakeMsgConnectionOpenConfirm {
                 origin_chain_id,
                 origin_chain_proof_height,
                 target_chain_id,
@@ -838,7 +874,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 )))
             }
 
-            Fetch::MakeMsgChannelOpenTry(MakeMsgChannelOpenTry {
+            Call::MakeMsgChannelOpenTry(MakeMsgChannelOpenTry {
                 origin_chain_id,
                 origin_chain_proof_height,
                 target_chain_id,
@@ -897,7 +933,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 })))
             }
 
-            Fetch::MakeMsgChannelOpenAck(MakeMsgChannelOpenAck {
+            Call::MakeMsgChannelOpenAck(MakeMsgChannelOpenAck {
                 origin_chain_id,
                 origin_chain_proof_height,
                 target_chain_id,
@@ -943,7 +979,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 })))
             }
 
-            Fetch::MakeMsgChannelOpenConfirm(MakeMsgChannelOpenConfirm {
+            Call::MakeMsgChannelOpenConfirm(MakeMsgChannelOpenConfirm {
                 origin_chain_id,
                 origin_chain_proof_height,
                 target_chain_id,
@@ -987,7 +1023,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 })))
             }
 
-            Fetch::MakeMsgRecvPacket(MakeMsgRecvPacket {
+            Call::MakeMsgRecvPacket(MakeMsgRecvPacket {
                 origin_chain_id,
                 origin_chain_proof_height,
                 target_chain_id,
@@ -1051,7 +1087,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 })))
             }
 
-            Fetch::MakeMsgAcknowledgement(MakeMsgAcknowledgement {
+            Call::MakeMsgAcknowledgement(MakeMsgAcknowledgement {
                 origin_chain_id,
                 origin_chain_proof_height,
                 target_chain_id,
@@ -1164,7 +1200,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
             //         counterparty_client_id,
             //     },
             // )),
-            Fetch::UpdateHeaders(FetchUpdateHeaders {
+            Call::UpdateHeaders(FetchUpdateHeaders {
                 chain_id,
                 update_from,
                 update_to,
@@ -1174,7 +1210,7 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 .await
                 .map_err(json_rpc_error_to_queue_error),
 
-            Fetch::MakeMsgCreateClient(MakeMsgCreateClient {
+            Call::MakeMsgCreateClient(MakeMsgCreateClient {
                 chain_id,
                 height,
                 metadata,
@@ -1192,7 +1228,138 @@ impl<D: Member, F: Member, A: Member> HandleFetch<VoyagerMessage<D, F, A>> for F
                 .await
             }
 
-            Fetch::Plugin(PluginMessage { plugin, message }) => Ok(ctx
+            // TODO: Replace this with an aggregation
+            Call::Height(WaitForHeight { chain_id, height }) => {
+                let chain_height = ctx
+                    .chain_module::<D, F, A>(&chain_id)?
+                    .query_latest_height()
+                    .await
+                    .map_err(json_rpc_error_to_queue_error)?;
+
+                assert_eq!(
+                    chain_height.revision_number, height.revision_number,
+                    "chain_height: {chain_height}, height: {height}",
+                );
+
+                debug!("latest height is {chain_height}, waiting for {height}");
+
+                if chain_height.revision_height >= height.revision_height {
+                    Ok(data(LatestHeight {
+                        chain_id,
+                        height: chain_height,
+                    }))
+                } else {
+                    Ok(seq([
+                        defer_absolute(now() + 1),
+                        call(WaitForHeight { chain_id, height }),
+                    ]))
+                }
+            }
+            // REVIEW: Perhaps remove, unused
+            Call::HeightRelative(WaitForHeightRelative { chain_id, height }) => {
+                let chain_height = ctx
+                    .chain_module::<D, F, A>(&chain_id)?
+                    .query_latest_height()
+                    .await
+                    .map_err(json_rpc_error_to_queue_error)?;
+
+                Ok(call(WaitForHeight {
+                    chain_id,
+                    height: Height {
+                        revision_number: chain_height.revision_number,
+                        revision_height: chain_height.revision_height + height,
+                    },
+                }))
+            }
+
+            Call::Timestamp(WaitForTimestamp {
+                chain_id,
+                timestamp,
+            }) => {
+                let chain_ts = ctx
+                    .chain_module::<D, F, A>(&chain_id)?
+                    .query_latest_timestamp()
+                    .await
+                    .map_err(json_rpc_error_to_queue_error)?;
+
+                if chain_ts >= timestamp {
+                    // TODO: Figure out a way to fetch a height at a specific timestamp
+                    Ok(data(LatestHeight {
+                        height: ctx
+                            .chain_module::<D, F, A>(&chain_id)?
+                            .query_latest_height()
+                            .await
+                            .map_err(json_rpc_error_to_queue_error)?,
+                        chain_id,
+                    }))
+                } else {
+                    Ok(seq([
+                        // REVIEW: Defer until `now + chain.block_time()`? Would require a new
+                        // method on chain
+                        defer_absolute(now() + 1),
+                        call(WaitForTimestamp {
+                            chain_id,
+                            timestamp,
+                        }),
+                    ]))
+                }
+            }
+
+            Call::TrustedHeight(WaitForTrustedHeight {
+                chain_id,
+                client_id,
+                counterparty_client_id,
+                counterparty_chain_id,
+                height,
+            }) => {
+                let client_state = ctx
+                    .chain_module::<D, F, A>(&chain_id)?
+                    .query_raw_unfinalized_trusted_client_state(client_id.clone())
+                    .await
+                    .map_err(json_rpc_error_to_queue_error)?;
+
+                let trusted_client_state_meta = ctx
+                    .client_module::<D, F, A>(
+                        &client_state.client_type,
+                        &client_state.ibc_interface,
+                    )?
+                    .decode_client_state_meta(client_state.bytes)
+                    .await
+                    .map_err(json_rpc_error_to_queue_error)?;
+
+                if trusted_client_state_meta.height.revision_height >= height.revision_height {
+                    debug!(
+                        "client height reached ({} >= {})",
+                        trusted_client_state_meta.height, height
+                    );
+
+                    // the height has been reached, fetch the counterparty client state on `Tr` at
+                    // the trusted height
+                    Ok(call(FetchState {
+                        chain_id: counterparty_chain_id,
+                        at: QueryHeight::Specific(trusted_client_state_meta.height),
+                        path: ClientStatePath {
+                            client_id: counterparty_client_id.clone(),
+                        }
+                        .into(),
+                    }))
+                } else {
+                    Ok(seq([
+                        // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
+                        // require a new method on chain
+                        defer_absolute(now() + 1),
+                        call(WaitForTrustedHeight {
+                            chain_id,
+                            client_id,
+                            height,
+                            counterparty_client_id,
+                            counterparty_chain_id,
+                        }),
+                    ]))
+                }
+            }
+
+            Call::Plugin(PluginMessage { plugin, message }) => Ok(ctx
                 .plugin(plugin)?
                 .handle_fetch(message)
                 .await
@@ -1242,9 +1409,9 @@ async fn make_msg_create_client<D: Member, F: Member, A: Member>(
 
     let client_module = ctx.client_module::<Value, Value, Value>(&client_type, &ibc_interface)?;
 
-    Ok(effect(Effect::Single(WithChainId {
+    Ok(data(WithChainId {
         chain_id,
-        message: Msg::from(MsgCreateClientData {
+        message: IbcMessage::from(MsgCreateClientData {
             msg: MsgCreateClient {
                 client_state: client_module
                     .encode_client_state(self_client_state, metadata)
@@ -1257,11 +1424,11 @@ async fn make_msg_create_client<D: Member, F: Member, A: Member>(
             },
             client_type,
         }),
-    })))
+    }))
 }
 
 pub mod compound {
-    use queue_msg::{aggregate, fetch, Op};
+    use queue_msg::{call, promise, Op};
     use unionlabs::{
         ics24::{ChannelEndPath, ClientStatePath},
         id::{ChannelId, ClientId, PortId},
@@ -1270,11 +1437,11 @@ pub mod compound {
     };
 
     use crate::{
-        aggregate::{
+        call::{FetchClientInfo, FetchState},
+        callback::{
             AggregateDecodeClientStateMeta, AggregateDecodeClientStateMetaFromConnection,
             AggregateFetchConnectionFromChannel,
         },
-        fetch::{FetchClientInfo, FetchState},
         VoyagerMessage,
     };
 
@@ -1288,8 +1455,8 @@ pub mod compound {
         port_id: PortId,
         channel_id: ChannelId,
     ) -> Op<VoyagerMessage<D, F, A>> {
-        aggregate(
-            [fetch(FetchState {
+        promise(
+            [call(FetchState {
                 chain_id,
                 at,
                 path: ChannelEndPath {
@@ -1313,7 +1480,7 @@ pub mod compound {
         port_id: PortId,
         channel_id: ChannelId,
     ) -> Op<VoyagerMessage<D, F, A>> {
-        aggregate(
+        promise(
             [fetch_connection_from_channel_info(
                 chain_id, at, port_id, channel_id,
             )],
@@ -1331,13 +1498,13 @@ pub mod compound {
         client_id: ClientId,
         at: QueryHeight,
     ) -> Op<VoyagerMessage<D, F, A>> {
-        aggregate(
+        promise(
             [
-                fetch(FetchClientInfo {
+                call(FetchClientInfo {
                     chain_id: chain_id.clone(),
                     client_id: client_id.clone(),
                 }),
-                fetch(FetchState {
+                call(FetchState {
                     chain_id,
                     at,
                     path: ClientStatePath { client_id }.into(),

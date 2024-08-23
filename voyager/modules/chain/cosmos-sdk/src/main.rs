@@ -9,7 +9,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{aggregate, conc, fetch, Op};
+use queue_msg::{call, conc, promise, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -34,13 +34,12 @@ use unionlabs::{
     option_unwrap, parse_wasm_client_type, ErrorReporter, QueryHeight, WasmClientType,
 };
 use voyager_message::{
-    aggregate::{
-        Aggregate, AggregateDecodeClientStateMetaFromConnection,
-        AggregateFetchClientFromConnection, AggregateFetchCounterpartyChannelAndConnection,
-        InfoOrMeta,
+    call::{compound::fetch_client_state_meta, Call, FetchClientInfo, FetchState},
+    callback::{
+        AggregateDecodeClientStateMetaFromConnection, AggregateFetchClientFromConnection,
+        AggregateFetchCounterpartyChannelAndConnection, Callback, InfoOrMeta,
     },
     data::{ClientInfo, Data, IbcState},
-    fetch::{compound::fetch_client_state_meta, Fetch, FetchClientInfo, FetchState},
     plugin::{
         ChainModuleServer, IbcGo08WasmClientMetadata, PluginInfo, PluginKind, PluginModuleServer,
         RawClientState,
@@ -361,9 +360,9 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                 | IbcEvent::ConnectionOpenConfirm(ConnectionOpenConfirm {
                                     ref client_id,
                                     ..
-                                }) => aggregate(
+                                }) => promise(
                                     [
-                                        fetch(FetchClientInfo {
+                                        call(FetchClientInfo {
                                             chain_id: self.chain_id.clone(),
                                             client_id: client_id.clone(),
                                         }),
@@ -373,7 +372,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                             QueryHeight::Specific(height)
                                         )],
                                     [],
-                                    Aggregate::plugin(
+                                    Callback::plugin(
                                         self.plugin_name(),
                                         MakeFullEvent {
                                             chain_id: self.chain_id.clone(),
@@ -391,16 +390,16 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                 | IbcEvent::ChannelOpenTry(ChannelOpenTry {
                                     ref connection_id,
                                     ..
-                                }) => aggregate(
+                                }) => promise(
                                     [
-                                        fetch(Fetch::plugin(
+                                        call(Call::plugin(
                                             self.plugin_name(),
                                             FetchClientFromConnectionId {
                                                 connection_id: connection_id.clone(),
                                                 fetch_type: InfoOrMeta::Both,
                                             },
                                         )),
-                                        fetch(FetchState {
+                                        call(FetchState {
                                             chain_id: self.chain_id.clone(),
                                             at: QueryHeight::Specific(height),
                                             path: ConnectionPath {
@@ -410,7 +409,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                         }),
                                     ],
                                     [],
-                                    Aggregate::plugin(
+                                    Callback::plugin(
                                         self.plugin_name(),
                                         MakeFullEvent {
                                             chain_id: self.chain_id.clone(),
@@ -431,16 +430,16 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                     ref port_id,
                                     ref channel_id,
                                     ..
-                                }) => aggregate(
+                                }) => promise(
                                     [
-                                        fetch(Fetch::plugin(
+                                        call(Call::plugin(
                                             self.plugin_name(),
                                             FetchClientFromConnectionId {
                                                 connection_id: connection_id.clone(),
                                                 fetch_type: InfoOrMeta::Both,
                                             },
                                         )),
-                                        fetch(FetchState {
+                                        call(FetchState {
                                             chain_id: self.chain_id.clone(),
                                             at: QueryHeight::Specific(height),
                                             path: ConnectionPath {
@@ -448,7 +447,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                             }
                                             .into(),
                                         }),
-                                        fetch(FetchState {
+                                        call(FetchState {
                                             chain_id: self.chain_id.clone(),
                                             at: QueryHeight::Specific(height),
                                             path: ChannelEndPath {
@@ -459,7 +458,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                         }),
                                     ],
                                     [],
-                                    Aggregate::plugin(
+                                    Callback::plugin(
                                         self.plugin_name(),
                                         MakeFullEvent {
                                             chain_id: self.chain_id.clone(),
@@ -514,10 +513,10 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                 }) => {
                                     // dbg!(&ibc_event, &self_port, &other_port);
 
-                                    aggregate(
+                                    promise(
                                         [
                                             // client underlying the connection on this chain
-                                            fetch(Fetch::plugin(
+                                            call(Call::plugin(
                                                 self.plugin_name(),
                                                 FetchClientFromConnectionId {
                                                     connection_id: connection_id.clone(),
@@ -525,7 +524,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                                 },
                                             )),
                                             // channel on this chain
-                                            fetch(FetchState {
+                                            call(FetchState {
                                                 chain_id: self.chain_id.clone(),
                                                 at: QueryHeight::Specific(height),
                                                 path: ChannelEndPath {
@@ -535,7 +534,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                                 .into(),
                                             }),
                                             // connection on this chain
-                                            fetch(FetchState {
+                                            call(FetchState {
                                                 chain_id: self.chain_id.clone(),
                                                 at: QueryHeight::Specific(height),
                                                 path: ConnectionPath {
@@ -544,9 +543,9 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                                 .into(),
                                             }),
                                             // fetching the counterparty channel and connection is a bit trickier - we need the counterparty chain id first, which can then be used to fetch the channel on the counterparty, which then contains the connection id as well.
-                                            aggregate(
-                                                [aggregate(
-                                                    [fetch(FetchState {
+                                            promise(
+                                                [promise(
+                                                    [call(FetchState {
                                                         chain_id: self.chain_id.clone(),
                                                         at: QueryHeight::Specific(height),
                                                         path: ConnectionPath {
@@ -565,7 +564,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                                             ),
                                         ],
                                         [],
-                                        Aggregate::plugin(
+                                        Callback::plugin(
                                             self.plugin_name(),
                                             MakeFullEvent {
                                                 chain_id: self.chain_id.clone(),
@@ -581,7 +580,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                         .chain(
                             ((page.get() * PER_PAGE_LIMIT.get() as u32) < response.total_count)
                                 .then(|| {
-                                    fetch(Fetch::plugin(
+                                    call(Call::plugin(
                                         self.plugin_name(),
                                         FetchTransactions {
                                             height,
@@ -598,7 +597,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
             }) => {
                 let (connection, height) = self.fetch_connection(connection_id.clone()).await;
 
-                Ok(aggregate(
+                Ok(promise(
                     [],
                     [IbcState {
                         chain_id: self.chain_id.clone(),
@@ -617,7 +616,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                 assert!(from_height.revision_height < to_height.revision_height);
 
                 if to_height.revision_height - from_height.revision_height == 1 {
-                    Ok(fetch(Fetch::plugin(
+                    Ok(call(Call::plugin(
                         self.plugin_name(),
                         FetchTransactions {
                             height: from_height,
@@ -632,7 +631,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                     let new_from_height = from_height.increment();
 
                     Ok(conc(
-                        [fetch(Fetch::plugin(
+                        [call(Call::plugin(
                             self.plugin_name(),
                             FetchTransactions {
                                 height: from_height,
@@ -643,7 +642,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                         .chain((new_from_height != to_height).then(|| {
                             debug!("range not completed, requeueing fetch from {new_from_height} to {to_height}");
 
-                            fetch(Fetch::plugin(
+                            call(Call::plugin(
                                 self.plugin_name(),
                                 FetchBlocks {
                                     from_height: new_from_height,
@@ -722,7 +721,7 @@ impl ChainModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
         from_height: Height,
         to_height: Height,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        Ok(fetch(Fetch::plugin(
+        Ok(call(Call::plugin(
             self.plugin_name(),
             FetchBlocks {
                 from_height,

@@ -16,7 +16,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{aggregate, aggregation::do_aggregate, conc, fetch, noop, BoxDynError, Op};
+use queue_msg::{promise, aggregation::do_aggregate, conc, call, noop, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, instrument, warn};
@@ -30,15 +30,15 @@ use unionlabs::{
     ErrorReporter, QueryHeight,
 };
 use voyager_message::{
-    aggregate::{
-        Aggregate, AggregateDecodeClientStateMetaFromConnection, AggregateFetchClientFromChannel,
+    callback::{
+        Callback, AggregateDecodeClientStateMetaFromConnection, AggregateFetchClientFromChannel,
         AggregateFetchClientFromConnection, AggregateFetchCounterpartyChannelAndConnection,
         AggregateFetchCounterpartyChannelAndConnectionFromSourceChannel, InfoOrMeta,
     },
     data::{ClientInfo, Data},
-    fetch::{
+    call::{
         compound::{fetch_client_state_meta, fetch_connection_from_channel_info},
-        Fetch, FetchClientInfo, FetchState,
+        Call, FetchClientInfo, FetchState,
     },
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
     run_module_server, ClientType, IbcInterface, VoyagerMessage,
@@ -123,7 +123,7 @@ impl Module {
         tx_hash: H256,
     ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
         let channel_fetch = |port_id: &str, channel_id: &str, height| {
-            fetch(FetchState {
+            call(FetchState {
                 path: ChannelEndPath {
                     port_id: port_id.parse().unwrap(),
                     channel_id: channel_id.parse().unwrap(),
@@ -135,7 +135,7 @@ impl Module {
         };
 
         let connection_fetch = |connection_id: &str, height| {
-            fetch(FetchState {
+            call(FetchState {
                 path: ConnectionPath {
                     connection_id: connection_id.parse().unwrap(),
                 }
@@ -157,10 +157,10 @@ impl Module {
 
             IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenInitFilter(
                 raw_event,
-            )) => aggregate(
+            )) => promise(
                 [
                     connection_fetch(&raw_event.connection_id, event_height),
-                    aggregate(
+                    promise(
                         [connection_fetch(&raw_event.connection_id, event_height)],
                         [],
                         AggregateFetchClientFromConnection {
@@ -169,7 +169,7 @@ impl Module {
                     ),
                 ],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -181,10 +181,10 @@ impl Module {
             ),
             IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenTryFilter(
                 raw_event,
-            )) => aggregate(
+            )) => promise(
                 [
                     connection_fetch(&raw_event.connection_id, event_height),
-                    aggregate(
+                    promise(
                         [connection_fetch(&raw_event.connection_id, event_height)],
                         [],
                         AggregateFetchClientFromConnection {
@@ -193,7 +193,7 @@ impl Module {
                     ),
                 ],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -205,11 +205,11 @@ impl Module {
             ),
             IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenAckFilter(
                 raw_event,
-            )) => aggregate(
+            )) => promise(
                 [
                     channel_fetch(&raw_event.port_id, &raw_event.channel_id, event_height),
                     connection_fetch(&raw_event.connection_id, event_height),
-                    aggregate(
+                    promise(
                         [connection_fetch(&raw_event.connection_id, event_height)],
                         [],
                         AggregateFetchClientFromConnection {
@@ -218,7 +218,7 @@ impl Module {
                     ),
                 ],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -230,11 +230,11 @@ impl Module {
             ),
             IBCHandlerEvents::ChannelEvent(
                 IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(raw_event),
-            ) => aggregate(
+            ) => promise(
                 [
                     channel_fetch(&raw_event.port_id, &raw_event.channel_id, event_height),
                     connection_fetch(&raw_event.connection_id, event_height),
-                    aggregate(
+                    promise(
                         [connection_fetch(&raw_event.connection_id, event_height)],
                         [],
                         AggregateFetchClientFromConnection {
@@ -243,7 +243,7 @@ impl Module {
                     ),
                 ],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -256,8 +256,8 @@ impl Module {
 
             IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenInitFilter(
                 raw_event,
-            )) => aggregate(
-                [aggregate(
+            )) => promise(
+                [promise(
                     [connection_fetch(&raw_event.connection_id, event_height)],
                     [],
                     AggregateFetchClientFromConnection {
@@ -265,7 +265,7 @@ impl Module {
                     },
                 )],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -277,8 +277,8 @@ impl Module {
             ),
             IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenTryFilter(
                 raw_event,
-            )) => aggregate(
-                [aggregate(
+            )) => promise(
+                [promise(
                     [connection_fetch(&raw_event.connection_id, event_height)],
                     [],
                     AggregateFetchClientFromConnection {
@@ -286,7 +286,7 @@ impl Module {
                     },
                 )],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -298,8 +298,8 @@ impl Module {
             ),
             IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenAckFilter(
                 raw_event,
-            )) => aggregate(
-                [aggregate(
+            )) => promise(
+                [promise(
                     [connection_fetch(&raw_event.connection_id, event_height)],
                     [],
                     AggregateFetchClientFromConnection {
@@ -307,7 +307,7 @@ impl Module {
                     },
                 )],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -319,8 +319,8 @@ impl Module {
             ),
             IBCHandlerEvents::ConnectionEvent(
                 IBCConnectionEvents::ConnectionOpenConfirmFilter(raw_event),
-            ) => aggregate(
-                [aggregate(
+            ) => promise(
+                [promise(
                     [connection_fetch(&raw_event.connection_id, event_height)],
                     [],
                     AggregateFetchClientFromConnection {
@@ -328,7 +328,7 @@ impl Module {
                     },
                 )],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -340,20 +340,20 @@ impl Module {
             ),
 
             IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(raw_event)) => {
-                aggregate(
+                promise(
                     [
                         fetch_client_state_meta(
                             self.chain_id.to_string(),
                             raw_event.client_id.parse().unwrap(),
                             QueryHeight::Specific(event_height),
                         ),
-                        fetch(FetchClientInfo {
+                        call(FetchClientInfo {
                             chain_id: self.chain_id.to_string(),
                             client_id: raw_event.client_id.parse().unwrap(),
                         }),
                     ],
                     [],
-                    Aggregate::plugin(
+                    Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
                             chain_id: self.chain_id.to_string(),
@@ -370,20 +370,20 @@ impl Module {
                 noop()
             }
             IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(raw_event)) => {
-                aggregate(
+                promise(
                     [
                         fetch_client_state_meta(
                             self.chain_id.to_string(),
                             raw_event.client_id.parse().unwrap(),
                             QueryHeight::Specific(event_height),
                         ),
-                        fetch(FetchClientInfo {
+                        call(FetchClientInfo {
                             chain_id: self.chain_id.to_string(),
                             client_id: raw_event.client_id.parse().unwrap(),
                         }),
                     ],
                     [],
-                    Aggregate::plugin(
+                    Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
                             chain_id: self.chain_id.to_string(),
@@ -395,10 +395,10 @@ impl Module {
                 )
             }
             IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(raw_event)) => {
-                aggregate(
+                promise(
                     [
                         // client info of the client underlying this connection on this chain
-                        aggregate(
+                        promise(
                             [channel_fetch(
                                 &raw_event.packet.destination_port,
                                 &raw_event.packet.destination_channel,
@@ -423,8 +423,8 @@ impl Module {
                             raw_event.packet.destination_channel.parse().unwrap(),
                         ),
                         // channel and connection on counterparty chain
-                        aggregate(
-                            [aggregate(
+                        promise(
+                            [promise(
                                 [fetch_connection_from_channel_info(
                                     self.chain_id.to_string(),
                                     QueryHeight::Specific(event_height),
@@ -446,7 +446,7 @@ impl Module {
                         ),
                     ],
                     [],
-                    Aggregate::plugin(
+                    Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
                             chain_id: self.chain_id.to_string(),
@@ -458,10 +458,10 @@ impl Module {
                 )
             }
             IBCHandlerEvents::PacketEvent(IBCPacketEvents::SendPacketFilter(raw_event)) => {
-                aggregate(
+                promise(
                     [
                         // client underlying the channel on this chain
-                        aggregate(
+                        promise(
                             [channel_fetch(
                                 &raw_event.source_port,
                                 &raw_event.source_channel,
@@ -486,9 +486,9 @@ impl Module {
                             raw_event.source_channel.parse().unwrap(),
                         ),
                         // channel and connection on the counterparty chain
-                        aggregate(
+                        promise(
                             [
-                                aggregate(
+                                promise(
                                     [fetch_connection_from_channel_info(
                                         self.chain_id.to_string(),
                                         QueryHeight::Specific(event_height),
@@ -509,7 +509,7 @@ impl Module {
                         ),
                     ],
                     [],
-                    Aggregate::plugin(
+                    Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
                             chain_id: self.chain_id.to_string(),
@@ -522,10 +522,10 @@ impl Module {
             }
             IBCHandlerEvents::PacketEvent(IBCPacketEvents::WriteAcknowledgementFilter(
                 raw_event,
-            )) => aggregate(
+            )) => promise(
                 [
                     // client underlying the channel on this chain
-                    aggregate(
+                    promise(
                         [channel_fetch(
                             &raw_event.packet.destination_port,
                             &raw_event.packet.destination_channel,
@@ -550,8 +550,8 @@ impl Module {
                         raw_event.packet.destination_channel.parse().unwrap(),
                     ),
                     // channel and connection on the counterparty chain
-                    aggregate(
-                        [aggregate(
+                    promise(
+                        [promise(
                             [fetch_connection_from_channel_info(
                                 self.chain_id.to_string(),
                                 QueryHeight::Specific(event_height),
@@ -573,7 +573,7 @@ impl Module {
                     ),
                 ],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
                         chain_id: self.chain_id.to_string(),
@@ -584,10 +584,10 @@ impl Module {
                 ),
             ),
             IBCHandlerEvents::PacketEvent(IBCPacketEvents::AcknowledgePacketFilter(raw_event)) => {
-                aggregate(
+                promise(
                     [
                         // client underlying the channel on this chain
-                        aggregate(
+                        promise(
                             [channel_fetch(
                                 &raw_event.packet.source_port,
                                 &raw_event.packet.source_channel,
@@ -612,8 +612,8 @@ impl Module {
                             raw_event.packet.source_channel.parse().unwrap(),
                         ),
                         // channel and connection on the counterparty chain
-                        aggregate(
-                            [aggregate(
+                        promise(
+                            [promise(
                                 [fetch_connection_from_channel_info(
                                     self.chain_id.to_string(),
                                     QueryHeight::Specific(event_height),
@@ -639,7 +639,7 @@ impl Module {
                         ),
                     ],
                     [],
-                    Aggregate::plugin(
+                    Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
                             chain_id: self.chain_id.to_string(),
@@ -825,7 +825,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
             ModuleFetch::FetchEvents(FetchEvents {
                 from_height,
                 to_height,
-            }) => Ok(fetch(Fetch::plugin(
+            }) => Ok(call(Call::plugin(
                 self.plugin_name(),
                 FetchBeaconBlockRange {
                     from_slot: from_height.revision_height,
@@ -838,7 +838,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                 assert!(from_slot < to_slot);
 
                 if to_slot - from_slot == 1 {
-                    Ok(fetch(Fetch::plugin(
+                    Ok(call(Call::plugin(
                         self.plugin_name(),
                         FetchGetLogs { from_slot, to_slot },
                     )))
@@ -868,14 +868,14 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                             }
                             Ok(_) => {
                                 return Ok(conc([
-                                    fetch(Fetch::plugin(
+                                    call(Call::plugin(
                                         self.plugin_name(),
                                         FetchGetLogs {
                                             from_slot,
                                             to_slot: slot,
                                         },
                                     )),
-                                    fetch(Fetch::plugin(
+                                    call(Call::plugin(
                                         self.plugin_name(),
                                         FetchBeaconBlockRange {
                                             from_slot: slot,
@@ -888,7 +888,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                     }
 
                     // if the range is not shrinkable (i.e. all blocks between `from` and `to` are missing, but `from` and `to` both exist), fetch logs between `from` and `to`
-                    Ok(fetch(Fetch::plugin(
+                    Ok(call(Call::plugin(
                         self.plugin_name(),
                         FetchGetLogs { from_slot, to_slot },
                     )))
@@ -1077,7 +1077,7 @@ impl ChainModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
         from_height: Height,
         to_height: Height,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        Ok(fetch(Fetch::plugin(
+        Ok(call(Call::plugin(
             self.plugin_name(),
             FetchEvents {
                 from_height,

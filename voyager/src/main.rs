@@ -19,13 +19,13 @@ use std::{
 
 use chain_utils::{any_chain, keyring::ChainKeyring, AnyChain, Chains, IncorrectChainTypeError};
 use clap::Parser;
-use queue_msg::fetch;
+use queue_msg::{call, BoxDynError};
 use serde::Serialize;
 use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
 use tracing_subscriber::EnvFilter;
 use unionlabs::ethereum::ibc_commitment_key;
-use voyager_message::{fetch::FetchBlock, plugin::ChainModuleClient, VoyagerMessage};
+use voyager_message::{call::FetchBlock, plugin::ChainModuleClient, VoyagerMessage};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -103,7 +103,7 @@ pub enum VoyagerError {
     #[error("error while running migrations")]
     Migrations(#[from] MigrationsError),
     #[error("fatal error encountered")]
-    Run(#[from] RunError),
+    Run(#[from] BoxDynError),
     #[error("unable to run command")]
     Command(#[source] Box<dyn Error>),
     #[error("chain was not of expected type")]
@@ -300,7 +300,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
             voyager.shutdown().await;
 
-            print_json(&fetch::<VoyagerMessage<Value, Value, Value>>(FetchBlock {
+            print_json(&call::<VoyagerMessage<Value, Value, Value>>(FetchBlock {
                 chain_id,
                 height,
             }));

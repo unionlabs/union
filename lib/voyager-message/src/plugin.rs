@@ -17,7 +17,6 @@ use unionlabs::{
 
 use crate::{
     data::{ClientInfo, Data},
-    effect::Msg,
     ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -65,7 +64,7 @@ pub enum PluginKind {
     Chain,
     Client,
     Consensus,
-    Transaction,
+    // Transaction,
 }
 
 impl std::fmt::Display for PluginKind {
@@ -74,7 +73,7 @@ impl std::fmt::Display for PluginKind {
             Self::Chain => "chain",
             Self::Client => "client",
             Self::Consensus => "consensus",
-            Self::Transaction => "transaction",
+            // Self::Transaction => "transaction",
         })
     }
 }
@@ -356,28 +355,28 @@ pub struct ConsensusStateMeta {
     pub timestamp_nanos: u64,
 }
 
-/// Transaction submission modules provide functionality to submit transactions
-/// on-chain. This is independent from chain modules
-#[rpc(
-    client,
-    server,
-    client_bounds(Self: PluginModuleClient<D, F, A>),
-    server_bounds(Self: PluginModuleServer<D, F, A>),
-    namespace = "transactionModule"
-)]
-pub trait TransactionSubmissionModule<D: Member, F: Member, A: Member> {
-    /// Register this transaction submission module with Voyager, returning the
-    /// chain id of the chain this module supports.
-    #[method(name = "register")]
-    fn register(&self) -> RpcResult<String>;
+// /// Transaction submission modules provide functionality to submit transactions
+// /// on-chain. This is independent from chain modules
+// #[rpc(
+//     client,
+//     server,
+//     client_bounds(Self: PluginModuleClient<D, F, A>),
+//     server_bounds(Self: PluginModuleServer<D, F, A>),
+//     namespace = "transactionModule"
+// )]
+// pub trait TransactionSubmissionModule<D: Member, F: Member, A: Member> {
+//     /// Register this transaction submission module with Voyager, returning the
+//     /// chain id of the chain this module supports.
+//     #[method(name = "register")]
+//     fn register(&self) -> RpcResult<String>;
 
-    /// Submit a transaction to this chain. The messages contain state
-    /// pre-encoded for their respective client types and counterparty IBC
-    /// interfaces, which should then be transformed to the format expected
-    /// by transaction submission for this chain and signed.
-    #[method(name = "sendTransaction")]
-    async fn send_transaction(&self, msg: Vec<Msg>) -> RpcResult<Op<VoyagerMessage<D, F, A>>>;
-}
+//     /// Submit a transaction to this chain. The messages contain state
+//     /// pre-encoded for their respective client types and counterparty IBC
+//     /// interfaces, which should then be transformed to the format expected
+//     /// by transaction submission for this chain and signed.
+//     #[method(name = "sendTransaction")]
+//     async fn send_transaction(&self, msg: Vec<Msg>) -> RpcResult<Op<VoyagerMessage<D, F, A>>>;
+// }
 
 #[model]
 pub struct IbcGo08WasmClientMetadata {

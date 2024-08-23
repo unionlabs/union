@@ -15,7 +15,6 @@ use crate::{
     plugin::{
         ChainModuleClient, ClientModuleClient, ConsensusModuleClient, ConsensusModuleInfo,
         PluginInfo, PluginKind, PluginModuleClient, SupportedInterface,
-        TransactionSubmissionModuleClient,
     },
     ClientType, IbcInterface,
 };
@@ -31,9 +30,8 @@ pub struct Context {
     /// map of client type to ibc interface to client module.
     client_modules: HashMap<ClientType<'static>, HashMap<IbcInterface<'static>, RpcClient>>,
 
-    /// map of chain id to transaction module.
-    transaction_modules: HashMap<String, RpcClient>,
-
+    // /// map of chain id to transaction module.
+    // transaction_modules: HashMap<String, RpcClient>,
     plugins: HashMap<String, RpcClient>,
 
     interest_filters: HashMap<String, String>,
@@ -78,7 +76,7 @@ impl Context {
             chain_modules: Default::default(),
             client_modules: Default::default(),
             consensus_modules: Default::default(),
-            transaction_modules: Default::default(),
+            // transaction_modules: Default::default(),
             plugins: Default::default(),
             interest_filters: Default::default(),
             cancellation_token: cancellation_token.clone(),
@@ -232,32 +230,6 @@ impl Context {
                             "registered plugin"
                         );
                     }
-                    PluginKind::Transaction => {
-                        let chain_id =
-                            TransactionSubmissionModuleClient::<Value, Value, Value>::register(
-                                rpc_client.client.as_ref(),
-                            )
-                            .await?;
-
-                        let prev = this
-                            .transaction_modules
-                            .insert(chain_id.clone(), rpc_client.clone());
-
-                        if prev.is_some() {
-                            return Err(format!(
-                                "multiple transaction modules configured for chain id `{chain_id}`"
-                            )
-                            .into());
-                        }
-
-                        info!(
-                            %name,
-                            %kind,
-                            %chain_id,
-                            %plugin_socket,
-                            "registered plugin"
-                        );
-                    }
                 },
                 None => {
                     info!(
@@ -308,18 +280,18 @@ impl Context {
             .as_ref())
     }
 
-    pub fn transaction_module<D: Member, F: Member, A: Member>(
-        &self,
-        chain_id: impl AsRef<str>,
-    ) -> Result<&(impl TransactionSubmissionModuleClient<D, F, A> + '_), TransactionModuleNotFound>
-    {
-        Ok(self
-            .transaction_modules
-            .get(chain_id.as_ref())
-            .ok_or_else(|| TransactionModuleNotFound(chain_id.as_ref().to_string()))?
-            .client
-            .as_ref())
-    }
+    // pub fn transaction_module<D: Member, F: Member, A: Member>(
+    //     &self,
+    //     chain_id: impl AsRef<str>,
+    // ) -> Result<&(impl TransactionSubmissionModuleClient<D, F, A> + '_), TransactionModuleNotFound>
+    // {
+    //     Ok(self
+    //         .transaction_modules
+    //         .get(chain_id.as_ref())
+    //         .ok_or_else(|| TransactionModuleNotFound(chain_id.as_ref().to_string()))?
+    //         .client
+    //         .as_ref())
+    // }
 
     pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, F: Member, A: Member>(
         &'a self,

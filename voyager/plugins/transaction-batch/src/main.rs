@@ -9,24 +9,23 @@ use frunk::hlist_pat;
 use itertools::Itertools;
 use jsonrpsee::core::{async_trait, RpcResult};
 use queue_msg::{
-    aggregate,
     aggregation::{do_aggregate, HListTryFromIterator, SubsetOf},
-    data, effect, fetch,
+    call, data,
     optimize::OptimizationResult,
-    Op,
+    promise, Op,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, instrument, trace, warn};
 use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
-    aggregate::{Aggregate, AggregateMsgUpdateClientsFromOrderedHeaders},
-    data::{ChainEvent, Data, DecodedClientStateMeta, FullIbcEvent, OrderedMsgUpdateClients},
-    fetch::{
+    call::{
         compound::fetch_client_state_meta, FetchClientInfo, MakeMsgAcknowledgement,
         MakeMsgChannelOpenAck, MakeMsgChannelOpenConfirm, MakeMsgChannelOpenTry,
         MakeMsgConnectionOpenAck, MakeMsgConnectionOpenConfirm, MakeMsgConnectionOpenTry,
         MakeMsgRecvPacket,
     },
+    callback::{AggregateMsgUpdateClientsFromOrderedHeaders, Callback},
+    data::{ChainEvent, Data, DecodedClientStateMeta, FullIbcEvent, OrderedMsgUpdateClients},
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
     run_module_server, PluginMessage, VoyagerMessage,
 };
@@ -164,7 +163,7 @@ end
                     .0
                     .height;
 
-                Ok(aggregate(
+                Ok(promise(
                     batch.events.into_iter().map(|batchable_event| {
                         assert!(batchable_event.provable_height <= new_trusted_height);
 
@@ -174,7 +173,7 @@ end
                         // in this context, we are the destination - the counterparty of the source is the destination
                         match batchable_event.event {
                             Event::ConnectionOpenInit(connection_open_init_event) => {
-                                fetch(MakeMsgConnectionOpenTry {
+                                call(MakeMsgConnectionOpenTry {
                                     origin_chain_id,
                                     origin_chain_proof_height: new_trusted_height,
                                     target_chain_id,
@@ -182,7 +181,7 @@ end
                                 })
                             }
                             Event::ConnectionOpenTry(connection_open_try_event) => {
-                                fetch(MakeMsgConnectionOpenAck {
+                                call(MakeMsgConnectionOpenAck {
                                     origin_chain_id,
                                     origin_chain_proof_height: new_trusted_height,
                                     target_chain_id,
@@ -190,7 +189,7 @@ end
                                 })
                             }
                             Event::ConnectionOpenAck(connection_open_ack_event) => {
-                                fetch(MakeMsgConnectionOpenConfirm {
+                                call(MakeMsgConnectionOpenConfirm {
                                     origin_chain_id,
                                     origin_chain_proof_height: new_trusted_height,
                                     target_chain_id,
@@ -198,7 +197,7 @@ end
                                 })
                             }
                             Event::ChannelOpenInit(channel_open_init_event) => {
-                                fetch(MakeMsgChannelOpenTry {
+                                call(MakeMsgChannelOpenTry {
                                     origin_chain_id,
                                     origin_chain_proof_height: new_trusted_height,
                                     target_chain_id,
@@ -206,7 +205,7 @@ end
                                 })
                             }
                             Event::ChannelOpenTry(channel_open_try_event) => {
-                                fetch(MakeMsgChannelOpenAck {
+                                call(MakeMsgChannelOpenAck {
                                     origin_chain_id,
                                     origin_chain_proof_height: new_trusted_height,
                                     target_chain_id,
@@ -214,21 +213,21 @@ end
                                 })
                             }
                             Event::ChannelOpenAck(channel_open_ack_event) => {
-                                fetch(MakeMsgChannelOpenConfirm {
+                                call(MakeMsgChannelOpenConfirm {
                                     origin_chain_id,
                                     origin_chain_proof_height: new_trusted_height,
                                     target_chain_id,
                                     channel_open_ack_event,
                                 })
                             }
-                            Event::SendPacket(send_packet_event) => fetch(MakeMsgRecvPacket {
+                            Event::SendPacket(send_packet_event) => call(MakeMsgRecvPacket {
                                 origin_chain_id,
                                 origin_chain_proof_height: new_trusted_height,
                                 target_chain_id,
                                 send_packet_event,
                             }),
                             Event::WriteAcknowledgement(write_acknowledgement_event) => {
-                                fetch(MakeMsgAcknowledgement {
+                                call(MakeMsgAcknowledgement {
                                     origin_chain_id,
                                     origin_chain_proof_height: new_trusted_height,
                                     target_chain_id,
@@ -238,11 +237,11 @@ end
                         }
                     }),
                     [],
-                    Aggregate::plugin(self.plugin_name(), MakeBatchTransaction { updates }),
+                    Callback::plugin(self.plugin_name(), MakeBatchTransaction { updates }),
                 ))
             }
             ModuleAggregate::MakeBatchTransaction(agg) => {
-                Ok(effect(agg.do_aggregate(self.chain_id.clone(), datas)))
+                Ok(data(agg.do_aggregate(self.chain_id.clone(), datas)))
             }
         }
     }
@@ -371,28 +370,28 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
 
                             Either::Left((
                                 idxs,
-                                aggregate(
+                                promise(
                                     [
                                         fetch_client_state_meta(
                                             self.chain_id.clone(),
                                             client_id.clone(),
                                             QueryHeight::Latest,
                                         ),
-                                        aggregate(
+                                        promise(
                                             [
-                                                fetch(FetchClientInfo {
+                                                call(FetchClientInfo {
                                                     chain_id: self.chain_id.clone(),
                                                     client_id: client_id.clone(),
                                                 }),
                                                 // fetch update
-                                                aggregate(
+                                                promise(
                                                     [fetch_client_state_meta(
                                                         self.chain_id.clone(),
                                                         client_id.clone(),
                                                         QueryHeight::Latest,
                                                     )],
                                                     [],
-                                                    Aggregate::plugin(
+                                                    Callback::plugin(
                                                         self.plugin_name(),
                                                         MakeUpdateFromLatestHeightToAtLeastTargetHeight {
                                                             target_height,
@@ -413,7 +412,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
                                     ],
                                     [],
                                     // make ibc messages out of the events, from the height of the created update
-                                    Aggregate::plugin(
+                                    Callback::plugin(
                                         self.plugin_name(),
                                         MakeIbcMessagesFromUpdate {
                                             batch: EventBatch {

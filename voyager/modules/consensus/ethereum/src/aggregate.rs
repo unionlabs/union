@@ -5,9 +5,9 @@ use chain_utils::ethereum::ETHEREUM_REVISION_NUMBER;
 use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
 use queue_msg::{
-    aggregate,
+    promise,
     aggregation::{SubsetOf, UseAggregate},
-    data, fetch, queue_msg, seq, Op,
+    data, call, queue_msg, seq, Op,
 };
 use tracing::debug;
 use unionlabs::{
@@ -23,9 +23,9 @@ use unionlabs::{
     },
 };
 use voyager_message::{
-    aggregate::Aggregate,
+    callback::Callback,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
-    fetch::Fetch,
+    call::Call,
     PluginMessage, VoyagerMessage,
 };
 
@@ -88,8 +88,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> for 
 
         // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
         // updates until we reach the `target_period - 1`.
-        aggregate(
-            [fetch(Fetch::plugin(
+        promise(
+            [call(Call::plugin(
                 plugin.clone(),
                 FetchLightClientUpdates {
                     trusted_period,
@@ -97,7 +97,7 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> for 
                 },
             ))],
             [Data::plugin(plugin.clone(), BeaconSpec { spec })],
-            Aggregate::plugin(
+            Callback::plugin(
                 plugin,
                 MakeCreateUpdatesFromLightClientUpdates {
                     update_from,
@@ -198,10 +198,10 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
             ))
         };
 
-        aggregate(
+        promise(
             [seq(lc_updates.into_iter().chain(finality_update_msg))],
             [],
-            Aggregate::plugin(plugin, AggregateHeaders {}),
+            Callback::plugin(plugin, AggregateHeaders {}),
         )
     }
 }
@@ -220,24 +220,24 @@ fn make_create_update(
         light_client_update.attested_header.beacon.slot / spec.period(),
     ) - 1;
 
-    aggregate(
+    promise(
         [
-            fetch(Fetch::plugin(
+            call(Call::plugin(
                 &plugin,
                 FetchLightClientUpdate {
                     period: previous_period,
                 },
             )),
-            fetch(Fetch::plugin(
+            call(Call::plugin(
                 &plugin,
                 FetchAccountUpdate {
                     slot: light_client_update.attested_header.beacon.slot,
                 },
             )),
-            fetch(Fetch::plugin(&plugin, FetchBeaconGenesis {})),
+            call(Call::plugin(&plugin, FetchBeaconGenesis {})),
         ],
         [Data::plugin(&plugin, BeaconSpec { spec: spec.clone() })],
-        Aggregate::plugin(
+        Callback::plugin(
             &plugin,
             CreateUpdate {
                 // chain_id,

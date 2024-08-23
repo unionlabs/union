@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
-use queue_msg::{aggregate, aggregation::UseAggregate, data, fetch, queue_msg, Op};
+use queue_msg::{promise, aggregation::UseAggregate, data, call, queue_msg, Op};
 use tracing::{debug, trace};
 use unionlabs::{
     bounded::BoundedI64,
@@ -23,9 +23,9 @@ use unionlabs::{
     union::galois::{prove_request::ProveRequest, validator_set_commit::ValidatorSetCommit},
 };
 use voyager_message::{
-    aggregate::Aggregate,
+    callback::Callback,
     data::{DecodedHeaderMeta, OrderedHeaders},
-    fetch::Fetch,
+    call::Call,
     PluginMessage, VoyagerMessage,
 };
 
@@ -194,8 +194,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
         let trusted_validators_commit = make_validators_commit(trusted_validators);
         let untrusted_validators_commit = make_validators_commit(untrusted_validators);
 
-        aggregate(
-            [fetch(Fetch::plugin(
+        promise(
+            [call(Call::plugin(
                 &plugin_name,
                 FetchProveRequest {
                     request: ProveRequest {
@@ -226,7 +226,7 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
                 },
             ))],
             [],
-            Aggregate::plugin(
+            Callback::plugin(
                 &plugin_name,
                 AggregateHeader {
                     chain_id,

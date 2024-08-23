@@ -21,7 +21,7 @@ use unionlabs::{
     ics24::{ChannelEndPath, ConnectionPath},
 };
 use voyager_message::{
-    aggregate::mk_packet_metadata_from_hlist,
+    callback::mk_packet_metadata_from_hlist,
     data::{
         AcknowledgePacket, ChainEvent, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
         ChannelOpenTry, ClientInfo, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,

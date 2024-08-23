@@ -5,7 +5,7 @@ use queue_msg::{
     optimize::{OptimizationResult, PurePass},
     BoxDynError, Op,
 };
-use tracing::{error, info, info_span, trace, trace_span};
+use tracing::{error, info, info_span, trace};
 use unionlabs::ErrorReporter;
 
 use crate::VoyagerMessage;
@@ -28,12 +28,31 @@ impl JaqInterestFilter {
                     ctx.insert_defs(jaq_std::std());
 
                     // parse the filter
-                    let f = jaq_syn::parse(&filter, |p| p.module(|p| p.term()))
-                        .unwrap()
-                        .conv(&filter);
+                    let lexed = jaq_syn::Lexer::new(&filter).lex().map_err(|es| {
+                        es.iter()
+                            .map(|(expect, s)| format!("({}: {s})", expect.as_str()))
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    })?;
+                    let f = jaq_syn::Parser::new(&lexed)
+                        .parse(|p| p.module(|p| p.term()))
+                        .map_err(|es| {
+                            es.iter()
+                                .map(|(expect, maybe_token)| match maybe_token {
+                                    Some(token) => {
+                                        format!("({}, {})", expect.as_str(), token.as_str())
+                                    }
+                                    None => format!("({})", expect.as_str()),
+                                })
+                                .collect::<Vec<_>>()
+                                .join(",")
+                        });
+                    // let f = jaq_syn::parse(&filter, |p| p.module(|p| p.term()))
+                    //     .map(|m| m.conv(&filter));
 
                     // compile the filter in the context of the given definitions
-                    let filter = ctx.compile(f);
+                    let filter = ctx.compile(f?.conv(&filter));
+
                     assert!(
                         ctx.errs.is_empty(),
                         "{:?}",
@@ -43,9 +62,9 @@ impl JaqInterestFilter {
                             .collect::<Vec<_>>()
                     );
 
-                    (filter, plugin_name)
+                    Ok((filter, plugin_name))
                 })
-                .collect(),
+                .collect::<Result<_, BoxDynError>>()?,
         })
     }
 }

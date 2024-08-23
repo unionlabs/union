@@ -256,15 +256,14 @@ impl Voyager {
         })
     }
 
-    pub async fn run(self) -> Result<(), RunError> {
+    pub async fn run(self) -> Result<(), BoxDynError> {
         let interest_filter = JaqInterestFilter::new(
             self.context
                 .interest_filters()
                 .clone()
                 .into_iter()
                 .collect(),
-        )
-        .unwrap();
+        )?;
 
         {
             // set up msg server
@@ -445,7 +444,7 @@ impl Voyager {
 
         self.context.shutdown().await;
 
-        Err(RunError { errs: vec![] })
+        Err(RunError { errs: vec![] }.into())
     }
 
     pub async fn shutdown(self) {

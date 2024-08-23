@@ -6,7 +6,7 @@ use std::{
 
 use jsonrpsee::core::{async_trait, RpcResult};
 use protos::union::galois::api::v3::union_prover_api_client;
-use queue_msg::{aggregate, data, defer_relative, fetch, seq, void, wait, Op};
+use queue_msg::{call, data, defer_relative, promise, seq, void, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, instrument, warn};
@@ -25,15 +25,13 @@ use unionlabs::{
     },
 };
 use voyager_message::{
-    aggregate::Aggregate,
+    call::{Call, WaitForHeight},
+    callback::Callback,
     data::Data,
-    fetch::Fetch,
     plugin::{
         ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginKind, PluginModuleServer,
     },
-    run_module_server,
-    wait::WaitForHeight,
-    ClientType, VoyagerMessage,
+    run_module_server, ClientType, VoyagerMessage,
 };
 
 use crate::{
@@ -216,7 +214,7 @@ impl PluginModuleServer<D, F, A> for Module {
                     seq([
                         // REVIEW: How long should we wait between polls?
                         defer_relative(1),
-                        fetch(Fetch::plugin(
+                        call(Call::plugin(
                             self.plugin_name(),
                             FetchProveRequest { request },
                         )),
@@ -341,21 +339,21 @@ impl ConsensusModuleServer<D, F, A> for Module {
         update_to: Height,
     ) -> RpcResult<Op<VoyagerMessage<D, F, A>>> {
         Ok(seq([
-            void(wait(WaitForHeight {
+            void(call(WaitForHeight {
                 chain_id: self.chain_id.clone(),
                 height: update_to,
             })),
-            aggregate(
+            promise(
                 [
-                    fetch(Fetch::plugin(
+                    call(Call::plugin(
                         self.plugin_name(),
                         FetchUntrustedCommit { height: update_to },
                     )),
-                    fetch(Fetch::plugin(
+                    call(Call::plugin(
                         self.plugin_name(),
                         FetchUntrustedValidators { height: update_to },
                     )),
-                    fetch(Fetch::plugin(
+                    call(Call::plugin(
                         self.plugin_name(),
                         FetchTrustedValidators {
                             height: update_from.increment(),
@@ -363,7 +361,7 @@ impl ConsensusModuleServer<D, F, A> for Module {
                     )),
                 ],
                 [],
-                Aggregate::plugin(
+                Callback::plugin(
                     self.plugin_name(),
                     AggregateProveRequest {
                         chain_id: self.chain_id.clone(),

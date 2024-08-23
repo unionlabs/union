@@ -15,15 +15,13 @@ use tracing::{info, trace};
 use unionlabs::{never::Never, traits::Member};
 
 use crate::{
-    aggregate::Aggregate, context::Context, data::Data, effect::Effect, fetch::Fetch,
-    plugin::PluginModuleServer, wait::Wait,
+    call::Call, callback::Callback, context::Context, data::Data, plugin::PluginModuleServer,
 };
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod effect;
-pub mod fetch;
-pub mod wait;
+// pub mod wait;
 
 pub mod chain;
 
@@ -41,12 +39,10 @@ pub struct VoyagerMessage<D = Value, F = Value, A = Value> {
 
 impl<D: Member, F: Member, A: Member> QueueMessage for VoyagerMessage<D, F, A> {
     type Data = Data<D>;
-    type Fetch = Fetch<F>;
-    type Effect = Effect;
-    type Wait = Wait;
-    type Aggregate = Aggregate<A>;
+    type Call = Call<F>;
+    type Callback = Callback<A>;
 
-    type Store = Context;
+    type Context = Context;
 }
 
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;

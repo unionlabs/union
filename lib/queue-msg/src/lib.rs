@@ -98,12 +98,11 @@ pub enum Op<T: QueueMessage> {
     /// an output.
     Data(T::Data),
     /// Fetch some data from the outside world. This can also be thought of as a "read" operation.
-    Fetch(T::Fetch),
-    /// Send a message to the outside world. This can also be thought of as a "write" operation.
-    Effect(T::Effect),
-    /// Wait for some external condition.
-    Wait(T::Wait),
-
+    Call(T::Call),
+    // /// Send a message to the outside world. This can also be thought of as a "write" operation.
+    // Effect(T::Effect),
+    // /// Wait for some external condition.
+    // Wait(T::Wait),
     Defer(Defer),
     /// Repeats the contained message `times` times. If `times` is `None`, will repeat infinitely.
     Repeat {
@@ -159,7 +158,7 @@ pub enum Op<T: QueueMessage> {
         /// The resolved data messages.
         data: VecDeque<T::Data>,
         /// The message that will utilize the aggregated data.
-        receiver: T::Aggregate,
+        receiver: T::Callback,
     },
     /// Handle the contained message, voiding any returned `Data` messages that it returns.
     Void(Box<Self>),
@@ -216,15 +215,15 @@ pub fn defer_relative<T: QueueMessage>(seconds: u64) -> Op<T> {
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn fetch<T: QueueMessage>(t: impl Into<T::Fetch>) -> Op<T> {
-    Op::Fetch(t.into())
+pub fn call<T: QueueMessage>(t: impl Into<T::Call>) -> Op<T> {
+    Op::Call(t.into())
 }
 
-#[inline]
-#[must_use = "constructing an instruction has no effect"]
-pub fn effect<T: QueueMessage>(t: impl Into<T::Effect>) -> Op<T> {
-    Op::Effect(t.into())
-}
+// #[inline]
+// #[must_use = "constructing an instruction has no effect"]
+// pub fn effect<T: QueueMessage>(t: impl Into<T::Effect>) -> Op<T> {
+//     Op::Effect(t.into())
+// }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
@@ -232,23 +231,24 @@ pub fn data<T: QueueMessage>(t: impl Into<T::Data>) -> Op<T> {
     Op::Data(t.into())
 }
 
-#[inline]
-#[must_use = "constructing an instruction has no effect"]
-pub fn wait<T: QueueMessage>(t: impl Into<T::Wait>) -> Op<T> {
-    Op::Wait(t.into())
-}
+// #[inline]
+// #[must_use = "constructing an instruction has no effect"]
+// pub fn wait<T: QueueMessage>(t: impl Into<T::Wait>) -> Op<T> {
+//     Op::Wait(t.into())
+// }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn aggregate<T: QueueMessage>(
+pub fn promise<T: QueueMessage>(
     queue: impl IntoIterator<Item = Op<T>>,
+    // TODO: Remove this and put data in `queue` instead
     data: impl IntoIterator<Item = T::Data>,
-    receiver: impl Into<T::Aggregate>,
+    callback: impl Into<T::Callback>,
 ) -> Op<T> {
     Op::Aggregate {
         queue: queue.into_iter().collect(),
         data: data.into_iter().collect(),
-        receiver: receiver.into(),
+        receiver: callback.into(),
     }
 }
 
@@ -282,15 +282,15 @@ pub trait OpT = Debug
 
 pub trait QueueMessage: Sized + 'static {
     type Data: HandleData<Self> + OpT;
-    type Fetch: HandleFetch<Self> + OpT;
-    type Effect: HandleEffect<Self> + OpT;
-    type Wait: HandleWait<Self> + OpT;
+    type Call: HandleCall<Self> + OpT;
+    // type Effect: HandleEffect<Self> + OpT;
+    // type Wait: HandleWait<Self> + OpT;
 
     // TODO: This is more like a "callback" - it should be renamed accordingly
-    type Aggregate: HandleAggregate<Self> + OpT;
+    type Callback: HandleCallback<Self> + OpT;
 
     // TODO: Rename to `Context`
-    type Store: Send + Sync;
+    type Context: Send + Sync;
 }
 
 impl<T: QueueMessage> Op<T> {
@@ -298,7 +298,7 @@ impl<T: QueueMessage> Op<T> {
     #[allow(clippy::type_complexity)]
     pub fn handle<'a>(
         self,
-        store: &'a T::Store,
+        store: &'a T::Context,
         depth: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Option<Op<T>>, QueueError>> + Send + 'a>> {
         trace!(%depth, "handling message");
@@ -307,10 +307,9 @@ impl<T: QueueMessage> Op<T> {
             match self {
                 Self::Data(data) => data.handle(store).map(Some),
 
-                Self::Fetch(fetch) => fetch.handle(store).await.map(Some),
-                Self::Effect(msg) => msg.handle(store).await.map(Some),
-                Self::Wait(wait) => wait.handle(store).await.map(Some),
-
+                Self::Call(fetch) => fetch.handle(store).await.map(Some),
+                // Self::Effect(msg) => msg.handle(store).await.map(Some),
+                // Self::Wait(wait) => wait.handle(store).await.map(Some),
                 Self::Defer(Defer::Relative(seconds)) => Ok(Some(defer_absolute(now() + seconds))),
                 Self::Defer(Defer::Absolute(seconds)) => {
                     // if we haven't hit the time yet, requeue the defer msg
@@ -415,7 +414,7 @@ impl<T: QueueMessage> Op<T> {
                             }
                         }
 
-                        Ok(Some(aggregate(queue, data, receiver)))
+                        Ok(Some(promise(queue, data, receiver)))
                     } else {
                         // queue is empty, handle msg
                         receiver.handle(store, data).await.map(Some)
@@ -474,19 +473,10 @@ mod tests {
 
     impl QueueMessage for UnitMessage {
         type Data = ();
-        type Fetch = ();
-        type Effect = ();
-        type Wait = ();
+        type Call = ();
+        type Callback = ();
 
-        type Aggregate = ();
-
-        type Store = ();
-    }
-
-    impl HandleEffect<UnitMessage> for () {
-        async fn handle(self, _: &()) -> Result<Op<UnitMessage>, QueueError> {
-            Ok(noop())
-        }
+        type Context = ();
     }
 
     impl HandleData<UnitMessage> for () {
@@ -495,37 +485,24 @@ mod tests {
         }
     }
 
-    impl HandleFetch<UnitMessage> for () {
+    impl HandleCall<UnitMessage> for () {
         async fn handle(self, _: &()) -> Result<Op<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
 
-    impl HandleWait<UnitMessage> for () {
-        async fn handle(self, _: &()) -> Result<Op<UnitMessage>, QueueError> {
-            Ok(noop())
-        }
-    }
-
-    impl HandleAggregate<UnitMessage> for () {
+    impl HandleCallback<UnitMessage> for () {
         async fn handle(self, _: &(), _: VecDeque<()>) -> Result<Op<UnitMessage>, QueueError> {
             Ok(noop())
         }
     }
 
     #[queue_msg]
-    pub struct SimpleEvent {}
-    #[queue_msg]
     pub struct SimpleData {}
     #[queue_msg]
-    pub struct SimpleFetch {}
+    pub struct SimpleCall {}
     #[queue_msg]
-    pub struct SimpleEffect {}
-    #[queue_msg]
-    pub struct SimpleWait {}
-
-    #[queue_msg]
-    pub struct SimpleAggregate {}
+    pub struct SimpleCallback {}
 
     // macro_rules! vec_deque {
     //     ($($tt:tt)*) => {
@@ -653,10 +630,10 @@ mod tests {
     fn extract_data_complex() {
         let msg = seq::<UnitMessage>([
             data(()),
-            effect(()),
-            seq([fetch(()), data(()), seq([data(())])]),
-            effect(()),
-            seq([data(()), effect(())]),
+            call(()),
+            seq([call(()), data(()), seq([data(())])]),
+            call(()),
+            seq([data(()), call(())]),
             data(()),
         ]);
         assert_eq!(
@@ -667,10 +644,7 @@ mod tests {
                 (vec![0], data(())),
                 (vec![0], data(())),
                 (vec![0], data(())),
-                (
-                    vec![0],
-                    seq([effect(()), fetch(()), effect(()), effect(())])
-                ),
+                (vec![0], seq([call(()), call(()), call(()), call(())])),
             ],
         );
     }
@@ -687,8 +661,8 @@ mod tests {
     //         conc([
     //             repeat(None, fetch(())),
     //             repeat(None, fetch(())),
-    //             effect(()),
-    //             seq([fetch(()), fetch(()), effect(())]),
+    //             call(()),
+    //             seq([fetch(()), fetch(()), call(())]),
     //         ]),
     //     ]);
 
@@ -705,8 +679,8 @@ mod tests {
     //     //             conc([
     //     //                 repeat(None, fetch(())),
     //     //                 repeat(None, fetch(())),
-    //     //                 effect(()),
-    //     //                 seq([fetch(()), fetch(()), effect(())]),
+    //     //                 call(()),
+    //     //                 seq([fetch(()), fetch(()), call(())]),
     //     //             ]),
     //     //         ])],
     //     //         vec_deque![seq::<UnitMessageTypes>([
@@ -714,8 +688,8 @@ mod tests {
     //     //             conc([
     //     //                 repeat(None, fetch(())),
     //     //                 repeat(None, fetch(())),
-    //     //                 effect(()),
-    //     //                 seq([fetch(()), fetch(()), effect(())]),
+    //     //                 call(()),
+    //     //                 seq([fetch(()), fetch(()), call(())]),
     //     //             ]),
     //     //         ])],
     //     //         vec_deque![seq::<UnitMessageTypes>([
@@ -724,33 +698,33 @@ mod tests {
     //     //             conc([
     //     //                 repeat(None, fetch(())),
     //     //                 repeat(None, fetch(())),
-    //     //                 effect(()),
-    //     //                 seq([fetch(()), fetch(()), effect(())]),
+    //     //                 call(()),
+    //     //                 seq([fetch(()), fetch(()), call(())]),
     //     //             ]),
     //     //         ])],
     //     //         // seq(a, conc(m...)), handles a, seq(conc(m...)) == m...
     //     //         vec_deque![
     //     //             repeat(None, fetch(())),
     //     //             repeat(None, fetch(())),
-    //     //             effect(()),
-    //     //             seq([fetch(()), fetch(()), effect(())]),
+    //     //             call(()),
+    //     //             seq([fetch(()), fetch(()), call(())]),
     //     //         ],
     //     //         vec_deque![
     //     //             repeat(None, fetch(())),
-    //     //             effect(()),
-    //     //             seq([fetch(()), fetch(()), effect(())]),
+    //     //             call(()),
+    //     //             seq([fetch(()), fetch(()), call(())]),
     //     //             // repeat(a) queues seq(a, repeat(a))
     //     //             seq([fetch(()), repeat(None, fetch(()))])
     //     //         ],
     //     //         vec_deque![
-    //     //             effect(()),
-    //     //             seq([fetch(()), fetch(()), effect(())]),
+    //     //             call(()),
+    //     //             seq([fetch(()), fetch(()), call(())]),
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //             // repeat(a) queues seq(a, repeat(a))
     //     //             seq([fetch(()), repeat(None, fetch(()))])
     //     //         ],
     //     //         vec_deque![
-    //     //             seq([fetch(()), fetch(()), effect(())]),
+    //     //             seq([fetch(()), fetch(()), call(())]),
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //             noop(),
@@ -759,33 +733,33 @@ mod tests {
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //             noop(),
-    //     //             seq([fetch(()), effect(())]),
+    //     //             seq([fetch(()), call(())]),
     //     //         ],
     //     //         vec_deque![
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //             noop(),
-    //     //             seq([fetch(()), effect(())]),
+    //     //             seq([fetch(()), call(())]),
     //     //             repeat(None, fetch(())),
     //     //         ],
     //     //         vec_deque![
     //     //             noop(),
-    //     //             seq([fetch(()), effect(())]),
+    //     //             seq([fetch(()), call(())]),
     //     //             repeat(None, fetch(())),
     //     //             repeat(None, fetch(())),
     //     //         ],
     //     //         vec_deque![
-    //     //             seq([fetch(()), effect(())]),
+    //     //             seq([fetch(()), call(())]),
     //     //             repeat(None, fetch(())),
     //     //             repeat(None, fetch(())),
     //     //         ],
-    //     //         vec_deque![repeat(None, fetch(())), repeat(None, fetch(())), effect(()),],
+    //     //         vec_deque![repeat(None, fetch(())), repeat(None, fetch(())), call(()),],
     //     //         vec_deque![
     //     //             repeat(None, fetch(())),
-    //     //             effect(()),
+    //     //             call(()),
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //         ],
     //     //         vec_deque![
-    //     //             effect(()),
+    //     //             call(()),
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //             seq([fetch(()), repeat(None, fetch(()))]),
     //     //         ],
@@ -828,44 +802,24 @@ impl std::error::Error for QueueError {
     }
 }
 
-pub trait HandleFetch<T: QueueMessage> {
-    fn handle(self, store: &T::Store) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
+pub trait HandleCall<T: QueueMessage> {
+    fn handle(self, store: &T::Context) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }
 
 pub trait HandleData<T: QueueMessage> {
-    fn handle(self, store: &T::Store) -> Result<Op<T>, QueueError>;
+    fn handle(self, store: &T::Context) -> Result<Op<T>, QueueError>;
 }
 
-pub trait HandleWait<T: QueueMessage> {
-    fn handle(self, store: &T::Store) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
-}
-
-pub trait HandleEffect<T: QueueMessage> {
-    fn handle(self, store: &T::Store) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
-}
-
-pub trait HandleAggregate<T: QueueMessage> {
+pub trait HandleCallback<T: QueueMessage> {
     fn handle(
         self,
-        ctx: &T::Store,
+        ctx: &T::Context,
         data: VecDeque<T::Data>,
     ) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }
 
-impl<T: QueueMessage> HandleFetch<T> for Never {
-    async fn handle(self, _: &<T as QueueMessage>::Store) -> Result<Op<T>, QueueError> {
-        match self {}
-    }
-}
-
-impl<T: QueueMessage> HandleWait<T> for Never {
-    async fn handle(self, _: &<T as QueueMessage>::Store) -> Result<Op<T>, QueueError> {
-        match self {}
-    }
-}
-
-impl<T: QueueMessage> HandleEffect<T> for Never {
-    async fn handle(self, _: &<T as QueueMessage>::Store) -> Result<Op<T>, QueueError> {
+impl<T: QueueMessage> HandleCall<T> for Never {
+    async fn handle(self, _: &<T as QueueMessage>::Context) -> Result<Op<T>, QueueError> {
         match self {}
     }
 }
@@ -880,7 +834,7 @@ pub fn now() -> u64 {
 
 // #[derive(CloneNoBound)]
 pub struct Engine<'a, T: QueueMessage, Q: Queue<T>, O: PurePass<T>> {
-    store: &'a T::Store,
+    store: &'a T::Context,
     queue: &'a Q,
     optimizer: &'a O,
 }
@@ -891,7 +845,7 @@ pub trait Captures<'a> {}
 impl<T: ?Sized> Captures<'_> for T {}
 
 impl<'a, T: QueueMessage, Q: Queue<T>, O: PurePass<T>> Engine<'a, T, Q, O> {
-    pub fn new(store: &'a T::Store, queue: &'a Q, optimizer: &'a O) -> Self {
+    pub fn new(store: &'a T::Context, queue: &'a Q, optimizer: &'a O) -> Self {
         Self {
             store,
             queue,
@@ -959,7 +913,7 @@ pub async fn run_to_completion<
     PostPass: Pass<T>,
 >(
     a: A,
-    store: T::Store,
+    store: T::Context,
     queue_config: Q::Config,
     msgs: impl IntoIterator<Item = Op<T>>,
     pre_pass_optimizer: PrePass,
@@ -1261,27 +1215,17 @@ pub mod test_utils {
 
     use crate::{
         aggregation::{do_aggregate, UseAggregate},
-        data, effect, noop, HandleAggregate, HandleData, HandleEffect, HandleFetch, HandleWait, Op,
-        QueueError, QueueMessage,
+        call, data, noop, HandleCall, HandleCallback, HandleData, Op, QueueError, QueueMessage,
     };
 
     pub enum SimpleMessage {}
 
     impl QueueMessage for SimpleMessage {
         type Data = SimpleData;
-        type Fetch = SimpleFetch;
-        type Effect = SimpleEffect;
-        type Wait = SimpleWait;
+        type Call = SimpleCall;
+        type Callback = SimpleAggregate;
 
-        type Aggregate = SimpleAggregate;
-
-        type Store = ();
-    }
-
-    impl HandleEffect<SimpleMessage> for SimpleEffect {
-        async fn handle(self, _: &()) -> Result<Op<SimpleMessage>, QueueError> {
-            Ok(noop())
-        }
+        type Context = ();
     }
 
     impl HandleData<SimpleMessage> for SimpleData {
@@ -1290,25 +1234,23 @@ pub mod test_utils {
         }
     }
 
-    impl HandleFetch<SimpleMessage> for SimpleFetch {
+    impl HandleCall<SimpleMessage> for SimpleCall {
         async fn handle(self, _: &()) -> Result<Op<SimpleMessage>, QueueError> {
             Ok(match self {
-                SimpleFetch::A(FetchA {}) => data(DataA {}),
-                SimpleFetch::B(FetchB {}) => data(DataB {}),
-                SimpleFetch::C(FetchC {}) => data(DataC {}),
-                SimpleFetch::D(FetchD {}) => data(DataD {}),
-                SimpleFetch::E(FetchE {}) => data(DataE {}),
+                SimpleCall::A(FetchA {}) => data(DataA {}),
+                SimpleCall::B(FetchB {}) => data(DataB {}),
+                SimpleCall::C(FetchC {}) => data(DataC {}),
+                SimpleCall::D(FetchD {}) => data(DataD {}),
+                SimpleCall::E(FetchE {}) => data(DataE {}),
+                SimpleCall::PrintAbc(PrintAbc { a, b, c }) => {
+                    println!("a = {a:?}, b = {b:?}, c = {c:?}");
+                    noop()
+                }
             })
         }
     }
 
-    impl HandleWait<SimpleMessage> for SimpleWait {
-        async fn handle(self, _: &()) -> Result<Op<SimpleMessage>, QueueError> {
-            Ok(noop())
-        }
-    }
-
-    impl HandleAggregate<SimpleMessage> for SimpleAggregate {
+    impl HandleCallback<SimpleMessage> for SimpleAggregate {
         async fn handle(
             self,
             _: &(),
@@ -1350,12 +1292,13 @@ pub mod test_utils {
 
     #[queue_msg]
     #[derive(Enumorph, SubsetOf)]
-    pub enum SimpleFetch {
+    pub enum SimpleCall {
         A(FetchA),
         B(FetchB),
         C(FetchC),
         D(FetchD),
         E(FetchE),
+        PrintAbc(PrintAbc),
     }
     #[queue_msg]
     pub struct FetchA {}
@@ -1367,12 +1310,6 @@ pub mod test_utils {
     pub struct FetchD {}
     #[queue_msg]
     pub struct FetchE {}
-
-    #[queue_msg]
-    #[derive(Enumorph, SubsetOf)]
-    pub enum SimpleEffect {
-        PrintAbc(PrintAbc),
-    }
 
     #[queue_msg]
     pub struct PrintAbc {
@@ -1400,7 +1337,7 @@ pub mod test_utils {
             AggregatePrintAbc {}: Self,
             hlist_pat![a, b, c]: Self::AggregatedData,
         ) -> Op<SimpleMessage> {
-            effect(PrintAbc { a, b, c })
+            call(PrintAbc { a, b, c })
         }
     }
 }

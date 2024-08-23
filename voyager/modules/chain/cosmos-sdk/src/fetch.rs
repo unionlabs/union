@@ -3,7 +3,7 @@ use std::num::NonZeroU32;
 use enumorph::Enumorph;
 use queue_msg::queue_msg;
 use unionlabs::{ibc::core::client::height::Height, id::ConnectionId};
-use voyager_message::aggregate::InfoOrMeta;
+use voyager_message::callback::InfoOrMeta;
 
 #[queue_msg]
 #[derive(Enumorph)]

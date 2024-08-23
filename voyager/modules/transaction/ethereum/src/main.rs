@@ -30,7 +30,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{defer_relative, effect, seq, Op};
+use queue_msg::{call, defer_relative, optimize::OptimizationResult, seq, Op};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, error_span, info, info_span, instrument, warn, Instrument};
 use unionlabs::{
@@ -39,9 +39,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    data::Data,
-    effect::{log_msg, Effect, Msg, MsgCreateClientData, WithChainId},
-    plugin::{PluginInfo, PluginKind, PluginModuleServer, TransactionSubmissionModuleServer},
+    call::Call,
+    data::{log_msg, Data, IbcMessage, MsgCreateClientData, WithChainId},
+    plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
     run_module_server, VoyagerMessage,
 };
 
@@ -57,7 +57,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    run_module_server(Module::new, TransactionSubmissionModuleServer::into_rpc).await
+    run_module_server(Module::new, OptimizationPassPluginServer::into_rpc).await
 }
 
 #[derive(Debug, Clone)]
@@ -152,18 +152,25 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
             name: self.plugin_name(),
-            kind: Some(PluginKind::Transaction),
-            interest_filter: None,
-        })
-    }
+            kind: None,
+            interest_filter: Some(
+                format!(
+                    r#"
+if ."@type" == "data" then
+    ."@value" as $data |
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn handle_aggregate(
-        &self,
-        aggregate: ModuleAggregate,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        match aggregate {}
+    # pull all transaction data messages
+    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message_batch")
+        and $data."@value".chain_id == "{chain_id}")
+else
+    false
+end
+"#,
+                    chain_id = self.chain_id,
+                )
+                .to_string(),
+            ),
+        })
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -171,21 +178,9 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
         &self,
         msg: ModuleFetch,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        match msg {}
-    }
-}
-
-#[async_trait]
-impl TransactionSubmissionModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
-    fn register(&self) -> RpcResult<String> {
-        Ok(self.chain_id.to_string())
-    }
-
-    async fn send_transaction(
-        &self,
-        mut msgs: Vec<Msg>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        let res = self.keyring
+        match msg {
+            ModuleFetch::SubmitMulticall(msgs) => {
+                let res = self.keyring
         .with({
             let msgs = msgs.clone();
             move |wallet| -> _ {
@@ -402,38 +397,85 @@ impl TransactionSubmissionModuleServer<ModuleData, ModuleFetch, ModuleAggregate>
         })
         .await;
 
-        let rewrap_msg = || {
-            if msgs.len() > 1 {
-                Effect::Batch(WithChainId {
-                    chain_id: self.chain_id.to_string(),
-                    message: msgs,
-                })
-            } else {
-                Effect::Single(WithChainId {
-                    chain_id: self.chain_id.to_string(),
-                    message: msgs.pop().unwrap(),
-                })
-            }
-        };
+                let rewrap_msg =
+                    || Call::plugin(self.plugin_name(), ModuleFetch::SubmitMulticall(msgs));
 
-        match res {
-            Some(Ok(())) => Ok(Op::Noop),
-            Some(Err(TxSubmitError::GasPriceTooHigh { .. })) => {
-                Ok(seq([defer_relative(6), effect(rewrap_msg())]))
+                match res {
+                    Some(Ok(())) => Ok(Op::Noop),
+                    Some(Err(TxSubmitError::GasPriceTooHigh { .. })) => {
+                        Ok(seq([defer_relative(6), call(rewrap_msg())]))
+                    }
+                    Some(Err(TxSubmitError::OutOfGas)) => {
+                        Ok(seq([defer_relative(12), call(rewrap_msg())]))
+                    }
+                    Some(Err(TxSubmitError::EmptyRevert)) => {
+                        Ok(seq([defer_relative(12), call(rewrap_msg())]))
+                    }
+                    Some(Err(err)) => Err(ErrorObject::owned(
+                        -1,
+                        ErrorReporter(err).to_string(),
+                        None::<()>,
+                    )),
+                    None => Ok(call(rewrap_msg())),
+                }
             }
-            Some(Err(TxSubmitError::OutOfGas)) => {
-                Ok(seq([defer_relative(12), effect(rewrap_msg())]))
-            }
-            Some(Err(TxSubmitError::EmptyRevert)) => {
-                Ok(seq([defer_relative(12), effect(rewrap_msg())]))
-            }
-            Some(Err(err)) => Err(ErrorObject::owned(
-                -1,
-                ErrorReporter(err).to_string(),
-                None::<()>,
-            )),
-            None => Ok(effect(rewrap_msg())),
         }
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    fn handle_aggregate(
+        &self,
+        aggregate: ModuleAggregate,
+        _data: VecDeque<Data<ModuleData>>,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        match aggregate {}
+    }
+}
+
+#[async_trait]
+impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+    fn run_pass(
+        &self,
+        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>
+    {
+        Ok(OptimizationResult {
+            optimize_further: vec![],
+            ready: msgs
+                .into_iter()
+                .enumerate()
+                .map(|(idx, msg)| {
+                    (
+                        vec![idx],
+                        match msg {
+                            Op::Data(Data::IdentifiedIbcMessage(WithChainId {
+                                chain_id,
+                                message,
+                            })) => {
+                                assert_eq!(chain_id, self.chain_id.to_string());
+
+                                call(Call::plugin(
+                                    self.plugin_name(),
+                                    ModuleFetch::SubmitMulticall(vec![message]),
+                                ))
+                            }
+                            Op::Data(Data::IdentifiedIbcMessageBatch(WithChainId {
+                                chain_id,
+                                message,
+                            })) => {
+                                assert_eq!(chain_id, self.chain_id.to_string());
+
+                                call(Call::plugin(
+                                    self.plugin_name(),
+                                    ModuleFetch::SubmitMulticall(message),
+                                ))
+                            }
+                            _ => panic!("unexpected message: {msg:?}"),
+                        },
+                    )
+                })
+                .collect(),
+        })
     }
 }
 
@@ -457,10 +499,10 @@ pub enum TxSubmitError {
 
 #[allow(clippy::type_complexity)]
 fn process_msgs<M: Middleware>(
-    msgs: Vec<Msg>,
+    msgs: Vec<IbcMessage>,
     ibc_handler: &IBCHandler<M>,
     relayer: H160,
-) -> Vec<(Msg, FunctionCall<Arc<M>, M, ()>)> {
+) -> Vec<(IbcMessage, FunctionCall<Arc<M>, M, ()>)> {
     pub fn mk_function_call<Call: EthCall, M: Middleware>(
         ibc_handler: &IBCHandler<M>,
         data: Call,
@@ -473,7 +515,7 @@ fn process_msgs<M: Middleware>(
     msgs.clone()
         .into_iter()
         .map(|msg| match msg.clone() {
-            Msg::ConnectionOpenInit(data) => (
+            IbcMessage::ConnectionOpenInit(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -486,7 +528,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::ConnectionOpenTry(data) => (
+            IbcMessage::ConnectionOpenTry(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -509,7 +551,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::ConnectionOpenAck(data) => (
+            IbcMessage::ConnectionOpenAck(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -527,7 +569,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::ConnectionOpenConfirm(data) => (
+            IbcMessage::ConnectionOpenConfirm(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -539,7 +581,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::ChannelOpenInit(data) => (
+            IbcMessage::ChannelOpenInit(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -550,7 +592,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::ChannelOpenTry(data) => (
+            IbcMessage::ChannelOpenTry(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -564,7 +606,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::ChannelOpenAck(data) => (
+            IbcMessage::ChannelOpenAck(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -579,7 +621,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::ChannelOpenConfirm(data) => (
+            IbcMessage::ChannelOpenConfirm(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -592,7 +634,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::RecvPacket(data) => (
+            IbcMessage::RecvPacket(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -604,7 +646,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::AckPacket(data) => (
+            IbcMessage::AcknowledgePacket(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -617,7 +659,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::TimeoutPacket(data) => (
+            IbcMessage::TimeoutPacket(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,
@@ -630,7 +672,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::CreateClient(MsgCreateClientData {
+            IbcMessage::CreateClient(MsgCreateClientData {
                 msg: data,
                 client_type,
             }) => (
@@ -645,7 +687,7 @@ fn process_msgs<M: Middleware>(
                     }),
                 ),
             ),
-            Msg::UpdateClient(data) => (
+            IbcMessage::UpdateClient(data) => (
                 msg,
                 mk_function_call(
                     ibc_handler,

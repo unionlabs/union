@@ -5,9 +5,8 @@ use frunk::{hlist_pat, HList};
 use futures::{stream, StreamExt, TryFutureExt, TryStreamExt};
 use macros::{apply, model};
 use queue_msg::{
-    aggregate,
     aggregation::{do_aggregate, HListTryFromIterator, UseAggregate},
-    conc, fetch, queue_msg, HandleAggregate, Op, QueueError, QueueMessage,
+    call, conc, promise, queue_msg, HandleCallback, Op, QueueError, QueueMessage,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -26,16 +25,16 @@ use unionlabs::{
 };
 
 use crate::{
+    call::{
+        compound::{fetch_client_state_meta, fetch_connection_from_channel_info},
+        DecodeClientStateMeta, EncodeProof, FetchBlockRange, FetchClientInfo, FetchRawProof,
+        FetchState,
+    },
     data::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ClientInfo,
         ConnectionMetadata, ConnectionOpenAck, ConnectionOpenInit, ConnectionOpenTry, Data,
         DecodedClientStateMeta, IbcState, LatestHeight, OrderedHeaders, OrderedMsgUpdateClients,
         RawIbcProof, SendPacket, WriteAcknowledgement,
-    },
-    fetch::{
-        compound::{fetch_client_state_meta, fetch_connection_from_channel_info},
-        DecodeClientStateMeta, EncodeProof, FetchBlockRange, FetchClientInfo, FetchRawProof,
-        FetchState,
     },
     json_rpc_error_to_queue_error,
     plugin::{ClientModuleClient, PluginModuleClient},
@@ -45,7 +44,7 @@ use crate::{
 #[apply(top_level_identifiable_enum)]
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum Aggregate<A = serde_json::Value> {
+pub enum Callback<Cb = serde_json::Value> {
     // originally block
     FetchBlockRange(AggregateFetchBlockRange),
 
@@ -109,10 +108,10 @@ pub enum Aggregate<A = serde_json::Value> {
     // new
     AggregateDecodeClientStateMeta(AggregateDecodeClientStateMeta),
 
-    Plugin(PluginMessage<A>),
+    Plugin(PluginMessage<Cb>),
 }
 
-impl<D: Member, F: Member, A: Member> HandleAggregate<VoyagerMessage<D, F, A>> for Aggregate<A> {
+impl<D: Member, F: Member, A: Member> HandleCallback<VoyagerMessage<D, F, A>> for Callback<A> {
     // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn handle(
         self,
@@ -120,9 +119,9 @@ impl<D: Member, F: Member, A: Member> HandleAggregate<VoyagerMessage<D, F, A>> f
         data: VecDeque<<VoyagerMessage<D, F, A> as QueueMessage>::Data>,
     ) -> Result<Op<VoyagerMessage<D, F, A>>, QueueError> {
         match self {
-            Aggregate::FetchBlockRange(aggregate) => Ok(do_aggregate(aggregate, data)),
+            Callback::FetchBlockRange(aggregate) => Ok(do_aggregate(aggregate, data)),
 
-            Aggregate::AggregateMsgUpdateClientsFromOrderedHeaders(
+            Callback::AggregateMsgUpdateClientsFromOrderedHeaders(
                 AggregateMsgUpdateClientsFromOrderedHeaders {
                     counterparty_client_id,
                 },
@@ -167,26 +166,26 @@ impl<D: Member, F: Member, A: Member> HandleAggregate<VoyagerMessage<D, F, A>> f
             // Aggregate::AggregateMsgUpdateClientFromEncodedHeader(aggregate) => {
             //     Ok(do_aggregate(aggregate, data))
             // }
-            Aggregate::AggregateFetchClientInfoFromChannel(aggregate) => {
+            Callback::AggregateFetchClientInfoFromChannel(aggregate) => {
                 Ok(do_aggregate(aggregate, data))
             }
-            Aggregate::AggregateFetchClientInfoFromConnection(aggregate) => {
+            Callback::AggregateFetchClientInfoFromConnection(aggregate) => {
                 Ok(do_aggregate(aggregate, data))
             }
-            Aggregate::AggregateFetchConnectionFromChannel(aggregate) => {
+            Callback::AggregateFetchConnectionFromChannel(aggregate) => {
                 Ok(do_aggregate(aggregate, data))
             }
-            Aggregate::AggregateDecodeClientStateFromConnection(aggregate) => {
-                Ok(do_aggregate(aggregate, data))
-            }
-
-            Aggregate::AggregateEncodeStateProof(aggregate) => Ok(do_aggregate(aggregate, data)),
-
-            Aggregate::AggregateFetchCounterpartyChannelAndConnection(aggregate) => {
+            Callback::AggregateDecodeClientStateFromConnection(aggregate) => {
                 Ok(do_aggregate(aggregate, data))
             }
 
-            Aggregate::AggregateFetchCounterpartyChannelAndConnectionFromSourceChannel(
+            Callback::AggregateEncodeStateProof(aggregate) => Ok(do_aggregate(aggregate, data)),
+
+            Callback::AggregateFetchCounterpartyChannelAndConnection(aggregate) => {
+                Ok(do_aggregate(aggregate, data))
+            }
+
+            Callback::AggregateFetchCounterpartyChannelAndConnectionFromSourceChannel(
                 aggregate,
             ) => Ok(do_aggregate(aggregate, data)),
 
@@ -258,9 +257,9 @@ impl<D: Member, F: Member, A: Member> HandleAggregate<VoyagerMessage<D, F, A>> f
             // }
             // Aggregate::WaitForPacketReceipt(agg) => Ok(do_aggregate(id(self.chain_id, agg),
             // data)),
-            Aggregate::AggregateDecodeClientStateMeta(agg) => Ok(do_aggregate(agg, data)),
+            Callback::AggregateDecodeClientStateMeta(agg) => Ok(do_aggregate(agg, data)),
 
-            Aggregate::Plugin(PluginMessage { plugin, message }) => Ok(ctx
+            Callback::Plugin(PluginMessage { plugin, message }) => Ok(ctx
                 .plugin(&plugin)?
                 .handle_aggregate(message, data)
                 .await
@@ -288,7 +287,7 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
     ) -> Op<VoyagerMessage<D, F, A>> {
         assert!(to_height.revision_height > from_height.revision_height);
 
-        fetch(FetchBlockRange {
+        call(FetchBlockRange {
             chain_id,
             from_height,
             to_height,
@@ -392,8 +391,8 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
             }
         }]: Self::AggregatedData,
     ) -> Op<VoyagerMessage<D, F, A>> {
-        aggregate(
-            [fetch(FetchState {
+        promise(
+            [call(FetchState {
                 chain_id,
                 path: ConnectionPath {
                     connection_id: connection_hops.pop().expect("empty connection hops?"),
@@ -435,7 +434,7 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
         };
 
         let info = || {
-            fetch(FetchClientInfo {
+            call(FetchClientInfo {
                 chain_id: chain_id.clone(),
                 client_id: client_id.clone(),
             })
@@ -471,7 +470,7 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
             }
         }]: Self::AggregatedData,
     ) -> Op<VoyagerMessage<D, F, A>> {
-        fetch(FetchState {
+        call(FetchState {
             chain_id,
             path: ConnectionPath {
                 connection_id: connection_hops.pop().expect("empty connection hops?"),
@@ -494,7 +493,7 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
         Self {}: Self,
         hlist_pat![raw_proof, client_info]: Self::AggregatedData,
     ) -> Op<VoyagerMessage<D, F, A>> {
-        fetch(EncodeProof {
+        call(EncodeProof {
             raw_proof,
             client_info,
         })
@@ -513,7 +512,7 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
         Self {}: Self,
         hlist_pat![ibc_state, client_info]: Self::AggregatedData,
     ) -> Op<VoyagerMessage<D, F, A>> {
-        fetch(DecodeClientStateMeta {
+        call(DecodeClientStateMeta {
             ibc_state,
             client_info,
         })
@@ -532,13 +531,13 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
         Self {}: Self,
         hlist_pat![ibc_state]: Self::AggregatedData,
     ) -> Op<VoyagerMessage<D, F, A>> {
-        aggregate(
+        promise(
             [
-                fetch(FetchClientInfo {
+                call(FetchClientInfo {
                     chain_id: ibc_state.chain_id.clone(),
                     client_id: ibc_state.state.client_id.clone(),
                 }),
-                fetch(FetchState {
+                call(FetchState {
                     chain_id: ibc_state.chain_id,
                     // NOTE: Latest *MUST* be used here, as ibc_state.height is the height on the
                     // wrong chain
@@ -2862,7 +2861,7 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
         hlist_pat![client_state]: Self::AggregatedData,
     ) -> Op<VoyagerMessage<D, F, A>> {
         conc([
-            fetch(FetchState {
+            call(FetchState {
                 chain_id: client_state.state.chain_id.clone(),
                 at: QueryHeight::Latest,
                 path: ChannelEndPath {
@@ -2923,7 +2922,7 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
         hlist_pat![client_state, channel_state]: Self::AggregatedData,
     ) -> Op<VoyagerMessage<D, F, A>> {
         conc([
-            fetch(FetchState {
+            call(FetchState {
                 chain_id: client_state.state.chain_id.clone(),
                 at: QueryHeight::Latest,
                 path: ChannelEndPath {

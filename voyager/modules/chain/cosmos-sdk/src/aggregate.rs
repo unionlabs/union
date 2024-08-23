@@ -12,7 +12,7 @@ use unionlabs::{
     ics24::{ChannelEndPath, ConnectionPath},
 };
 use voyager_message::{
-    aggregate::mk_packet_metadata,
+    callback::mk_packet_metadata,
     data::{ChainEvent, ClientInfo, Data, DecodedClientStateMeta, IbcState, PacketMetadata},
     VoyagerMessage,
 };

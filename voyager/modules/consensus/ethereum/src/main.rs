@@ -4,7 +4,7 @@ use beacon_api::client::BeaconApiClient;
 use bitvec::{order::Msb0, vec::BitVec};
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use jsonrpsee::core::{async_trait, RpcResult};
-use queue_msg::{aggregate, aggregation::do_aggregate, data, defer_relative, fetch, seq, Op};
+use queue_msg::{aggregation::do_aggregate, call, data, defer_relative, promise, seq, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument, warn};
@@ -20,9 +20,9 @@ use unionlabs::{
     uint::U256,
 };
 use voyager_message::{
-    aggregate::Aggregate,
+    call::Call,
+    callback::Callback,
     data::Data,
-    fetch::Fetch,
     plugin::{
         ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginKind, PluginModuleServer,
     },
@@ -158,7 +158,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
 
                     Ok(seq([
                         defer_relative(1),
-                        fetch(Fetch::plugin(self.plugin_name(), FetchFinalityUpdate {})),
+                        call(Call::plugin(self.plugin_name(), FetchFinalityUpdate {})),
                     ]))
                 } else {
                     Ok(data(Data::plugin(
@@ -388,13 +388,13 @@ impl ConsensusModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module 
         update_from: Height,
         update_to: Height,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        Ok(aggregate(
+        Ok(promise(
             [
-                fetch(Fetch::plugin(self.plugin_name(), FetchFinalityUpdate {})),
-                fetch(Fetch::plugin(self.plugin_name(), FetchBeaconSpec {})),
+                call(Call::plugin(self.plugin_name(), FetchFinalityUpdate {})),
+                call(Call::plugin(self.plugin_name(), FetchBeaconSpec {})),
             ],
             [],
-            Aggregate::plugin(
+            Callback::plugin(
                 self.plugin_name(),
                 MakeCreateUpdates {
                     update_from,
