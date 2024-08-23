@@ -8,7 +8,7 @@ import unionWorks from "#/assets/images/spline-holders/union-works.png"
 import trust from "#/assets/images/spline-holders/trust.png"
 import TextP from "../../typography/TextP.astro";
 import bubbles from "#/assets/images/spline-holders/bubbles.png"
-import divingBubbles from "#/assets/images/spline-holders/diving-bubbles.png"
+import smallWhale from "#/assets/images/whale.png"
 
 const diver = [
   {text: "What is Union?", meter: '200m'},
@@ -23,7 +23,7 @@ const diver = [
 ]
 ---
 
-<div class="flex justify-center  learn-gradient pb-24">
+<div class="flex justify-center  learn-gradient pb-24 " id="swim-container">
     <Image src={bubbles} alt="bubbles" class="absolute inset-0 w-full h-full object-cover object-center mix-blend-soft-light"></Image>
 
     <div class="relative grid grid-cols-4 gap-4 max-w-[1440px] px-6">
@@ -242,32 +242,57 @@ const diver = [
             <div class="sticky top-24 p-4 pr-0">
                 <div class="flex gap-8 h-full justify-end font-mono">
                     <div class="flex flex-col gap-6">
-                      {
-                        diver.map(item => {
-                          return (
-                                  <div class="h-16 flex items-center">
-                                      <a href="#" class="hover:text-accent-500">{item.text}</a>
-                                  </div>
-                          )
-                        })
-                      }
+                        {diver.map(item => (
+                          <div class="h-16 flex items-center">
+                              <a href="#" class="hover:text-accent-500">{item.text}</a>
+                          </div>
+                        ))}
                     </div>
-                    <div class="flex dive-gradient h-auto min-w-5"></div>
+                    <div class="flex dive-gradient h-auto min-w-7 relative" id="swim-lane">
+                        <Image id="scrolling-dot"  src={smallWhale} alt="small whale" class="absolute w-10"></Image>
+                    </div>
                     <div class="flex flex-col gap-6 font-mono text-lg">
-                      {
-                        diver.map(item => {
-                          return (
-                                  <div class="h-16 flex items-center">
-                                      <p class="text-2xl">{item.meter}</p>
-                                  </div>
-                          )
-                        })
-                      }
+                        {diver.map(item => (
+                          <div class="h-16 flex items-center">
+                              <p class="text-2xl">{item.meter}</p>
+                          </div>
+                        ))}
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
+
+    <script>
+        const dot = document.getElementById('scrolling-dot');
+        const container = document.getElementById('swim-container');
+        const swimlane = document.getElementById('swim-lane');
+
+        window.addEventListener('scroll', () => {
+            const containerRect = container.getBoundingClientRect();
+            const swimlaneRect = swimlane.getBoundingClientRect();
+
+            const containerTop = containerRect.top;
+            const containerBottom = containerRect.bottom;
+            const containerHeight = containerRect.height;
+
+            const swimlaneHeight = swimlaneRect.height;
+
+            // Calculate how much the container is scrolled
+            const scrollPosition = Math.max(0, Math.min(containerHeight, window.innerHeight - containerTop));
+
+            // Calculate the scroll percentage relative to the container's height
+            const scrollPercentage = scrollPosition / containerHeight;
+
+            // Calculate the new top position of the dot within the swimlane
+            const maxDotPosition = swimlaneHeight - dot.offsetHeight;
+            const newTop = scrollPercentage * maxDotPosition;
+
+            // Set the dot's top position
+            dot.style.top = `${newTop}px`;
+        });
+    </script>
 
 
     <style>
@@ -278,6 +303,8 @@ const diver = [
         .dive-gradient {
             background: linear-gradient(180deg, #FFFFFF 4%, #A0ECFD 7.13%, #030711 56%, #000000 100%);
         }
+
+
     </style>
 
 

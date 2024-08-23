@@ -73,7 +73,7 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
         <div class="col-span-1">
             <button
                     id="filterToggle"
-                    class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center md:hidden"
+                    class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center lg:hidden"
             >
                 Filter
                 <svg
@@ -92,7 +92,7 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
                 </svg>
             </button>
 
-            <div id="filterContent" class="hidden md:block">
+            <div id="filterContent" class="hidden lg:block">
               {categories.map(category => (
                       <div class="mb-2">
                           <label class="inline-flex items-center cursor-pointer font-mono uppercase">
@@ -202,7 +202,7 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
 
   // Show filter content on larger screens
   window.addEventListener('resize', () => {
-    if (window.innerWidth >= 768) {
+    if (window.innerWidth >= 1024) {
       filterContent.classList.remove('hidden');
     } else {
       filterContent.classList.add('hidden');
