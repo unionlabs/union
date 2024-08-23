@@ -41,8 +41,6 @@ pub mod config;
 
 pub mod queue;
 
-pub mod passes;
-
 fn main() -> ExitCode {
     let args = AppArgs::parse();
 
@@ -1187,33 +1185,3 @@ fn print_json<T: Serialize>(t: &T) {
 //         .await
 //         .unwrap();
 // }
-
-#[cfg(test)]
-mod tests {
-    use unionlabs::{
-        encoding::{DecodeAs, Proto},
-        google::protobuf::any::Any,
-        ibc::lightclients::{ethereum, wasm},
-    };
-
-    // type Type = Any<wasm::client_message::ClientMessage<ethereum::header::Header<Mainnet>>>;
-    type Type = Any<wasm::client_state::ClientState<ethereum::client_state::ClientState>>;
-
-    #[test]
-    fn wasm_json() {
-        let value =
-            Type::decode_as::<Proto>(&hex::decode(include_str!("../../cs.hex").trim()).unwrap())
-                .unwrap();
-
-        dbg!(&value);
-
-        let json = serde_json::from_str::<Type>(&serde_json::to_string(&value).unwrap()).unwrap();
-
-        println!("{:?}", json);
-
-        let json =
-            serde_json::to_string_pretty(&(protos::google::protobuf::Any::from(value))).unwrap();
-
-        println!("{}", json);
-    }
-}
