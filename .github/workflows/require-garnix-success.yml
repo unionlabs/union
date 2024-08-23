@@ -6,6 +6,7 @@ on:
     branches:
       - main
   merge_group:
+    types: [check-requested]
 
 permissions:
   checks: read
@@ -22,7 +23,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          REF: ${{ github.head_ref }}
+          REF: ${{ github.head_ref || github.pull_request.head_ref || github.merge_group.head_ref }}
         run: |
           sleep 60
 
