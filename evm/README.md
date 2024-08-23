@@ -50,7 +50,7 @@ This links are working if you run a local devnet on a x86 machine only (Blocksco
 ## Testnet 8
 
 Note that the addresses are different because we often redeploy without upgrading when a storage breaking update is pushed.
-Production contracts will get solely upgraded through the proxy.
+Production contracts will get solely upgraded through the proxy and have the same addresses accross networks.
 
 ### Sepolia
 - Deployer: [0x12cffF5aAd6Fc340BBE6F1fe674C5Aa78f0d1E0F](https://sepolia.etherscan.io/address/0x12cffF5aAd6Fc340BBE6F1fe674C5Aa78f0d1E0F)
@@ -78,6 +78,18 @@ Production contracts will get solely upgraded through the proxy.
 - UCS01: [0xBd346331b31f8C43CC378286Bfe49f2f7F128c39](https://sepolia.arbiscan.io/address/0xBd346331b31f8C43CC378286Bfe49f2f7F128c39)
 - UCS02: [0x4505EB10bc6E8DfB38C2AB65B3017fd0Ae223827](https://sepolia.arbiscan.io/address/0x4505EB10bc6E8DfB38C2AB65B3017fd0Ae223827)
 - Multicall: [0xd867c233ee0908FC7BC21095dA47F775F6479F2A](https://sepolia.arbiscan.io/address/0xd867c233ee0908FC7BC21095dA47F775F6479F2A)
+
+### Scroll
+
+[Commit: 5530a7d3f88e602b9a8da445f54826699768c3dd](https://github.com/unionlabs/union/commit/5530a7d3f88e602b9a8da445f54826699768c3dd)
+
+- Deployer: [0x8E6cbf264706486E533eA07399474d9e1616313d](https://sepolia.scrollscan.com/address/0x8E6cbf264706486E533eA07399474d9e1616313d)
+- Sender: [0x6BFD43FE5cb241b360EC4a307700c6a42EE9F6cb](https://sepolia.scrollscan.com/address/0x6BFD43FE5cb241b360EC4a307700c6a42EE9F6cb)
+- IBCHandler: [0x03792798d62F082a2748e686745a5Cd7Ab06Ee6D](https://sepolia.scrollscan.com/address/0x03792798d62F082a2748e686745a5Cd7Ab06Ee6D)
+- CometblsClient: [0xf303226A9FF0a920a79BcC2d9012871735C0f611](https://sepolia.scrollscan.com/address/0xf303226A9FF0a920a79BcC2d9012871735C0f611)
+- UCS01: [0xA61Bdce84F44CA842D0EE9c1706A3C9fDD311DC2](https://sepolia.scrollscan.com/address/0xA61Bdce84F44CA842D0EE9c1706A3C9fDD311DC2)
+- UCS02: [0x8eEC1B331B46cDb1021718cf2422100eadD1e13e](https://sepolia.scrollscan.com/address/0x8eEC1B331B46cDb1021718cf2422100eadD1e13e)
+- Multicall: [0x58FC3fB2d19A41bdbD5B5f4B12cf9C69172601C7](https://sepolia.scrollscan.com/address/0x58FC3fB2d19A41bdbD5B5f4B12cf9C69172601C7)
 
 ## Other networks
 
