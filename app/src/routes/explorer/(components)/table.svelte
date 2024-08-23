@@ -130,7 +130,7 @@ onDestroy(unsubscribe)
             {/if}
           {:else}
             <Table.Row
-              class={cn(onClick !== undefined ? 'cursor-pointer' : '',
+              class={cn("relative", onClick !== undefined ? 'cursor-pointer' : '',
               index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
             )}
               on:click={onClick !== undefined ? (() => onClick($rows[row.index].original)) : undefined}

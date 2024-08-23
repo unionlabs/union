@@ -46,13 +46,8 @@ const columns: Array<ColumnDef<PacketRow>> = [
     cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
   },
   {
-    header: () => "Source Sequence",
+    header: () => "Sequence",
     accessorKey: "source_sequence",
-    cell: info => flexRender(CellSequence, { value: info.getValue() })
-  },
-  {
-    header: () => "Destination Sequence",
-    accessorKey: "destination_sequence",
     cell: info => flexRender(CellSequence, { value: info.getValue() })
   }
 ]
