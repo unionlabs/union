@@ -2,9 +2,14 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use std::array::TryFromSliceError;
+
 use serde::{Deserialize, Serialize};
 
-use super::{epoch_state::EpochState, hash_value::HashValue};
+use super::{
+    epoch_state::{EpochState, TryFromEpochStateError},
+    hash_value::HashValue,
+};
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
 /// monotonically.
@@ -53,5 +58,45 @@ impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockIn
             timestamp_usecs: value.timestamp_usecs,
             next_epoch_state: value.next_epoch_state.map(Into::into),
         }
+    }
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum TryFromBlockInfoError {
+    #[error("invalid id")]
+    Id(#[source] TryFromSliceError),
+    #[error("invalid executed state id")]
+    ExecutedStateId(#[source] TryFromSliceError),
+    #[error("invalid next epoch state: {0}")]
+    NextEpochState(#[from] TryFromEpochStateError),
+}
+
+impl TryFrom<protos::union::ibc::lightclients::movement::v1::BlockInfo> for BlockInfo {
+    type Error = TryFromBlockInfoError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::movement::v1::BlockInfo,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            epoch: value.epoch,
+            round: value.round,
+            id: HashValue::new(
+                value
+                    .id
+                    .as_slice()
+                    .try_into()
+                    .map_err(TryFromBlockInfoError::Id)?,
+            ),
+            executed_state_id: HashValue::new(
+                value
+                    .executed_state_id
+                    .as_slice()
+                    .try_into()
+                    .map_err(TryFromBlockInfoError::ExecutedStateId)?,
+            ),
+            version: value.version,
+            timestamp_usecs: value.timestamp_usecs,
+            next_epoch_state: value.next_epoch_state.map(TryInto::try_into).transpose()?,
+        })
     }
 }

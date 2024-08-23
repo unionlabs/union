@@ -12,6 +12,14 @@ impl From<PublicKey> for protos::union::ibc::lightclients::movement::v1::PublicK
     }
 }
 
+impl From<protos::union::ibc::lightclients::movement::v1::PublicKey> for PublicKey {
+    fn from(value: protos::union::ibc::lightclients::movement::v1::PublicKey) -> Self {
+        Self {
+            pubkey: value.pubkey,
+        }
+    }
+}
+
 impl serde::Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where

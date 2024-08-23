@@ -13,6 +13,12 @@ impl From<Signature> for protos::union::ibc::lightclients::movement::v1::Signatu
     }
 }
 
+impl From<protos::union::ibc::lightclients::movement::v1::Signature> for Signature {
+    fn from(value: protos::union::ibc::lightclients::movement::v1::Signature) -> Self {
+        Self { sig: value.sig }
+    }
+}
+
 impl serde::Serialize for Signature {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -67,5 +73,25 @@ impl From<AggregateSignature>
             validator_bitmask: value.validator_bitmask.inner,
             sig: value.sig.map(Into::into),
         }
+    }
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum TryFromAggregateSignatureError {}
+
+impl TryFrom<protos::union::ibc::lightclients::movement::v1::AggregateSignature>
+    for AggregateSignature
+{
+    type Error = TryFromAggregateSignatureError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::movement::v1::AggregateSignature,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            validator_bitmask: BitVec {
+                inner: value.validator_bitmask,
+            },
+            sig: value.sig.map(Into::into),
+        })
     }
 }

@@ -1,7 +1,12 @@
+use core::array::TryFromSliceError;
+
 use serde::{Deserialize, Serialize};
 
 use super::public_key::PublicKey;
-use crate::aptos::account::AccountAddress;
+use crate::{
+    aptos::account::AccountAddress,
+    errors::{required, MissingField},
+};
 
 /// Supports validation of signatures for known authors with individual voting powers. This struct
 /// can be used for all signature verification operations including block and network signature
@@ -28,6 +33,30 @@ impl From<ValidatorVerifier> for protos::union::ibc::lightclients::movement::v1:
     }
 }
 
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum TryFromValidatorVerifierError {
+    #[error("invalid validator infos: {0}")]
+    ValidatorInfos(#[from] TryFromValidatorConsensusInfo),
+}
+
+impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorVerifier>
+    for ValidatorVerifier
+{
+    type Error = TryFromValidatorVerifierError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::movement::v1::ValidatorVerifier,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            validator_infos: value
+                .validator_infos
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+}
+
 impl From<ValidatorConsensusInfo>
     for protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo
 {
@@ -37,5 +66,35 @@ impl From<ValidatorConsensusInfo>
             public_key: Some(value.public_key.into()),
             voting_power: value.voting_power,
         }
+    }
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum TryFromValidatorConsensusInfo {
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid address")]
+    Address(TryFromSliceError),
+}
+
+impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo>
+    for ValidatorConsensusInfo
+{
+    type Error = TryFromValidatorConsensusInfo;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            address: AccountAddress::new(
+                value
+                    .address
+                    .as_slice()
+                    .try_into()
+                    .map_err(TryFromValidatorConsensusInfo::Address)?,
+            ),
+            public_key: required!(value.public_key)?.into(),
+            voting_power: value.voting_power,
+        })
     }
 }
