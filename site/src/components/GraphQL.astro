@@ -1,0 +1,57 @@
+---
+import { dedent } from "ts-dedent"
+import { Code } from "@astrojs/starlight/components"
+
+interface Props {
+  query: string
+  title?: string
+}
+
+const { query = "{}", title = "" } = Astro.props
+const sanitizedQuery = dedent(query)
+---
+
+<article class="flex flex-col" data-query={query}>
+  <button
+    id="run-query"
+    class="hover:cursor-pointer bg-green-700 hover:bg-emerald-500 w-full max-w-[75px] ml-auto"
+  >
+    RUN
+  </button>
+
+  <Code code={sanitizedQuery} lang="graphql" {title} class:list={['']} />
+
+  <div id="result" data-result class:list={['overflow-x-scroll size-full']}></div>
+</article>
+
+<script>
+  import { codeToHtml } from 'shiki'
+
+  async function runQuery() {
+    const response = await fetch('https://graphql.union.build/v1/graphql', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const result = (await response.json()) as { data: any }
+    const data = result.data
+    if (!data) return
+
+    console.info(data)
+
+    const resultElement = document.querySelector('div#result[data-result]')
+    if (!resultElement) return
+    const stringified = JSON.stringify(data, null, 2)
+    const html = await codeToHtml(stringified, {
+      lang: 'json',
+      theme: 'github-dark',
+    })
+    resultElement.innerHTML = html
+  }
+
+  const queryElement = document.querySelector('article[data-query]')
+  const query = queryElement?.getAttribute('data-query')
+
+  const runQueryButton = document.querySelector('button#run-query')
+  runQueryButton?.addEventListener('click', runQuery)
+</script>

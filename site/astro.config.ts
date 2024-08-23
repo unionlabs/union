@@ -134,6 +134,13 @@ export default defineConfig({
               link: "/docs/integrations/getting-started"
             },
             {
+              label: "API",
+              collapsed: true,
+              autogenerate: {
+                directory: "/docs/integrations/api"
+              }
+            },
+            {
               label: "CometBFT",
               collapsed: true,
               autogenerate: {
