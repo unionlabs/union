@@ -11,6 +11,25 @@ use crate::batch_header::{BatchHeaderV3, BatchHeaderV3DecodeError};
 
 pub mod batch_header;
 
+/// See <https://github.com/scroll-tech/scroll-contracts/blob/7bb751f9cf1b5fdde95297049e3407ce23d56ac6/src/mocks/ScrollChainMockFinalize.sol#L59>
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    ::ethers::contract::EthCall,
+    ::ethers::contract::EthDisplay,
+    Serialize,
+    Deserialize,
+)]
+#[ethcall(name = "finalizeBundle", abi = "finalizeBundle(bytes,bytes32,bytes32)")]
+pub struct FinalizeBundle {
+    #[serde(with = "::serde_utils::hex_string")]
+    pub batch_header: ethers::core::types::Bytes,
+    pub post_state_root: H256,
+    pub withdraw_root: H256,
+}
+
 /// See <https://github.com/scroll-tech/scroll-contracts/blob/7bb751f9cf1b5fdde95297049e3407ce23d56ac6/src/L1/rollup/ScrollChain.sol#L537>
 #[derive(
     Debug,

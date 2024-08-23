@@ -11,7 +11,7 @@ use queue_msg::{
     aggregation::{do_aggregate, UseAggregate},
     data, effect, fetch, queue_msg, Op,
 };
-use scroll_codec::FinalizeBundleWithProof;
+use scroll_codec::{FinalizeBundle, FinalizeBundleWithProof};
 use unionlabs::{
     encoding::{Decode, Encode, EthAbi},
     hash::{H160, H256},
@@ -455,13 +455,19 @@ where
 
                 let calldata = finalize_batch_tx.input.to_vec();
 
-                let finalize_bundle_with_proof_call =
-                    <FinalizeBundleWithProof as AbiDecode>::decode(calldata).unwrap();
+                let batch_header = <FinalizeBundleWithProof as AbiDecode>::decode(&calldata)
+                    .map(|call| call.batch_header)
+                    .or_else(|_| {
+                        <FinalizeBundle as AbiDecode>::decode(&calldata)
+                            .map(|call| call.batch_header)
+                    })
+                    .unwrap()
+                    .to_vec();
 
                 Data::specific(FinalizeBatchTransactionInput {
                     height,
                     batch_index,
-                    batch_header: finalize_bundle_with_proof_call.batch_header.to_vec(),
+                    batch_header,
                     __marker: PhantomData,
                 })
             }
