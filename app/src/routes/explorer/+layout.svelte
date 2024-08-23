@@ -7,6 +7,8 @@ import Menu from "./(components)/menu.svelte"
 import { deviceWidth } from "$lib/utilities/device.ts"
 import StatsBar from "./(components)/stats-bar.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
+import ExplorerBreadcrumbs from "$lib/components/explorer-breadcrumbs.svelte"
+import ExplorerPagination from "$lib/components/explorer-pagination.svelte"
 
 export let data: LayoutData
 
@@ -45,23 +47,10 @@ onNavigate(navigation => {
       explorerRoute === null ? "hidden sm:block" : ""
     )}
   >
-    {#if !$page.route.id?.startsWith("/explorer/address")}
-    <a
-      class={cn(
-        "font-bold px-4 py-2 gap-2 items-center font-supermolot flex",
-
-        ($page.route.id?.split("/").length ?? 0) > 3 ? "" : "sm:hidden"
-      )}
-      href={$page.route.id?.split("/").slice(0, -1).join("/")}
-    >
-      <ArrowLeftIcon />
-      <span class="uppercase">{$page.route.id?.split("/").at(-2)}</span>
-    </a>
-    {/if}
-
     {#if $page.route.id?.split("/").length !== 4}
       <StatsBar />
     {/if}
+    <ExplorerBreadcrumbs/>
 
     <div class="flex flex-col flex-1 size-full">
       <div class="p-2 pt-0 sm:p-6">
