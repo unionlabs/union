@@ -47,10 +47,13 @@ onNavigate(navigation => {
       explorerRoute === null ? "hidden sm:block" : ""
     )}
   >
-    {#if $page.route.id?.split("/").length !== 4}
+    {#if $page.route.id?.split("/").length === 3}
       <StatsBar />
     {/if}
-    <ExplorerBreadcrumbs/>
+
+    {#if ($page?.route?.id?.split("/")?.length ?? 0) > 3}
+        <ExplorerBreadcrumbs/>
+    {/if}
 
     <div class="flex flex-col flex-1 size-full">
       <div class="p-2 pt-0 sm:p-6">

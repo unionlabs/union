@@ -7,9 +7,11 @@ import { derived } from "svelte/store"
 const pathComponents = derived(page, $page => $page.url.pathname.split("/").slice(2))
 </script>
 
-<nav class="flex">
-{#each $pathComponents as pathComponent, index} 
-  {@const pathUrl = $page.url.pathname.split("/").slice(0, index+3).join("/")}
-  <a class="block border-b px-2 py-1 border-r" href={pathUrl}>{pathComponent}</a>
-{/each}
+<nav>
+  <div class="flex overflow-x-auto">
+    {#each $pathComponents as pathComponent, index} 
+      {@const pathUrl = $page.url.pathname.split("/").slice(0, index+3).join("/")}
+      <a class="block border-b px-2 py-1 border-r" href={pathUrl}>{pathComponent}</a>
+    {/each}
+  </div>
 </nav>
