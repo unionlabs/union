@@ -77,7 +77,7 @@ $: if ($navigating) sheetOpen = false
       "overflow-y-auto"
     )}
   >
-    <Sheet.Header class="pl-2">
+    <Sheet.Header>
       <Sheet.Title class="flex gap-4 items-center">
         <!-- Connect Wallet -->
         <Avatar.Root
@@ -109,7 +109,6 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
     />
-    <Separator class={cn("px-0 bg-border -mt-5")} />
     <Connection
       address={$cosmosStore.address}
       chain="cosmos"
