@@ -71,7 +71,7 @@ where
             self.multicall_address,
             &self.keyring,
             msg,
-            true,
+            false,
             None,
         )
         .await
