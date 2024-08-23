@@ -24,7 +24,13 @@ interface ItemData {
 }
 
 const data: ItemData[] = [
-  {name: "Skip", url: "https://google.com", logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png", cover: "https://walker-web.imgix.net/cms/Gradient_builder_2.jpg?auto=format,compress&w=1920&h=1200&fit=crop&dpr=1.5", category: ["nft", "dex", "wallet"]},
+  {
+    name: "Skip",
+    url: "https://google.com",
+    logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png",
+    cover: "https://walker-web.imgix.net/cms/Gradient_builder_2.jpg?auto=format,compress&w=1920&h=1200&fit=crop&dpr=1.5",
+    category: ["nft", "dex", "wallet"]
+  },
   {name: "Landslide", url: "https://google.com", logo: "", cover: "", category: ["interchain native", "defi"]},
   {name: "Bera", url: "https://google.com", logo: "", cover: "", category: ["interchain token", "wallet"]},
   {name: "Arbitrum Token", url: "https://google.com", logo: "", cover: "", category: ["rwa", "interchain token"]},
@@ -126,7 +132,7 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
         <!-- Cards Grid -->
         <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.map(item => (
-                  <a class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96" href={item.url}>
+                  <div class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96">
                       <img src={item.cover} alt={item.name} class="absolute w-full h-full object-cover object-center"/>
                       <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
                           <div class="flex w-full justify-between items-center">
@@ -135,13 +141,13 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
                                         <p class="text-sm w-fit bg-white text-black uppercase text-center font-mono font-bold px-2">{cat}</p>
                                 ))}
                               </div>
-                              <div class="rounded-full border-2 h-28 w-28 mb-2 flex items-center justify-center items-center">
+                              <div class="rounded-full border-2 h-28 w-28 mb-2 flex items-center justify-center">
                                   <img src={item.logo} alt={`${item.name} logo`} class="w-12 h-12 mb-2"/>
                               </div>
                           </div>
                           <H3 class="text-lg font-semibold">{item.name}</H3>
                       </div>
-                  </a>
+                  </div>
           ))}
         </div>
 
@@ -161,15 +167,15 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
       .map(cb => cb.value);
 
     cards.forEach(card => {
-        const name = card.querySelector('h3').textContent.toLowerCase();
-        const categoryElements = card.querySelectorAll('p');
-        const categories = Array.from(categoryElements).map(el => el.textContent.toLowerCase());
+      const name = card.querySelector('h3').textContent.toLowerCase();
+      const categoryElements = card.querySelectorAll('p');
+      const categories = Array.from(categoryElements).map(el => el.textContent.toLowerCase());
 
-        const matchesSearch = name.includes(searchTerm);
-        const matchesCategory = selectedCategories.length === 0 ||
-          categories.some(cat => selectedCategories.includes(cat));
+      const matchesSearch = name.includes(searchTerm);
+      const matchesCategory = selectedCategories.length === 0 ||
+        categories.some(cat => selectedCategories.includes(cat));
 
-        matchesSearch && matchesCategory ?  card.classList.remove("hidden"): card.classList.add("hidden");
+      matchesSearch && matchesCategory ? card.classList.remove("hidden") : card.classList.add("hidden");
     });
   }
 
