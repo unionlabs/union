@@ -1,6 +1,6 @@
 use core::array::TryFromSliceError;
 
-use serde::{Deserialize, Serialize};
+use macros::model;
 
 use super::public_key::PublicKey;
 use crate::{
@@ -11,14 +11,22 @@ use crate::{
 /// Supports validation of signatures for known authors with individual voting powers. This struct
 /// can be used for all signature verification operations including block and network signature
 /// verification, respectively.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::movement::v1::ValidatorVerifier),
+    into,
+    from
+))]
 pub struct ValidatorVerifier {
     /// A vector of each validator's on-chain account address to its pubkeys and voting power.
     pub validator_infos: Vec<ValidatorConsensusInfo>,
 }
 
 /// Helper struct to manage validator information for validation
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo),
+    into,
+    from
+))]
 pub struct ValidatorConsensusInfo {
     pub address: AccountAddress,
     pub public_key: PublicKey,

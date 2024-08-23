@@ -1,5 +1,14 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use macros::model;
+
 /// A BLS12381 public key
+#[model(
+    no_serde,
+    proto(
+        raw(protos::union::ibc::lightclients::movement::v1::PublicKey),
+        into,
+        from
+    )
+)]
 pub struct PublicKey {
     pub pubkey: Vec<u8>,
 }

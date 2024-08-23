@@ -43,6 +43,12 @@ impl ::prost::Name for ConsensusState {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
     #[prost(message, optional, tag = "1")]
+    pub l1_height:
+        ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
+    #[prost(message, optional, tag = "2")]
+    pub trusted_height:
+        ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
+    #[prost(message, optional, tag = "3")]
     pub state_proof: ::core::option::Option<StateProof>,
 }
 impl ::prost::Name for Header {

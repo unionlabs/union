@@ -22,7 +22,9 @@ message ConsensusState {
 }
 
 message Header {
-  StateProof state_proof = 1;
+  .ibc.core.client.v1.Height l1_height = 1;
+  .ibc.core.client.v1.Height trusted_height = 2;
+  StateProof state_proof = 3;
 }
 
 message StateProof {
@@ -84,21 +86,3 @@ message EpochChangeProof {
   repeated LedgerInfoWithSignatures ledger_info_with_sigs = 1;
   bool more = 2;
 }
-
-// message Header {
-//   .ibc.core.client.v1.Height l1_height = 1;
-//   // rollupContractOnL1 ∈ L1Stateroot
-//   .union.ibc.lightclients.ethereum.v1.AccountProof l1_account_proof = 2;
-//   // lastBatchIndex ≡ rollupContractOnL1.lastBatchIndex
-//   .union.ibc.lightclients.ethereum.v1.StorageProof last_batch_index_proof = 3;
-//   // L2stateRoot ≡ rollupContractOnL1.finalized[lastBatchIndex]
-//   .union.ibc.lightclients.ethereum.v1.StorageProof l2_state_root_proof = 4;
-//   // ibcContractOnL2 ∈ L2StateRoot
-//   .union.ibc.lightclients.ethereum.v1.AccountProof l2_ibc_account_proof = 5;
-//   // batchHash ≡ rollupContractOnL1.batchHashes[lastBatchIndex]
-//   .union.ibc.lightclients.ethereum.v1.StorageProof batch_hash_proof = 6;
-//   // The batch header from where we extract the L2 timestamp, then proving:
-//   // hash(batchHeader) ≡ batchHash
-//   bytes batch_header = 7;
-// }
-

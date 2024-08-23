@@ -2,7 +2,7 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use serde::{Deserialize, Serialize};
+use macros::model;
 use sha2::Digest;
 
 use super::{
@@ -20,7 +20,11 @@ use crate::errors::{required, MissingField};
 /// the most recent epoch.
 ///
 /// [`TrustedState`]: crate::trusted_state::TrustedState
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::movement::v1::StateProof),
+    into,
+    from
+))]
 pub struct StateProof {
     pub latest_li_w_sigs: LedgerInfoWithSignatures,
     pub epoch_changes: EpochChangeProof,

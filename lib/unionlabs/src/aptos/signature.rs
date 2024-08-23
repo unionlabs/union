@@ -1,6 +1,15 @@
+use macros::model;
+
 use super::bit_vec::BitVec;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[model(
+    no_serde,
+    proto(
+        raw(protos::union::ibc::lightclients::movement::v1::Signature),
+        into,
+        from
+    )
+)]
 /// Either (1) a BLS signature share from an individual signer, (2) a BLS multisignature or (3) a
 /// BLS aggregate signature
 pub struct Signature {
@@ -59,7 +68,11 @@ impl<'de> serde::Deserialize<'de> for Signature {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::movement::v1::AggregateSignature),
+    into,
+    from
+))]
 pub struct AggregateSignature {
     validator_bitmask: BitVec,
     sig: Option<Signature>,
