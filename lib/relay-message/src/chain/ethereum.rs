@@ -143,6 +143,40 @@ where
     >,
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Hc, Tr>)>,
 {
+    do_msg_fixed_gas(
+        chain_id,
+        multicall_address,
+        ibc_handlers,
+        msg,
+        legacy,
+        None,
+        max_gas_price,
+    )
+    .await
+}
+
+// TODO: Refactor this to use `Hc: ChainKeyring`
+pub async fn do_msg_fixed_gas<Hc, Tr>(
+    chain_id: ChainIdOf<Hc>,
+    multicall_address: H160,
+    ibc_handlers: &EthereumKeyring,
+    msg: Effect<Hc, Tr>,
+    legacy: bool,
+    fixed_gas: Option<U256>,
+    max_gas_price: Option<U256>,
+) -> Result<Op<RelayMessage>, TxSubmitError>
+where
+    Hc: ChainExt<Config = EthereumConfig, SelfClientState: Encode<Tr::IbcStateEncoding>>
+        + EthereumIbcChain,
+    Tr: ChainExt<
+        SelfConsensusState: Encode<EthAbi>,
+        SelfClientState: Encode<EthAbi>,
+        Header: Encode<EthAbi>,
+        StoredClientState<Hc>: Encode<Tr::IbcStateEncoding>,
+        StateProof: Encode<EthAbi>,
+    >,
+    AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Hc, Tr>)>,
+{
     let res = ibc_handlers
         .with({
             let chain_id = chain_id.clone();
@@ -205,7 +239,7 @@ where
                             );
 
                             // TODO: config
-                            match call.gas(estimated_gas + (estimated_gas / 10)).send().await {
+                            match call.gas(fixed_gas.map(Into::into).unwrap_or(estimated_gas + (estimated_gas / 10))).send().await {
                                 Ok(ok) => {
                                     let tx_hash = ok.tx_hash();
                                     async move {
