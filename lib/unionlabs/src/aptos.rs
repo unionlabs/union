@@ -9,4 +9,5 @@ pub mod public_key;
 pub mod signature;
 pub mod state_proof;
 pub mod transaction_info;
+pub mod transaction_proof;
 pub mod validator_verifier;

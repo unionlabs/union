@@ -1,7 +1,10 @@
 use macros::model;
 
 use crate::{
-    aptos::state_proof::{StateProof, TryFromStateProofError},
+    aptos::{
+        state_proof::{StateProof, TryFromStateProofError},
+        transaction_proof::{TransactionInfoWithProof, TryFromTransactionInfoWithProofError},
+    },
     errors::{required, MissingField},
     ibc::core::client::height::Height,
 };
@@ -15,6 +18,7 @@ pub struct Header {
     pub l1_height: Height,
     pub trusted_height: Height,
     pub state_proof: StateProof,
+    pub tx_proof: TransactionInfoWithProof,
 }
 
 impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
@@ -23,6 +27,7 @@ impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
             l1_height: Some(value.l1_height.into()),
             trusted_height: Some(value.trusted_height.into()),
             state_proof: Some(value.state_proof.into()),
+            tx_proof: Some(value.tx_proof.into()),
         }
     }
 }
@@ -33,6 +38,8 @@ pub enum TryFromHeaderError {
     MissingField(#[from] MissingField),
     #[error("invalid state proof")]
     StateProof(#[from] TryFromStateProofError),
+    #[error("invalid tx proof")]
+    TxProof(#[from] TryFromTransactionInfoWithProofError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::Header> for Header {
@@ -45,6 +52,7 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::Header> for Header 
             l1_height: required!(value.l1_height)?.into(),
             trusted_height: required!(value.trusted_height)?.into(),
             state_proof: required!(value.state_proof)?.try_into()?,
+            tx_proof: required!(value.tx_proof)?.try_into()?,
         })
     }
 }

@@ -2,16 +2,18 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
-    #[prost(bytes = "vec", tag = "1")]
-    pub l1_contract_address: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag = "1")]
+    pub l1_client_id: ::prost::alloc::string::String,
     #[prost(bytes = "vec", tag = "2")]
-    pub l2_contract_address: ::prost::alloc::vec::Vec<u8>,
+    pub l1_contract_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "3")]
+    pub l2_contract_address: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "4")]
     pub table_handle: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "5")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(uint64, tag = "5")]
+    #[prost(uint64, tag = "6")]
     pub latest_block_num: u64,
 }
 impl ::prost::Name for ClientState {
@@ -52,9 +54,52 @@ pub struct Header {
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(message, optional, tag = "3")]
     pub state_proof: ::core::option::Option<StateProof>,
+    #[prost(message, optional, tag = "4")]
+    pub tx_proof: ::core::option::Option<TransactionInfoWithProof>,
 }
 impl ::prost::Name for Header {
     const NAME: &'static str = "Header";
+    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionInfoWithProof {
+    #[prost(bytes = "vec", repeated, tag = "1")]
+    pub ledger_info_to_transaction_info_proof:
+        ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+    #[prost(message, optional, tag = "2")]
+    pub transaction_info: ::core::option::Option<TransactionInfo>,
+}
+impl ::prost::Name for TransactionInfoWithProof {
+    const NAME: &'static str = "TransactionInfoWithProof";
+    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
+    }
+}
+/// NOTE(aeryz): we don't include status cause we assume success status in the light client. If it's not successfull,
+/// the light client will fail since the hash won't match.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionInfo {
+    #[prost(uint64, tag = "1")]
+    pub gas_used: u64,
+    #[prost(bytes = "vec", tag = "2")]
+    pub transaction_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub event_root_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "4")]
+    pub state_change_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "5")]
+    pub state_checkpoint_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "6")]
+    pub state_cemetery_hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for TransactionInfo {
+    const NAME: &'static str = "TransactionInfo";
     const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)

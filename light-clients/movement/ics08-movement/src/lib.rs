@@ -90,5 +90,14 @@ fn merkle_proof() {
         ))),
     );
 
+    // Membership verification
+    // 1. SparseMerkleProof is verified against the tx `state_checkpoint_hash`.
+    // 2. Tx data is verifier against `state_proof.latest_ledger_info().commit_info.executed_state_id` (which is saved at `update_state`)
+
+    // Header verification
+    // 1. Check if the l1 has the state root at that height.
+    // 2. Verify `state_proof` hash against the `l1.state_root`
+    // 3. Save `state_root.latest_ledger_info().commit_info.executed_state_id` for membership verification. (this is the merkle root of txs)
+
     // println!("Res: {res:?}");
 }

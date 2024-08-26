@@ -1,108 +1,149 @@
+use macros::model;
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
-use sha3::Sha3_256;
 
-use super::{account::AccountAddress, hash_value::HashValue};
+use super::hash_value::HashValue;
+use crate::errors::InvalidLength;
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
 /// transaction as well as the execution result of this transaction.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[model(proto(
+    raw(protos::union::ibc::lightclients::movement::v1::TransactionInfo),
+    into,
+    from
+))]
 pub enum TransactionInfo {
     V0(TransactionInfoV0),
 }
 
-impl TransactionInfo {
-    pub fn hash(&self) -> HashValue {
-        let mut state = Sha3_256::new();
-        state.update(
-            Sha3_256::new()
-                .chain_update("APTOS::TransactionInfo")
-                .finalize(),
-        );
-        bcs::serialize_into(&mut state, &self).expect("expected to be able to serialize");
-        HashValue(state.finalize().into())
-    }
-}
+// impl TransactionInfo {
+//     pub fn hash(&self) -> HashValue {
+//         let mut state = Sha3_256::new();
+//         state.update(
+//             Sha3_256::new()
+//                 .chain_update("APTOS::TransactionInfo")
+//                 .finalize(),
+//         );
+//         bcs::serialize_into(&mut state, &self).expect("expected to be able to serialize");
+//         HashValue(state.finalize().into())
+//     }
+// }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionInfoV0 {
     /// The amount of gas used.
-    gas_used: u64,
+    pub gas_used: u64,
 
     /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
     /// failures and Move abort's receive more detailed information. But other errors are generally
     /// categorized with no status code or other information
-    status: ExecutionStatus,
+    pub status: ExecutionStatus,
 
     /// The hash of this transaction.
-    transaction_hash: HashValue,
+    pub transaction_hash: HashValue,
 
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
-    event_root_hash: HashValue,
+    pub event_root_hash: HashValue,
 
     /// The hash value summarizing all changes caused to the world state by this transaction.
     /// i.e. hash of the output write set.
-    state_change_hash: HashValue,
+    pub state_change_hash: HashValue,
 
     /// The root hash of the Sparse Merkle Tree describing the world state at the end of this
     /// transaction. Depending on the protocol configuration, this can be generated periodical
     /// only, like per block.
-    state_checkpoint_hash: Option<HashValue>,
+    pub state_checkpoint_hash: Option<HashValue>,
 
     /// Potentially summarizes all evicted items from state. Always `None` for now.
-    state_cemetery_hash: Option<HashValue>,
+    pub state_cemetery_hash: Option<HashValue>,
 }
 
-impl TransactionInfoV0 {
-    pub fn hash(&self) -> HashValue {
-        let mut state = Sha3_256::new();
-        state.update(
-            Sha3_256::new()
-                .chain_update("APTOS::TransactionInfoV0")
-                .finalize(),
-        );
-        bcs::serialize_into(&mut state, &self).expect("expected to be able to serialize");
-        HashValue(state.finalize().into())
-    }
-}
+// impl TransactionInfoV0 {
+//     pub fn hash(&self) -> HashValue {
+//         let mut state = Sha3_256::new();
+//         state.update(
+//             Sha3_256::new()
+//                 .chain_update("APTOS::TransactionInfoV0")
+//                 .finalize(),
+//         );
+//         bcs::serialize_into(&mut state, &self).expect("expected to be able to serialize");
+//         HashValue(state.finalize().into())
+//     }
+// }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum ExecutionStatus {
     Success,
-    OutOfGas,
-    MoveAbort {
-        location: AbortLocation,
-        code: u64,
-        info: Option<AbortInfo>,
-    },
-    ExecutionFailure {
-        location: AbortLocation,
-        function: u16,
-        code_offset: u16,
-    },
-    MiscellaneousError(Option<u64>),
 }
 
-/// An `AbortLocation` specifies where a Move program `abort` occurred, either in a function in
-/// a module, or in a script
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub enum AbortLocation {
-    /// Indicates `abort` occurred in the specified module
-    Module(ModuleId),
-    /// Indicates the `abort` occurred in a script
-    Script,
+impl From<TransactionInfo> for protos::union::ibc::lightclients::movement::v1::TransactionInfo {
+    fn from(value: TransactionInfo) -> Self {
+        let TransactionInfo::V0(value) = value;
+        Self {
+            gas_used: value.gas_used,
+            transaction_hash: value.transaction_hash.into(),
+            event_root_hash: value.event_root_hash.into(),
+            state_change_hash: value.state_change_hash.into(),
+            state_checkpoint_hash: value.state_checkpoint_hash.unwrap_or_default().into(),
+            state_cemetery_hash: value.state_cemetery_hash.unwrap_or_default().into(),
+        }
+    }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct AbortInfo {
-    pub reason_name: String,
-    pub description: String,
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum TryFromTransactionInfoError {
+    #[error("invalid transaction hash")]
+    TransactionHash(#[source] InvalidLength),
+    #[error("invalid event root hash")]
+    EventRootHash(#[source] InvalidLength),
+    #[error("invalid state change hash")]
+    StateChangeHash(#[source] InvalidLength),
+    #[error("invalid state checkpoint hash")]
+    StateCheckpointHash(#[source] InvalidLength),
+    #[error("invalid state cemetery hash")]
+    StateCemeteryHash(#[source] InvalidLength),
 }
 
-/// Represents the initial key into global storage where we first index by the address, and then
-/// the struct tag. The struct fields are public to support pattern matching.
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
-pub struct ModuleId {
-    pub address: AccountAddress,
-    pub name: String,
+impl TryFrom<protos::union::ibc::lightclients::movement::v1::TransactionInfo> for TransactionInfo {
+    type Error = TryFromTransactionInfoError;
+
+    fn try_from(
+        value: protos::union::ibc::lightclients::movement::v1::TransactionInfo,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self::V0(TransactionInfoV0 {
+            gas_used: value.gas_used,
+            status: ExecutionStatus::Success,
+            transaction_hash: value
+                .transaction_hash
+                .try_into()
+                .map_err(TryFromTransactionInfoError::TransactionHash)?,
+            event_root_hash: value
+                .event_root_hash
+                .try_into()
+                .map_err(TryFromTransactionInfoError::EventRootHash)?,
+            state_change_hash: value
+                .state_change_hash
+                .try_into()
+                .map_err(TryFromTransactionInfoError::StateChangeHash)?,
+            state_checkpoint_hash: if value.state_checkpoint_hash.is_empty() {
+                None
+            } else {
+                Some(
+                    value
+                        .state_checkpoint_hash
+                        .try_into()
+                        .map_err(TryFromTransactionInfoError::StateCheckpointHash)?,
+                )
+            },
+            state_cemetery_hash: if value.state_cemetery_hash.is_empty() {
+                None
+            } else {
+                Some(
+                    value
+                        .state_cemetery_hash
+                        .try_into()
+                        .map_err(TryFromTransactionInfoError::StateCemeteryHash)?,
+                )
+            },
+        }))
+    }
 }

@@ -1,27 +1,35 @@
 use cosmwasm_std::{Deps, Empty};
-use ics008_wasm_client::{IbcClient, IbcClientError, StorageState};
+use ics008_wasm_client::{
+    storage_utils::read_client_state, IbcClient, IbcClientError, StorageState,
+};
 use unionlabs::{
+    cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::Proto,
     ibc::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
-        lightclients::movement::{
-            client_state::ClientState, consensus_state::ConsensusState, header::Header,
+        lightclients::{
+            ethereum,
+            movement::{
+                client_state::ClientState, consensus_state::ConsensusState, header::Header,
+            },
+            wasm,
         },
     },
 };
 
 use crate::errors::Error;
 
-type WasmClientState = unionlabs::ibc::lightclients::wasm::client_state::ClientState<ClientState>;
-type WasmConsensusState =
-    unionlabs::ibc::lightclients::wasm::consensus_state::ConsensusState<ConsensusState>;
+type WasmClientState = wasm::client_state::ClientState<ClientState>;
+type WasmConsensusState = wasm::consensus_state::ConsensusState<ConsensusState>;
+type WasmL1ConsensusState =
+    wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>;
 
 pub struct MovementLightClient;
 
 impl IbcClient for MovementLightClient {
     type Error = Error;
 
-    type CustomQuery = Empty;
+    type CustomQuery = UnionCustomQuery;
 
     type Header = Header;
 
@@ -48,8 +56,18 @@ impl IbcClient for MovementLightClient {
     fn verify_header(
         deps: Deps<Self::CustomQuery>,
         env: cosmwasm_std::Env,
-        header: Self::Header,
+        header: Header,
     ) -> Result<(), IbcClientError<Self>> {
+        let client_state: WasmClientState = read_client_state(deps)?;
+
+        let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
+            deps,
+            &env,
+            client_state.data.l1_client_id.to_string(),
+            header.l1_height,
+        )
+        .map_err(Error::CustomQuery)?;
+
         todo!()
     }
 

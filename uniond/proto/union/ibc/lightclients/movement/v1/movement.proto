@@ -6,11 +6,12 @@ import "ibc/core/client/v1/client.proto";
 import "union/ibc/lightclients/ethereum/v1/ethereum.proto";
 
 message ClientState {
-  bytes l1_contract_address = 1;
-  bytes l2_contract_address = 2;
-  bytes table_handle = 3;
-  .ibc.core.client.v1.Height frozen_height = 4;
-  uint64 latest_block_num = 5;
+  string l1_client_id = 1;
+  bytes l1_contract_address = 2;
+  bytes l2_contract_address = 3;
+  bytes table_handle = 4;
+  .ibc.core.client.v1.Height frozen_height = 5;
+  uint64 latest_block_num = 6;
 }
 
 message ConsensusState {
@@ -26,6 +27,23 @@ message Header {
   .ibc.core.client.v1.Height l1_height = 1;
   .ibc.core.client.v1.Height trusted_height = 2;
   StateProof state_proof = 3;
+  TransactionInfoWithProof tx_proof = 4;
+}
+
+message TransactionInfoWithProof {
+  repeated bytes ledger_info_to_transaction_info_proof = 1;
+  TransactionInfo transaction_info = 2;
+}
+
+// NOTE(aeryz): we don't include status cause we assume success status in the light client. If it's not successfull,
+// the light client will fail since the hash won't match.
+message TransactionInfo {
+  uint64 gas_used = 1;
+  bytes transaction_hash = 2;
+  bytes event_root_hash = 3;
+  bytes state_change_hash = 4;
+  bytes state_checkpoint_hash = 5;
+  bytes state_cemetery_hash = 6;
 }
 
 message StateProof {

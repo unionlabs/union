@@ -12,6 +12,8 @@ pub enum Error {
     ClientStateDecode(#[source] DecodeErrorOf<Proto, movement::client_state::ClientState>),
     #[error("unable to decode consensus state")]
     ConsensusStateDecode(#[source] DecodeErrorOf<Proto, movement::consensus_state::ConsensusState>),
+    #[error("error while calling custom query: {0}")]
+    CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
 }
 
 impl From<Error> for IbcClientError<MovementLightClient> {

@@ -3,6 +3,8 @@ use core::fmt;
 use hex::FromHex;
 use serde::{de, ser, Deserialize, Serialize};
 
+use crate::errors::{ExpectedLength, InvalidLength};
+
 impl AsRef<[u8; HashValue::LENGTH]> for HashValue {
     fn as_ref(&self) -> &[u8; HashValue::LENGTH] {
         &self.0
@@ -112,6 +114,18 @@ impl HashValue {
     }
 }
 
+impl From<HashValue> for Vec<u8> {
+    fn from(value: HashValue) -> Self {
+        value.0.as_slice().to_vec()
+    }
+}
+
+impl Default for HashValue {
+    fn default() -> Self {
+        HashValue::new([0; HashValue::LENGTH])
+    }
+}
+
 impl ser::Serialize for HashValue {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -200,5 +214,18 @@ impl<'a> std::iter::Iterator for HashValueBitIterator<'a> {
 impl<'a> std::iter::DoubleEndedIterator for HashValueBitIterator<'a> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
+    }
+}
+
+impl TryFrom<Vec<u8>> for HashValue {
+    type Error = InvalidLength;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        Ok(HashValue::new(value.as_slice().try_into().map_err(
+            |_| InvalidLength {
+                expected: ExpectedLength::Exact(HashValue::LENGTH),
+                found: value.len(),
+            },
+        )?))
     }
 }
