@@ -17,7 +17,7 @@ sha3 = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 thiserror = { workspace = true }
 ics008-wasm-client     = { workspace = true }
-unionlabs = { workspace = true }
+unionlabs = { workspace = true, features = [ "cosmwasm", "stargate" ] }
 cosmwasm-std           = { workspace = true, features = ["abort"] }
 protos = { workspace = true }
 

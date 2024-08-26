@@ -73,7 +73,7 @@ members = [
   "unionvisor",
   "voyager",
 
-  "drip", "light-clients/movement/ics08-movement",
+  "drip", "light-clients/movement/ics08-movement", "lib/aptos-verifier",
 ]
 
 [workspace.package]
