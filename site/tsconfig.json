@@ -33,7 +33,6 @@
   "include": ["src", "public", "scripts"],
   "files": [
     "reset.d.ts",
-    "uno.config.ts",
     "ec.config.mjs",
     "astro.config.ts",
     "svelte.config.js",

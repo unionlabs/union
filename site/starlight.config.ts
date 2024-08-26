@@ -20,22 +20,6 @@ export default starlight({
   components: {
     EditLink: "./src/components/EditLink.astro"
   },
-  expressiveCode: {
-    frames: {
-      extractFileNameFromCode: true,
-      showCopyToClipboardButton: true,
-      removeCommentsWhenCopyingTerminalFrames: true
-    },
-    useStarlightUiThemeColors: true,
-    useStarlightDarkModeSwitch: true,
-    themes: ["starlight-dark", "starlight-light"],
-    // @ts-expect-error
-    plugins: [pluginLineNumbers(), pluginCollapsibleSections()],
-    defaultProps: {
-      // @ts-expect-error
-      showLineNumbers: false
-    }
-  },
   head: [
     {
       tag: "meta",

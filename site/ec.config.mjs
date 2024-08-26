@@ -6,13 +6,14 @@ export default {
   frames: {
     extractFileNameFromCode: true,
     showCopyToClipboardButton: true,
-    removeCommentsWhenCopyingTerminalFrames: true,
+    removeCommentsWhenCopyingTerminalFrames: true
   },
   useStarlightUiThemeColors: true,
   useStarlightDarkModeSwitch: true,
   themes: ["starlight-dark", "starlight-light"],
-  plugins: [
-    pluginLineNumbers(),
-    pluginCollapsibleSections(),
-  ],
-};
+
+  plugins: [pluginLineNumbers(), pluginCollapsibleSections()],
+  defaultProps: {
+    showLineNumbers: false
+  }
+}
