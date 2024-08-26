@@ -1,3 +1,4 @@
+import "#/styles/theme.css"
 import { useTheme } from "./hooks/use-theme.ts"
 import type { Terminal as XTerm } from "@xterm/xterm"
 import { Suspense, lazy, useEffect, useState } from "react"
@@ -19,8 +20,14 @@ export default function ExampleTerminal() {
   return (
     domLoaded && (
       <Suspense>
-        {/* biome-ignore lint/nursery/noReactSpecificProps: <explanation> */}
-        <Terminal className="h-32" readonly={false} theme={theme} onTerminalReady={setTerminal} />
+        <Terminal
+          theme={theme}
+          readonly={false}
+          onTerminalReady={setTerminal}
+          suppressHydrationWarning={true}
+          suppressContentEditableWarning={true}
+          className="h-64 overflow-scroll bg-[#16181D]"
+        />
       </Suspense>
     )
   )

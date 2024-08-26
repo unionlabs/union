@@ -1,0 +1,24 @@
+---
+import "@tutorialkit/astro/default-theme.css"
+import { classNames } from "@tutorialkit/components-react"
+
+interface Props {
+  className?: string
+  previewClassName?: string
+}
+
+const { className, previewClassName } = Astro.props
+---
+
+<div class={classNames('not-content react-example overflow-hidden', className)}>
+  <div
+    class={classNames(
+      'border border-[var(--ec-brdCol)] border-b-transparent border-solid rounded-t overflow-y-auto',
+      previewClassName,
+    )}
+  >
+    <slot name="preview" />
+  </div>
+
+  <slot name="code" />
+</div>

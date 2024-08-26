@@ -1,11 +1,11 @@
 import type {
-  EditorDocument,
   EditorUpdate,
+  EditorDocument,
   ScrollPosition
 } from "@tutorialkit/components-react/core"
-import CodeMirrorEditor from "@tutorialkit/components-react/core/CodeMirrorEditor"
 import { useState } from "react"
-import { useTheme } from "./hooks/useTheme"
+import { useTheme } from "./hooks/use-theme.ts"
+import CodeMirrorEditor from "@tutorialkit/components-react/core/CodeMirrorEditor"
 
 export default function ExampleCodeMirrorEditor() {
   const { editorDocument, theme, onChange, onScroll } = useEditorDocument()

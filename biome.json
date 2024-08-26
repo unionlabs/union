@@ -171,6 +171,7 @@
         "noConsole": "off",
         "useTopLevelRegex": "off",
         "noExportedImports": "off",
+        "noReactSpecificProps": "off",
         "useImportRestrictions": "off",
         "noUndeclaredDependencies": "off",
         "noUnusedFunctionParameters": "off",
@@ -315,7 +316,7 @@
       }
     },
     {
-      "include": ["./app/src/lib/polyfill.ts"],
+      "include": ["./app/src/lib/polyfill.ts", "./site/src/lib/wagmi-polyfills.ts"],
       "linter": {
         "rules": {
           "style": {

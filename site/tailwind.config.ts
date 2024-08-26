@@ -5,7 +5,6 @@ import defaultTheme from "tailwindcss/defaultTheme"
 import typographyPlugin from "@tailwindcss/typography"
 import starlightPlugin from "@astrojs/starlight-tailwind"
 import aspectRatioPlugin from "@tailwindcss/aspect-ratio"
-import { theme, rules, shortcuts } from "@tutorialkit/theme"
 import containerQueriesPlugin from "@tailwindcss/container-queries"
 
 export default {
@@ -30,7 +29,6 @@ export default {
         ]
       },
       colors: {
-        ...theme.colors,
         accent: {
           DEFAULT: "#A0ECFD",
           0: "#FAFEFF",
