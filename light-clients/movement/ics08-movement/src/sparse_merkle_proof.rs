@@ -4,8 +4,7 @@ use hex::FromHex;
 use hex_literal::hex;
 use serde::{de, ser, Deserialize, Serialize};
 use sha3::{Digest, Sha3_256};
-
-use crate::hash_value::HashValue;
+use unionlabs::aptos::hash_value::HashValue;
 
 // "SPARSE_MERKLE_PLACEHOLDER_HASH"
 pub const SPARSE_MERKLE_PLACEHOLDER_HASH: HashValue = HashValue(hex!(

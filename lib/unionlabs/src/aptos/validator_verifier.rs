@@ -1,11 +1,9 @@
-use core::array::TryFromSliceError;
-
 use macros::model;
 
 use super::public_key::PublicKey;
 use crate::{
     aptos::account::AccountAddress,
-    errors::{required, MissingField},
+    errors::{required, ExpectedLength, InvalidLength, MissingField},
 };
 
 /// Supports validation of signatures for known authors with individual voting powers. This struct
@@ -41,7 +39,7 @@ impl From<ValidatorVerifier> for protos::union::ibc::lightclients::movement::v1:
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromValidatorVerifierError {
     #[error("invalid validator infos: {0}")]
     ValidatorInfos(#[from] TryFromValidatorConsensusInfo),
@@ -77,12 +75,12 @@ impl From<ValidatorConsensusInfo>
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromValidatorConsensusInfo {
     #[error(transparent)]
     MissingField(#[from] MissingField),
     #[error("invalid address")]
-    Address(TryFromSliceError),
+    Address(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo>
@@ -94,13 +92,12 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorConsensusI
         value: protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            address: AccountAddress::new(
-                value
-                    .address
-                    .as_slice()
-                    .try_into()
-                    .map_err(TryFromValidatorConsensusInfo::Address)?,
-            ),
+            address: AccountAddress::new(value.address.as_slice().try_into().map_err(|_| {
+                TryFromValidatorConsensusInfo::Address(InvalidLength {
+                    expected: ExpectedLength::Exact(AccountAddress::LENGTH),
+                    found: value.address.len(),
+                })
+            })?),
             public_key: required!(value.public_key)?.into(),
             voting_power: value.voting_power,
         })

@@ -89,7 +89,7 @@ impl From<AggregateSignature>
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromAggregateSignatureError {}
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::AggregateSignature>

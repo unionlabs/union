@@ -1,15 +1,10 @@
-// Copyright © Aptos Foundation
-// Parts of the project are originally copyright © Meta Platforms, Inc.
-// SPDX-License-Identifier: Apache-2.0
-
-use std::array::TryFromSliceError;
-
 use macros::model;
 
 use super::{
     epoch_state::{EpochState, TryFromEpochStateError},
     hash_value::HashValue,
 };
+use crate::errors::{ExpectedLength, InvalidLength};
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
 /// monotonically.
@@ -65,12 +60,12 @@ impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockIn
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromBlockInfoError {
     #[error("invalid id")]
-    Id(#[source] TryFromSliceError),
+    Id(#[source] InvalidLength),
     #[error("invalid executed state id")]
-    ExecutedStateId(#[source] TryFromSliceError),
+    ExecutedStateId(#[source] InvalidLength),
     #[error("invalid next epoch state: {0}")]
     NextEpochState(#[from] TryFromEpochStateError),
 }
@@ -84,19 +79,19 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::BlockInfo> for Bloc
         Ok(Self {
             epoch: value.epoch,
             round: value.round,
-            id: HashValue::new(
-                value
-                    .id
-                    .as_slice()
-                    .try_into()
-                    .map_err(TryFromBlockInfoError::Id)?,
-            ),
+            id: HashValue::new(value.id.as_slice().try_into().map_err(|_| {
+                TryFromBlockInfoError::Id(InvalidLength {
+                    expected: ExpectedLength::Exact(HashValue::LENGTH),
+                    found: value.id.len(),
+                })
+            })?),
             executed_state_id: HashValue::new(
-                value
-                    .executed_state_id
-                    .as_slice()
-                    .try_into()
-                    .map_err(TryFromBlockInfoError::ExecutedStateId)?,
+                value.executed_state_id.as_slice().try_into().map_err(|_| {
+                    TryFromBlockInfoError::ExecutedStateId(InvalidLength {
+                        expected: ExpectedLength::Exact(HashValue::LENGTH),
+                        found: value.executed_state_id.len(),
+                    })
+                })?,
             ),
             version: value.version,
             timestamp_usecs: value.timestamp_usecs,

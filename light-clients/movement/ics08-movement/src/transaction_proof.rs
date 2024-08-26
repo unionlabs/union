@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use sha3::Sha3_256;
-
-use crate::{hash_value::HashValue, transaction_info::TransactionInfo};
+use unionlabs::aptos::{hash_value::HashValue, transaction_info::TransactionInfo};
 
 const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 

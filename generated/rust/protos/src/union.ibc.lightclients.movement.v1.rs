@@ -11,6 +11,8 @@ pub struct ClientState {
     #[prost(message, optional, tag = "4")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
+    #[prost(uint64, tag = "5")]
+    pub latest_block_num: u64,
 }
 impl ::prost::Name for ClientState {
     const NAME: &'static str = "ClientState";

@@ -10,6 +10,7 @@ message ClientState {
   bytes l2_contract_address = 2;
   bytes table_handle = 3;
   .ibc.core.client.v1.Height frozen_height = 4;
+  uint64 latest_block_num = 5;
 }
 
 message ConsensusState {

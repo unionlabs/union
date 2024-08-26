@@ -1,15 +1,9 @@
-mod block_info;
 mod client;
 mod contract;
-mod epoch_change;
-mod epoch_state;
-mod hash_value;
+mod errors;
 mod sparse_merkle_proof;
-mod state_proof;
-mod transaction_info;
 mod transaction_proof;
 mod types;
-mod validator_verifier;
 
 // use aptos_types::{proof::TransactionInfoWithProof, state_proof::StateProof};
 // use aptos_crypto::{hash::CryptoHash, HashValue};

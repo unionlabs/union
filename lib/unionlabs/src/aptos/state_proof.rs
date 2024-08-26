@@ -62,7 +62,7 @@ impl From<StateProof> for protos::union::ibc::lightclients::movement::v1::StateP
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromStateProofError {
     #[error(transparent)]
     MissingField(#[from] MissingField),

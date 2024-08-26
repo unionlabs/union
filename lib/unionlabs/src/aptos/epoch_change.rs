@@ -31,7 +31,7 @@ impl From<EpochChangeProof> for protos::union::ibc::lightclients::movement::v1::
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromEpochChangeProof {
     #[error("invalid ledger info with sigs")]
     LedgerInfoWithSigs(#[from] TryFromLedgerInfoWithSignatures),

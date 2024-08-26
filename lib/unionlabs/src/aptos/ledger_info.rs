@@ -1,5 +1,3 @@
-use core::array::TryFromSliceError;
-
 use macros::model;
 
 use super::{
@@ -7,7 +5,7 @@ use super::{
     hash_value::HashValue,
     signature::{AggregateSignature, TryFromAggregateSignatureError},
 };
-use crate::errors::{required, MissingField};
+use crate::errors::{required, ExpectedLength, InvalidLength, MissingField};
 
 /// Wrapper around LedgerInfoWithScheme to support future upgrades, this is the data being persisted.
 #[model(proto(
@@ -57,7 +55,7 @@ impl From<LedgerInfoWithSignatures>
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromLedgerInfoWithSignatures {
     #[error(transparent)]
     MissingField(#[from] MissingField),
@@ -91,14 +89,14 @@ impl From<LedgerInfo> for protos::union::ibc::lightclients::movement::v1::Ledger
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromLedgerInfo {
     #[error(transparent)]
     MissingField(#[from] MissingField),
     #[error("invalid commit info")]
     CommitInfo(#[from] TryFromBlockInfoError),
     #[error("invalid consensus data hash")]
-    ConsensusDataHash(#[source] TryFromSliceError),
+    ConsensusDataHash(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::LedgerInfo> for LedgerInfo {
@@ -114,7 +112,12 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::LedgerInfo> for Led
                     .consensus_data_hash
                     .as_slice()
                     .try_into()
-                    .map_err(TryFromLedgerInfo::ConsensusDataHash)?,
+                    .map_err(|_| {
+                        TryFromLedgerInfo::ConsensusDataHash(InvalidLength {
+                            expected: ExpectedLength::Exact(HashValue::LENGTH),
+                            found: value.consensus_data_hash.len(),
+                        })
+                    })?,
             ),
         })
     }

@@ -1,9 +1,9 @@
-use core::array::TryFromSliceError;
-
 use macros::model;
 
 use crate::{
-    aptos::account::AccountAddress, errors::InvalidLength, hash::H160,
+    aptos::account::AccountAddress,
+    errors::{ExpectedLength, InvalidLength},
+    hash::H160,
     ibc::core::client::height::Height,
 };
 
@@ -18,6 +18,7 @@ pub struct ClientState {
     pub l2_contract_address: H160,
     pub table_handle: AccountAddress,
     pub frozen_height: Height,
+    pub latest_block_num: u64,
 }
 
 impl From<ClientState> for protos::union::ibc::lightclients::movement::v1::ClientState {
@@ -27,18 +28,19 @@ impl From<ClientState> for protos::union::ibc::lightclients::movement::v1::Clien
             l2_contract_address: value.l2_contract_address.into(),
             table_handle: value.table_handle.0.to_vec(),
             frozen_height: Some(value.frozen_height.into()),
+            latest_block_num: value.latest_block_num,
         }
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromClientStateError {
     #[error("invalid l1 contract address")]
     L1ContractAddress(#[source] InvalidLength),
     #[error("invalid l2 contract address")]
     L2ContractAddress(#[source] InvalidLength),
     #[error("invalid table handle")]
-    TableHandle(#[source] TryFromSliceError),
+    TableHandle(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::ClientState> for ClientState {
@@ -56,14 +58,16 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::ClientState> for Cl
                 .l2_contract_address
                 .try_into()
                 .map_err(TryFromClientStateError::L2ContractAddress)?,
-            table_handle: AccountAddress::new(
-                value
-                    .table_handle
-                    .as_slice()
-                    .try_into()
-                    .map_err(TryFromClientStateError::TableHandle)?,
-            ),
+            table_handle: AccountAddress::new(value.table_handle.as_slice().try_into().map_err(
+                |_| {
+                    TryFromClientStateError::TableHandle(InvalidLength {
+                        expected: ExpectedLength::Exact(AccountAddress::LENGTH),
+                        found: value.table_handle.len(),
+                    })
+                },
+            )?),
             frozen_height: value.frozen_height.unwrap_or_default().into(),
+            latest_block_num: value.latest_block_num,
         })
     }
 }

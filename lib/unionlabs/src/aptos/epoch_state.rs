@@ -40,7 +40,7 @@ impl From<EpochState> for protos::union::ibc::lightclients::movement::v1::EpochS
     }
 }
 
-#[derive(Clone, Debug, thiserror::Error)]
+#[derive(Clone, Debug, PartialEq, thiserror::Error)]
 pub enum TryFromEpochStateError {
     #[error(transparent)]
     MissingField(#[from] MissingField),

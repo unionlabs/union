@@ -27,7 +27,7 @@ impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
     }
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromHeaderError {
     #[error(transparent)]
     MissingField(#[from] MissingField),
