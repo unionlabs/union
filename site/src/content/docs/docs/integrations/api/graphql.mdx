@@ -3,30 +3,45 @@ title: "GraphQL"
 sidebar:
   order: 1
 ---
-Unionlabs provides a hosted indexing service for all connected chains, served at [graphql.union.build](https://graphql.union.build/v1/graphql). 
-A [UI](https://cloud.hasura.io/public/graphiql?endpoint=https://graphql.union.build/v1/graphql) is also provided, which can be used 
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+Unionlabs provides a hosted indexing service for all connected chains, served at [graphql.union.build](https://graphql.union.build/v1/graphql).
+A [Playground UI](https://cloud.hasura.io/public/graphiql?endpoint=https://graphql.union.build/v1/graphql) is also provided, which can be used 
 to explore all available data. This guide goes through the most useful queries and types.
 
 Although most HTTP clients can be used to query our API, we recommend [URQL](https://commerce.nearform.com/open-source/urql/). Our GraphQL schema can
 be downloaded using [`graphqurl`](https://github.com/hasura/graphqurl) or [`graphql-inspector`](https://the-guild.dev/graphql/inspector):
 
-```bash title="introspecting the schema"
-export npm_config_yes=true
+<Tabs>
+  <TabItem label="graphqurl" icon="seti:shell">
+  ```bash frame="none"
+  # download .graphql schema
+  npx graphqurl https://graphql.union.build/v1/graphql \
+    --introspect > schema.graphql
+  ```
+  ```bash frame="none"
+  # download .json schema
+  npx graphqurl https://graphql.union.build/v1/graphql \
+    --introspect \
+    --format json > schema.json
+  ```
+  </TabItem>
+  <TabItem label="graphql-inspector" icon="seti:shell">
+    ```bash frame="none"
+    # download .graphql schema
+    npx @graphql-inspector/cli \
+      introspect https://graphql.union.build/v1/graphql \
+      --write schema.graphql
+    ```
+    ```bash frame="none"
+    # download .json schema
+    npx @graphql-inspector/cli \
+      introspect https://graphql.union.build/v1/graphql \
+      --write schema.json
+    ```
+  </TabItem>
+</Tabs>
 
-# using graphqurl
-npx graphqurl https://graphql.union.build/v1/graphql \
-  --introspect > schema.graphql
-
-# some clients require a JSON schema
-npx graphqurl https://graphql.union.build/v1/graphql \
-  --introspect \
-  --format json > schema.json
-
-# using graphql-inspector
-npx @graphql-inspector/cli \
-  introspect https://graphql.union.build/v1/graphql \
-  --write schema.graphql
-```
 
 This schema can be used by API clients and editors like VSCode to provide a better developer experience.
 
