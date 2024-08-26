@@ -1,7 +1,5 @@
 import starlight from "@astrojs/starlight"
 import starlightLinksValidator from "starlight-links-validator"
-import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
-import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections"
 
 const SITE_URL = "https://union.build"
 
