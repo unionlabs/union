@@ -143,7 +143,7 @@ fn derive_debug(
                                 }
                             }
 
-                            DebugAsDisplay(format!(#lit, #(#exprs)*))
+                            DebugAsDisplay(format!(#lit, #(#exprs,)*))
                         }}
                     }
                     Some(DebugMetaFmt::Wrap(path)) => {
@@ -274,7 +274,7 @@ fn derive_debug(
             }
         }
         (Data::Struct(_) | Data::Enum(_), Some(DebugMetaFmt::Format(lit, exprs))) => Ok(quote! {
-            write!(f, #lit, #(#exprs)*)
+            write!(f, #lit, #(#exprs,)*)
         }),
         (Data::Struct(_) | Data::Enum(_), Some(DebugMetaFmt::Wrap(path))) => Ok(quote! {
             ::core::fmt::Debug::fmt((#path)(self), f)
@@ -459,14 +459,9 @@ impl DebugMeta {
 
             let fmt: LitStr = input.parse()?;
 
-            let ahead = input.fork();
-            ahead.parse::<Option<Token![,]>>()?;
-            let args = if ahead.is_empty() {
-                input.advance_to(&ahead);
-                Punctuated::default()
-            } else {
-                input.advance_to(&ahead);
-                Punctuated::<Expr, Token![,]>::parse_terminated(input)?
+            let args = match input.parse::<Option<Token![,]>>()? {
+                Some(_token) => Punctuated::<Expr, Token![,]>::parse_terminated(input)?,
+                None => Punctuated::default(),
             };
 
             let prev = debug_meta

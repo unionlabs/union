@@ -1,13 +1,10 @@
 #![feature(trait_alias)]
 
-use std::{
-    borrow::Cow,
-    fmt::{Debug, Display},
-    marker::PhantomData,
-};
+use std::{fmt::Debug, marker::PhantomData};
 
 use futures::Future;
 use jsonrpsee::types::error::METHOD_NOT_FOUND_CODE;
+use macros::apply;
 use queue_msg::{aggregation::SubsetOf, queue_msg, QueueError, QueueMessage};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
@@ -21,7 +18,6 @@ use crate::{
 pub mod call;
 pub mod callback;
 pub mod data;
-// pub mod wait;
 
 pub mod chain;
 
@@ -59,47 +55,62 @@ pub fn json_rpc_error_to_queue_error(value: jsonrpsee::core::client::Error) -> Q
     }
 }
 
+macro_rules! str_newtype {
+    (
+        $(#[doc = $doc:literal])+
+        $vis:vis struct $Struct:ident;
+    ) => {
+        #[derive(macros::Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        // I tested this and apparently it's not required (newtype is automatically transparent?) but
+        // keeping it here for clarity
+        #[serde(transparent)]
+        #[debug("{}({:?})", stringify!($Struct), self.0)]
+        $vis struct $Struct<'a>(::std::borrow::Cow<'a, str>);
+
+        impl<'a> ::core::fmt::Display for $Struct<'a> {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                ::core::fmt::Display::fmt(&self.0, f)
+            }
+        }
+
+        #[allow(unused)]
+        impl $Struct<'static> {
+            pub const fn new_static(ibc_interface: &'static str) -> Self {
+                Self(::std::borrow::Cow::Borrowed(ibc_interface))
+            }
+        }
+
+
+        #[allow(unused)]
+        impl<'a> $Struct<'a> {
+            pub fn new(s: impl Into<::std::borrow::Cow<'a, str>>) -> Self {
+                Self(s.into())
+            }
+
+            pub fn into_static(self) -> $Struct<'static> {
+                $Struct(match self.0 {
+                    ::std::borrow::Cow::Borrowed(x) => ::std::borrow::Cow::Owned(x.to_owned()),
+                    ::std::borrow::Cow::Owned(x) => ::std::borrow::Cow::Owned(x),
+                })
+            }
+
+            pub fn as_str(&self) -> &str {
+                self.0.as_ref()
+            }
+        }
+    };
+}
+
 /// Represents the IBC interface of a chain. Since multiple chains with
 /// different consensus mechanisms can have the same execution environment, this
 /// value is used to describe how the IBC state is stored on-chain and how the
 /// IBC stack is to be interacted with.
-#[derive(macros::Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-// I tested this and apparently it's not required (newtype is automatically transparent?) but
-// keeping it here for clarity
-#[serde(transparent)]
-#[debug("{:?}", self.0)]
-pub struct IbcInterface<'a>(Cow<'a, str>);
-
-impl<'a> Display for IbcInterface<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
-
-impl<'a> IbcInterface<'a> {
-    pub fn new(ibc_interface: impl Into<Cow<'a, str>>) -> Self {
-        Self(ibc_interface.into())
-    }
-
-    pub fn into_static(self) -> IbcInterface<'static> {
-        IbcInterface(match self.0 {
-            Cow::Borrowed(x) => Cow::Owned(x.to_owned()),
-            Cow::Owned(x) => Cow::Owned(x),
-        })
-    }
-
-    pub fn as_str(&self) -> &str {
-        self.0.as_ref()
-    }
-}
+#[apply(str_newtype)]
+pub struct IbcInterface;
 
 /// Well-known IBC interfaces, defined as constants for reusability and to allow
 /// for pattern matching.
 impl IbcInterface<'static> {
-    pub const fn new_static(ibc_interface: &'static str) -> Self {
-        Self(Cow::Borrowed(ibc_interface))
-    }
-
     /// Native light clients in ibc-go, through the client v1 router. This
     /// entrypoint uses protobuf [`Any`] wrapping to route to the correct
     /// module, such as "/ibc.lightclients.tendermint.v1.ClientState" for native
@@ -130,41 +141,12 @@ impl IbcInterface<'static> {
 
 /// Newtype for client types. Clients of the same type have the same client
 /// state, consensus state, and header (client update) types.
-#[derive(macros::Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)] // see above
-#[debug("{:?}", self.0)]
-pub struct ClientType<'a>(Cow<'a, str>);
-
-impl<'a> Display for ClientType<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
-
-impl<'a> ClientType<'a> {
-    pub fn new(client_type: impl Into<Cow<'a, str>>) -> Self {
-        Self(client_type.into())
-    }
-
-    pub fn into_static(self) -> ClientType<'static> {
-        ClientType(match self.0 {
-            Cow::Borrowed(x) => Cow::Owned(x.to_owned()),
-            Cow::Owned(x) => Cow::Owned(x),
-        })
-    }
-
-    pub fn as_str(&self) -> &str {
-        self.0.as_ref()
-    }
-}
+#[apply(str_newtype)]
+pub struct ClientType;
 
 /// Well-known client types, defined as constants for reusability and to allow
 /// for pattern matching.
 impl ClientType<'static> {
-    pub const fn new_static(client_type: &'static str) -> Self {
-        Self(Cow::Borrowed(client_type))
-    }
-
     /// A client tracking CometBLS consensus.
     pub const COMETBLS: &'static str = "cometbls";
 
