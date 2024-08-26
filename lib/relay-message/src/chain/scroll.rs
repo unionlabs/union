@@ -28,11 +28,11 @@ use unionlabs::{
     uint::U256,
 };
 
+use super::ethereum::do_msg_fixed_gas;
 use crate::{
     aggregate::{Aggregate, AnyAggregate},
     chain::ethereum::{
-        do_msg, fetch_get_proof, fetch_ibc_state, EthereumConfig, FetchIbcState, GetProof,
-        TxSubmitError,
+        fetch_get_proof, fetch_ibc_state, EthereumConfig, FetchIbcState, GetProof, TxSubmitError,
     },
     data::{AnyData, Data},
     effect::{AnyEffect, Effect, MsgUpdateClientData},
@@ -66,12 +66,13 @@ where
     AnyLightClientIdentified<AnyEffect>: From<identified!(Effect<Self, Tr>)>,
 {
     async fn msg(&self, msg: Effect<Self, Tr>) -> Result<Op<RelayMessage>, Self::MsgError> {
-        do_msg(
+        do_msg_fixed_gas(
             self.chain_id(),
             self.multicall_address,
             &self.keyring,
             msg,
-            true,
+            false,
+            Some(5_000_000.into()),
             None,
         )
         .await
