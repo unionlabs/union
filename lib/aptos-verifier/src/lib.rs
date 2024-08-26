@@ -1,19 +1,23 @@
 pub mod error;
 
-use error::Error;
+pub use error::Error;
 use sha3::{Digest, Sha3_256};
-use unionlabs::aptos::{hash_value::HashValue, transaction_proof::TransactionAccumulatorProof};
+use unionlabs::aptos::{
+    hash_value::HashValue, transaction_info::TransactionInfo,
+    transaction_proof::TransactionInfoWithProof,
+};
 
 pub(crate) const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 
 /// Verifies an element whose hash is `element_hash` and version is `element_version` exists in
 /// the accumulator whose root hash is `expected_root_hash` using the provided proof.
-pub fn verify_tx_accumulator_proof(
-    proof: &TransactionAccumulatorProof,
+pub fn verify_tx_state(
+    tx_info: &TransactionInfoWithProof,
     expected_root_hash: HashValue,
-    element_hash: HashValue,
     element_index: u64,
 ) -> Result<(), Error> {
+    let element_hash = hash_tx_info(&tx_info.transaction_info);
+    let proof = &tx_info.ledger_info_to_transaction_info_proof;
     if proof.siblings.len() > MAX_ACCUMULATOR_PROOF_DEPTH {
         return Err(Error::MaxSiblingsExceeded(proof.siblings.len()));
     }
@@ -50,7 +54,18 @@ pub fn verify_tx_accumulator_proof(
     Ok(())
 }
 
-pub fn hash_inner_node(left_child: HashValue, right_child: HashValue) -> HashValue {
+fn hash_tx_info(tx_info: &TransactionInfo) -> HashValue {
+    let mut state = Sha3_256::new();
+    state.update(
+        Sha3_256::new()
+            .chain_update("APTOS::TransactionInfo")
+            .finalize(),
+    );
+    bcs::serialize_into(&mut state, tx_info).expect("expected to be able to serialize");
+    HashValue(state.finalize().into())
+}
+
+fn hash_inner_node(left_child: HashValue, right_child: HashValue) -> HashValue {
     let mut state = Sha3_256::new();
     state.update(
         Sha3_256::new()

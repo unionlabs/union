@@ -14,6 +14,10 @@ pub enum Error {
     ConsensusStateDecode(#[source] DecodeErrorOf<Proto, movement::consensus_state::ConsensusState>),
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
+    #[error("header verification failure ({0})")]
+    HeaderVerification(#[from] aptos_verifier::Error),
+    #[error("invalid state_proof storage proof")]
+    InvalidStateProof,
 }
 
 impl From<Error> for IbcClientError<MovementLightClient> {

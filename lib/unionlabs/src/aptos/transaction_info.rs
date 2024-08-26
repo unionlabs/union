@@ -15,19 +15,6 @@ pub enum TransactionInfo {
     V0(TransactionInfoV0),
 }
 
-// impl TransactionInfo {
-//     pub fn hash(&self) -> HashValue {
-//         let mut state = Sha3_256::new();
-//         state.update(
-//             Sha3_256::new()
-//                 .chain_update("APTOS::TransactionInfo")
-//                 .finalize(),
-//         );
-//         bcs::serialize_into(&mut state, &self).expect("expected to be able to serialize");
-//         HashValue(state.finalize().into())
-//     }
-// }
-
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionInfoV0 {
     /// The amount of gas used.

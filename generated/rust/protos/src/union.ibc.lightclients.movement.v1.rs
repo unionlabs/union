@@ -56,6 +56,10 @@ pub struct Header {
     pub state_proof: ::core::option::Option<StateProof>,
     #[prost(message, optional, tag = "4")]
     pub tx_proof: ::core::option::Option<TransactionInfoWithProof>,
+    #[prost(message, optional, tag = "5")]
+    pub state_proof_hash_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
+    #[prost(message, optional, tag = "6")]
+    pub settlement_contract_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
 }
 impl ::prost::Name for Header {
     const NAME: &'static str = "Header";

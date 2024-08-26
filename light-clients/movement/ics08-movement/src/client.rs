@@ -5,6 +5,7 @@ use ics008_wasm_client::{
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::Proto,
+    hash::{H160, H256},
     ibc::{
         core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::{
@@ -15,6 +16,7 @@ use unionlabs::{
             wasm,
         },
     },
+    uint::U256,
 };
 
 use crate::errors::Error;
@@ -68,7 +70,36 @@ impl IbcClient for MovementLightClient {
         )
         .map_err(Error::CustomQuery)?;
 
-        todo!()
+        aptos_verifier::verify_tx_state(
+            &header.tx_proof,
+            header
+                .state_proof
+                .latest_ledger_info()
+                .commit_info
+                .executed_state_id,
+            17, // TODO(aeryz): this should be configurable
+        )
+        .map_err(Into::<Error>::into)?;
+
+        // TODO(aeryz): make sure the given state_proof_hash_proof.key matches the correct slot
+
+        ethereum_verifier::verify::verify_account_storage_root(
+            l1_consensus_state.data.state_root,
+            &client_state.data.l1_contract_address,
+            &header.settlement_contract_proof.proof,
+            &header.settlement_contract_proof.storage_root,
+        )
+        .unwrap();
+
+        ethereum_verifier::verify::verify_storage_proof(
+            header.settlement_contract_proof.storage_root,
+            header.state_proof_hash_proof.key,
+            &header.state_proof.hash(),
+            header.state_proof_hash_proof.proof,
+        )
+        .unwrap();
+
+        Ok(())
     }
 
     fn verify_misbehaviour(

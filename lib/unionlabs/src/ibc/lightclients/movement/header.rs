@@ -6,7 +6,13 @@ use crate::{
         transaction_proof::{TransactionInfoWithProof, TryFromTransactionInfoWithProofError},
     },
     errors::{required, MissingField},
-    ibc::core::client::height::Height,
+    ibc::{
+        core::client::height::Height,
+        lightclients::ethereum::{
+            account_proof::{AccountProof, TryFromAccountProofError},
+            storage_proof::{StorageProof, TryFromStorageProofError},
+        },
+    },
 };
 
 #[model(proto(
@@ -19,6 +25,10 @@ pub struct Header {
     pub trusted_height: Height,
     pub state_proof: StateProof,
     pub tx_proof: TransactionInfoWithProof,
+    /// Proof that the hash of the `StateProof` is committed to L1
+    pub state_proof_hash_proof: StorageProof,
+    /// Proof of state of the settlement contract on L1
+    pub settlement_contract_proof: AccountProof,
 }
 
 impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
@@ -28,6 +38,8 @@ impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
             trusted_height: Some(value.trusted_height.into()),
             state_proof: Some(value.state_proof.into()),
             tx_proof: Some(value.tx_proof.into()),
+            state_proof_hash_proof: Some(value.state_proof_hash_proof.into()),
+            settlement_contract_proof: Some(value.settlement_contract_proof.into()),
         }
     }
 }
@@ -40,6 +52,10 @@ pub enum TryFromHeaderError {
     StateProof(#[from] TryFromStateProofError),
     #[error("invalid tx proof")]
     TxProof(#[from] TryFromTransactionInfoWithProofError),
+    #[error("invalid state proof hash proof")]
+    StateProofHashProof(#[from] TryFromStorageProofError),
+    #[error("invalid settlement contract proof")]
+    SettlementContractProof(#[from] TryFromAccountProofError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::Header> for Header {
@@ -53,6 +69,8 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::Header> for Header 
             trusted_height: required!(value.trusted_height)?.into(),
             state_proof: required!(value.state_proof)?.try_into()?,
             tx_proof: required!(value.tx_proof)?.try_into()?,
+            state_proof_hash_proof: required!(value.state_proof_hash_proof)?.try_into()?,
+            settlement_contract_proof: required!(value.settlement_contract_proof)?.try_into()?,
         })
     }
 }

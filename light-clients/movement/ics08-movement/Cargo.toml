@@ -20,6 +20,8 @@ ics008-wasm-client     = { workspace = true }
 unionlabs = { workspace = true, features = [ "cosmwasm", "stargate" ] }
 cosmwasm-std           = { workspace = true, features = ["abort"] }
 protos = { workspace = true }
+aptos-verifier = { workspace = true }
+ethereum-verifier = { workspace = true }
 
 [lints]
 workspace = true
