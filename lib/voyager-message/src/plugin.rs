@@ -17,7 +17,7 @@ use unionlabs::{
 
 use crate::{
     data::{ClientInfo, Data},
-    ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    ChainId, ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 // REVIEW: Rename?
@@ -106,7 +106,7 @@ pub trait ChainModule<D: Member, F: Member, A: Member> {
     /// Register this chain module with Voyager, returning the chain id of the
     /// chain this module tracks.
     #[method(name = "chainId")]
-    fn chain_id(&self) -> RpcResult<String>;
+    fn chain_id(&self) -> RpcResult<ChainId<'static>>;
 
     /// Query the latest finalized height of this chain.
     #[method(name = "queryLatestHeight")]
@@ -325,7 +325,7 @@ pub trait ConsensusModule<D: Member, F: Member, A: Member> {
 
 #[model]
 pub struct ConsensusModuleInfo {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub client_type: ClientType<'static>,
 }
 
@@ -345,7 +345,7 @@ pub struct ClientStateMeta {
     pub height: Height,
 
     /// The chain id of the counterparty chain this client tracks.
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
 }
 
 #[model]

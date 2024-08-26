@@ -25,7 +25,7 @@ use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
 use tracing_subscriber::EnvFilter;
 use unionlabs::ethereum::ibc_commitment_key;
-use voyager_message::{call::FetchBlock, plugin::ChainModuleClient, VoyagerMessage};
+use voyager_message::{call::FetchBlock, plugin::ChainModuleClient, ChainId, VoyagerMessage};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -293,7 +293,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
 
             let chain = voyager
                 .context
-                .chain_module::<Value, Value, Value>(&chain_id)
+                .chain_module::<Value, Value, Value>(&ChainId::new(&chain_id))
                 .unwrap();
 
             let height = chain.query_latest_height().await.unwrap();
@@ -301,7 +301,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             voyager.shutdown().await;
 
             print_json(&call::<VoyagerMessage<Value, Value, Value>>(FetchBlock {
-                chain_id,
+                chain_id: ChainId::new(chain_id),
                 height,
             }));
         }

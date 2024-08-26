@@ -42,7 +42,7 @@ use voyager_message::{
     call::Call,
     data::{log_msg, Data, IbcMessage, MsgCreateClientData, WithChainId},
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
-    run_module_server, VoyagerMessage,
+    run_module_server, ChainId, VoyagerMessage,
 };
 
 use crate::{aggregate::ModuleAggregate, data::ModuleData, fetch::ModuleFetch};
@@ -62,7 +62,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: U256,
+    pub chain_id: ChainId<'static>,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
@@ -108,7 +108,7 @@ impl Module {
         let chain_id = provider.get_chainid().await?;
 
         Ok(Self {
-            chain_id: U256(chain_id),
+            chain_id: ChainId::new(U256(chain_id).to_string()),
             ibc_handler_address: config.ibc_handler_address,
             multicall_address: config.multicall_address,
             provider,
@@ -484,7 +484,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
                                 chain_id,
                                 message,
                             })) => {
-                                assert_eq!(chain_id, self.chain_id.to_string());
+                                assert_eq!(chain_id, self.chain_id);
 
                                 call(Call::plugin(
                                     self.plugin_name(),
@@ -495,7 +495,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
                                 chain_id,
                                 message,
                             })) => {
-                                assert_eq!(chain_id, self.chain_id.to_string());
+                                assert_eq!(chain_id, self.chain_id);
 
                                 call(Call::plugin(
                                     self.plugin_name(),

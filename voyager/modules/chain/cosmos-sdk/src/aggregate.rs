@@ -14,7 +14,7 @@ use unionlabs::{
 use voyager_message::{
     callback::mk_packet_metadata,
     data::{ChainEvent, ClientInfo, Data, DecodedClientStateMeta, IbcState, PacketMetadata},
-    VoyagerMessage,
+    ChainId, VoyagerMessage,
 };
 
 use crate::{data::ModuleData, fetch::ModuleFetch};
@@ -27,7 +27,7 @@ pub enum ModuleAggregate {
 
 #[queue_msg]
 pub struct MakeFullEvent {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub tx_hash: H256,
     pub height: Height,
     pub event: IbcEvent,

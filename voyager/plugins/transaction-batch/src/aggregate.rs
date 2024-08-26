@@ -10,7 +10,7 @@ use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::FetchUpdateHeaders,
     data::{Data, DecodedClientStateMeta, IbcMessage, OrderedMsgUpdateClients, WithChainId},
-    VoyagerMessage,
+    ChainId, VoyagerMessage,
 };
 
 use crate::{
@@ -64,7 +64,7 @@ pub struct MakeBatchTransaction {
 impl MakeBatchTransaction {
     pub fn do_aggregate(
         self,
-        chain_id: String,
+        chain_id: ChainId<'static>,
         datas: VecDeque<Data<ModuleData>>,
     ) -> Data<ModuleData> {
         let msgs = datas

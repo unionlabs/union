@@ -6,7 +6,7 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{
     fold::Fold,
     parenthesized,
-    parse::{discouraged::Speculative, Parse, ParseStream},
+    parse::{Parse, ParseStream},
     parse_macro_input, parse_quote, parse_quote_spanned,
     punctuated::Punctuated,
     spanned::Spanned,

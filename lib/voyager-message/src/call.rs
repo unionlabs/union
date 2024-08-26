@@ -46,7 +46,7 @@ use crate::{
         ChainModuleClient, ChainModuleClientExt, ClientModuleClient, ConsensusModuleClient,
         PluginModuleClient,
     },
-    top_level_identifiable_enum, Context, IbcInterface, PluginMessage, VoyagerMessage,
+    top_level_identifiable_enum, ChainId, Context, IbcInterface, PluginMessage, VoyagerMessage,
 };
 
 #[apply(top_level_identifiable_enum)]
@@ -102,20 +102,20 @@ pub enum Call<C = serde_json::Value> {
 
 #[queue_msg]
 pub struct FetchBlockRange {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub from_height: Height,
     pub to_height: Height,
 }
 
 #[queue_msg]
 pub struct FetchBlock {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub height: Height,
 }
 
 #[queue_msg]
 pub struct FetchSelfClientState {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub at: QueryHeight,
     /// The counterparty IBC interface that the state must be encoded for.
     pub ibc_interface: IbcInterface<'static>,
@@ -128,7 +128,7 @@ pub struct FetchSelfClientState {
 
 #[queue_msg]
 pub struct FetchSelfConsensusState {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub at: QueryHeight,
     /// The counterparty IBC interface that the state must be encoded for.
     pub ibc_interface: IbcInterface<'static>,
@@ -137,7 +137,7 @@ pub struct FetchSelfConsensusState {
 // TODO: This should have a height field
 #[queue_msg]
 pub struct FetchClientInfo {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub client_id: ClientId,
 }
 
@@ -180,33 +180,33 @@ pub struct EncodeProof {
 /// Fetches a raw, unenccoded IBC proof from the specified chain.
 #[queue_msg]
 pub struct FetchRawProof {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub at: Height,
     pub path: Path,
 }
 
 #[queue_msg]
 pub struct FetchState {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub at: QueryHeight,
     pub path: Path,
 }
 
 #[queue_msg]
 pub struct FetchUpdateHeaders {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub update_from: Height,
     pub update_to: Height,
 }
 
 #[queue_msg]
 pub struct FetchLatestHeight {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
 }
 
 #[queue_msg]
 pub struct FetchUnfinalizedTrustedClientState {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub client_id: ClientId,
 }
 
@@ -214,7 +214,7 @@ pub struct FetchUnfinalizedTrustedClientState {
 #[queue_msg]
 pub struct MakeMsgCreateClient {
     /// The chain to create the client on.
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     /// The height of the counterparty that the client will trust. The
     /// [`SelfClientState`] and [`SelfConsensusState`] will be queried at this
     /// height.
@@ -225,7 +225,7 @@ pub struct MakeMsgCreateClient {
     /// [`ClientInfo::metadata`].
     pub metadata: Value,
     /// The chain to create a client of.
-    pub counterparty_chain_id: String,
+    pub counterparty_chain_id: ChainId<'static>,
     /// The IBC interface to create the client on.
     pub ibc_interface: IbcInterface<'static>,
 }
@@ -233,11 +233,11 @@ pub struct MakeMsgCreateClient {
 #[queue_msg]
 pub struct MakeMsgConnectionOpenTry {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: String,
+    pub origin_chain_id: ChainId<'static>,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: String,
+    pub target_chain_id: ChainId<'static>,
     /// The original event that was emitted on the origin chain.
     pub connection_open_init_event: crate::data::ConnectionOpenInit,
 }
@@ -245,11 +245,11 @@ pub struct MakeMsgConnectionOpenTry {
 #[queue_msg]
 pub struct MakeMsgConnectionOpenAck {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: String,
+    pub origin_chain_id: ChainId<'static>,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: String,
+    pub target_chain_id: ChainId<'static>,
     /// The original event that was emitted on the origin chain.
     pub connection_open_try_event: crate::data::ConnectionOpenTry,
 }
@@ -257,11 +257,11 @@ pub struct MakeMsgConnectionOpenAck {
 #[queue_msg]
 pub struct MakeMsgConnectionOpenConfirm {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: String,
+    pub origin_chain_id: ChainId<'static>,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: String,
+    pub target_chain_id: ChainId<'static>,
     /// The original event that was emitted on the origin chain.
     pub connection_open_ack_event: crate::data::ConnectionOpenAck,
 }
@@ -269,11 +269,11 @@ pub struct MakeMsgConnectionOpenConfirm {
 #[queue_msg]
 pub struct MakeMsgChannelOpenTry {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: String,
+    pub origin_chain_id: ChainId<'static>,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: String,
+    pub target_chain_id: ChainId<'static>,
     /// The original event that was emitted on the origin chain.
     pub channel_open_init_event: crate::data::ChannelOpenInit,
 }
@@ -281,11 +281,11 @@ pub struct MakeMsgChannelOpenTry {
 #[queue_msg]
 pub struct MakeMsgChannelOpenAck {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: String,
+    pub origin_chain_id: ChainId<'static>,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: String,
+    pub target_chain_id: ChainId<'static>,
     /// The original event that was emitted on the origin chain.
     pub channel_open_try_event: crate::data::ChannelOpenTry,
 }
@@ -293,11 +293,11 @@ pub struct MakeMsgChannelOpenAck {
 #[queue_msg]
 pub struct MakeMsgChannelOpenConfirm {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: String,
+    pub origin_chain_id: ChainId<'static>,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: String,
+    pub target_chain_id: ChainId<'static>,
     /// The original event that was emitted on the origin chain.
     pub channel_open_ack_event: crate::data::ChannelOpenAck,
 }
@@ -305,11 +305,11 @@ pub struct MakeMsgChannelOpenConfirm {
 #[queue_msg]
 pub struct MakeMsgRecvPacket {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: String,
+    pub origin_chain_id: ChainId<'static>,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: String,
+    pub target_chain_id: ChainId<'static>,
     /// The original event that was emitted on the origin chain.
     pub send_packet_event: crate::data::SendPacket,
 }
@@ -317,30 +317,30 @@ pub struct MakeMsgRecvPacket {
 #[queue_msg]
 pub struct MakeMsgAcknowledgement {
     /// The chain id of the chain that the event was emitted on.
-    pub origin_chain_id: String,
+    pub origin_chain_id: ChainId<'static>,
     /// The height to generate the state proofs at.
     pub origin_chain_proof_height: Height,
     /// The chain id of the chain that the message will be sent to.
-    pub target_chain_id: String,
+    pub target_chain_id: ChainId<'static>,
     /// The original event that was emitted on the origin chain.
     pub write_acknowledgement_event: crate::data::WriteAcknowledgement,
 }
 
 #[queue_msg]
 pub struct WaitForHeight {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub height: Height,
 }
 
 #[queue_msg]
 pub struct WaitForHeightRelative {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub height: u64,
 }
 
 #[queue_msg]
 pub struct WaitForTimestamp {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub timestamp: i64,
 }
 
@@ -348,7 +348,7 @@ pub struct WaitForTimestamp {
 /// returning the counterparty's client state at that height when it's reached.
 #[queue_msg]
 pub struct WaitForTrustedHeight {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     /// The id of the client on `Hc` who's [`ClientState::height()`] we're
     /// waiting to be >= `.height`.
     pub client_id: ClientId,
@@ -356,7 +356,7 @@ pub struct WaitForTrustedHeight {
     /// at [`ClientState::height()`] when `.client_id` on `Hc` trusts a height
     /// >= `.height`.
     pub counterparty_client_id: ClientId,
-    pub counterparty_chain_id: String,
+    pub counterparty_chain_id: ChainId<'static>,
     pub height: Height,
 }
 
@@ -828,10 +828,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 connection_open_ack_event,
             }) => {
                 let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(origin_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
                 let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(target_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 // info of the client on the target chain that will verify the storage
                 // proofs
@@ -881,10 +881,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 channel_open_init_event: event,
             }) => {
                 let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(origin_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
                 let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(target_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 let origin_channel_path = ChannelEndPath {
                     port_id: event.port_id.clone(),
@@ -940,10 +940,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 channel_open_try_event: event,
             }) => {
                 let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(origin_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
                 let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(target_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 let origin_channel_path = ChannelEndPath {
                     port_id: event.port_id,
@@ -986,10 +986,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 channel_open_ack_event,
             }) => {
                 let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(origin_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
                 let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(target_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 let origin_channel_path = ChannelEndPath {
                     port_id: channel_open_ack_event.port_id,
@@ -1030,10 +1030,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 send_packet_event,
             }) => {
                 let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(origin_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
                 let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(target_chain_id)?;
+                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 let proof_commitment = origin_chain_module
                     .query_ibc_proof(
@@ -1380,14 +1380,14 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
 )]
 async fn make_msg_create_client<D: Member, F: Member, A: Member>(
     ctx: &Context,
-    counterparty_chain_id: String,
+    counterparty_chain_id: ChainId<'static>,
     height: Height,
-    chain_id: String,
+    chain_id: ChainId<'static>,
     ibc_interface: IbcInterface<'_>,
     metadata: Value,
 ) -> Result<Op<VoyagerMessage<D, F, A>>, QueueError> {
     let counterparty_consensus_module =
-        ctx.consensus_module::<Value, Value, Value>(counterparty_chain_id)?;
+        ctx.consensus_module::<Value, Value, Value>(&counterparty_chain_id)?;
 
     let self_client_state = counterparty_consensus_module
         .self_client_state(height)
@@ -1442,7 +1442,7 @@ pub mod compound {
             AggregateDecodeClientStateMeta, AggregateDecodeClientStateMetaFromConnection,
             AggregateFetchConnectionFromChannel,
         },
-        VoyagerMessage,
+        ChainId, VoyagerMessage,
     };
 
     /// Fetches the underlying connection of the provided channel ids on the
@@ -1450,7 +1450,7 @@ pub mod compound {
     ///
     /// This expands to [`AggregateFetchConnectionFromChannel`].
     pub fn fetch_connection_from_channel_info<D: Member, F: Member, A: Member>(
-        chain_id: String,
+        chain_id: ChainId<'static>,
         at: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -1475,7 +1475,7 @@ pub mod compound {
     ///
     /// This expands to [`AggregateFetchConnectionFromConnection`].
     pub fn fetch_client_state_meta_from_connection<D: Member, F: Member, A: Member>(
-        chain_id: String,
+        chain_id: ChainId<'static>,
         at: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
@@ -1494,7 +1494,7 @@ pub mod compound {
     ///
     /// This expands to [`AggregateFetchConnectionFromConnection`].
     pub fn fetch_client_state_meta<D: Member, F: Member, A: Member>(
-        chain_id: String,
+        chain_id: ChainId<'static>,
         client_id: ClientId,
         at: QueryHeight,
     ) -> Op<VoyagerMessage<D, F, A>> {
@@ -1520,16 +1520,16 @@ pub mod compound {
 /// MsgConnectionOpenTry/Ack.
 async fn mk_connection_handshake_state_and_proofs(
     ctx: &Context,
-    origin_chain_id: String,
-    target_chain_id: String,
+    origin_chain_id: ChainId<'static>,
+    target_chain_id: ChainId<'static>,
     client_id: ClientId,
     counterparty_client_id: ClientId,
     connection_id: ConnectionId,
     origin_chain_proof_height: Height,
 ) -> Result<ConnectionHandshakeStateAndProofs, QueueError> {
-    let origin_chain_module = ctx.chain_module::<Value, Value, Value>(origin_chain_id)?;
+    let origin_chain_module = ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
-    let target_chain_module = ctx.chain_module::<Value, Value, Value>(target_chain_id)?;
+    let target_chain_module = ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
 
     // info of the client on the target chain that will verify the storage
     // proofs

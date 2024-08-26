@@ -38,7 +38,7 @@ use voyager_message::{
     call::Call,
     data::{Data, IbcMessage, WithChainId},
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
-    run_module_server, VoyagerMessage,
+    run_module_server, ChainId, VoyagerMessage,
 };
 
 use crate::{aggregate::ModuleAggregate, data::ModuleData, fetch::ModuleFetch};
@@ -58,7 +58,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub keyring: CosmosKeyring,
     pub tm_client: cometbft_rpc::Client,
     pub grpc_url: String,
@@ -117,7 +117,7 @@ impl Module {
                 }),
             ),
             tm_client,
-            chain_id,
+            chain_id: ChainId::new(chain_id),
             grpc_url: config.grpc_url,
             gas_config: config.gas_config,
             bech32_prefix,
@@ -325,7 +325,7 @@ impl Module {
                 &SignDoc {
                     body_bytes: tx_body.clone().encode_as::<Proto>(),
                     auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.chain_id.clone(),
+                    chain_id: self.chain_id.to_string(),
                     account_number: account.account_number,
                 }
                 .encode_as::<Proto>(),
@@ -487,7 +487,7 @@ impl Module {
                 &SignDoc {
                     body_bytes: tx_body.clone().encode_as::<Proto>(),
                     auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.chain_id.clone(),
+                    chain_id: self.chain_id.to_string(),
                     account_number: account.account_number,
                 }
                 .encode_as::<Proto>(),
@@ -641,7 +641,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
                                 chain_id,
                                 message,
                             })) => {
-                                assert_eq!(chain_id, self.chain_id.to_string());
+                                assert_eq!(chain_id, self.chain_id);
 
                                 call(Call::plugin(
                                     self.plugin_name(),
@@ -652,7 +652,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
                                 chain_id,
                                 message,
                             })) => {
-                                assert_eq!(chain_id, self.chain_id.to_string());
+                                assert_eq!(chain_id, self.chain_id);
 
                                 call(Call::plugin(
                                     self.plugin_name(),

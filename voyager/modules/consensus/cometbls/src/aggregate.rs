@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
-use queue_msg::{promise, aggregation::UseAggregate, data, call, queue_msg, Op};
+use queue_msg::{aggregation::UseAggregate, call, data, promise, queue_msg, Op};
 use tracing::{debug, trace};
 use unionlabs::{
     bounded::BoundedI64,
@@ -23,10 +23,10 @@ use unionlabs::{
     union::galois::{prove_request::ProveRequest, validator_set_commit::ValidatorSetCommit},
 };
 use voyager_message::{
+    call::Call,
     callback::Callback,
     data::{DecodedHeaderMeta, OrderedHeaders},
-    call::Call,
-    PluginMessage, VoyagerMessage,
+    ChainId, PluginMessage, VoyagerMessage,
 };
 
 use crate::{
@@ -43,7 +43,7 @@ pub enum ModuleAggregate {
 
 #[queue_msg]
 pub struct AggregateProveRequest {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
 
     pub update_from: Height,
     pub update_to: Height,
@@ -51,7 +51,7 @@ pub struct AggregateProveRequest {
 
 #[queue_msg]
 pub struct AggregateHeader {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
 
     pub signed_header: SignedHeader,
 

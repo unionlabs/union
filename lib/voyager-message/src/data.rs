@@ -36,7 +36,7 @@ use unionlabs::{
 
 use crate::{
     plugin::{ClientStateMeta, ConsensusStateMeta},
-    top_level_identifiable_enum, ClientType, IbcInterface, PluginMessage,
+    top_level_identifiable_enum, ChainId, ClientType, IbcInterface, PluginMessage,
 };
 
 #[apply(top_level_identifiable_enum)]
@@ -106,11 +106,11 @@ pub enum Data<D = serde_json::Value> {
 #[queue_msg]
 pub struct ChainEvent {
     /// The chain where this event was emitted.
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     /// The underlying client of this event, on [`Self::chain_id`].
     pub client_info: ClientInfo,
     /// The chain on the other end of this IBC event.
-    pub counterparty_chain_id: String,
+    pub counterparty_chain_id: ChainId<'static>,
     pub tx_hash: H256,
     /// The 'provable height' of the event. This is the minimum height at which the effect of the IBC action that caused this event is provable in the state root of the chain identified by [`Self::chain_id`].
     pub provable_height: Height,
@@ -404,7 +404,7 @@ pub enum FullIbcEvent {
 
 #[queue_msg]
 pub struct LatestHeight {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub height: Height,
 }
 
@@ -456,7 +456,7 @@ pub struct UnfinalizedTrustedClientState {
 #[queue_msg]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct IbcState<P: IbcPath> {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub path: P,
     /// The height that the state was read at.
     pub height: Height,
@@ -536,7 +536,7 @@ pub struct EncodedHeader {
 
 #[queue_msg]
 pub struct WithChainId<T> {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub message: T,
 }
 

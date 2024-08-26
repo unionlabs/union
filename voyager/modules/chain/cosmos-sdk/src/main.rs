@@ -44,7 +44,7 @@ use voyager_message::{
         ChainModuleServer, IbcGo08WasmClientMetadata, PluginInfo, PluginKind, PluginModuleServer,
         RawClientState,
     },
-    run_module_server, ClientType, IbcInterface, VoyagerMessage,
+    run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
 use crate::{
@@ -70,7 +70,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub chain_revision: u64,
 
     pub tm_client: cometbft_rpc::Client,
@@ -96,7 +96,7 @@ impl Module {
     pub async fn new(config: Config) -> Result<Self, InitError> {
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
 
-        let chain_id = tm_client.status().await?.node_info.network.to_string();
+        let chain_id = tm_client.status().await?.node_info.network;
 
         let chain_revision = chain_id
             .split('-')
@@ -113,7 +113,7 @@ impl Module {
 
         Ok(Self {
             tm_client,
-            chain_id,
+            chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
             checksum_cache: Arc::new(DashMap::default()),
@@ -660,7 +660,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
 #[async_trait]
 impl ChainModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn chain_id(&self) -> RpcResult<String> {
+    fn chain_id(&self) -> RpcResult<ChainId<'static>> {
         Ok(self.chain_id.clone())
     }
 

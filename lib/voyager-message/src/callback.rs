@@ -38,7 +38,7 @@ use crate::{
     },
     json_rpc_error_to_queue_error,
     plugin::{ClientModuleClient, PluginModuleClient},
-    top_level_identifiable_enum, Context, PluginMessage, VoyagerMessage,
+    top_level_identifiable_enum, ChainId, Context, PluginMessage, VoyagerMessage,
 };
 
 #[apply(top_level_identifiable_enum)]
@@ -331,7 +331,7 @@ pub struct AggregateMsgUpdateClientsFromOrderedHeaders {
 
 // #[queue_msg]
 // pub struct AggregateMsgUpdateClientFromEncodedHeader {
-//     pub counterparty_chain_id: String,
+//     pub counterparty_chain_id: ChainId<'static>,
 //     pub counterparty_client_id: ClientId,
 // }
 
@@ -712,7 +712,7 @@ pub struct AggregateWaitForNextClientSequence {
 #[queue_msg]
 pub struct AggregateWaitForTrustedHeight {
     pub client_id: ClientId,
-    pub counterparty_chain_id: String,
+    pub counterparty_chain_id: ChainId<'static>,
     pub counterparty_client_id: ClientId,
 }
 
@@ -796,7 +796,7 @@ pub enum AggregateMsgAfterUpdate {
 // }
 
 // pub fn mk_aggregate_wait_for_update<D: Member, F: Member, A: Member>(
-//     chain_id: String,
+//     chain_id: ChainId<'static>,
 //     client_id: ClientId,
 //     counterparty_client_id: ClientId,
 //     wait_for: Height,
@@ -2947,8 +2947,8 @@ impl<D: Member, F: Member, A: Member> UseAggregate<VoyagerMessage<D, F, A>>
 /// in src/dst ids.
 pub fn mk_packet_metadata<D: Member>(
     data: VecDeque<Data<D>>,
-    source_chain_id: String,
-    destination_chain_id: String,
+    source_chain_id: ChainId<'static>,
+    destination_chain_id: ChainId<'static>,
     packet_src_port: PortId,
     packet_src_channel: ChannelId,
     packet_dst_port: PortId,
@@ -2979,8 +2979,8 @@ pub fn mk_packet_metadata_from_hlist<D: Member>(
         IbcState<ChannelEndPath>,
         IbcState<ChannelEndPath>,
     ],
-    source_chain_id: String,
-    destination_chain_id: String,
+    source_chain_id: ChainId<'static>,
+    destination_chain_id: ChainId<'static>,
     packet_src_port: PortId,
     packet_src_channel: ChannelId,
     packet_dst_port: PortId,

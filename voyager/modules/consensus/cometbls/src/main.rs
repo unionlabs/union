@@ -31,7 +31,7 @@ use voyager_message::{
     plugin::{
         ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginKind, PluginModuleServer,
     },
-    run_module_server, ClientType, VoyagerMessage,
+    run_module_server, ChainId, ClientType, VoyagerMessage,
 };
 
 use crate::{
@@ -58,7 +58,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
 
     pub tm_client: cometbft_rpc::Client,
     pub chain_revision: u64,
@@ -102,7 +102,7 @@ impl Module {
 
         Ok(Self {
             tm_client,
-            chain_id,
+            chain_id: ChainId::new(chain_id),
             chain_revision,
             prover_endpoints: config.prover_endpoints,
             grpc_url: config.grpc_url,
@@ -297,7 +297,7 @@ impl ConsensusModuleServer<D, F, A> for Module {
             u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap() * 1_000_000_000;
 
         Ok(serde_json::to_value(ClientState {
-            chain_id: self.chain_id.clone(),
+            chain_id: self.chain_id.to_string(),
             trusting_period: unbonding_period * 85 / 100,
             unbonding_period,
             max_clock_drift: (60 * 20) * 1_000_000_000,
@@ -306,7 +306,14 @@ impl ConsensusModuleServer<D, F, A> for Module {
                 revision_height: 0,
             },
             latest_height: Height {
-                revision_number: self.chain_id.split('-').last().unwrap().parse().unwrap(),
+                revision_number: self
+                    .chain_id
+                    .as_str()
+                    .split('-')
+                    .last()
+                    .unwrap()
+                    .parse()
+                    .unwrap(),
                 revision_height: height.inner().try_into().expect("value is >= 0; qed;"),
             },
         })

@@ -22,7 +22,7 @@ use voyager_message::{
         ClientModuleServer, ClientStateMeta, ConsensusStateMeta, PluginInfo, PluginKind,
         PluginModuleServer, SupportedInterface,
     },
-    run_module_server, ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{aggregate::ModuleAggregate, data::ModuleData, fetch::ModuleFetch};
@@ -140,7 +140,7 @@ impl ClientModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
         let cs = Self::decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
-            chain_id: cs.chain_id,
+            chain_id: ChainId::new(cs.chain_id),
             height: cs.latest_height,
         })
     }

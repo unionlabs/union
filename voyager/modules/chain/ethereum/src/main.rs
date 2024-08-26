@@ -16,7 +16,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{promise, aggregation::do_aggregate, conc, call, noop, BoxDynError, Op};
+use queue_msg::{aggregation::do_aggregate, call, conc, noop, promise, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, instrument, warn};
@@ -30,18 +30,18 @@ use unionlabs::{
     ErrorReporter, QueryHeight,
 };
 use voyager_message::{
-    callback::{
-        Callback, AggregateDecodeClientStateMetaFromConnection, AggregateFetchClientFromChannel,
-        AggregateFetchClientFromConnection, AggregateFetchCounterpartyChannelAndConnection,
-        AggregateFetchCounterpartyChannelAndConnectionFromSourceChannel, InfoOrMeta,
-    },
-    data::{ClientInfo, Data},
     call::{
         compound::{fetch_client_state_meta, fetch_connection_from_channel_info},
         Call, FetchClientInfo, FetchState,
     },
+    callback::{
+        AggregateDecodeClientStateMetaFromConnection, AggregateFetchClientFromChannel,
+        AggregateFetchClientFromConnection, AggregateFetchCounterpartyChannelAndConnection,
+        AggregateFetchCounterpartyChannelAndConnectionFromSourceChannel, Callback, InfoOrMeta,
+    },
+    data::{ClientInfo, Data},
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
-    run_module_server, ClientType, IbcInterface, VoyagerMessage,
+    run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
 use crate::{
@@ -67,7 +67,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: U256,
+    pub chain_id: ChainId<'static>,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
@@ -101,7 +101,7 @@ impl Module {
         let chain_id = provider.get_chainid().await?;
 
         Ok(Self {
-            chain_id: U256(chain_id),
+            chain_id: ChainId::new(U256(chain_id).to_string()),
             ibc_handler_address: config.ibc_handler_address,
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
@@ -129,7 +129,7 @@ impl Module {
                     channel_id: channel_id.parse().unwrap(),
                 }
                 .into(),
-                chain_id: self.chain_id.to_string(),
+                chain_id: self.chain_id.clone(),
                 at: QueryHeight::Specific(height),
             })
         };
@@ -140,7 +140,7 @@ impl Module {
                     connection_id: connection_id.parse().unwrap(),
                 }
                 .into(),
-                chain_id: self.chain_id.to_string(),
+                chain_id: self.chain_id.clone(),
                 at: QueryHeight::Specific(height),
             })
         };
@@ -172,7 +172,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -196,7 +196,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -221,7 +221,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -246,7 +246,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -268,7 +268,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -289,7 +289,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -310,7 +310,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -331,7 +331,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -343,12 +343,12 @@ impl Module {
                 promise(
                     [
                         fetch_client_state_meta(
-                            self.chain_id.to_string(),
+                            self.chain_id.clone(),
                             raw_event.client_id.parse().unwrap(),
                             QueryHeight::Specific(event_height),
                         ),
                         call(FetchClientInfo {
-                            chain_id: self.chain_id.to_string(),
+                            chain_id: self.chain_id.clone(),
                             client_id: raw_event.client_id.parse().unwrap(),
                         }),
                     ],
@@ -356,7 +356,7 @@ impl Module {
                     Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
-                            chain_id: self.chain_id.to_string(),
+                            chain_id: self.chain_id.clone(),
                             height: event_height,
                             tx_hash,
                             raw_event,
@@ -373,12 +373,12 @@ impl Module {
                 promise(
                     [
                         fetch_client_state_meta(
-                            self.chain_id.to_string(),
+                            self.chain_id.clone(),
                             raw_event.client_id.parse().unwrap(),
                             QueryHeight::Specific(event_height),
                         ),
                         call(FetchClientInfo {
-                            chain_id: self.chain_id.to_string(),
+                            chain_id: self.chain_id.clone(),
                             client_id: raw_event.client_id.parse().unwrap(),
                         }),
                     ],
@@ -386,7 +386,7 @@ impl Module {
                     Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
-                            chain_id: self.chain_id.to_string(),
+                            chain_id: self.chain_id.clone(),
                             height: event_height,
                             tx_hash,
                             raw_event,
@@ -417,7 +417,7 @@ impl Module {
                         ),
                         // connection on this chain
                         fetch_connection_from_channel_info(
-                            self.chain_id.to_string(),
+                            self.chain_id.clone(),
                             QueryHeight::Specific(event_height),
                             raw_event.packet.destination_port.parse().unwrap(),
                             raw_event.packet.destination_channel.parse().unwrap(),
@@ -426,7 +426,7 @@ impl Module {
                         promise(
                             [promise(
                                 [fetch_connection_from_channel_info(
-                                    self.chain_id.to_string(),
+                                    self.chain_id.clone(),
                                     QueryHeight::Specific(event_height),
                                     raw_event.packet.destination_port.parse().unwrap(),
                                     raw_event.packet.destination_channel.parse().unwrap(),
@@ -449,7 +449,7 @@ impl Module {
                     Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
-                            chain_id: self.chain_id.to_string(),
+                            chain_id: self.chain_id.clone(),
                             height: event_height,
                             tx_hash,
                             raw_event,
@@ -480,7 +480,7 @@ impl Module {
                         ),
                         // connection on this chain
                         fetch_connection_from_channel_info(
-                            self.chain_id.to_string(),
+                            self.chain_id.clone(),
                             QueryHeight::Specific(event_height),
                             raw_event.source_port.parse().unwrap(),
                             raw_event.source_channel.parse().unwrap(),
@@ -490,7 +490,7 @@ impl Module {
                             [
                                 promise(
                                     [fetch_connection_from_channel_info(
-                                        self.chain_id.to_string(),
+                                        self.chain_id.clone(),
                                         QueryHeight::Specific(event_height),
                                         raw_event.source_port.parse().unwrap(),
                                         raw_event.source_channel.parse().unwrap(),
@@ -512,7 +512,7 @@ impl Module {
                     Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
-                            chain_id: self.chain_id.to_string(),
+                            chain_id: self.chain_id.clone(),
                             height: event_height,
                             tx_hash,
                             raw_event,
@@ -544,7 +544,7 @@ impl Module {
                     ),
                     // connection on this chain
                     fetch_connection_from_channel_info(
-                        self.chain_id.to_string(),
+                        self.chain_id.clone(),
                         QueryHeight::Specific(event_height),
                         raw_event.packet.destination_port.parse().unwrap(),
                         raw_event.packet.destination_channel.parse().unwrap(),
@@ -553,7 +553,7 @@ impl Module {
                     promise(
                         [promise(
                             [fetch_connection_from_channel_info(
-                                self.chain_id.to_string(),
+                                self.chain_id.clone(),
                                 QueryHeight::Specific(event_height),
                                 raw_event.packet.destination_port.parse().unwrap(),
                                 raw_event.packet.destination_channel.parse().unwrap(),
@@ -576,7 +576,7 @@ impl Module {
                 Callback::plugin(
                     self.plugin_name(),
                     EventInfo {
-                        chain_id: self.chain_id.to_string(),
+                        chain_id: self.chain_id.clone(),
                         height: event_height,
                         tx_hash,
                         raw_event,
@@ -606,7 +606,7 @@ impl Module {
                         ),
                         // connection on this chain
                         fetch_connection_from_channel_info(
-                            self.chain_id.to_string(),
+                            self.chain_id.clone(),
                             QueryHeight::Specific(event_height),
                             raw_event.packet.source_port.parse().unwrap(),
                             raw_event.packet.source_channel.parse().unwrap(),
@@ -615,7 +615,7 @@ impl Module {
                         promise(
                             [promise(
                                 [fetch_connection_from_channel_info(
-                                    self.chain_id.to_string(),
+                                    self.chain_id.clone(),
                                     QueryHeight::Specific(event_height),
                                     raw_event.packet.source_port.parse().unwrap(),
                                     raw_event.packet.source_channel.parse().unwrap(),
@@ -642,7 +642,7 @@ impl Module {
                     Callback::plugin(
                         self.plugin_name(),
                         EventInfo {
-                            chain_id: self.chain_id.to_string(),
+                            chain_id: self.chain_id.clone(),
                             height: event_height,
                             tx_hash,
                             raw_event,
@@ -1002,8 +1002,8 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
 #[async_trait]
 impl ChainModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn chain_id(&self) -> RpcResult<String> {
-        Ok(self.chain_id.to_string())
+    fn chain_id(&self) -> RpcResult<ChainId<'static>> {
+        Ok(self.chain_id.clone())
     }
 
     /// Query the latest finalized height of this chain.

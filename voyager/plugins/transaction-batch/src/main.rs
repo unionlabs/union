@@ -27,7 +27,7 @@ use voyager_message::{
     callback::{AggregateMsgUpdateClientsFromOrderedHeaders, Callback},
     data::{ChainEvent, Data, DecodedClientStateMeta, FullIbcEvent, OrderedMsgUpdateClients},
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
-    run_module_server, PluginMessage, VoyagerMessage,
+    run_module_server, ChainId, PluginMessage, VoyagerMessage,
 };
 
 use crate::{
@@ -54,13 +54,13 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub max_batch_size: NonZeroUsize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub max_batch_size: NonZeroUsize,
 }
 

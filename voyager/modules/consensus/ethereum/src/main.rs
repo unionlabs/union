@@ -17,7 +17,6 @@ use unionlabs::{
             self, account_proof::AccountProof, account_update::AccountUpdate,
         },
     },
-    uint::U256,
 };
 use voyager_message::{
     call::Call,
@@ -26,7 +25,7 @@ use voyager_message::{
     plugin::{
         ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginKind, PluginModuleServer,
     },
-    run_module_server, ClientType, VoyagerMessage,
+    run_module_server, ChainId, ClientType, VoyagerMessage,
 };
 
 use crate::{
@@ -56,7 +55,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: U256,
+    pub chain_id: ChainId<'static>,
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
@@ -89,7 +88,7 @@ impl Module {
         let chain_id = provider.get_chainid().await?;
 
         Ok(Self {
-            chain_id: chain_id.into(),
+            chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             provider,
             beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
@@ -284,7 +283,7 @@ impl ConsensusModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo> {
         Ok(ConsensusModuleInfo {
-            chain_id: self.chain_id.to_string(),
+            chain_id: self.chain_id.clone(),
             client_type: ClientType::new(ClientType::ETHEREUM_MINIMAL),
         })
     }
@@ -296,7 +295,11 @@ impl ConsensusModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module 
         let spec = self.beacon_api_client.spec().await.unwrap().data;
 
         Ok(serde_json::to_value(ethereum::client_state::ClientState {
-            chain_id: self.chain_id,
+            chain_id: self
+                .chain_id
+                .as_str()
+                .parse()
+                .expect("self.chain_id is a valid u256"),
             genesis_validators_root: genesis.genesis_validators_root,
             genesis_time: genesis.genesis_time,
             fork_parameters: spec.to_fork_parameters(),

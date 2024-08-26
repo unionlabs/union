@@ -16,16 +16,16 @@ use crate::{
         ChainModuleClient, ClientModuleClient, ConsensusModuleClient, ConsensusModuleInfo,
         PluginInfo, PluginKind, PluginModuleClient, SupportedInterface,
     },
-    ClientType, IbcInterface,
+    ChainId, ClientType, IbcInterface,
 };
 
 #[derive(Debug)]
 pub struct Context {
     /// map of chain id to chain module.
-    chain_modules: HashMap<String, RpcClient>,
+    chain_modules: HashMap<ChainId<'static>, RpcClient>,
 
     /// map of chain id to consensus module.
-    consensus_modules: HashMap<String, RpcClient>,
+    consensus_modules: HashMap<ChainId<'static>, RpcClient>,
 
     /// map of client type to ibc interface to client module.
     client_modules: HashMap<ClientType<'static>, HashMap<IbcInterface<'static>, RpcClient>>,
@@ -256,26 +256,26 @@ impl Context {
         }
     }
 
-    pub fn chain_module<D: Member, F: Member, A: Member>(
-        &self,
-        chain_id: impl AsRef<str>,
-    ) -> Result<&(impl ChainModuleClient<D, F, A> + '_), ChainModuleNotFound> {
+    pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, F: Member, A: Member>(
+        &'a self,
+        chain_id: &'b ChainId<'c>,
+    ) -> Result<&'a (impl ChainModuleClient<D, F, A> + 'a), ChainModuleNotFound> {
         Ok(self
             .chain_modules
-            .get(chain_id.as_ref())
-            .ok_or_else(|| ChainModuleNotFound(chain_id.as_ref().to_string()))?
+            .get(chain_id)
+            .ok_or_else(|| ChainModuleNotFound(chain_id.clone().into_static()))?
             .client
             .as_ref())
     }
 
-    pub fn consensus_module<D: Member, F: Member, A: Member>(
-        &self,
-        chain_id: impl AsRef<str>,
-    ) -> Result<&(impl ConsensusModuleClient<D, F, A> + '_), ConsensusModuleNotFound> {
+    pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, F: Member, A: Member>(
+        &'a self,
+        chain_id: &'b ChainId<'c>,
+    ) -> Result<&'a (impl ConsensusModuleClient<D, F, A> + '_), ConsensusModuleNotFound> {
         Ok(self
             .consensus_modules
-            .get(chain_id.as_ref())
-            .ok_or_else(|| ConsensusModuleNotFound(chain_id.as_ref().to_string()))?
+            .get(chain_id)
+            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_static()))?
             .client
             .as_ref())
     }
@@ -432,7 +432,7 @@ async fn run_plugin_client(
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("no module loaded for chain `{0}`")]
-pub struct ChainModuleNotFound(pub String);
+pub struct ChainModuleNotFound(pub ChainId<'static>);
 
 impl From<ChainModuleNotFound> for QueueError {
     fn from(value: ChainModuleNotFound) -> Self {
@@ -442,7 +442,7 @@ impl From<ChainModuleNotFound> for QueueError {
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("no module loaded for consensus on chain `{0}`")]
-pub struct ConsensusModuleNotFound(pub String);
+pub struct ConsensusModuleNotFound(pub ChainId<'static>);
 
 impl From<ConsensusModuleNotFound> for QueueError {
     fn from(value: ConsensusModuleNotFound) -> Self {

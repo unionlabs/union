@@ -175,6 +175,17 @@ impl ClientType<'static> {
     // lots more to come - near, movement, linea, polygon - stay tuned
 }
 
+/// Identifier used to uniquely indentify the chain, as provided by the chain itself.
+///
+/// # Examples
+///
+/// 1 -> ethereum mainnet
+/// 11155111 -> ethereum sepolia testnet
+/// union-testnet-8 -> union testnet
+/// stargaze-1 -> stargaze mainnet
+#[apply(str_newtype)]
+pub struct ChainId;
+
 #[queue_msg]
 pub struct PluginMessage<T = serde_json::Value> {
     pub plugin: String,

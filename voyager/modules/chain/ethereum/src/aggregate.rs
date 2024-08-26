@@ -28,7 +28,7 @@ use voyager_message::{
         ConnectionOpenTry, CreateClient, DecodedClientStateMeta, IbcState, PacketMetadata,
         RecvPacket, SendPacket, TimeoutPacket, UpdateClient, WriteAcknowledgement,
     },
-    VoyagerMessage,
+    ChainId, VoyagerMessage,
 };
 
 use crate::{data::ModuleData, fetch::ModuleFetch};
@@ -60,7 +60,7 @@ pub enum ModuleAggregate {
 
 #[queue_msg]
 pub struct EventInfo<T> {
-    pub chain_id: String,
+    pub chain_id: ChainId<'static>,
     pub height: Height,
     pub tx_hash: H256,
     pub raw_event: T,
