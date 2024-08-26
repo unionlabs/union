@@ -161,7 +161,7 @@ if ."@type" == "data" then
 
     # pull all transaction data messages
     ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message_batch")
-        and $data."@value".chain_id == "{chain_id}")
+        and $data."@value".chain_id == "{chain_id}"
 else
     false
 end
@@ -265,6 +265,8 @@ end
                                             "submitted batched evm messages"
                                         );
 
+                                        let mut retry_msgs = vec![];
+
                                         for (idx, (result, (msg, msg_name))) in result.0.into_iter().zip(msg_names).enumerate() {
                                             if result.success {
                                                 info_span!(
@@ -272,7 +274,7 @@ end
                                                     msg = msg_name,
                                                     %idx,
                                                 )
-                                                .in_scope(|| log_msg(&self.chain_id.to_string(), msg));
+                                                .in_scope(|| log_msg(&self.chain_id.to_string(), &msg));
                                             } else if let Ok(known_revert) =
                                                 IbcHandlerErrors::decode(&*result.return_data.clone())
                                             {
@@ -283,7 +285,7 @@ end
                                                     revert = ?known_revert,
                                                     well_known = true,
                                                 )
-                                                .in_scope(|| log_msg(&self.chain_id.to_string(), msg));
+                                                .in_scope(|| log_msg(&self.chain_id.to_string(), &msg));
                                             } else if result.return_data.is_empty() {
                                                 error_span!(
                                                     "evm message failed",
@@ -292,9 +294,10 @@ end
                                                     revert = %serde_utils::to_hex(result.return_data),
                                                     well_known = false,
                                                 )
-                                                .in_scope(|| log_msg(&self.chain_id.to_string(), msg));
+                                                .in_scope(|| log_msg(&self.chain_id.to_string(), &msg));
 
-                                                return Err(TxSubmitError::EmptyRevert)
+                                                retry_msgs.push((true, msg));
+                                                // return Err(TxSubmitError::EmptyRevert)
                                             } else {
                                                 error_span!(
                                                     "evm message failed",
@@ -303,11 +306,18 @@ end
                                                     revert = %serde_utils::to_hex(result.return_data),
                                                     well_known = false,
                                                 )
-                                                .in_scope(|| log_msg(&self.chain_id.to_string(), msg));
+                                                .in_scope(|| log_msg(&self.chain_id.to_string(), &msg));
+
+                                                retry_msgs.push((false, msg));
                                             }
                                         }
 
-                                        Ok(())
+                                        // empty iterator returns false
+                                        if retry_msgs.iter().any(|(is_empty_revert, _)| *is_empty_revert) {
+                                            Err(TxSubmitError::EmptyRevert(retry_msgs.into_iter().map(|(_, msg)| msg).collect()))
+                                        } else {
+                                            Ok(())
+                                        }
                                     }
                                     .instrument(info_span!(
                                         "evm tx",
@@ -408,9 +418,13 @@ end
                     Some(Err(TxSubmitError::OutOfGas)) => {
                         Ok(seq([defer_relative(12), call(rewrap_msg())]))
                     }
-                    Some(Err(TxSubmitError::EmptyRevert)) => {
-                        Ok(seq([defer_relative(12), call(rewrap_msg())]))
-                    }
+                    Some(Err(TxSubmitError::EmptyRevert(msgs))) => Ok(seq([
+                        defer_relative(12),
+                        call(Call::plugin(
+                            self.plugin_name(),
+                            ModuleFetch::SubmitMulticall(msgs),
+                        )),
+                    ])),
                     Some(Err(err)) => Err(ErrorObject::owned(
                         -1,
                         ErrorReporter(err).to_string(),
@@ -430,6 +444,24 @@ end
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
         match aggregate {}
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TxSubmitError {
+    #[error(transparent)]
+    Contract(#[from] ContractError<EthereumSignerMiddleware>),
+    #[error(transparent)]
+    Provider(#[from] ProviderError),
+    #[error("no tx receipt from tx")]
+    NoTxReceipt,
+    #[error("invalid revert code: {0}")]
+    InvalidRevert(ethers::types::Bytes),
+    #[error("out of gas")]
+    OutOfGas,
+    #[error("0x revert")]
+    EmptyRevert(Vec<IbcMessage>),
+    #[error("gas price is too high: max {max}, price {price}")]
+    GasPriceTooHigh { max: U256, price: U256 },
 }
 
 #[async_trait]
@@ -477,24 +509,6 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
                 .collect(),
         })
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum TxSubmitError {
-    #[error(transparent)]
-    Contract(#[from] ContractError<EthereumSignerMiddleware>),
-    #[error(transparent)]
-    Provider(#[from] ProviderError),
-    #[error("no tx receipt from tx")]
-    NoTxReceipt,
-    #[error("invalid revert code: {0}")]
-    InvalidRevert(ethers::types::Bytes),
-    #[error("out of gas")]
-    OutOfGas,
-    #[error("0x revert")]
-    EmptyRevert,
-    #[error("gas price is too high: max {max}, price {price}")]
-    GasPriceTooHigh { max: U256, price: U256 },
 }
 
 #[allow(clippy::type_complexity)]

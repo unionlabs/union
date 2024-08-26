@@ -49,10 +49,10 @@ pub struct GasConfig {
 impl GasConfig {
     pub fn mk_fee(&self, gas: u64) -> Fee {
         // gas limit = provided gas * multiplier, clamped between min_gas and max_gas
-        let gas_limit = u128_mul_f64(gas.into(), self.gas_multiplier)
+        let gas_limit = u128_saturating_mul_f64(gas.into(), self.gas_multiplier)
             .clamp(self.min_gas.into(), self.max_gas.into());
 
-        let amount = u128_mul_f64(gas.into(), self.gas_price);
+        let amount = u128_saturating_mul_f64(gas.into(), self.gas_price);
 
         Fee {
             amount: vec![Coin {
@@ -494,17 +494,18 @@ pub async fn fetch_balances(
     out_vec
 }
 
-fn u128_mul_f64(u: u128, f: f64) -> u128 {
+fn u128_saturating_mul_f64(u: u128, f: f64) -> u128 {
     (num_rational::BigRational::from_integer(u.into())
         * num_rational::BigRational::from_float(f).expect("finite"))
     .to_integer()
     .try_into()
-    .expect("overflow")
+    .unwrap_or(u128::MAX)
+    // .expect("overflow")
 }
 
 #[test]
 fn test_u128_mul_f64() {
-    let val = u128_mul_f64(100, 1.1);
+    let val = u128_saturating_mul_f64(100, 1.1);
 
     assert_eq!(val, 110);
 }

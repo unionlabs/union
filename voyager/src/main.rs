@@ -33,7 +33,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     cli::{AppArgs, Command, UtilCmd},
     config::{Config, GetChainError},
-    queue::{RunError, Voyager, VoyagerInitError},
+    queue::{Voyager, VoyagerInitError},
 };
 
 pub mod cli;

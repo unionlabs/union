@@ -281,7 +281,7 @@ pub trait OpT = Debug
     + MaybeArbitrary;
 
 pub trait QueueMessage: Sized + 'static {
-    type Data: HandleData<Self> + OpT;
+    type Data: OpT;
     type Call: HandleCall<Self> + OpT;
     // type Effect: HandleEffect<Self> + OpT;
     // type Wait: HandleWait<Self> + OpT;
@@ -305,7 +305,11 @@ impl<T: QueueMessage> Op<T> {
 
         let fut = async move {
             match self {
-                Self::Data(data) => data.handle(store).map(Some),
+                Self::Data(data) => {
+                    // TODO: Use valuable here
+                    info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
+                    Ok(None)
+                }
 
                 Self::Call(fetch) => fetch.handle(store).await.map(Some),
                 // Self::Effect(msg) => msg.handle(store).await.map(Some),
@@ -477,12 +481,6 @@ mod tests {
         type Callback = ();
 
         type Context = ();
-    }
-
-    impl HandleData<UnitMessage> for () {
-        fn handle(self, _: &()) -> Result<Op<UnitMessage>, QueueError> {
-            Ok(noop())
-        }
     }
 
     impl HandleCall<UnitMessage> for () {
@@ -804,10 +802,6 @@ impl std::error::Error for QueueError {
 
 pub trait HandleCall<T: QueueMessage> {
     fn handle(self, store: &T::Context) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
-}
-
-pub trait HandleData<T: QueueMessage> {
-    fn handle(self, store: &T::Context) -> Result<Op<T>, QueueError>;
 }
 
 pub trait HandleCallback<T: QueueMessage> {
@@ -1215,7 +1209,7 @@ pub mod test_utils {
 
     use crate::{
         aggregation::{do_aggregate, UseAggregate},
-        call, data, noop, HandleCall, HandleCallback, HandleData, Op, QueueError, QueueMessage,
+        call, data, noop, HandleCall, HandleCallback, Op, QueueError, QueueMessage,
     };
 
     pub enum SimpleMessage {}
@@ -1226,12 +1220,6 @@ pub mod test_utils {
         type Callback = SimpleAggregate;
 
         type Context = ();
-    }
-
-    impl HandleData<SimpleMessage> for SimpleData {
-        fn handle(self, _: &()) -> Result<Op<SimpleMessage>, QueueError> {
-            Ok(data(self))
-        }
     }
 
     impl HandleCall<SimpleMessage> for SimpleCall {

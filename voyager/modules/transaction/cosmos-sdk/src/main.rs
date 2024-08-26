@@ -228,12 +228,12 @@ impl Module {
                                 info!("packet messages are redundant");
                                 Ok(())
                             }
-                            BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
-                                SdkError::ErrOutOfGas
-                            )) => {
-                                error!("out of gas");
-                                Err(BroadcastTxCommitError::OutOfGas)
-                            }
+                            // BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
+                            //     SdkError::ErrOutOfGas
+                            // )) => {
+                            //     error!("out of gas");
+                            //     Err(BroadcastTxCommitError::OutOfGas)
+                            // }
                             BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
                                 SdkError::ErrWrongSequence
                             )) => {
@@ -287,10 +287,21 @@ impl Module {
     ) -> Result<(H256, BoundedI64<0, { i64::MAX }>), BroadcastTxCommitError> {
         let account = self.account_info(&signer.to_string()).await;
 
-        let (tx_body, mut auth_info, simulation_gas_info) = self
-            .simulate_tx(signer, messages, memo)
-            .await
-            .map_err(BroadcastTxCommitError::SimulateTx)?;
+        let (tx_body, mut auth_info, simulation_gas_info) =
+            match self.simulate_tx(signer, messages, memo).await {
+                Ok((tx_body, auth_info, simulation_gas_info)) => {
+                    (tx_body, auth_info, simulation_gas_info)
+                }
+                Err((tx_body, auth_info, _err)) => (
+                    tx_body,
+                    auth_info,
+                    GasInfo {
+                        gas_wanted: u64::MAX,
+                        gas_used: u64::MAX,
+                    },
+                ),
+            };
+        // .map_err(BroadcastTxCommitError::SimulateTx)?;
 
         info!(
             gas_used = %simulation_gas_info.gas_used,
@@ -439,7 +450,7 @@ impl Module {
         signer: &CosmosSigner,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
         memo: String,
-    ) -> Result<(TxBody, AuthInfo, GasInfo), tonic::Status> {
+    ) -> Result<(TxBody, AuthInfo, GasInfo), (TxBody, AuthInfo, tonic::Status)> {
         use protos::cosmos::tx;
 
         let account = self.account_info(&signer.to_string()).await;
@@ -507,7 +518,7 @@ impl Module {
             )),
             Err(err) => {
                 info!(error = %ErrorReporter(&err), "tx simulation failed");
-                Err(err)
+                Err((tx_body, auth_info, err))
             }
         }
     }
@@ -566,11 +577,27 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
         Ok(PluginInfo {
             name: self.plugin_name(),
             kind: None,
-            interest_filter: None,
+            interest_filter: Some(
+                format!(
+                    r#"
+if ."@type" == "data" then
+    ."@value" as $data |
+
+    # pull all transaction data messages
+    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message_batch")
+        and $data."@value".chain_id == "{chain_id}"
+else
+    false
+end
+"#,
+                    chain_id = self.chain_id,
+                )
+                .to_string(),
+            ),
         })
     }
 
-    #[instrument]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn handle_fetch(
         &self,
         msg: ModuleFetch,

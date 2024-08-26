@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 
 use enumorph::Enumorph;
 use macros::{apply, model};
-use queue_msg::{data, queue_msg, HandleData, Op, QueueError, SubsetOf};
+use queue_msg::{queue_msg, SubsetOf};
 use serde_json::Value;
 use tracing::info;
 use unionlabs::{
@@ -36,7 +36,7 @@ use unionlabs::{
 
 use crate::{
     plugin::{ClientStateMeta, ConsensusStateMeta},
-    top_level_identifiable_enum, ClientType, Context, IbcInterface, PluginMessage, VoyagerMessage,
+    top_level_identifiable_enum, ClientType, IbcInterface, PluginMessage,
 };
 
 #[apply(top_level_identifiable_enum)]
@@ -101,15 +101,6 @@ pub enum Data<D = serde_json::Value> {
 
     #[subset_of(ignore)]
     Plugin(PluginMessage<D>),
-}
-
-// Passthrough since we don't want to handle any top-level data, just bubble it
-// up to the top level.
-impl<D: Member, F: Member, A: Member> HandleData<VoyagerMessage<D, F, A>> for Data<D> {
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn handle(self, _store: &Context) -> Result<Op<VoyagerMessage<D, F, A>>, QueueError> {
-        Ok(data(self))
-    }
 }
 
 #[queue_msg]
@@ -555,7 +546,7 @@ pub struct MsgCreateClientData {
     pub client_type: ClientType<'static>,
 }
 
-pub fn log_msg(chain_id: &str, effect: IbcMessage) {
+pub fn log_msg(chain_id: &str, effect: &IbcMessage) {
     match effect.clone() {
         IbcMessage::ConnectionOpenInit(message) => {
             info!(
