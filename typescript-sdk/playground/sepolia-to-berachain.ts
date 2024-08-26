@@ -69,7 +69,7 @@ try {
     amount: 1n,
     memo: pfmMemo,
     approve: true,
-    evmSigner: evmAccount.address,
+    // evmSigner: evmAccount.address,
     network: sepoliaInfo.rpc_type,
     sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,

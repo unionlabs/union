@@ -9,108 +9,110 @@ import {
   bech32ToBech32Address,
   type TransactionResponse,
   type CosmosClientParameters,
-  type TransferAssetsParameters
-} from "@union/client"
-import { onMount } from "svelte"
-import { page } from "$app/stores"
-import { toast } from "svelte-sonner"
-import Chevron from "./chevron.svelte"
-import { useMachine } from "@xstate/svelte"
-import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import { cn } from "$lib/utilities/shadcn.ts"
-import { userAddrEvm } from "$lib/wallet/evm"
-import ChainButton from "./chain-button.svelte"
-import ChainDialog from "./chain-dialog.svelte"
-import { cosmosStore } from "$lib/wallet/cosmos"
-import AssetsDialog from "./assets-dialog.svelte"
-import { userAddrCosmos } from "$lib/wallet/cosmos"
-import { truncate } from "$lib/utilities/format.ts"
-import { raise, sleep } from "$lib/utilities/index.ts"
-import DevTools from "$lib/components/dev-tools.svelte"
-import { userBalancesQuery } from "$lib/queries/balance"
-import * as Card from "$lib/components/ui/card/index.ts"
-import type { Chain, UserAddresses } from "$lib/types.ts"
-import { Input } from "$lib/components/ui/input/index.ts"
-import { userAddrOnChain } from "$lib/utilities/address.ts"
-import { createBrowserInspector } from "@statelyai/inspect"
-import { Button } from "$lib/components/ui/button/index.ts"
-import { getSupportedAsset } from "$lib/utilities/helpers.ts"
-import CardSectionHeading from "./card-section-heading.svelte"
-import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
-import { getCosmosOfflineSigner } from "$lib/wallet/cosmos/config.ts"
-import type { ChainsQueryResult } from "$lib/graphql/documents/chains"
-import { sepoliaStore, wagmiConfig, evmConnect } from "$lib/wallet/evm"
-import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
-import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
-import { get, derived, writable, type Writable, type Readable } from "svelte/store"
-import { transferStateMachine, transferAnimationMachine } from "../state-machine.ts"
-import { getChainId, switchChain, getWalletClient, getConnectorClient } from "@wagmi/core"
-import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address, http } from "viem"
+  type TransferAssetsParameters,
+} from '@union/client'
+import { onMount } from 'svelte'
+import { page } from '$app/stores'
+import { toast } from 'svelte-sonner'
+import Chevron from './chevron.svelte'
+import { useMachine } from '@xstate/svelte'
+import { ucs01abi } from '$lib/abi/ucs-01.ts'
+import { cn } from '$lib/utilities/shadcn.ts'
+import { userAddrEvm } from '$lib/wallet/evm'
+import ChainButton from './chain-button.svelte'
+import ChainDialog from './chain-dialog.svelte'
+import { cosmosStore } from '$lib/wallet/cosmos'
+import AssetsDialog from './assets-dialog.svelte'
+import { userAddrCosmos } from '$lib/wallet/cosmos'
+import { truncate } from '$lib/utilities/format.ts'
+import { raise, sleep } from '$lib/utilities/index.ts'
+import DevTools from '$lib/components/dev-tools.svelte'
+import { userBalancesQuery } from '$lib/queries/balance'
+import * as Card from '$lib/components/ui/card/index.ts'
+import type { Chain, UserAddresses } from '$lib/types.ts'
+import { Input } from '$lib/components/ui/input/index.ts'
+import { userAddrOnChain } from '$lib/utilities/address.ts'
+import { createBrowserInspector } from '@statelyai/inspect'
+import { Button } from '$lib/components/ui/button/index.ts'
+import { getSupportedAsset } from '$lib/utilities/helpers.ts'
+import CardSectionHeading from './card-section-heading.svelte'
+import ArrowLeftRight from 'virtual:icons/lucide/arrow-left-right'
+import { getCosmosChainInfo } from '$lib/wallet/cosmos/chain-info.ts'
+import { getCosmosOfflineSigner } from '$lib/wallet/cosmos/config.ts'
+import { sepoliaStore, wagmiConfig, evmConnect } from '$lib/wallet/evm'
+import { submittedTransfers } from '$lib/stores/submitted-transfers.ts'
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from 'viem/chains'
+import { get, derived, writable, type Writable, type Readable } from 'svelte/store'
+import { transferStateMachine, transferAnimationMachine } from '../state-machine.ts'
+import { getChainId, switchChain, getWalletClient, getConnectorClient } from '@wagmi/core'
+import { custom, erc20Abi, parseUnits, getAddress, formatUnits, type Address, http } from 'viem'
 
 export let chains: Array<Chain>
 
-const { inspect, ...inspector } = createBrowserInspector({
-  autoStart: true
-})
+// const { inspect, ...inspector } = createBrowserInspector({
+//   autoStart: true
+// })
 
-const { snapshot, send } = useMachine(transferStateMachine, {
+$: ({ snapshot, send } = useMachine(transferStateMachine, {
   // inspect,
   input: {
     chains,
     cosmosStore: $cosmosStore,
-    sepoliaStore: $sepoliaStore
-  }
-})
+    sepoliaStore: $sepoliaStore,
+  },
+}))
 
-const { snapshot: animationSnapshot, send: animationSend } = useMachine(transferAnimationMachine, {
-  inspect,
-  input: { defaultDelay: 1_000 }
-})
+const { snapshot: animationSnapshot, send: animationSend } = useMachine(
+  transferAnimationMachine,
+  {
+    // inspect,
+    input: { defaultDelay: 1_000 },
+  },
+)
 
 let [dialogOpenFromChain, dialogOpenToChain, dialogOpenToken] = [false, false, false]
 
-$: network = $snapshot.context["NETWORK"]
-$: recipient = $snapshot.context?.["RECIPIENT"]
+$: network = $snapshot.context['NETWORK']
+$: recipient = $snapshot.context?.['RECIPIENT']
 
-$: sourceChainId = $snapshot.context["SOURCE_CHAIN_ID"]
+$: sourceChainId = $snapshot.context['SOURCE_CHAIN_ID']
 $: sourceChain = chains.find(({ chain_id }) => chain_id === sourceChainId)
-$: destinationChainId = $snapshot.context["DESTINATION_CHAIN_ID"]
+$: destinationChainId = $snapshot.context['DESTINATION_CHAIN_ID']
 $: destinationChain = chains.find(({ chain_id }) => chain_id === destinationChainId)
 
-$: sourceChannel = $snapshot.context["SOURCE_CHANNEL"]
-$: relayContractAddress = $snapshot.context["RELAY_CONTRACT_ADDRESS"]
-$: denomAddress = $snapshot.context["ASSET"]?.denom
-$: assetSymbol = $snapshot.context["ASSET"]?.display_symbol
+$: sourceChannel = $snapshot.context['SOURCE_CHANNEL']
+$: relayContractAddress = $snapshot.context['RELAY_CONTRACT_ADDRESS']
+$: denomAddress = $snapshot.context['ASSET']?.denom
+$: assetSymbol = $snapshot.context['ASSET']?.display_symbol
 
 $: selectedAsset = sourceChain?.assets.find(asset => asset.denom === denomAddress)
 
 $: pfmTransfer =
   sourceChainId &&
-  sourceChainId !== "union-testnet-8" &&
+  sourceChainId !== 'union-testnet-8' &&
   destinationChainId &&
-  destinationChainId !== "union-testnet-8"
+  destinationChainId !== 'union-testnet-8'
 
 $: path = (
   pfmTransfer
-    ? [`${sourceChainId}`, "union-testnet-8"]
+    ? [`${sourceChainId}`, 'union-testnet-8']
     : [`${sourceChainId}`, `${destinationChainId}`]
 ) satisfies [string, string]
 
 $: ucsConfiguration = pfmTransfer
-  ? sourceChain?.ucs1_configurations["union-testnet-8"]
+  ? sourceChain?.ucs1_configurations['union-testnet-8']
   : destinationChainId
     ? sourceChain?.ucs1_configurations[destinationChainId]
     : undefined
 
 $: forward =
   pfmTransfer && destinationChainId
-    ? sourceChain?.ucs1_configurations["union-testnet-8"].forward?.[destinationChainId]
+    ? sourceChain?.ucs1_configurations['union-testnet-8'].forward?.[destinationChainId]
     : undefined
 
 $: if (sourceChainId && destinationChainId && ucsConfiguration) {
-  send({ type: "SET_SOURCE_CHANNEL", value: ucsConfiguration.channel_id })
-  send({ type: "SET_RELAY_CONTRACT_ADDRESS", value: ucsConfiguration.contract_address })
+  send({ type: 'SET_SOURCE_CHANNEL', value: ucsConfiguration.channel_id })
+  send({ type: 'SET_RELAY_CONTRACT_ADDRESS', value: ucsConfiguration.contract_address })
 }
 
 $: userAddress = derived(
@@ -118,8 +120,8 @@ $: userAddress = derived(
   ([$userAddrEvm, $userAddrCosmos]) =>
     ({
       evm: $userAddrEvm,
-      cosmos: $userAddrCosmos
-    }) as UserAddresses
+      cosmos: $userAddrCosmos,
+    }) as UserAddresses,
 )
 
 $: cosmosOfflineSigner = sourceChainId ? getCosmosOfflineSigner(sourceChainId) : undefined
@@ -129,7 +131,8 @@ $: _allSourceChainAssetBalances = userBalancesQuery({
   // @ts-expect-error
   userAddresses: { evm: $userAddrEvm, cosmos: $userAddrCosmos },
   connected:
-    $cosmosStore.connectionStatus === "connected" || $sepoliaStore.connectionStatus === "connected"
+    $cosmosStore.connectionStatus === 'connected' ||
+    $sepoliaStore.connectionStatus === 'connected',
 })
 
 $: allSourceChainAssetBalances = derived(
@@ -137,7 +140,7 @@ $: allSourceChainAssetBalances = derived(
   $_allSourceChainAssetBalances => {
     const chainIndex = chains.findIndex(({ chain_id }) => chain_id === sourceChain?.chain_id)
     return $_allSourceChainAssetBalances[chainIndex]?.data ?? []
-  }
+  },
 )
 
 $: assetBalance = derived(allSourceChainAssetBalances, $allSourceChainAssetBalances => {
@@ -148,25 +151,25 @@ $: assetBalance = derived(allSourceChainAssetBalances, $allSourceChainAssetBalan
     balance: asset.balance,
     name: selectedAsset.display_name,
     symbol: selectedAsset.display_symbol,
-    formattedBalance: formatUnits(asset.balance, selectedAsset.decimals)
+    formattedBalance: formatUnits(BigInt(asset.balance), selectedAsset.decimals),
   }
 })
 
 $: console.info($assetBalance)
 
-let inputAmount = ""
-$: inputAmount = inputAmount.replaceAll(/[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g, "")
-$: Number.parseFloat(inputAmount) >= 0 && send({ type: "SET_AMOUNT", value: BigInt(inputAmount) })
-$: amount = $snapshot.context["AMOUNT"]
+let inputAmount = ''
+$: inputAmount = inputAmount.replaceAll(/[^0-9.]|\.(?=\.)|(?<=\.\d+)\./g, '')
+$: Number.parseFloat(inputAmount) >= 0 && send({ type: 'SET_AMOUNT', value: BigInt(inputAmount) })
+$: amount = $snapshot.context['AMOUNT']
 
 $: memo = pfmTransfer
   ? createPfmMemo({
       receiver:
-        destinationChain?.rpc_type === "evm"
+        destinationChain?.rpc_type === 'evm'
           ? `${recipient}`
           : bech32AddressToHex({ address: `${recipient}` }),
       port: `${forward?.port}`,
-      channel: `${forward?.channel_id}`
+      channel: `${forward?.channel_id}`,
     })
   : `transferring ${inputAmount} ${assetSymbol}`
 
@@ -176,7 +179,7 @@ $: memo = pfmTransfer
 $: balanceCoversAmount = derived(assetBalance, $assetBalance => {
   if (!(inputAmount && $assetBalance?.balance && selectedAsset?.decimals)) return false
   const amount = parseUnits(inputAmount, selectedAsset?.decimals)
-  return amount <= $assetBalance?.balance
+  return amount <= BigInt($assetBalance?.balance)
 })
 
 // $: console.info(
@@ -197,12 +200,12 @@ $: buttonText =
   denomAddress && inputAmount
     ? $balanceCoversAmount
       ? destinationChainId
-        ? "transfer"
-        : "select destination chain"
-      : "insufficient balance"
+        ? 'transfer'
+        : 'select destination chain'
+      : 'insufficient balance'
     : denomAddress && !inputAmount
-      ? "enter amount"
-      : "select asset and enter amount"
+      ? 'enter amount'
+      : 'select asset and enter amount'
 
 $: disableRecipientField = sourceChainId === undefined || destinationChainId === undefined
 
@@ -219,8 +222,8 @@ function swapChainsClick(_event: MouseEvent) {
   const [fromChain, toChain] = [sourceChainId, destinationChainId]
   const network = chains.find(chain => chain.chain_id === toChain)?.rpc_type
   if (!(network && fromChain && toChain)) return
-  send({ type: "SET_DESTINATION_CHAIN", value: fromChain })
-  send({ type: "SET_SOURCE_CHAIN", value: { chainId: toChain, network } })
+  send({ type: 'SET_DESTINATION_CHAIN', value: fromChain })
+  send({ type: 'SET_SOURCE_CHAIN', value: { chainId: toChain, network } })
 }
 
 async function onTransferClick(event: MouseEvent) {
@@ -228,8 +231,8 @@ async function onTransferClick(event: MouseEvent) {
 
   animationSend({
     delay: 4_000,
-    type: "advance",
-    target: "FLIPPING"
+    type: 'advance',
+    target: 'FLIPPING',
   })
   console.info($animationSnapshot.context)
   // animationSend({
@@ -240,21 +243,20 @@ async function onTransferClick(event: MouseEvent) {
   // })
 
   const currentChainId = getChainId(wagmiConfig)
-  if (network === "evm" && currentChainId !== Number(sourceChainId)) {
-    // @ts-expect-error
-    await switchChain(wagmiConfig, { chainId: Number(sourceChainId) })
+  if (network === 'evm' && currentChainId !== Number(sourceChainId)) {
+    await switchChain(wagmiConfig, { chainId: Number(sourceChainId) as any })
   }
 
   const params = [
-    ["network", network],
-    ["sourceChainId", sourceChainId],
-    ["destinationChainId", destinationChainId],
-    ["path", ...path],
-    ["relayContractAddress", relayContractAddress],
-    ["sourceChannel", sourceChannel],
-    ["inputAmount", inputAmount],
-    ["recipient", recipient],
-    ["denomAddress", denomAddress]
+    ['network', network],
+    ['sourceChainId', sourceChainId],
+    ['destinationChainId', destinationChainId],
+    ['path', ...path],
+    ['relayContractAddress', relayContractAddress],
+    ['sourceChannel', sourceChannel],
+    ['inputAmount', inputAmount],
+    ['recipient', recipient],
+    ['denomAddress', denomAddress],
   ]
   params.forEach(([param, value]) => {
     if (!value) return toast.error(`Missing parameter: ${param} with value ${value}`)
@@ -273,12 +275,12 @@ async function onTransferClick(event: MouseEvent) {
       denomAddress
     )
   ) {
-    return toast.error("Missing parameters")
+    return toast.error('Missing parameters')
   }
   await sleep(1_000)
 
   const walletClient = await getWalletClient(wagmiConfig, {
-    chainId: Number(sourceChainId)
+    chainId: Number(sourceChainId),
   })
 
   // const cosmosRpcURLs =
@@ -299,32 +301,32 @@ async function onTransferClick(event: MouseEvent) {
   console.info({
     account: cosmosOfflineSigner,
     gasPrice: {
-      inputAmount: "0.0025",
-      denom: sourceChain?.assets.find(asset => asset.gas_token)?.denom
+      inputAmount: '0.0025',
+      denom: sourceChain?.assets.find(asset => asset.gas_token)?.denom,
     },
-    transport: cosmosHttp(`https://${sourceChain?.rpcs?.find(rpc => rpc.type === "rpc")?.url}`)
+    transport: cosmosHttp(`https://${sourceChain?.rpcs?.find(rpc => rpc.type === 'rpc')?.url}`),
   })
   const client = createUnionClient({
     evm: {
       chain: evmChain,
       account: walletClient.account,
-      transport: custom(window.ethereum)
+      transport: custom(window.ethereum),
     },
     cosmos: {
       account: cosmosOfflineSigner,
       gasPrice: {
-        inputAmount: "0.0025",
+        inputAmount: '0.0025',
         // @ts-expect-error
-        denom: sourceChain?.assets.find(asset => asset.gas_token)?.denom
+        denom: sourceChain?.assets.find(asset => asset.gas_token)?.denom,
       },
-      transport: cosmosHttp(`https://${sourceChain?.rpcs?.find(rpc => rpc.type === "rpc")?.url}`)
-    }
+      transport: cosmosHttp(`https://${sourceChain?.rpcs?.find(rpc => rpc.type === 'rpc')?.url}`),
+    },
   })
 
   animationSend({
     delay: 2_000,
-    type: "advance",
-    target: "APPROVING_ASSET"
+    type: 'advance',
+    target: 'APPROVING_ASSET',
   })
   const transferAssetsParameters = {
     memo,
@@ -335,7 +337,7 @@ async function onTransferClick(event: MouseEvent) {
     sourceChannel,
     approve: false,
     relayContractAddress,
-    amount: BigInt(inputAmount)
+    amount: BigInt(inputAmount),
   } satisfies TransferAssetsParameters
 
   console.info(JSON.stringify(transferAssetsParameters, undefined, 2))
@@ -345,21 +347,21 @@ async function onTransferClick(event: MouseEvent) {
 
   animationSend({
     delay: 2_000,
-    type: "advance",
-    target: "AWAITING_APPROVAL_RECEIPT",
+    type: 'advance',
+    target: 'AWAITING_APPROVAL_RECEIPT',
     data: approvalResponse.success ? approvalResponse.data : undefined,
-    error: approvalResponse.success ? undefined : new Error(approvalResponse.data)
+    error: approvalResponse.success ? undefined : new Error(approvalResponse.data),
   })
   const transfer = await client.transferAsset(transferAssetsParameters)
 
   console.info(transfer)
 }
 
-$: _animationSnapshot = $animationSnapshot["context"]
+$: _animationSnapshot = $animationSnapshot['context']
 $: console.info(JSON.stringify(_animationSnapshot, undefined, 2))
 </script>
 
-<DevTools>
+<!-- <DevTools>
   <pre class="text-left w-full">
     {JSON.stringify(
       {
@@ -377,15 +379,7 @@ $: console.info(JSON.stringify(_animationSnapshot, undefined, 2))
       2,
     )}
   </pre>
-</DevTools>
-
-<div
-  class={cn(
-    'size-full duration-1000 transition-colors dark:bg-muted',
-    $snapshot.matches('START') ? 'bg-black/60' : '',
-  )}
-></div>
-<Button
+  <Button
   on:click={() => {
     animationSend({
       type: 'advance',
@@ -400,6 +394,15 @@ $: console.info(JSON.stringify(_animationSnapshot, undefined, 2))
 >
   b
 </Button>
+</DevTools> -->
+
+<div
+  class={cn(
+    'size-full duration-1000 transition-colors dark:bg-muted',
+    $snapshot.matches('START') ? 'bg-black/60' : '',
+  )}
+></div>
+
 <div class="cube-scene" id="scene">
   <div class={cn('cube ', !$snapshot.matches('START') ? 'cube--flipped' : 'no-transition')}>
     <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">
@@ -413,7 +416,7 @@ $: console.info(JSON.stringify(_animationSnapshot, undefined, 2))
         <section>
           <CardSectionHeading>From</CardSectionHeading>
           <ChainButton bind:dialogOpen={dialogOpenFromChain}>
-            {$snapshot.context['SOURCE_CHAIN_ID'] ?? 'Select chain'}
+            {sourceChain?.display_name ?? 'Select chain'}
           </ChainButton>
           <div class="flex flex-col items-center pt-4 -mb-6">
             <Button on:click={swapChainsClick} size="icon" variant="outline">
@@ -422,7 +425,7 @@ $: console.info(JSON.stringify(_animationSnapshot, undefined, 2))
           </div>
           <CardSectionHeading>To</CardSectionHeading>
           <ChainButton bind:dialogOpen={dialogOpenToChain}>
-            {$snapshot.context['DESTINATION_CHAIN_ID'] ?? 'Select chain'}
+            {destinationChain?.display_name ?? 'Select chain'}
           </ChainButton>
         </section>
         <section>
@@ -516,10 +519,18 @@ $: console.info(JSON.stringify(_animationSnapshot, undefined, 2))
         </section>
       </Card.Content>
       <Card.Footer class="flex flex-col gap-4 items-start">
+ <div
+        class="cube-left font-bold flex items-center justify-center text-xl font-supermolot"
+      >
+        UNION TESTNET
+      </div>
         <Button type="button" disabled={buttonDisabled} on:click={onTransferClick}>
           {buttonText}
+
         </Button>
+
       </Card.Footer>
+
     </Card.Root>
 
     <!-- {#if $transferState.kind !== "PRE_TRANSFER"}
