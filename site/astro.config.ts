@@ -1,10 +1,12 @@
 import { loadEnv } from "vite"
+import react from "@astrojs/react"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
 import netlify from "@astrojs/netlify"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
+import tutorialkit from "@tutorialkit/astro"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightLinksValidator from "starlight-links-validator"
 
@@ -165,11 +167,10 @@ export default defineConfig({
         "./node_modules/katex/dist/katex.min.css"
       ]
     }),
-    tailwind({
-      applyBaseStyles: false,
-      configFile: "tailwind.config.ts"
-    }),
     svelte(),
-    sitemap()
+    sitemap(),
+    // tutorialkit(),
+    react({ experimentalReactChildren: true }),
+    tailwind({ applyBaseStyles: false, configFile: "tailwind.config.ts" })
   ]
 })
