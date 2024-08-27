@@ -2,7 +2,7 @@ use crate::{DecodeError, MAX_UNION_SELECTOR};
 
 /// Provides the one-byte "selector" from the SSZ union specification:
 ///
-/// https://github.com/ethereum/consensus-specs/blob/v1.1.0-beta.3/ssz/simple-serialize.md#union
+/// <https://github.com/ethereum/consensus-specs/blob/v1.1.0-beta.3/ssz/simple-serialize.md#union>
 #[derive(Copy, Clone)]
 pub struct UnionSelector(u8);
 

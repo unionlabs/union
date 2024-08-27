@@ -5,6 +5,8 @@ use macros::{apply, model};
 use queue_msg::{queue_msg, SubsetOf};
 use serde_json::Value;
 use tracing::info;
+#[cfg(doc)]
+use unionlabs::events::IbcEvent;
 use unionlabs::{
     hash::H256,
     ibc::core::{

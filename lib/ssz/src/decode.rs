@@ -41,24 +41,24 @@ pub enum DecodeError {
     /// An offset points “backwards” into the fixed-bytes portion of the message, essentially
     /// double-decoding bytes that will also be decoded as fixed-length.
     ///
-    /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#1-Offset-into-fixed-portion
+    /// <https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#1-Offset-into-fixed-portion>
     #[error("tried to read offset {0} into fixed-size portion")]
     OffsetIntoFixedPortion(usize),
     /// The first offset does not point to the byte that follows the fixed byte portion,
     /// essentially skipping a variable-length byte.
     ///
-    /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#2-Skip-first-variable-byte
+    /// <https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#2-Skip-first-variable-byte>
     #[error("first offset {0} does not point to the byte that follows the fixed-size portion")]
     OffsetSkipsVariableBytes(usize),
     /// An offset points to bytes prior to the previous offset. Depending on how you look at it,
     /// this either double-decodes bytes or makes the first offset a negative-length.
     ///
-    /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#3-Offsets-are-decreasing
+    /// <https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#3-Offsets-are-decreasing>
     #[error("offset {0} points to bytes prior to the previous offset")]
     OffsetsAreDecreasing(usize),
     /// An offset references byte indices that do not exist in the source bytes.
     ///
-    /// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#4-Offsets-are-out-of-bounds
+    /// <https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view#4-Offsets-are-out-of-bounds>
     #[error("offset {0} points beyond the end of the source data")]
     OffsetOutOfBounds(usize),
     /// A variable-length list does not have a fixed portion that is cleanly divisible by
@@ -93,7 +93,7 @@ pub enum DecodeError {
 ///
 /// The checks here are derived from this document:
 ///
-/// https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view
+/// <https://notes.ethereum.org/ruKvDXl6QOW3gnqVYb8ezA?view>
 pub(crate) fn sanitize_offset(
     offset: usize,
     previous_offset: Option<usize>,

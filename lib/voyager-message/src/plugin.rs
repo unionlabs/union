@@ -14,6 +14,11 @@ use unionlabs::{
     traits::Member,
     ErrorReporter,
 };
+#[cfg(doc)]
+use {
+    crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},
+    unionlabs::ibc::core::client::msg_update_client::MsgUpdateClient,
+};
 
 use crate::{
     data::{ClientInfo, Data},
@@ -308,7 +313,7 @@ pub trait ConsensusModule<D: Member, C: Member, Cb: Member> {
     ///
     /// # Implementor's Note
     ///
-    /// The returned [`Op`] ***MUST*** resolve to an [`OrderdHeaders`] data.
+    /// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data.
     /// This is the entrypoint called when a client update is requested, and
     /// will be called in the queue of an
     /// [`AggregateMsgUpdateClientsFromOrderedHeaders`], which will be used to
