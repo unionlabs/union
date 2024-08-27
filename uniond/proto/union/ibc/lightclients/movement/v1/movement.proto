@@ -30,6 +30,7 @@ message Header {
   TransactionInfoWithProof tx_proof = 4;
   .union.ibc.lightclients.ethereum.v1.StorageProof state_proof_hash_proof = 5;
   .union.ibc.lightclients.ethereum.v1.AccountProof settlement_contract_proof = 6;
+  uint64 new_height = 7;
 }
 
 message TransactionInfoWithProof {
@@ -106,4 +107,14 @@ message Signature {
 message EpochChangeProof {
   repeated LedgerInfoWithSignatures ledger_info_with_sigs = 1;
   bool more = 2;
+}
+
+message SparseMerkleProof {
+  SparseMerkleLeafNode leaf = 1;
+  repeated bytes siblings = 2;
+}
+
+message SparseMerkleLeafNode {
+  bytes key = 1;
+  bytes value_hash = 2;
 }

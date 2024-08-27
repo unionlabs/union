@@ -213,6 +213,7 @@ name = "aptos-verifier"
 version = "0.1.0"
 dependencies = [
  "bcs",
+ "hex-literal",
  "sha3",
  "thiserror",
  "unionlabs",
@@ -4727,6 +4728,7 @@ dependencies = [
  "hex-literal",
  "ics008-wasm-client",
  "protos",
+ "rlp",
  "serde",
  "serde_json",
  "sha2 0.10.8",

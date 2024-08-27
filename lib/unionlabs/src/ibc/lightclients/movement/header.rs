@@ -29,6 +29,7 @@ pub struct Header {
     pub state_proof_hash_proof: StorageProof,
     /// Proof of state of the settlement contract on L1
     pub settlement_contract_proof: AccountProof,
+    pub new_height: u64,
 }
 
 impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
@@ -40,6 +41,7 @@ impl From<Header> for protos::union::ibc::lightclients::movement::v1::Header {
             tx_proof: Some(value.tx_proof.into()),
             state_proof_hash_proof: Some(value.state_proof_hash_proof.into()),
             settlement_contract_proof: Some(value.settlement_contract_proof.into()),
+            new_height: value.new_height,
         }
     }
 }
@@ -71,6 +73,7 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::Header> for Header 
             tx_proof: required!(value.tx_proof)?.try_into()?,
             state_proof_hash_proof: required!(value.state_proof_hash_proof)?.try_into()?,
             settlement_contract_proof: required!(value.settlement_contract_proof)?.try_into()?,
+            new_height: value.new_height,
         })
     }
 }

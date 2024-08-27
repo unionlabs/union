@@ -60,6 +60,8 @@ pub struct Header {
     pub state_proof_hash_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
     #[prost(message, optional, tag = "6")]
     pub settlement_contract_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
+    #[prost(uint64, tag = "7")]
+    pub new_height: u64,
 }
 impl ::prost::Name for Header {
     const NAME: &'static str = "Header";
@@ -277,6 +279,36 @@ pub struct EpochChangeProof {
 }
 impl ::prost::Name for EpochChangeProof {
     const NAME: &'static str = "EpochChangeProof";
+    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SparseMerkleProof {
+    #[prost(message, optional, tag = "1")]
+    pub leaf: ::core::option::Option<SparseMerkleLeafNode>,
+    #[prost(bytes = "vec", repeated, tag = "2")]
+    pub siblings: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+impl ::prost::Name for SparseMerkleProof {
+    const NAME: &'static str = "SparseMerkleProof";
+    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SparseMerkleLeafNode {
+    #[prost(bytes = "vec", tag = "1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub value_hash: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for SparseMerkleLeafNode {
+    const NAME: &'static str = "SparseMerkleLeafNode";
     const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)

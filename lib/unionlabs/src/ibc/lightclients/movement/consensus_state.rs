@@ -1,6 +1,6 @@
 use macros::model;
 
-use crate::{errors::InvalidLength, hash::H256};
+use crate::{aptos::hash_value::HashValue, errors::InvalidLength, hash::H256};
 
 #[model(proto(
     raw(protos::union::ibc::lightclients::movement::v1::ConsensusState),
@@ -8,7 +8,7 @@ use crate::{errors::InvalidLength, hash::H256};
     from
 ))]
 pub struct ConsensusState {
-    pub state_root: H256,
+    pub state_root: HashValue,
     pub timestamp: u64,
     /// This is the hash of the `StateProof` which is committed to l1
     pub state_proof_hash: H256,
