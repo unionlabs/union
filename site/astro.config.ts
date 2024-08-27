@@ -22,6 +22,8 @@ export default defineConfig({
   site: SITE_URL,
   output: "hybrid",
   experimental: {
+    actions: true,
+    contentLayer: true,
     serverIslands: true,
     clientPrerender: true,
     directRenderScript: true
@@ -29,7 +31,8 @@ export default defineConfig({
   trailingSlash: "ignore",
   adapter: netlify({
     imageCDN: false,
-    edgeMiddleware: false
+    edgeMiddleware: false,
+    cacheOnDemandPages: true
   }),
   image: {
     domains: [
@@ -71,7 +74,9 @@ export default defineConfig({
     }
   },
   integrations: [
-    liveCode(),
+    liveCode({
+      defaultProps: { "client:load": true }
+    }),
     react({ experimentalReactChildren: true }),
     starlight,
     svelte(),

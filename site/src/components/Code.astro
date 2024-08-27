@@ -1,0 +1,121 @@
+---
+import {
+  transformerNotationDiff,
+  transformerNotationFocus,
+  transformerMetaHighlight,
+  transformerRenderWhitespace,
+  transformerNotationHighlight,
+  transformerMetaWordHighlight,
+  transformerCompactLineOptions,
+  transformerNotationErrorLevel,
+  transformerRemoveNotationEscape,
+  transformerNotationWordHighlight
+} from "@shikijs/transformers"
+import { codeToHtml } from "shiki"
+import { dedent } from "ts-dedent"
+import AstroCode from "astro/components/Code.astro"
+import { rendererRich, transformerTwoslash, defaultHoverInfoProcessor } from "@shikijs/twoslash"
+
+type AstroCodeProps = Parameters<typeof AstroCode>[number]
+
+interface Props extends AstroCodeProps {
+  code: string
+}
+
+const { lang = "tsx", code, theme = "tokyo-night", transformers, meta, ...props } = Astro.props
+
+const transformedProps = {
+  ...Astro.props,
+  lang,
+  meta,
+  theme,
+  code: dedent(code),
+  transformers: [
+    ...(Array.isArray(transformers) ? transformers : []),
+    transformerTwoslash({
+      throws: false,
+      twoslashOptions: {
+        customTransformers: {}
+      },
+      renderer: rendererRich({
+        jsdoc: true,
+        errorRendering: "line",
+        processHoverInfo: info =>
+          defaultHoverInfoProcessor(info).replaceAll(/_shikijs_core\w*/g, "")
+      })
+    }),
+    transformerNotationDiff(),
+    transformerNotationFocus(),
+    transformerMetaHighlight(),
+    transformerRenderWhitespace(),
+    transformerNotationHighlight(),
+    transformerMetaWordHighlight(),
+    transformerCompactLineOptions(),
+    transformerNotationErrorLevel(),
+    transformerRemoveNotationEscape(),
+    transformerNotationWordHighlight(),
+    {
+      name: "shiki:inline-decorations",
+      preprocess(code, options) {
+        const reg = /^\/\/ @decorations:(.*)\n/
+        code = code.replace(reg, (_match, decorations) => {
+          options.decorations ||= []
+          // @ts-expect-error
+          options.decorations.push(...JSON.parse(decorations))
+          return ""
+        })
+        return code
+      }
+    }
+  ]
+} satisfies AstroCodeProps
+
+const html = await codeToHtml(dedent(code), {
+  theme,
+  lang: "tsx",
+  transformers: transformedProps.transformers
+})
+---
+
+<AstroCode {...transformedProps} />
+
+<style lang="postcss" is:global>
+@import "@shikijs/twoslash/style-rich.css";
+
+.twoslash {
+  overflow: visible !important;
+}
+
+.twoslash-popup-code,
+.twoslash-popup-arrow,
+.twoslash-popup-container {
+  @apply backdrop-blur-md;
+  overflow: visible !important;
+  background-color: var(--tw-bg-opacity) !important;
+}
+
+.vp-code .tab,
+.vp-code .space {
+  position: relative;
+}
+
+.vp-code .tab::before {
+  content: '⇥';
+  position: absolute;
+  opacity: 0.3;
+}
+
+.vp-code .space::before {
+  content: '·';
+  position: absolute;
+  opacity: 0.3;
+}
+
+.vp-code .highlighted-word {
+  background-color: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-border);
+  padding: 1px 3px;
+  margin: -1px -3px;
+  border-radius: 4px;
+}
+</style>

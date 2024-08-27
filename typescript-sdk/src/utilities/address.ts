@@ -1,6 +1,14 @@
 import { bech32 } from "@scure/base"
 import type { HexAddress, Bech32Address } from "../types.ts"
 
+export function extractBech32AddressPrefix(address: string) {
+  const pattern = /^([a-z]+)1[a-zA-Z0-9]{38,58}$/
+
+  const match = address.match(pattern)
+  if (match) return match[1]
+  return
+}
+
 export function isValidCosmosTxHash(hash: unknown): hash is string {
   if (typeof hash !== "string") return false
   return typeof hash === "string" && /^[A-Fa-f0-9]{64}$/.test(hash)

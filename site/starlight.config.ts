@@ -18,6 +18,7 @@ export default starlight({
   components: {
     EditLink: "./src/components/EditLink.astro"
   },
+  expressiveCode: false,
   head: [
     {
       tag: "meta",

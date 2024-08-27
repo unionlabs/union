@@ -2,12 +2,37 @@
 title: "TypeScript SDK"
 sidebar:
   order: 1
+
+
 ---
 import "addreth/styles.css"
 import '#/lib/wagmi-polyfills'
+import Code from '#/components/Code.astro'
+import TypeScriptSdkDemo from "#/components/ts-sdk"
 import { Addreth, AddrethConfig } from "addreth/no-wagmi"
+import { bech32AddressToHex } from "../../../../../../../typescript-sdk/src/convert.ts"
 
-```tsx live props={{ "client:load": true }} showLineNumbers={false} collapse={25-30,36-46}
+<Code
+  lang="tsx"
+  meta="{1,3} line:1-3,5-6"
+  code={
+`// @errors: 2322
+
+const foo = 'hello'  // [!code --]
+const bar: number = '1'
+console.info(foo)
+`}
+/>
+
+{/* <TypeScriptSdkDemo client:load /> */}
+
+```tsx
+import { custom } from "viem"
+import * as React from "react"
+import { sepolia } from "viem/chains"
+
+```
+```tsx live props={{ }} 
 import { custom } from "viem"
 import * as React from "react"
 import { sepolia } from "viem/chains"
@@ -40,7 +65,7 @@ export default () => {
   }
 
   return (
-    <main className="flex flex-col items-center justify-center gap-4 p-4">
+    <main className="flex flex-col items-center justify-center">
       <section className="h-12" aria-label="Wallet Address" hidden={!connected}>
         <AddrethConfig ens={true}>
           {client?.account?.address && (
@@ -62,6 +87,8 @@ export default () => {
       >
         {connected ? "Disconnect" : "Connect"}
       </button>
+
+<a target="_blank" rel="noreferrer noopener" href="https://app.union.build/explorer/transfers/0xb447bf681a50d9d6d64f442f7469a24abb7f8b2f2cd6d0a35700b43a92dad032">0xb447bf681a50d9d6d64f442f7469a24abb7f8b2f2cd6d0a35700b43a92dad032</a>
     </main>
   )
 }
