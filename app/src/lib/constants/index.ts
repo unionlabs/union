@@ -8,9 +8,9 @@ export const UNO = {
 } as const
 
 export const URLS = {
-  GRAPHQL: "https://blue.graphql.union.build/v1/graphql",
-  GRAPHQL_WSS: "wss//hubble-blue.hasura.app/v1/graphql",
-  GRAPHQL_REST: "https://blue.graphql.union.build/api/rest",
+  GRAPHQL: "https://green.graphql.union.build/v1/graphql",
+  GRAPHQL_WSS: "wss//hubble-green.hasura.app/v1/graphql",
+  GRAPHQL_REST: "https://green.graphql.union.build/api/rest",
   UNION: {
     /**
      * TODO: add array of RPCs and pass to `viem`'s `fallback` array
