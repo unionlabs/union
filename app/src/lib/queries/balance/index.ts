@@ -42,9 +42,6 @@ export function userBalancesQuery({
             const multicallResults = await erc20ReadMulticall({
               chainId: chain.chain_id,
               address: userAddr.evm.canonical,
-              multicallOptions: {
-                functionNames: ["balanceOf"]
-              },
               contractAddresses: tokenList.map(asset => asset.denom) as Array<Address>
             })
 
@@ -53,10 +50,10 @@ export function userBalancesQuery({
                 balance: result.balance,
                 address: tokenList[index].denom,
                 name: tokenList[index].display_name,
-                gasToken: tokenList[index].gas_token,
-                symbol: tokenList[index].display_symbol
+                symbol: tokenList[index].display_symbol,
+                gasToken: tokenList[index].gas_token ?? false
               }))
-              .filter(result => BigInt(result.balance) > 0)
+              .filter(result => !!result?.balance && BigInt(result.balance) > 0n)
           }
 
           if (rpc.type === "alchemy") {
