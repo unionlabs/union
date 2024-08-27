@@ -56,7 +56,7 @@ onNavigate(navigation => {
     {/if}
 
     <div class="flex flex-col flex-1 size-full">
-      <div class="p-2 pt-0 sm:p-6">
+      <div class="p-2 sm:p-4 md:p-6">
         <div
           class={cn($page.route.id?.split("/").length === 3 ? "" : "hidden")}
         >

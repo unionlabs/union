@@ -396,7 +396,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     !-->
 
       <Card.Root
-        class="flex flex-col w-full max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4 dark:bg-muted"
+        class="flex flex-col w-full max-w-full overflow-y-hidden overflow-x-auto justify-self-center dark:bg-muted"
       >
         <Card.Header
           class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
@@ -625,9 +625,11 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           {/if}
         </Card.Footer>
       </Card.Root>
-      <div class="text-transparent hover:text-muted-foreground transition">
+      <!--
+      <div class="text-transparent hover:text-muted-foreground transition text-xs overflow-hidden">
         {#if !(source.slice(0, 2) === "0x")}0x{/if}{source.toLowerCase()}
       </div>
+      !-->
     {/each}
   </div>
 {:else if $transfers.isLoading}
