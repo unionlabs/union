@@ -1,6 +1,7 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
+import PacketDetails from "$lib/components/packet-details.svelte"
 import { packetDetailsQuery } from "$lib/queries/packets"
 
 const chain_id = $page.params.chain_id
@@ -12,7 +13,9 @@ const packetDetails = packetDetailsQuery(chain_id, connection_id, channel_id, Nu
 </script>
 
 {#if $packetDetails.data}
-  <pre class="text-sm">{JSON.stringify($packetDetails.data.v0_packets, null, 2)}</pre>
+  {#each $packetDetails.data.v0_packets as packetDetails}
+    <PacketDetails {packetDetails}/>
+  {/each}
 {:else}
   <LoadingLogo/>
 {/if}
