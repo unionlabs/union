@@ -3,78 +3,135 @@ title: "TypeScript SDK"
 sidebar:
   order: 1
 ---
-import "addreth/styles.css"
-import '#/lib/wagmi-polyfills'
-import Code from '#/components/Code.astro'
-import TypeScriptSdkDemo from "#/components/ts-sdk"
-import { Addreth, AddrethConfig } from "addreth/no-wagmi"
+import "#/lib/wagmi-polyfills";
+import Code from "#/components/Code.astro";
+import TypeScriptSdkDemo from "#/components/ts-sdk";
+import { Addreth, AddrethConfig } from "addreth/no-wagmi";
 
-<Code
-  code={`// @errors: 2322
-    const foo = 'hello'  // [!code --]
-    const bar: number = '1'
-    console.info(foo)`
-  }
-/>
+## Quick demo
 
-```tsx live props={{ }} 
-import { custom } from "viem"
-import * as React from "react"
-import { sepolia } from "viem/chains"
-import { Addreth, AddrethConfig } from "addreth/no-wagmi"
-import { createCosmosSdkClient as createUnionClient } from "@union/client"
+A React.js component that lets you transfer `$LINK` from Arbitrum Sepolia to Union Testnet.
+You can use [this faucet](https://faucets.chain.link/arbitrum-sepolia) to get some `$LINK` to test your integration
 
-export default () => {
-  const [connected, setConnected] = React.useState(false)
-  const [account, setAccount] = React.useState<`0x${string}` | undefined>(undefined)
-  const [client, setClient] = React.useState<ReturnType<typeof createUnionClient>>()
+```tsx live props={{ }} collapse={1-5,8-12,27-42,73-90,111-117}
+import * as React from "react";
+import { arbitrumSepolia } from "viem/chains";
+import { custom, formatEther, toHex } from "viem";
+import { Addreth, AddrethConfig } from "addreth/no-wagmi";
+import { createCosmosSdkClient, type TransferAssetsParameters,} from "@union/client";
+
+export default function TypeScriptSdkDemo() {
+  const [connected, setConnected] = React.useState(false);
+  const [hash, setHash] = React.useState<string | undefined>(undefined);
+  const [balance, setBalance] = React.useState<bigint | undefined>(undefined);
+  const [account, setAccount] = React.useState<`0x${string}` | undefined>(undefined);
+  const [client, setClient] = React.useState<ReturnType<typeof createUnionClient>>();
 
   React.useEffect(() => {
-    if (!window.ethereum) return
-    const client = createUnionClient({
+    if (!window.ethereum) return;
+    const client = createCosmosSdkClient({
       evm: {
         account,
-        chain: sepolia,
-        transport: custom(window.ethereum)
-      }
-    })
-    setClient(client)
-  }, [account])
+        chain: arbitrumSepolia,
+        transport: custom(window.ethereum),
+      },
+    });
+    setClient(client);
+  }, [account]);
 
   const onConnectClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    if (connected) return [setAccount(undefined), setConnected(false)]
+    event.preventDefault();
+    if (!client) return;
+    if (connected)
+      return [
+        setAccount(undefined),
+        setConnected(false),
+        setBalance(undefined),
+      ];
 
-    const [account] = await client.request({ method: "eth_requestAccounts" })
-    return [setAccount(account), setConnected(true)]
-  }
+    const [address] = await client.request({ method: "eth_requestAccounts" });
+    await client.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: toHex(arbitrumSepolia.id) }],
+    });
+    const balance = await client.getBalance({ address });
+    return [setAccount(address), setBalance(balance), setConnected(true)];
+  };
+
+  const onTransferClick = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.preventDefault();
+    if (!client) return;
+
+    const transfer = await client.transferAsset({
+      amount: 1n,
+      approve: true,
+      network: "evm",
+      sourceChannel: "channel-0",
+      path: ["421614", "union-testnet-8"],
+      recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
+      denomAddress: "0xb1d4538b4571d411f07960ef2838ce337fe1e80e",
+      relayContractAddress: "0xBd346331b31f8C43CC378286Bfe49f2f7F128c39",
+    });
+
+    console.info(transfer);
+
+    if (transfer.success) setHash(transfer.data);
+  };
 
   return (
     <main className="flex flex-col items-center justify-center">
-      <section className="h-12" aria-label="Wallet Address" hidden={!connected}>
-        <AddrethConfig ens={true}>
-          {client?.account?.address && (
-            <Addreth
-              ens={true}
-              icon="ens"
-              theme="dark"
-              actions="none"
-              address={client?.account?.address}
-            />
-          )}
-        </AddrethConfig>
+      <section
+        aria-label="Wallet Address"
+        className="mx-auto w-full items-center justify-center"
+      >
+        <div className="text-center">
+          <AddrethConfig ens={true}>
+            {client?.account?.address && (
+              <Addreth
+                ens={true}
+                icon="ens"
+                theme="dark"
+                actions="none"
+                address={client?.account?.address}
+              />
+            )}
+          </AddrethConfig>
+        </div>
+        {typeof balance === "bigint" && (
+          <h6 className="border-none text-center">
+            ETH {formatEther(balance)}
+          </h6>
+        )}
       </section>
 
       <button
         type="button"
         onClick={onConnectClick}
-        className="rounded-sm hover:cursor-pointer bg-accent-800 text-white hover:bg-accent-700 font-bold uppercase text-sm px-2 py-1"
+        className="rounded-sm bg-accent-800 px-2 py-1 font-bold text-sm text-white uppercase hover:cursor-pointer hover:bg-accent-700"
       >
         {connected ? "Disconnect" : "Connect"}
       </button>
 
-<a target="_blank" rel="noreferrer noopener" href="https://app.union.build/explorer/transfers/0xb447bf681a50d9d6d64f442f7469a24abb7f8b2f2cd6d0a35700b43a92dad032">0xb447bf681a50d9d6d64f442f7469a24abb7f8b2f2cd6d0a35700b43a92dad032</a>
+      <section aria-label="transfer" hidden={!connected}>
+        <button
+          type="button"
+          onClick={onTransferClick}
+          className="rounded-sm bg-accent-800 px-2 py-1 font-bold text-sm text-white uppercase hover:cursor-pointer hover:bg-accent-700"
+        >
+          transfer
+        </button>
+      </section>
+
+      <a
+        target="_blank"
+        rel="noreferrer noopener"
+        href={`https://app.union.build/explorer/transfers/${hash}`}
+      >
+        {hash}
+      </a>
     </main>
-  )
+  );
 }
 ```
