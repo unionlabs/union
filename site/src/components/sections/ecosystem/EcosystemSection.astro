@@ -312,9 +312,9 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
         </div>
 
         <!-- Cards Grid -->
-        <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
           {data.map(item => (
-                  <div class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96">
+                  <div class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96 w-[300px]">
                       <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0"></div>
                       <img src={item.cover.src} alt={item.name}
                            class="absolute w-full h-full object-fill object-center"/>
@@ -326,7 +326,6 @@ const categories: Category[] = ["defi", "infrastructure", "interchain token", "w
                                 ))}
                               </div>
                               <img src={item.logo.src} alt={`${item.name} logo`} class="w-24 h-24 mb-2"/>
-
                           </div>
                           <H3 class="text-lg font-semibold">{item.name}</H3>
                       </div>
