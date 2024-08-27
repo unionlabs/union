@@ -5,9 +5,9 @@ import {
   transfersBySourceHashBaseQueryDocument,
   transfersBySourceHashTracesAndHopsQueryDocument
 } from "$lib/graphql/queries/transfer-details.ts"
+import DetailsHeading from "$lib/components/details-heading.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
-import MoveRightIcon from "virtual:icons/lucide/move-right"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
@@ -22,6 +22,7 @@ import { submittedTransfers } from "$lib/stores/submitted-transfers"
 import { cn } from "$lib/utilities/shadcn"
 import Truncate from "$lib/components/truncate.svelte"
 import { formatUnits } from "viem"
+import PacketPath from "./packet-path.svelte"
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -438,92 +439,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           </section>
 
           <section>
-            <section class="flex flex-col sm:flex-row">
-              <div class="flex-1 lex-col text-muted-foreground">
-                <h2
-                  class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
-                >
-                  {toDisplayName(transfer.source_chain_id, chains)}
-                </h2>
-                <a 
-                  href={`/explorer/packets/${transfer.source_chain_id}`}
-                  class="block text-sm underline text-muted-foreground">
-                  
-                  {transfer.source_chain_id}
-                </a>
-                <a
-                  href={`/explorer/packets/${transfer.source_chain_id}/${transfer.source_connection_id}`}
-                  class={cn(
-                    "black text-sm underline",
-                    transfer.source_connection_id
-                      ? "text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.source_connection_id}
-                </a>
-                <a
-                  href={`/explorer/packets/${transfer.source_chain_id}/${transfer.source_connection_id}/${transfer.source_channel_id}`}
-                  class={cn(
-                    "text-sm block underline",
-                    transfer.source_channel_id
-                      ? "text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.source_channel_id}
-                </a>
-                <a
-                  href={`/explorer/packets/${transfer.source_chain_id}/${transfer.source_connection_id}/${transfer.source_channel_id}/${transfer.source_sequence}`}
-                  class={cn(
-                    "text-sm block underline",
-                    transfer.source_sequence
-                      ? "text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.source_sequence}
-                </a>
-              </div>
-              <div class="flex items-center justify-center px-8">
-                <MoveRightIcon class="text-foreground size-8" />
-              </div>
-              <div class="flex-1 sm:text-right flex-col text-muted-foreground">
-                <h2
-                  class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
-                >
-                  {toDisplayName(transfer.destination_chain_id, chains)}
-                </h2>
-                <a 
-                  href={`/explorer/packets/${transfer.destination_chain_id}`}
-                  class="block text-sm underline text-muted-foreground">
-                  
-                  {transfer.destination_chain_id}
-                </a>
-                <a
-                  href={`/explorer/packets/${transfer.destination_chain_id}/${transfer.destination_connection_id}`}
-                  class={cn(
-                    "text-sm block underline",
-                    transfer.destination_connection_id
-                      ? "text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.destination_connection_id}
-                </a>
-                <a
-                  href={`/explorer/packets/${transfer.destination_chain_id}/${transfer.destination_connection_id}/${transfer.destination_channel_id}`}
-                  class={cn(
-                    "text-sm block underline",
-                    transfer.destination_channel_id
-                      ? "text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.destination_channel_id}
-                </a>
-              </div>
-            </section>
+            <PacketPath packet={transfer} {chains}/>
             {#if transfer.hop_chain_id}
               <div
                 class="flex-1 text-center flex-col text-sm text-muted-foreground items-center"
@@ -563,9 +479,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           </section>
           <section class="flex flex-col lg:flex-row gap-8">
             <div class=" lex-col text-muted-foreground">
-              <h2 class="text-lg text-foreground font-bold font-supermolot">
+              <DetailsHeading>
                 Sender
-              </h2>
+              </DetailsHeading>
               {#if sourceExplorer !== undefined}
                 <a
                   href={`/explorer/address/${transfer.sender}`}
@@ -586,9 +502,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               </p>
             </div>
             <div class="flex-1 lg:text-right flex-col text-muted-foreground">
-              <h2 class="text-lg text-foreground font-supermolot font-bold">
+              <DetailsHeading>
                 Receiver
-              </h2>
+              </DetailsHeading>
               {#if destinationExplorer !== undefined}
                 <a
                   href={`/explorer/address/${transfer.receiver}`}

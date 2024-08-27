@@ -1,5 +1,6 @@
 <script lang="ts">
 import { page } from "$app/stores"
+import ChainsGate from "$lib/components/chains-gate.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import PacketDetails from "$lib/components/packet-details.svelte"
 import { packetDetailsQuery } from "$lib/queries/packets"
@@ -12,11 +13,12 @@ const sequence = $page.params.sequence
 const packetDetails = packetDetailsQuery(chain_id, connection_id, channel_id, Number(sequence))
 </script>
 
-{#if $packetDetails.data}
-  {#each $packetDetails.data.v0_packets as packetDetails}
-    <PacketDetails {packetDetails}/>
-  {/each}
-{:else}
-  <LoadingLogo/>
-{/if}
-
+<ChainsGate let:chains>
+  {#if $packetDetails.data}
+    {#each $packetDetails.data.v0_packets as packetDetails}
+      <PacketDetails {chains} {packetDetails}/>
+    {/each}
+  {:else}
+    <LoadingLogo/>
+  {/if}
+</ChainsGate>
