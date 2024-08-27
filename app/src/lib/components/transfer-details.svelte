@@ -5,9 +5,9 @@ import {
   transfersBySourceHashBaseQueryDocument,
   transfersBySourceHashTracesAndHopsQueryDocument
 } from "$lib/graphql/queries/transfer-details.ts"
+import DetailsHeading from "$lib/components/details-heading.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import { URLS } from "$lib/constants"
-import MoveRightIcon from "virtual:icons/lucide/move-right"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { toIsoString } from "$lib/utilities/date"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
@@ -22,6 +22,7 @@ import { submittedTransfers } from "$lib/stores/submitted-transfers"
 import { cn } from "$lib/utilities/shadcn"
 import Truncate from "$lib/components/truncate.svelte"
 import { formatUnits } from "viem"
+import PacketPath from "./packet-path.svelte"
 
 const source = $page.params.source
 export let chains: Array<Chain>
@@ -64,6 +65,9 @@ let processedTransfers = derived(
       let hop_chain_source_channel_id: string | null = null
 
       // overwrite destination and receiver if to last forward
+
+      // forwards does not contain sequence numbers,
+      // so we cannot construct the destination sequence at this stage yet.
       const lastForward = tx.forwards_2?.at(-1)
       if (lastForward) {
         hop_chain_id = tx.destination_chain_id
@@ -393,7 +397,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     !-->
 
       <Card.Root
-        class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4 dark:bg-muted"
+        class="flex flex-col w-full lg:w-auto max-w-full overflow-y-hidden overflow-x-auto justify-self-center dark:bg-muted"
       >
         <Card.Header
           class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
@@ -435,71 +439,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           </section>
 
           <section>
-            <section class="flex flex-col sm:flex-row">
-              <div class="flex-1 lex-col text-muted-foreground">
-                <h2
-                  class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
-                >
-                  {toDisplayName(transfer.source_chain_id, chains)}
-                </h2>
-                <p class="text-sm dark:text-muted-foreground">
-                  {transfer.source_chain_id}
-                </p>
-                <p
-                  class={cn(
-                    "text-sm",
-                    transfer.source_connection_id
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.source_connection_id}
-                </p>
-                <p
-                  class={cn(
-                    "text-sm",
-                    transfer.source_connection_id
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.source_channel_id}
-                </p>
-              </div>
-              <div class="flex items-center justify-center px-8">
-                <MoveRightIcon class="text-foreground size-8" />
-              </div>
-              <div class="flex-1 sm:text-right flex-col text-muted-foreground">
-                <h2
-                  class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
-                >
-                  {toDisplayName(transfer.destination_chain_id, chains)}
-                </h2>
-                <p class="text-sm dark:text-muted-foreground">
-                  {transfer.destination_chain_id}
-                </p>
-                <p
-                  class={cn(
-                    "text-sm",
-                    transfer.source_connection_id
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.destination_connection_id}
-                </p>
-                <p
-                  class={cn(
-                    "text-sm",
-                    transfer.source_connection_id
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent"
-                  )}
-                >
-                  {transfer.destination_channel_id}
-                </p>
-              </div>
-            </section>
+            <PacketPath packet={transfer} {chains}/>
             {#if transfer.hop_chain_id}
               <div
                 class="flex-1 text-center flex-col text-sm text-muted-foreground items-center"
@@ -539,9 +479,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           </section>
           <section class="flex flex-col lg:flex-row gap-8">
             <div class=" lex-col text-muted-foreground">
-              <h2 class="text-lg text-foreground font-bold font-supermolot">
+              <DetailsHeading>
                 Sender
-              </h2>
+              </DetailsHeading>
               {#if sourceExplorer !== undefined}
                 <a
                   href={`/explorer/address/${transfer.sender}`}
@@ -562,9 +502,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               </p>
             </div>
             <div class="flex-1 lg:text-right flex-col text-muted-foreground">
-              <h2 class="text-lg text-foreground font-supermolot font-bold">
+              <DetailsHeading>
                 Receiver
-              </h2>
+              </DetailsHeading>
               {#if destinationExplorer !== undefined}
                 <a
                   href={`/explorer/address/${transfer.receiver}`}
@@ -601,9 +541,11 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           {/if}
         </Card.Footer>
       </Card.Root>
-      <div class="text-transparent hover:text-muted-foreground transition">
+      <!--
+      <div class="text-transparent hover:text-muted-foreground transition text-xs overflow-hidden">
         {#if !(source.slice(0, 2) === "0x")}0x{/if}{source.toLowerCase()}
       </div>
+      !-->
     {/each}
   </div>
 {:else if $transfers.isLoading}
