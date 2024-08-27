@@ -396,7 +396,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     !-->
 
       <Card.Root
-        class="flex flex-col w-full max-w-full overflow-y-hidden overflow-x-auto justify-self-center dark:bg-muted"
+        class="flex flex-col w-full lg:w-auto max-w-full overflow-y-hidden overflow-x-auto justify-self-center dark:bg-muted"
       >
         <Card.Header
           class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
