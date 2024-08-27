@@ -1,6 +1,8 @@
+import { isAddress, type Address } from "viem"
 import { raise } from "$lib/utilities/index.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
 import { createQueries } from "@tanstack/svelte-query"
+import { erc20ReadMulticall } from "./evm/multicall.ts"
 import { rawToBech32 } from "$lib/utilities/address.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
@@ -33,6 +35,28 @@ export function userBalancesQuery({
             .at(0)
           if (!rpc) {
             raise(`No Alchemy or Routescan RPC available for chain ${chain.chain_id}`)
+          }
+
+          if (chain.chain_id === "534351") {
+            const tokenList = chain.assets.filter(asset => isAddress(asset.denom))
+            const multicallResults = await erc20ReadMulticall({
+              chainId: chain.chain_id,
+              address: userAddr.evm.canonical,
+              multicallOptions: {
+                functionNames: ["balanceOf"]
+              },
+              contractAddresses: tokenList.map(asset => asset.denom) as Array<Address>
+            })
+
+            return multicallResults
+              .map((result, index) => ({
+                balance: result.balance,
+                address: tokenList[index].denom,
+                name: tokenList[index].display_name,
+                gasToken: tokenList[index].gas_token,
+                symbol: tokenList[index].display_symbol
+              }))
+              .filter(result => BigInt(result.balance) > 0)
           }
 
           if (rpc.type === "alchemy") {
