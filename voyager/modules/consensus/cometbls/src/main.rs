@@ -6,7 +6,7 @@ use std::{
 
 use jsonrpsee::core::{async_trait, RpcResult};
 use protos::union::galois::api::v3::union_prover_api_client;
-use queue_msg::{call, data, defer_relative, promise, seq, void, Op};
+use queue_msg::{call, data, defer, now, promise, seq, void, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, instrument, warn};
@@ -211,7 +211,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
                     seq([
                         // REVIEW: How long should we wait between polls?
-                        defer_relative(1),
+                        defer(now() + 1),
                         call(Call::plugin(
                             self.plugin_name(),
                             FetchProveRequest { request },

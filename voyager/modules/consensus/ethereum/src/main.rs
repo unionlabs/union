@@ -4,7 +4,7 @@ use beacon_api::client::BeaconApiClient;
 use bitvec::{order::Msb0, vec::BitVec};
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use jsonrpsee::core::{async_trait, RpcResult};
-use queue_msg::{aggregation::do_callback, call, data, defer_relative, promise, seq, Op};
+use queue_msg::{aggregation::do_callback, call, data, defer, now, promise, seq, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument, warn};
@@ -156,7 +156,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     );
 
                     Ok(seq([
-                        defer_relative(1),
+                        defer(now() + 1),
                         call(Call::plugin(self.plugin_name(), FetchFinalityUpdate {})),
                     ]))
                 } else {

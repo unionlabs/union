@@ -151,9 +151,9 @@ impl<T: QueueMessage> PurePass<T> for NoopPass {
 #[cfg(test)]
 mod tests {
     use crate::{
-        call, conc, data, defer_relative, noop,
+        call, conc, data, defer, noop,
         normalize::normalize,
-        promise, race, repeat, seq,
+        now, promise, race, repeat, seq,
         test_utils::{BuildPrintAbc, DataA, DataB, DataC, FetchA, FetchB, PrintAbc, SimpleMessage},
     };
 
@@ -215,8 +215,8 @@ mod tests {
                 promise([], [], BuildPrintAbc {}),
             ]),
             conc([
-                repeat(None, seq([call(FetchA {}), defer_relative(10)])),
-                repeat(None, seq([call(FetchB {}), defer_relative(10)])),
+                repeat(None, seq([call(FetchA {}), defer(now() + 10)])),
+                repeat(None, seq([call(FetchB {}), defer(now() + 10)])),
                 // this seq is the only message that should be flattened
                 seq([
                     call(PrintAbc {
@@ -245,8 +245,8 @@ mod tests {
                     promise([], [], BuildPrintAbc {}),
                 ]),
                 conc([
-                    repeat(None, seq([call(FetchA {}), defer_relative(10)])),
-                    repeat(None, seq([call(FetchB {}), defer_relative(10)])),
+                    repeat(None, seq([call(FetchA {}), defer(now() + 10)])),
+                    repeat(None, seq([call(FetchB {}), defer(now() + 10)])),
                     seq([
                         call(PrintAbc {
                             a: DataA {},

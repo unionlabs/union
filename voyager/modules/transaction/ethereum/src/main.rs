@@ -30,7 +30,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{call, defer_relative, optimize::OptimizationResult, seq, Op};
+use queue_msg::{call, defer, now, optimize::OptimizationResult, seq, Op};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, error_span, info, info_span, instrument, warn, Instrument};
 use unionlabs::{
@@ -413,13 +413,13 @@ end
                 match res {
                     Some(Ok(())) => Ok(Op::Noop),
                     Some(Err(TxSubmitError::GasPriceTooHigh { .. })) => {
-                        Ok(seq([defer_relative(6), call(rewrap_msg())]))
+                        Ok(seq([defer(now() + 6), call(rewrap_msg())]))
                     }
                     Some(Err(TxSubmitError::OutOfGas)) => {
-                        Ok(seq([defer_relative(12), call(rewrap_msg())]))
+                        Ok(seq([defer(now() + 12), call(rewrap_msg())]))
                     }
                     Some(Err(TxSubmitError::EmptyRevert(msgs))) => Ok(seq([
-                        defer_relative(12),
+                        defer(now() + 12),
                         call(Call::plugin(
                             self.plugin_name(),
                             ModuleCall::SubmitMulticall(msgs),

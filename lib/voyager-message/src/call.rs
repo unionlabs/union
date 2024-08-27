@@ -1,7 +1,7 @@
 use enumorph::Enumorph;
 use macros::apply;
 use queue_msg::{
-    call, conc, data, defer_absolute, now, promise, queue_msg, seq, HandleCall, Op, QueueError,
+    call, conc, data, defer, now, promise, queue_msg, seq, HandleCall, Op, QueueError,
 };
 use serde_json::Value;
 use serde_utils::Hex;
@@ -1265,7 +1265,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     }))
                 } else {
                     Ok(seq([
-                        defer_absolute(now() + 1),
+                        defer(now() + 1),
                         call(WaitForHeight { chain_id, height }),
                     ]))
                 }
@@ -1311,7 +1311,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     Ok(seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new
                         // method on chain
-                        defer_absolute(now() + 1),
+                        defer(now() + 1),
                         call(WaitForTimestamp {
                             chain_id,
                             timestamp,
@@ -1362,7 +1362,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     Ok(seq([
                         // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
                         // require a new method on chain
-                        defer_absolute(now() + 1),
+                        defer(now() + 1),
                         call(WaitForTrustedHeight {
                             chain_id,
                             client_id,

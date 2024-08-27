@@ -104,7 +104,9 @@ pub enum Op<T: QueueMessage> {
     // Effect(T::Effect),
     // /// Wait for some external condition.
     // Wait(T::Wait),
-    Defer(Defer),
+    Defer {
+        until: u64,
+    },
     /// Repeats the contained message `times` times. If `times` is `None`, will repeat infinitely.
     Repeat {
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -204,14 +206,8 @@ pub fn conc<T: QueueMessage>(ts: impl IntoIterator<Item = Op<T>>) -> Op<T> {
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
-pub fn defer_absolute<T: QueueMessage>(timestamp: u64) -> Op<T> {
-    Op::Defer(Defer::Absolute(timestamp))
-}
-
-#[inline]
-#[must_use = "constructing an instruction has no effect"]
-pub fn defer_relative<T: QueueMessage>(seconds: u64) -> Op<T> {
-    Op::Defer(Defer::Relative(seconds))
+pub fn defer<T: QueueMessage>(timestamp: u64) -> Op<T> {
+    Op::Defer { until: timestamp }
 }
 
 #[inline]
@@ -311,10 +307,7 @@ impl<T: QueueMessage> Op<T> {
                 }
 
                 Self::Call(fetch) => fetch.handle(store).await.map(Some),
-                // Self::Effect(msg) => msg.handle(store).await.map(Some),
-                // Self::Wait(wait) => wait.handle(store).await.map(Some),
-                Self::Defer(Defer::Relative(seconds)) => Ok(Some(defer_absolute(now() + seconds))),
-                Self::Defer(Defer::Absolute(seconds)) => {
+                Self::Defer { until: seconds } => {
                     // if we haven't hit the time yet, requeue the defer msg
                     let current_ts_seconds = now();
                     if current_ts_seconds < seconds {
@@ -328,7 +321,7 @@ impl<T: QueueMessage> Op<T> {
                         // TODO: Make the time configurable?
                         sleep(Duration::from_millis(10)).await;
 
-                        Ok(Some(defer_absolute(seconds)))
+                        Ok(Some(defer(seconds)))
                     } else {
                         Ok(None)
                     }
@@ -387,7 +380,7 @@ impl<T: QueueMessage> Op<T> {
                                 );
 
                                 Ok(Some(seq([
-                                    defer_absolute(now() + RETRY_DELAY_SECONDS),
+                                    defer(now() + RETRY_DELAY_SECONDS),
                                     retry(retries_left, *msg),
                                 ])))
                             }
@@ -533,33 +526,27 @@ mod tests {
     #[test]
     fn flatten() {
         let msg = seq::<UnitMessage>([
-            defer_absolute(1),
-            seq([defer_absolute(2), seq([defer_absolute(3)])]),
-            seq([defer_absolute(4)]),
-            defer_absolute(5),
+            defer(1),
+            seq([defer(2), seq([defer(3)])]),
+            seq([defer(4)]),
+            defer(5),
         ]);
         assert_eq!(
             flatten_seq(vec![msg]),
             vec![(
                 vec![0],
-                seq([
-                    defer_absolute(1),
-                    defer_absolute(2),
-                    defer_absolute(3),
-                    defer_absolute(4),
-                    defer_absolute(5)
-                ])
+                seq([defer(1), defer(2), defer(3), defer(4), defer(5)])
             )]
         );
 
-        let msg = seq::<UnitMessage>([defer_absolute(1)]);
-        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer_absolute(1))]);
+        let msg = seq::<UnitMessage>([defer(1)]);
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer(1))]);
 
-        let msg = conc::<UnitMessage>([defer_absolute(1)]);
-        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer_absolute(1))]);
+        let msg = conc::<UnitMessage>([defer(1)]);
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer(1))]);
 
-        let msg = conc::<UnitMessage>([seq([defer_absolute(1)])]);
-        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer_absolute(1))]);
+        let msg = conc::<UnitMessage>([seq([defer(1)])]);
+        assert_eq!(normalize(vec![msg]), vec![(vec![0], defer(1))]);
 
         let msg = seq::<UnitMessage>([noop()]);
         assert_eq!(normalize(vec![msg]), vec![]);
@@ -607,10 +594,7 @@ mod tests {
     fn flatten_seq_conc_fixed_point_is_noop() {
         // this message can't be optimized any further, flattening operations should be a noop
 
-        let msg = seq::<UnitMessage>([
-            conc([defer_absolute(1), defer_absolute(2)]),
-            defer_absolute(3),
-        ]);
+        let msg = seq::<UnitMessage>([conc([defer(1), defer(2)]), defer(3)]);
         assert_eq!(normalize(vec![msg.clone()]), vec![(vec![0], msg.clone())]);
         assert_eq!(normalize(vec![msg.clone()]), vec![(vec![0], msg)]);
     }
@@ -898,7 +882,7 @@ impl<'a, T: QueueMessage, Q: Queue<T>, O: PurePass<T>> Engine<'a, T, Q, O> {
                             // TODO: Add some backoff logic here based on `full_err`?
                             let full_err = ErrorReporter(&*retry);
                             error!(error = %full_err, "retryable error");
-                            (None, Ok(vec![seq([defer_absolute(now() + 3), msg])]))
+                            (None, Ok(vec![seq([defer(now() + 3), msg])]))
                         }
                     })
                 })
