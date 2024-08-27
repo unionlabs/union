@@ -5,7 +5,6 @@ use core::{
 };
 
 use macros::model;
-use serde::{Deserialize, Serialize};
 use ssz::Ssz;
 
 #[derive(Ssz, Default, Copy)]
@@ -21,11 +20,10 @@ pub struct Height {
 
 impl Height {
     #[must_use]
-    #[deprecated]
-    pub fn new(revision_number: u64, revision_height: u64) -> Self {
-        Height {
-            revision_number,
-            revision_height,
+    pub const fn increment(self) -> Self {
+        Self {
+            revision_number: self.revision_number,
+            revision_height: self.revision_height + 1,
         }
     }
 }
@@ -129,79 +127,9 @@ impl From<contracts::shared_types::IbcCoreClientV1HeightData> for Height {
     }
 }
 
-pub trait IsHeight:
-    FromStr<Err = HeightFromStrError>
-    + Display
-    + Debug
-    + Copy
-    + PartialEq
-    + Serialize
-    + for<'de> Deserialize<'de>
-    + From<Height>
-    + Into<Height>
-    + Send
-    + Sync
-    + 'static
-{
-    fn into_height(self) -> Height {
-        Into::<Height>::into(self)
-    }
-
-    #[must_use]
-    fn increment(self) -> Self {
-        Height {
-            revision_number: self.revision_number(),
-            revision_height: self.revision_height() + 1,
-        }
-        .into()
-    }
-
-    #[must_use]
-    fn decrement(self) -> Self {
-        Height {
-            revision_number: self.revision_number(),
-            revision_height: self.revision_height() - 1,
-        }
-        .into()
-    }
-
-    fn revision_number(&self) -> u64 {
-        self.into_height().revision_number
-    }
-    fn revision_height(&self) -> u64 {
-        self.into_height().revision_height
-    }
-}
-
-impl<T> IsHeight for T where
-    T: FromStr<Err = HeightFromStrError>
-        + Display
-        + Debug
-        + Copy
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + From<Height>
-        + Into<Height>
-        + Send
-        + Sync
-        + 'static
-{
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn height_impls_is_height() {
-        fn f(_: impl IsHeight) {}
-
-        f(Height {
-            revision_number: 0,
-            revision_height: 0,
-        });
-    }
 
     #[test]
     fn debug() {

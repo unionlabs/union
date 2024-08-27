@@ -8,13 +8,13 @@ use queue_msg::{
 use unionlabs::{
     events::IbcEvent,
     hash::H256,
-    ibc::core::client::height::{Height, IsHeight},
+    ibc::core::client::height::Height,
     ics24::{ChannelEndPath, ConnectionPath},
 };
 use voyager_message::{
     callback::mk_packet_metadata,
     data::{ChainEvent, ClientInfo, Data, DecodedClientStateMeta, IbcState, PacketMetadata},
-    ChainId, VoyagerMessage,
+    ChainId, ClientType, VoyagerMessage,
 };
 
 use crate::{call::ModuleCall, data::ModuleData};
@@ -71,7 +71,7 @@ impl MakeFullEvent {
                 mk_event(
                     voyager_message::data::CreateClient {
                         client_id: event.client_id,
-                        client_type: event.client_type,
+                        client_type: ClientType::new(event.client_type),
                         consensus_height: event.consensus_height,
                     }
                     .into(),

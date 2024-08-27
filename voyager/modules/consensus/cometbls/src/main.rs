@@ -12,10 +12,7 @@ use serde_json::Value;
 use tracing::{debug, error, info, instrument, warn};
 use unionlabs::{
     ibc::{
-        core::{
-            client::height::{Height, IsHeight},
-            commitment::merkle_root::MerkleRoot,
-        },
+        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::cometbls::{client_state::ClientState, consensus_state::ConsensusState},
     },
     traits::Member,

@@ -88,7 +88,7 @@ impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
             provable_height: height,
             event: CreateClient {
                 client_id: raw_event.client_id.parse().unwrap(),
-                client_type: client_info.client_type.to_string(),
+                client_type: client_info.client_type,
                 consensus_height: client_meta.state.height,
             }
             .into(),

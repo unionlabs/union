@@ -14,10 +14,7 @@ use unionlabs::{
             msg_channel_open_confirm::MsgChannelOpenConfirm,
             msg_channel_open_try::MsgChannelOpenTry, msg_recv_packet::MsgRecvPacket,
         },
-        client::{
-            height::{Height, IsHeight},
-            msg_create_client::MsgCreateClient,
-        },
+        client::{height::Height, msg_create_client::MsgCreateClient},
         commitment::merkle_prefix::MerklePrefix,
         connection::{
             self, connection_end::ConnectionEnd, msg_connection_open_ack::MsgConnectionOpenAck,

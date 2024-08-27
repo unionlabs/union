@@ -33,7 +33,7 @@ use unionlabs::{
     },
     hash::H160,
     ibc::{
-        core::client::height::{Height, IsHeight},
+        core::client::height::Height,
         lightclients::ethereum::{self, storage_proof::StorageProof},
     },
     ics24::{
@@ -624,7 +624,7 @@ impl EthereumStateRead for ClientConsensusStatePath {
             .unwrap();
 
         Hex(ILightClient::new(client_address, ibc_handler.client())
-            .get_consensus_state(self.client_id.to_string(), self.height.into_height().into())
+            .get_consensus_state(self.client_id.to_string(), self.height.into())
             .block(execution_block_number)
             .call()
             .await

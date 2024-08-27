@@ -216,7 +216,7 @@ pub enum IbcMessage {
 pub struct CreateClient {
     pub client_id: ClientId,
     // TODO: Figure out if there's a better type we can use than string
-    pub client_type: String,
+    pub client_type: ClientType<'static>,
     pub consensus_height: Height,
 }
 

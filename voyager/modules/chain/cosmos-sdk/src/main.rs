@@ -24,9 +24,7 @@ use unionlabs::{
     },
     hash::H256,
     ibc::core::{
-        channel::channel::Channel,
-        client::height::{Height, IsHeight},
-        commitment::merkle_proof::MerkleProof,
+        channel::channel::Channel, client::height::Height, commitment::merkle_proof::MerkleProof,
         connection::connection_end::ConnectionEnd,
     },
     ics24::{ChannelEndPath, ClientStatePath, ConnectionPath, Path},

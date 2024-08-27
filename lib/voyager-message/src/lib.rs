@@ -19,8 +19,6 @@ pub mod call;
 pub mod callback;
 pub mod data;
 
-pub mod chain;
-
 pub mod context;
 pub mod pass;
 pub mod plugin;

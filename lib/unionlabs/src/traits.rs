@@ -13,7 +13,7 @@ use crate::{
     ethereum::config::ChainSpec,
     google::protobuf::any::Any,
     ibc::{
-        core::client::height::{Height, IsHeight},
+        core::client::height::Height,
         lightclients::{arbitrum, cometbls, ethereum, scroll, tendermint, wasm},
     },
     id::ClientId,
@@ -104,7 +104,7 @@ pub trait Chain: Sized + Send + Sync + 'static {
     type StoredConsensusState<Tr: Chain>: Member;
 
     // this is just Height
-    type Height: Member + IsHeight + PartialOrd;
+    type Height: Member + PartialOrd;
 
     type ClientId: Member + Id + TryFrom<ClientId, Error: Debug> + Into<ClientId>;
 
@@ -146,7 +146,7 @@ pub trait Chain: Sized + Send + Sync + 'static {
 
 pub trait ClientState {
     type ChainId: Member + Display + Eq + Hash;
-    type Height: Member + IsHeight;
+    type Height: Member;
 
     fn height(&self) -> Self::Height;
     fn chain_id(&self) -> Self::ChainId;
