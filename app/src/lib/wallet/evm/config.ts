@@ -20,7 +20,7 @@ import { derived, writable, type Readable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
 import { APP_INFO } from "$lib/constants/app.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "@wagmi/core/chains"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "@wagmi/core/chains"
 import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
 import type { UserAddressEvm } from "$lib/types"
 import type { Address } from "viem"
@@ -70,6 +70,9 @@ export const config = createConfig({
       //   name: "unstable_connector-injected-berachain"
       // }),
       http(arbitrumSepolia.rpcUrls.default.http.at(0), { name: "default Arbitrum Sepolia RPC" })
+    ]),
+    [scrollSepolia.id]: fallback([
+      http(scrollSepolia.rpcUrls.default.http.at(0), { name: "default Scroll Sepolia RPC" })
     ])
   },
   storage: createWagmiStorage({

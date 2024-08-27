@@ -41,13 +41,14 @@ import {
   getConnectorClient,
   switchChain
 } from "@wagmi/core"
-import { sepolia, berachainTestnetbArtio, arbitrumSepolia } from "viem/chains"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "viem/chains"
 
 function getChainById(chainId: number): ViemChain | null {
   const chains: { [key: number]: ViemChain } = {
     11155111: sepolia,
     80084: berachainTestnetbArtio,
-    421614: arbitrumSepolia
+    421614: arbitrumSepolia,
+    534351: scrollSepolia
   }
   return chains[chainId] || null
 }
