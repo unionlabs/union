@@ -33,10 +33,10 @@ pub struct VoyagerMessage<D = Value, F = Value, A = Value> {
     __unconstructable: Never,
 }
 
-impl<D: Member, F: Member, A: Member> QueueMessage for VoyagerMessage<D, F, A> {
+impl<D: Member, C: Member, Cb: Member> QueueMessage for VoyagerMessage<D, C, Cb> {
+    type Call = Call<C>;
     type Data = Data<D>;
-    type Call = Call<F>;
-    type Callback = Callback<A>;
+    type Callback = Callback<Cb>;
 
     type Context = Context;
 }
@@ -242,10 +242,10 @@ pub(crate) use top_level_identifiable_enum;
 
 pub async fn run_module_server<
     D: Member,
-    F: Member,
-    A: Member,
+    C: Member,
+    Cb: Member,
     T: DeserializeOwned,
-    M: PluginModuleServer<D, F, A> + Clone,
+    M: PluginModuleServer<D, C, Cb> + Clone,
     Fut: Future<Output = Result<M, impl Debug>>,
 >(
     new_fn: fn(T) -> Fut,

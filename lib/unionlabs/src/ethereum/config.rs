@@ -11,12 +11,10 @@ use crate::{
 
 /// Minimal config.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Minimal;
 
 /// Mainnet config.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Mainnet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -65,7 +63,7 @@ macro_rules! consts_traits {
             }
         )+
 
-        pub trait ChainSpec: 'static + crate::MaybeArbitrary + FromStrExact + Debug + Clone + PartialEq + Eq + Default + Send + Sync + Unpin + $($CONST+)+ {
+        pub trait ChainSpec: 'static + FromStrExact + Debug + Clone + PartialEq + Eq + Default + Send + Sync + Unpin + $($CONST+)+ {
             const PRESET: preset::Preset;
             // const PRESET_BASE_KIND: PresetBaseKind;
 

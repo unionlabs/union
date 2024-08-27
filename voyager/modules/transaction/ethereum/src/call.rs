@@ -4,6 +4,6 @@ use voyager_message::data::IbcMessage;
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleFetch {
+pub enum ModuleCall {
     SubmitMulticall(Vec<IbcMessage>),
 }

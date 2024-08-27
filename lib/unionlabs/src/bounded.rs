@@ -81,17 +81,6 @@ macro_rules! bounded_int {
                 }
             }
 
-            #[cfg(feature = "arbitrary")]
-            impl<'a, const MIN: $ty, const MAX: $ty> arbitrary::Arbitrary<'a> for $Struct<MIN, MAX> {
-                fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-
-                    let inner: $ty = u.int_in_range(MIN..=MAX)?;
-
-                    Ok(Self::new(inner).expect("value is within bounds"))
-
-                }
-            }
-
             impl<const MIN: $ty, const MAX: $ty> core::str::FromStr for $Struct<MIN, MAX> {
                 type Err = BoundedIntParseError<$ty>;
 

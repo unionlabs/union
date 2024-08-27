@@ -15,7 +15,6 @@ test-include = []
 workspace = true
 
 [dependencies]
-arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 axum                     = { workspace = true, features = ["macros", "tokio", "json"] }
 beacon-api               = { workspace = true }
 bech32                   = "0.9.1"
@@ -69,12 +68,3 @@ voyager-message          = { workspace = true }
 
 [features]
 default = []
-
-arbitrary = [
-  "dep:arbitrary",
-  # "relay-message/arbitrary",
-  "voyager-message/arbitrary",
-  "unionlabs/arbitrary",
-  "chain-utils/arbitrary",
-  "queue-msg/arbitrary",
-]

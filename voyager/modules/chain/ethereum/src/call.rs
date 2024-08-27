@@ -4,7 +4,7 @@ use unionlabs::ibc::core::client::height::Height;
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleFetch {
+pub enum ModuleCall {
     FetchEvents(FetchEvents),
     FetchGetLogs(FetchGetLogs),
     FetchBeaconBlockRange(FetchBeaconBlockRange),

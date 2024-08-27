@@ -10,7 +10,6 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
-arbitrary                    = { workspace = true, optional = true, features = ["derive"] }
 beacon-api                   = { workspace = true }
 chain-utils                  = { workspace = true }
 contracts                    = { workspace = true, features = ["providers"] }
@@ -54,14 +53,3 @@ hex-literal = { workspace = true }
 
 [features]
 default = []
-
-arbitrary = [
-  "dep:arbitrary",
-  "queue-msg/arbitrary",
-  "tendermint/arbitrary",
-  "tendermint/std",
-  "unionlabs/arbitrary",
-  "chain-utils/arbitrary",
-  "contracts/arbitrary",
-  # "ethers/arbitrary",
-]

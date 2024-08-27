@@ -48,14 +48,14 @@ use voyager_message::{
 };
 
 use crate::{
-    aggregate::{MakeFullEvent, ModuleAggregate},
+    call::{FetchBlocks, FetchClientFromConnectionId, FetchTransactions, ModuleCall},
+    callback::{MakeFullEvent, ModuleCallback},
     data::ModuleData,
-    fetch::{FetchBlocks, FetchClientFromConnectionId, FetchTransactions, ModuleFetch},
 };
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 const PER_PAGE_LIMIT: NonZeroU8 = option_unwrap!(NonZeroU8::new(10));
 
@@ -266,7 +266,7 @@ pub enum InitError {
 }
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -277,23 +277,23 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: ModuleAggregate,
+        cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        Ok(match aggregate {
-            ModuleAggregate::MakeFullEvent(aggregate) => aggregate.do_aggregate(data),
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        Ok(match cb {
+            ModuleCallback::MakeFullEvent(aggregate) => aggregate.do_aggregate(data),
         })
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle_fetch(
+    async fn call(
         &self,
-        msg: ModuleFetch,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
-            ModuleFetch::FetchTransactions(FetchTransactions { height, page }) => {
+            ModuleCall::FetchTransactions(FetchTransactions { height, page }) => {
                 info!(%height, %page, "fetching events in block");
 
                 let response = self
@@ -591,7 +591,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                         ),
                 ))
             }
-            ModuleFetch::FetchClientFromConnectionId(FetchClientFromConnectionId {
+            ModuleCall::FetchClientFromConnectionId(FetchClientFromConnectionId {
                 connection_id,
                 fetch_type,
             }) => {
@@ -609,7 +609,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                     AggregateFetchClientFromConnection { fetch_type },
                 ))
             }
-            ModuleFetch::FetchBlocks(FetchBlocks {
+            ModuleCall::FetchBlocks(FetchBlocks {
                 from_height,
                 to_height,
             }) => {
@@ -658,7 +658,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
 }
 
 #[async_trait]
-impl ChainModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     fn chain_id(&self) -> RpcResult<ChainId<'static>> {
         Ok(self.chain_id.clone())
@@ -720,7 +720,7 @@ impl ChainModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
         &self,
         from_height: Height,
         to_height: Height,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(call(Call::plugin(
             self.plugin_name(),
             FetchBlocks {

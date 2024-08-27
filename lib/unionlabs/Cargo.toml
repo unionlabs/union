@@ -12,7 +12,6 @@ test-include = []
 workspace = true
 
 [dependencies]
-arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
@@ -74,8 +73,7 @@ grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]
 std      = ["ethers-core/std"]
 
-arbitrary  = ["dep:arbitrary", "primitive-types/arbitrary"]
-fuzzing    = ["arbitrary"]
+fuzzing    = []
 test_utils = []
 
 schemars = ["dep:schemars"]

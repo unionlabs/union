@@ -35,17 +35,17 @@ use voyager_message::{
 };
 
 use crate::{
-    aggregate::{AggregateProveRequest, ModuleAggregate},
-    data::{ModuleData, ProveResponse, TrustedValidators, UntrustedCommit, UntrustedValidators},
-    fetch::{
+    call::{
         FetchProveRequest, FetchTrustedValidators, FetchUntrustedCommit, FetchUntrustedValidators,
-        ModuleFetch,
+        ModuleCall,
     },
+    callback::{AggregateProveRequest, ModuleCallback},
+    data::{ModuleData, ProveResponse, TrustedValidators, UntrustedCommit, UntrustedValidators},
 };
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -118,7 +118,6 @@ pub enum UnionInitError {
         "unable to parse chain id: expected format \
         `<chain>-<revision-number>`, found `{found}`"
     )]
-    // TODO: Once the `Id` trait in unionlabs is cleaned up to no longer use static id types, this error should just wrap `IdParseError`
     ChainIdParse {
         found: String,
         #[source]
@@ -126,12 +125,8 @@ pub enum UnionInitError {
     },
 }
 
-type D = ModuleData;
-type F = ModuleFetch;
-type A = ModuleAggregate;
-
 #[async_trait]
-impl PluginModuleServer<D, F, A> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -142,9 +137,12 @@ impl PluginModuleServer<D, F, A> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle_fetch(&self, msg: ModuleFetch) -> RpcResult<Op<VoyagerMessage<D, F, A>>> {
+    async fn call(
+        &self,
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
-            ModuleFetch::FetchUntrustedCommit(FetchUntrustedCommit { height }) => {
+            ModuleCall::FetchUntrustedCommit(FetchUntrustedCommit { height }) => {
                 let commit = self
                     .tm_client
                     .commit(Some(height.revision_height.try_into().unwrap()))
@@ -159,7 +157,7 @@ impl PluginModuleServer<D, F, A> for Module {
                     },
                 )))
             }
-            ModuleFetch::FetchTrustedValidators(FetchTrustedValidators { height }) => {
+            ModuleCall::FetchTrustedValidators(FetchTrustedValidators { height }) => {
                 let validators = self
                     .tm_client
                     .all_validators(Some(height.revision_height.try_into().unwrap()))
@@ -172,7 +170,7 @@ impl PluginModuleServer<D, F, A> for Module {
                     TrustedValidators { height, validators },
                 )))
             }
-            ModuleFetch::FetchUntrustedValidators(FetchUntrustedValidators { height }) => {
+            ModuleCall::FetchUntrustedValidators(FetchUntrustedValidators { height }) => {
                 let validators = self
                     .tm_client
                     .all_validators(Some(height.revision_height.try_into().unwrap()))
@@ -185,7 +183,7 @@ impl PluginModuleServer<D, F, A> for Module {
                     UntrustedValidators { height, validators },
                 )))
             }
-            ModuleFetch::FetchProveRequest(FetchProveRequest { request }) => {
+            ModuleCall::FetchProveRequest(FetchProveRequest { request }) => {
                 debug!("submitting prove request");
 
                 let prover_endpoint = &self.prover_endpoints[usize::try_from(
@@ -244,24 +242,24 @@ impl PluginModuleServer<D, F, A> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: A,
-        data: VecDeque<Data<D>>,
-    ) -> RpcResult<Op<VoyagerMessage<D, F, A>>> {
-        Ok(match aggregate {
-            ModuleAggregate::AggregateProveRequest(aggregate) => {
-                queue_msg::aggregation::do_aggregate(aggregate, data)
+        callback: ModuleCallback,
+        data: VecDeque<Data<ModuleData>>,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        Ok(match callback {
+            ModuleCallback::AggregateProveRequest(aggregate) => {
+                queue_msg::aggregation::do_callback(aggregate, data)
             }
-            ModuleAggregate::AggregateHeader(aggregate) => {
-                queue_msg::aggregation::do_aggregate(aggregate, data)
+            ModuleCallback::AggregateHeader(aggregate) => {
+                queue_msg::aggregation::do_callback(aggregate, data)
             }
         })
     }
 }
 
 #[async_trait]
-impl ConsensusModuleServer<D, F, A> for Module {
+impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo> {
         Ok(ConsensusModuleInfo {
@@ -344,7 +342,7 @@ impl ConsensusModuleServer<D, F, A> for Module {
         &self,
         update_from: Height,
         update_to: Height,
-    ) -> RpcResult<Op<VoyagerMessage<D, F, A>>> {
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(seq([
             void(call(WaitForHeight {
                 chain_id: self.chain_id.clone(),

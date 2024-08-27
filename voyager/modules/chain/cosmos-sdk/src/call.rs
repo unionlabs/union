@@ -7,7 +7,7 @@ use voyager_message::callback::InfoOrMeta;
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleFetch {
+pub enum ModuleCall {
     FetchBlocks(FetchBlocks),
     FetchTransactions(FetchTransactions),
     FetchClientFromConnectionId(FetchClientFromConnectionId),

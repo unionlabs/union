@@ -18,7 +18,7 @@ use crate::{
     },
     id::ClientId,
     uint::U256,
-    MaybeArbitrary, TypeUrl,
+    TypeUrl,
 };
 
 /// A convenience trait for a string id (`ChainId`, `ClientId`, `ConnectionId`, etc)
@@ -76,7 +76,6 @@ pub trait Member = Debug
     + Send
     + Sync
     + Unpin
-    + MaybeArbitrary
     + 'static;
 
 /// Represents a chain.
@@ -105,9 +104,9 @@ pub trait Chain: Sized + Send + Sync + 'static {
     type StoredConsensusState<Tr: Chain>: Member;
 
     // this is just Height
-    type Height: Member + IsHeight + MaybeArbitrary + PartialOrd;
+    type Height: Member + IsHeight + PartialOrd;
 
-    type ClientId: Member + Id + TryFrom<ClientId, Error: Debug> + Into<ClientId> + MaybeArbitrary;
+    type ClientId: Member + Id + TryFrom<ClientId, Error: Debug> + Into<ClientId>;
 
     /// The encoding this chain uses in it's IBC store.
     type IbcStateEncoding: Encoding;
@@ -147,7 +146,7 @@ pub trait Chain: Sized + Send + Sync + 'static {
 
 pub trait ClientState {
     type ChainId: Member + Display + Eq + Hash;
-    type Height: Member + IsHeight + MaybeArbitrary;
+    type Height: Member + IsHeight;
 
     fn height(&self) -> Self::Height;
     fn chain_id(&self) -> Self::ChainId;

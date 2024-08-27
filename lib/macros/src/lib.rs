@@ -703,7 +703,6 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     ::core::cmp::PartialEq,
                     ::core::cmp::Eq,
                 )]
-                #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
                 #serde
             }
         }
@@ -733,7 +732,6 @@ pub fn model(meta: TokenStream, ts: TokenStream) -> TokenStream {
                     ::core::cmp::PartialEq,
                     ::core::cmp::Eq,
                 )]
-                #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
                 #serde
             }
         }
@@ -1003,7 +1001,6 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
     quote! {
         #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ::clap::Args)]
-        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         #[serde(bound(
             serialize = #serde_ser_bound,
             deserialize = #serde_de_bound,

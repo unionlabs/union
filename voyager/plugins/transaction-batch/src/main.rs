@@ -9,7 +9,7 @@ use frunk::hlist_pat;
 use itertools::Itertools;
 use jsonrpsee::core::{async_trait, RpcResult};
 use queue_msg::{
-    aggregation::{do_aggregate, HListTryFromIterator, SubsetOf},
+    aggregation::{do_callback, HListTryFromIterator, SubsetOf},
     call, data,
     optimize::OptimizationResult,
     promise, Op,
@@ -31,17 +31,17 @@ use voyager_message::{
 };
 
 use crate::{
-    aggregate::{
+    call::ModuleCall,
+    callback::{
         MakeBatchTransaction, MakeIbcMessagesFromUpdate,
-        MakeUpdateFromLatestHeightToAtLeastTargetHeight, ModuleAggregate,
+        MakeUpdateFromLatestHeightToAtLeastTargetHeight, ModuleCallback,
     },
     data::{BatchableEvent, Event, EventBatch, ModuleData},
-    fetch::ModuleFetch,
 };
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -83,7 +83,7 @@ impl Module {
 pub enum ModuleInitError {}
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -128,24 +128,24 @@ end
     }
 
     #[instrument]
-    async fn handle_fetch(
+    async fn call(
         &self,
-        msg: ModuleFetch,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {}
     }
 
     #[instrument]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        module_aggregate: ModuleAggregate,
+        cb: ModuleCallback,
         datas: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        match module_aggregate {
-            ModuleAggregate::MakeUpdateFromLatestHeightToAtLeastTargetHeight(aggregate) => {
-                Ok(do_aggregate(aggregate, datas))
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match cb {
+            ModuleCallback::MakeUpdateFromLatestHeightToAtLeastTargetHeight(aggregate) => {
+                Ok(do_callback(aggregate, datas))
             }
-            ModuleAggregate::MakeIbcMessagesFromUpdate(MakeIbcMessagesFromUpdate { batch }) => {
+            ModuleCallback::MakeIbcMessagesFromUpdate(MakeIbcMessagesFromUpdate { batch }) => {
                 let Ok(
                     hlist_pat![
                         updates @ OrderedMsgUpdateClients { .. },
@@ -240,7 +240,7 @@ end
                     Callback::plugin(self.plugin_name(), MakeBatchTransaction { updates }),
                 ))
             }
-            ModuleAggregate::MakeBatchTransaction(agg) => {
+            ModuleCallback::MakeBatchTransaction(agg) => {
                 Ok(data(agg.do_aggregate(self.chain_id.clone(), datas)))
             }
         }
@@ -248,13 +248,12 @@ end
 }
 
 #[async_trait]
-impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     fn run_pass(
         &self,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>
-    {
+        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         let mut batchers = HashMap::<ClientId, Vec<(usize, BatchableEvent)>>::new();
 
         for (idx, msg) in msgs.into_iter().enumerate() {

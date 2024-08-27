@@ -299,22 +299,6 @@ impl<T, N: Unsigned + NonZero> TryFromIter<T> for List<T, N> {
     }
 }
 
-#[cfg(feature = "arbitrary")]
-impl<'a, T: arbitrary::Arbitrary<'a>, N: 'static + Unsigned + NonZero> arbitrary::Arbitrary<'a>
-    for List<T, N>
-{
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        let max_size = N::USIZE;
-        let rand = usize::arbitrary(u)?;
-        let size = std::cmp::min(rand, max_size);
-        let mut vec: Vec<T> = Vec::with_capacity(size);
-        for _ in 0..size {
-            vec.push(<T>::arbitrary(u)?);
-        }
-        Ok(Self::new(vec).map_err(|_| arbitrary::Error::IncorrectFormat)?)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use typenum::*;

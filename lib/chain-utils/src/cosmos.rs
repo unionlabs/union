@@ -274,7 +274,6 @@ pub enum CosmosInitError {
     #[error(
         "unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`"
     )]
-    // TODO: Once the `Id` trait in unionlabs is cleaned up to no longer use static id types, this error should just wrap `IdParseError`
     ChainIdParse {
         found: String,
         #[source]

@@ -17,11 +17,11 @@ use voyager_message::{
     ChainId, VoyagerMessage,
 };
 
-use crate::{data::ModuleData, fetch::ModuleFetch};
+use crate::{call::ModuleCall, data::ModuleData};
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleAggregate {
+pub enum ModuleCallback {
     MakeFullEvent(MakeFullEvent),
 }
 
@@ -37,7 +37,7 @@ impl MakeFullEvent {
     pub fn do_aggregate(
         self,
         datas: VecDeque<Data<ModuleData>>,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let MakeFullEvent {
             chain_id,
             tx_hash,

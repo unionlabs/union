@@ -9,7 +9,6 @@ version = "0.5.3"
 name = "ssz"
 
 [dependencies]
-arbitrary             = { workspace = true, features = ["derive"], optional = true }
 derivative            = "2.1.1"
 itertools             = "0.10.3"
 lazy_static           = { workspace = true }
@@ -29,4 +28,3 @@ snap                  = "1.1.1"
 unionlabs.workspace   = true
 
 [features]
-arbitrary = ["dep:arbitrary"]

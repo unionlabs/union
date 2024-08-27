@@ -724,7 +724,6 @@ pub enum AggregateWithChannel<Hc: ChainExt> {
 }
 
 #[derive(macros::Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(
     rename_all = "snake_case",
     deny_unknown_fields,

@@ -6,9 +6,7 @@ version = "0.0.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arbitrary = { workspace = true, optional = true, features = ["derive"] }
 ethers    = { workspace = true, features = ["abigen"] }
 serde     = { workspace = true, features = ["derive"] }
 [features]
-arbitrary = ["dep:arbitrary"]
 providers = ["ethers/providers"]

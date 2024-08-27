@@ -25,11 +25,11 @@ use voyager_message::{
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
-use crate::{aggregate::ModuleAggregate, data::ModuleData, fetch::ModuleFetch};
+use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 const SUPPORTED_CLIENT_TYPE: ClientType<'static> = ClientType::new_static(ClientType::COMETBLS);
 const SUPPORTED_IBC_INTERFACE: IbcInterface<'static> =
@@ -94,7 +94,7 @@ impl Module {
 pub enum ModuleInitError {}
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all)]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -105,25 +105,25 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     }
 
     #[instrument(skip_all)]
-    async fn handle_fetch(
+    async fn call(
         &self,
-        msg: ModuleFetch,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {}
     }
 
     #[instrument(skip_all)]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: ModuleAggregate,
+        cb: ModuleCallback,
         _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        match aggregate {}
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match cb {}
     }
 }
 
 #[async_trait]
-impl ClientModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all)]
     async fn supported_interface(&self) -> RpcResult<SupportedInterface> {
         Ok(SupportedInterface {

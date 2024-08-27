@@ -55,38 +55,6 @@ impl<T: Into<String> + From<String>> Validate<T> for Ics024IdentifierCharacters 
     }
 }
 
-#[cfg(feature = "arbitrary")]
-impl<T: Into<String> + From<String>> crate::validated::ValidateExt<T>
-    for Ics024IdentifierCharacters
-{
-    fn restrict(t: T, u: &mut arbitrary::Unstructured) -> arbitrary::Result<T> {
-        const VALID_CHARS: [u8; 71] =
-            *b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890._+-#[]<>";
-
-        let s: String = t.into();
-
-        Ok(T::from(
-            s.bytes()
-                .map(|c| match c {
-                    b'a'..=b'z'
-                    | b'A'..=b'Z'
-                    | b'0'..=b'9'
-                    | b'.'
-                    | b'_'
-                    | b'+'
-                    | b'-'
-                    | b'#'
-                    | b'['
-                    | b']'
-                    | b'<'
-                    | b'>' => Ok(c as char),
-                    _ => Ok(*u.choose(&VALID_CHARS)? as char),
-                })
-                .collect::<Result<String, _>>()?,
-        ))
-    }
-}
-
 pub struct Bounded<const MIN: usize, const MAX: usize>;
 
 impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize> Validate<T>
@@ -108,38 +76,6 @@ impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize> Validat
                 expected: ExpectedLength::Between(MIN, MAX),
                 found: len,
             })
-        }
-    }
-}
-
-#[cfg(feature = "arbitrary")]
-impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize>
-    crate::validated::ValidateExt<T> for Bounded<MIN, MAX>
-{
-    fn restrict(t: T, u: &mut arbitrary::Unstructured) -> arbitrary::Result<T> {
-        const { assert!(MIN <= MAX) };
-
-        let s: String = t.into();
-
-        let len = s.len();
-
-        if len < MIN {
-            // can't add more data, since that might invalidate other validations run before this
-            Err(arbitrary::Error::IncorrectFormat)
-        } else if len > MAX {
-            fn floor_char_boundary(string: &str, index: usize) -> &str {
-                if string.is_char_boundary(index) {
-                    &string[..index]
-                } else {
-                    floor_char_boundary(string, index - 1)
-                }
-            }
-
-            Ok(T::from(
-                floor_char_boundary(&s, u.int_in_range(MIN..=MAX)?).to_owned(),
-            ))
-        } else {
-            Ok(T::from(s))
         }
     }
 }

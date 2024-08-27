@@ -5,9 +5,8 @@ use chain_utils::ethereum::ETHEREUM_REVISION_NUMBER;
 use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
 use queue_msg::{
-    promise,
-    aggregation::{SubsetOf, UseAggregate},
-    data, call, queue_msg, seq, Op,
+    aggregation::{DoCallback, SubsetOf},
+    call, data, promise, queue_msg, seq, Op,
 };
 use tracing::debug;
 use unionlabs::{
@@ -23,26 +22,26 @@ use unionlabs::{
     },
 };
 use voyager_message::{
+    call::Call,
     callback::Callback,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
-    call::Call,
     PluginMessage, VoyagerMessage,
 };
 
 use crate::{
+    call::{
+        FetchAccountUpdate, FetchBeaconGenesis, FetchLightClientUpdate, FetchLightClientUpdates,
+        ModuleCall,
+    },
     data::{
         AccountUpdateData, BeaconGenesis, BeaconSpec, FinalityUpdate, Header, LightClientUpdate,
         LightClientUpdates, ModuleData,
-    },
-    fetch::{
-        FetchAccountUpdate, FetchBeaconGenesis, FetchLightClientUpdate, FetchLightClientUpdates,
-        ModuleFetch,
     },
 };
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleAggregate {
+pub enum ModuleCallback {
     MakeCreateUpdates(MakeCreateUpdates),
     MakeCreateUpdatesFromLightClientUpdates(MakeCreateUpdatesFromLightClientUpdates),
     CreateUpdate(CreateUpdate),
@@ -56,10 +55,10 @@ pub struct MakeCreateUpdates {
     pub update_to: Height,
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> for MakeCreateUpdates {
-    type AggregatedData = HList![PluginMessage<FinalityUpdate>, PluginMessage<BeaconSpec>];
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for MakeCreateUpdates {
+    type Params = HList![PluginMessage<FinalityUpdate>, PluginMessage<BeaconSpec>];
 
-    fn aggregate(
+    fn call(
         MakeCreateUpdates {
             update_from,
             update_to,
@@ -73,8 +72,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> for 
                 plugin: _,
                 message: BeaconSpec { spec },
             }
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let target_period =
             sync_committee_period(finality_update.attested_header.beacon.slot, spec.period());
 
@@ -118,12 +117,12 @@ pub struct MakeCreateUpdatesFromLightClientUpdates {
     pub finality_update: UnboundedLightClientFinalityUpdate,
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for MakeCreateUpdatesFromLightClientUpdates
 {
-    type AggregatedData = HList![PluginMessage<LightClientUpdates>, PluginMessage<BeaconSpec>];
+    type Params = HList![PluginMessage<LightClientUpdates>, PluginMessage<BeaconSpec>];
 
-    fn aggregate(
+    fn call(
         MakeCreateUpdatesFromLightClientUpdates {
             update_from,
             update_to,
@@ -140,8 +139,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
                 plugin: _,
                 message: BeaconSpec { spec },
             }
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let target_period = sync_committee_period(finality_update.signature_slot, spec.period());
 
         let trusted_period = sync_committee_period(update_from.revision_height, spec.period());
@@ -212,7 +211,7 @@ fn make_create_update(
     light_client_update: UnboundedLightClientUpdate,
     is_next: bool,
     spec: &Spec,
-) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
     // When we fetch the update at this height, the `next_sync_committee` will
     // be the current sync committee of the period that we want to update to.
     let previous_period = u64::max(
@@ -259,15 +258,15 @@ pub struct CreateUpdate {
     pub is_next: bool,
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> for CreateUpdate {
-    type AggregatedData = HList![
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for CreateUpdate {
+    type Params = HList![
         PluginMessage<LightClientUpdate>,
         PluginMessage<AccountUpdateData>,
         PluginMessage<BeaconGenesis>,
         PluginMessage<BeaconSpec>,
     ];
 
-    fn aggregate(
+    fn call(
         CreateUpdate {
             // chain_id,
             // counterparty_chain_id,
@@ -297,8 +296,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> for 
                 plugin: _,
                 message: BeaconSpec { spec },
             },
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         // seq([
         // REVIEW: Why did we add this?
         // void(wait(WaitForTimestamp {

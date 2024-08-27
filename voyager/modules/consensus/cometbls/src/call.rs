@@ -4,7 +4,7 @@ use unionlabs::{ibc::core::client::height::Height, union::galois::prove_request:
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleFetch {
+pub enum ModuleCall {
     FetchUntrustedCommit(FetchUntrustedCommit),
     FetchTrustedValidators(FetchTrustedValidators),
     FetchUntrustedValidators(FetchUntrustedValidators),

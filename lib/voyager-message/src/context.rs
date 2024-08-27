@@ -41,6 +41,12 @@ pub struct Context {
     handles: JoinSet<()>,
 }
 
+impl queue_msg::Context for Context {
+    fn tags(&self) -> Vec<&str> {
+        self.interest_filters.keys().map(|s| s.as_str()).collect()
+    }
+}
+
 #[derive(macros::Debug, Clone)]
 pub struct RpcClient {
     #[debug(skip)]
@@ -256,10 +262,10 @@ impl Context {
         }
     }
 
-    pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, F: Member, A: Member>(
+    pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a (impl ChainModuleClient<D, F, A> + 'a), ChainModuleNotFound> {
+    ) -> Result<&'a (impl ChainModuleClient<D, C, Cb> + 'a), ChainModuleNotFound> {
         Ok(self
             .chain_modules
             .get(chain_id)
@@ -268,10 +274,10 @@ impl Context {
             .as_ref())
     }
 
-    pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, F: Member, A: Member>(
+    pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a (impl ConsensusModuleClient<D, F, A> + '_), ConsensusModuleNotFound> {
+    ) -> Result<&'a (impl ConsensusModuleClient<D, C, Cb> + '_), ConsensusModuleNotFound> {
         Ok(self
             .consensus_modules
             .get(chain_id)
@@ -280,10 +286,10 @@ impl Context {
             .as_ref())
     }
 
-    // pub fn transaction_module<D: Member, F: Member, A: Member>(
+    // pub fn transaction_module<D: Member, C: Member, Cb: Member>(
     //     &self,
     //     chain_id: impl AsRef<str>,
-    // ) -> Result<&(impl TransactionSubmissionModuleClient<D, F, A> + '_), TransactionModuleNotFound>
+    // ) -> Result<&(impl TransactionSubmissionModuleClient<D, C, Cb> + '_), TransactionModuleNotFound>
     // {
     //     Ok(self
     //         .transaction_modules
@@ -293,11 +299,11 @@ impl Context {
     //         .as_ref())
     // }
 
-    pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, F: Member, A: Member>(
+    pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         client_type: &'b ClientType<'c>,
         ibc_interface: &'b IbcInterface<'c>,
-    ) -> Result<&'a (impl ClientModuleClient<D, F, A> + 'a), ClientModuleNotFound> {
+    ) -> Result<&'a (impl ClientModuleClient<D, C, Cb> + 'a), ClientModuleNotFound> {
         match self.client_modules.get(client_type) {
             Some(ibc_interfaces) => match ibc_interfaces.get(ibc_interface) {
                 Some(client_module) => Ok(client_module.client.as_ref()),
@@ -312,10 +318,10 @@ impl Context {
         }
     }
 
-    pub fn plugin<D: Member, F: Member, A: Member>(
+    pub fn plugin<D: Member, C: Member, Cb: Member>(
         &self,
         plugin_name: impl AsRef<str>,
-    ) -> Result<&(impl PluginModuleClient<D, F, A> + '_), PluginNotFound> {
+    ) -> Result<&(impl PluginModuleClient<D, C, Cb> + '_), PluginNotFound> {
         Ok(self
             .plugins
             .get(plugin_name.as_ref())
@@ -326,7 +332,7 @@ impl Context {
             .as_ref())
     }
 
-    pub fn plugin_client_raw<D: Member, F: Member, A: Member>(
+    pub fn plugin_client_raw<D: Member, C: Member, Cb: Member>(
         &self,
         plugin_name: impl AsRef<str>,
     ) -> Result<&jsonrpsee::core::client::Client, PluginNotFound> {

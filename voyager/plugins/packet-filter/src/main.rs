@@ -12,11 +12,11 @@ use voyager_message::{
     run_module_server, VoyagerMessage,
 };
 
-use crate::{aggregate::ModuleAggregate, data::ModuleData, fetch::ModuleFetch};
+use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -272,7 +272,7 @@ impl Module {
 pub enum ModuleInitError {}
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -283,31 +283,30 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     }
 
     #[instrument]
-    async fn handle_fetch(
+    async fn call(
         &self,
-        msg: ModuleFetch,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {}
     }
 
     #[instrument]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: ModuleAggregate,
+        cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        match aggregate {}
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match cb {}
     }
 }
 
 #[async_trait]
-impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     fn run_pass(
         &self,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>
-    {
+        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         warn!("dropping messages");
 
         Ok(OptimizationResult::default())

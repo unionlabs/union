@@ -360,9 +360,9 @@ pub struct WaitForTrustedHeight {
     pub height: Height,
 }
 
-impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Call<F> {
+impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for Call<C> {
     // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle(self, ctx: &Context) -> Result<Op<VoyagerMessage<D, F, A>>, QueueError> {
+    async fn handle(self, ctx: &Context) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
         match self {
             Call::FetchBlock(FetchBlock { height, chain_id }) => {
                 info!(%height, "fetch_block");
@@ -411,7 +411,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
             Call::State(FetchState { chain_id, at, path }) => match at {
                 QueryHeight::Latest => Ok(call(FetchState {
                     at: QueryHeight::Specific(
-                        ctx.chain_module::<D, F, A>(&chain_id)?
+                        ctx.chain_module::<D, C, Cb>(&chain_id)?
                             .query_latest_height()
                             .await
                             .map_err(json_rpc_error_to_queue_error)?,
@@ -505,7 +505,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
 
             Call::LatestHeight(FetchLatestHeight { chain_id }) => Ok(data(LatestHeight {
                 height: ctx
-                    .chain_module::<D, F, A>(&chain_id)?
+                    .chain_module::<D, C, Cb>(&chain_id)?
                     .query_latest_height()
                     .await
                     .map_err(json_rpc_error_to_queue_error)?,
@@ -516,7 +516,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 chain_id,
                 client_id,
             }) => Ok(data(
-                ctx.chain_module::<D, F, A>(&chain_id)?
+                ctx.chain_module::<D, C, Cb>(&chain_id)?
                     .client_info(client_id)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?,
@@ -561,7 +561,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 // TODO: Split this into a separate query and aggregate
                 let height = match height {
                     QueryHeight::Latest => ctx
-                        .chain_module::<D, F, A>(&chain_id)?
+                        .chain_module::<D, C, Cb>(&chain_id)?
                         .query_latest_height()
                         .await
                         .map_err(json_rpc_error_to_queue_error)?,
@@ -571,7 +571,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 info!(%height, "querying self client state");
 
                 let self_client_state = ctx
-                    .consensus_module::<D, F, A>(&chain_id)?
+                    .consensus_module::<D, C, Cb>(&chain_id)?
                     .self_client_state(height)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -579,14 +579,14 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 // REVIEW: Add an assert here that the returned chain_id is the same as the
                 // passed in one?
                 let client_type = ctx
-                    .consensus_module::<D, F, A>(&chain_id)?
+                    .consensus_module::<D, C, Cb>(&chain_id)?
                     .consensus_info()
                     .await
                     .map_err(json_rpc_error_to_queue_error)?
                     .client_type;
 
                 let self_client_state = ctx
-                    .client_module::<D, F, A>(&client_type, &ibc_interface)?
+                    .client_module::<D, C, Cb>(&client_type, &ibc_interface)?
                     .encode_client_state(self_client_state, metadata)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -602,7 +602,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 // TODO: Split this into a separate query and aggregate?
                 let height = match height {
                     QueryHeight::Latest => ctx
-                        .chain_module::<D, F, A>(&chain_id)?
+                        .chain_module::<D, C, Cb>(&chain_id)?
                         .query_latest_height()
                         .await
                         .map_err(json_rpc_error_to_queue_error)?,
@@ -610,20 +610,20 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 };
 
                 let self_consensus_state = ctx
-                    .consensus_module::<D, F, A>(&chain_id)?
+                    .consensus_module::<D, C, Cb>(&chain_id)?
                     .self_consensus_state(height)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
 
                 let client_type = ctx
-                    .consensus_module::<D, F, A>(&chain_id)?
+                    .consensus_module::<D, C, Cb>(&chain_id)?
                     .consensus_info()
                     .await
                     .map_err(json_rpc_error_to_queue_error)?
                     .client_type;
 
                 let self_consensus_state = ctx
-                    .client_module::<D, F, A>(&client_type, &ibc_interface)?
+                    .client_module::<D, C, Cb>(&client_type, &ibc_interface)?
                     .encode_consensus_state(self_consensus_state)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -647,7 +647,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                     path: ibc_state.path,
                     height: ibc_state.height,
                     state: ctx
-                        .client_module::<D, F, A>(
+                        .client_module::<D, C, Cb>(
                             &client_info.client_type,
                             &client_info.ibc_interface,
                         )?
@@ -664,7 +664,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 path: ibc_state.path,
                 height: ibc_state.height,
                 state: ctx
-                    .client_module::<D, F, A>(&client_info.client_type, &client_info.ibc_interface)?
+                    .client_module::<D, C, Cb>(
+                        &client_info.client_type,
+                        &client_info.ibc_interface,
+                    )?
                     .decode_consensus_state_meta(ibc_state.state.0.into())
                     .await
                     .map_err(json_rpc_error_to_queue_error)?,
@@ -675,7 +678,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 client_info,
             }) => Ok(data(EncodedClientState {
                 encoded_client_state: ctx
-                    .client_module::<D, F, A>(&client_info.client_type, &client_info.ibc_interface)?
+                    .client_module::<D, C, Cb>(
+                        &client_info.client_type,
+                        &client_info.ibc_interface,
+                    )?
                     .encode_client_state(client_state, client_info.metadata)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?,
@@ -686,7 +692,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 client_info,
             }) => Ok(data(EncodedConsensusState {
                 encoded_consensus_state: ctx
-                    .client_module::<D, F, A>(&client_info.client_type, &client_info.ibc_interface)?
+                    .client_module::<D, C, Cb>(
+                        &client_info.client_type,
+                        &client_info.ibc_interface,
+                    )?
                     .encode_consensus_state(consensus_state)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?,
@@ -697,7 +706,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 client_info,
             }) => Ok(data(EncodedHeader {
                 encoded_header: ctx
-                    .client_module::<D, F, A>(&client_info.client_type, &client_info.ibc_interface)?
+                    .client_module::<D, C, Cb>(
+                        &client_info.client_type,
+                        &client_info.ibc_interface,
+                    )?
                     .encode_header(header)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?,
@@ -713,7 +725,10 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 client_info,
             }) => {
                 let proof = ctx
-                    .client_module::<D, F, A>(&client_info.client_type, &client_info.ibc_interface)?
+                    .client_module::<D, C, Cb>(
+                        &client_info.client_type,
+                        &client_info.ibc_interface,
+                    )?
                     .encode_proof(proof)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -1231,7 +1246,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
             // TODO: Replace this with an aggregation
             Call::Height(WaitForHeight { chain_id, height }) => {
                 let chain_height = ctx
-                    .chain_module::<D, F, A>(&chain_id)?
+                    .chain_module::<D, C, Cb>(&chain_id)?
                     .query_latest_height()
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -1258,7 +1273,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
             // REVIEW: Perhaps remove, unused
             Call::HeightRelative(WaitForHeightRelative { chain_id, height }) => {
                 let chain_height = ctx
-                    .chain_module::<D, F, A>(&chain_id)?
+                    .chain_module::<D, C, Cb>(&chain_id)?
                     .query_latest_height()
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -1277,7 +1292,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 timestamp,
             }) => {
                 let chain_ts = ctx
-                    .chain_module::<D, F, A>(&chain_id)?
+                    .chain_module::<D, C, Cb>(&chain_id)?
                     .query_latest_timestamp()
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -1286,7 +1301,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                     // TODO: Figure out a way to fetch a height at a specific timestamp
                     Ok(data(LatestHeight {
                         height: ctx
-                            .chain_module::<D, F, A>(&chain_id)?
+                            .chain_module::<D, C, Cb>(&chain_id)?
                             .query_latest_height()
                             .await
                             .map_err(json_rpc_error_to_queue_error)?,
@@ -1313,13 +1328,13 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
                 height,
             }) => {
                 let client_state = ctx
-                    .chain_module::<D, F, A>(&chain_id)?
+                    .chain_module::<D, C, Cb>(&chain_id)?
                     .query_raw_unfinalized_trusted_client_state(client_id.clone())
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
 
                 let trusted_client_state_meta = ctx
-                    .client_module::<D, F, A>(
+                    .client_module::<D, C, Cb>(
                         &client_state.client_type,
                         &client_state.ibc_interface,
                     )?
@@ -1361,7 +1376,7 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
 
             Call::Plugin(PluginMessage { plugin, message }) => Ok(ctx
                 .plugin(plugin)?
-                .handle_fetch(message)
+                .call(message)
                 .await
                 .map_err(json_rpc_error_to_queue_error)?),
         }
@@ -1378,14 +1393,14 @@ impl<D: Member, F: Member, A: Member> HandleCall<VoyagerMessage<D, F, A>> for Ca
         %metadata,
     )
 )]
-async fn make_msg_create_client<D: Member, F: Member, A: Member>(
+async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
     ctx: &Context,
     counterparty_chain_id: ChainId<'static>,
     height: Height,
     chain_id: ChainId<'static>,
     ibc_interface: IbcInterface<'_>,
     metadata: Value,
-) -> Result<Op<VoyagerMessage<D, F, A>>, QueueError> {
+) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
     let counterparty_consensus_module =
         ctx.consensus_module::<Value, Value, Value>(&counterparty_chain_id)?;
 
@@ -1449,12 +1464,12 @@ pub mod compound {
     /// specified chain.
     ///
     /// This expands to [`AggregateFetchConnectionFromChannel`].
-    pub fn fetch_connection_from_channel_info<D: Member, F: Member, A: Member>(
+    pub fn fetch_connection_from_channel_info<D: Member, C: Member, Cb: Member>(
         chain_id: ChainId<'static>,
         at: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
-    ) -> Op<VoyagerMessage<D, F, A>> {
+    ) -> Op<VoyagerMessage<D, C, Cb>> {
         promise(
             [call(FetchState {
                 chain_id,
@@ -1474,12 +1489,12 @@ pub mod compound {
     /// specified chain.
     ///
     /// This expands to [`AggregateFetchConnectionFromConnection`].
-    pub fn fetch_client_state_meta_from_connection<D: Member, F: Member, A: Member>(
+    pub fn fetch_client_state_meta_from_connection<D: Member, C: Member, Cb: Member>(
         chain_id: ChainId<'static>,
         at: QueryHeight,
         port_id: PortId,
         channel_id: ChannelId,
-    ) -> Op<VoyagerMessage<D, F, A>> {
+    ) -> Op<VoyagerMessage<D, C, Cb>> {
         promise(
             [fetch_connection_from_channel_info(
                 chain_id, at, port_id, channel_id,
@@ -1493,11 +1508,11 @@ pub mod compound {
     /// specified chain.
     ///
     /// This expands to [`AggregateFetchConnectionFromConnection`].
-    pub fn fetch_client_state_meta<D: Member, F: Member, A: Member>(
+    pub fn fetch_client_state_meta<D: Member, C: Member, Cb: Member>(
         chain_id: ChainId<'static>,
         client_id: ClientId,
         at: QueryHeight,
-    ) -> Op<VoyagerMessage<D, F, A>> {
+    ) -> Op<VoyagerMessage<D, C, Cb>> {
         promise(
             [
                 call(FetchClientInfo {

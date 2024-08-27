@@ -71,11 +71,6 @@ fn apply_item(derive_input: DeriveInput) -> Result<proc_macro2::TokenStream, Err
                         // bound(serialize = "", deserialize = ""),
                         deny_unknown_fields
                     )]
-                    #[cfg_attr(
-                        feature = "arbitrary",
-                        // derive(arbitrary::Arbitrary),
-                        // arbitrary(bound = "")
-                    )]
 
                     #derive_input
                 })
@@ -96,11 +91,6 @@ fn apply_item(derive_input: DeriveInput) -> Result<proc_macro2::TokenStream, Err
                         deny_unknown_fields,
                         transparent
                     )]
-                    // #[cfg_attr(
-                    //     feature = "arbitrary",
-                    //     // derive(arbitrary::Arbitrary),
-                    //     // arbitrary(bound = "")
-                    // )]
 
                     #derive_input
                 })
@@ -120,7 +110,6 @@ fn apply_item(derive_input: DeriveInput) -> Result<proc_macro2::TokenStream, Err
                 // bound(serialize = "", deserialize = ""),
                 deny_unknown_fields
             )]
-            // #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
             #[allow(clippy::large_enum_variant)]
 
             #derive_input
@@ -139,7 +128,6 @@ fn add_marker_field_to_struct(data_struct: &mut DataStruct, type_params_to_cover
             fields_named.named.push(parse_quote! {
                 #[serde(skip)]
                 #[debug(skip)]
-                #[cfg_attr(feature = "arbitrary", arbitrary(default))]
                 pub __marker: ::core::marker::PhantomData<fn() -> (#(#type_params_to_cover),*)>
             });
         }

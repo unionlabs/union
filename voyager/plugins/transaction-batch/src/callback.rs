@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
 use queue_msg::{
-    aggregation::{SubsetOf, UseAggregate},
+    aggregation::{DoCallback, SubsetOf},
     call, queue_msg,
 };
 use unionlabs::ibc::core::client::height::Height;
@@ -14,13 +14,13 @@ use voyager_message::{
 };
 
 use crate::{
+    call::ModuleCall,
     data::{EventBatch, ModuleData},
-    fetch::ModuleFetch,
 };
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleAggregate {
+pub enum ModuleCallback {
     MakeUpdateFromLatestHeightToAtLeastTargetHeight(
         MakeUpdateFromLatestHeightToAtLeastTargetHeight,
     ),
@@ -33,15 +33,15 @@ pub struct MakeUpdateFromLatestHeightToAtLeastTargetHeight {
     pub target_height: Height,
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for MakeUpdateFromLatestHeightToAtLeastTargetHeight
 {
-    type AggregatedData = HList![DecodedClientStateMeta];
+    type Params = HList![DecodedClientStateMeta];
 
-    fn aggregate(
+    fn call(
         Self { target_height }: Self,
-        hlist_pat![client_meta]: Self::AggregatedData,
-    ) -> queue_msg::Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_meta]: Self::Params,
+    ) -> queue_msg::Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         call(FetchUpdateHeaders {
             chain_id: client_meta.state.chain_id,
             update_from: client_meta.state.height,

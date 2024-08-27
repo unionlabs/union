@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
 use num_bigint::BigUint;
-use queue_msg::{aggregation::UseAggregate, call, data, promise, queue_msg, Op};
+use queue_msg::{aggregation::DoCallback, call, data, promise, queue_msg, Op};
 use tracing::{debug, trace};
 use unionlabs::{
     bounded::BoundedI64,
@@ -30,13 +30,13 @@ use voyager_message::{
 };
 
 use crate::{
+    call::{FetchProveRequest, ModuleCall},
     data::{ModuleData, ProveResponse, TrustedValidators, UntrustedCommit, UntrustedValidators},
-    fetch::{FetchProveRequest, ModuleFetch},
 };
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleAggregate {
+pub enum ModuleCallback {
     AggregateProveRequest(AggregateProveRequest),
     AggregateHeader(AggregateHeader),
 }
@@ -59,16 +59,16 @@ pub struct AggregateHeader {
     pub update_to: Height,
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for AggregateProveRequest
 {
-    type AggregatedData = HList![
+    type Params = HList![
         PluginMessage<UntrustedCommit>,
         PluginMessage<TrustedValidators>,
         PluginMessage<UntrustedValidators>
     ];
 
-    fn aggregate(
+    fn call(
         AggregateProveRequest {
             chain_id,
             update_from,
@@ -96,8 +96,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
                     validators: untrusted_validators,
                 }
             },
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let make_validators_commit =
             |mut validators: Vec<unionlabs::tendermint::types::validator::Validator>| {
                 // Validators must be sorted to match the root, by token then address
@@ -239,10 +239,10 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> for AggregateHeader {
-    type AggregatedData = HList![PluginMessage<ProveResponse>];
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for AggregateHeader {
+    type Params = HList![PluginMessage<ProveResponse>];
 
-    fn aggregate(
+    fn call(
         AggregateHeader {
             mut signed_header,
             chain_id,
@@ -254,8 +254,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> for 
             message: ProveResponse {
                 prove_response: response,
             }
-        }]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        }]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         // TODO: maybe introduce a new commit for union signed header as we don't need the signatures but the ZKP only
         // Keeping this signatures significantly increase the size of the structure and the associated gas cost in EVM (calldata).
         signed_header.commit.signatures.clear();

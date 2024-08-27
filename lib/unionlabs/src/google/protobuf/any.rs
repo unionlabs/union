@@ -16,7 +16,6 @@ use crate::{
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Any<T>(pub T);
 
 /// Provides a way to convert a type `T` into an [`Any`], even if `T` is itself an [`Any`].

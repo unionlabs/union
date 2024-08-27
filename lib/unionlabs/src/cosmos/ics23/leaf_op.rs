@@ -15,7 +15,6 @@ pub struct LeafOp {
     pub length: LengthOp,
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    #[cfg_attr(feature = "arbitrary", arbitrary(with = crate::arbitrary_cow_static))]
     pub prefix: Cow<'static, [u8]>,
 }
 

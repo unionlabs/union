@@ -16,7 +16,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{aggregation::do_aggregate, call, conc, noop, promise, BoxDynError, Op};
+use queue_msg::{aggregation::do_callback, call, conc, noop, promise, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, instrument, warn};
@@ -45,14 +45,14 @@ use voyager_message::{
 };
 
 use crate::{
-    aggregate::{EventInfo, ModuleAggregate},
+    call::{FetchBeaconBlockRange, FetchEvents, FetchGetLogs, ModuleCall},
+    callback::{EventInfo, ModuleCallback},
     data::ModuleData,
-    fetch::{FetchBeaconBlockRange, FetchEvents, FetchGetLogs, ModuleFetch},
 };
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 const ETHEREUM_REVISION_NUMBER: u64 = 0;
 
@@ -121,7 +121,7 @@ impl Module {
         event: IBCHandlerEvents,
         event_height: Height,
         tx_hash: H256,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let channel_fetch = |port_id: &str, channel_id: &str, height| {
             call(FetchState {
                 path: ChannelEndPath {
@@ -781,7 +781,7 @@ pub enum InitError {
 }
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -792,37 +792,37 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: ModuleAggregate,
+        cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        Ok(match aggregate {
-            ModuleAggregate::CreateClient(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::UpdateClient(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::ConnectionOpenInit(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::ConnectionOpenTry(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::ConnectionOpenAck(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::ConnectionOpenConfirm(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::ChannelOpenInit(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::ChannelOpenTry(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::ChannelOpenAck(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::ChannelOpenConfirm(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::SendPacket(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::RecvPacket(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::WriteAcknowledgement(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::PacketAcknowledgement(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::PacketTimeout(aggregate) => do_aggregate(aggregate, data),
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        Ok(match cb {
+            ModuleCallback::CreateClient(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::UpdateClient(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::ConnectionOpenInit(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::ConnectionOpenTry(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::ConnectionOpenAck(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::ConnectionOpenConfirm(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::ChannelOpenInit(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::ChannelOpenTry(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::ChannelOpenAck(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::ChannelOpenConfirm(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::SendPacket(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::RecvPacket(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::WriteAcknowledgement(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::PacketAcknowledgement(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::PacketTimeout(aggregate) => do_callback(aggregate, data),
         })
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle_fetch(
+    async fn call(
         &self,
-        msg: ModuleFetch,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
-            ModuleFetch::FetchEvents(FetchEvents {
+            ModuleCall::FetchEvents(FetchEvents {
                 from_height,
                 to_height,
             }) => Ok(call(Call::plugin(
@@ -832,7 +832,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                     to_slot: to_height.revision_height,
                 },
             ))),
-            ModuleFetch::FetchBeaconBlockRange(FetchBeaconBlockRange { from_slot, to_slot }) => {
+            ModuleCall::FetchBeaconBlockRange(FetchBeaconBlockRange { from_slot, to_slot }) => {
                 debug!(%from_slot, %to_slot, "fetching beacon block range");
 
                 assert!(from_slot < to_slot);
@@ -894,7 +894,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                     )))
                 }
             }
-            ModuleFetch::FetchGetLogs(FetchGetLogs { from_slot, to_slot }) => {
+            ModuleCall::FetchGetLogs(FetchGetLogs { from_slot, to_slot }) => {
                 debug!(%from_slot, %to_slot, "fetching logs in beacon block range");
 
                 let event_height = Height {
@@ -1000,7 +1000,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
 }
 
 #[async_trait]
-impl ChainModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     fn chain_id(&self) -> RpcResult<ChainId<'static>> {
         Ok(self.chain_id.clone())
@@ -1076,7 +1076,7 @@ impl ChainModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
         &self,
         from_height: Height,
         to_height: Height,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(call(Call::plugin(
             self.plugin_name(),
             FetchEvents {

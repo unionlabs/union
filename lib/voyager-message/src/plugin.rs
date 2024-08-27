@@ -22,23 +22,23 @@ use crate::{
 
 // REVIEW: Rename?
 #[rpc(client, server, namespace = "plugin")]
-pub trait PluginModule<D: Member, F: Member, A: Member> {
+pub trait PluginModule<D: Member, C: Member, Cb: Member> {
     /// The name of this plugin that will be used as the `Plugin.plugin_name` to
     /// direct custom messages to this module.
     #[method(name = "info")]
     async fn info(&self) -> RpcResult<PluginInfo>;
 
     /// Handle a custom `Fetch` message for this module.
-    #[method(name = "handleFetch")]
-    async fn handle_fetch(&self, fetch: F) -> RpcResult<Op<VoyagerMessage<D, F, A>>>;
+    #[method(name = "call")]
+    async fn call(&self, call: C) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 
     /// Handle a custom `Aggregate` message for this module.
-    #[method(name = "handleAggregate")]
-    fn handle_aggregate(
+    #[method(name = "callback")]
+    fn callback(
         &self,
-        aggregate: A,
+        aggregate: Cb,
         data: VecDeque<Data<D>>,
-    ) -> RpcResult<Op<VoyagerMessage<D, F, A>>>;
+    ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 }
 
 #[model]
@@ -64,7 +64,6 @@ pub enum PluginKind {
     Chain,
     Client,
     Consensus,
-    // Transaction,
 }
 
 impl std::fmt::Display for PluginKind {
@@ -73,7 +72,6 @@ impl std::fmt::Display for PluginKind {
             Self::Chain => "chain",
             Self::Client => "client",
             Self::Consensus => "consensus",
-            // Self::Transaction => "transaction",
         })
     }
 }
@@ -81,16 +79,16 @@ impl std::fmt::Display for PluginKind {
 #[rpc(
     client,
     server,
-    client_bounds(Self: PluginModuleClient<D, F, A>),
-    server_bounds(Self: PluginModuleServer<D, F, A>),
+    client_bounds(Self: PluginModuleClient<D, C, Cb>),
+    server_bounds(Self: PluginModuleServer<D, C, Cb>),
     namespace = "optimizeModule"
 )]
-pub trait OptimizationPassPlugin<D: Member, F: Member, A: Member> {
+pub trait OptimizationPassPlugin<D: Member, C: Member, Cb: Member> {
     #[method(name = "runPass")]
     fn run_pass(
         &self,
-        msgs: Vec<Op<VoyagerMessage<D, F, A>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<D, F, A>>>;
+        msgs: Vec<Op<VoyagerMessage<D, C, Cb>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<D, C, Cb>>>;
 }
 
 /// Chain modules provide functionality to interact with a single chain,
@@ -98,11 +96,11 @@ pub trait OptimizationPassPlugin<D: Member, F: Member, A: Member> {
 #[rpc(
     client,
     server,
-    client_bounds(Self: PluginModuleClient<D, F, A>),
-    server_bounds(Self: PluginModuleServer<D, F, A>),
+    client_bounds(Self: PluginModuleClient<D, C, Cb>),
+    server_bounds(Self: PluginModuleServer<D, C, Cb>),
     namespace = "chainModule"
 )]
-pub trait ChainModule<D: Member, F: Member, A: Member> {
+pub trait ChainModule<D: Member, C: Member, Cb: Member> {
     /// Register this chain module with Voyager, returning the chain id of the
     /// chain this module tracks.
     #[method(name = "chainId")]
@@ -126,7 +124,7 @@ pub trait ChainModule<D: Member, F: Member, A: Member> {
         &self,
         from_height: Height,
         to_height: Height,
-    ) -> RpcResult<Op<VoyagerMessage<D, F, A>>>;
+    ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 
     /// Query the latest raw, unfinalized trusted client state of the client
     /// `client_id`.
@@ -201,12 +199,12 @@ pub struct RawClientState<'a> {
 #[rpc(
     client,
     server,
-    client_bounds(Self: PluginModuleClient<D, F, A>),
-    server_bounds(Self: PluginModuleServer<D, F, A>),
+    client_bounds(Self: PluginModuleClient<D, C, Cb>),
+    server_bounds(Self: PluginModuleServer<D, C, Cb>),
     namespace = "clientModule"
 )]
 // TODO: Rename to client codec module
-pub trait ClientModule<D: Member, F: Member, A: Member> {
+pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     /// Register this module with Voyager.
     #[method(name = "supportedInterface")]
     async fn supported_interface(&self) -> RpcResult<SupportedInterface>;
@@ -283,11 +281,11 @@ pub trait ClientModule<D: Member, F: Member, A: Member> {
 #[rpc(
     client,
     server,
-    client_bounds(Self: PluginModuleClient<D, F, A>),
-    server_bounds(Self: PluginModuleServer<D, F, A>),
+    client_bounds(Self: PluginModuleClient<D, C, Cb>),
+    server_bounds(Self: PluginModuleServer<D, C, Cb>),
     namespace = "consensusModule"
 )]
-pub trait ConsensusModule<D: Member, F: Member, A: Member> {
+pub trait ConsensusModule<D: Member, C: Member, Cb: Member> {
     /// Register this module with Voyager.
     #[method(name = "info")]
     async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo>;
@@ -320,7 +318,7 @@ pub trait ConsensusModule<D: Member, F: Member, A: Member> {
         &self,
         update_from: Height,
         update_to: Height,
-    ) -> RpcResult<Op<VoyagerMessage<D, F, A>>>;
+    ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 }
 
 #[model]
@@ -360,11 +358,11 @@ pub struct ConsensusStateMeta {
 // #[rpc(
 //     client,
 //     server,
-//     client_bounds(Self: PluginModuleClient<D, F, A>),
-//     server_bounds(Self: PluginModuleServer<D, F, A>),
+//     client_bounds(Self: PluginModuleClient<D, C, Cb>),
+//     server_bounds(Self: PluginModuleServer<D, C, Cb>),
 //     namespace = "transactionModule"
 // )]
-// pub trait TransactionSubmissionModule<D: Member, F: Member, A: Member> {
+// pub trait TransactionSubmissionModule<D: Member, C: Member, Cb: Member> {
 //     /// Register this transaction submission module with Voyager, returning the
 //     /// chain id of the chain this module supports.
 //     #[method(name = "register")]
@@ -375,7 +373,7 @@ pub struct ConsensusStateMeta {
 //     /// interfaces, which should then be transformed to the format expected
 //     /// by transaction submission for this chain and signed.
 //     #[method(name = "sendTransaction")]
-//     async fn send_transaction(&self, msg: Vec<Msg>) -> RpcResult<Op<VoyagerMessage<D, F, A>>>;
+//     async fn send_transaction(&self, msg: Vec<Msg>) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 // }
 
 #[model]

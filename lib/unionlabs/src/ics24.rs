@@ -30,7 +30,6 @@ pub trait IbcPath: Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
     clap::Subcommand,
     enumorph::Enumorph,
 )]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(
     bound(
         serialize = "ClientId: Serialize",
@@ -284,63 +283,4 @@ mod tests {
             })
         );
     }
-
-    // TODO: Migrate these to fuzz targets
-    // mod arbtest {
-    //     use arbitrary::Arbitrary;
-
-    //     use crate::{
-    //         ibc::core::client::height::Height,
-    //         id::ClientId,
-    //         proof::Path,
-    //         test_utils::{assert_json_roundtrip, assert_string_roundtrip},
-    //     };
-
-    //     #[test]
-    //     pub(crate) fn parse() {
-    //         arbtest::builder().budget_ms(4000).minimize().run(|u| {
-    //             // we don't care if it succeeds (it probably won't), we just want to ensure it doesn't panic
-    //             let _ = String::arbitrary(u)?.parse::<Path>();
-    //             Ok(())
-    //         });
-    //     }
-
-    //     #[test]
-    //     pub(crate) fn roundtrip() {
-    //         let mut oks = 0;
-    //         let mut errs = 0;
-    //         arbtest::builder().budget_ms(4000).minimize().run(|u| {
-    //             dbg!(u.len());
-    //             let mut tries = 0;
-    //             loop {
-    //                 if u.is_empty() {
-    //                     eprintln!("exhausted buffer");
-    //                     break;
-    //                 }
-
-    //                 if let Ok(ok) = <Path>::arbitrary(u) {
-    //                     oks += 1;
-    //                     assert_json_roundtrip(&ok);
-    //                     assert_string_roundtrip(&ok);
-    //                     break;
-    //                 }
-
-    //                 tries += 1;
-    //                 if tries >= 1024 {
-    //                     errs += 1;
-    //                     break;
-    //                 };
-    //             }
-    //             Ok(())
-    //         });
-
-    //         dbg!(oks, errs);
-    //     }
-    // }
-
-    // const _: fn() = || {
-    //     fn assert_impl_all<T: for<'a> Arbitrary<'a>>() {}
-
-    //     assert_impl_all::<Path>();
-    // };
 }

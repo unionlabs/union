@@ -45,11 +45,11 @@ use voyager_message::{
     run_module_server, ChainId, VoyagerMessage,
 };
 
-use crate::{aggregate::ModuleAggregate, data::ModuleData, fetch::ModuleFetch};
+use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -147,7 +147,7 @@ pub enum InitError {
 }
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -174,12 +174,12 @@ end
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle_fetch(
+    async fn call(
         &self,
-        msg: ModuleFetch,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
-            ModuleFetch::SubmitMulticall(msgs) => {
+            ModuleCall::SubmitMulticall(msgs) => {
                 let res = self.keyring
         .with({
             let msgs = msgs.clone();
@@ -408,7 +408,7 @@ end
         .await;
 
                 let rewrap_msg =
-                    || Call::plugin(self.plugin_name(), ModuleFetch::SubmitMulticall(msgs));
+                    || Call::plugin(self.plugin_name(), ModuleCall::SubmitMulticall(msgs));
 
                 match res {
                     Some(Ok(())) => Ok(Op::Noop),
@@ -422,7 +422,7 @@ end
                         defer_relative(12),
                         call(Call::plugin(
                             self.plugin_name(),
-                            ModuleFetch::SubmitMulticall(msgs),
+                            ModuleCall::SubmitMulticall(msgs),
                         )),
                     ])),
                     Some(Err(err)) => Err(ErrorObject::owned(
@@ -437,12 +437,12 @@ end
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: ModuleAggregate,
+        cb: ModuleCallback,
         _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        match aggregate {}
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match cb {}
     }
 }
 
@@ -465,12 +465,11 @@ pub enum TxSubmitError {
 }
 
 #[async_trait]
-impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     fn run_pass(
         &self,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>
-    {
+        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(OptimizationResult {
             optimize_further: vec![],
             ready: msgs
@@ -488,7 +487,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
 
                                 call(Call::plugin(
                                     self.plugin_name(),
-                                    ModuleFetch::SubmitMulticall(vec![message]),
+                                    ModuleCall::SubmitMulticall(vec![message]),
                                 ))
                             }
                             Op::Data(Data::IdentifiedIbcMessageBatch(WithChainId {
@@ -499,7 +498,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
 
                                 call(Call::plugin(
                                     self.plugin_name(),
-                                    ModuleFetch::SubmitMulticall(message),
+                                    ModuleCall::SubmitMulticall(message),
                                 ))
                             }
                             _ => panic!("unexpected message: {msg:?}"),

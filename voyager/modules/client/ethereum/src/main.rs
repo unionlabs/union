@@ -32,11 +32,11 @@ use voyager_message::{
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
-use crate::{aggregate::ModuleAggregate, data::ModuleData, fetch::ModuleFetch};
+use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 // TODO: Thread this value through the config (or something similar)
 const SUPPORTED_CLIENT_TYPE: ClientType<'static> =
@@ -109,12 +109,8 @@ impl Module {
 #[derive(Debug, thiserror::Error)]
 pub enum ModuleInitError {}
 
-type D = ModuleData;
-type F = ModuleFetch;
-type A = ModuleAggregate;
-
 #[async_trait]
-impl PluginModuleServer<D, F, A> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -125,22 +121,25 @@ impl PluginModuleServer<D, F, A> for Module {
     }
 
     #[instrument]
-    async fn handle_fetch(&self, msg: ModuleFetch) -> RpcResult<Op<VoyagerMessage<D, F, A>>> {
+    async fn call(
+        &self,
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {}
     }
 
     #[instrument]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: A,
-        data: VecDeque<Data<D>>,
-    ) -> RpcResult<Op<VoyagerMessage<D, F, A>>> {
-        match aggregate {}
+        callback: ModuleCallback,
+        data: VecDeque<Data<ModuleData>>,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match callback {}
     }
 }
 
 #[async_trait]
-impl ClientModuleServer<D, F, A> for Module {
+impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn supported_interface(&self) -> RpcResult<SupportedInterface> {
         Ok(SupportedInterface {

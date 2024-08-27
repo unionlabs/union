@@ -41,11 +41,11 @@ use voyager_message::{
     run_module_server, ChainId, VoyagerMessage,
 };
 
-use crate::{aggregate::ModuleAggregate, data::ModuleData, fetch::ModuleFetch};
+use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -127,7 +127,7 @@ impl Module {
     pub async fn do_send_transaction(
         &self,
         msgs: Vec<IbcMessage>,
-    ) -> Result<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>, BroadcastTxCommitError>
+    ) -> Result<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>, BroadcastTxCommitError>
     {
         let res = self
             .keyring
@@ -251,7 +251,7 @@ impl Module {
             })
             .await;
 
-        let rewrap_msg = || Call::plugin(self.plugin_name(), ModuleFetch::SubmitTransaction(msgs));
+        let rewrap_msg = || Call::plugin(self.plugin_name(), ModuleCall::SubmitTransaction(msgs));
 
         match res {
             Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => Ok(call(rewrap_msg())),
@@ -571,7 +571,7 @@ pub enum InitError {
 }
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -598,12 +598,12 @@ end
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle_fetch(
+    async fn call(
         &self,
-        msg: ModuleFetch,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
-            ModuleFetch::SubmitTransaction(msgs) => self
+            ModuleCall::SubmitTransaction(msgs) => self
                 .do_send_transaction(msgs)
                 .await
                 .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)),
@@ -611,23 +611,22 @@ end
     }
 
     #[instrument]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: ModuleAggregate,
+        cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        match aggregate {}
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match cb {}
     }
 }
 
 #[async_trait]
-impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     fn run_pass(
         &self,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>>
-    {
+        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(OptimizationResult {
             optimize_further: vec![],
             ready: msgs
@@ -645,7 +644,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
 
                                 call(Call::plugin(
                                     self.plugin_name(),
-                                    ModuleFetch::SubmitTransaction(vec![message]),
+                                    ModuleCall::SubmitTransaction(vec![message]),
                                 ))
                             }
                             Op::Data(Data::IdentifiedIbcMessageBatch(WithChainId {
@@ -656,7 +655,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleFetch, ModuleAggregate> for 
 
                                 call(Call::plugin(
                                     self.plugin_name(),
-                                    ModuleFetch::SubmitTransaction(message),
+                                    ModuleCall::SubmitTransaction(message),
                                 ))
                             }
                             _ => panic!("unexpected message: {msg:?}"),

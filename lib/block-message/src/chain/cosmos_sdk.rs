@@ -40,10 +40,6 @@ impl<C: CosmosSdkChainSealed> ChainExt for C {
     type Aggregate = CosmosSdkAggregate<C>;
 }
 
-const _: fn() = || {
-    unionlabs::impl_maybe_arbitrary::<CosmosSdkAggregate<chain_utils::cosmos::Cosmos>>();
-};
-
 impl<C: CosmosSdkChainSealed<Fetch = CosmosSdkFetch<C>>> DoFetchBlockRange<C> for C
 where
     AnyChainIdentified<AnyFetch>: From<Identified<C, Fetch<C>>>,

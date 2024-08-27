@@ -26,7 +26,6 @@ macro_rules! event {
     ) => {
         #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, enumorph::Enumorph)]
         #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
-        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         pub enum $Enum {
             $(
                 $Struct($Struct),
@@ -58,7 +57,6 @@ macro_rules! event {
         $(
             #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
             #[serde(deny_unknown_fields)]
-            #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
             pub struct $Struct {
                 $(
                     $(#[doc = $doc])*

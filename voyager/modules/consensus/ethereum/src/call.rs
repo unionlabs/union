@@ -3,7 +3,7 @@ use queue_msg::queue_msg;
 
 #[queue_msg]
 #[derive(Enumorph)]
-pub enum ModuleFetch {
+pub enum ModuleCall {
     FetchLightClientUpdate(FetchLightClientUpdate),
     FetchFinalityUpdate(FetchFinalityUpdate),
     FetchLightClientUpdates(FetchLightClientUpdates),

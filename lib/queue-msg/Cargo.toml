@@ -8,7 +8,6 @@ edition = { workspace = true }
 workspace = true
 
 [dependencies]
-arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 either                   = { workspace = true }
 frame-support-procedural = { workspace = true }
 frunk                    = { workspace = true }
@@ -30,5 +29,3 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [features]
 default = []
-
-arbitrary = ["dep:arbitrary", "unionlabs/arbitrary"]

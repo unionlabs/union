@@ -20,7 +20,6 @@ macro_rules! hex_string_array_wrapper {
                 Hash
             )]
             #[ssz(transparent)]
-            #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
             pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
 
             impl $Struct {
@@ -265,7 +264,6 @@ macro_rules! wrapper_enum {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
         #[serde(rename_all = "snake_case")]
         $(#[$meta])*
-        #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         pub enum $Enum {
             $(

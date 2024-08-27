@@ -11,8 +11,8 @@ pub trait SubsetOf<T>: Sized {
     fn into_super(self) -> T;
 }
 
-pub fn do_aggregate<T: QueueMessage, A: UseAggregate<T>>(
-    event: A,
+pub fn do_callback<T: QueueMessage, Cb: DoCallback<T>>(
+    event: Cb,
     data: VecDeque<T::Data>,
 ) -> Op<T> {
     let data = match HListTryFromIterator::try_from_iter(data) {
@@ -20,15 +20,15 @@ pub fn do_aggregate<T: QueueMessage, A: UseAggregate<T>>(
         Err(_) => {
             error!(
                 "could not aggregate data into {}",
-                std::any::type_name::<A>()
+                std::any::type_name::<Cb>()
             );
             panic!(
                 "could not aggregate data into {}",
-                std::any::type_name::<A>()
+                std::any::type_name::<Cb>()
             )
         }
     };
-    A::aggregate(event, data)
+    Cb::call(event, data)
 }
 
 pub fn pluck<T: SubsetOf<U>, U>(mut vec: VecDeque<U>) -> PluckResult<T, U> {
@@ -94,37 +94,37 @@ impl<U> HListTryFromIterator<U> for HNil {
     }
 }
 
-pub trait UseAggregate<T: QueueMessage, R = Op<T>> {
-    type AggregatedData: HListTryFromIterator<T::Data>;
+pub trait DoCallback<T: QueueMessage, R = Op<T>> {
+    /// Unordered params for this callback. If there are multiple params of the same type, their ordering is not guaranteed or deterministic.
+    type Params: HListTryFromIterator<T::Data>;
 
-    fn aggregate(this: Self, data: Self::AggregatedData) -> R;
+    fn call(this: Self, data: Self::Params) -> R;
 }
 
-pub struct TupleAggregator;
+pub struct TupleCallback;
 
 // pub trait IsAggregateData<T: QueueMessage> = TryFrom<<T as QueueMessage>::Data, Error = <T as QueueMessage>::Data>
 //     + Into<<T as QueueMessage>::Data>;
 
-impl<T> UseAggregate<T, ()> for TupleAggregator
+impl<T> DoCallback<T, ()> for TupleCallback
 where
     T: QueueMessage,
 {
-    type AggregatedData = HList![];
+    type Params = HList![];
 
-    fn aggregate(_: TupleAggregator, _data: Self::AggregatedData) {}
+    fn call(_: TupleCallback, _data: Self::Params) {}
 }
 
-impl<T, U, Tail> UseAggregate<T, (U, Tail)> for TupleAggregator
+impl<T, U, Tail> DoCallback<T, (U, Tail)> for TupleCallback
 where
     T: QueueMessage,
     U: SubsetOf<T::Data>,
-    TupleAggregator: UseAggregate<T, Tail>,
-    HList![U, ...<TupleAggregator as UseAggregate<T, Tail>>::AggregatedData]:
-        HListAsTuple<Tuple = (U, Tail)>,
+    TupleCallback: DoCallback<T, Tail>,
+    HList![U, ...<TupleCallback as DoCallback<T, Tail>>::Params]: HListAsTuple<Tuple = (U, Tail)>,
 {
-    type AggregatedData = HList![U, ...<TupleAggregator as UseAggregate<T, Tail>>::AggregatedData];
+    type Params = HList![U, ...<TupleCallback as DoCallback<T, Tail>>::Params];
 
-    fn aggregate(_: TupleAggregator, data: Self::AggregatedData) -> (U, Tail) {
+    fn call(_: TupleCallback, data: Self::Params) -> (U, Tail) {
         data.into_tuple()
     }
 }
@@ -149,126 +149,118 @@ impl<H, Tail: HListAsTuple> HListAsTuple for HCons<H, Tail> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use std::sync::Arc;
+#[cfg(test)]
+mod tests {
+    use frunk::HList;
+    use queue_msg_macro::SubsetOf;
+    use tracing_subscriber::EnvFilter;
 
-//     use frunk::HList;
-//     use tracing_subscriber::EnvFilter;
+    use super::*;
+    use crate::{
+        call,
+        optimize::{NoopPass, Pure},
+        run_to_completion,
+        test_utils::{queue_msg, DataA, DataB, DataC, FetchA, FetchB, FetchC, SimpleMessage},
+        InMemoryQueue,
+    };
 
-//     use super::*;
-//     use crate::{
-//         fetch,
-//         optimize::{passes::NormalizeFinal, Pure},
-//         run_to_completion,
-//         test_utils::{DataA, DataB, DataC, FetchA, FetchB, FetchC, SimpleMessage},
-//         InMemoryQueue,
-//     };
+    #[test]
+    fn hlist_try_from_iter() {
+        #[derive(Debug, PartialEq, enumorph::Enumorph, SubsetOf)]
+        pub enum A {
+            B(B),
+            C(C),
+            D(D),
+        }
 
-//     #[test]
-//     fn hlist_try_from_iter() {
-//         #[derive(Debug, PartialEq, enumorph::Enumorph)]
-//         pub enum A {
-//             B(B),
-//             C(C),
-//             D(D),
-//         }
+        #[derive(Debug, PartialEq)]
+        pub struct B;
 
-//         #[derive(Debug, PartialEq)]
-//         pub struct B;
+        #[derive(Debug, PartialEq)]
+        pub struct C;
 
-//         #[derive(Debug, PartialEq)]
-//         pub struct C;
+        #[derive(Debug, PartialEq)]
+        pub struct D;
 
-//         #[derive(Debug, PartialEq)]
-//         pub struct D;
+        // correct items, correct order
+        assert_eq!(
+            <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::B(B), A::C(C)])),
+            Ok(frunk::hlist![B, C])
+        );
 
-//         // correct items, correct order
-//         assert_eq!(
-//             <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::B(B), A::C(C)])),
-//             Ok(frunk::hlist![B, C])
-//         );
+        // correct items, wrong order
+        assert_eq!(
+            <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::C(C), A::B(B)])),
+            Ok(frunk::hlist![B, C])
+        );
 
-//         // correct items, wrong order
-//         assert_eq!(
-//             <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::C(C), A::B(B)])),
-//             Ok(frunk::hlist![B, C])
-//         );
+        // extra items
+        assert_eq!(
+            <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::C(C), A::B(B), A::D(D)])),
+            Err(VecDeque::from_iter([A::D(D)]))
+        );
 
-//         // extra items
-//         assert_eq!(
-//             <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::C(C), A::B(B), A::D(D)])),
-//             Err(VecDeque::from_iter([A::D(D)]))
-//         );
+        // missing items
+        assert_eq!(
+            <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::C(C)])),
+            Err(VecDeque::from_iter([A::C(C)]))
+        );
 
-//         // missing items
-//         assert_eq!(
-//             <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::C(C)])),
-//             Err(VecDeque::from_iter([A::C(C)]))
-//         );
+        // missing items, extra items present
+        assert_eq!(
+            <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::C(C), A::D(D)])),
+            Err(VecDeque::from_iter([A::C(C), A::D(D)]))
+        );
+    }
 
-//         // missing items, extra items present
-//         assert_eq!(
-//             <HList![B, C]>::try_from_iter(VecDeque::from_iter([A::C(C), A::D(D)])),
-//             Err(VecDeque::from_iter([A::C(C), A::D(D)]))
-//         );
-//     }
+    #[tokio::test]
+    async fn tuple_aggregate() {
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
+            .try_init();
 
-//     #[tokio::test]
-//     async fn tuple_aggregate() {
-//         let _ = tracing_subscriber::fmt()
-//             .with_env_filter(EnvFilter::from_default_env())
-//             .try_init();
+        let _: () = run_to_completion::<
+            TupleCallback,
+            SimpleMessage,
+            (),
+            InMemoryQueue<SimpleMessage>,
+            NoopPass,
+            Pure<NoopPass>,
+        >(TupleCallback, (), (), [], NoopPass, Pure(NoopPass))
+        .await;
 
-//         let _: () = run_to_completion::<
-//             TupleAggregator,
-//             SimpleMessage,
-//             (),
-//             InMemoryQueue<SimpleMessage>,
-//             NormalizeFinal,
-//             Pure<NormalizeFinal>,
-//         >(
-//             TupleAggregator,
-//             Arc::new(()),
-//             (),
-//             [],
-//             NormalizeFinal::default(),
-//             Pure(NormalizeFinal::default()),
-//         )
-//         .await;
+        let _: (DataA, ()) = run_to_completion::<
+            TupleCallback,
+            SimpleMessage,
+            (DataA, ()),
+            InMemoryQueue<SimpleMessage>,
+            NoopPass,
+            Pure<NoopPass>,
+        >(
+            TupleCallback,
+            (),
+            (),
+            [call(FetchA {})],
+            NoopPass,
+            Pure(NoopPass),
+        )
+        .await;
 
-//         let _: (DataA, ()) = run_to_completion::<
-//             TupleAggregator,
-//             SimpleMessage,
-//             (DataA, ()),
-//             InMemoryQueue<SimpleMessage>,
-//             NormalizeFinal,
-//             Pure<NormalizeFinal>,
-//         >(
-//             TupleAggregator,
-//             Arc::new(()),
-//             (),
-//             [fetch(FetchA {})],
-//             NormalizeFinal::default(),
-//             Pure(NormalizeFinal::default()),
-//         )
-//         .await;
-
-//         let _: (DataC, (DataB, (DataA, ()))) = run_to_completion::<
-//             TupleAggregator,
-//             SimpleMessage,
-//             (DataC, (DataB, (DataA, ()))),
-//             InMemoryQueue<SimpleMessage>,
-//             NormalizeFinal,
-//             Pure<NormalizeFinal>,
-//         >(
-//             TupleAggregator,
-//             Arc::new(()),
-//             (),
-//             [fetch(FetchA {}), fetch(FetchC {}), fetch(FetchB {})],
-//             NormalizeFinal::default(),
-//             Pure(NormalizeFinal::default()),
-//         )
-//         .await;
-//     }
-// }
+        let _: (DataC, (DataB, (DataA, ()))) = run_to_completion::<
+            TupleCallback,
+            SimpleMessage,
+            (DataC, (DataB, (DataA, ()))),
+            InMemoryQueue<SimpleMessage>,
+            NoopPass,
+            Pure<NoopPass>,
+        >(
+            TupleCallback,
+            (),
+            (),
+            [call(FetchA {}), call(FetchC {}), call(FetchB {})],
+            NoopPass,
+            Pure(NoopPass),
+        )
+        .await;
+    }
+}

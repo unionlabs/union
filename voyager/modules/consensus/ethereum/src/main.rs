@@ -4,7 +4,7 @@ use beacon_api::client::BeaconApiClient;
 use bitvec::{order::Msb0, vec::BitVec};
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use jsonrpsee::core::{async_trait, RpcResult};
-use queue_msg::{aggregation::do_aggregate, call, data, defer_relative, promise, seq, Op};
+use queue_msg::{aggregation::do_callback, call, data, defer_relative, promise, seq, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument, warn};
@@ -29,20 +29,20 @@ use voyager_message::{
 };
 
 use crate::{
-    aggregate::{MakeCreateUpdates, ModuleAggregate},
+    call::{
+        FetchAccountUpdate, FetchBeaconGenesis, FetchBeaconSpec, FetchBootstrap,
+        FetchFinalityUpdate, FetchLightClientUpdate, FetchLightClientUpdates, ModuleCall,
+    },
+    callback::{MakeCreateUpdates, ModuleCallback},
     data::{
         AccountUpdateData, BeaconGenesis, BeaconSpec, BootstrapData, FinalityUpdate,
         LightClientUpdates, ModuleData,
     },
-    fetch::{
-        FetchAccountUpdate, FetchBeaconGenesis, FetchBeaconSpec, FetchBootstrap,
-        FetchFinalityUpdate, FetchLightClientUpdate, FetchLightClientUpdates, ModuleFetch,
-    },
 };
 
-pub mod aggregate;
+pub mod call;
+pub mod callback;
 pub mod data;
-pub mod fetch;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -107,7 +107,7 @@ pub enum ModuleInitError {
 }
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn info(&self) -> RpcResult<PluginInfo> {
         Ok(PluginInfo {
@@ -118,14 +118,14 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle_fetch(
+    async fn call(
         &self,
-        msg: ModuleFetch,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         let beacon_api_client = &self.beacon_api_client;
 
         match msg {
-            ModuleFetch::FetchFinalityUpdate(FetchFinalityUpdate {}) => {
+            ModuleCall::FetchFinalityUpdate(FetchFinalityUpdate {}) => {
                 let finality_update = beacon_api_client.finality_update().await.unwrap().data;
 
                 let has_supermajority = {
@@ -166,7 +166,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                     )))
                 }
             }
-            ModuleFetch::FetchLightClientUpdates(FetchLightClientUpdates {
+            ModuleCall::FetchLightClientUpdates(FetchLightClientUpdates {
                 trusted_period,
                 target_period,
             }) => Ok(data(Data::plugin(
@@ -182,7 +182,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                         .collect(),
                 },
             ))),
-            ModuleFetch::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
+            ModuleCall::FetchLightClientUpdate(FetchLightClientUpdate { period }) => {
                 Ok(data(Data::plugin(
                     self.plugin_name(),
                     crate::data::LightClientUpdate {
@@ -199,7 +199,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                     },
                 )))
             }
-            ModuleFetch::FetchBootstrap(FetchBootstrap { slot }) => Ok(data(Data::plugin(
+            ModuleCall::FetchBootstrap(FetchBootstrap { slot }) => Ok(data(Data::plugin(
                 self.plugin_name(),
                 BootstrapData {
                     slot,
@@ -210,7 +210,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                         .data,
                 },
             ))),
-            ModuleFetch::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
+            ModuleCall::FetchAccountUpdate(FetchAccountUpdate { slot }) => {
                 let execution_height = beacon_api_client
                     .execution_height(beacon_api::client::BlockId::Slot(slot))
                     .await
@@ -244,13 +244,13 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
                     },
                 )))
             }
-            ModuleFetch::FetchBeaconGenesis(FetchBeaconGenesis {}) => Ok(data(Data::plugin(
+            ModuleCall::FetchBeaconGenesis(FetchBeaconGenesis {}) => Ok(data(Data::plugin(
                 self.plugin_name(),
                 BeaconGenesis {
                     genesis: beacon_api_client.genesis().await.unwrap().data,
                 },
             ))),
-            ModuleFetch::FetchBeaconSpec(FetchBeaconSpec {}) => Ok(data(Data::plugin(
+            ModuleCall::FetchBeaconSpec(FetchBeaconSpec {}) => Ok(data(Data::plugin(
                 self.plugin_name(),
                 BeaconSpec {
                     spec: beacon_api_client.spec().await.unwrap().data,
@@ -260,18 +260,18 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn handle_aggregate(
+    fn callback(
         &self,
-        aggregate: ModuleAggregate,
+        cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
-        Ok(match aggregate {
-            ModuleAggregate::CreateUpdate(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::MakeCreateUpdates(aggregate) => do_aggregate(aggregate, data),
-            ModuleAggregate::MakeCreateUpdatesFromLightClientUpdates(aggregate) => {
-                do_aggregate(aggregate, data)
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        Ok(match cb {
+            ModuleCallback::CreateUpdate(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::MakeCreateUpdates(aggregate) => do_callback(aggregate, data),
+            ModuleCallback::MakeCreateUpdatesFromLightClientUpdates(aggregate) => {
+                do_callback(aggregate, data)
             }
-            ModuleAggregate::AggregateHeaders(aggregate) => {
+            ModuleCallback::AggregateHeaders(aggregate) => {
                 queue_msg::data(aggregate.aggregate(data))
             }
         })
@@ -279,7 +279,7 @@ impl PluginModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
 }
 
 #[async_trait]
-impl ConsensusModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module {
+impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo> {
         Ok(ConsensusModuleInfo {
@@ -390,7 +390,7 @@ impl ConsensusModuleServer<ModuleData, ModuleFetch, ModuleAggregate> for Module 
         &self,
         update_from: Height,
         update_to: Height,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>> {
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(promise(
             [
                 call(Call::plugin(self.plugin_name(), FetchFinalityUpdate {})),

@@ -14,7 +14,7 @@ use contracts::{
 };
 use enumorph::Enumorph;
 use frunk::{hlist, hlist_pat, HList};
-use queue_msg::{aggregation::UseAggregate, data, queue_msg, Op, SubsetOf};
+use queue_msg::{aggregation::DoCallback, data, queue_msg, Op, SubsetOf};
 use unionlabs::{
     hash::H256,
     ibc::core::client::height::Height,
@@ -31,11 +31,11 @@ use voyager_message::{
     ChainId, VoyagerMessage,
 };
 
-use crate::{data::ModuleData, fetch::ModuleFetch};
+use crate::{call::ModuleCall, data::ModuleData};
 
 #[queue_msg]
 #[derive(Enumorph, SubsetOf)]
-pub enum ModuleAggregate {
+pub enum ModuleCallback {
     CreateClient(EventInfo<ClientCreatedFilter>),
     UpdateClient(EventInfo<ClientUpdatedFilter>),
 
@@ -66,20 +66,20 @@ pub struct EventInfo<T> {
     pub raw_event: T,
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ClientCreatedFilter>
 {
-    type AggregatedData = HList![ClientInfo, DecodedClientStateMeta];
+    type Params = HList![ClientInfo, DecodedClientStateMeta];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info: client_info.clone(),
@@ -96,20 +96,20 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ClientUpdatedFilter>
 {
-    type AggregatedData = HList![ClientInfo, DecodedClientStateMeta];
+    type Params = HList![ClientInfo, DecodedClientStateMeta];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info: client_info.clone(),
@@ -126,20 +126,20 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ChannelOpenInitFilter>
 {
-    type AggregatedData = HList![ClientInfo, DecodedClientStateMeta, IbcState<ConnectionPath>];
+    type Params = HList![ClientInfo, DecodedClientStateMeta, IbcState<ConnectionPath>];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta, connection]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta, connection]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info,
@@ -158,20 +158,20 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ChannelOpenTryFilter>
 {
-    type AggregatedData = HList![ClientInfo, DecodedClientStateMeta, IbcState<ConnectionPath>];
+    type Params = HList![ClientInfo, DecodedClientStateMeta, IbcState<ConnectionPath>];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta, connection]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta, connection]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info,
@@ -191,25 +191,25 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ChannelOpenAckFilter>
 {
-    type AggregatedData = HList![
+    type Params = HList![
         ClientInfo,
         DecodedClientStateMeta,
         IbcState<ConnectionPath>,
         IbcState<ChannelEndPath>,
     ];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta, connection, channel]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta, connection, channel]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info,
@@ -229,25 +229,25 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ChannelOpenConfirmFilter>
 {
-    type AggregatedData = HList![
+    type Params = HList![
         ClientInfo,
         DecodedClientStateMeta,
         IbcState<ConnectionPath>,
         IbcState<ChannelEndPath>,
     ];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta, connection, channel]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta, connection, channel]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info,
@@ -267,20 +267,20 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ConnectionOpenInitFilter>
 {
-    type AggregatedData = HList![ClientInfo, DecodedClientStateMeta];
+    type Params = HList![ClientInfo, DecodedClientStateMeta];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info,
@@ -297,20 +297,20 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ConnectionOpenTryFilter>
 {
-    type AggregatedData = HList![ClientInfo, DecodedClientStateMeta];
+    type Params = HList![ClientInfo, DecodedClientStateMeta];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info,
@@ -328,20 +328,20 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ConnectionOpenAckFilter>
 {
-    type AggregatedData = HList![ClientInfo, DecodedClientStateMeta];
+    type Params = HList![ClientInfo, DecodedClientStateMeta];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info,
@@ -359,20 +359,20 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<ConnectionOpenConfirmFilter>
 {
-    type AggregatedData = HList![ClientInfo, DecodedClientStateMeta];
+    type Params = HList![ClientInfo, DecodedClientStateMeta];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
             tx_hash,
             raw_event,
         }: Self,
-        hlist_pat![client_info, client_meta]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        hlist_pat![client_info, client_meta]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         data(ChainEvent {
             chain_id,
             client_info,
@@ -390,10 +390,10 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<SendPacketFilter>
 {
-    type AggregatedData = HList![
+    type Params = HList![
         ClientInfo,
         DecodedClientStateMeta,
         IbcState<ConnectionPath>,
@@ -402,7 +402,7 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
         IbcState<ChannelEndPath>,
     ];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
@@ -416,8 +416,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
             connection_b,
             channel_a,
             channel_b,
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let source_channel = if *raw_event.source_port == *channel_a.path.port_id
             && *raw_event.source_channel == *channel_a.path.channel_id
         {
@@ -466,10 +466,10 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<RecvPacketFilter>
 {
-    type AggregatedData = HList![
+    type Params = HList![
         ClientInfo,
         DecodedClientStateMeta,
         IbcState<ConnectionPath>,
@@ -478,7 +478,7 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
         IbcState<ChannelEndPath>,
     ];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
@@ -488,8 +488,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
         hlist_pat![
             client_info,client_meta,
             ...rest
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let (source_channel, destination_channel) = mk_packet_metadata_from_hlist::<ModuleData>(
             rest,
             client_meta.state.chain_id.clone(),
@@ -521,10 +521,10 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<TimeoutPacketFilter>
 {
-    type AggregatedData = HList![
+    type Params = HList![
         ClientInfo,
         DecodedClientStateMeta,
         IbcState<ConnectionPath>,
@@ -533,7 +533,7 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
         IbcState<ChannelEndPath>,
     ];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
@@ -544,8 +544,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
             client_info,
             client_meta,
             ...rest
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let (source_channel, destination_channel) = mk_packet_metadata_from_hlist::<ModuleData>(
             rest,
             chain_id.clone(),
@@ -576,10 +576,10 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<AcknowledgePacketFilter>
 {
-    type AggregatedData = HList![
+    type Params = HList![
         ClientInfo,
         DecodedClientStateMeta,
         IbcState<ConnectionPath>,
@@ -588,7 +588,7 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
         IbcState<ChannelEndPath>,
     ];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
@@ -599,8 +599,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
             client_info,
             client_meta,
             ...rest
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let (source_channel, destination_channel) = mk_packet_metadata_from_hlist::<ModuleData>(
             rest,
             chain_id.clone(),
@@ -631,10 +631,10 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
     }
 }
 
-impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
     for EventInfo<WriteAcknowledgementFilter>
 {
-    type AggregatedData = HList![
+    type Params = HList![
         ClientInfo,
         DecodedClientStateMeta,
         IbcState<ConnectionPath>,
@@ -643,7 +643,7 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
         IbcState<ChannelEndPath>,
     ];
 
-    fn aggregate(
+    fn call(
         EventInfo {
             chain_id,
             height,
@@ -654,8 +654,8 @@ impl UseAggregate<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>>
             client_info,
             client_meta,
             ...rest
-        ]: Self::AggregatedData,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleFetch, ModuleAggregate>> {
+        ]: Self::Params,
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let (source_channel, destination_channel) = mk_packet_metadata_from_hlist::<ModuleData>(
             rest,
             client_meta.state.chain_id.clone(),
