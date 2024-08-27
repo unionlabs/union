@@ -6,6 +6,7 @@ AUTOINCREMENT
 Accs
 Acknowledgemets
 Acks
+Addreth
 Agglayer
 Axelar
 BAYC
@@ -38,7 +39,9 @@ Cosmoverse
 Counterparties
 Counterparty
 Cpath
+Crect
 Cryptopunkssvg
+Csvg
 Cypherpunk
 DATADIR
 DYLD
@@ -334,6 +337,7 @@ capabilitykeeper
 capabilitytypes
 cargotoml
 catmull
+catppuccin
 cctp
 cdctypes
 cdylib
@@ -658,6 +662,7 @@ jemalloc
 jemallocator
 jetbrains
 journalctl
+jsdoc
 jsoncpp
 jsonrpsee
 jsons
@@ -773,6 +778,7 @@ muno
 muslc
 nanos
 nanosec
+nanostores
 nasm
 nearcore
 neard
@@ -881,6 +887,7 @@ precommits
 prehash
 preimage
 preimages
+preprocess
 preprocessors
 prerender
 prerendered
@@ -1011,6 +1018,7 @@ shazow
 shentu
 shiki
 shikiji
+shikijs
 sidechains
 sifchain
 sigint
@@ -1097,6 +1105,7 @@ swepool
 symlinker
 syncedstore
 syncmode
+tabindex
 tabler
 tablist
 tada
@@ -1157,6 +1166,7 @@ tsdb
 tsdbadmin
 tsqd
 tsup
+twoslash
 txes
 txfees
 txmodule

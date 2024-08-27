@@ -11,7 +11,6 @@ import {
   transformerRemoveNotationEscape,
   transformerNotationWordHighlight
 } from "@shikijs/transformers"
-import { codeToHtml } from "shiki"
 import { dedent } from "ts-dedent"
 import AstroCode from "astro/components/Code.astro"
 import { rendererRich, transformerTwoslash, defaultHoverInfoProcessor } from "@shikijs/twoslash"
@@ -70,17 +69,81 @@ const transformedProps = {
   ]
 } satisfies AstroCodeProps
 
-const html = await codeToHtml(dedent(code), {
-  theme,
-  lang: "tsx",
-  transformers: transformedProps.transformers
-})
+// const html = await codeToHtml(dedent(code), {
+//   theme,
+//   lang: "tsx",
+//   transformers: transformedProps.transformers
+// })
 ---
 
 <AstroCode {...transformedProps} />
 
+<!-- <script is:inline>
+  const copySvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75'%3E%3Cpath d='M3 19a2 2 0 0 1-1-2V2a2 2 0 0 1 1-1h13a2 2 0 0 1 2 1'/%3E%3Crect x='6' y='5' width='16' height='18' rx='1.5' ry='1.5'/%3E%3C/svg%3E`
+  let codeBlocks = Array.from(document.querySelectorAll("pre"));
+
+  for (let codeBlock of codeBlocks) {
+    let wrapper = document.createElement("div");
+    wrapper.style.position = "relative";
+
+    let copyButton = document.createElement("button");
+    copyButton.className = "copy-code";
+    codeBlock.setAttribute("tabindex", "0");
+    codeBlock.appendChild(copyButton);
+    // wrap codeblock with relative parent element
+    codeBlock.parentNode?.insertBefore(wrapper, codeBlock);
+    wrapper.appendChild(codeBlock);
+
+    copyButton.addEventListener("click", async () => {
+      await copyCode(codeBlock, copyButton);
+    });
+  }
+
+  /**
+* @param {HTMLPreElement} block
+* @param {HTMLButtonElement} button
+*/
+  async function copyCode(block, button) {
+    let code = block.querySelector("code");
+    let text = code?.innerText;
+
+    await navigator.clipboard.writeText(`${text}`);
+
+    // visual feedback that task is completed
+    // button.innerText = "Code Copied";
+    button.style.backgroundImage = `url(${copySvg})`
+
+    setTimeout(() => {
+      // button.innerText = copyButtonLabel;
+
+    }, 700);
+  }
+</script> -->
+
+
 <style lang="postcss" is:global>
 @import "@shikijs/twoslash/style-rich.css";
+
+.copy-code {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: transparent;
+  padding: 0.5rem 0.5rem;
+  font-size: 0.25rem;
+  line-height: 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='1.75'%3E%3Cpath d='M3 19a2 2 0 0 1-1-2V2a2 2 0 0 1 1-1h13a2 2 0 0 1 2 1'/%3E%3Crect x='6' y='5' width='16' height='18' rx='1.5' ry='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 2rem;
+  height: 2rem;
+  color: #000;
+}
+
+.copy-code:hover {
+  background-color: transparent;
+  cursor: pointer;
+}
 
 .twoslash {
   overflow: visible !important;

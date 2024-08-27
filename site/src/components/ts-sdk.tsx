@@ -98,7 +98,14 @@ export default function TypeScriptSdkDemo() {
         {connected ? "Disconnect" : "Connect"}
       </button>
 
-      {connected && <div dangerouslySetInnerHTML={{ __html: highlightedPayload }}></div>}
+      {connected && (
+        <div
+          dangerouslySetInnerHTML={{
+            // @ts-expect-error
+            __html: highlightedPayload
+          }}
+        ></div>
+      )}
 
       <section aria-label="transfer">
         <button type="button" onClick={onTransferClick}>
