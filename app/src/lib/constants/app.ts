@@ -1,4 +1,4 @@
-import base64Icon from "~static/images/logo/base64.txt?raw"
+import base64Icon from "$lib/assets/base64.txt?raw"
 
 export const APP_INFO = {
   base64Icon,

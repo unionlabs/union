@@ -1,5 +1,11 @@
 import type { Readable } from "svelte/store"
 
+export type NoRepetition<U extends string, ResultT extends Array<any> = []> =
+  | ResultT
+  | {
+      [k in U]: NoRepetition<Exclude<U, k>, [k, ...ResultT]>
+    }[U]
+
 export type AwaitedReturnType<T extends (...args: any) => any> = ReturnType<T> extends Promise<
   infer U
 >

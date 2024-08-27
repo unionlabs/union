@@ -25,13 +25,13 @@
     "@tanstack/svelte-query-persist-client": "^5.51.21",
     "@tanstack/svelte-table": "^8.20.1",
     "@tanstack/svelte-virtual": "^3.8.6",
-    "@wagmi/connectors": "^5.1.5",
+    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.52",
+    "@wagmi/connectors": "^5.1.7",
     "@wagmi/core": "^2.13.4",
     "bech32": "^2.0.0",
     "bits-ui": "^0.21.13",
     "cmdk-sv": "^0.0.18",
     "gql.tada": "^1.8.5",
-    "@union/client": "npm:@jsr/union__client@^0.0.1-rc.52",
     "graphql-request": "7.1.0",
     "mode-watcher": "^0.4.1",
     "paneforge": "^0.0.5",
@@ -44,7 +44,7 @@
     "uint8array-extras": "^1.4.0",
     "valibot": "^0.37.0",
     "vaul-svelte": "^0.3.2",
-    "viem": "^2.19.3"
+    "viem": "^2.20.1"
   },
   "devDependencies": {
     "@cosmjs/tendermint-rpc": "0.32.4",
