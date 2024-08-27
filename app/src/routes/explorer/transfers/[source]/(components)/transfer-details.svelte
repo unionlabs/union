@@ -64,6 +64,9 @@ let processedTransfers = derived(
       let hop_chain_source_channel_id: string | null = null
 
       // overwrite destination and receiver if to last forward
+
+      // forwards does not contain sequence numbers,
+      // so we cannot construct the destination sequence at this stage yet.
       const lastForward = tx.forwards_2?.at(-1)
       if (lastForward) {
         hop_chain_id = tx.destination_chain_id
@@ -393,7 +396,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
     !-->
 
       <Card.Root
-        class="flex flex-col max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4 dark:bg-muted"
+        class="flex flex-col w-full max-w-full overflow-y-hidden overflow-x-auto justify-self-center mb-4 dark:bg-muted"
       >
         <Card.Header
           class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
@@ -442,29 +445,45 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 >
                   {toDisplayName(transfer.source_chain_id, chains)}
                 </h2>
-                <p class="text-sm dark:text-muted-foreground">
+                <a 
+                  href={`/explorer/packets/${transfer.source_chain_id}`}
+                  class="block text-sm underline text-muted-foreground">
+                  
                   {transfer.source_chain_id}
-                </p>
-                <p
+                </a>
+                <a
+                  href={`/explorer/packets/${transfer.source_chain_id}/${transfer.source_connection_id}`}
                   class={cn(
-                    "text-sm",
+                    "black text-sm underline",
                     transfer.source_connection_id
-                      ? "text-black dark:text-muted-foreground"
+                      ? "text-muted-foreground"
                       : "text-transparent"
                   )}
                 >
                   {transfer.source_connection_id}
-                </p>
-                <p
+                </a>
+                <a
+                  href={`/explorer/packets/${transfer.source_chain_id}/${transfer.source_connection_id}/${transfer.source_channel_id}`}
                   class={cn(
-                    "text-sm",
-                    transfer.source_connection_id
-                      ? "text-black dark:text-muted-foreground"
+                    "text-sm block underline",
+                    transfer.source_channel_id
+                      ? "text-muted-foreground"
                       : "text-transparent"
                   )}
                 >
                   {transfer.source_channel_id}
-                </p>
+                </a>
+                <a
+                  href={`/explorer/packets/${transfer.source_chain_id}/${transfer.source_connection_id}/${transfer.source_channel_id}/${transfer.source_sequence}`}
+                  class={cn(
+                    "text-sm block underline",
+                    transfer.source_sequence
+                      ? "text-muted-foreground"
+                      : "text-transparent"
+                  )}
+                >
+                  {transfer.source_sequence}
+                </a>
               </div>
               <div class="flex items-center justify-center px-8">
                 <MoveRightIcon class="text-foreground size-8" />
@@ -475,29 +494,34 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 >
                   {toDisplayName(transfer.destination_chain_id, chains)}
                 </h2>
-                <p class="text-sm dark:text-muted-foreground">
+                <a 
+                  href={`/explorer/packets/${transfer.destination_chain_id}`}
+                  class="block text-sm underline text-muted-foreground">
+                  
                   {transfer.destination_chain_id}
-                </p>
-                <p
+                </a>
+                <a
+                  href={`/explorer/packets/${transfer.destination_chain_id}/${transfer.destination_connection_id}`}
                   class={cn(
-                    "text-sm",
-                    transfer.source_connection_id
-                      ? "text-black dark:text-muted-foreground"
+                    "text-sm block underline",
+                    transfer.destination_connection_id
+                      ? "text-muted-foreground"
                       : "text-transparent"
                   )}
                 >
                   {transfer.destination_connection_id}
-                </p>
-                <p
+                </a>
+                <a
+                  href={`/explorer/packets/${transfer.destination_chain_id}/${transfer.destination_connection_id}/${transfer.destination_channel_id}`}
                   class={cn(
-                    "text-sm",
-                    transfer.source_connection_id
-                      ? "text-black dark:text-muted-foreground"
+                    "text-sm block underline",
+                    transfer.destination_channel_id
+                      ? "text-muted-foreground"
                       : "text-transparent"
                   )}
                 >
                   {transfer.destination_channel_id}
-                </p>
+                </a>
               </div>
             </section>
             {#if transfer.hop_chain_id}
