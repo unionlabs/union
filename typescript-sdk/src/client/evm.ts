@@ -1,4 +1,3 @@
-import "./patch.ts"
 import {
   erc20Abi,
   getAddress,

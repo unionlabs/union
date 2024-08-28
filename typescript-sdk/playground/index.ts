@@ -1,32 +1,26 @@
-import { fallback, http, createPublicClient } from "viem"
+
+import { fallback, http } from "viem"
 import { createUnionClient } from "#mod.js"
-import { sepolia } from "viem/chains"
 
-const client = createPublicClient({
-  chain: sepolia,
-  transport: fallback([http("https://rpc.sepolia.org")])
-})
-
+/**
+ * evm chain, where ERC20 approval is a thing
+ */
 createUnionClient({
   chainId: "11155111",
   transport: fallback([http("https://rpc.sepolia.org")])
 }).approveTransaction
 
+/**
+ * cosmos sdk chain, where there's no concept of token approval
+ */
 createUnionClient({
-  chainId: "union-testnet-8",
-  transport: http("https://rpc.testnet-8.union.build")
-}) //.approveTransaction
+  chainId: "stride-internal-1",
+  transport: http("stride.testnet-1.stridenet.co")
+}).approveTransaction
 
-// const account = getConnectorClient(config)
 
-// const multiClient = createMultiUnionClient([
-//   {
-//     account,
-//     chainId: "11155111",
-//     transport: fallback([http("https://rpc.sepolia.org")])
-//   },
-//   {
-//     chainId: 'union-testnet-8',
-//     transport: fallback([http("https://rpc.testnet-8.union.build")])
-//   }
-// ])
+
+
+
+
+

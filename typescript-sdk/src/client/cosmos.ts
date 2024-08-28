@@ -1,4 +1,3 @@
-import "./patch.ts"
 import {
   ibcTransfer,
   cosmwasmTransfer,
@@ -37,10 +36,10 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       transferAsset: async ({
         path,
         amount,
+        account,
         recipient,
         sourcePort,
         denomAddress,
-        cosmosSigner,
         sourceChannel,
         memo = timestamp(),
         relayContractAddress
@@ -51,14 +50,14 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           const [sourceChainId, destinationChainId] = path
 
           const cosmosRpcUrl = parameters.transport({}).value?.url
-          if (!cosmosSigner) return { success: false, data: "No cosmos signer found" }
+          if (!account) return { success: false, data: "No cosmos signer found" }
           if (!cosmosRpcUrl) return { success: false, data: "No cosmos RPC URL found" }
           if (!parameters.gasPrice) return { success: false, data: "No gas price found" }
 
           if (sourceChainId === "union-testnet-8" && destinationChainId === "union-testnet-8") {
             const transfer = await cosmosSameChainTransfer({
               recipient,
-              cosmosSigner,
+              account,
               cosmosRpcUrl,
               gasPrice: parameters.gasPrice,
               asset: { denom: denomAddress, amount: amount.toString() }
@@ -72,7 +71,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
               return { success: false, data: "Relay contract address not found" }
             }
             const transfer = await cosmwasmTransfer({
-              cosmosSigner,
+              account,
               cosmosRpcUrl,
               gasPrice: parameters.gasPrice,
               instructions: [
@@ -93,18 +92,18 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           }
           if (destinationChainId === "union-testnet-8") {
             if (!sourceChannel) return { success: false, data: "Source channel not found" }
-            const [account] = await cosmosSigner.getAccounts()
+            const [account_] = await account.getAccounts()
             if (!account) return { success: false, data: "No account found" }
             sourcePort ||= "transfer"
             const transfer = await ibcTransfer({
-              cosmosSigner,
+              account,
               cosmosRpcUrl,
               gasPrice: parameters.gasPrice,
               messageTransfers: [
                 {
                   sourcePort,
                   sourceChannel,
-                  sender: account.address,
+                  sender: account_?.address,
                   token: { denom: denomAddress, amount: amount.toString() },
                   timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
                   receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
@@ -135,14 +134,14 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         sourceChannel,
         relayContractAddress,
         gasPrice = parameters?.gasPrice,
-        cosmosSigner = parameters?.account
+        account = parameters?.account
       }: TransferAssetsParameters<
         CosmosClientParameters["chainId"]
       >): Promise<TransactionResponse> => {
         const [sourceChainId, destinationChainId] = path
 
         if (!parameters.transport) return { success: false, data: "No transport found" }
-        if (!cosmosSigner) return { success: false, data: "No cosmos signer found" }
+        if (!account) return { success: false, data: "No cosmos signer found" }
         const cosmosRpcUrl = parameters.transport({}).value?.url
 
         if (!gasPrice) return { success: false, data: "No gas price found" }
@@ -152,7 +151,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           // Union to Union
           return await cosmosSameChainTransferSimulate({
             recipient,
-            cosmosSigner,
+            account,
             cosmosRpcUrl,
             asset: { denom: denomAddress, amount: amount.toString() },
             gasPrice: gasPrice ?? { amount: "0.0025", denom: "muno" }
@@ -167,7 +166,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           return await cosmwasmTransferSimulate({
             gasPrice,
             cosmosRpcUrl,
-            cosmosSigner,
+            account,
             instructions: [
               {
                 contractAddress: relayContractAddress,
@@ -185,19 +184,19 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         }
         if (destinationChainId === "union-testnet-8") {
           if (!sourceChannel) return { success: false, data: "Source channel not found" }
-          const [account] = await cosmosSigner.getAccounts()
+          const [account_] = await account.getAccounts()
           if (!account) return { success: false, data: "No account found" }
           sourcePort ||= "transfer"
           const stamp = timestamp()
           return await ibcTransferSimulate({
             gasPrice,
-            cosmosSigner,
+            account,
             cosmosRpcUrl,
             messageTransfers: [
               {
                 sourcePort,
                 sourceChannel,
-                sender: account.address,
+                sender: account_?.address,
                 token: { denom: denomAddress, amount: amount.toString() },
                 timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
                 receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,

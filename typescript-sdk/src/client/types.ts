@@ -14,7 +14,7 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
   sourceChannel?: string
   relayContractAddress?: string
 } & (CHAIN_ID extends CosmosChainId
-  ? { cosmosSigner?: OfflineSigner; gasPrice?: { amount: string; denom: string } }
+  ? { account?: OfflineSigner; gasPrice?: { amount: string; denom: string } }
   : CHAIN_ID extends EvmChainId
-    ? { evmSigner?: `0x${string}` | Account | undefined }
+    ? { account?: `0x${string}` | Account | undefined }
     : undefined)

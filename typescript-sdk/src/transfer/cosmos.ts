@@ -25,24 +25,22 @@ import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm
  */
 export async function ibcTransfer({
   gasPrice,
-  cosmosSigner,
+  account: _account,
   cosmosRpcUrl,
   messageTransfers
 }: {
   gasPrice: { amount: string; denom: string }
   cosmosRpcUrl: string
-  cosmosSigner: CosmosOfflineSigner
+  account: CosmosOfflineSigner
   messageTransfers: Array<MessageTransferWithOptionals>
 }): Promise<TransactionResponse> {
   try {
-    const [account] = await cosmosSigner.getAccounts()
+    const [account] = await _account.getAccounts()
     if (!account) return { success: false, data: "No account found" }
 
-    const signingClient = await SigningStargateClient.connectWithSigner(
-      cosmosRpcUrl,
-      cosmosSigner,
-      { gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`) }
-    )
+    const signingClient = await SigningStargateClient.connectWithSigner(cosmosRpcUrl, _account, {
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+    })
 
     const response = await signingClient.signAndBroadcast(
       account.address,
@@ -69,23 +67,21 @@ export async function ibcTransfer({
 
 export async function ibcTransferSimulate({
   gasPrice,
-  cosmosSigner,
+  account: _account,
   cosmosRpcUrl,
   messageTransfers
 }: {
   gasPrice: { amount: string; denom: string }
   cosmosRpcUrl: string
-  cosmosSigner: CosmosOfflineSigner
+  account: CosmosOfflineSigner
   messageTransfers: Array<MessageTransferWithOptionals>
 }): Promise<TransactionResponse> {
   try {
-    const signingClient = await SigningStargateClient.connectWithSigner(
-      cosmosRpcUrl,
-      cosmosSigner,
-      { gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`) }
-    )
+    const signingClient = await SigningStargateClient.connectWithSigner(cosmosRpcUrl, _account, {
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+    })
 
-    const [account] = await cosmosSigner.getAccounts()
+    const [account] = await _account.getAccounts()
     if (!account) return { success: false, data: "No account found" }
 
     const gas = await signingClient.simulate(
@@ -115,23 +111,21 @@ export async function ibcTransferSimulate({
 export async function cosmwasmTransfer({
   gasPrice,
   instructions,
-  cosmosSigner,
+  account: _account,
   cosmosRpcUrl
 }: {
   cosmosRpcUrl: string
-  cosmosSigner: CosmosOfflineSigner
+  account: CosmosOfflineSigner
   instructions: Array<ExecuteInstruction>
   gasPrice: { amount: string; denom: string }
 }): Promise<TransactionResponse> {
   try {
-    const [account] = await cosmosSigner.getAccounts()
+    const [account] = await _account.getAccounts()
     if (!account) return { success: false, data: "No account found" }
 
-    const signingClient = await SigningCosmWasmClient.connectWithSigner(
-      cosmosRpcUrl,
-      cosmosSigner,
-      { gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`) }
-    )
+    const signingClient = await SigningCosmWasmClient.connectWithSigner(cosmosRpcUrl, _account, {
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+    })
     const response = await signingClient.executeMultiple(account.address, instructions, "auto")
 
     signingClient.disconnect()
@@ -147,22 +141,20 @@ export async function cosmwasmTransfer({
 export async function cosmwasmTransferSimulate({
   gasPrice,
   instructions,
-  cosmosSigner,
+  account: _account,
   cosmosRpcUrl
 }: {
   cosmosRpcUrl: string
-  cosmosSigner: CosmosOfflineSigner
+  account: CosmosOfflineSigner
   instructions: Array<ExecuteInstruction>
   gasPrice: { amount: string; denom: string }
 }): Promise<TransactionResponse> {
   try {
-    const signingClient = await SigningCosmWasmClient.connectWithSigner(
-      cosmosRpcUrl,
-      cosmosSigner,
-      { gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`) }
-    )
+    const signingClient = await SigningCosmWasmClient.connectWithSigner(cosmosRpcUrl, _account, {
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+    })
 
-    const [account] = await cosmosSigner.getAccounts()
+    const [account] = await _account.getAccounts()
     if (!account) return { success: false, data: "No account found" }
 
     const gas = await signingClient.simulate(
@@ -199,24 +191,22 @@ export async function cosmosSameChainTransfer({
   asset,
   gasPrice,
   recipient,
-  cosmosSigner,
+  account: _account,
   cosmosRpcUrl
 }: {
   asset: Coin
   recipient: string
   cosmosRpcUrl: string
-  cosmosSigner: CosmosOfflineSigner
+  account: CosmosOfflineSigner
   gasPrice: { amount: string; denom: string }
 }): Promise<TransactionResponse> {
   try {
-    const [account] = await cosmosSigner.getAccounts()
+    const [account] = await _account.getAccounts()
     if (!account) return { success: false, data: "No account found" }
 
-    const signingClient = await SigningStargateClient.connectWithSigner(
-      cosmosRpcUrl,
-      cosmosSigner,
-      { gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`) }
-    )
+    const signingClient = await SigningStargateClient.connectWithSigner(cosmosRpcUrl, _account, {
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+    })
 
     const response = await signingClient.signAndBroadcast(
       account.address,
@@ -250,23 +240,21 @@ export async function cosmosSameChainTransferSimulate({
   asset,
   gasPrice,
   recipient,
-  cosmosSigner,
+  account: _account,
   cosmosRpcUrl
 }: {
   asset: Coin
   recipient: string
   cosmosRpcUrl: string
-  cosmosSigner: CosmosOfflineSigner
+  account: CosmosOfflineSigner
   gasPrice: { amount: string; denom: string }
 }): Promise<TransactionResponse> {
   try {
-    const signingClient = await SigningStargateClient.connectWithSigner(
-      cosmosRpcUrl,
-      cosmosSigner,
-      { gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`) }
-    )
+    const signingClient = await SigningStargateClient.connectWithSigner(cosmosRpcUrl, _account, {
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+    })
 
-    const [account] = await cosmosSigner.getAccounts()
+    const [account] = await _account.getAccounts()
     if (!account) return { success: false, data: "No account found" }
 
     const gas = await signingClient.simulate(
