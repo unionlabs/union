@@ -26,7 +26,13 @@ use crate::{
 };
 
 // REVIEW: Rename?
-#[rpc(client, server, namespace = "plugin")]
+#[rpc(
+    client,
+    server,
+    client_bounds(Self: Send + Sync),
+    server_bounds(Self:),
+    namespace = "plugin",
+)]
 pub trait PluginModule<D: Member, C: Member, Cb: Member> {
     /// The name of this plugin that will be used as the `Plugin.plugin_name` to
     /// direct custom messages to this module.

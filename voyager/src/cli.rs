@@ -1,5 +1,6 @@
 use std::{ffi::OsString, str::FromStr};
 
+use chain_utils::BoxDynError;
 use clap::{
     error::{ContextKind, ContextValue, ErrorKind},
     Args, FromArgMatches, Parser, Subcommand,
@@ -13,6 +14,7 @@ use unionlabs::{
     uint::U256,
     QueryHeight,
 };
+use voyager_message::ChainId;
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -44,8 +46,8 @@ pub enum LogFormat {
 
 #[derive(Debug)]
 pub struct HandshakeCmd {
-    pub chain_a: String,
-    pub chain_b: String,
+    pub chain_a: ChainId<'static>,
+    pub chain_b: ChainId<'static>,
 
     pub ty: HandshakeType,
 }
@@ -149,8 +151,8 @@ impl HandshakeCmd {
         raw.assert_empty()?;
 
         Ok(Self {
-            chain_a: raw.chain_a,
-            chain_b: raw.chain_b,
+            chain_a: ChainId::new(raw.chain_a),
+            chain_b: ChainId::new(raw.chain_b),
             ty,
         })
     }
@@ -320,341 +322,16 @@ pub enum Command {
     #[command(subcommand)]
     Signer(SignerCmd),
     Query {
-        #[arg(long)]
-        on: String,
-        #[arg(long)]
-        tracking: String,
+        #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
+        on: ChainId<'static>,
         #[arg(long, default_value_t = QueryHeight::Latest)]
-        at: QueryHeight,
+        height: QueryHeight,
         #[command(subcommand)]
-        cmd: QueryCmd,
+        path: ics24::Path,
     },
 }
 
-#[derive(Debug, Subcommand)]
-pub enum QueryCmd {
-    #[command(subcommand)]
-    IbcPath(ics24::Path),
-}
-
-// pub async fn any_state_proof_to_json<Hc, Tr>(
-//     chains: Arc<Chains>,
-//     path: ics24::Path<Hc::ClientId, Tr::Height>,
-//     c: Hc,
-//     height: QueryHeight<HeightOf<Hc>>,
-// ) -> serde_json::Value
-// where
-//     Hc: ChainExt + DoFetchState<Hc, Tr> + DoFetchProof<Hc, Tr>,
-//     Tr: ChainExt,
-
-//     Identified<Hc, Tr, IbcState<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<ClientStatePath<Hc::ClientId>, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>>:
-//         IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<ClientConsensusStatePath<Hc::ClientId, Tr::Height>, Hc, Tr>>:
-//         IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<ConnectionPath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<ConnectionPath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<ChannelEndPath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<ChannelEndPath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<CommitmentPath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<CommitmentPath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<AcknowledgementPath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<ReceiptPath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<ReceiptPath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<NextSequenceSendPath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<NextSequenceSendPath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<NextSequenceRecvPath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<NextSequenceRecvPath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<NextSequenceAckPath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<NextSequenceAckPath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<NextConnectionSequencePath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<NextConnectionSequencePath, Hc, Tr>>: IsAggregateData,
-
-//     Identified<Hc, Tr, IbcState<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<NextClientSequencePath, Hc, Tr>>: IsAggregateData,
-// {
-//     use serde_json::to_value as json;
-
-//     let height = match height {
-//         QueryHeight::Latest => c.query_latest_height().await.unwrap(),
-//         QueryHeight::Specific(height) => height,
-//     };
-
-//     info!("latest height is {height}");
-
-//     let msgs = [
-//         Hc::state(&c, height, path.clone()),
-//         Hc::proof(&c, height, path.clone()),
-//     ];
-
-//     match path {
-//         ics24::Path::ClientState(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::ClientConsensusState(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::Connection(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::ChannelEnd(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::Commitment(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::Acknowledgement(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::Receipt(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::NextSequenceSend(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::NextSequenceRecv(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::NextSequenceAck(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::NextConnectionSequence(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//         ics24::Path::NextClientSequence(path) => json(
-//             &run_to_completion::<_, _, _, InMemoryQueue<_>, _, _>(
-//                 FetchStateProof {
-//                     path,
-//                     height,
-//                     __marker: PhantomData,
-//                 },
-//                 chains,
-//                 (),
-//                 msgs,
-//                 NormalizeFinal::default(),
-//                 Pure(NormalizeFinal::default()),
-//             )
-//             .await,
-//         ),
-//     }
-//     .unwrap()
-// }
-
-// #[derive(Debug, serde::Serialize)]
-// #[serde(bound(serialize = ""))]
-// struct StateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
-//     #[serde(with = "::serde_utils::string")]
-//     path: P,
-//     state: P::Value,
-//     proof: Hc::StateProof,
-//     height: HeightOf<Hc>,
-// }
-
-// #[derive(Debug, serde::Serialize)]
-// #[serde(bound(serialize = ""))]
-// // TODO: Replace with TupleAggregator
-// struct FetchStateProof<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>> {
-//     #[serde(with = "::serde_utils::string")]
-//     path: P,
-//     height: HeightOf<Hc>,
-//     #[serde(skip)]
-//     pub __marker: PhantomData<fn() -> Tr>,
-// }
-
-// impl<Hc: ChainExt, Tr: ChainExt, P: IbcPath<Hc, Tr>>
-//     UseAggregate<RelayMessage, StateProof<Hc, Tr, P>> for FetchStateProof<Hc, Tr, P>
-// where
-//     Identified<Hc, Tr, IbcState<P, Hc, Tr>>: IsAggregateData,
-//     Identified<Hc, Tr, IbcProof<P, Hc, Tr>>: IsAggregateData,
-// {
-//     type AggregatedData =
-//         HList![Identified<Hc, Tr, IbcState<P, Hc, Tr>>, Identified<Hc, Tr, IbcProof<P, Hc, Tr>>];
-
-//     fn aggregate(
-//         this: Self,
-//         hlist_pat![
-//             Identified {
-//                 chain_id: _state_chain_id,
-//                 t: IbcState {
-//                     path: state_path,
-//                     height: state_height,
-//                     state,
-//                 },
-//                 __marker: _,
-//             },
-//             Identified {
-//                 chain_id: _proof_chain_id,
-//                 t: IbcProof {
-//                     path: proof_path,
-//                     height: proof_height,
-//                     proof,
-//                     __marker: _,
-//                 },
-//                 __marker: _,
-//             },
-//         ]: Self::AggregatedData,
-//     ) -> StateProof<Hc, Tr, P> {
-//         assert_eq!(state_path, proof_path);
-//         assert_eq!(this.path, proof_path);
-//         assert_eq!(state_height, proof_height);
-//         assert_eq!(this.height, proof_height);
-
-//         StateProof {
-//             path: this.path,
-//             state,
-//             proof,
-//             height: this.height,
-//         }
-//     }
-// }
-
-// type PgId = BoundedI64<1, { i64::MAX }>;
 type Pg64 = BoundedI64<0, { i64::MAX }>;
-// type Pg32 = BoundedI32<1, { i32::MAX }>;
 
 #[derive(Debug, Subcommand)]
 pub enum QueueCmd {

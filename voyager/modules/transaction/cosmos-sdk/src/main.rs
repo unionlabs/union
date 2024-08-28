@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use chain_utils::{
     cosmos_sdk::{
-        cosmos_sdk_error::{ChannelError, CosmosSdkError, SdkError},
+        cosmos_sdk_error::{ChannelError, CosmosSdkError, IbcError, IbcWasmError, SdkError},
         CosmosKeyring, GasConfig,
     },
     keyring::{KeyringConfig, KeyringEntry},
@@ -38,7 +38,7 @@ use voyager_message::{
     call::Call,
     data::{Data, IbcMessage, WithChainId},
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
-    run_module_server, ChainId, VoyagerMessage,
+    run_module_server, ChainId, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
@@ -584,7 +584,7 @@ if ."@type" == "data" then
     ."@value" as $data |
 
     # pull all transaction data messages
-    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message_batch")
+    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message")
         and $data."@value".chain_id == "{chain_id}"
 else
     false
@@ -603,10 +603,23 @@ end
         msg: ModuleCall,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
-            ModuleCall::SubmitTransaction(msgs) => self
-                .do_send_transaction(msgs)
-                .await
-                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)),
+            ModuleCall::SubmitTransaction(msgs) => {
+                self.do_send_transaction(msgs)
+                    .await
+                    .map_err(|err| match &err {
+                        BroadcastTxCommitError::Tx(tx_err) => match tx_err {
+                            CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
+                                ErrorObject::owned(
+                                    FATAL_JSONRPC_ERROR_CODE,
+                                    ErrorReporter(err).to_string(),
+                                    None::<()>,
+                                )
+                            }
+                            _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
+                        },
+                        _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
+                    })
+            }
         }
     }
 

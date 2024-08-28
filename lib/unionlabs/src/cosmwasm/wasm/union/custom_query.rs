@@ -74,7 +74,6 @@ use {
         encoding::{Decode, DecodeAs, Proto},
         google::protobuf::any::Any,
         ics24::{ClientConsensusStatePath, ClientStatePath},
-        traits::Id,
     },
     cosmwasm_std::{to_json_vec, ContractResult, Env, SystemResult},
     prost::Message,

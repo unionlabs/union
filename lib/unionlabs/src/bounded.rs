@@ -67,7 +67,7 @@ macro_rules! bounded_int {
 
             impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
                 pub const fn new(n: $ty) -> Result<Self, BoundedIntError<$ty>> {
-                    const {MIN < MAX};
+                    const { assert!(MIN < MAX) };
 
                     if n >= MIN && n <= MAX {
                         Ok(Self(n))

@@ -8,8 +8,6 @@
 )]
 
 use std::{
-    collections::HashMap,
-    error::Error,
     ffi::OsString,
     fmt::{Debug, Write},
     fs::read_to_string,
@@ -17,22 +15,27 @@ use std::{
     process::ExitCode,
 };
 
-use chain_utils::{any_chain, keyring::ChainKeyring, AnyChain, Chains, IncorrectChainTypeError};
+use chain_utils::BoxDynError;
 use clap::Parser;
-use queue_msg::{call, BoxDynError};
+use queue_msg::call;
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{json, Value};
+use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
 use tracing_subscriber::EnvFilter;
-use unionlabs::ethereum::ibc_commitment_key;
-use voyager_message::{call::FetchBlock, plugin::ChainModuleClient, ChainId, VoyagerMessage};
+use unionlabs::{ethereum::ibc_commitment_key, ics24, QueryHeight};
+use voyager_message::{
+    call::FetchBlock,
+    plugin::{ChainModuleClient, ClientModuleClient},
+    ChainId, VoyagerMessage,
+};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{AppArgs, Command, UtilCmd},
-    config::{Config, GetChainError},
+    config::Config,
     queue::{Voyager, VoyagerInitError},
 };
 
@@ -96,8 +99,6 @@ pub enum VoyagerError {
         #[source]
         source: serde_json::Error,
     },
-    #[error("error retrieving a chain from the config")]
-    GetChain(#[from] GetChainError),
     #[error("error initializing voyager")]
     Init(#[from] VoyagerInitError),
     #[error("error while running migrations")]
@@ -105,9 +106,7 @@ pub enum VoyagerError {
     #[error("fatal error encountered")]
     Run(#[from] BoxDynError),
     #[error("unable to run command")]
-    Command(#[source] Box<dyn Error>),
-    #[error("chain was not of expected type")]
-    IncorrectChainType(#[from] IncorrectChainTypeError),
+    Command(#[source] BoxDynError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -122,7 +121,7 @@ pub enum MigrationsError {
 
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
-async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
+async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
     let voyager_config = read_to_string(&args.config_file_path)
         .map_err(|err| VoyagerError::ConfigFileNotFound {
             path: args.config_file_path.clone(),
@@ -143,18 +142,66 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
             print_json(&voyager_config);
         }
         Command::Relay => {
-            let queue = Voyager::new(voyager_config.clone()).await?;
+            let voyager = Voyager::new(voyager_config.clone()).await?;
 
-            queue.run().await?;
+            voyager.run().await?;
         }
-        Command::Query {
-            on: _on_name,
-            at: _,
-            cmd: _,
-            tracking: _,
-        } => {
-            // query(&mut voyager_config, on_name, tracking, cmd, at).await?;
-            todo!()
+        Command::Query { on, height, path } => {
+            let voyager = Voyager::new(voyager_config.clone()).await?;
+
+            let chain = voyager.context.chain_module::<Value, Value, Value>(&on)?;
+
+            let height = match height {
+                QueryHeight::Latest => chain.query_latest_height().await?,
+                QueryHeight::Specific(height) => height,
+            };
+
+            let state = chain.query_ibc_state(height, path.clone()).await?;
+
+            let state = match &path {
+                ics24::Path::ClientState(path) => {
+                    let client_info = chain.client_info(path.client_id.clone()).await?;
+
+                    voyager
+                        .context
+                        .client_module::<Value, Value, Value>(
+                            &client_info.client_type,
+                            &client_info.ibc_interface,
+                        )?
+                        .decode_client_state(
+                            serde_json::from_value::<Hex<Vec<u8>>>(state)
+                                .unwrap()
+                                .0
+                                .into(),
+                        )
+                        .await?
+                }
+                ics24::Path::ClientConsensusState(path) => {
+                    let client_info = chain.client_info(path.client_id.clone()).await?;
+
+                    voyager
+                        .context
+                        .client_module::<Value, Value, Value>(
+                            &client_info.client_type,
+                            &client_info.ibc_interface,
+                        )?
+                        .decode_consensus_state(
+                            serde_json::from_value::<Hex<Vec<u8>>>(state)
+                                .unwrap()
+                                .0
+                                .into(),
+                        )
+                        .await?
+                }
+                _ => state,
+            };
+
+            voyager.shutdown().await;
+
+            print_json(&json!({
+               "path": path.to_string(),
+               "state": state,
+            }));
         }
         Command::Queue(_cli_msg) => {
             todo!()
@@ -463,20 +510,20 @@ async fn do_main(args: cli::AppArgs) -> Result<(), VoyagerError> {
     Ok(())
 }
 
-pub async fn signer_balances(chains: &Chains) -> HashMap<String, serde_json::Value> {
-    let mut balances = HashMap::new();
+// pub async fn signer_balances(chains: &Chains) -> HashMap<String, serde_json::Value> {
+//     let mut balances = HashMap::new();
 
-    for (chain_id, chain) in &chains.chains {
-        any_chain!(|chain| {
-            balances.insert(
-                chain_id.to_string(),
-                serde_json::to_value(chain.balances().await).unwrap(),
-            );
-        });
-    }
+//     for (chain_id, chain) in &chains.chains {
+//         any_chain!(|chain| {
+//             balances.insert(
+//                 chain_id.to_string(),
+//                 serde_json::to_value(chain.balances().await).unwrap(),
+//             );
+//         });
+//     }
 
-    balances
-}
+//     balances
+// }
 
 // async fn query(
 //     voyager_config: &mut Config,

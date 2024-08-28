@@ -332,7 +332,7 @@ mod tests {
             .unwrap()
             .conv(filter);
 
-        dbg!(&f);
+        // dbg!(&f);
 
         // compile the filter in the context of the given definitions
         let f = ctx.compile(f);

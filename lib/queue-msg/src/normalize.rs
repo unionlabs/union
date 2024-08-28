@@ -43,30 +43,30 @@ use crate::{conc, noop, race, repeat, retry, seq, void, Op, QueueMessage};
 /// never have occurred since the data and noop messages would still be there, resulting in an
 /// incomplete normalization.
 pub fn normalize<T: QueueMessage>(msgs: Vec<Op<T>>) -> Vec<(Vec<usize>, Op<T>)> {
-    dbg!(&msgs);
+    // dbg!(&msgs);
 
     // let ids = msgs.iter().enumerate().map(|(id, _)| id).copied().collect::<Vec<_>>();
     let (parent_idxs, msgs): (Vec<_>, Vec<_>) = extract_data(msgs).into_iter().unzip();
 
-    dbg!(&msgs);
+    // dbg!(&msgs);
 
     let (parent_idxs, msgs): (Vec<_>, Vec<_>) =
         combine_normalization_pass_output(parent_idxs, remove_noop(msgs))
             .into_iter()
             .unzip();
 
-    dbg!(&msgs);
+    // dbg!(&msgs);
 
     let (parent_idxs, msgs): (Vec<_>, Vec<_>) =
         combine_normalization_pass_output(parent_idxs, flatten_seq(msgs))
             .into_iter()
             .unzip();
 
-    dbg!(&msgs);
+    // dbg!(&msgs);
 
     let output = combine_normalization_pass_output(parent_idxs, flatten_conc(msgs));
 
-    dbg!(&output);
+    // dbg!(&output);
 
     output
 }

@@ -1,4 +1,4 @@
-use std::{fmt::Debug, marker::PhantomData, ops::Div, sync::Arc};
+use std::{fmt::Debug, marker::PhantomData, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;
 use contracts::{
@@ -24,27 +24,21 @@ use futures::Future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_utils::Hex;
 use tracing::{debug, instrument};
-use typenum::Unsigned;
 use unionlabs::{
-    encoding::EthAbi,
     ethereum::{
         config::{ChainSpec, Mainnet, Minimal},
         ibc_commitment_key, IBC_HANDLER_COMMITMENTS_SLOT,
     },
     hash::H160,
-    ibc::{
-        core::client::height::Height,
-        lightclients::ethereum::{self, storage_proof::StorageProof},
-    },
+    ibc::lightclients::ethereum::storage_proof::StorageProof,
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
         CommitmentPath, ConnectionPath, IbcPath, NextClientSequencePath,
         NextConnectionSequencePath, NextSequenceAckPath, NextSequenceRecvPath,
         NextSequenceSendPath, ReceiptPath,
     },
-    id::ClientId,
     iter,
-    traits::{Chain, ClientState, FromStrExact},
+    traits::FromStrExact,
     uint::U256,
 };
 
@@ -54,9 +48,6 @@ pub type EthereumKeyring = ConcurrentKeyring<H160, IBCHandler<EthereumSignerMidd
 
 pub type EthereumSignerMiddleware =
     SignerMiddleware<NonceManagerMiddleware<Provider<Ws>>, Wallet<ecdsa::SigningKey>>;
-
-pub trait EthereumChain =
-    Chain<IbcStateEncoding = EthAbi, ClientType = String, StateProof = StorageProof>;
 
 // NOTE: ClientType bound is temporary until I figure out a better way to deal with client types
 /// A chain running the EVM and our solidity IBC stack. This can be any Ethereum L1 or L2, or a chain running the EVM in a different environment (such as Berachain).
@@ -426,133 +417,6 @@ impl AbiDecode for IbcHandlerErrors {
             CometblsClientErrors::decode(&bytes).map(IbcHandlerErrors::CometblsClientErrors)
         };
         Err(ethers::abi::Error::InvalidData.into())
-    }
-}
-
-impl<C: ChainSpec, S: EthereumSignersConfig> Chain for Ethereum<C, S> {
-    type ChainType = EthereumChainType<C>;
-
-    type SelfClientState = ethereum::client_state::ClientState;
-    type SelfConsensusState = ethereum::consensus_state::ConsensusState;
-
-    type StoredClientState<Tr: Chain> = Tr::SelfClientState;
-    type StoredConsensusState<Tr: Chain> = Tr::SelfConsensusState;
-
-    type Header = ethereum::header::Header<C>;
-
-    type Height = Height;
-
-    type ClientId = ClientId;
-
-    type IbcStateEncoding = EthAbi;
-
-    type ClientType = String;
-
-    type Error = beacon_api::errors::Error;
-
-    type StateProof = StorageProof;
-
-    fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
-        self.chain_id
-    }
-
-    async fn query_latest_height(&self) -> Result<Height, Self::Error> {
-        todo!()
-    }
-
-    async fn query_latest_height_as_destination(&self) -> Result<Height, Self::Error> {
-        todo!()
-    }
-
-    async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
-        todo!()
-    }
-
-    async fn self_client_state(&self, beacon_height: Height) -> Self::SelfClientState {
-        let genesis = self.beacon_api_client.genesis().await.unwrap().data;
-
-        let spec = self.beacon_api_client.spec().await.unwrap().data;
-
-        ethereum::client_state::ClientState {
-            chain_id: self.chain_id,
-            genesis_validators_root: genesis.genesis_validators_root,
-            genesis_time: genesis.genesis_time,
-            fork_parameters: spec.to_fork_parameters(),
-            // REVIEW: Is this a preset config param? Or a per-chain config?
-            seconds_per_slot: C::SECONDS_PER_SLOT::U64,
-            slots_per_epoch: C::SLOTS_PER_EPOCH::U64,
-            epochs_per_sync_committee_period: C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64,
-            latest_slot: beacon_height.revision_height,
-            min_sync_committee_participants: 0,
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
-            ibc_commitment_slot: IBC_HANDLER_COMMITMENTS_SLOT,
-            ibc_contract_address: self.ibc_handler_address,
-        }
-    }
-
-    async fn self_consensus_state(&self, beacon_height: Height) -> Self::SelfConsensusState {
-        let trusted_header = self
-            .beacon_api_client
-            .header(beacon_api::client::BlockId::Slot(
-                beacon_height.revision_height,
-            ))
-            .await
-            .unwrap()
-            .data;
-
-        let bootstrap = self
-            .beacon_api_client
-            .bootstrap(trusted_header.root)
-            .await
-            .unwrap()
-            .data;
-
-        assert!(bootstrap.header.beacon.slot == beacon_height.revision_height);
-
-        let light_client_update = {
-            let current_period = beacon_height.revision_height.div(C::PERIOD::U64);
-
-            debug!(%current_period);
-
-            let light_client_updates = self
-                .beacon_api_client
-                .light_client_updates(current_period, 1)
-                .await
-                .unwrap();
-
-            let [light_client_update] = &*light_client_updates.0 else {
-                panic!()
-            };
-
-            light_client_update.data.clone()
-        };
-
-        // Normalize to nanos in order to be compliant with cosmos
-        let timestamp = bootstrap.header.execution.timestamp * 1_000_000_000;
-        ethereum::consensus_state::ConsensusState {
-            slot: bootstrap.header.beacon.slot,
-            state_root: bootstrap.header.execution.state_root,
-            storage_root: self
-                .provider
-                .get_proof(
-                    ethers::types::H160::from(self.ibc_handler_address.0),
-                    vec![],
-                    Some(bootstrap.header.execution.block_number.into()),
-                )
-                .await
-                .unwrap()
-                .storage_hash
-                .0
-                .into(),
-            timestamp,
-            current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
-            next_sync_committee: light_client_update
-                .next_sync_committee
-                .map(|nsc| nsc.aggregate_pubkey),
-        }
     }
 }
 

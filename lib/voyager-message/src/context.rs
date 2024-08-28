@@ -3,6 +3,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc},
 };
 
+use futures::{stream::FuturesUnordered, TryStreamExt};
 use macros::model;
 use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
@@ -89,64 +90,127 @@ impl Context {
             handles: JoinSet::new(),
         };
 
-        for plugin_info in plugins {
-            let plugin_socket = format!(
-                "/tmp/voyager-plugin-{}.sock",
-                keccak256(&(plugin_info.config.to_string() + &plugin_info.path))
-                    .to_string_unprefixed()
-            );
+        pub enum PluginKindFilled {
+            Chain(ChainId<'static>),
+            Client(ClientType<'static>, IbcInterface<'static>),
+            Consensus(ChainId<'static>),
+        }
 
-            let healthy = Arc::new(AtomicBool::new(true));
+        pub struct PluginInfoFilled {
+            name: String,
+            interest_filter: Option<String>,
+            rpc_client: RpcClient,
+            kind: Option<PluginKindFilled>,
+        }
 
-            this.handles.spawn(run_plugin_client(
-                plugin_info,
-                plugin_socket.clone(),
-                cancellation_token.clone(),
-                healthy.clone(),
-            ));
+        let handles = std::sync::Mutex::new(JoinSet::new());
 
-            let rpc_client = loop {
-                match RpcClient::new(plugin_socket.clone()).await {
-                    Ok(client) => {
-                        debug!(%plugin_socket, "connected to socket");
-                        break client;
-                    }
-                    Err(err) => {
-                        if healthy.load(std::sync::atomic::Ordering::SeqCst) {
-                            debug!(
-                                err = %ErrorReporter(err),
-                                %plugin_socket,
-                                "unable to connect to socket, plugin has not started yet"
-                            );
+        let plugins = plugins
+            .into_iter()
+            .map(|plugin_config| async {
+                let plugin_socket = format!(
+                    "/tmp/voyager-plugin-{}.sock",
+                    keccak256(&(plugin_config.config.to_string() + &plugin_config.path))
+                        .to_string_unprefixed()
+                );
 
-                            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                        } else {
-                            error!(
-                                %plugin_socket,
-                                "plugin is unhealthy and could not start"
-                            );
-                            return Err("unhealthy plugin".into());
+                let healthy = Arc::new(AtomicBool::new(true));
+
+                handles.lock().unwrap().spawn(run_plugin_client(
+                    plugin_config,
+                    plugin_socket.clone(),
+                    cancellation_token.clone(),
+                    healthy.clone(),
+                ));
+
+                let rpc_client = loop {
+                    match RpcClient::new(plugin_socket.clone()).await {
+                        Ok(client) => {
+                            debug!(%plugin_socket, "connected to socket");
+                            break client;
+                        }
+                        Err(err) => {
+                            if healthy.load(std::sync::atomic::Ordering::SeqCst) {
+                                debug!(
+                                    err = %ErrorReporter(err),
+                                    %plugin_socket,
+                                    "unable to connect to socket, plugin has not started yet"
+                                );
+
+                                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                            } else {
+                                error!(
+                                    %plugin_socket,
+                                    "plugin is unhealthy and could not start"
+                                );
+                                return Err::<_, BoxDynError>("unhealthy plugin".into());
+                            }
                         }
                     }
-                }
-            };
+                };
 
-            let PluginInfo {
-                name,
-                kind,
-                interest_filter,
-            } = PluginModuleClient::<Value, Value, Value>::info(rpc_client.client.as_ref()).await?;
+                let PluginInfo {
+                    name,
+                    kind,
+                    interest_filter,
+                } = PluginModuleClient::<Value, Value, Value>::info(rpc_client.client.as_ref())
+                    .await?;
 
-            debug!(%name, "registering plugin");
+                let kind = match kind {
+                    Some(kind) => match kind {
+                        PluginKind::Chain => {
+                            let chain_id = ChainModuleClient::<Value, Value, Value>::chain_id(
+                                rpc_client.client.as_ref(),
+                            )
+                            .await?;
 
-            match this.plugins.insert(name.clone(), rpc_client.clone()) {
-                Some(_) => {
-                    return Err(format!("plugin name collision: `{name}`").into());
-                }
-                None => {
-                    //
-                }
-            }
+                            Some(PluginKindFilled::Chain(chain_id.clone()))
+                        }
+                        PluginKind::Client => {
+                            let SupportedInterface {
+                                client_type,
+                                ibc_interface,
+                            } = ClientModuleClient::<Value, Value, Value>::supported_interface(
+                                rpc_client.client.as_ref(),
+                            )
+                            .await?;
+
+                            Some(PluginKindFilled::Client(client_type, ibc_interface))
+                        }
+                        PluginKind::Consensus => {
+                            let ConsensusModuleInfo {
+                                chain_id,
+                                client_type: _,
+                            } = ConsensusModuleClient::<Value, Value, Value>::consensus_info(
+                                rpc_client.client.as_ref(),
+                            )
+                            .await?;
+
+                            Some(PluginKindFilled::Consensus(chain_id))
+                        }
+                    },
+                    None => None,
+                };
+
+                Ok(PluginInfoFilled {
+                    name,
+                    interest_filter,
+                    rpc_client,
+                    kind,
+                })
+            })
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        for PluginInfoFilled {
+            name,
+            interest_filter,
+            rpc_client,
+            kind,
+        } in plugins
+        {
+            this.plugins.insert(name.clone(), rpc_client.clone());
 
             if let Some(interest_filter) = interest_filter {
                 this.interest_filters.insert(name.clone(), interest_filter);
@@ -154,12 +218,7 @@ impl Context {
 
             match kind {
                 Some(kind) => match kind {
-                    PluginKind::Chain => {
-                        let chain_id = ChainModuleClient::<Value, Value, Value>::chain_id(
-                            rpc_client.client.as_ref(),
-                        )
-                        .await?;
-
+                    PluginKindFilled::Chain(chain_id) => {
                         let prev = this.chain_modules.insert(chain_id.clone(), rpc_client);
 
                         if prev.is_some() {
@@ -171,21 +230,11 @@ impl Context {
 
                         info!(
                             %name,
-                            %kind,
                             %chain_id,
-                            %plugin_socket,
                             "registered plugin"
                         );
                     }
-                    PluginKind::Client => {
-                        let SupportedInterface {
-                            client_type,
-                            ibc_interface,
-                        } = ClientModuleClient::<Value, Value, Value>::supported_interface(
-                            rpc_client.client.as_ref(),
-                        )
-                        .await?;
-
+                    PluginKindFilled::Client(client_type, ibc_interface) => {
                         let entry = this.client_modules.entry(client_type.clone()).or_default();
 
                         let prev = entry.insert(ibc_interface.clone(), rpc_client.clone());
@@ -201,22 +250,12 @@ impl Context {
 
                         info!(
                             %name,
-                            %kind,
                             %client_type,
                             %ibc_interface,
-                            %plugin_socket,
                             "registered plugin"
                         );
                     }
-                    PluginKind::Consensus => {
-                        let ConsensusModuleInfo {
-                            chain_id,
-                            client_type,
-                        } = ConsensusModuleClient::<Value, Value, Value>::consensus_info(
-                            rpc_client.client.as_ref(),
-                        )
-                        .await?;
-
+                    PluginKindFilled::Consensus(chain_id) => {
                         let prev = this
                             .consensus_modules
                             .insert(chain_id.clone(), rpc_client.clone());
@@ -230,9 +269,7 @@ impl Context {
 
                         info!(
                             %name,
-                            %kind,
-                            %client_type,
-                            %plugin_socket,
+                            %chain_id,
                             "registered plugin"
                         );
                     }
@@ -240,14 +277,15 @@ impl Context {
                 None => {
                     info!(
                         %name,
-                        %plugin_socket,
                         "registered plugin"
                     );
                 }
             }
         }
 
-        dbg!(&this);
+        // dbg!(&this);
+
+        this.handles = handles.into_inner().unwrap();
 
         Ok(this)
     }
@@ -277,7 +315,7 @@ impl Context {
     pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a (impl ConsensusModuleClient<D, C, Cb> + '_), ConsensusModuleNotFound> {
+    ) -> Result<&'a (impl ConsensusModuleClient<D, C, Cb> + 'a), ConsensusModuleNotFound> {
         Ok(self
             .consensus_modules
             .get(chain_id)
@@ -285,19 +323,6 @@ impl Context {
             .client
             .as_ref())
     }
-
-    // pub fn transaction_module<D: Member, C: Member, Cb: Member>(
-    //     &self,
-    //     chain_id: impl AsRef<str>,
-    // ) -> Result<&(impl TransactionSubmissionModuleClient<D, C, Cb> + '_), TransactionModuleNotFound>
-    // {
-    //     Ok(self
-    //         .transaction_modules
-    //         .get(chain_id.as_ref())
-    //         .ok_or_else(|| TransactionModuleNotFound(chain_id.as_ref().to_string()))?
-    //         .client
-    //         .as_ref())
-    // }
 
     pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
@@ -372,7 +397,7 @@ async fn run_plugin_client(
 
                     info!(%id, "spawned plugin");
 
-                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                    // tokio::time::sleep(std::time::Duration::from_nanos(100)).await;
 
                     if let Ok(Some(status)) = child.try_wait() {
                         error!(%id, %status, %plugin_socket, "child exited after startup");

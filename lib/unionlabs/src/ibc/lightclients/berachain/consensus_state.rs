@@ -4,7 +4,6 @@ use crate::{
     errors::{required, InvalidLength, MissingField},
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
     hash::H256,
-    traits,
 };
 
 #[model(proto(
@@ -67,11 +66,5 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::berachain::v1::C
             eth_storage_root: value.eth_storage_root.into(),
             comet_next_validators_hash: value.comet_next_validators_hash.into(),
         }
-    }
-}
-
-impl traits::ConsensusState for ConsensusState {
-    fn timestamp(&self) -> u64 {
-        self.eth_timestamp
     }
 }

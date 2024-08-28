@@ -27,13 +27,11 @@ pub struct Ics024IdentifierCharacters;
 #[error("invalid ics-024 identifier character: `{0}`")]
 pub struct InvalidIcs024IdentifierCharacter(char);
 
-impl<T: Into<String> + From<String>> Validate<T> for Ics024IdentifierCharacters {
+impl<T: AsRef<str>> Validate<T> for Ics024IdentifierCharacters {
     type Error = InvalidIcs024IdentifierCharacter;
 
-    fn validate(t: T) -> Result<T, Self::Error> {
-        let s = t.into();
-
-        for c in s.chars() {
+    fn validate(s: T) -> Result<T, Self::Error> {
+        for c in s.as_ref().chars() {
             match c {
                 'a'..='z'
                 | 'A'..='Z'
@@ -51,26 +49,22 @@ impl<T: Into<String> + From<String>> Validate<T> for Ics024IdentifierCharacters 
             }
         }
 
-        Ok(T::from(s))
+        Ok(s)
     }
 }
 
 pub struct Bounded<const MIN: usize, const MAX: usize>;
 
-impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize> Validate<T>
-    for Bounded<MIN, MAX>
-{
+impl<T: AsRef<str>, const MIN: usize, const MAX: usize> Validate<T> for Bounded<MIN, MAX> {
     type Error = InvalidLength;
 
-    fn validate(t: T) -> Result<T, Self::Error> {
+    fn validate(s: T) -> Result<T, Self::Error> {
         const { assert!(MIN <= MAX) };
 
-        let s: String = t.into();
-
-        let len = s.len();
+        let len = s.as_ref().len();
 
         if (MIN..=MAX).contains(&len) {
-            Ok(T::from(s))
+            Ok(s)
         } else {
             Err(InvalidLength {
                 expected: ExpectedLength::Between(MIN, MAX),

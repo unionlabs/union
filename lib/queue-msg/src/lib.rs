@@ -302,8 +302,11 @@ impl<T: QueueMessage> Op<T> {
             match self {
                 Self::Data(data) => {
                     // TODO: Use valuable here
-                    // info!(data = %serde_json::to_string(&data).unwrap(), "received data outside of an aggregation");
-                    Ok(Some(Self::Data(data)))
+                    info!(
+                        data = %serde_json::to_string(&data).unwrap(),
+                        "received data outside of an aggregation"
+                    );
+                    Ok(None)
                 }
 
                 Self::Call(fetch) => fetch.handle(store).await.map(Some),
@@ -861,17 +864,17 @@ impl<'a, T: QueueMessage, Q: Queue<T>, O: PurePass<T>> Engine<'a, T, Q, O> {
             self.queue
                 .process::<_, _, Option<T::Data>, O>(self.optimizer, |msg| {
                     msg.clone().handle(self.store, 0).map(|res| match res {
-                        Ok(Some(Op::Data(d))) => {
-                            // // TODO: push data to a separate queue
-                            // let data_output = d.clone().handle(self.store).unwrap();
+                        // Ok(Some(Op::Data(d))) => {
+                        //     // // TODO: push data to a separate queue
+                        //     // let data_output = d.clone().handle(self.store).unwrap();
 
-                            // // run to a fixed point
-                            // if data_output != data(d.clone()) {
-                            //  (None, Ok(vec![data_output]))
-                            // } else {
-                            (Some(d), Ok(vec![]))
-                            // }
-                        }
+                        //     // // run to a fixed point
+                        //     // if data_output != data(d.clone()) {
+                        //     //  (None, Ok(vec![data_output]))
+                        //     // } else {
+                        //     (Some(d), Ok(vec![]))
+                        //     // }
+                        // }
                         Ok(msg) => (None, Ok(msg.into_iter().collect())),
                         Err(QueueError::Fatal(fatal)) => {
                             let full_err = ErrorReporter(&*fatal);

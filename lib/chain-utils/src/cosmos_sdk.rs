@@ -19,10 +19,9 @@ use unionlabs::{
     encoding::{EncodeAs, Proto},
     google::protobuf::any::Any,
     hash::H256,
-    id::ConnectionId,
+    id::{ClientId, ConnectionId},
     parse_wasm_client_type,
     signer::CosmosSigner,
-    traits::Chain,
     ErrorReporter, MaybeRecoverableError, WasmClientType,
 };
 
@@ -79,9 +78,7 @@ pub trait CosmosSdkChain {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait CosmosSdkChainIbcExt:
-    CosmosSdkChain + CosmosSdkChainRpcs + Chain<Error = tendermint_rpc::Error>
-{
+pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
     async fn client_type_of_checksum(&self, checksum: H256) -> Option<WasmClientType> {
         if let Some(ty) = self.checksum_cache().get(&checksum) {
             debug!(
@@ -136,7 +133,7 @@ pub trait CosmosSdkChainIbcExt:
         }
     }
 
-    async fn checksum_of_client_id(&self, client_id: Self::ClientId) -> H256 {
+    async fn checksum_of_client_id(&self, client_id: ClientId) -> H256 {
         let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
             self.grpc_url().clone(),
         )
@@ -163,7 +160,7 @@ pub trait CosmosSdkChainIbcExt:
             .unwrap()
     }
 
-    async fn client_id_of_connection(&self, connection_id: ConnectionId) -> Self::ClientId {
+    async fn client_id_of_connection(&self, connection_id: ConnectionId) -> ClientId {
         protos::ibc::core::connection::v1::query_client::QueryClient::connect(
             self.grpc_url().clone(),
         )
@@ -510,10 +507,7 @@ fn test_u128_mul_f64() {
     assert_eq!(val, 110);
 }
 
-impl<T: CosmosSdkChain + CosmosSdkChainRpcs + Chain<Error = tendermint_rpc::Error>>
-    CosmosSdkChainIbcExt for T
-{
-}
+impl<T: CosmosSdkChain + CosmosSdkChainRpcs> CosmosSdkChainIbcExt for T {}
 
 impl<T: CosmosSdkChainRpcs> CosmosSdkChainExt for T {}
 
@@ -870,6 +864,28 @@ pub mod cosmos_sdk_error {
             ErrInvalidChannelVersion = errorsmod.Register(SubModuleName, 24, "invalid channel version")
             ErrPacketNotSent         = errorsmod.Register(SubModuleName, 25, "packet has not been sent")
             ErrInvalidTimeout        = errorsmod.Register(SubModuleName, 26, "invalid packet timeout")
+        )
+
+        // https://github.com/cosmos/ibc-go/blob/main/modules/light-clients/08-wasm/types/errors.go
+        #[err(name = IbcWasmError, codespace = "08-wasm")]
+        var (
+            ErrInvalid              = errorsmod.Register(ModuleName, 2, "invalid")
+            ErrInvalidData          = errorsmod.Register(ModuleName, 3, "invalid data")
+            ErrInvalidChecksum      = errorsmod.Register(ModuleName, 4, "invalid checksum")
+            ErrInvalidClientMessage = errorsmod.Register(ModuleName, 5, "invalid client message")
+            ErrRetrieveClientID     = errorsmod.Register(ModuleName, 6, "failed to retrieve client id")
+            // Wasm specific
+            ErrWasmEmptyCode                   = errorsmod.Register(ModuleName, 7, "empty wasm code")
+            ErrWasmCodeTooLarge                = errorsmod.Register(ModuleName, 8, "wasm code too large")
+            ErrWasmCodeExists                  = errorsmod.Register(ModuleName, 9, "wasm code already exists")
+            ErrWasmChecksumNotFound            = errorsmod.Register(ModuleName, 10, "wasm checksum not found")
+            ErrWasmSubMessagesNotAllowed       = errorsmod.Register(ModuleName, 11, "execution of sub messages is not allowed")
+            ErrWasmEventsNotAllowed            = errorsmod.Register(ModuleName, 12, "returning events from a contract is not allowed")
+            ErrWasmAttributesNotAllowed        = errorsmod.Register(ModuleName, 13, "returning attributes from a contract is not allowed")
+            ErrWasmContractCallFailed          = errorsmod.Register(ModuleName, 14, "wasm contract call failed")
+            ErrWasmInvalidResponseData         = errorsmod.Register(ModuleName, 15, "wasm contract returned invalid response data")
+            ErrWasmInvalidContractModification = errorsmod.Register(ModuleName, 16, "wasm contract made invalid state modifications")
+            ErrVMError                         = errorsmod.Register(ModuleName, 17, "wasm VM error")
         )
     }
 }
