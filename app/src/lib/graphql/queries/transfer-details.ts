@@ -40,7 +40,7 @@ export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
 export const transfersBySourceHashTracesAndHopsQueryDocument = graphql(/* GraphQL */ `
     query TransfersBySourceHashTracesAndHops($source_transaction_hash: String!)
     @cached(ttl: 1) {
-      vq_transfers(
+      v1_transfers(
         where: { source_transaction_hash: { _eq: $source_transaction_hash } }
       ) {
         traces(order_by: { timestamp: asc }) {

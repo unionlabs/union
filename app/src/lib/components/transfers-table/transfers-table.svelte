@@ -33,7 +33,7 @@ const columns: Array<ColumnDef<DataRow>> = [
     cell: info => flexRender(CellOriginTransfer, { chains, value: info.getValue() })
   },
   {
-    accessorKey: "assets",
+    accessorKey: "tokens",
     cell: info => flexRender(CellAssets, { value: info.getValue() })
   },
   {
@@ -44,4 +44,4 @@ const columns: Array<ColumnDef<DataRow>> = [
 ]
 </script>
 
-<ExplorerTablePaginated queryResult={transfers} dataStore={transfersDataStore} {columns}/>
+<ExplorerTablePaginated queryResult={transfers} dataStore={transfersDataStore} {columns} />
