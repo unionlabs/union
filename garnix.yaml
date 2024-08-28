@@ -85,6 +85,8 @@ builds:
     - 'packages.*.hubble-abis'
     - 'packages.*.rust-sol-bindings'
     - 'packages.*.site'
+    - 'packages.*.uniond-release'
+    - 'packages.*.uniond-release-image'
     - 'packages.*.voyager'
     - 'packages.*.voyager-dev'
   include:
