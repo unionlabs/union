@@ -3,6 +3,11 @@ module IBC::ics23 {
     use std::option::Option;
     use std::hash;
 
+    struct MembershipProof has drop {
+        sub_proof: ExistenceProof,
+        top_level_proof: ExistenceProof,
+    }
+
     struct ExistenceProof has drop {
         key: vector<u8>,
         value: vector<u8>,
@@ -44,20 +49,20 @@ module IBC::ics23 {
         }
     }
 
-    fun verify_chained_membership(
-        proofs: vector<ExistenceProof>,
+    public fun verify_membership(
+        proof: MembershipProof,
         root: vector<u8>,
         prefix: vector<u8>,
         key: vector<u8>,
         value: vector<u8>,
     ): u64 {
-        let (subroot, err) = calculate_existence_root(vector::borrow(&proofs, 0));
+        let (subroot, err) = calculate_existence_root(&proof.top_level_proof);
         if (err != 0) {
             return err
         };
 
         let err = verify_no_root_check(
-            vector::borrow(&proofs, 0),
+            &proof.top_level_proof,
             iavl_proof_spec(),
             key,
             value,
@@ -68,7 +73,7 @@ module IBC::ics23 {
         };
 
         verify_existence(
-            vector::borrow(&proofs, 1),
+            &proof.sub_proof,
             tm_proof_spec(),
             root,
             prefix,

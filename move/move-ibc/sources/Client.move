@@ -318,7 +318,7 @@ module IBC::Core {
     }
 
 
-    // // Function to create a client based on the provided message
+    /// Create a client with an initial client and consensus state
     public fun create_client(
         client_type: String,
         client_state: Any,
@@ -326,7 +326,10 @@ module IBC::Core {
     ): String  acquires IBCStore, SignerRef {
         let client_id = generate_client_identifier(client_type);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
         let client_state_bytes = bcs::to_bytes<Any>(&client_state);
+        let consensus_state_bytes = bcs::to_bytes<Any>(&consensus_state);
+
         let status_code = LightClient::create_client(
             &get_ibc_signer(),
             client_id, 
@@ -334,18 +337,18 @@ module IBC::Core {
             consensus_state
         );
     
-        // Check if the client was created successfully
         assert!(status_code == 0, status_code);
 
         // Update commitments
         smart_table::upsert(&mut store.commitments, IBCCommitment::client_state_commitment_key(client_id), client_state_bytes);
 
-        // smart_table::upsert(
-        //     &mut store.commitments,
-        //     IBCCommitment::consensus_state_commitment_key(client_id, update.height, 1),
-        //     msg.consensus_state.data
-        // ); 
+        let latest_height = LightClient::latest_height(client_id);
 
+        smart_table::upsert(
+            &mut store.commitments,
+            IBCCommitment::consensus_state_commitment_key(client_id, latest_height),
+            consensus_state_bytes
+        );
 
         event::emit(
             ClientCreatedEvent {
@@ -354,7 +357,6 @@ module IBC::Core {
         );
 
         client_id
-
     }
 
     public fun get_ibc_signer(): signer acquires SignerRef {
@@ -556,7 +558,7 @@ module IBC::Core {
         proof: Any,
         client_state_bytes: vector<u8>
     ): bool {
-        let (_, error_code) = LightClient::verify_membership(
+        let error_code = LightClient::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
@@ -575,7 +577,7 @@ module IBC::Core {
         connection_id: String,
         counterparty_connection: ConnectionEnd
     ): bool {
-        let (_, error_code) = LightClient::verify_membership(
+        let error_code = LightClient::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
@@ -594,7 +596,7 @@ module IBC::Core {
         path: String,
         commitment: vector<u8>,
     ): u64 {
-        let (_, err) = LightClient::verify_membership(
+        let err = LightClient::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
@@ -1056,7 +1058,7 @@ module IBC::Core {
         channel_bytes: vector<u8>
     ): bool {
         let path = IBCCommitment::channel_commitment_key(port_id, channel_id);
-        let (_, error_code) = LightClient::verify_membership(
+        let error_code = LightClient::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,

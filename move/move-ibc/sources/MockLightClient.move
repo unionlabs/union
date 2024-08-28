@@ -2,7 +2,7 @@ module IBC::LightClient {
     use std::vector;
     use aptos_std::from_bcs;
     use std::hash;
-    use aptos_std::any::Any;
+    use aptos_std::any::{Self, Any};
     use aptos_std::string::{Self, String};
     use aptos_std::bcs;
     use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr, G2, Gt, FormatG2Compr};
@@ -12,6 +12,7 @@ module IBC::LightClient {
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
+    use IBC::ics23;
 
     const ALPHA_G1: vector<u8> = x"99a818c167016f7f6d02d84005a5ed1f7c6c19c4ddf15733b67acc0129076709ff810d9d3374808069c1ea1e5d263a90cf8181b98b415805797176357acec708";
     const BETA_G2: vector<u8> = x"742884ea18a00ef31874d5fc5511b18fa9391dc69b971b898a2dbfc644033f15656dc92f1f94dc170026cd80212e5160d2539e7e8b40885d1d60b770d25f3599";
@@ -117,10 +118,11 @@ module IBC::LightClient {
     }
 
     public fun latest_height(
-        _client_id: String
-    ): height::Height {
+        client_id: String
+    ): height::Height acquires State {
         // Return error code, 0 for success
-        height::new(0,0)
+        let state = borrow_global<State>(get_client_address(&client_id));
+        state.client_state.latest_height
     }
 
     fun verify_header(
@@ -219,18 +221,22 @@ module IBC::LightClient {
     }
 
     public fun verify_membership(
-        _client_id: String,
-        _height: height::Height,
-        _proof: Any,
-        _prefix: vector<u8>,
-        _path: vector<u8>,
-        _value: vector<u8>, 
-    ): (vector<height::Height>, u64) { // second parameter is error code        
-        (
-            vector<height::Height>[
+        client_id: String,
+        height: height::Height,
+        proof: Any,
+        prefix: vector<u8>,
+        path: vector<u8>,
+        value: vector<u8>, 
+    ): u64 acquires State {
+        let consensus_state = smart_table::borrow(&borrow_global<State>(get_client_address(&client_id)).consensus_states, height);
+        let proof = any::unpack<ics23::MembershipProof>(proof);
 
-            ],
-            0
+        ics23::verify_membership(
+            proof,
+            consensus_state.app_hash.hash,
+            prefix,
+            path,
+            value
         )
     }
 

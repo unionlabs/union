@@ -3,6 +3,7 @@ module IBC::IBCCommitment {
     use aptos_std::string::{Self, String};
     use aptos_std::string_utils;
     use aptos_std::hash;
+    use IBC::height::{Self, Height};
 
     // Function to convert a String to vector<u8>
     public fun keccak256(s: String): vector<u8> {
@@ -116,8 +117,8 @@ module IBC::IBCCommitment {
         keccak256(client_state_path(client_id))
     }
 
-    public fun consensus_state_commitment_key(client_id: String, revision_number: u64, revision_height: u64): vector<u8> {
-        keccak256(consensus_state_path(client_id, revision_number, revision_height))
+    public fun consensus_state_commitment_key(client_id: String, height: Height): vector<u8> {
+        keccak256(consensus_state_path(client_id, height::get_revision_number(&height), height::get_revision_height(&height)))
     }
 
     public fun connection_commitment_key(connection_id: String): vector<u8> {
