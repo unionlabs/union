@@ -1,9 +1,6 @@
 <script lang="ts">
 import StatsBarStat from "$lib/components/stats-bar-stat.svelte"
-import {
-  statsQuery,
-  transfersPerDayQuery
-} from "$lib/queries/stats.ts"
+import { statsQuery, transfersPerDayQuery } from "$lib/queries/stats.ts"
 import PixelGraph from "../(components)/pixel-graph.svelte"
 import { userTime } from "$lib/utilities/user-time.ts"
 import SpinningOutlineLogoThree from "$lib/components/spinning-outline-logo-three.svelte"

@@ -1,4 +1,4 @@
-import {graphql} from "gql.tada"
+import { graphql } from "gql.tada"
 
 export const statsQueryDocument = graphql(/* GraphQL */ `
     query StatsQuery @cached(ttl: 5) {

@@ -1,4 +1,4 @@
-import {graphql} from "../index.ts"
+import { graphql } from "../index.ts"
 
 export const transferListDataFragment = graphql(`
     fragment TransferListData on v1_transfers {

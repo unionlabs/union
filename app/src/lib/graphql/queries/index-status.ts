@@ -1,4 +1,4 @@
-import {graphql} from "gql.tada"
+import { graphql } from "gql.tada"
 
 export const indexStatusQuery = graphql(/* GraphQL */ `
     query IndexStatusQuery {
