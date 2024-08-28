@@ -1,5 +1,17 @@
 import type { Readable } from "svelte/store"
 
+export type AtLeastOne<T, U = T> = T extends any
+  ? T | (U & Record<Exclude<keyof U, keyof T>, never>)
+  : never
+
+export type SelectOneOrMore<T extends string> = AtLeastOne<Record<T, true>>
+
+export type NoRepetition<U extends string, ResultT extends Array<any> = []> =
+  | ResultT
+  | {
+      [k in U]: NoRepetition<Exclude<U, k>, [k, ...ResultT]>
+    }[U]
+
 export type AwaitedReturnType<T extends (...args: any) => any> = ReturnType<T> extends Promise<
   infer U
 >
