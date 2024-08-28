@@ -308,37 +308,32 @@ pub trait IbcListen: Send + Sync {
 
                 IbcEvent::WriteAcknowledgement(ref e) => {
                     if sequence_entry.get(&0).map_or(false, |e| e.arrived) {
-                        if self.write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone()) {
-                            if let Some(event_data) = sequence_entry.get_mut(&2) {
-                                event_data.arrived = true;
-                                event_data.arrived_time = Some(chrono::Utc::now());
-                                event_data.tx_hash = Some(formatted_tx.clone());
-                                tracing::info!(
-                                    sequence = sequence,
-                                    chain_id = chain_id,
-                                    key = key,
-                                    tx_hash = formatted_tx.clone(),
-                                    "WriteAcknowledgement event recorded."
-                                );
-                            } else {
-                                tracing::warn!(
-                                    "Unexpected error: Could not find event data for WriteAcknowledgement."
-                                );
-                            }
-                        } else {
-                            let initial_tx_hash =
-                                sequence_entry.get(&0).and_then(|e| e.tx_hash.clone());
-                            tracing::error!(
+                        // if self.write_handler_packet_ack_hex_controller(e.packet_ack_hex.clone()) {
+                        if let Some(event_data) = sequence_entry.get_mut(&2) {
+                            event_data.arrived = true;
+                            event_data.arrived_time = Some(chrono::Utc::now());
+                            event_data.tx_hash = Some(formatted_tx.clone());
+                            tracing::info!(
                                 sequence = sequence,
                                 chain_id = chain_id,
                                 key = key,
                                 tx_hash = formatted_tx.clone(),
-                                initial_tx_hash = initial_tx_hash,
-                                "[TRANSFER FAILED] WriteAcknowledgement indicates failure. packet_ack_hex: {:?}.",
-                                e.packet_ack_hex.clone()
+                                "WriteAcknowledgement event recorded."
                             );
-                            entry.remove(&sequence);
+                        } else {
+                            tracing::warn!(
+                                "Unexpected error: Could not find event data for WriteAcknowledgement."
+                            );
                         }
+                        // } else {
+                        //     let initial_tx_hash =
+                        //         sequence_entry.get(&0).and_then(|e| e.tx_hash.clone());
+
+                        //     tracing::error!("[TRANSFER FAILED] WriteAcknowledgement indicates failure. packet_ack_hex: {:?}. Sequence: {:?},
+                        //     chain_id: {:?}, key: {:?}, tx_hash: {:?}, initial_tx_hash: {:?}",  e.packet_ack_hex.clone(),
+                        //     sequence, chain_id, key, formatted_tx.clone(), initial_tx_hash);
+                        //     entry.remove(&sequence);
+                        // }
                     } else {
                         tracing::warn!(
                             sequence = sequence,
