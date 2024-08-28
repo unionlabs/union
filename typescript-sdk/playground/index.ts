@@ -1,4 +1,3 @@
-
 import { fallback, http } from "viem"
 import { createUnionClient } from "#mod.js"
 
@@ -17,10 +16,3 @@ createUnionClient({
   chainId: "stride-internal-1",
   transport: http("stride.testnet-1.stridenet.co")
 }).approveTransaction
-
-
-
-
-
-
-
