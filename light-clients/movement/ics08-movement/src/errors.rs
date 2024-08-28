@@ -1,7 +1,7 @@
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
     encoding::{DecodeErrorOf, Proto},
-    ibc::lightclients::movement,
+    ibc::{core::client::height::Height, lightclients::movement},
 };
 
 use crate::client::MovementLightClient;
@@ -18,6 +18,10 @@ pub enum Error {
     HeaderVerification(#[from] aptos_verifier::Error),
     #[error("invalid state_proof storage proof")]
     InvalidStateProof,
+    #[error("empty ibc path")]
+    EmptyIbcPath,
+    #[error("consensus state not found ({0})")]
+    ConsensusStateNotFound(Height),
 }
 
 impl From<Error> for IbcClientError<MovementLightClient> {

@@ -1,10 +1,12 @@
 use cosmwasm_std::{Deps, Empty};
 use ics008_wasm_client::{
-    storage_utils::{read_client_state, save_client_state, save_consensus_state},
+    storage_utils::{
+        read_client_state, read_consensus_state, save_client_state, save_consensus_state,
+    },
     IbcClient, IbcClientError, StorageState,
 };
 use unionlabs::{
-    aptos::transaction_info::TransactionInfo,
+    aptos::{account::AccountAddress, hash_value::HashValue, transaction_info::TransactionInfo},
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::Proto,
     hash::{H160, H256},
@@ -55,13 +57,28 @@ impl IbcClient for MovementLightClient {
     fn verify_membership(
         deps: Deps<Self::CustomQuery>,
         height: Height,
-        delay_time_period: u64,
-        delay_block_period: u64,
+        _delay_time_period: u64,
+        _delay_block_period: u64,
         proof: Vec<u8>,
-        path: MerklePath,
+        mut path: MerklePath,
         value: StorageState,
     ) -> Result<(), IbcClientError<Self>> {
-        todo!()
+        let consensus_state: WasmConsensusState =
+            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
+        let client_state: WasmClientState = read_client_state(deps)?;
+
+        let path = path.key_path.pop().ok_or(Error::EmptyIbcPath)?;
+
+        match value {
+            StorageState::Occupied(value) => do_verify_membership(
+                path,
+                consensus_state.data.state_root,
+                client_state.data.table_handle,
+                proof,
+                value,
+            ),
+            StorageState::Empty => unimplemented!(),
+        }
     }
 
     fn verify_header(
@@ -227,4 +244,22 @@ impl IbcClient for MovementLightClient {
     ) -> Result<u64, IbcClientError<Self>> {
         todo!()
     }
+}
+
+fn do_verify_membership(
+    _path: String,
+    state_root: HashValue,
+    _table_handle: AccountAddress,
+    proof: Vec<u8>,
+    value: Vec<u8>,
+) -> Result<(), IbcClientError<MovementLightClient>> {
+    aptos_verifier::verify_existence_proof(
+        &proof,
+        state_root,
+        HashValue::default(),
+        value.try_into().unwrap(),
+    )
+    .unwrap();
+
+    Ok(())
 }
