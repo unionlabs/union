@@ -74,7 +74,7 @@ jobs:
       - name: Fetch from Cache
         run: |
           nix develop
-          nix build .#explorer
+          nix build .#app
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -113,7 +113,7 @@ jobs:
       - name: Fetch from Cache
         run: |
           nix develop
-          nix build .#explorer
+          nix build .#app
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -135,7 +135,7 @@ jobs:
       - name: Fetch from Cache
         run: |
           nix develop
-          nix build .#explorer
+          nix build .#app
       - name: '[staging] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -157,7 +157,7 @@ jobs:
       - name: Fetch from Cache
         run: |
           nix develop
-          nix build .#explorer
+          nix build .#app
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
