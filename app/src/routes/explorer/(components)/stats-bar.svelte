@@ -1,11 +1,6 @@
 <script lang="ts">
 import StatsBarStat from "$lib/components/stats-bar-stat.svelte"
-import {
-  statsQuery,
-  packetCountQuery,
-  transferCountQuery,
-  transfersPerDayQuery
-} from "$lib/queries/stats.ts"
+import { statsQuery, transfersPerDayQuery } from "$lib/queries/stats.ts"
 import PixelGraph from "../(components)/pixel-graph.svelte"
 import { userTime } from "$lib/utilities/user-time.ts"
 import SpinningOutlineLogoThree from "$lib/components/spinning-outline-logo-three.svelte"
@@ -13,7 +8,6 @@ import { Separator } from "$lib/components/ui/separator"
 import { supportsWebGL } from "$lib/utilities/device.ts"
 import { deviceWidth } from "$lib/utilities/device.ts"
 import { onMount } from "svelte"
-import { fade } from "svelte/transition"
 
 const statsData = statsQuery()
 const transfersPerDayData = transfersPerDayQuery(30)
@@ -34,9 +28,9 @@ onMount(() => {
 <div class="bg-muted dark:bg-background border-b flex">
   <div class="w-full flex flex-1">
     {#if $deviceWidth > 888 || show === 0}
-      <StatsBarStat blink={true} label={"Total Transfers"} value={$statsData?.data?.total_transfers || 0}/>
+      <StatsBarStat blink={true} label={"Total Transfers"} value={$statsData?.data?.[1].value || 0}/>
       <Separator orientation="vertical"/>
-      <StatsBarStat blink={true} label="Total Packets" value={$statsData?.data?.total_packets || 0}/>
+      <StatsBarStat blink={true} label="Total Packets" value={$statsData?.data?.[0].value || 0}/>
     {/if}
     {#if $deviceWidth > 888}
     <Separator orientation="vertical"/>

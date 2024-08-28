@@ -5,14 +5,14 @@ export const transfersTimestampQuery = graphql(
   /* GraphQL */ `
     query TransfersTimestampQuery($limit: Int!, $timestamp: timestamptz!)
     @cached(ttl: 1000) {
-      newer: v0_transfers(
+      newer: v1_transfers(
         limit: $limit
         order_by: [{ source_timestamp: asc }, { source_transaction_hash: asc }]
         where: { source_timestamp: { _gte: $timestamp } }
       ) {
         ...TransferListData
       }
-      older: v0_transfers(
+      older: v1_transfers(
         limit: $limit
         order_by: [
           { source_timestamp: desc }
@@ -30,7 +30,7 @@ export const transfersTimestampQuery = graphql(
 export const transfersLatestQuery = graphql(
   /* GraphQL */ `
     query TransfersLatestQuery($limit: Int! = 8) {
-      data: v0_transfers(
+      data: v1_transfers(
         limit: $limit
         order_by: [
           { source_timestamp: desc }
@@ -51,7 +51,7 @@ export const transfersByAddressesTimestampQuery = graphql(
       $addresses: [String!]!
       $timestamp: timestamptz!
     ) @cached(ttl: 1000) {
-      newer: v0_transfers(
+      newer: v1_transfers(
         limit: $limit
         order_by: [{ source_timestamp: asc }, { source_transaction_hash: asc }]
         where: {
@@ -69,7 +69,7 @@ export const transfersByAddressesTimestampQuery = graphql(
         ...TransferListData
       }
 
-      older: v0_transfers(
+      older: v1_transfers(
         limit: $limit
         order_by: [
           { source_timestamp: desc }
@@ -97,7 +97,7 @@ export const transfersByAddressesTimestampQuery = graphql(
 export const transfersByAddressesLatestQuery = graphql(
   /* graphql */ `
     query TransfersByAddressesLatestQuery($limit: Int!, $addresses: [String!]!) {
-      data: v0_transfers(
+      data: v1_transfers(
         limit: $limit
         order_by: [
           { source_timestamp: desc }

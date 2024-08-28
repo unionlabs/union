@@ -36,12 +36,14 @@ let transfers = createQuery({
       source_transaction_hash: source
     })
 
-    if (response.v0_transfers === undefined || response.v0_transfers === null)
+    if (response.v1_transfers === undefined || response.v1_transfers === null)
       raise("error fetching transfers")
 
-    return response.v0_transfers
+    return response.v1_transfers
   }
 })
+
+$: console.log("transfers", $transfers)
 //@ts-ignore
 let processedTransfers = derived(
   [transfers, submittedTransfers],
@@ -122,7 +124,7 @@ let tracesAndHops = createQuery({
       await request(URLS.GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
         source_transaction_hash: source
       })
-    ).v0_transfers
+    ).v1_transfers
 })
 
 let processedTraces = derived(
@@ -409,19 +411,19 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         </Card.Header>
         <Card.Content class="flex flex-col gap-8">
           <section class="mt-6">
-            {#if transfer.assets}
+            {#if transfer.tokens}
               <ul
                 class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl"
               >
-                {#each Object.entries(transfer.assets) as [denom, value]}
-                  {#if value.info}
+                {#each Object.entries(transfer.tokens) as [denom, value]}
+                  {#if value.asset}
                     <li>
                       <Truncate
-                        value={formatUnits(value.amount, value.info.decimals)}
+                        value={formatUnits(value.amount, value.asset.decimals)}
                         type="full"
                       />
                       <Truncate
-                        value={value.info.display_symbol}
+                        value={value.asset.display_symbol}
                         type="address"
                       />
                     </li>

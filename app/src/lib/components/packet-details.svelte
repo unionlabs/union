@@ -12,13 +12,13 @@ const packet = readFragment(packetDetailsFragment, packetDetails)
 export let chains: Array<Chain>
 
 const packetSourceDestination = {
-  source_chain_id: packet.from_chain_id,
-  source_connection_id: packet.from_connection_id,
-  source_channel_id: packet.from_channel_id,
+  source_chain_id: packet.source_chain_id,
+  source_connection_id: packet.source_connection_id,
+  source_channel_id: packet.source_channel_id,
   source_sequence: packet.source_sequence,
-  destination_chain_id: packet.to_chain_id,
-  destination_connection_id: packet.to_connection_id,
-  destination_channel_id: packet.to_channel_id,
+  destination_chain_id: packet.destination_chain_id,
+  destination_connection_id: packet.destination_connection_id,
+  destination_channel_id: packet.destination_channel_id,
   destination_sequence: packet.destination_sequence
 }
 </script>  
@@ -37,8 +37,8 @@ const packetSourceDestination = {
       <DetailsHeading>
         Ports
       </DetailsHeading>
-      <div>Source: {packet.from_port_id}</div>
-      <div>Destination: {packet.to_port_id}</div>
+      <div>Source: {packet.source_port_id}</div>
+      <div>Destination: {packet.destination_port_id}</div>
 
     </section>
     <section>

@@ -17,20 +17,20 @@ let connections = createQuery({
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
   queryFn: async () => request(URLS.GRAPHQL, connectionsQuery, {}),
   select: data => {
-    if (!data.v0_connection_map) raise("error fetching transfers")
+    if (!data.v1_connections) raise("error fetching transfers")
 
-    return data.v0_connection_map.map(connection => ({
+    return data.v1_connections.map(connection => ({
       source: {
         chain_display_name: connection.source_chain?.display_name,
-        chain_id: connection.from_chain_id ?? "unknown",
-        connection_id: connection.from_connection_id ?? "unknown",
-        client_id: connection.from_client_id ?? "unknown"
+        chain_id: connection.destination_chain_id ?? "unknown",
+        connection_id: connection.destination_connection_id ?? "unknown",
+        client_id: connection.destination_client_id ?? "unknown"
       },
       destination: {
         chain_display_name: connection.destination_chain?.display_name,
-        chain_id: connection.to_chain_id ?? "unknown",
-        connection_id: connection.to_connection_id ?? "unknown",
-        client_id: connection.to_client_id ?? "unknown"
+        chain_id: connection.source_chain_id ?? "unknown",
+        connection_id: connection.source_connection_id ?? "unknown",
+        client_id: connection.source_client_id ?? "unknown"
       },
       status: connection.status
     }))

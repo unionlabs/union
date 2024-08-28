@@ -1,35 +1,35 @@
 import { graphql } from "gql.tada"
 
 export const channelsQuery = graphql(/* GraphQL */ `query ChannelsQuery($limit: Int = 500) @cached(ttl: 30) {
-  v0_channel_map(
-    where: {source: {enabled: {_eq: true}}, destination: {enabled: {_eq: true}}},
+  v1_channels(
+    where: {source_chain: {enabled: {_eq: true}}, destination_chain: {enabled: {_eq: true}}},
     order_by: [
     {status: asc}, 
-    {from_chain_id: asc}, 
-    {from_connection_id: asc},
-    {from_channel_id: asc},
-    {from_port_id: asc},
-    {to_chain_id: asc}, 
-    {to_connection_id: asc}, 
-    {to_channel_id: asc},
-    {to_port_id: asc}
+    {source_chain_id: asc}, 
+    {source_connection_id: asc},
+    {source_channel_id: asc},
+    {source_port_id: asc},
+    {destination_chain_id: asc}, 
+    {destination_connection_id: asc}, 
+    {destination_channel_id: asc},
+    {destination_port_id: asc}
   ], limit: $limit) {
-    from_chain_id
-    from_connection_id
-    from_channel_id
-    from_port_id
-    source {
-      enabled
-      display_name
+      source_chain_id
+      source_connection_id
+      source_channel_id
+      source_port_id
+      source_chain {
+          enabled
+          display_name
+      }
+      destination_chain_id
+      destination_connection_id
+      destination_channel_id
+      destination_port_id
+      destination_chain {
+          enabled
+          display_name
     }
-    to_chain_id
-    to_connection_id
-		to_channel_id    
-    to_port_id
-    destination {
-      enabled
-      display_name
-    }
-    status
+      status
   }
 }`)

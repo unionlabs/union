@@ -2,28 +2,28 @@ import { graphql } from "gql.tada"
 
 export const connectionsQuery = graphql(/* GraphQL */ `
 query ConnectionsQuery($limit: Int = 100) @cached(ttl: 30) {
-  v0_connection_map(
+  v1_connections(
     order_by: [
     {status: asc}, 
-    {from_chain_id: asc}, 
-    {from_client_id: asc}, 
-    {from_connection_id: asc},
-    {to_chain_id: asc}, 
-    {to_client_id: asc}, 
-    {to_connection_id: asc}
+    {source_chain_id: asc}, 
+    {source_client_id: asc}, 
+    {source_connection_id: asc},
+    {destination_chain_id: asc}, 
+    {destination_client_id: asc}, 
+    {destination_connection_id: asc}
   ], 
   limit: $limit, 
   where: { status: {_eq: "CONFIRM"}, source_chain: {enabled: {_eq: true}}, destination_chain: {enabled: {_eq: true}}}) {
-    from_chain_id
-    to_chain_id
-    from_client_id
-    from_connection_id
+    source_chain_id
+    destination_chain_id
+    source_client_id
+    source_connection_id
     source_chain {
       enabled
       display_name
     }
-    to_client_id
-    to_connection_id
+    destination_client_id
+    destination_connection_id
     destination_chain {
       enabled
       display_name
