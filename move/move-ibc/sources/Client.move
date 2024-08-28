@@ -1085,26 +1085,23 @@ module IBC::Core {
         channel_table
     }
     public fun channel_open_init(
-        msg_port_id: String,
-        msg_channel: Channel,
-        relayer: address
-    ): (
-    u8, vector<String>, String, String, String, String, String,
-        ) acquires IBCStore {
-        if (!is_lowercase(&msg_port_id)) {
+        ibc_app: &signer, // this is the caller which should be the `ibc_app`
+        port_id: String,
+        connection_hops: vector<String>,
+        ordering: u8,
+        counterparty: channel::Counterparty,
+        version: String,
+    ): (Channel, u64) acquires IBCStore {
+        if (!is_lowercase(&port_id)) {
             abort(E_PORT_ID_MUST_BE_LOWERCASE)
         };
 
         let (connection_id, _) = ensure_connection_feature(
-            *channel::connection_hops(&msg_channel),
-            channel::ordering(&msg_channel),
+            connection_hops,
+            ordering,
         );
 
-        if (channel::state(&msg_channel) != CHAN_STATE_INIT) {
-            abort(E_INVALID_CHANNEL_STATE)
-        };
-
-        if (!string::is_empty(channel::chan_counterparty_channel_id(&msg_channel))) {
+        if (!string::is_empty(channel::counterparty_channel_id(&counterparty))) {
             abort(E_COUNTERPARTY_CHANNEL_NOT_EMPTY)
         };
 
@@ -1112,63 +1109,48 @@ module IBC::Core {
 
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let channel_port = ChannelPort{port_id:msg_port_id, channel_id};
-        smart_table::upsert(&mut store.channels, channel_port, msg_channel);
+        let channel_port = ChannelPort{port_id, channel_id};
+        let channel = channel::new(CHAN_STATE_INIT, ordering, counterparty, connection_hops, version);
+        smart_table::upsert(&mut store.channels, channel_port, channel);
         
-        // string::utf8(b"test return")
-
         smart_table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_send_commitment_key(msg_port_id, channel_id),
+            IBCCommitment::next_sequence_send_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         smart_table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_recv_commitment_key(msg_port_id, channel_id),
+            IBCCommitment::next_sequence_recv_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
         smart_table::upsert(
             &mut store.commitments,
-            IBCCommitment::next_sequence_ack_commitment_key(msg_port_id, channel_id),
+            IBCCommitment::next_sequence_ack_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
-        // TODO: Is it problem to emit event before updating the commitment?
         event::emit(
             ChannelOpenInit {
-                port_id: msg_port_id,
+                port_id: port_id,
                 channel_id: channel_id,
-                counterparty_port_id: *channel::chan_counterparty_port_id(&msg_channel),
+                counterparty_port_id: *channel::chan_counterparty_port_id(&channel),
                 connection_id: connection_id,
-                version: *channel::version(&msg_channel)
+                version: *channel::version(&channel)
             },
         );
-        update_channel_commitment(msg_port_id, channel_id);
-
-        // TODO(aeryz): this is going to happen the other way around, the module will call this function.
-        // // Hardcoded call to IBCModule::on_chan_open_init
-        // IBCModule::on_chan_open_init(
-            
-        // );
+        update_channel_commitment(port_id, channel_id);
 
         claim_capability(
-            IBCCommitment::channel_capability_path(msg_port_id, channel_id),
-            relayer
+            IBCCommitment::channel_capability_path(port_id, channel_id),
+            signer::address_of(ibc_app),
         );
 
-        (
-            channel::ordering(&msg_channel),
-            *channel::connection_hops(&msg_channel),
-            channel_port.port_id,
-            channel_port.channel_id,
-            *channel::chan_counterparty_port_id(&msg_channel),
-            *channel::chan_counterparty_channel_id(&msg_channel),
-            *channel::version(&msg_channel)
-        )
+        (channel, 0)
     }
 
+    // TODO(aeryz): should we verify the caller here?
     public fun channel_open_ack(
         port_id: String,
         channel_id: String,
@@ -1295,26 +1277,24 @@ module IBC::Core {
     }
 
     public fun channel_open_try(
+        ibc_app: &signer,
         port_id: String,
-        channel: Channel,
+        connection_hops: vector<String>,
+        ordering: u8,
+        counterparty: channel::Counterparty,
         counterparty_version: String,
+        version: String,
         proof_init: Any,
         proof_height: height::Height
-    ): (
-    u8, vector<String>, String, String, String, String, String, String
-        ) acquires IBCStore {
-        let (connection_id, connection) = ensure_connection_feature(*channel::connection_hops(&channel), channel::ordering(&channel));
+    ): (Channel, u64) acquires IBCStore {
+        let (connection_id, connection) = ensure_connection_feature(connection_hops, ordering);
         
-        if (channel::state(&channel) != CHAN_STATE_TRYOPEN) {
-            abort(E_INVALID_CHANNEL_STATE)
-        };
-
         let expected_counterparty = channel::new_counterparty(port_id, string::utf8(b""));
         let expected_channel = channel::new(
             CHAN_STATE_INIT,
-            channel::ordering(&channel),
+            ordering,
             expected_counterparty,
-            get_counterparty_hops(*vector::borrow(channel::connection_hops(&channel), 0)),
+            get_counterparty_hops(*vector::borrow(&connection_hops, 0)),
             counterparty_version
         );
 
@@ -1322,8 +1302,8 @@ module IBC::Core {
             &connection,
             proof_height,
             proof_init,
-            *channel::chan_counterparty_port_id(&channel),
-            *channel::chan_counterparty_channel_id(&channel),
+            *channel::counterparty_port_id(&counterparty),
+            *channel::counterparty_channel_id(&counterparty),
             bcs::to_bytes(&expected_channel)
         )) {
             abort(E_INVALID_PROOF)
@@ -1335,8 +1315,8 @@ module IBC::Core {
             ChannelOpenTry {
                 port_id,
                 channel_id,
-                counterparty_port_id: *channel::chan_counterparty_port_id(&channel),
-                counterparty_channel_id: *channel::chan_counterparty_channel_id(&channel),
+                counterparty_port_id: *channel::counterparty_port_id(&counterparty),
+                counterparty_channel_id: *channel::counterparty_channel_id(&counterparty),
                 connection_id,
                 version: counterparty_version
             },
@@ -1344,6 +1324,8 @@ module IBC::Core {
 
         let channel_port = ChannelPort { port_id, channel_id };
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+        let channel = channel::new(CHAN_STATE_TRYOPEN, ordering, counterparty, connection_hops, version);
         smart_table::upsert(&mut store.channels, channel_port, channel);
 
         smart_table::upsert(
@@ -1366,33 +1348,12 @@ module IBC::Core {
 
         update_channel_commitment(port_id, channel_id);
 
-        // TODO(aeryz): this will be called by the ibc app
-        // IBCModule::on_chan_open_try(
-        //     channel.ordering,
-        //     channel.connection_hops,
-        //     port_id,
-        //     channel_id,
-        //     channel.counterparty.port_id,
-        //     channel.counterparty.channel_id,
-        //     channel.version,
-        //     counterparty_version
-        // );
-
         claim_capability(
             IBCCommitment::channel_capability_path(port_id, channel_id),
-            @IBCModuleAddr
+            signer::address_of(ibc_app),
         );
 
-        (
-            channel::ordering(&channel),
-            *channel::connection_hops(&channel),
-            port_id,
-            channel_id,
-            *channel::chan_counterparty_port_id(&channel),
-            *channel::chan_counterparty_channel_id(&channel),
-            *channel::version(&channel),
-            counterparty_version
-        )
+        (channel, 0)
     }
 
     // Ensures that the channel state is open
@@ -1832,7 +1793,7 @@ module IBC::Core {
         proof: Any,
         path: String
     ): u64 {
-        let (_, err) = LightClient::verify_non_membership(
+        let err = LightClient::verify_non_membership(
             *connection_end::client_id(connection),
             height,
             proof,

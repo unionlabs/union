@@ -246,13 +246,8 @@ module IBC::LightClient {
         _proof: Any,
         _prefix: vector<u8>,
         _path: vector<u8>,
-    ): (vector<height::Height>, u64) { // second parameter is error code        
-        (
-            vector<height::Height>[
-
-            ],
-            0
-        )
+    ): u64 {
+        0
     }
 
     fun get_client_address(client_id: &string::String): address {

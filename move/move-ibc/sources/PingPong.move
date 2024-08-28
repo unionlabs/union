@@ -1,14 +1,16 @@
 module IBCModuleAddr::PingPong {
     use aptos_framework::event;
     use aptos_framework::timestamp;
+    use std::object;
+    use std::signer;
     use aptos_std::string::{Self, String};
     use IBC::Core;
     use std::vector;
     use std::bcs;
     use aptos_std::from_bcs;
     use aptos_std::any::{Any};
-    use IBC::height::{Self};
-    use IBC::channel::{Channel};
+    use IBC::height;
+    use IBC::channel;
     use IBC::packet::{Self, Packet};
 
     const ACK_SUCCESS: vector<u8> = b"\x01";
@@ -16,6 +18,8 @@ module IBCModuleAddr::PingPong {
     const ERR_INVALID_ACK: u64 = 2002;
     const ERR_NO_CHANNEL: u64 = 2003;
     const ERR_INFINITE_GAME: u64 = 2004;
+
+    const VAULT_SEED: vector<u8> = b"Vault Seed Example";
 
     #[event]
     struct RingEvent has copy, drop, store {
@@ -37,6 +41,19 @@ module IBCModuleAddr::PingPong {
         channel_id: String,
         revision_number: u64,
         timeout: u64,
+    }
+
+    struct SignerRef has key {
+        self_ref: object::ExtendRef,
+    }
+
+    fun init_module(deployer: &signer) {
+        assert!(signer::address_of(deployer) == @IBCModuleAddr, 1);
+        let vault_constructor_ref = &object::create_named_object(deployer, VAULT_SEED);
+        let vault_signer = &object::generate_signer(vault_constructor_ref);
+        move_to(vault_signer, SignerRef {
+            self_ref: object::generate_extend_ref(vault_constructor_ref)
+        });
     }
 
     public fun encode_packet(packet: &PingPongPacket): vector<u8> {
@@ -139,14 +156,20 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun chan_open_init(
-        msg_port_id: String,
-        msg_channel: Channel,
-        relayer: address
-    ) acquires PingPong {
+        port_id: String,
+        connection_hops: vector<String>,
+        ordering: u8,
+        counterparty: channel::Counterparty,
+        version: String,
+    ) acquires PingPong, SignerRef {
+        // TODO(aeryz): save the channel here
         Core::channel_open_init(
-            msg_port_id,
-            msg_channel,
-            relayer
+            &get_signer(),
+            port_id,
+            connection_hops,
+            ordering,
+            counterparty,
+            version,
         );
         if (string::length(&borrow_global<PingPong>(@0x1).channel_id) != 0) {
             abort ERR_ONLY_ONE_CHANNEL
@@ -155,17 +178,25 @@ module IBCModuleAddr::PingPong {
 
     public fun chan_open_try(
         port_id: String,
-        channel: Channel,
+        connection_hops: vector<String>,
+        ordering: u8,
+        counterparty: channel::Counterparty,
         counterparty_version: String,
+        version: String,
         proof_init: Any,
-        proof_height: height::Height
-    ) acquires PingPong {
+        proof_height: height::Height,
+    ) acquires PingPong, SignerRef {
+        // TODO(aeryz): save the channel here
         Core::channel_open_try(
+            &get_signer(),
             port_id,
-            channel,
+            connection_hops,
+            ordering,
+            counterparty,
             counterparty_version,
+            version,
             proof_init,
-            proof_height
+            proof_height,
         );
 
         if (string::length(&borrow_global<PingPong>(@0x1).channel_id) != 0) {
@@ -237,6 +268,15 @@ module IBCModuleAddr::PingPong {
         move_to(account, pp);
     }
 
+    #[view]
+    public fun get_vault_addr(): address {
+        object::create_object_address(&@IBCModuleAddr, VAULT_SEED)
+    }
+
+    public fun get_signer(): signer acquires SignerRef {
+        let vault = borrow_global<SignerRef>(get_vault_addr());
+        object::generate_signer_for_extending(&vault.self_ref)
+    }
 
     #[test]
     public fun test_encode() {
