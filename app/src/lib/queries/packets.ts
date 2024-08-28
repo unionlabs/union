@@ -19,41 +19,41 @@ import { packetDetailsQueryDocument } from "$lib/graphql/queries/packet-details"
 const packetTransform = (p: FragmentOf<typeof packetListDataFragment>) => {
   const packet = readFragment(packetListDataFragment, p)
   return {
-    url: `/explorer/packets/${packet.from_chain_id}/${packet.from_connection_id}/${packet.from_channel_id}/${packet.source_sequence}`,
+    url: `/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}/${packet.source_sequence}`,
     source: {
-      chain_id: packet.from_chain_id ?? "unknown",
-      connection_id: packet.from_connection_id ?? "unknown",
-      channel_id: packet.from_channel_id ?? "unknown",
-      port_id: packet.from_port_id ?? "unknown",
+      chain_id: packet.source_chain_id ?? "unknown",
+      connection_id: packet.source_connection_id ?? "unknown",
+      channel_id: packet.source_channel_id ?? "unknown",
+      port_id: packet.source_port_id ?? "unknown",
       sequence: packet.source_sequence ?? "unknown"
     },
     destination: {
-      chain_id: packet.to_chain_id ?? "unknown",
-      connection_id: packet.to_connection_id ?? "unknown",
-      channel_id: packet.to_channel_id ?? "unknown",
-      port_id: packet.to_port_id ?? "unknown",
+      chain_id: packet.destination_chain_id ?? "unknown",
+      connection_id: packet.destination_connection_id ?? "unknown",
+      channel_id: packet.destination_channel_id ?? "unknown",
+      port_id: packet.destination_port_id ?? "unknown",
       sequence: packet.destination_sequence ?? "unknown"
     },
     source_sequence: {
       sequence: packet.source_sequence,
-      timestamp: packet.source_time
+      timestamp: packet.source_timestamp
     },
     destination_sequence: {
       sequence: packet.destination_sequence,
-      timestamp: packet.destination_time
+      timestamp: packet.destination_timestamp
     },
-    timestamp: packet.source_time,
-    destination_time: packet.destination_time
+    timestamp: packet.source_timestamp,
+    destination_time: packet.destination_timestamp
   }
 }
 
 type PacketsReturnType = Promise<Array<ReturnType<typeof packetTransform>>>
 
 export async function packetsLatest({ limit = 12 }: { limit?: number } = {}): PacketsReturnType {
-  const { v0_packets } = await request(URLS.GRAPHQL, packetsLatestQuery, {
+  const { v1_packets } = await request(URLS.GRAPHQL, packetsLatestQuery, {
     limit
   })
-  return v0_packets.map(packetTransform)
+  return v1_packets.map(packetTransform)
 }
 
 export async function packetsTimestamp({
@@ -72,11 +72,11 @@ export async function packetsByChainIdLatest({
   limit,
   chain_id
 }: { limit: number; chain_id: string }): PacketsReturnType {
-  const { v0_packets } = await request(URLS.GRAPHQL, packetsByChainLatestQuery, {
+  const { v1_packets } = await request(URLS.GRAPHQL, packetsByChainLatestQuery, {
     limit,
     chain_id
   })
-  return v0_packets.map(packetTransform)
+  return v1_packets.map(packetTransform)
 }
 
 export async function packetsByChainIdTimestamp({
@@ -97,12 +97,12 @@ export async function packetsByConnectionIdLatest({
   chain_id,
   connection_id
 }: { limit: number; chain_id: string; connection_id: string }): PacketsReturnType {
-  const { v0_packets } = await request(URLS.GRAPHQL, packetsByConnectionIdLatestQuery, {
+  const { v1_packets } = await request(URLS.GRAPHQL, packetsByConnectionIdLatestQuery, {
     limit,
     chain_id,
     connection_id
   })
-  return v0_packets.map(packetTransform)
+  return v1_packets.map(packetTransform)
 }
 
 export async function packetsByConnectionIdTimestamp({
@@ -136,13 +136,13 @@ export async function packetsByChannelIdLatest({
   connection_id: string
   channel_id: string
 }): PacketsReturnType {
-  const { v0_packets } = await request(URLS.GRAPHQL, packetsByChannelIdLatestQuery, {
+  const { v1_packets } = await request(URLS.GRAPHQL, packetsByChannelIdLatestQuery, {
     limit,
     chain_id,
     connection_id,
     channel_id
   })
-  return v0_packets.map(packetTransform)
+  return v1_packets.map(packetTransform)
 }
 
 export async function packetsByChannelIdTimestamp({

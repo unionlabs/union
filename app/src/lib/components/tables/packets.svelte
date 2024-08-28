@@ -30,6 +30,7 @@ let packets = chain_id
       : packetsByConnectionIdQuery(12, chain_id, connection_id, timestamp)
     : packetsByChainIdQuery(12, chain_id, timestamp)
   : packetsQuery(12, timestamp)
+
 let packetsDataStore = derived(packets, $packets => $packets.data ?? [])
 
 type PacketRow = UnwrapReadable<typeof packetsDataStore>[number]

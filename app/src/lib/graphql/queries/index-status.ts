@@ -1,18 +1,17 @@
-import { graphql } from "gql.tada"
+import {graphql} from "gql.tada"
 
 export const indexStatusQuery = graphql(/* GraphQL */ `
-  query IndexStatusQuery {
-    chains: v0_chains(where: {enabled:{_eq:true}}) {
-      chain_id
+    query IndexStatusQuery {
+        chains: v1_chains(where: {enabled:{_eq:true}}) {
+            chain_id
+        }
+        statuses: v1_index_status(order_by: {status: desc}) {
+            chain_id
+            display_name
+            height
+            status
+            timestamp
+            tip_age_seconds
+        }
     }
-    statuses: v0_index_status(order_by: {id: asc}) {
-      chain_id
-      display_name
-      height
-      id
-      status
-      timestamp
-      tip_age_seconds
-    }
-  }
 `)

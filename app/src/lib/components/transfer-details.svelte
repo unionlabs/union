@@ -36,10 +36,10 @@ let transfers = createQuery({
       source_transaction_hash: source
     })
 
-    if (response.v0_transfers === undefined || response.v0_transfers === null)
+    if (response.v1_transfers === undefined || response.v1_transfers === null)
       raise("error fetching transfers")
 
-    return response.v0_transfers
+    return response.v1_transfers
   }
 })
 //@ts-ignore
@@ -122,7 +122,7 @@ let tracesAndHops = createQuery({
       await request(URLS.GRAPHQL, transfersBySourceHashTracesAndHopsQueryDocument, {
         source_transaction_hash: source
       })
-    ).v0_transfers
+    ).v1_transfers
 })
 
 let processedTraces = derived(

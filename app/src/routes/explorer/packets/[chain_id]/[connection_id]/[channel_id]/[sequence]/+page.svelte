@@ -15,7 +15,7 @@ const packetDetails = packetDetailsQuery(chain_id, connection_id, channel_id, Nu
 
 <ChainsGate let:chains>
   {#if $packetDetails.data}
-    {#each $packetDetails.data.v0_packets as packetDetails}
+    {#each $packetDetails.data.v1_packets as packetDetails}
       <PacketDetails {chains} {packetDetails}/>
     {/each}
   {:else}

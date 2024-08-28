@@ -4,7 +4,7 @@ import { packetListDataFragment } from "$lib/graphql/fragments/packets"
 export const packetsLatestQuery = graphql(
   /* GraphQL */ `
     query PacketsLatestQuery($limit: Int = 100) {
-      v0_packets(limit: $limit, order_by: { source_time: desc_nulls_last }) {
+      v1_packets(limit: $limit, order_by: { source_timestamp: desc_nulls_last }) {
         ...PacketListData
       }
     }
@@ -16,20 +16,20 @@ export const packetsTimestampQuery = graphql(
   /* GraphQL */ `
   query PacketsTimestampQuery($limit: Int! = 100, $timestamp: timestamptz!)
     @cached(ttl: 1000) {
-      newer: v0_packets(
+      newer: v1_packets(
         limit: $limit
-        order_by: [{ source_time: asc }, { destination_time: asc }]
-        where: { source_time: { _gte: $timestamp } }
+        order_by: [{ source_timestamp: asc }, { destination_timestamp: asc }]
+        where: { source_timestamp: { _gte: $timestamp } }
       ) {
         ...PacketListData
       }
-      older: v0_packets(
+      older: v1_packets(
         limit: $limit
         order_by: [
-          { source_time: desc }
-          { destination_time: desc }
+          { source_timestamp: desc }
+          { destination_timestamp: desc }
         ]
-        where: { source_time: { _lt: $timestamp } }
+        where: { source_timestamp: { _lt: $timestamp } }
       ) {
         ...PacketListData
       }
@@ -41,12 +41,12 @@ export const packetsTimestampQuery = graphql(
 export const packetsByChainLatestQuery = graphql(
   /* GraphQL */ `
     query PacketsByChainLatestQuery($limit: Int, $chain_id: String!) {
-      v0_packets(
+      v1_packets(
         limit: $limit 
-        order_by: { source_time: desc_nulls_last }
+        order_by: { source_timestamp: desc_nulls_last }
         where: { _or: [
-          { from_chain_id: { _eq: $chain_id }}
-          { to_chain_id: { _eq: $chain_id }}
+          { source_chain_id: { _eq: $chain_id }}
+          { destination_chain_id: { _eq: $chain_id }}
         ]}
         ) {
         ...PacketListData
@@ -59,16 +59,16 @@ export const packetsByChainLatestQuery = graphql(
 export const packetsByChainTimestampQuery = graphql(
   /* GraphQL */ `
     query PacketsByChainTimestampQuery($limit: Int!, $chain_id: String!, $timestamp: timestamptz!) @cached(ttl: 1000) {
-      newer: v0_packets(
+      newer: v1_packets(
         limit: $limit
-        order_by: [{ source_time: asc }, { destination_time: asc }]
+        order_by: [{ source_timestamp: asc }, { destination_timestamp: asc }]
         where: {
           _and: [
-            { source_time: { _gte: $timestamp } }
+            { source_timestamp: { _gte: $timestamp } }
             {
               _or: [
-                { from_chain_id: { _eq: $chain_id }}
-                { to_chain_id: { _eq: $chain_id }}
+                { source_chain_id: { _eq: $chain_id }}
+                { destination_chain_id: { _eq: $chain_id }}
               ]
             }
           ]
@@ -77,16 +77,16 @@ export const packetsByChainTimestampQuery = graphql(
       ) {
         ...PacketListData
       }
-      older: v0_packets(
+      older: v1_packets(
         limit: $limit
-        order_by: [ { source_time: desc } { destination_time: desc } ]
+        order_by: [ { source_timestamp: desc } { destination_timestamp: desc } ]
         where: {
           _and: [
-            { source_time: { _lt: $timestamp } }
+            { source_timestamp: { _lt: $timestamp } }
             {
               _or: [
-                { from_chain_id: { _eq: $chain_id }}
-                { to_chain_id: { _eq: $chain_id }}
+                { source_chain_id: { _eq: $chain_id }}
+                { destination_chain_id: { _eq: $chain_id }}
               ]
             }
           ]
@@ -102,13 +102,13 @@ export const packetsByChainTimestampQuery = graphql(
 export const packetsByConnectionIdLatestQuery = graphql(
   /* GraphQL */ `
     query PacketsByConnectionIdLatestQuery($limit: Int!, $chain_id: String!, $connection_id: String!) {
-      v0_packets(
+      v1_packets(
         limit: $limit 
-        order_by: { source_time: desc_nulls_last }
+        order_by: { source_timestamp: desc_nulls_last }
         where: { 
           _or: [
-            { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }}] }
-            { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }}] }
+            { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }}] }
+            { _and: [{destination_chain_id: { _eq: $chain_id }} {destination_connection_id: { _eq: $connection_id }}] }
           ]
         }
         ) {
@@ -122,16 +122,16 @@ export const packetsByConnectionIdLatestQuery = graphql(
 export const packetsByConnectionIdTimestampQuery = graphql(
   /* GraphQL */ `
     query PacketsByConnectionIdTimestampQuery($limit: Int!, $chain_id: String!, $connection_id: String!, $timestamp: timestamptz!) @cached(ttl: 1000) {
-      newer: v0_packets(
+      newer: v1_packets(
         limit: $limit
-        order_by: [{ source_time: asc }, { destination_time: asc }]
+        order_by: [{ source_timestamp: asc }, { destination_timestamp: asc }]
         where: {
           _and: [
-            { source_time: { _gte: $timestamp } }
+            { source_timestamp: { _gte: $timestamp } }
             {
               _or: [
-                { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }}] }
-                { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }}] }
+                { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }}] }
+                { _and: [{destination_chain_id: { _eq: $chain_id }} {destination_connection_id: { _eq: $connection_id }}] }
               ]
             }
           ]
@@ -140,16 +140,16 @@ export const packetsByConnectionIdTimestampQuery = graphql(
       ) {
         ...PacketListData
       }
-      older: v0_packets(
+      older: v1_packets(
         limit: $limit
-        order_by: [ { source_time: desc } { destination_time: desc } ]
+        order_by: [ { source_timestamp: desc } { destination_timestamp: desc } ]
         where: {
           _and: [
-            { source_time: { _lt: $timestamp } }
+            { source_timestamp: { _lt: $timestamp } }
             {
               _or: [
-                { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }}] }
-                { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }}] }
+                { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }}] }
+                { _and: [{destination_chain_id: { _eq: $chain_id }} {destination_connection_id: { _eq: $connection_id }}] }
               ]
             }
           ]
@@ -165,13 +165,13 @@ export const packetsByConnectionIdTimestampQuery = graphql(
 export const packetsByChannelIdLatestQuery = graphql(
   /* GraphQL */ `
     query PacketsByChannelIdLatestQuery($limit: Int!, $chain_id: String!, $connection_id: String!, $channel_id: String!) {
-      v0_packets(
+      v1_packets(
         limit: $limit 
-        order_by: { source_time: desc_nulls_last }
+        order_by: { source_timestamp: desc_nulls_last }
         where: { 
           _or: [
-            { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }} {from_channel_id: { _eq: $channel_id }}] }
-            { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }} {to_channel_id: { _eq: $channel_id }}] }
+            { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }} {source_channel_id: { _eq: $channel_id }}] }
+            { _and: [{destination_chain_id: { _eq: $chain_id }} {destination_connection_id: { _eq: $connection_id }} {destination_channel_id: { _eq: $channel_id }}] }
           ]
         }
         ) {
@@ -185,16 +185,16 @@ export const packetsByChannelIdLatestQuery = graphql(
 export const packetsByChannelIdTimestampQuery = graphql(
   /* GraphQL */ `
     query PacketsByChannelIdTimestampQuery($limit: Int!, $chain_id: String!, $connection_id: String!, $channel_id: String!,  $timestamp: timestamptz!) @cached(ttl: 1000) {
-      newer: v0_packets(
+      newer: v1_packets(
         limit: $limit
-        order_by: [{ source_time: asc }, { destination_time: asc }]
+        order_by: [{ source_timestamp: asc }, { destination_timestamp: asc }]
         where: {
           _and: [
-            { source_time: { _gte: $timestamp } }
+            { source_timestamp: { _gte: $timestamp } }
             {
               _or: [
-                { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }} {from_channel_id: { _eq: $channel_id }}] }
-                { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }} {to_channel_id: { _eq: $channel_id }}] }
+                { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }} {source_channel_id: { _eq: $channel_id }}] }
+                { _and: [{destination_chain_id: { _eq: $chain_id }} {destination_connection_id: { _eq: $connection_id }} {destination_channel_id: { _eq: $channel_id }}] }
               ]
             }
           ]
@@ -203,16 +203,16 @@ export const packetsByChannelIdTimestampQuery = graphql(
       ) {
         ...PacketListData
       }
-      older: v0_packets(
+      older: v1_packets(
         limit: $limit
-        order_by: [ { source_time: desc } { destination_time: desc } ]
+        order_by: [ { source_timestamp: desc } { destination_timestamp: desc } ]
         where: {
           _and: [
-            { source_time: { _lt: $timestamp } }
+            { source_timestamp: { _lt: $timestamp } }
             {
               _or: [
-                { _and: [{from_chain_id: { _eq: $chain_id }} {from_connection_id: { _eq: $connection_id }} {from_channel_id: { _eq: $channel_id }}] }
-                { _and: [{to_chain_id: { _eq: $chain_id }} {to_connection_id: { _eq: $connection_id }} {to_channel_id: { _eq: $channel_id }}] }
+                { _and: [{source_chain_id: { _eq: $chain_id }} {source_connection_id: { _eq: $connection_id }} {source_channel_id: { _eq: $channel_id }}] }
+                { _and: [{destination_chain_id: { _eq: $chain_id }} {destination_connection_id: { _eq: $connection_id }} {destination_channel_id: { _eq: $channel_id }}] }
               ]
             }
           ]
