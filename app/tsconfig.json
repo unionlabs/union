@@ -26,7 +26,7 @@
         "name": "gql.tada/ts-plugin",
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts",
         "schema": {
-          "url": "https://blue.graphql.union.build/v1/graphql"
+          "url": "https://green.graphql.union.build/v1/graphql"
         }
       }
     ]
