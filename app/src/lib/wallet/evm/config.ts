@@ -34,7 +34,7 @@ export type ConnectedWallet = Wallet & { status: "connected" }
 export type ConnectorType = "injected" | "walletConnect"
 
 export const config = createConfig({
-  chains: [sepolia, berachainTestnetbArtio, arbitrumSepolia],
+  chains: [sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia],
   cacheTime: 4_000,
   pollingInterval: 4_000,
   syncConnectedChain: true,
@@ -72,6 +72,16 @@ export const config = createConfig({
       http(arbitrumSepolia.rpcUrls.default.http.at(0), { name: "default Arbitrum Sepolia RPC" })
     ]),
     [scrollSepolia.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-scroll-sepolia",
+        name: "unstable_connector-injected-scroll-sepolia"
+      }),
+      http(
+        "https://sparkling-shy-hill.scroll-testnet.quiknode.pro/71674ce271d10786bb3e2fb69e8f788b784c2e89/",
+        { name: "QuickNode - Scroll Sepolia" }
+      ),
       http(scrollSepolia.rpcUrls.default.http.at(0), { name: "default Scroll Sepolia RPC" })
     ])
   },

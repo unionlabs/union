@@ -19,17 +19,18 @@ export function userBalancesQuery({
 }) {
   return createQueries({
     queries: chains.map(chain => ({
-      // Using JSON.stringify to ensure queryKey updates when userAddr changes.
       queryKey: [
         "balances",
         chain.chain_id,
         userAddr?.evm?.normalized,
         userAddr?.cosmos?.normalized
       ],
-      refetchOnWindowFocus: false,
       refetchInterval: 4_000,
+      refetchOnWindowFocus: false,
       queryFn: async () => {
-        if (chain.rpc_type === "evm" && userAddr.evm && connected) {
+        if (!connected) return []
+
+        if (chain.rpc_type === "evm" && userAddr.evm) {
           const rpc = chain.rpcs
             .filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan")
             .at(0)
@@ -48,6 +49,7 @@ export function userBalancesQuery({
           }
 
           const tokenList = chain.assets.filter(asset => isAddress(asset.denom))
+
           const multicallResults = await erc20ReadMulticall({
             chainId: chain.chain_id,
             functionNames: ["balanceOf"],
@@ -66,7 +68,7 @@ export function userBalancesQuery({
             .filter(result => !!result?.balance && BigInt(result.balance) > 0n)
         }
 
-        if (chain.rpc_type === "cosmos" && userAddr.cosmos && connected) {
+        if (chain.rpc_type === "cosmos" && userAddr.cosmos) {
           const url = chain.rpcs.filter(rpc => rpc.type === "rest").at(0)?.url
           if (!url) raise(`No REST RPC available for chain ${chain.chain_id}`)
 
