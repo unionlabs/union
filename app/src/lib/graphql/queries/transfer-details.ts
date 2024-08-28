@@ -19,18 +19,27 @@ export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
             destination_connection_id
             destination_channel_id
             destination_sequence
-            assets
+            tokens {
+                denom
+                amount
+                asset {
+                    denom
+                    decimals
+                    display_name
+                    display_symbol
+                }
+            }
             source_timestamp
             destination_timestamp
-            forwards_2 {
-                chain {
+            forwards {
+                source_chain {
                     chain_id
                 }
                 source_connection_id
                 source_channel_id
                 destination_connection_id
                 destination_channel_id
-                channel
+                source_channel_id
                 receiver
             }
         }
