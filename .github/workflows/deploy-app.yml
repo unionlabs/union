@@ -27,21 +27,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait on Garnix CI Check Suite
-        env: 
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           REF: ${{ github.head_ref }}
         run: |
           sleep 15
-          
+
           status=''
-          
+
           while [[ $status != 'completed' ]]; do
             check_suites=$(gh api \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "/repos/$REPO/commits/$REF/check-suites")
-              
+
             status=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .status')
             sleep 15
           done
