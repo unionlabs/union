@@ -33,17 +33,14 @@ export function userBalancesQuery({
           const rpc = chain.rpcs
             .filter(rpc => rpc.type === "alchemy" || rpc.type === "routescan")
             .at(0)
-          if (!rpc) {
-            raise(`No Alchemy or Routescan RPC available for chain ${chain.chain_id}`)
-          }
 
-          if (rpc.type === "alchemy") {
+          if (rpc?.type === "alchemy") {
             return await getBalancesFromAlchemy({
               url: rpc.url,
               walletAddress: userAddr.evm.canonical
             })
           }
-          if (rpc.type === "routescan") {
+          if (rpc?.type === "routescan") {
             return await getBalancesFromRoutescan({
               url: rpc.url,
               walletAddress: userAddr.evm.canonical
