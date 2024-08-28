@@ -8,7 +8,7 @@ export const chainsQuery = () =>
   createQuery({
     queryKey: ["chains"],
     placeholderData: (previousData, _) => previousData,
-    queryFn: async () => (await request(URLS.GRAPHQL, chainsQueryDocument, {})).v0_chains,
+    queryFn: async () => (await request(URLS.GRAPHQL, chainsQueryDocument, {})).v1_chains,
     enabled: true,
     refetchInterval: 6_000,
     refetchOnWindowFocus: false

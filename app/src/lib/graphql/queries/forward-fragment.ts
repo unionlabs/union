@@ -1,12 +1,12 @@
 import { graphql } from "gql.tada"
 
 export const ForwardFragment = graphql(/* GraphQL */ `
-  fragment ForwardFragment on v0_transfers {
+  fragment ForwardFragment on v1_transfers {
       forwards {
-        port
-        channel
-        receiver
-        chain { chain_id }
+          source_port_id
+          source_channel_id
+          receiver
+          source_chain { chain_id }
       }
   }
 `)
