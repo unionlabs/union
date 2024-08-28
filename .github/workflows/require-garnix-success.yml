@@ -24,7 +24,7 @@ jobs:
           REPO: ${{ github.repository }}
           REF: ${{ github.head_ref }}
         run: |
-          sleep 60
+          sleep 15
 
           status=''
 
