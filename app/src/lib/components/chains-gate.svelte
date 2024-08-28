@@ -43,7 +43,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 
     let ucs1_configurations = chain.ucs1_configurations.reduce<Chain["ucs1_configurations"]>(
       (acc, item) => {
-        let forward = item.forward.reduce<Record<string, (typeof item.forward)[number]>>(
+        let forwards = item.forwards.reduce<Record<string, (typeof item.forward)[number]>>(
           (acc2, item2) => {
             acc2[item2.destination_chain.chain_id] = item2
             return acc2
@@ -53,7 +53,7 @@ let checkedChains: Readable<Array<Chain>> = derived(chains, $chains => {
 
         let item_with_fwd = {
           ...item,
-          forward
+          forwards
         }
 
         acc[item.destination_chain.chain_id] = item_with_fwd

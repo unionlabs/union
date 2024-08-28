@@ -48,7 +48,7 @@ export type Chain = {
     {
       contract_address: string
       channel_id: string
-      forward: Record<
+      forwards: Record<
         string,
         {
           channel_id: string

@@ -20,7 +20,7 @@ export const chainsQueryDocument = graphql(/* GraphQL */ `query ChainsQuery @cac
       destination_chain {
         chain_id
       }
-      forward {
+      forwards {
         channel_id
         destination_chain {
           chain_id
