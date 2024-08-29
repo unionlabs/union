@@ -17,7 +17,7 @@ use crate::{
     init::{self, SetSeedsError},
     logging::LogFormat,
     supervisor::{self, RuntimeError},
-    symlinker::{MakeFallbackLinkError, Symlinker},
+    symlinker::{MakeFallbackLinkError, Symlinker, SymlinkerError},
 };
 
 #[derive(Parser, Clone)]
@@ -55,6 +55,10 @@ pub struct Cli {
 
 #[derive(Clone, Parser)]
 pub enum Command {
+    /// Set the current binary to a specific version in the bundle.
+    /// Use this when using unionvisor in combination with a node snapshot or state sync.
+    SetBinary(SetBinaryCmd),
+
     /// Call the current binary, forwarding all arguments passed.
     /// `unionvisor call ..arg` is equivalent to `uniond ..args`.
     Call(CallCmd),
@@ -64,6 +68,15 @@ pub enum Command {
 
     /// Initializes a local directory to join the union network.
     Init(InitCmd),
+}
+
+#[derive(Clone, Parser)]
+pub struct SetBinaryCmd {
+    /// Path to where the binary bundle is stored.
+    #[arg(short, long, env = "UNIONVISOR_BUNDLE")]
+    bundle: PathBuf,
+
+    version: String,
 }
 
 #[derive(Clone, Parser)]
@@ -116,6 +129,10 @@ pub struct RunCmd {
 impl Cli {
     pub fn run(self) -> Result<(), RunCliError> {
         match &self.command {
+            Command::SetBinary(cmd) => {
+                cmd.set_binary(self.root)?;
+                Ok(())
+            }
             Command::Call(cmd) => {
                 cmd.call(self.root)?;
                 Ok(())
@@ -134,6 +151,8 @@ impl Cli {
 
 #[derive(Debug, Error)]
 pub enum RunCliError {
+    #[error("set binary error")]
+    SetBinary(#[from] SetBinaryError),
     #[error("call command error")]
     Call(#[from] CallError),
     #[error("run command error")]
@@ -227,6 +246,40 @@ pub enum RunError {
     NewBundle(#[from] NewBundleError),
     #[error("runtime error")]
     Runtime(#[from] RuntimeError),
+}
+
+#[derive(Debug, Error)]
+pub enum SetBinaryError {
+    #[error("runtime error")]
+    Runtime(#[from] RuntimeError),
+    #[error("new bundle error")]
+    NewBundle(#[from] NewBundleError),
+    #[error("symlink error")]
+    Symlink(#[from] SymlinkerError),
+}
+
+impl SetBinaryCmd {
+    fn set_binary(&self, root: impl Into<PathBuf>) -> Result<(), SetBinaryError> {
+        let root = root.into();
+        let bundle = Bundle::new(self.bundle.clone())?;
+        log_bundle(&bundle);
+        let symlinker = Symlinker::new(root.clone(), bundle);
+
+        // Ensure version exists in bundle
+        symlinker
+            .bundle
+            .path_to(&self.version)
+            .validate()
+            .map_err(|source| RuntimeError::BinaryUnavailable {
+                name: self.version.clone(),
+                source,
+            })?;
+
+        // Swap version symlink
+        symlinker.swap(&self.version)?;
+
+        Ok(())
+    }
 }
 
 impl CallCmd {
