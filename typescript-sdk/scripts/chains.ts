@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { consola } from "./logger.ts"
-import { offchainQuery } from "#mod.ts"
+import { offchainQuery } from "../src/mod.ts"
 
 const [, , chainId] = process.argv
 

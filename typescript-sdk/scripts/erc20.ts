@@ -1,6 +1,6 @@
 import * as chains from "viem/chains"
 import { parseArgs } from "node:util"
-import { raise } from "#utilities/index.ts"
+import { raise } from "../src/utilities/index.ts"
 import { createPublicClient, erc20Abi, fallback, getAddress, http } from "viem"
 
 const { values } = parseArgs({
