@@ -19,6 +19,7 @@
           buildInputs = combinedDeps;
           installPhase = ''
             mkdir -p $out
+            echo "force rebuild"
             cp -r ./build/* $out
           '';
           doDist = false;
