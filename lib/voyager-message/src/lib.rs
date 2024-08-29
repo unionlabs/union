@@ -136,7 +136,9 @@ impl IbcInterface<'static> {
     /// L2s, berachain, etc).
     pub const IBC_SOLIDITY: &'static str = "ibc-solidity";
 
-    // lots more to come - near, move, fuel - stay tuned
+    pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
+
+    // lots more to come - near, fuel - stay tuned
 }
 
 /// Newtype for client types. Clients of the same type have the same client
@@ -172,7 +174,10 @@ impl ClientType<'static> {
     /// A client tracking the state of a BeaconKit chain.
     pub const BEACON_KIT: &'static str = "beacon-kit";
 
-    // lots more to come - near, movement, linea, polygon - stay tuned
+    /// A client tracking the state of a Movement chain.
+    pub const MOVEMENT: &'static str = "movement";
+
+    // lots more to come - near, linea, polygon - stay tuned
 }
 
 /// Identifier used to uniquely indentify the chain, as provided by the chain itself.

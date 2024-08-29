@@ -774,6 +774,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             WasmClientType::Arbitrum => ClientType::new(ClientType::ARBITRUM),
                             WasmClientType::Linea => todo!(),
                             WasmClientType::Berachain => ClientType::new(ClientType::BEACON_KIT),
+                            WasmClientType::Movement => ClientType::new(ClientType::MOVEMENT),
                             WasmClientType::EvmInCosmos => todo!(),
                         },
                         None => {
