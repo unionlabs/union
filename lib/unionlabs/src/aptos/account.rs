@@ -35,18 +35,19 @@ pub struct AccountAddress(pub [u8; Self::LENGTH]);
 impl AccountAddress {
     pub const LENGTH: usize = 32;
 
+    #[must_use]
     pub const fn new(address: [u8; Self::LENGTH]) -> Self {
         Self(address)
     }
 
-    /// NOTE: Where possible use from_str_strict or from_str instead.
+    /// NOTE: Where possible use `from_str_strict` or `from_str` instead.
     pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self, AccountAddressParseError> {
         <[u8; Self::LENGTH]>::from_hex(hex)
-            .map_err(|e| AccountAddressParseError::InvalidHexChars(format!("{:#}", e)))
+            .map_err(|e| AccountAddressParseError::InvalidHexChars(format!("{e:#}")))
             .map(Self)
     }
 
-    /// NOTE: Where possible use from_str_strict or from_str instead.
+    /// NOTE: Where possible use `from_str_strict` or `from_str` instead.
     pub fn from_hex_literal(literal: &str) -> Result<Self, AccountAddressParseError> {
         if !literal.starts_with("0x") {
             return Err(AccountAddressParseError::LeadingZeroXRequired);
@@ -69,12 +70,12 @@ impl AccountAddress {
 }
 
 impl Serialize for AccountAddress {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
         S: ::serde::Serializer,
     {
         if serializer.is_human_readable() {
-            hex::encode(&self.0).serialize(serializer)
+            hex::encode(self.0).serialize(serializer)
         } else {
             // See comment in deserialize.
             serializer.serialize_newtype_struct("AccountAddress", &self.0)
@@ -83,7 +84,7 @@ impl Serialize for AccountAddress {
 }
 
 impl<'de> Deserialize<'de> for AccountAddress {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
     {
@@ -111,7 +112,7 @@ impl FromStr for AccountAddress {
     /// the `from_str_strict` function. Where possible use `from_str_strict` rather than
     /// this function.
     ///
-    /// Create an instance of AccountAddress by parsing a hex string representation.
+    /// Create an instance of `AccountAddress` by parsing a hex string representation.
     ///
     /// This function allows all formats defined by AIP-40. In short this means the
     /// following formats are accepted:
@@ -127,16 +128,16 @@ impl FromStr for AccountAddress {
     /// Learn more about the different address formats by reading AIP-40:
     /// <https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md>.
     fn from_str(s: &str) -> Result<Self, AccountAddressParseError> {
-        if !s.starts_with("0x") {
-            if s.is_empty() {
-                return Err(AccountAddressParseError::TooShort);
-            }
-            AccountAddress::from_hex_literal(&format!("0x{}", s))
-        } else {
+        if s.starts_with("0x") {
             if s.len() == 2 {
                 return Err(AccountAddressParseError::TooShort);
             }
             AccountAddress::from_hex_literal(s)
+        } else {
+            if s.is_empty() {
+                return Err(AccountAddressParseError::TooShort);
+            }
+            AccountAddress::from_hex_literal(&format!("0x{s}"))
         }
     }
 }

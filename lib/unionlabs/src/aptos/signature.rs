@@ -29,7 +29,7 @@ impl From<protos::union::ibc::lightclients::movement::v1::Signature> for Signatu
 }
 
 impl serde::Serialize for Signature {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
         S: ::serde::Serializer,
     {
@@ -45,7 +45,7 @@ impl serde::Serialize for Signature {
 }
 
 impl<'de> serde::Deserialize<'de> for Signature {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where
         D: ::serde::Deserializer<'de>,
     {

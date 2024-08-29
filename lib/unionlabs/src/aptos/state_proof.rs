@@ -31,6 +31,7 @@ pub struct StateProof {
 }
 
 impl StateProof {
+    #[must_use]
     pub fn new(
         latest_li_w_sigs: LedgerInfoWithSignatures,
         epoch_changes: EpochChangeProof,
@@ -41,12 +42,15 @@ impl StateProof {
         }
     }
 
+    #[must_use]
+    #[allow(clippy::missing_panics_doc)] // panics are impossible
     pub fn hash(&self) -> [u8; 32] {
         let mut hasher = sha2::Sha256::new();
         bcs::serialize_into(&mut hasher, self).expect("unexpected serialization error");
         hasher.finalize().into()
     }
 
+    #[must_use]
     pub fn latest_ledger_info(&self) -> &LedgerInfo {
         let LedgerInfoWithSignatures::V0(ledger_info) = &self.latest_li_w_sigs;
         &ledger_info.ledger_info

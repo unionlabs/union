@@ -7,7 +7,7 @@ use super::{
 };
 use crate::errors::{required, ExpectedLength, InvalidLength, MissingField};
 
-/// Wrapper around LedgerInfoWithScheme to support future upgrades, this is the data being persisted.
+/// Wrapper to support future upgrades, this is the data being persisted.
 #[model(proto(
     raw(protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures),
     into,
@@ -19,7 +19,7 @@ pub enum LedgerInfoWithSignatures {
 
 /// The validator node returns this structure which includes signatures
 /// from validators that confirm the state.  The client needs to only pass back
-/// the LedgerInfo element since the validator node doesn't need to know the signatures
+/// the `LedgerInfo` element since the validator node doesn't need to know the signatures
 /// again when the client performs a query, those are only there for the client
 /// to be able to verify the state
 #[model]

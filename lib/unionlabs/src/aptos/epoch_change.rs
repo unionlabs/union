@@ -6,8 +6,8 @@ use macros::model;
 
 use super::ledger_info::{LedgerInfoWithSignatures, TryFromLedgerInfoWithSignatures};
 
-/// A vector of LedgerInfo with contiguous increasing epoch numbers to prove a sequence of
-/// epoch changes from the first LedgerInfo's epoch.
+/// A vector of `LedgerInfo` with contiguous increasing epoch numbers to prove a sequence of
+/// epoch changes from the first `LedgerInfo`'s epoch.
 #[model(proto(
     raw(protos::union::ibc::lightclients::movement::v1::EpochChangeProof),
     into,

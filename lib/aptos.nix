@@ -35,7 +35,7 @@
 
         CARGO_PROFILE = "cli";
 
-        CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
+        # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
 
         src = builtins.fetchGit {
           url = "https://github.com/aeryz/aptos-core";

@@ -11,7 +11,7 @@ impl AsRef<[u8; HashValue::LENGTH]> for HashValue {
     }
 }
 
-impl std::ops::Deref for HashValue {
+impl core::ops::Deref for HashValue {
     type Target = [u8; Self::LENGTH];
 
     fn deref(&self) -> &Self::Target {
@@ -19,7 +19,7 @@ impl std::ops::Deref for HashValue {
     }
 }
 
-impl std::ops::Index<usize> for HashValue {
+impl core::ops::Index<usize> for HashValue {
     type Output = u8;
 
     fn index(&self, s: usize) -> &u8 {
@@ -39,7 +39,7 @@ impl fmt::LowerHex for HashValue {
             write!(f, "0x")?;
         }
         for byte in &self.0 {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{byte:02x}")?;
         }
         Ok(())
     }
@@ -49,7 +49,7 @@ impl fmt::LowerHex for HashValue {
 impl fmt::Display for HashValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for byte in self.0.iter().take(4) {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{byte:02x}")?;
         }
         Ok(())
     }
@@ -64,9 +64,9 @@ impl fmt::Debug for HashValue {
     }
 }
 
-impl std::error::Error for HashValueParseError {}
+impl core::error::Error for HashValueParseError {}
 
-/// Parse error when attempting to construct a HashValue
+/// Parse error when attempting to construct a `HashValue`
 #[derive(Clone, Copy, Debug)]
 pub struct HashValueParseError;
 
@@ -80,6 +80,7 @@ impl HashValue {
     pub const LENGTH_IN_BITS: usize = Self::LENGTH * 8;
 
     /// Create a new [`HashValue`] from a byte array.
+    #[must_use]
     pub fn new(hash: [u8; HashValue::LENGTH]) -> Self {
         HashValue(hash)
     }
@@ -92,20 +93,18 @@ impl HashValue {
     }
 
     /// Full hex representation of a given hash value.
+    #[must_use]
     pub fn to_hex(&self) -> String {
-        format!("{:x}", self)
+        format!("{self:x}")
     }
 
-    /// Creates a zero-initialized instance.
-    pub const fn zero() -> Self {
-        HashValue([0; HashValue::LENGTH])
-    }
-
+    #[must_use]
     pub fn iter_bits(&self) -> HashValueBitIterator<'_> {
         HashValueBitIterator::new(self)
     }
 
     /// Returns the length of common prefix of `self` and `other` in bits.
+    #[must_use]
     pub fn common_prefix_bits_len(&self, other: HashValue) -> usize {
         self.iter_bits()
             .zip(other.iter_bits())
@@ -175,7 +174,7 @@ impl<'de> de::Deserialize<'de> for HashValue {
 pub struct HashValueBitIterator<'a> {
     /// The reference to the bytes that represent the `HashValue`.
     hash_bytes: &'a [u8],
-    pos: std::ops::Range<usize>,
+    pos: core::ops::Range<usize>,
     // invariant hash_bytes.len() == HashValue::LENGTH;
     // invariant pos.end == hash_bytes.len() * 8;
 }
@@ -199,7 +198,7 @@ impl<'a> HashValueBitIterator<'a> {
     }
 }
 
-impl<'a> std::iter::Iterator for HashValueBitIterator<'a> {
+impl<'a> core::iter::Iterator for HashValueBitIterator<'a> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -211,7 +210,7 @@ impl<'a> std::iter::Iterator for HashValueBitIterator<'a> {
     }
 }
 
-impl<'a> std::iter::DoubleEndedIterator for HashValueBitIterator<'a> {
+impl<'a> core::iter::DoubleEndedIterator for HashValueBitIterator<'a> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }

@@ -177,6 +177,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                 WasmClientType::EvmInCosmos => {
                                     todo!()
                                 }
+                                WasmClientType::Movement => todo!(),
                             };
 
                             datas.push(Data {

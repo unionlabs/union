@@ -2,15 +2,15 @@
 // Parts of the project are originally copyright © Meta Platforms, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fmt;
+use core::fmt;
 
 use macros::model;
 
 use super::validator_verifier::{TryFromValidatorVerifierError, ValidatorVerifier};
 use crate::errors::{required, MissingField};
 
-/// EpochState represents a trusted validator set to validate messages from the specific epoch,
-/// it could be updated with EpochChangeProof.
+/// `EpochState` represents a trusted validator set to validate messages from the specific epoch,
+/// it could be updated with `EpochChangeProof`.
 #[model(proto(
     raw(protos::union::ibc::lightclients::movement::v1::EpochState),
     into,
