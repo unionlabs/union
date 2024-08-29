@@ -64,6 +64,9 @@ pub mod linea;
 /// Types specific to the berachain protocol.
 pub mod berachain;
 
+/// Types specific to aptos.
+pub mod aptos;
+
 /// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
 pub mod bls;
 
@@ -157,6 +160,7 @@ pub enum WasmClientType {
     Linea,
     Berachain,
     EvmInCosmos,
+    Movement,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -208,6 +212,7 @@ impl FromStr for WasmClientType {
             "Linea" => Ok(WasmClientType::Linea),
             "Berachain" => Ok(WasmClientType::Berachain),
             "EvmInCosmos" => Ok(WasmClientType::EvmInCosmos),
+            "Movement" => Ok(WasmClientType::Movement),
             _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
         }
     }
@@ -225,6 +230,7 @@ impl Display for WasmClientType {
             Self::Linea => write!(f, "Linea"),
             Self::Berachain => write!(f, "Berachain"),
             Self::EvmInCosmos => write!(f, "EvmInCosmos"),
+            Self::Movement => write!(f, "Movement"),
         }
     }
 }

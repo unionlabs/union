@@ -233,6 +233,7 @@
         ./lib/ssz/ssz.nix
         ./lib/unionlabs/unionlabs.nix
         ./hubble/hubble.nix
+        ./lib/aptos.nix
         ./lib/ethereum-verifier/ethereum-verifier.nix
         ./lib/tendermint-verifier/tendermint-verifier.nix
         ./lib/scroll-verifier/scroll-verifier.nix
@@ -249,6 +250,7 @@
         ./light-clients/linea-light-client/linea-light-client.nix
         ./light-clients/berachain-light-client/berachain-light-client.nix
         ./light-clients/evm-in-cosmos-light-client/evm-in-cosmos-light-client.nix
+        ./light-clients/movement/ics08-movement/ics08-movement.nix
         ./lib/cometbls-groth16-verifier/default.nix
         ./lib/linea-verifier/default.nix
         ./lib/linea-zktrie/default.nix

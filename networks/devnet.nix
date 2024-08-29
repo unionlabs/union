@@ -62,6 +62,7 @@
           # self'.packages.scroll-light-client
           self'.packages.arbitrum-light-client
           # self'.packages.berachain-light-client
+          self'.packages.ics08-movement
         ];
         cosmwasmContracts = [
           {

@@ -1,0 +1,16 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "aptos-verifier"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+bcs         = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
+hex-literal = { workspace = true }
+sha3        = { workspace = true }
+thiserror   = { workspace = true }
+unionlabs   = { workspace = true }
+
+[lints]
+workspace = true

@@ -209,6 +209,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 
 [[package]]
+name = "aptos-verifier"
+version = "0.1.0"
+dependencies = [
+ "bcs",
+ "hex-literal",
+ "sha3",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
 name = "arbitrary"
 version = "1.3.2"
 source = "git+https://github.com/unionlabs/arbitrary#b5796f1a0066dc5707d7681a80e19b99a910987d"
@@ -848,6 +859,15 @@ name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
+
+[[package]]
+name = "bcs"
+version = "0.1.4"
+source = "git+https://github.com/aptos-labs/bcs.git?rev=d31fab9d81748e2594be5cd5cdf845786a30562d#d31fab9d81748e2594be5cd5cdf845786a30562d"
+dependencies = [
+ "serde",
+ "thiserror",
+]
 
 [[package]]
 name = "beacon-api"
@@ -4824,6 +4844,27 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
+ "thiserror",
+ "unionlabs",
+]
+
+[[package]]
+name = "ics08-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-verifier",
+ "bcs",
+ "cosmwasm-std 1.5.2",
+ "ethereum-verifier",
+ "hex",
+ "hex-literal",
+ "ics008-wasm-client",
+ "protos",
+ "rlp",
+ "serde",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3",
  "thiserror",
  "unionlabs",
 ]
@@ -10984,9 +11025,9 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 1.0.0",
+ "cfg-if 0.1.10",
  "digest 0.10.7",
- "rand 0.8.5",
+ "rand 0.4.6",
  "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -11187,6 +11228,7 @@ name = "unionlabs"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "bcs",
  "bip32",
  "bitvec",
  "borsh 1.5.1",
@@ -11221,6 +11263,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde-utils",
+ "serde_bytes",
  "serde_json",
  "sha2 0.10.8",
  "sha3",

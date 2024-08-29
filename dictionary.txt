@@ -244,6 +244,7 @@ appchain
 appchains
 appmodule
 appparams
+aptos
 arbitrum
 arbtest
 arethetypeswrong
@@ -303,6 +304,7 @@ bitfield
 bitfield's
 bitfields
 bitlist
+bitmask
 bitsize
 bitslice
 bitsong
@@ -376,6 +378,7 @@ commitmenttypes
 committes
 compat
 composability
+compr
 concat
 configurator
 confix
@@ -473,6 +476,7 @@ dymension
 echarts
 eitherway
 elems
+elfutils
 elgafar
 elit
 endianness
@@ -1069,6 +1073,7 @@ stridevalcons
 stridevalconspub
 stridevaloper
 stridevaloperpub
+strlen
 struct
 structs
 strxor
@@ -1077,6 +1082,7 @@ subaccount
 subdenom
 subdenoms
 subdetail
+subdir
 submessage
 submessages
 submsg
@@ -1176,6 +1182,7 @@ umee
 unbond
 unbonded
 unbonding
+uncompr
 uncons
 undelegate
 undelegations
@@ -1223,8 +1230,10 @@ upgradability
 upgradeclient
 upgradekeeper
 upgradetypes
+upsert
 urql
 ursi
+usecs
 usertransfers
 usizes
 ustars
