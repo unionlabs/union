@@ -196,10 +196,10 @@
     "max_retry": 3
   },
   "finalities":[
-    {"chain": "arbitrum", "channel": "channel-141", "forward_channel": "channel-0", "finality": 7200},
-    {"chain": "bera", "channel": "channel-86", "forward_channel": "channel-3", "finality": 60},
-    {"chain": "sepolia", "channel": "channel-82", "forward_channel": "channel-90", "finality": 720},
-    {"chain": "osmosis", "channel": "channel-40", "forward_channel": "channel-8075", "finality": 60},
-    {"chain": "stride", "channel": "channel-103", "forward_channel": "channel-50", "finality": 60}
+    {"chain": "arbitrum", "channel": "channel-141", "forward_channel": "channel-0", "finality": 14400},
+    {"chain": "bera", "channel": "channel-86", "forward_channel": "channel-3", "finality": 120},
+    {"chain": "sepolia", "channel": "channel-82", "forward_channel": "channel-90", "finality": 1440},
+    {"chain": "osmosis", "channel": "channel-40", "forward_channel": "channel-8075", "finality": 120},
+    {"chain": "stride", "channel": "channel-103", "forward_channel": "channel-50", "finality": 120}
   ]
 }

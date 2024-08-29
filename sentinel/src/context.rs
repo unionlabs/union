@@ -313,7 +313,7 @@ impl Context {
                                                 }
                                             }
                                         }
-                                        if duration.num_seconds() >= ((total_expect_full_cycle as f64) * 3.5) as i64 { // 3.5 times is the error case{
+                                        if duration.num_seconds() >= ((total_expect_full_cycle as f64) * 4.5) as i64 { // 4.5 times is the error case{
                                             tracing::error!(
                                                 "[TRANSFER FAILED] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
                                                 sequence,
@@ -321,7 +321,7 @@ impl Context {
                                                 event_map
                                             );
                                             Some(sequence)
-                                        } else if duration.num_seconds() >= (total_expect_full_cycle * 2) as i64 && duration.num_seconds() < (total_expect_full_cycle * 2) as i64 + 20  { //  times is the error case{
+                                        } else if duration.num_seconds() >= (total_expect_full_cycle * 3) as i64 && duration.num_seconds() < (total_expect_full_cycle * 3) as i64 + 20  { //  times is the error case{
                                             tracing::error!(
                                                 "[WARNING TRANSFER FAILED] Not all events received for sequence: {} after {} seconds. Event map: {:?}. Removing due to timeout.",
                                                 sequence,
