@@ -29,6 +29,9 @@ export interface EvmClientParameters extends WalletClientConfig {
   chainId: EvmChainId
 }
 
+/**
+ * TODO: add JSDoc with examples
+ */
 export const createEvmClient = (parameters: EvmClientParameters) =>
   createWalletClient(parameters)
     .extend(publicActions)

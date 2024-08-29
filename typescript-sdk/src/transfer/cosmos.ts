@@ -22,6 +22,8 @@ import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm
  * Make ICS-20 transfer:
  * - https://github.com/cosmos/ibc/blob/main/spec/app/ics-020-fungible-token-transfer/README.md
  * - transfer tokens from ibc-enabled chain to another ibc-enabled chain
+ *
+ * TODO: add JSDoc with examples
  */
 export async function ibcTransfer({
   gasPrice,
@@ -65,6 +67,9 @@ export async function ibcTransfer({
   }
 }
 
+/**
+ * TODO: add JSDoc with examples
+ */
 export async function ibcTransferSimulate({
   gasPrice,
   account: _account,
@@ -107,6 +112,8 @@ export async function ibcTransferSimulate({
 
 /**
  * Transfer tokens where the source is Union
+ *
+ * TODO: add JSDoc with examples
  */
 export async function cosmwasmTransfer({
   gasPrice,
@@ -138,6 +145,9 @@ export async function cosmwasmTransfer({
   }
 }
 
+/**
+ * TODO: add JSDoc with examples
+ */
 export async function cosmwasmTransferSimulate({
   gasPrice,
   instructions,
@@ -186,6 +196,8 @@ export async function cosmwasmTransferSimulate({
 
 /**
  * Transfer tokens where where source and destination are the same chain
+ *
+ * TODO: add JSDoc with examples
  */
 export async function cosmosSameChainTransfer({
   asset,
@@ -236,6 +248,9 @@ export async function cosmosSameChainTransfer({
   }
 }
 
+/**
+ * TODO: add JSDoc with examples
+ */
 export async function cosmosSameChainTransferSimulate({
   asset,
   gasPrice,

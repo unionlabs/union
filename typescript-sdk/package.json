@@ -18,9 +18,6 @@
     "clean": "rm -rf dist node_modules",
     "postinstall": "patch-package"
   },
-  "imports": {
-    "#*": "./src/*"
-  },
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/stargate": "0.32.4",

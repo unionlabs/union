@@ -1,7 +1,9 @@
 import type { Account } from "viem"
-import type { EvmChainId } from "./evm.ts"
-import type { CosmosChainId } from "./cosmos.ts"
 import type { OfflineSigner } from "../types.ts"
+import type { evmChainId, EvmChainId } from "./evm.ts"
+import type { cosmosChainId, CosmosChainId } from "./cosmos.ts"
+
+export type ChainId = (typeof evmChainId)[number] | (typeof cosmosChainId)[number]
 
 export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId> = {
   memo?: string

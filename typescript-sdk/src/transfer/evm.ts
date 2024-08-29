@@ -27,6 +27,8 @@ export type TransferAssetFromEvmParams = {
 /**
  * TODO:
  * - [ ] prefix logs with context to make it easier to debug
+ *
+ * TODO: add JSDoc with examples
  */
 export async function transferAssetFromEvm(
   client: WalletClient & PublicActions,
@@ -114,6 +116,9 @@ export type ApproveTransferAssetFromEvmParams = Pick<
   "amount" | "account" | "simulate" | "denomAddress" | "relayContractAddress"
 >
 
+/**
+ * TODO: add JSDoc with examples
+ */
 export async function approveTransferAssetFromEvm(
   client: WalletClient & PublicActions,
   {
@@ -163,6 +168,9 @@ export async function approveTransferAssetFromEvm(
   }
 }
 
+/**
+ * TODO: add JSDoc with examples
+ */
 export async function transferAssetFromEvmSimulate(
   client: WalletClient & PublicActions,
   {

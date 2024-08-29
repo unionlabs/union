@@ -1,3 +1,6 @@
+/**
+ * @source https://github.com/wevm/viem/blob/main/src/utils/promise/createBatchScheduler.ts
+ */
 import type { ErrorType } from "../../types.ts"
 
 type Resolved<TReturnType extends ReadonlyArray<unknown> = any> = [
