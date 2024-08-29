@@ -52,7 +52,7 @@ export type Chain = {
         string,
         {
           channel_id: string
-          port: string
+          port_id: string
         }
       >
     }
