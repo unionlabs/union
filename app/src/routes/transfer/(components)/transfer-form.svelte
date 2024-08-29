@@ -923,8 +923,41 @@ const resetInput = () => {
             </div>
           {/if}
         </section>
-        
-          <section>
+        <section>
+          <CardSectionHeading>Recipient</CardSectionHeading>
+          <div class="flex items-start gap-2">
+            <div class="w-full">
+              <div class="relative w-full mb-2">
+                <Input
+                        autocapitalize="none"
+                        autocomplete="off"
+                        autocorrect="off"
+                        bind:value={$address}
+                        class="disabled:bg-black/30"
+                        disabled={!$toChain}
+                        id="address"
+                        on:input={handleInput}
+                        placeholder="Enter recipient's address"
+                        required={true}
+                        spellcheck="false"
+                        type="text"
+                />
+              </div>
+              <div class="flex justify-between px-1">
+                {#if $userInput}
+                  <button
+                          type="button"
+                          on:click={resetInput}
+                          class="text-xs text-muted-foreground hover:text-primary transition"
+                  >
+                    Reset
+                  </button>
+                {/if}
+              </div>
+            </div>
+          </div>
+        </section>
+        <section>
             <CardSectionHeading>Amount</CardSectionHeading>
             <Input
               autocapitalize="none"
@@ -944,40 +977,6 @@ const resetInput = () => {
               placeholder="0.00"
               spellcheck="false"
             />
-          </section>
-          <section>
-            <CardSectionHeading>Recipient</CardSectionHeading>
-            <div class="flex items-start gap-2">
-              <div class="w-full">
-                <div class="relative w-full mb-2">
-                  <Input
-                    autocapitalize="none"
-                    autocomplete="off"
-                    autocorrect="off"
-                    bind:value={$address}
-                    class="disabled:bg-black/30"
-                    disabled={!$toChain}
-                    id="address"
-                    on:input={handleInput}
-                    placeholder="Enter recipient's address"
-                    required={true}
-                    spellcheck="false"
-                    type="text"
-                  />
-                </div>
-                <div class="flex justify-between px-1">
-                  {#if $userInput}
-                    <button
-                      type="button"
-                      on:click={resetInput}
-                      class="text-xs text-muted-foreground hover:text-primary transition"
-                    >
-                      Reset
-                    </button>
-                  {/if}
-                </div>
-              </div>
-            </div>
           </section>
         </Card.Content>
         <Card.Footer class="flex flex-col gap-4 items-start">
