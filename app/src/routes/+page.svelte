@@ -2,7 +2,6 @@
 import WalletGateCosmos from "$lib/components/wallet-gate-cosmos.svelte"
 import WalletGateEvm from "$lib/components/wallet-gate-evm.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
-import NotConnected from "$lib/components/not-connected.svelte"
 import BalancesOverview from "$lib/components/balances-overview.svelte"
 </script>
 
