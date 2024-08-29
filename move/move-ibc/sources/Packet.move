@@ -52,22 +52,26 @@ module IBC::packet {
     }
 
     public fun commitment(packet: &Packet): vector<u8> {
-        let buf = bcs::to_bytes(&packet.timeout_timestamp);
+        commitment_from_parts(packet.timeout_timestamp, packet.timeout_height, packet.data)
+    }
+
+    public fun commitment_from_parts(timeout_timestamp: u64, timeout_height: Height, data: vector<u8>): vector<u8> {
+        let buf = bcs::to_bytes(&timeout_timestamp);
         // bcs encodes little endian by default but we want big endian
         vector::reverse(&mut buf);
 
-        let rev_num = bcs::to_bytes(&height::get_revision_number(&packet.timeout_height));
+        let rev_num = bcs::to_bytes(&height::get_revision_number(&timeout_height));
         vector::reverse(&mut rev_num);
         vector::append(&mut buf, rev_num);
 
-        let rev_height = bcs::to_bytes(&height::get_revision_height(&packet.timeout_height));
+        let rev_height = bcs::to_bytes(&height::get_revision_height(&timeout_height));
         vector::reverse(&mut rev_height);
         vector::append(&mut buf, rev_height);
 
-        vector::append(&mut buf, hash::sha2_256(packet.data));
+        vector::append(&mut buf, hash::sha2_256(data));
 
         hash::sha2_256(buf)
-    }
+    } 
 
     public fun new(
         sequence: u64,

@@ -1422,22 +1422,11 @@ module IBC::Core {
             bcs::to_bytes(&(packet_sequence + 1))
         );
 
-        // TODO: How can we implement this one? We need to agree on the implementation of
-        // abi.encodePacked
-        // smart_table::upsert(
-        //     &mut store.commitments,
-        //     IBCCommitment::packet_commitment_key(source_port, source_channel, packet_sequence),
-        //     IBCCommitment::keccak256(
-        //         IBCCommitment::keccak256(
-        //             bcs::to_bytes(&(
-        //                 timeout_timestamp,
-        //                 height::get_revision_number(&timeout_height),
-        //                 height::get_revision_height(&timeout_height),
-        //                 IBCCommitment::keccak256(data)
-        //             ))
-        //         )
-        //     )
-        // );
+        smart_table::upsert(
+            &mut store.commitments,
+            IBCCommitment::packet_commitment_key(source_port, source_channel, packet_sequence),            
+            packet::commitment_from_parts(timeout_timestamp, timeout_height, data),
+        );
 
         event::emit(SendPacket {
             sequence: packet_sequence,
@@ -1500,8 +1489,6 @@ module IBC::Core {
         };
 
 
-        // TODO: How can we implement this one? We need to agree on the implementation of
-        // abi.encodePacked
         let err = verify_commitment(
             connection,
             msg_proof_height,
@@ -1631,9 +1618,7 @@ module IBC::Core {
             abort E_PACKET_COMMITMENT_NOT_FOUND
         };
 
-        let packet_commitment = hash::sha2_256(
-            packet::commitment(&packet)
-        );
+        let packet_commitment = packet::commitment(&packet);
 
         if (expected_packet_commitment != packet_commitment) {
             abort E_INVALID_PACKET_COMMITMENT
@@ -1717,9 +1702,7 @@ module IBC::Core {
             abort E_PACKET_COMMITMENT_NOT_FOUND
         };
 
-        let packet_commitment = hash::sha2_256(
-            packet::commitment(&packet)
-        );
+        let packet_commitment = packet::commitment(&packet);
         if (expected_packet_commitment != packet_commitment) {
             abort E_INVALID_PACKET_COMMITMENT
         };
