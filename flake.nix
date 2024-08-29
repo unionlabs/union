@@ -596,6 +596,7 @@
 
             SQLX_OFFLINE = true;
             LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+            PROTOC = "${pkgs.protobuf}/bin/protoc";
           };
 
           treefmt = {
