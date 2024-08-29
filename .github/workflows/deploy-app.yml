@@ -2,11 +2,11 @@ name: Deploy App
 
 on:
   push:
-    # branches:
-    #   - main
-    #   - release/app
-    # paths:
-    #   - 'app/**'
+  # branches:
+  #   - main
+  #   - release/app
+  # paths:
+  #   - 'app/**'
   # pull_request:
   #   paths:
   #     - 'app/**'
