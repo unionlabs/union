@@ -9,7 +9,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{call, conc, promise, Op};
+use queue_msg::{call, conc, promise, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -63,7 +63,18 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    run_module_server(Module::new, ChainModuleServer::into_rpc).await
+    run_module_server(
+        Module::new,
+        ChainModuleServer::into_rpc,
+        |config, cmd| async move { Module::new(config).await?.cmd(cmd).await },
+    )
+    .await
+}
+
+#[derive(clap::Subcommand)]
+pub enum Cmd {
+    ChainId,
+    LatestHeight,
 }
 
 #[derive(Debug, Clone)]
@@ -85,6 +96,15 @@ pub struct Config {
 }
 
 impl Module {
+    pub async fn cmd(&self, cmd: Cmd) -> Result<(), BoxDynError> {
+        match cmd {
+            Cmd::ChainId => println!("{}", self.chain_id),
+            Cmd::LatestHeight => println!("{}", self.query_latest_height().await?),
+        }
+
+        Ok(())
+    }
+
     fn plugin_name(&self) -> String {
         pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 

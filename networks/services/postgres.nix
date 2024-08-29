@@ -20,6 +20,11 @@ in
     environment = {
       POSTGRES_PASSWORD = "postgrespassword";
       POSTGRES_DB = "default";
+      POSTGRES_HOST_AUTH_METHOD = "trust";
     };
+    # authentication = pkgs.lib.mkOverride 10 ''
+    #   #type database  DBuser  auth-method
+    #   local all       all     trust
+    # '';
   };
 }

@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use chain_utils::{
     cosmos_sdk::{
-        cosmos_sdk_error::{ChannelError, CosmosSdkError, IbcError, IbcWasmError, SdkError},
+        cosmos_sdk_error::{ChannelError, CosmosSdkError, IbcWasmError, SdkError},
         CosmosKeyring, GasConfig,
     },
     keyring::{KeyringConfig, KeyringEntry},
@@ -53,7 +53,12 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    run_module_server(Module::new, OptimizationPassPluginServer::into_rpc).await
+    run_module_server(
+        Module::new,
+        OptimizationPassPluginServer::into_rpc,
+        voyager_message::default_subcommand_handler,
+    )
+    .await
 }
 
 #[derive(Debug, Clone)]

@@ -384,7 +384,8 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 info!(%from_height, %to_height, "fetch_block_range");
 
                 Ok(conc([
-                    ctx.chain_module(&chain_id)?
+                    ctx.modules()
+                        .chain_module(&chain_id)?
                         .fetch_block_range(from_height, to_height)
                         .await
                         .map_err(json_rpc_error_to_queue_error)?,
@@ -399,6 +400,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 path: path.clone(),
                 height: at,
                 proof: ctx
+                    .modules()
                     .chain_module::<Value, Value, Value>(&chain_id)?
                     .query_ibc_proof(at, path)
                     .await
@@ -408,7 +410,8 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
             Call::State(FetchState { chain_id, at, path }) => match at {
                 QueryHeight::Latest => Ok(call(FetchState {
                     at: QueryHeight::Specific(
-                        ctx.chain_module::<D, C, Cb>(&chain_id)?
+                        ctx.modules()
+                            .chain_module::<D, C, Cb>(&chain_id)?
                             .query_latest_height()
                             .await
                             .map_err(json_rpc_error_to_queue_error)?,
@@ -418,6 +421,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 })),
                 QueryHeight::Specific(at) => {
                     let state = ctx
+                        .modules()
                         .chain_module::<Value, Value, Value>(&chain_id)?
                         .query_ibc_state(at, path.clone())
                         .await
@@ -502,6 +506,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
 
             Call::LatestHeight(FetchLatestHeight { chain_id }) => Ok(data(LatestHeight {
                 height: ctx
+                    .modules()
                     .chain_module::<D, C, Cb>(&chain_id)?
                     .query_latest_height()
                     .await
@@ -513,7 +518,8 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 chain_id,
                 client_id,
             }) => Ok(data(
-                ctx.chain_module::<D, C, Cb>(&chain_id)?
+                ctx.modules()
+                    .chain_module::<D, C, Cb>(&chain_id)?
                     .client_info(client_id)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?,
@@ -558,6 +564,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 // TODO: Split this into a separate query and aggregate
                 let height = match height {
                     QueryHeight::Latest => ctx
+                        .modules()
                         .chain_module::<D, C, Cb>(&chain_id)?
                         .query_latest_height()
                         .await
@@ -568,6 +575,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 info!(%height, "querying self client state");
 
                 let self_client_state = ctx
+                    .modules()
                     .consensus_module::<D, C, Cb>(&chain_id)?
                     .self_client_state(height)
                     .await
@@ -576,6 +584,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 // REVIEW: Add an assert here that the returned chain_id is the same as the
                 // passed in one?
                 let client_type = ctx
+                    .modules()
                     .consensus_module::<D, C, Cb>(&chain_id)?
                     .consensus_info()
                     .await
@@ -583,6 +592,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     .client_type;
 
                 let self_client_state = ctx
+                    .modules()
                     .client_module::<D, C, Cb>(&client_type, &ibc_interface)?
                     .encode_client_state(self_client_state, metadata)
                     .await
@@ -599,6 +609,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 // TODO: Split this into a separate query and aggregate?
                 let height = match height {
                     QueryHeight::Latest => ctx
+                        .modules()
                         .chain_module::<D, C, Cb>(&chain_id)?
                         .query_latest_height()
                         .await
@@ -607,12 +618,14 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 };
 
                 let self_consensus_state = ctx
+                    .modules()
                     .consensus_module::<D, C, Cb>(&chain_id)?
                     .self_consensus_state(height)
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
 
                 let client_type = ctx
+                    .modules()
                     .consensus_module::<D, C, Cb>(&chain_id)?
                     .consensus_info()
                     .await
@@ -620,6 +633,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     .client_type;
 
                 let self_consensus_state = ctx
+                    .modules()
                     .client_module::<D, C, Cb>(&client_type, &ibc_interface)?
                     .encode_consensus_state(self_consensus_state)
                     .await
@@ -644,6 +658,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     path: ibc_state.path,
                     height: ibc_state.height,
                     state: ctx
+                        .modules()
                         .client_module::<D, C, Cb>(
                             &client_info.client_type,
                             &client_info.ibc_interface,
@@ -661,6 +676,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 path: ibc_state.path,
                 height: ibc_state.height,
                 state: ctx
+                    .modules()
                     .client_module::<D, C, Cb>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -675,6 +691,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 client_info,
             }) => Ok(data(EncodedClientState {
                 encoded_client_state: ctx
+                    .modules()
                     .client_module::<D, C, Cb>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -689,6 +706,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 client_info,
             }) => Ok(data(EncodedConsensusState {
                 encoded_consensus_state: ctx
+                    .modules()
                     .client_module::<D, C, Cb>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -703,6 +721,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 client_info,
             }) => Ok(data(EncodedHeader {
                 encoded_header: ctx
+                    .modules()
                     .client_module::<D, C, Cb>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -722,6 +741,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 client_info,
             }) => {
                 let proof = ctx
+                    .modules()
                     .client_module::<D, C, Cb>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -839,11 +859,13 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 target_chain_id,
                 connection_open_ack_event,
             }) => {
-                let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
+                let origin_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
-                let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
+                let target_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 // info of the client on the target chain that will verify the storage
                 // proofs
@@ -855,7 +877,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
 
                 // client module for the client on the origin chain (the chain the event was
                 // emitted on)
-                let target_client_module = ctx.client_module::<Value, Value, Value>(
+                let target_client_module = ctx.modules().client_module::<Value, Value, Value>(
                     &target_client_info.client_type,
                     &target_client_info.ibc_interface,
                 )?;
@@ -892,11 +914,13 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 target_chain_id,
                 channel_open_init_event: event,
             }) => {
-                let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
+                let origin_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
-                let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
+                let target_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 let origin_channel_path = ChannelEndPath {
                     port_id: event.port_id.clone(),
@@ -919,6 +943,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     .map_err(json_rpc_error_to_queue_error)?;
 
                 let encoded_proof_init = ctx
+                    .modules()
                     .client_module::<Value, Value, Value>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -951,11 +976,13 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 target_chain_id,
                 channel_open_try_event: event,
             }) => {
-                let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
+                let origin_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
-                let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
+                let target_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 let origin_channel_path = ChannelEndPath {
                     port_id: event.port_id,
@@ -973,6 +1000,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     .map_err(json_rpc_error_to_queue_error)?;
 
                 let encoded_proof_try = ctx
+                    .modules()
                     .client_module::<Value, Value, Value>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -997,11 +1025,13 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 target_chain_id,
                 channel_open_ack_event,
             }) => {
-                let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
+                let origin_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
-                let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
+                let target_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 let origin_channel_path = ChannelEndPath {
                     port_id: channel_open_ack_event.port_id,
@@ -1019,6 +1049,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     .map_err(json_rpc_error_to_queue_error)?;
 
                 let encoded_proof_ack = ctx
+                    .modules()
                     .client_module::<Value, Value, Value>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -1041,11 +1072,13 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 target_chain_id,
                 send_packet_event,
             }) => {
-                let origin_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
+                let origin_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
-                let target_chain_module =
-                    ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
+                let target_chain_module = ctx
+                    .modules()
+                    .chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                 let proof_commitment = origin_chain_module
                     .query_ibc_proof(
@@ -1072,6 +1105,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     .map_err(json_rpc_error_to_queue_error)?;
 
                 let encoded_proof_commitment = ctx
+                    .modules()
                     .client_module::<Value, Value, Value>(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -1106,11 +1140,13 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 write_acknowledgement_event,
             }) => {
                 async {
-                    let origin_chain_module =
-                        ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
+                    let origin_chain_module = ctx
+                        .modules()
+                        .chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
-                    let target_chain_module =
-                        ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
+                    let target_chain_module = ctx
+                        .modules()
+                        .chain_module::<Value, Value, Value>(&target_chain_id)?;
 
                     let proof_acked = origin_chain_module
                         .query_ibc_proof(
@@ -1145,6 +1181,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                         .map_err(json_rpc_error_to_queue_error)?;
 
                     let encoded_proof_acked = ctx
+                        .modules()
                         .client_module::<Value, Value, Value>(
                             &client_info.client_type,
                             &client_info.ibc_interface,
@@ -1217,6 +1254,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 update_from,
                 update_to,
             }) => ctx
+                .modules()
                 .consensus_module(&chain_id)?
                 .fetch_update_headers(update_from, update_to)
                 .await
@@ -1243,6 +1281,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
             // TODO: Replace this with an aggregation
             Call::Height(WaitForHeight { chain_id, height }) => {
                 let chain_height = ctx
+                    .modules()
                     .chain_module::<D, C, Cb>(&chain_id)?
                     .query_latest_height()
                     .await
@@ -1270,6 +1309,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
             // REVIEW: Perhaps remove, unused
             Call::HeightRelative(WaitForHeightRelative { chain_id, height }) => {
                 let chain_height = ctx
+                    .modules()
                     .chain_module::<D, C, Cb>(&chain_id)?
                     .query_latest_height()
                     .await
@@ -1289,6 +1329,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 timestamp,
             }) => {
                 let chain_ts = ctx
+                    .modules()
                     .chain_module::<D, C, Cb>(&chain_id)?
                     .query_latest_timestamp()
                     .await
@@ -1298,6 +1339,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     // TODO: Figure out a way to fetch a height at a specific timestamp
                     Ok(data(LatestHeight {
                         height: ctx
+                            .modules()
                             .chain_module::<D, C, Cb>(&chain_id)?
                             .query_latest_height()
                             .await
@@ -1325,12 +1367,14 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 height,
             }) => {
                 let client_state = ctx
+                    .modules()
                     .chain_module::<D, C, Cb>(&chain_id)?
                     .query_raw_unfinalized_trusted_client_state(client_id.clone())
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
 
                 let trusted_client_state_meta = ctx
+                    .modules()
                     .client_module::<D, C, Cb>(
                         &client_state.client_type,
                         &client_state.ibc_interface,
@@ -1398,8 +1442,9 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
     ibc_interface: IbcInterface<'_>,
     metadata: Value,
 ) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
-    let counterparty_consensus_module =
-        ctx.consensus_module::<Value, Value, Value>(&counterparty_chain_id)?;
+    let counterparty_consensus_module = ctx
+        .modules()
+        .consensus_module::<Value, Value, Value>(&counterparty_chain_id)?;
 
     let self_client_state = counterparty_consensus_module
         .self_client_state(height)
@@ -1419,7 +1464,9 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
         .map_err(json_rpc_error_to_queue_error)?
         .client_type;
 
-    let client_module = ctx.client_module::<Value, Value, Value>(&client_type, &ibc_interface)?;
+    let client_module = ctx
+        .modules()
+        .client_module::<Value, Value, Value>(&client_type, &ibc_interface)?;
 
     Ok(data(WithChainId {
         chain_id,
@@ -1539,9 +1586,13 @@ async fn mk_connection_handshake_state_and_proofs(
     connection_id: ConnectionId,
     origin_chain_proof_height: Height,
 ) -> Result<ConnectionHandshakeStateAndProofs, QueueError> {
-    let origin_chain_module = ctx.chain_module::<Value, Value, Value>(&origin_chain_id)?;
+    let origin_chain_module = ctx
+        .modules()
+        .chain_module::<Value, Value, Value>(&origin_chain_id)?;
 
-    let target_chain_module = ctx.chain_module::<Value, Value, Value>(&target_chain_id)?;
+    let target_chain_module = ctx
+        .modules()
+        .chain_module::<Value, Value, Value>(&target_chain_id)?;
 
     // info of the client on the target chain that will verify the storage
     // proofs
@@ -1559,7 +1610,7 @@ async fn mk_connection_handshake_state_and_proofs(
     );
 
     // client module for the client on the target chain
-    let target_client_module = ctx.client_module::<Value, Value, Value>(
+    let target_client_module = ctx.modules().client_module::<Value, Value, Value>(
         &target_client_info.client_type,
         &target_client_info.ibc_interface,
     )?;
@@ -1581,7 +1632,7 @@ async fn mk_connection_handshake_state_and_proofs(
 
     // client module for the client on the origin chain (the chain the event was
     // emitted on)
-    let origin_client_module = ctx.client_module::<Value, Value, Value>(
+    let origin_client_module = ctx.modules().client_module::<Value, Value, Value>(
         &origin_client_info.client_type,
         &origin_client_info.ibc_interface,
     )?;

@@ -23,6 +23,8 @@ pub mod context;
 pub mod pass;
 pub mod plugin;
 
+pub mod rpc;
+
 pub use reth_ipc;
 
 pub struct VoyagerMessage<D = Value, F = Value, A = Value> {
@@ -238,43 +240,73 @@ macro_rules! top_level_identifiable_enum {
 }
 pub(crate) use top_level_identifiable_enum;
 
+#[derive(clap::Subcommand)]
+pub enum DefaultCmd {}
+
+pub async fn default_subcommand_handler<T>(_: T, cmd: DefaultCmd) -> Result<(), Never> {
+    match cmd {}
+}
+
 pub async fn run_module_server<
     D: Member,
     C: Member,
     Cb: Member,
-    T: DeserializeOwned,
+    Config: DeserializeOwned,
     M: PluginModuleServer<D, C, Cb> + Clone,
     Fut: Future<Output = Result<M, impl Debug>>,
+    Cmd: clap::Subcommand,
+    CmdFut: Future<Output = Result<(), impl Debug>>,
 >(
-    new_fn: fn(T) -> Fut,
+    new_fn: fn(Config) -> Fut,
     into_rpc_fn: fn(M) -> jsonrpsee::RpcModule<M>,
+    do_cmd: fn(Config, Cmd) -> CmdFut,
 ) {
-    let [socket, config] = std::env::args()
-        .skip(1)
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
+    #[derive(clap::Parser)]
+    enum Args<Cmd: clap::Subcommand> {
+        Run {
+            socket: String,
+            config: String,
+        },
+        Cmd {
+            #[command(subcommand)]
+            cmd: Cmd,
+            #[arg(long)]
+            config: String,
+        },
+    }
 
-    let config = serde_json::from_str(&config).expect("unable to parse config");
+    let app = <Args<Cmd> as clap::Parser>::parse();
 
-    let module = new_fn(config)
+    match app {
+        Args::Run { socket, config } => {
+            let config = serde_json::from_str(&config).expect("unable to parse config");
+
+            let module = new_fn(config)
+                .await
+                .expect("error instantiating client module");
+
+            let server = reth_ipc::server::Builder::default().build(socket);
+
+            let addr = server.endpoint();
+
+            let mut rpcs = PluginModuleServer::into_rpc(module.clone());
+            rpcs.merge(into_rpc_fn(module)).unwrap();
+
+            trace!(methods = ?*rpcs, "registered methods");
+
+            let server_handle = server.start(rpcs).await.unwrap();
+
+            info!("listening on {addr}");
+
+            tokio::spawn(server_handle.stopped()).await.unwrap();
+        }
+        Args::Cmd { cmd, config } => do_cmd(
+            serde_json::from_str(&config).expect("unable to parse config"),
+            cmd,
+        )
         .await
-        .expect("error instantiating client module");
-
-    let server = reth_ipc::server::Builder::default().build(socket);
-
-    let addr = server.endpoint();
-
-    let mut rpcs = PluginModuleServer::into_rpc(module.clone());
-    rpcs.merge(into_rpc_fn(module)).unwrap();
-
-    trace!(methods = ?*rpcs, "registered rpcs");
-
-    let server_handle = server.start(rpcs).await.unwrap();
-
-    info!("listening on {addr}");
-
-    tokio::spawn(server_handle.stopped()).await.unwrap();
+        .unwrap(),
+    }
 }
 
 #[cfg(test)]

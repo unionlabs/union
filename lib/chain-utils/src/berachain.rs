@@ -110,6 +110,7 @@ impl FromStrExact for BerachainChainType {
     const EXPECTING: &'static str = "berachain";
 }
 
+#[allow(dead_code)]
 impl Berachain {
     async fn query_latest_height(&self) -> Result<Height, BoxDynError> {
         Ok(Height {

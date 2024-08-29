@@ -20,8 +20,23 @@ use crate::{
     ChainId, ClientType, IbcInterface,
 };
 
+pub const PLUGIN_NAME_CACHE_FILE: &str = "/tmp/voyager-plugin-name-cache.json";
+
 #[derive(Debug)]
 pub struct Context {
+    modules: Modules,
+
+    plugins: HashMap<String, RpcClient>,
+
+    interest_filters: HashMap<String, String>,
+
+    cancellation_token: CancellationToken,
+
+    handles: JoinSet<()>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Modules {
     /// map of chain id to chain module.
     chain_modules: HashMap<ChainId<'static>, RpcClient>,
 
@@ -30,16 +45,6 @@ pub struct Context {
 
     /// map of client type to ibc interface to client module.
     client_modules: HashMap<ClientType<'static>, HashMap<IbcInterface<'static>, RpcClient>>,
-
-    // /// map of chain id to transaction module.
-    // transaction_modules: HashMap<String, RpcClient>,
-    plugins: HashMap<String, RpcClient>,
-
-    interest_filters: HashMap<String, String>,
-
-    cancellation_token: CancellationToken,
-
-    handles: JoinSet<()>,
 }
 
 impl queue_msg::Context for Context {
@@ -54,10 +59,13 @@ pub struct RpcClient {
     client: Arc<jsonrpsee::core::client::Client>,
     #[allow(dead_code)]
     socket: String,
+    plugin_config: PluginConfig,
 }
 
 impl RpcClient {
-    async fn new(socket: String) -> Result<Self, reth_ipc::client::IpcError> {
+    async fn new(path: String, config: Value) -> Result<Self, reth_ipc::client::IpcError> {
+        let socket = Self::make_socket_path(path.clone(), config.clone());
+
         let client = reth_ipc::client::IpcClientBuilder::default()
             .build(&socket)
             .await?;
@@ -65,11 +73,31 @@ impl RpcClient {
         Ok(Self {
             client: Arc::new(client),
             socket,
+            plugin_config: PluginConfig {
+                config: config.clone(),
+                path: path.clone(),
+            },
         })
+    }
+
+    fn make_socket_path(path: String, config: Value) -> String {
+        format!(
+            "/tmp/voyager-plugin-{}.sock",
+            keccak256(&(config.to_string() + &path)).to_string_unprefixed()
+        )
+    }
+
+    pub fn client(&self) -> &jsonrpsee::core::client::Client {
+        &self.client
+    }
+
+    pub fn plugin_config(&self) -> &PluginConfig {
+        &self.plugin_config
     }
 }
 
 #[model]
+#[derive(Hash)]
 pub struct PluginConfig {
     pub path: String,
     pub config: Value,
@@ -80,10 +108,11 @@ impl Context {
         let cancellation_token = CancellationToken::new();
 
         let mut this = Self {
-            chain_modules: Default::default(),
-            client_modules: Default::default(),
-            consensus_modules: Default::default(),
-            // transaction_modules: Default::default(),
+            modules: Modules {
+                chain_modules: Default::default(),
+                client_modules: Default::default(),
+                consensus_modules: Default::default(),
+            },
             plugins: Default::default(),
             interest_filters: Default::default(),
             cancellation_token: cancellation_token.clone(),
@@ -107,97 +136,97 @@ impl Context {
 
         let plugins = plugins
             .into_iter()
-            .map(|plugin_config| async {
-                let plugin_socket = format!(
-                    "/tmp/voyager-plugin-{}.sock",
-                    keccak256(&(plugin_config.config.to_string() + &plugin_config.path))
-                        .to_string_unprefixed()
-                );
-
+            .map(|plugin_config| {
                 let healthy = Arc::new(AtomicBool::new(true));
 
                 handles.lock().unwrap().spawn(run_plugin_client(
-                    plugin_config,
-                    plugin_socket.clone(),
+                    plugin_config.clone(),
+                    RpcClient::make_socket_path(
+                        plugin_config.path.to_owned(),
+                        plugin_config.config.to_owned(),
+                    ),
                     cancellation_token.clone(),
                     healthy.clone(),
                 ));
 
-                let rpc_client = loop {
-                    match RpcClient::new(plugin_socket.clone()).await {
-                        Ok(client) => {
-                            debug!(%plugin_socket, "connected to socket");
-                            break client;
-                        }
-                        Err(err) => {
-                            if healthy.load(std::sync::atomic::Ordering::SeqCst) {
-                                debug!(
-                                    err = %ErrorReporter(err),
-                                    %plugin_socket,
-                                    "unable to connect to socket, plugin has not started yet"
-                                );
+                async move {
+                    let rpc_client = loop {
+                        match RpcClient::new(
+                            plugin_config.path.to_owned(),
+                            plugin_config.config.to_owned(),
+                        )
+                        .await
+                        {
+                            Ok(client) => {
+                                debug!(plugin_socket = %client.socket, "connected to socket");
+                                break client;
+                            }
+                            Err(err) => {
+                                if healthy.load(std::sync::atomic::Ordering::SeqCst) {
+                                    debug!(
+                                        err = %ErrorReporter(err),
+                                        "unable to connect to socket, plugin has not started yet"
+                                    );
 
-                                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                            } else {
-                                error!(
-                                    %plugin_socket,
-                                    "plugin is unhealthy and could not start"
-                                );
-                                return Err::<_, BoxDynError>("unhealthy plugin".into());
+                                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                } else {
+                                    error!("plugin is unhealthy and could not start");
+                                    return Err::<_, BoxDynError>("unhealthy plugin".into());
+                                }
                             }
                         }
-                    }
-                };
+                    };
 
-                let PluginInfo {
-                    name,
-                    kind,
-                    interest_filter,
-                } = PluginModuleClient::<Value, Value, Value>::info(rpc_client.client.as_ref())
-                    .await?;
+                    let PluginInfo {
+                        name,
+                        kind,
+                        interest_filter,
+                    } = PluginModuleClient::<Value, Value, Value>::info(rpc_client.client.as_ref())
+                        .await?;
 
-                let kind = match kind {
-                    Some(kind) => match kind {
-                        PluginKind::Chain => {
-                            let chain_id = ChainModuleClient::<Value, Value, Value>::chain_id(
-                                rpc_client.client.as_ref(),
-                            )
-                            .await?;
+                    let kind = match kind {
+                        Some(kind) => match kind {
+                            PluginKind::Chain => {
+                                let chain_id = ChainModuleClient::<Value, Value, Value>::chain_id(
+                                    rpc_client.client.as_ref(),
+                                )
+                                .await?;
 
-                            Some(PluginKindFilled::Chain(chain_id.clone()))
-                        }
-                        PluginKind::Client => {
-                            let SupportedInterface {
-                                client_type,
-                                ibc_interface,
-                            } = ClientModuleClient::<Value, Value, Value>::supported_interface(
-                                rpc_client.client.as_ref(),
-                            )
-                            .await?;
+                                Some(PluginKindFilled::Chain(chain_id.clone()))
+                            }
+                            PluginKind::Client => {
+                                let SupportedInterface {
+                                    client_type,
+                                    ibc_interface,
+                                } = ClientModuleClient::<Value, Value, Value>::supported_interface(
+                                    rpc_client.client.as_ref(),
+                                )
+                                .await?;
 
-                            Some(PluginKindFilled::Client(client_type, ibc_interface))
-                        }
-                        PluginKind::Consensus => {
-                            let ConsensusModuleInfo {
-                                chain_id,
-                                client_type: _,
-                            } = ConsensusModuleClient::<Value, Value, Value>::consensus_info(
-                                rpc_client.client.as_ref(),
-                            )
-                            .await?;
+                                Some(PluginKindFilled::Client(client_type, ibc_interface))
+                            }
+                            PluginKind::Consensus => {
+                                let ConsensusModuleInfo {
+                                    chain_id,
+                                    client_type: _,
+                                } = ConsensusModuleClient::<Value, Value, Value>::consensus_info(
+                                    rpc_client.client.as_ref(),
+                                )
+                                .await?;
 
-                            Some(PluginKindFilled::Consensus(chain_id))
-                        }
-                    },
-                    None => None,
-                };
+                                Some(PluginKindFilled::Consensus(chain_id))
+                            }
+                        },
+                        None => None,
+                    };
 
-                Ok(PluginInfoFilled {
-                    name,
-                    interest_filter,
-                    rpc_client,
-                    kind,
-                })
+                    Ok(PluginInfoFilled {
+                        name,
+                        interest_filter,
+                        rpc_client,
+                        kind,
+                    })
+                }
             })
             .collect::<FuturesUnordered<_>>()
             .try_collect::<Vec<_>>()
@@ -219,7 +248,10 @@ impl Context {
             match kind {
                 Some(kind) => match kind {
                     PluginKindFilled::Chain(chain_id) => {
-                        let prev = this.chain_modules.insert(chain_id.clone(), rpc_client);
+                        let prev = this
+                            .modules
+                            .chain_modules
+                            .insert(chain_id.clone(), rpc_client);
 
                         if prev.is_some() {
                             return Err(format!(
@@ -235,7 +267,11 @@ impl Context {
                         );
                     }
                     PluginKindFilled::Client(client_type, ibc_interface) => {
-                        let entry = this.client_modules.entry(client_type.clone()).or_default();
+                        let entry = this
+                            .modules
+                            .client_modules
+                            .entry(client_type.clone())
+                            .or_default();
 
                         let prev = entry.insert(ibc_interface.clone(), rpc_client.clone());
 
@@ -257,6 +293,7 @@ impl Context {
                     }
                     PluginKindFilled::Consensus(chain_id) => {
                         let prev = this
+                            .modules
                             .consensus_modules
                             .insert(chain_id.clone(), rpc_client.clone());
 
@@ -287,19 +324,72 @@ impl Context {
 
         this.handles = handles.into_inner().unwrap();
 
+        if let Err(err) = tokio::fs::write(
+            PLUGIN_NAME_CACHE_FILE,
+            serde_json::to_string(
+                &this
+                    .plugins
+                    .iter()
+                    .map(|(plugin_name, client)| (plugin_name, &client.plugin_config))
+                    .collect::<HashMap<&String, &PluginConfig>>(),
+            )
+            .unwrap(),
+        )
+        .await
+        {
+            error!(err = %ErrorReporter(err), "unable to write cache file")
+        }
+
         Ok(this)
     }
 
-    pub async fn shutdown(mut self) {
+    pub fn modules(&self) -> &Modules {
+        &self.modules
+    }
+
+    pub async fn shutdown(self) {
         self.cancellation_token.cancel();
 
-        while let Some(res) = self.handles.join_next().await {
+        let mut handles = self.handles;
+
+        while let Some(res) = handles.join_next().await {
             if let Err(err) = res {
                 error!("error shutting down module: {}", ErrorReporter(err));
             }
         }
     }
 
+    pub fn plugin<D: Member, C: Member, Cb: Member>(
+        &self,
+        plugin_name: impl AsRef<str>,
+    ) -> Result<&(impl PluginModuleClient<D, C, Cb> + '_), PluginNotFound> {
+        Ok(self
+            .plugins
+            .get(plugin_name.as_ref())
+            .ok_or_else(|| PluginNotFound {
+                plugin_name: plugin_name.as_ref().into(),
+            })?
+            .client
+            .as_ref())
+    }
+
+    pub fn plugin_client_raw(
+        &self,
+        plugin_name: impl AsRef<str>,
+    ) -> Result<&RpcClient, PluginNotFound> {
+        self.plugins
+            .get(plugin_name.as_ref())
+            .ok_or_else(|| PluginNotFound {
+                plugin_name: plugin_name.as_ref().into(),
+            })
+    }
+
+    pub fn interest_filters(&self) -> &HashMap<String, String> {
+        &self.interest_filters
+    }
+}
+
+impl Modules {
     pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,
@@ -342,38 +432,6 @@ impl Context {
             }),
         }
     }
-
-    pub fn plugin<D: Member, C: Member, Cb: Member>(
-        &self,
-        plugin_name: impl AsRef<str>,
-    ) -> Result<&(impl PluginModuleClient<D, C, Cb> + '_), PluginNotFound> {
-        Ok(self
-            .plugins
-            .get(plugin_name.as_ref())
-            .ok_or_else(|| PluginNotFound {
-                plugin_name: plugin_name.as_ref().into(),
-            })?
-            .client
-            .as_ref())
-    }
-
-    pub fn plugin_client_raw<D: Member, C: Member, Cb: Member>(
-        &self,
-        plugin_name: impl AsRef<str>,
-    ) -> Result<&jsonrpsee::core::client::Client, PluginNotFound> {
-        Ok(self
-            .plugins
-            .get(plugin_name.as_ref())
-            .ok_or_else(|| PluginNotFound {
-                plugin_name: plugin_name.as_ref().into(),
-            })?
-            .client
-            .as_ref())
-    }
-
-    pub fn interest_filters(&self) -> &HashMap<String, String> {
-        &self.interest_filters
-    }
 }
 
 #[instrument(skip_all, fields(%plugin_config.path))]
@@ -387,6 +445,7 @@ async fn run_plugin_client(
         debug!("spawning plugin child process");
 
         let mut cmd = tokio::process::Command::new(&plugin_config.path);
+        cmd.arg("run");
         cmd.arg(&plugin_socket);
         cmd.arg(plugin_config.config.to_string());
 

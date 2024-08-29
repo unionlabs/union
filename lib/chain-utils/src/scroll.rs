@@ -179,6 +179,7 @@ impl Scroll {
             scroll_api_client: ScrollClient::new(config.scroll_api),
             l1: todo!(),
             // l1: Ethereum::new(config.l1).await?,
+            #[allow(unreachable_code)]
             rollup_contract_address: config.rollup_contract_address,
             rollup_finalized_state_roots_slot: config.rollup_finalized_state_roots_slot,
             rollup_last_finalized_batch_index_slot: config.rollup_last_finalized_batch_index_slot,
@@ -232,6 +233,7 @@ impl Scroll {
     }
 }
 
+#[allow(dead_code)]
 impl Scroll {
     fn chain_id(&self) -> U256 {
         self.chain_id

@@ -321,6 +321,11 @@ pub enum Command {
     Util(UtilCmd),
     #[command(subcommand)]
     Signer(SignerCmd),
+    Plugin {
+        plugin_name: Option<String>,
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
+        args: Vec<String>,
+    },
     Query {
         #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
         on: ChainId<'static>,

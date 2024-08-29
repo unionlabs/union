@@ -26,6 +26,7 @@ use voyager_message::{
     },
     callback::{AggregateMsgUpdateClientsFromOrderedHeaders, Callback},
     data::{ChainEvent, Data, DecodedClientStateMeta, FullIbcEvent, OrderedMsgUpdateClients},
+    default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
     run_module_server, ChainId, PluginMessage, VoyagerMessage,
 };
@@ -49,7 +50,12 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    run_module_server(Module::new, OptimizationPassPluginServer::into_rpc).await
+    run_module_server(
+        Module::new,
+        OptimizationPassPluginServer::into_rpc,
+        default_subcommand_handler,
+    )
+    .await
 }
 
 #[derive(Debug, Clone)]

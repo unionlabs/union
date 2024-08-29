@@ -8,6 +8,7 @@
 )]
 
 use std::{
+    collections::{HashMap, HashSet},
     ffi::OsString,
     fmt::{Debug, Write},
     fs::read_to_string,
@@ -22,10 +23,12 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
+use tracing::debug;
 use tracing_subscriber::EnvFilter;
-use unionlabs::{ethereum::ibc_commitment_key, ics24, QueryHeight};
+use unionlabs::{ethereum::ibc_commitment_key, ics24, ErrorReporter, QueryHeight};
 use voyager_message::{
     call::FetchBlock,
+    context::{Context, PluginConfig, PLUGIN_NAME_CACHE_FILE},
     plugin::{ChainModuleClient, ClientModuleClient},
     ChainId, VoyagerMessage,
 };
@@ -146,10 +149,38 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
             voyager.run().await?;
         }
+        Command::Plugin { plugin_name, args } => match plugin_name {
+            Some(plugin_name) => {
+                let plugin_name_cache = read_plugin_name_cache(voyager_config.plugins).await?;
+
+                let plugin_config = plugin_name_cache
+                    .get(&plugin_name)
+                    .ok_or("plugin not found")?;
+
+                tokio::process::Command::new(&plugin_config.path)
+                    .arg("cmd")
+                    .arg("--config")
+                    .arg(plugin_config.config.to_string())
+                    .args(args)
+                    .spawn()?
+                    .wait()
+                    .await?;
+            }
+            None => {
+                let plugin_name_cache = read_plugin_name_cache(voyager_config.plugins).await?;
+
+                for (plugin_name, _) in plugin_name_cache {
+                    println!("{plugin_name}");
+                }
+            }
+        },
         Command::Query { on, height, path } => {
             let voyager = Voyager::new(voyager_config.clone()).await?;
 
-            let chain = voyager.context.chain_module::<Value, Value, Value>(&on)?;
+            let chain = voyager
+                .context
+                .modules()
+                .chain_module::<Value, Value, Value>(&on)?;
 
             let height = match height {
                 QueryHeight::Latest => chain.query_latest_height().await?,
@@ -164,6 +195,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                     voyager
                         .context
+                        .modules()
                         .client_module::<Value, Value, Value>(
                             &client_info.client_type,
                             &client_info.ibc_interface,
@@ -181,6 +213,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                     voyager
                         .context
+                        .modules()
                         .client_module::<Value, Value, Value>(
                             &client_info.client_type,
                             &client_info.ibc_interface,
@@ -340,6 +373,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
             let chain = voyager
                 .context
+                .modules()
                 .chain_module::<Value, Value, Value>(&ChainId::new(&chain_id))
                 .unwrap();
 
@@ -508,6 +542,48 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
     }
 
     Ok(())
+}
+
+async fn read_plugin_name_cache(
+    plugins: Vec<PluginConfig>,
+) -> Result<HashMap<String, PluginConfig>, BoxDynError> {
+    let regenerate = |plugins| async {
+        let context = Context::new(plugins).await?;
+
+        context.shutdown().await;
+
+        Ok::<_, BoxDynError>(serde_json::from_str::<HashMap<String, PluginConfig>>(
+            &tokio::fs::read_to_string(PLUGIN_NAME_CACHE_FILE).await?,
+        )?)
+    };
+
+    match tokio::fs::read_to_string(PLUGIN_NAME_CACHE_FILE).await {
+        Ok(file_contents) => {
+            match serde_json::from_str::<HashMap<String, PluginConfig>>(&file_contents) {
+                Ok(plugin_config_cache) => {
+                    if HashSet::from_iter(plugins.iter())
+                        != plugin_config_cache.values().collect::<HashSet<_>>()
+                    {
+                        debug!("cache is invalid, regenerating");
+
+                        Ok(regenerate(plugins).await?)
+                    } else {
+                        Ok(plugin_config_cache)
+                    }
+                }
+                Err(err) => {
+                    debug!(err = %ErrorReporter(err), "cache is invalid, regenerating");
+
+                    Ok(regenerate(plugins).await?)
+                }
+            }
+        }
+        Err(err) => {
+            debug!(err = %ErrorReporter(err), "cache is invalid, regenerating");
+
+            Ok(regenerate(plugins).await?)
+        }
+    }
 }
 
 // pub async fn signer_balances(chains: &Chains) -> HashMap<String, serde_json::Value> {

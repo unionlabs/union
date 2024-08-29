@@ -4,7 +4,7 @@ name    = "voyager-client-module-cometbls"
 version = "0.1.0"
 
 [dependencies]
-voyager-message      = { workspace = true }
+clap               = { workspace = true, features = ["default", "derive", "env", "error-context"] }
 cometbft-rpc       = { workspace = true }
 dashmap            = { workspace = true }
 enumorph.workspace = true
@@ -22,3 +22,4 @@ tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
+voyager-message    = { workspace = true }

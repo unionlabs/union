@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 beacon-api                   = { workspace = true }
 chain-utils                  = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
 contracts                    = { workspace = true, features = ["providers"] }
 dashmap                      = { workspace = true }
 enumorph                     = { workspace = true }

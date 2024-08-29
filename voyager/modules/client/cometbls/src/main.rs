@@ -1,10 +1,11 @@
 use std::{borrow::Cow, collections::VecDeque};
 
+use clap::Subcommand;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::Op;
+use queue_msg::{BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, instrument, warn};
@@ -41,7 +42,12 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    run_module_server(Module::new, ClientModuleServer::into_rpc).await
+    run_module_server(
+        Module::new,
+        ClientModuleServer::into_rpc,
+        |config, cmd| async move { Module::new(config).await?.cmd(cmd).await },
+    )
+    .await
 }
 
 #[derive(Debug, Clone)]
@@ -58,7 +64,22 @@ pub struct Config {
     // pub ibc_interface: IbcInterface<'static>,
 }
 
+#[derive(Subcommand)]
+pub enum Cmd {
+    Test,
+}
+
 impl Module {
+    async fn cmd(&self, cmd: Cmd) -> Result<(), BoxDynError> {
+        match cmd {
+            Cmd::Test => {
+                println!("test");
+
+                Ok(())
+            }
+        }
+    }
+
     fn plugin_name(&self) -> String {
         pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 

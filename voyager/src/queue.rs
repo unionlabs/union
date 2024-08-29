@@ -28,7 +28,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, info_span, trace, Instrument};
 use voyager_message::{
-    context::Context, pass::JaqInterestFilter, plugin::OptimizationPassPluginClient, VoyagerMessage,
+    context::Context, pass::JaqInterestFilter, plugin::OptimizationPassPluginClient,
+    rpc::VoyagerRpcServer, VoyagerMessage,
 };
 
 use crate::config::Config;
@@ -316,7 +317,39 @@ impl Voyager {
 
             tokio::spawn(axum::Server::bind(&self.laddr).serve(app.into_make_service()));
 
-            let mut tasks = FuturesUnordered::<BoxFuture<_>>::new();
+            let mut tasks =
+                FuturesUnordered::<BoxFuture<Result<Result<(), BoxDynError>, _>>>::new();
+
+            tasks.push(Box::pin(
+                AssertUnwindSafe(async {
+                    let server = jsonrpsee::server::Server::builder()
+                        .build("127.0.0.1:34157".parse::<SocketAddr>()?)
+                        .await?;
+                    let mut module = jsonrpsee::RpcModule::new(&self.context);
+                    module
+                        .merge(
+                            voyager_message::rpc::Server {
+                                modules: self.context.modules().clone(),
+                            }
+                            .into_rpc(),
+                        )
+                        .unwrap();
+
+                    dbg!(&module);
+
+                    let addr = server.local_addr()?;
+                    let handle = server.start(module);
+
+                    info!("rpc listening on {addr}");
+
+                    // In this example we don't care about doing shutdown so let's it run forever.
+                    // You may use the `ServerHandle` to shut it down or manage it yourself.
+                    handle.stopped().await;
+
+                    Err("rpc server exited".into())
+                })
+                .catch_unwind(),
+            ));
 
             tasks.push(Box::pin(
                 AssertUnwindSafe(async {
@@ -394,8 +427,9 @@ impl Voyager {
                             let pass = PluginOptPass {
                                 client: self
                                     .context
-                                    .plugin_client_raw::<Value, Value, Value>(&plugin_name)
-                                    .unwrap(),
+                                    .plugin_client_raw(&plugin_name)
+                                    .unwrap()
+                                    .client(),
                             };
 
                             loop {

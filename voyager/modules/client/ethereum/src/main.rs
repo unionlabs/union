@@ -50,7 +50,12 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    run_module_server(Module::new, ClientModuleServer::into_rpc).await
+    run_module_server(
+        Module::new,
+        ClientModuleServer::into_rpc,
+        voyager_message::default_subcommand_handler,
+    )
+    .await
 }
 
 #[derive(Debug, Clone)]

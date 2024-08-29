@@ -140,8 +140,9 @@ impl<D: Member, C: Member, Cb: Member> HandleCallback<VoyagerMessage<D, C, Cb>> 
                     panic!("bad data")
                 };
 
-                let client_module =
-                    ctx.client_module::<Value, Value, Value>(&client_type, &ibc_interface)?;
+                let client_module = ctx
+                    .modules()
+                    .client_module::<Value, Value, Value>(&client_type, &ibc_interface)?;
 
                 Ok(queue_msg::data(OrderedMsgUpdateClients {
                     updates: stream::iter(headers.into_iter())
