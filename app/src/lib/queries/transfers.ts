@@ -17,7 +17,7 @@ const transferTransform = (tx: FragmentOf<typeof transferListDataFragment>) => {
   const transfer = readFragment(transferListDataFragment, tx)
   const lastForward = transfer.forwards?.at(-1)
   const receiver = lastForward?.receiver ?? transfer.receiver
-  const destinationChainId = lastForward?.source_chain?.chain_id ?? transfer.destination_chain_id
+  const destinationChainId = lastForward?.destination_chain_id ?? transfer.destination_chain_id
   return {
     source: {
       hash: transfer.source_transaction_hash || "unknown",

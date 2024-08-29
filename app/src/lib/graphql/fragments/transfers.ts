@@ -27,12 +27,8 @@ export const transferListDataFragment = graphql(`
             denom
         }
         forwards {
-            source_port_id
-            source_channel_id
+            destination_chain_id
             receiver
-            source_chain {
-                chain_id
-            }
         }
     }
 `)

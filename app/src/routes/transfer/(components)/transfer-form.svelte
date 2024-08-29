@@ -175,7 +175,7 @@ let ucs01Configuration = derived(
         let forwardConfig = ucs1_configuration.forwards[$toChainId]
         pfmMemo = generatePfmMemo(
           forwardConfig.channel_id,
-          forwardConfig.port,
+          forwardConfig.port_id,
           $toChain?.rpc_type === "evm" ? $recipient.slice(2) : $recipient
         )
         break

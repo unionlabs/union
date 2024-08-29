@@ -32,13 +32,11 @@ export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
             source_timestamp
             destination_timestamp
             forwards {
-                source_chain {
-                    chain_id
-                }
                 source_connection_id
                 source_channel_id
                 destination_connection_id
                 destination_channel_id
+                destination_chain_id
                 source_channel_id
                 receiver
             }
