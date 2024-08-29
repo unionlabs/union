@@ -415,22 +415,22 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
               <ul
                 class="text-foreground text-center uppercase condenced font-bold text-3xl sm:text-4xl"
               >
-                {#each Object.entries(transfer.tokens) as [denom, value]}
-                  {#if value.asset}
+                {#each transfer.tokens as token}
+                  {#if token.asset}
                     <li>
                       <Truncate
-                        value={formatUnits(value.amount, value.asset.decimals)}
+                        value={formatUnits(token.amount, token.asset.decimals)}
                         type="full"
                       />
                       <Truncate
-                        value={value.asset.display_symbol}
+                        value={token.asset.display_symbol}
                         type="address"
                       />
                     </li>
                   {:else}
                     <li>
-                      <Truncate value={value.amount} type="full" />
-                      <Truncate value={denom} type="address" />
+                      <Truncate value={token.amount} type="full" />
+                      <Truncate value={token.denom} type="address" />
                     </li>
                   {/if}
                 {/each}
