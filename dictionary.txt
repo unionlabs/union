@@ -23,6 +23,9 @@ CBFF
 CCTP
 CFLAGS
 CHAINSTACK
+neverthrow
+stridenet
+
 CMOV
 Celestia
 Celestine
