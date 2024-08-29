@@ -43,6 +43,7 @@ jobs:
       - name: 'Install Dependencies'
         working-directory: './typescript-sdk'
         run: bun install
+
       - name: 'Publish Preview Version'
         run: |
           bun x pkg-pr-new publish --no-template --comment=update typescript-sdk
