@@ -70,14 +70,14 @@ let processedTransfers = derived(
 
       // forwards does not contain sequence numbers,
       // so we cannot construct the destination sequence at this stage yet.
-      const lastForward = tx.forwards_2?.at(-1)
+      const lastForward = tx.forwards?.at(-1)
       if (lastForward) {
         hop_chain_id = tx.destination_chain_id
         hop_chain_destination_connection_id = tx.destination_connection_id
         hop_chain_destination_channel_id = tx.destination_channel_id
         hop_chain_source_connection_id = lastForward.source_connection_id
         hop_chain_source_channel_id = lastForward.source_channel_id
-        tx.destination_chain_id = lastForward.chain?.chain_id ?? "unknown"
+        tx.destination_chain_id = lastForward.destination_chain_id
         tx.destination_connection_id = lastForward.destination_connection_id
         tx.destination_channel_id = lastForward.destination_channel_id
         tx.receiver = lastForward.receiver
