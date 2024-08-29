@@ -586,7 +586,6 @@ module IBC::ConnectionTest {
     //     let client_id = string::utf8(b"client-0");
     //     let version = Core::default_ibc_version();
     //     let delay_period: u64 = 0;
-    //     let counterparty_prefix = Core::new_merkleprefix(vector::empty<u8>());
     //     let counterparty = Core::new_connection_counterparty(
     //         string::utf8(b"counterparty-client"),
     //         string::utf8(b"connection-0"),

@@ -10,7 +10,7 @@ use super::bit_vec::BitVec;
         from
     )
 )]
-/// Either (1) a BLS signature share from an individual signer, (2) a BLS multisignature or (3) a
+/// Either (1) a BLS signature share from an individual signer, (2) a BLS multi-signature or (3) a
 /// BLS aggregate signature
 pub struct Signature {
     pub sig: Vec<u8>,

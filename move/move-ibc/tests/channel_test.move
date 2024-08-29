@@ -148,17 +148,17 @@ module IBC::ChannelTest {
         assert!(is_lowercase, 7001);
 
         // Test case where the string is not lowercase
-        let mixedcase_string = string::utf8(b"MixedCase");
-        let is_not_lowercase = Core::is_lowercase(&mixedcase_string);
+        let mixed_case_string = string::utf8(b"Mixed_Case");
+        let is_not_lowercase = Core::is_lowercase(&mixed_case_string);
         assert!(!is_not_lowercase, 7002);
 
         // Test case where the string is not lowercase
-        let mixedcase_string = string::utf8(b"ItsWrong");
-        let is_not_lowercase = Core::is_lowercase(&mixedcase_string);
+        let mixed_case_string = string::utf8(b"ItsWrong");
+        let is_not_lowercase = Core::is_lowercase(&mixed_case_string);
         assert!(!is_not_lowercase, 7002);
 
 
-        let lowercase_string = string::utf8(b"thisshouldbecorrecttoo");
+        let lowercase_string = string::utf8(b"this_should_be_correct_too");
         let is_lowercase = Core::is_lowercase(&lowercase_string);
         assert!(is_lowercase, 7001);
 

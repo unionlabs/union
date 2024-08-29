@@ -700,7 +700,7 @@ module IBC::Core {
         proof_client: Any,
         _proof_consensus: vector<u8>,
         proof_height: height::Height,
-        _consenseus_height: height::Height,
+        _consensus_height: height::Height,
     ):String acquires IBCStore {
         // Generate a new connection identifier
         let connection_id = generate_connection_identifier();
@@ -789,7 +789,7 @@ module IBC::Core {
         _proof_consensus: vector<u8>,
         counterparty_connection_id: String,
         proof_height: height::Height,
-        _consenseus_height: height::Height
+        _consensus_height: height::Height
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -1240,9 +1240,6 @@ module IBC::Core {
 
         channel::set_state(&mut channel, CHAN_STATE_OPEN);
         update_channel_commitment(port_id, channel_id);
-
-        // TODO(aeryz): this funciton is gonna be called by the ibc app
-        // IBCModule::on_chan_open_confirm(port_id, channel_id);
 
         smart_table::upsert(&mut borrow_global_mut<IBCStore>(get_vault_addr()).channels, channel_port, channel);
 

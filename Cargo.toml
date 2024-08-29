@@ -94,7 +94,7 @@ opt-level = 3
 strip = true
 
 [workspace.dependencies]
-aptos-verifier             = { path = "lib/aptos-verifier", default-faetures = false }
+aptos-verifier             = { path = "lib/aptos-verifier", default-features = false }
 arbitrum-verifier          = { path = "lib/arbitrum-verifier", default-features = false }
 beacon-api                 = { path = "lib/beacon-api", default-features = false }
 block-message              = { path = "lib/block-message", default-features = false }

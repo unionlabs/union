@@ -264,7 +264,7 @@ module IBC::proto_utils {
         let exp = vector<String> [
             string::utf8(b"h"),
             string::utf8(b"hello world"),
-            string::utf8(b"hello worldas enednsedn eansd"),
+            string::utf8(b"hello world hello again"),
         ];
 
         let i = 0;

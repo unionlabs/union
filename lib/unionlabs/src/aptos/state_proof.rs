@@ -11,7 +11,7 @@ use super::{
 };
 use crate::errors::{required, MissingField};
 
-/// A convenience type for the collection of sub-proofs that consistitute a
+/// A convenience type for the collection of sub-proofs that constitute a
 /// response to a `get_state_proof` request.
 ///
 /// From a `StateProof` response, a client should be able to ratchet their
