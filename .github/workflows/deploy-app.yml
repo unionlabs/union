@@ -122,7 +122,7 @@ jobs:
 
   deploy-staging:
     runs-on: ['ubuntu-latest']
-    needs: [build]
+    needs: [garnix]
     env:
       npm_config_yes: true
     environment: 'app-staging'
@@ -144,7 +144,7 @@ jobs:
 
   deploy-production:
     runs-on: ['ubuntu-latest']
-    needs: [build]
+    needs: [garnix]
     env:
       npm_config_yes: true
     environment: 'app-production'
