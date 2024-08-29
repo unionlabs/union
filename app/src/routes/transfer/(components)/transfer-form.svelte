@@ -167,12 +167,12 @@ let ucs01Configuration = derived(
     for (const chain of chains) {
       let [foundHopChainId, ucs1Config] =
         Object.entries(chain.ucs1_configurations).find(
-          ([foundHopChainId, config]) => config.forward[$toChainId] !== undefined
+          ([foundHopChainId, config]) => config.forwards[$toChainId] !== undefined
         ) ?? []
       if (foundHopChainId !== undefined && ucs1Config !== undefined) {
         hopChainId = foundHopChainId
         ucs1_configuration = $fromChain.ucs1_configurations[hopChainId]
-        let forwardConfig = ucs1_configuration.forward[$toChainId]
+        let forwardConfig = ucs1_configuration.forwards[$toChainId]
         pfmMemo = generatePfmMemo(
           forwardConfig.channel_id,
           forwardConfig.port,
