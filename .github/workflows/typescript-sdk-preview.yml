@@ -1,0 +1,48 @@
+name: 'Publish TypeScript SDK Preview'
+
+# pkg.pr.new won't publish anything to NPM; instead, 
+# it leverages its own URLs, which are npm-compatible.
+
+# npm install https://pkg.pr.new/${owner}/${repo}/${package}@${commit}
+
+# learn more: https://github.com/stackblitz-labs/pkg.pr.new/blob/main/README.md
+
+on:
+  push:
+    tags: '!**'
+    paths:
+      - 'typescript-sdk/**'
+  pull_request:
+    paths:
+      - 'typescript-sdk/**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  NODE_OPTIONS: '--no-warnings'
+
+jobs:
+  preview:
+    name: 'Publish TypeScript SDK Preview'
+    runs-on: ['ubuntu-latest']
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Setup bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+
+      - name: 'Install Dependencies'
+        working-directory: './typescript-sdk'
+        run: bun install
+      - name: 'Publish Preview Version'
+        run: |
+          bun x pkg-pr-new publish --no-template --comment=update typescript-sdk
