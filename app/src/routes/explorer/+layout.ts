@@ -1,18 +1,11 @@
 import type { LayoutLoad } from "./$types.ts"
-import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
 import { UnionIcons } from "$lib/components/union-icons/union-icons.ts"
 
-const tables = [
-  "channels",
-  "transfers",
-  "packets",
-  "connections",
-  "index-status"
-] as const
+const tables = ["channels", "transfers", "packets", "connections", "index-status"] as const
 
 export interface Table {
   route: (typeof tables)[number]
-  icon: typeof TransfersIcon
+  icon: typeof UnionIcons.transfers.variants.color
   description: string
 }
 
