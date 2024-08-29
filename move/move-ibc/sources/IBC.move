@@ -1136,18 +1136,21 @@ module IBC::Core {
 
     // TODO(aeryz): should we verify the caller here?
     public fun channel_open_ack(
+        ibc_app: &signer, // this is the caller which should be the `ibc_app`
         port_id: String,
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
         proof_try: Any,
         proof_height: height::Height
-    ): (
-    String, String, String, String,
-        )  acquires IBCStore {
+    ) acquires IBCStore {
         // Retrieve the channel from the store
         let channel_port = ChannelPort { port_id, channel_id };
         let chan = *smart_table::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);
+
+        if (!authenticate_capability(ibc_app, IBCCommitment::channel_capability_path(port_id, channel_id))) {
+            abort E_UNAUTHORIZED
+        };
 
         if (channel::state(&chan) != CHAN_STATE_INIT) {
             abort(E_INVALID_CHANNEL_STATE)
@@ -1192,26 +1195,22 @@ module IBC::Core {
                 connection_id: *vector::borrow(channel::connection_hops(&chan), 0)
             },
         );
-
-        (
-            port_id,
-            channel_id,
-            counterparty_channel_id,
-            counterparty_version
-        )
     }
 
     public fun channel_open_confirm(
+        ibc_app: &signer,
         port_id: String,
         channel_id: String,
         proof_ack: Any,
         proof_height: height::Height
-    ): (
-    String, String,
-        )acquires IBCStore {
+    ) acquires IBCStore {
         // Retrieve the channel from the store
         let channel_port = ChannelPort { port_id, channel_id };
         let channel = *smart_table::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);
+
+        if (!authenticate_capability(ibc_app, IBCCommitment::channel_capability_path(port_id, channel_id))) {
+            abort E_UNAUTHORIZED
+        };
 
         if (channel::state(&channel) != CHAN_STATE_TRYOPEN) { // STATE_TRYOPEN
             abort(E_INVALID_CHANNEL_STATE)
@@ -1256,8 +1255,6 @@ module IBC::Core {
                 connection_id: *vector::borrow(channel::connection_hops(&channel), 0)
             },
         );
-
-        (port_id, channel_id)
     }
 
     public fun channel_open_try(
@@ -1530,8 +1527,6 @@ module IBC::Core {
             abort E_UNKNOWN_CHANNEL_ORDERING
         };
 
-
-        // TODO: What will be the type of that acknowledgement? String? bytes array?
         if (vector::length(&acknowledgement) > 0) {
             write_ack_impl(msg_packet, acknowledgement);
         };
@@ -1540,6 +1535,7 @@ module IBC::Core {
             packet: msg_packet
         });
     }
+
     public fun write_acknowledgement(
         caller: &signer,
         packet: packet::Packet,
@@ -1618,23 +1614,19 @@ module IBC::Core {
             abort E_PACKET_COMMITMENT_NOT_FOUND
         };
 
-        let packet_commitment = packet::commitment(&packet);
-
-        if (expected_packet_commitment != packet_commitment) {
+        if (expected_packet_commitment != packet::commitment(&packet)) {
             abort E_INVALID_PACKET_COMMITMENT
         };
-
-        let ack_commitment_path = IBCCommitment::packet_acknowledgement_commitment_path(
-            *packet::destination_port(&packet),
-            *packet::destination_channel(&packet),
-            packet::sequence(&packet)
-        );
 
         let err = verify_commitment(
             &connection,
             proof_height,
             proof,
-            ack_commitment_path,
+            IBCCommitment::packet_acknowledgement_commitment_path(
+                *packet::destination_port(&packet),
+                *packet::destination_channel(&packet),
+                packet::sequence(&packet)
+            ),
             hash::sha2_256(acknowledgement)
         );
 
@@ -1769,14 +1761,13 @@ module IBC::Core {
         proof: Any,
         path: String
     ): u64 {
-        let err = LightClient::verify_non_membership(
+        LightClient::verify_non_membership(
             *connection_end::client_id(connection),
             height,
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
             *string::bytes(&path)
-        );
-        err
+        )
     }
 
 

@@ -204,9 +204,10 @@ module IBCModuleAddr::PingPong {
         counterparty_version: String,
         proof_try: Any,
         proof_height: height::Height
-    ) acquires PingPong {
+    ) acquires PingPong, SignerRef {
         // Store the channel_id
-        let (_,channel_id,_,_) = Core::channel_open_ack(
+        Core::channel_open_ack(
+            &get_signer(),
             port_id,
             channel_id,
             counterparty_channel_id,
@@ -222,9 +223,9 @@ module IBCModuleAddr::PingPong {
         channel_id: String,
         proof_ack: Any,
         proof_height: height::Height
-    ) acquires PingPong {
-        // Store the channel_id
-        let (_,channel_id) = Core::channel_open_confirm(
+    ) acquires PingPong, SignerRef {
+        Core::channel_open_confirm(
+            &get_signer(),
             port_id,
             channel_id,
             proof_ack,
