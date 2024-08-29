@@ -87,18 +87,16 @@ module IBCModuleAddr::PingPong {
 
 
     public fun initiate(
-        caller: &signer,
         packet: PingPongPacket,
         local_timeout: u64
-    ) acquires PingPong {
+    ) acquires PingPong, SignerRef {
         let pp = borrow_global<PingPong>(@0x1); // assuming @0x1 is the address of the PingPong instance
         if (string::length(&pp.channel_id) == 0) {
             abort ERR_NO_CHANNEL
         };
 
-        // TODO: send_packet here
         Core::send_packet(  
-            caller,
+            &get_signer(),
             pp.channel_id,
             height::default(), // no height timeout
             local_timeout,
@@ -107,25 +105,13 @@ module IBCModuleAddr::PingPong {
     }
 
     public fun recv_packet(
-        caller: &signer,
         msg_port_id: String,
         msg_channel_id: String,
-        msg_packet: Packet,
+        packet: Packet,
         msg_proof: Any,
         msg_proof_height: height::Height,
-        acknowledgement: vector<u8>
-    ) acquires PingPong {
-        // Here we'll call on_recv_packet of ibc module and it will return packet
-
-        let packet = Core::recv_packet(
-            msg_port_id,
-            msg_channel_id,
-            msg_packet,
-            msg_proof,
-            msg_proof_height,
-            acknowledgement
-        );
-        let pp_packet = decode_packet(&packet::commitment(&packet));
+    ) acquires PingPong, SignerRef {
+        let pp_packet = decode_packet(packet::data(&packet));
         event::emit(RingEvent { ping: pp_packet.ping });
 
         let local_timeout = pp_packet.counterparty_timeout;
@@ -133,7 +119,17 @@ module IBCModuleAddr::PingPong {
         pp_packet.ping = !pp_packet.ping;
         pp_packet.counterparty_timeout = timestamp::now_seconds() + borrow_global<PingPong>(@0x1).timeout;
 
-        initiate(caller, pp_packet, local_timeout);
+        initiate(pp_packet, local_timeout);
+
+        Core::recv_packet(
+            &get_signer(),
+            msg_port_id,
+            msg_channel_id,
+            packet,
+            msg_proof,
+            msg_proof_height,
+            vector[1]
+        );
     }
 
     public fun acknowledge_packet(
@@ -141,11 +137,8 @@ module IBCModuleAddr::PingPong {
         acknowledgement: vector<u8>,
         proof: Any,
         proof_height: height::Height
-    ) {
-        let (_, acknowledgement) = Core::acknowledge_packet(packet, acknowledgement, proof, proof_height);
-        if (acknowledgement != ACK_SUCCESS) {
-            abort ERR_INVALID_ACK
-        };
+    ) acquires SignerRef {
+        Core::acknowledge_packet(&get_signer(), packet, acknowledgement, proof, proof_height);
         event::emit(AcknowledgedEvent {});
     }
 

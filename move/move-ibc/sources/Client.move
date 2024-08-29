@@ -274,7 +274,7 @@ module IBC::Core {
 
 
     // Initializes the IBCStore resource in the signer's account
-    public fun create_ibc_store(account: &signer)  {
+    fun init_module(account: &signer)  {
         assert!(signer::address_of(account) == @IBC, E_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE);
         let vault_constructor_ref = &object::create_named_object(account, VAULT_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
@@ -392,22 +392,6 @@ module IBC::Core {
         // found && verify_proposed_version(&supported_version, version)
     }
 
-
-
-    public fun contains(elem: &String, set: &vector<String>): bool {
-        let set_len = vector::length(set);
-        let i = 0;
-        while (i < set_len) {
-            let item = vector::borrow(set, i);
-            if (item == elem) {
-                return true
-            };
-            i = i + 1;
-        };
-        false
-    }
-
-
     public fun get_feature_set_intersection(
         source_features: &vector<String>,
         counterparty_features: &vector<String>
@@ -417,7 +401,7 @@ module IBC::Core {
         let i = 0;
         while (i < source_len) {
             let feature = vector::borrow(source_features, i);
-            if (contains(feature, counterparty_features)) {
+            if (vector::contains(counterparty_features, feature)) {
                 vector::push_back(&mut feature_set, *feature);
             };
             i = i + 1;
@@ -1467,16 +1451,23 @@ module IBC::Core {
         packet_sequence
     }
 
-    // Receives and processes an IBC packet
+    /// Receives and processes an IBC packet
+    ///
+    /// Note that any sanity check failures will result in this function to be aborted in order for caller's
+    /// storage to be reverted. This will result in acks won't be able to written.
     public fun recv_packet(
-        // _caller: &signer, // TODO: Do we need this?
+        caller: &signer,
         msg_port_id: String,
         msg_channel_id: String,
         msg_packet: Packet,
         msg_proof: Any,
         msg_proof_height: height::Height,
         acknowledgement: vector<u8>
-    ): Packet acquires IBCStore {
+    ) acquires IBCStore {
+        if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(msg_port_id, msg_channel_id))) {
+            abort E_UNAUTHORIZED
+        };
+
         let channel = ensure_channel_state(msg_port_id, msg_channel_id);
 
         if (packet::source_port(&msg_packet) != channel::chan_counterparty_port_id(&channel)) {
@@ -1561,8 +1552,6 @@ module IBC::Core {
         event::emit(RecvPacket {
             packet: msg_packet
         });
-
-        msg_packet
     }
     public fun write_acknowledgement(
         caller: &signer,
@@ -1611,13 +1600,18 @@ module IBC::Core {
     }
 
     public fun acknowledge_packet(
+        caller: &signer,
         packet: packet::Packet,
         acknowledgement: vector<u8>,
         proof: Any,
         proof_height: height::Height
-    ): (Packet, vector<u8>) acquires IBCStore {
+    ) acquires IBCStore {
         let port_id = *packet::source_port(&packet);
         let channel_id = *packet::source_channel(&packet);
+        
+        if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(port_id, channel_id))) {
+            abort E_UNAUTHORIZED
+        };
 
         let channel = ensure_channel_state(port_id, channel_id);
 
@@ -1689,7 +1683,6 @@ module IBC::Core {
             packet,
             acknowledgement
         });
-        (packet, acknowledgement)
     }
 
     public fun timeout_packet(
