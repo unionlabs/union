@@ -69,6 +69,7 @@ let fromChainId = writable("")
 let toChainId = writable("")
 let assetSymbol = writable("")
 let assetAddress = writable("")
+let address = writable("")
 
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
@@ -146,9 +147,9 @@ let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
 })
 
 let ucs01Configuration = derived(
-  [fromChain, toChainId, recipient],
-  ([$fromChain, $toChainId, $recipient]) => {
-    if ($fromChain === null || $toChainId === null || $recipient === null) return null
+  [fromChain, toChainId, address],
+  ([$fromChain, $toChainId, $address]) => {
+    if ($fromChain === null || $toChainId === null || $address === null) return null
 
     let ucs1_configuration =
       $toChainId in $fromChain.ucs1_configurations
@@ -175,8 +176,8 @@ let ucs01Configuration = derived(
         let forwardConfig = ucs1_configuration.forwards[$toChainId]
         pfmMemo = generatePfmMemo(
           forwardConfig.channel_id,
-          forwardConfig.port_id,
-          $toChain?.rpc_type === "evm" ? $recipient.slice(2) : $recipient
+          forwardConfig.port,
+          $toChain?.rpc_type === "evm" ? $address.slice(2) : $address
         )
         break
       }
@@ -233,7 +234,7 @@ const transfer = async () => {
   if ($fromChain.rpc_type === "evm" && !$userAddr.evm) return toast.error("No evm wallet connected")
   if ($fromChain.rpc_type === "cosmos" && !$userAddr.cosmos)
     return toast.error("No cosmos wallet connected")
-  if (!$recipient) return toast.error("Invalid recipient")
+  if (!$address) return toast.error("Invalid recipient")
   if (!$ucs01Configuration)
     return toast.error(
       `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
@@ -329,7 +330,7 @@ const transfer = async () => {
         let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
         console.log({ ucs1_configuration })
         if (ucs1_configuration.contract_address === "ics20") {
-          console.log({ $recipient })
+          console.log({ $address })
           transferAssetsMessage = {
             kind: "ibc",
             messageTransfers: [
@@ -338,7 +339,7 @@ const transfer = async () => {
                 sourceChannel: ucs1_configuration.channel_id,
                 token: { denom: $assetAddress, amount: parsedAmount.toString() },
                 sender: rawToBech32($fromChain.addr_prefix, $userAddrCosmos.bytes),
-                receiver: $recipient,
+                receiver: $address,
                 memo: pfmMemo ?? "",
                 timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
               }
@@ -354,7 +355,7 @@ const transfer = async () => {
                 msg: {
                   transfer: {
                     channel: ucs1_configuration.channel_id,
-                    receiver: $toChain.rpc_type === "evm" ? $recipient?.slice(2) : $recipient,
+                    receiver: $toChain.rpc_type === "evm" ? $address?.slice(2) : $address,
                     memo: pfmMemo ?? ""
                   }
                 },
@@ -554,7 +555,7 @@ const transfer = async () => {
             ? $userAddrCosmos?.normalized
             : $userAddrEvm?.normalized,
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
-        receiver: $recipient,
+        receiver: $address,
         assets: {
           [$assetSymbol]: {
             info: $fromChain?.assets?.find(d => d.denom === $assetSymbol) ?? null,
@@ -846,23 +847,20 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
   raise("trying to make stepper for unsupported chain")
 })
 
-let inputState: "locked" | "unlocked" = "locked"
+let userInput = writable(false)
 
-let userInput = false
-$: address = $recipient ?? ""
-
-$: if (!userInput && $recipient !== address) {
-  address = $recipient ?? ""
+$: if (!$userInput) {
+  $address = $recipient ?? ""
 }
 
 const handleInput = (event: Event) => {
-  address = (event.target as HTMLInputElement).value
-  userInput = true
+  address.set((event.target as HTMLInputElement).value)
+  userInput.set(true)
 }
 
 const resetInput = () => {
-  userInput = false
-  address = $recipient ?? ""
+  userInput.set(false)
+  address.set($recipient ?? "")
 }
 </script>
 
@@ -956,19 +954,19 @@ const resetInput = () => {
                     autocapitalize="none"
                     autocomplete="off"
                     autocorrect="off"
-                    bind:value={address}
+                    bind:value={$address}
                     class="disabled:bg-black/30"
-                    disabled={inputState === 'locked'}
+                    disabled={!$toChain}
                     id="address"
                     on:input={handleInput}
-                    placeholder="Select chain"
+                    placeholder="Enter recipient's address"
                     required={true}
                     spellcheck="false"
                     type="text"
                   />
                 </div>
                 <div class="flex justify-between px-1">
-                  {#if userInput}
+                  {#if $userInput}
                     <button
                       type="button"
                       on:click={resetInput}
@@ -979,18 +977,6 @@ const resetInput = () => {
                   {/if}
                 </div>
               </div>
-              <!--            <Button-->
-              <!--              aria-label="Toggle address lock"-->
-              <!--              class="px-3"-->
-              <!--              on:click={onLockClick}-->
-              <!--              variant="ghost"-->
-              <!--            >-->
-              <!--              {#if inputState === 'locked'}-->
-              <!--                <LockLockedIcon class="size-4.5"/>-->
-              <!--              {:else}-->
-              <!--                <LockOpenIcon class="size-4.5"/>-->
-              <!--              {/if}-->
-              <!--            </Button>-->
             </div>
           </section>
         </Card.Content>
