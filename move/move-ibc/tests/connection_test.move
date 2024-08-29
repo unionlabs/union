@@ -579,7 +579,7 @@ module IBC::ConnectionTest {
 
     // TODO: Uncomment this test when light client is implemented
 
-    // #[test(alice = @IBC, relayer=@mock_relayer_address)]   
+    // #[test(alice = @IBC)]   
     // #[expected_failure(abort_code = 1010)] // E_INVALID_PROOF
     // public fun test_connection_open_confirm_failure_invalid_proof(alice: &signer, relayer:address) {
     //     Core::create_ibc_store(alice);

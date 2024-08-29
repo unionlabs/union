@@ -1,22 +1,18 @@
 [package]
-name = "move-ibc"
-version = "1.0.0"
 authors = []
+name    = "move-ibc"
+version = "1.0.0"
 
 [addresses]
-ContractAAddress = "0xA" # Replace with a real address for deployment
-ContractBAddress = "0xB" # Replace with a real address for deployment
-ContractTestAddress = "0x00"
-
-IBC = "0x111111111111111" # This will be storage of our IBCStore
+IBC                  = "0x111111111111111" # This will be storage of our IBCStore
+IBCModuleAddr        = "0x333333333333333"
 mock_relayer_address = "0x222222222222222"
-IBCModuleAddr = "0x333333333333333"
 
 [dev-addresses]
 
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "mainnet"
+git    = "https://github.com/aptos-labs/aptos-core.git"
+rev    = "mainnet"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

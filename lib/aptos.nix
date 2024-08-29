@@ -30,7 +30,7 @@
         ];
 
         cargoExtraArgs = "-p movement";
-        
+
         LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
 
         CARGO_PROFILE = "cli";

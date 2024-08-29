@@ -1,8 +1,9 @@
 #[test_only]
 module IBC::IBCCommitmentTest {
 
-    use aptos_std::string;
+    use std::string;
     use IBC::IBCCommitment;
+    use IBC::height;
 
     const E_TEST_CHANNEL_COMMITMENT_KEY: u64 = 4001;
     const E_TEST_CHANNEL_PATH: u64 = 4002;
@@ -46,7 +47,7 @@ module IBC::IBCCommitmentTest {
     #[test]
     public fun test_consensus_state_commitment_key() {
         let client_id = string::utf8(b"client_id");
-        let key = IBCCommitment::consensus_state_commitment_key(client_id, 1, 1);
+        let key = IBCCommitment::consensus_state_commitment_key(client_id, height::new(1, 1));
         
         assert!(key == b"\x96\xfd\xc8\xff\xf2\x8c\xda\xd1\xf9\x0d\x12\x71\x7a\x66\x7c\xa9\x04\x8f\x08\x15\xb3\x80\xbe\x6a\xba\x05\x8f\xc2\xde\x22\xcb\xf3", 
                 E_TEST_CONSENSUS_STATE_COMMITMENT_KEY);

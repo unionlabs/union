@@ -64,7 +64,7 @@ module IBC::ChannelTest {
     #[test(alice = @IBC)]
     public fun test_get_counterparty_hops(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Mock connection ID
         let connection_id = string::utf8(b"connection-0");
@@ -85,7 +85,7 @@ module IBC::ChannelTest {
     #[test(alice = @IBC)]
     public fun test_generate_channel_identifier(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Test generate_channel_identifier function
         let _ = Core::generate_channel_identifier();
@@ -98,7 +98,7 @@ module IBC::ChannelTest {
     #[test(alice = @IBC)]
     public fun test_ensure_connection_state(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Mock connection ID
         let connection_id = string::utf8(b"connection-0");
@@ -118,7 +118,7 @@ module IBC::ChannelTest {
     #[test(alice = @IBC)]
     public fun test_ensure_connection_feature(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Mock connection ID
         let connection_id = string::utf8(b"connection-0");
@@ -170,7 +170,7 @@ module IBC::ChannelTest {
     #[test(alice = @IBC)]
     public fun test_channel_open_init(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -211,7 +211,7 @@ module IBC::ChannelTest {
     #[expected_failure(abort_code = 1016)] //E_INVALID_CHANNEL_STATE
     public fun test_channel_open_init_invalid_state(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -271,7 +271,7 @@ module IBC::ChannelTest {
     #[test(alice = @IBC)]
 public fun test_channel_open_ack(alice: &signer) {
     // Initialize IBCStore for testing
-    Core::create_ibc_store(alice);
+    // Core::create_ibc_store(alice);
 
     // Prepare a mock connection and set it in the IBCStore
     let client_id = string::utf8(b"client-0");
@@ -322,7 +322,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
     public fun test_channel_open_ack_invalid_state(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -364,7 +364,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[test(alice = @IBC)]
     public fun test_channel_open_confirm_success(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -407,7 +407,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
     public fun test_channel_open_confirm_invalid_state(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -445,7 +445,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[test(alice = @IBC)]
     public fun test_channel_open_try_success(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -489,7 +489,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1016)] // E_INVALID_CHANNEL_STATE
     public fun test_channel_open_try_invalid_state(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -524,7 +524,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[test(alice = @IBC)]
     public fun test_claim_capability_success(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Claim a new capability
         let capability_name = string::utf8(b"capability-0");
@@ -540,7 +540,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1014)] // E_CAPABILITY_ALREADY_CLAIMED
     public fun test_claim_capability_already_claimed(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Claim a new capability
         let capability_name = string::utf8(b"capability-0");
@@ -554,7 +554,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[test(alice = @IBC)]
     public fun test_write_acknowledgement_success(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock channel and set it in the IBCStore
         let connection_id = string::utf8(b"connection-0");
@@ -594,7 +594,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1020)] // E_UNAUTHORIZED
     public fun test_write_acknowledgement_unauthorized(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock channel and set it in the IBCStore
         let connection_id = string::utf8(b"connection-0");
@@ -626,7 +626,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1028)] // E_ACKNOWLEDGEMENT_IS_EMPTY
     public fun test_write_acknowledgement_empty_ack(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock channel and set it in the IBCStore
         let connection_id = string::utf8(b"connection-0");
@@ -662,7 +662,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1029)] // E_ACKNOWLEDGEMENT_ALREADY_EXISTS
     public fun test_write_acknowledgement_already_exists(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock channel and set it in the IBCStore
         let connection_id = string::utf8(b"connection-0");
@@ -700,7 +700,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[test(alice = @IBC)]
     public fun test_acknowledge_packet_success(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -763,7 +763,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1032)] // E_PACKET_COMMITMENT_NOT_FOUND
     public fun test_acknowledge_packet_commitment_not_found(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -814,7 +814,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1033)] // E_INVALID_PACKET_COMMITMENT
     public fun test_acknowledge_packet_invalid_commitment(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -869,7 +869,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1026)] // E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
     public fun test_acknowledge_packet_sequence_mismatch(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -927,7 +927,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[test(alice = @IBC)]
     public fun test_timeout_packet_success_ordered(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -991,7 +991,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[test(alice = @IBC)]
     public fun test_timeout_packet_success_unordered(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
@@ -1057,7 +1057,7 @@ public fun test_channel_open_ack(alice: &signer) {
     #[expected_failure(abort_code = 1032)] // E_PACKET_COMMITMENT_NOT_FOUND
     public fun test_timeout_packet_commitment_not_found(alice: &signer) {
         // Initialize IBCStore for testing
-        Core::create_ibc_store(alice);
+        // Core::create_ibc_store(alice);
 
         // Prepare a mock connection and set it in the IBCStore
         let client_id = string::utf8(b"client-0");
