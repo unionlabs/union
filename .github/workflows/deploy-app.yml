@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          REF: ${{ github.head_ref }}
+          REF: ${{ github.head_ref || github.sha }}
         run: |
           sleep 15
 
