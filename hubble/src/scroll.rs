@@ -1,14 +1,14 @@
 use std::time::Duration;
 
+use alloy::{
+    providers::{Provider, ProviderBuilder, RootProvider},
+    transports::http::{Client, Http},
+};
 use backon::{ConstantBuilder, ExponentialBuilder, Retryable};
 use color_eyre::eyre::{ContextCompat, Result, WrapErr};
-use ethers::providers::{Http, Middleware, Provider};
 use scroll_api::ScrollClient;
 use tracing::{debug, info};
-use unionlabs::{
-    hash::{H160, H256},
-    uint::U256,
-};
+use unionlabs::{hash::H160, uint::U256};
 
 use crate::{
     beacon::Beacon,
@@ -16,9 +16,9 @@ use crate::{
 };
 
 pub struct Scroll {
-    pub l1_client: Provider<Http>,
+    pub l1_client: RootProvider<Http<Client>>,
     #[allow(unused)]
-    pub l2_client: Provider<Http>,
+    pub l2_client: RootProvider<Http<Client>>,
 
     pub beacon: Beacon,
 
@@ -51,11 +51,11 @@ pub struct RollupFinalizationConfig {
 
 impl Config {
     pub async fn indexer(self, db: sqlx::PgPool) -> Result<Indexer<Scroll>> {
-        let l2_client = Provider::new(Http::new(self.l2_url));
+        let l2_client = ProviderBuilder::new().on_http(self.l2_url);
 
         let l2_chain_id = U256::from(
             l2_client
-                .get_chainid()
+                .get_chain_id()
                 .await
                 .wrap_err("unable to fetch chain id from l2")?,
         )
@@ -75,7 +75,7 @@ impl Config {
         .await?;
 
         let querier = Scroll {
-            l1_client: Provider::new(Http::new(self.l1_url)),
+            l1_client: ProviderBuilder::new().on_http(self.l1_url),
             l2_client,
 
             beacon: Beacon::new(self.beacon_url, reqwest::Client::new()),
@@ -111,21 +111,18 @@ impl Scroll {
         let storage = self
             .l1_client
             .get_storage_at(
-                ethers::types::H160(self.rollup_finalization_config.rollup_contract_address.0),
-                H256::from(
+                alloy::primitives::Address::new(
+                    (self.rollup_finalization_config.rollup_contract_address).0,
+                ),
+                alloy::primitives::Uint::from_be_bytes(
                     self.rollup_finalization_config
                         .rollup_last_finalized_batch_index_slot
                         .to_be_bytes(),
-                )
-                .into(),
-                Some(ethers::types::BlockId::Number(
-                    ethers::types::BlockNumber::Number((l1_height as u64).into()),
-                )),
+                ),
             )
             .await
             .wrap_err("error fetching l1 rollup contract storage")?;
-
-        let batch_index = U256::from_be_bytes(storage.to_fixed_bytes())
+        let batch_index: u64 = storage
             .try_into()
             .expect("value is a u64 in the contract; qed;");
 

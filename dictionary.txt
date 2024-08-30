@@ -474,6 +474,7 @@ dyld
 dylib
 dymension
 echarts
+eips
 eitherway
 elems
 elfutils

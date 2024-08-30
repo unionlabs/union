@@ -81,6 +81,7 @@ impl<C> RaceClient<C> {
 
     /// Run the provided closure over the clients, returning the first encountered Ok, or if all error, the first
     /// encountered Err.
+
     pub async fn race_some<
         'a,
         T,

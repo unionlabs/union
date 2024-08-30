@@ -1,15 +1,20 @@
 use core::fmt::Debug;
 use std::{ops::Range, sync::Arc, time::Duration};
 
+use alloy::{
+    eips::BlockId,
+    primitives::{Address, BloomInput, FixedBytes},
+    providers::{Provider, ProviderBuilder, RootProvider},
+    rpc::types::{Block, BlockTransactionsKind, Filter, Log},
+    transports::{
+        http::{Client, Http},
+        RpcError, TransportErrorKind,
+    },
+};
 use backon::{ConstantBuilder, Retryable};
+use chrono::{offset::LocalResult, TimeZone, Utc};
 use color_eyre::Report;
 use const_hex::ToHexExt;
-use ethers::{
-    abi::ethereum_types::Address,
-    core::types::BlockId,
-    providers::{Http, Provider},
-    types::H256,
-};
 use futures::{stream::FuturesOrdered, FutureExt, StreamExt, TryFutureExt};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -53,7 +58,7 @@ pub struct Indexer {
     chain_id: ChainId,
     tasks: tokio::task::JoinSet<Result<(), Report>>,
     pool: PgPool,
-    provider: RaceClient<Provider<Http>>,
+    provider: RaceClient<RootProvider<Http<Client>>>,
     chunk_size: usize,
     mode: InsertMode,
     contracts: Vec<Address>,
@@ -64,18 +69,17 @@ impl Config {
         let provider = RaceClient::new(
             self.urls
                 .into_iter()
-                .map(|url| Provider::<Http>::try_from(url.as_str()).unwrap())
+                .map(|url| ProviderBuilder::new().on_http(url))
                 .collect(),
         );
 
         info!("fetching chain-id from node");
         let chain_id = (|| {
             debug!(?provider, "retry fetching chain-id from node");
-            provider.get_chainid()
+            provider.get_chain_id()
         })
         .retry(&crate::expo_backoff())
-        .await?
-        .as_u64();
+        .await?;
 
         let indexing_span = info_span!("indexer", chain_id = chain_id);
         async move {
@@ -203,7 +207,7 @@ async fn index_blocks(
     pool: PgPool,
     range: Range<u64>,
     chain_id: ChainId,
-    provider: RaceClient<Provider<Http>>,
+    provider: RaceClient<RootProvider<Http<Client>>>,
     chunk_size: usize,
     mode: InsertMode,
     filter: Vec<Address>,
@@ -257,7 +261,7 @@ async fn index_blocks_by_chunk(
     pool: PgPool,
     range: Range<u64>,
     chain_id: ChainId,
-    provider: RaceClient<Provider<Http>>,
+    provider: RaceClient<RootProvider<Http<Client>>>,
     chunk_size: usize,
     mode: InsertMode,
     filter: Arc<Vec<Address>>,
@@ -357,7 +361,7 @@ async fn index_blocks_by_chunk(
 pub struct BlockInsert {
     pub chain_id: ChainId,
     pub hash: String,
-    pub header: ethers::types::Block<H256>,
+    pub header: Block,
     pub height: i32,
     pub time: OffsetDateTime,
     pub transactions: Vec<TransactionInsert>,
@@ -366,7 +370,7 @@ pub struct BlockInsert {
 #[derive(Serialize, Deserialize)]
 pub struct LogData {
     pub transactions: Vec<TransactionInsert>,
-    pub header: ethers::types::Block<H256>,
+    pub header: Block,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -374,13 +378,13 @@ pub enum FromProviderError {
     #[error("block not found")]
     BlockNotFound,
     #[error("data belonging to block not found")]
-    DataNotFound(ethers::providers::ProviderError),
+    DataNotFound(RpcError<TransportErrorKind>),
     #[error("something else went wrong")]
     Other(Report),
 }
 
-impl From<ethers::providers::ProviderError> for FromProviderError {
-    fn from(error: ethers::providers::ProviderError) -> Self {
+impl From<RpcError<TransportErrorKind>> for FromProviderError {
+    fn from(error: RpcError<TransportErrorKind>) -> Self {
         Self::Other(Report::from(error))
     }
 }
@@ -410,7 +414,7 @@ impl BlockInsert {
     pub async fn from_provider_retried_filtered<T: Into<BlockId> + Send + Sync + Debug + Clone>(
         chain_id: ChainId,
         id: T,
-        provider: RaceClient<Provider<Http>>,
+        provider: RaceClient<RootProvider<Http<Client>>>,
         filter: impl Into<Option<Arc<Vec<Address>>>>,
     ) -> Result<Option<Self>, FromProviderError> {
         let filter = filter.into();
@@ -429,22 +433,15 @@ impl BlockInsert {
     async fn from_provider_filtered<T: Into<BlockId> + Send + Sync + Debug>(
         chain_id: ChainId,
         id: T,
-        provider: RaceClient<Provider<Http>>,
+        provider: RaceClient<RootProvider<Http<Client>>>,
         filter: Option<Arc<Vec<Address>>>,
     ) -> Result<Option<Self>, FromProviderError> {
         use std::collections::HashMap;
 
-        use ethers::middleware::Middleware;
-
         let id = id.into();
 
-        use ethers::{
-            core::{abi::ethabi::ethereum_types::BloomInput, types::Filter},
-            types::Log,
-        };
-
         let block = provider
-            .get_block(id)
+            .get_block(id, BlockTransactionsKind::Full)
             .await?
             .ok_or(FromProviderError::BlockNotFound)?;
 
@@ -452,10 +449,11 @@ impl BlockInsert {
 
         // We check for a potential log match, which potentially avoids querying
         // eth_getLogs.
-        if let (Some(bloom), Some(filter)) = (block.logs_bloom, &filter) {
+        let bloom = block.header.logs_bloom;
+        if let Some(filter) = &filter {
             if !filter
                 .iter()
-                .any(|address| bloom.contains_input(BloomInput::Raw(address.as_bytes())))
+                .any(|address| bloom.contains_input(BloomInput::Raw(&address.into_array())))
             {
                 return Ok(None);
             }
@@ -463,7 +461,7 @@ impl BlockInsert {
 
         // We know now there is a potential match, we still apply a Filter to only
         // get the logs we want.
-        let log_filter = Filter::new().select(block.hash.unwrap());
+        let log_filter = Filter::new().select(block.header.hash.unwrap());
 
         let log_filter = if let Some(ref filter) = filter {
             let addresses: Vec<_> = filter.iter().cloned().collect();
@@ -485,7 +483,7 @@ impl BlockInsert {
         let partitioned = {
             let mut map: HashMap<(_, _), Vec<Log>> = HashMap::with_capacity(logs.len());
             for log in logs {
-                if log.removed.unwrap_or_default() {
+                if log.removed {
                     continue;
                 }
 
@@ -500,16 +498,21 @@ impl BlockInsert {
         };
 
         let result: Result<Option<Self>, Report> = try {
-            let ts = block.time().unwrap_or_default().timestamp();
+            let timestamp_i64 = block.header.timestamp as i64;
+            let datetime = match Utc.timestamp_opt(timestamp_i64, 0) {
+                LocalResult::Single(datetime) => datetime,
+                _ => Utc::now(),
+            };
+            let ts = datetime.timestamp();
             let time = OffsetDateTime::from_unix_timestamp(ts)?;
-            let block_hash = block.hash.unwrap().to_lower_hex();
-            let height: i32 = block.number.unwrap().as_u32().try_into()?;
+            let block_hash = block.header.hash.unwrap().to_lower_hex();
+            let height: i32 = block.header.number.unwrap() as i32;
 
             let transactions = partitioned
                 .into_iter()
                 .map(|((transaction_hash, transaction_index), logs)| {
                     let transaction_hash = transaction_hash.to_lower_hex();
-                    let transaction_index = transaction_index.as_u32() as i32;
+                    let transaction_index = transaction_index as i32;
 
                     let events = logs
                         .into_iter()
@@ -518,7 +521,7 @@ impl BlockInsert {
                             let data = serde_json::to_value(&log).unwrap();
                             EventInsert {
                                 data,
-                                log_index: log.log_index.unwrap().as_usize(),
+                                log_index: log.log_index.unwrap() as usize,
                                 transaction_log_index: transaction_log_index as i32,
                             }
                         })
@@ -562,7 +565,7 @@ pub trait ToLowerHex {
     fn to_lower_hex(&self) -> String;
 }
 
-impl ToLowerHex for H256 {
+impl ToLowerHex for FixedBytes<32> {
     fn to_lower_hex(&self) -> String {
         format!("{:#x}", self)
     }

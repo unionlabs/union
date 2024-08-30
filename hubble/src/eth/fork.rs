@@ -1,11 +1,12 @@
 use std::time::Duration;
 
+use alloy::{
+    eips::BlockId,
+    providers::{ProviderBuilder, RootProvider},
+    transports::http::{Client, Http},
+};
 use backon::Retryable;
 use color_eyre::Report;
-use ethers::{
-    providers::{Http, Provider},
-    types::BlockId,
-};
 use futures::{stream, stream::FuturesOrdered, StreamExt, TryStreamExt};
 use sqlx::PgPool;
 use tracing::{debug, info, info_span, Instrument};
@@ -36,7 +37,7 @@ fn default_interval() -> Duration {
 pub struct Indexer {
     chain_id: ChainId,
     pool: PgPool,
-    provider: RaceClient<Provider<Http>>,
+    provider: RaceClient<RootProvider<Http<Client>>>,
     interval: Duration,
     start_height: Option<i32>,
     chunk_size: usize,
@@ -47,18 +48,17 @@ impl Config {
         let provider = RaceClient::new(
             self.urls
                 .into_iter()
-                .map(|url| Provider::<Http>::try_from(url.as_str()).unwrap())
+                .map(|url| ProviderBuilder::new().on_http(url))
                 .collect(),
         );
 
         info!("fetching chain-id from node");
         let chain_id = (|| {
             debug!(?provider, "retry fetching chain-id from node");
-            provider.get_chainid()
+            provider.get_chain_id()
         })
         .retry(&crate::expo_backoff())
-        .await?
-        .as_u64();
+        .await?;
 
         let indexing_span = info_span!("indexer", chain_id = chain_id);
         async move {
@@ -92,8 +92,9 @@ impl Indexer {
                 chain_id: ChainId,
                 hash: String,
                 height: i32,
-                provider: RaceClient<Provider<Http>>,
+                provider: RaceClient<RootProvider<Http<Client>>>,
             ) -> Result<Option<BlockInsert>, Report> {
+                let height: u64 = height as u64;
                 let block = BlockInsert::from_provider_retried_filtered(
                     chain_id,
                     BlockId::Number(height.into()),

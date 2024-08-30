@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use ethers::providers::{Http, Middleware, Provider};
+use alloy::{
+    providers::{Provider, ProviderBuilder},
+    sol,
+};
 use prost::Message;
 use protos::ibc::{
     core::client::v1::QueryClientStateRequest, lightclients::wasm::v1::QueryCodeRequest,
@@ -14,7 +17,18 @@ use unionlabs::{
     traits::ClientState,
     WasmClientType,
 };
+sol! {
+    contract IbcHandler {
+        function CreateClient(MsgCreateClient calldata) returns (string memory);
+    }
 
+    struct MsgCreateClient {
+        string client_type;
+        bytes client_state_bytes;
+        bytes consensus_state_bytes;
+        address relayer;
+    }
+}
 use crate::cli::{IndexerConfig, Indexers};
 
 #[derive(Debug)]
@@ -206,10 +220,9 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                 }
             }
             IndexerConfig::Eth(eth_config) => {
-                let provider =
-                    Provider::<Http>::try_from(eth_config.urls[0].clone().as_str()).unwrap();
+                let provider = ProviderBuilder::new().on_http(eth_config.urls[0].clone());
 
-                let chain_id = provider.get_chainid().await.unwrap().as_u64().to_string();
+                let chain_id = provider.get_chain_id().await.unwrap().to_string();
                 dbg!("hi");
 
                 let eth_clients = sqlx::query!(
@@ -242,15 +255,17 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                     };
 
                     let tx = provider
-                        .get_transaction(
-                            ethers::types::H256::from_str(&record.transaction_hash.unwrap())
-                                .unwrap(),
+                        .get_transaction_by_hash(
+                            alloy::primitives::FixedBytes::from_str(
+                                &record.transaction_hash.unwrap(),
+                            )
+                            .unwrap(),
                         )
                         .await
                         .unwrap()
                         .unwrap();
 
-                    let msg = match <contracts::ibc_handler::CreateClientCall as ethers::abi::AbiDecode>::decode(&tx.input) {
+                    let msg = match <IbcHandler::CreateClientCall as alloy::sol_types::SolCall>::abi_decode(&tx.input,true) {
                         Ok(msg) => msg,
                         Err(err) => {
                             warn!("could not decode CreateClientCall, most likely due to ABI change: {}", err);
@@ -258,9 +273,9 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                         }
                     };
 
-                    match &*msg.0.client_type {
+                    match &*msg._0.client_type {
                         "cometbls" => {
-                            let cs = unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<EthAbi>(&msg.0.client_state_bytes).unwrap();
+                            let cs = unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<EthAbi>(&msg._0.client_state_bytes).unwrap();
 
                             datas.push(Data {
                                 chain_id: record.id,
