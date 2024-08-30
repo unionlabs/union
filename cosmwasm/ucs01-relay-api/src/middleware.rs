@@ -169,10 +169,28 @@ mod tests {
     #[test]
     fn serde_parses_memo() {
         // let memo = "\"balls\": \"string\"";
-        let memo = "{\"forward\": {\"receiver\": \"[eth_addr]\",\"port\": \"[union-eth port]\",\"channel\": \"[union-eth channel]\",\"timeout\": \"1000000\",\"retries\": 0}}";
+        let memo = r#"{"forward": {"receiver": "[eth_addr]","port": "[union-eth port]","channel": "[union-eth channel]","timeout": "1000000","retries": 0}}"#;
 
         let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
 
         dbg!(parsed);
+    }
+
+    #[test]
+    fn serde_parses_memo_without_port_as_none() {
+        // let memo = "\"balls\": \"string\"";
+        let memo = r#"{"forward":{"channel":"channel-201","receiver":"2C96e52fCE14BAa13868CA8182f8A7903e4e76E0"}}"#;
+
+        let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
+
+        assert
+    #[test]
+    fn serde_parses_memo_without_port_as_none() {
+        // let memo = "\"balls\": \"string\"";
+        let memo = r#"{"forward":{"port":"wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h","channel":"channel-201","receiver":"3C5daAa3c96AB8fe4cFC2fB6d76193fe959A9f82"}}"#;
+
+        let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
+
+        assert_eq!(parsed, Memo::None {})
     }
 }

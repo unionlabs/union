@@ -16,9 +16,11 @@ members = [
 
   "hubble",
 
+  "lib/aptos-rpc",
   "lib/beacon-api",
-  "lib/chain-utils",
   "lib/cometbft-rpc",
+
+  "lib/chain-utils",
   "lib/gnark-key-parser",
   "lib/gnark-mimc",
   "lib/ibc-vm-rs",
@@ -72,6 +74,7 @@ members = [
   "voyager",
   "voyager/modules/chain/cosmos-sdk",
   "voyager/modules/chain/ethereum",
+  "voyager/modules/chain/movement",
 
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
@@ -103,6 +106,7 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
+aptos-rpc                  = { path = "lib/aptos-rpc", default-features = false }
 aptos-verifier             = { path = "lib/aptos-verifier", default-features = false }
 arbitrum-verifier          = { path = "lib/arbitrum-verifier", default-features = false }
 beacon-api                 = { path = "lib/beacon-api", default-features = false }

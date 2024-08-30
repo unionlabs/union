@@ -734,6 +734,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 
 [[package]]
+name = "aptos-rpc"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "macros",
+ "reqwest 0.11.27",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
+
+[[package]]
 name = "aptos-verifier"
 version = "0.1.0"
 dependencies = [
@@ -2089,7 +2106,6 @@ checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 name = "chain-utils"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
  "beacon-api",
  "bip32",
  "chrono",
@@ -2518,7 +2534,6 @@ checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
 name = "contracts"
 version = "0.0.0"
 dependencies = [
- "arbitrary",
  "ethers",
  "serde",
 ]
@@ -4499,7 +4514,6 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "835c052cb0c08c1acf6ffd71c022172e18723949c8282f2b9f27efbc51e64534"
 dependencies = [
- "arbitrary",
  "byteorder",
  "rand 0.8.5",
  "rustc-hex",
@@ -8991,7 +9005,6 @@ dependencies = [
 name = "queue-msg"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
  "either",
  "enumorph",
  "frame-support-procedural",
@@ -10838,7 +10851,6 @@ dependencies = [
 name = "ssz"
 version = "0.5.3"
 dependencies = [
- "arbitrary",
  "derivative",
  "hex-literal",
  "itertools 0.10.5",
@@ -11222,7 +11234,6 @@ name = "tendermint"
 version = "0.39.1"
 source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.39.1-bn254#e891d238e263935b7cae17068d726154f4a95a6b"
 dependencies = [
- "arbitrary",
  "bytes",
  "digest 0.10.7",
  "ed25519",
@@ -12353,7 +12364,6 @@ version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76f64bba2c53b04fcab63c01a7d7427eadc821e3bc48c34dc9ba29c501164b52"
 dependencies = [
- "arbitrary",
  "byteorder",
  "crunchy",
  "hex",
@@ -12430,7 +12440,6 @@ checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 name = "unionlabs"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
  "bcs",
  "bip32",
  "bitvec",
@@ -12616,7 +12625,6 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "voyager"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
  "axum 0.6.20",
  "beacon-api",
  "bech32 0.9.1",
@@ -12673,6 +12681,7 @@ dependencies = [
 name = "voyager-chain-module-cosmos-sdk"
 version = "0.1.0"
 dependencies = [
+ "clap 4.5.4",
  "cometbft-rpc",
  "dashmap",
  "enumorph",
@@ -12720,9 +12729,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-chain-module-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-rpc",
+ "clap 4.5.4",
+ "enumorph",
+ "frunk",
+ "futures",
+ "jsonrpsee 0.24.3",
+ "macros",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
 name = "voyager-client-module-cometbls"
 version = "0.1.0"
 dependencies = [
+ "clap 4.5.4",
  "cometbft-rpc",
  "dashmap",
  "enumorph",
@@ -12823,9 +12858,9 @@ dependencies = [
 name = "voyager-message"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
  "beacon-api",
  "chain-utils",
+ "clap 4.5.4",
  "contracts",
  "dashmap",
  "enumorph",

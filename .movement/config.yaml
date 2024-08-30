@@ -1,0 +1,9 @@
+---
+profiles:
+  default:
+    network: Devnet
+    private_key: "0xa1ecef98fc76367afc1376df13edf89d137050b3a8c9ca62984e1354c112b801"
+    public_key: "0xe2d73a1d2a3451d935cf9ca241bc2915937aa0f54de72baf0839c147b7e0fbc5"
+    account: b0c040f990447c163a29a234fdfc4a315cb341375af9f67cda519b971fab8f53
+    rest_url: "https://aptos.devnet.inola.movementlabs.xyz/v1"
+    faucet_url: "https://faucet.devnet.inola.movementlabs.xyz"
