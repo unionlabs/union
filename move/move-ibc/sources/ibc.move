@@ -1,17 +1,18 @@
 module IBC::Core {
+    use std::any;
     use std::signer;
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
-    use aptos_framework::event;
+    use aptos_std::table::{Self, Table};
+    use std::event;
     use std::bcs;
-    use aptos_framework::object;
-    use aptos_std::string::{Self, String};
-    use aptos_std::any::{Any};
+    use std::object;
+    use std::string::{Self, String};
     use std::hash;
     use std::timestamp;
 
-    use aptos_std::string_utils;
-    use aptos_std::from_bcs;
+    use std::string_utils;
+    use std::from_bcs;
     use IBC::IBCCommitment;
     use IBC::LightClient;
     use IBC::height::{Self, Height};
@@ -193,7 +194,7 @@ module IBC::Core {
     struct IBCStore has key {
         client_impls: SmartTable<String, address>,
         client_registry: SmartTable<String, address>,
-        commitments: SmartTable<vector<u8>, vector<u8>>,
+        commitments: Table<vector<u8>, vector<u8>>,
         connections: SmartTable<String, ConnectionEnd>,
         channels: SmartTable<ChannelPort, Channel>, 
         capabilities: SmartTable<String, address>,
@@ -210,6 +211,15 @@ module IBC::Core {
         self_ref: object::ExtendRef,
     }
 
+    #[view]
+    public fun client_state(client_id: String): vector<u8> {
+        LightClient::get_client_state(client_id)
+    }
+
+    #[view]
+    public fun consensus_state(client_id: String, revision_number: u64, revision_height: u64): vector<u8> {
+        LightClient::get_consensus_state(client_id, height::new(revision_number, revision_height))
+    }
 
     #[view]
     public fun get_vault_addr(): address {
@@ -231,13 +241,13 @@ module IBC::Core {
     // Setter for Commitments
     public fun set_commitment(key: vector<u8>, value: vector<u8>) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        smart_table::upsert(&mut store.commitments, key, value);
+        table::upsert(&mut store.commitments, key, value);
     }
 
     // Getter for Commitments
     public fun get_commitment(key: vector<u8>): vector<u8> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
-        let commitment = smart_table::borrow_with_default(&store.commitments, key, &vector::empty<u8>());
+        let commitment = table::borrow_with_default(&store.commitments, key, &vector::empty<u8>());
         *commitment
     }
 
@@ -262,13 +272,13 @@ module IBC::Core {
     // Setter for nextChannelSequence in Commitments
     public fun set_next_channel_sequence(sequence: u64) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        smart_table::upsert(&mut store.commitments, b"nextChannelSequence", bcs::to_bytes(&sequence));
+        table::upsert(&mut store.commitments, b"nextChannelSequence", bcs::to_bytes(&sequence));
     }
 
     // Getter for nextChannelSequence in Commitments
     public fun get_next_channel_sequence(): u64 acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
-        let next_sequence_bytes = smart_table::borrow_with_default(&store.commitments, b"nextChannelSequence", &bcs::to_bytes<u64>(&0));
+        let next_sequence_bytes = table::borrow_with_default(&store.commitments, b"nextChannelSequence", &bcs::to_bytes<u64>(&0));
         from_bcs::to_u64(*next_sequence_bytes)
     }
 
@@ -281,7 +291,7 @@ module IBC::Core {
 
         let store = IBCStore {
             client_registry: smart_table::new(),
-            commitments: smart_table::new(),
+            commitments: table::new(),
             client_impls: smart_table::new(),
             connections: smart_table::new(),
             channels: smart_table::new<ChannelPort, Channel>(),
@@ -299,7 +309,7 @@ module IBC::Core {
     public fun generate_client_identifier(client_type: String): String acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let next_sequence = smart_table::borrow_with_default(&store.commitments, b"nextClientSequence", &bcs::to_bytes<u64>(&0u64));
+        let next_sequence = table::borrow_with_default(&store.commitments, b"nextClientSequence", &bcs::to_bytes<u64>(&0u64));
 
         let next_sequence = from_bcs::to_u64(*next_sequence);
 
@@ -312,42 +322,39 @@ module IBC::Core {
         string::append_utf8(&mut identifier, b"-");
         string::append(&mut identifier, next_sequence_str);
 
-        smart_table::upsert(&mut store.commitments, b"nextClientSequence", bcs::to_bytes<u64>(&next_sequence));
+        table::upsert(&mut store.commitments, b"nextClientSequence", bcs::to_bytes<u64>(&next_sequence));
 
         identifier
     }
 
 
     /// Create a client with an initial client and consensus state
-    public fun create_client(
+    public entry fun create_client<CliT: copy + drop + store, ConT: copy + drop + store>(
         client_type: String,
-        client_state: Any,
-        consensus_state: Any
-    ): String  acquires IBCStore, SignerRef {
+        client_state: CliT,
+        consensus_state: ConT,
+    ) acquires IBCStore, SignerRef {
         let client_id = generate_client_identifier(client_type);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-
-        let client_state_bytes = bcs::to_bytes<Any>(&client_state);
-        let consensus_state_bytes = bcs::to_bytes<Any>(&consensus_state);
 
         let status_code = LightClient::create_client(
             &get_ibc_signer(),
             client_id, 
-            client_state, 
-            consensus_state
+            any::pack(client_state), 
+            any::pack(consensus_state),
         );
     
         assert!(status_code == 0, status_code);
 
         // Update commitments
-        smart_table::upsert(&mut store.commitments, IBCCommitment::client_state_commitment_key(client_id), client_state_bytes);
+        table::upsert(&mut store.commitments, IBCCommitment::client_state_commitment_key(client_id), hash::sha2_256(bcs::to_bytes(&client_state)));
 
         let latest_height = LightClient::latest_height(client_id);
 
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::consensus_state_commitment_key(client_id, latest_height),
-            consensus_state_bytes
+            hash::sha2_256(bcs::to_bytes(&consensus_state))
         );
 
         event::emit(
@@ -355,8 +362,6 @@ module IBC::Core {
                 client_id
             },
         );
-
-        client_id
     }
 
     public fun get_ibc_signer(): signer acquires SignerRef {
@@ -539,7 +544,7 @@ module IBC::Core {
         connection: &ConnectionEnd,
         height: height::Height,
         path: vector<u8>,
-        proof: Any,
+        proof: vector<u8>,
         client_state_bytes: vector<u8>
     ): bool {
         let error_code = LightClient::verify_membership(
@@ -557,7 +562,7 @@ module IBC::Core {
     public fun verify_connection_state(
         connection: &ConnectionEnd,
         height: height::Height,
-        proof: Any,
+        proof: vector<u8>,
         connection_id: String,
         counterparty_connection: ConnectionEnd
     ): bool {
@@ -576,7 +581,7 @@ module IBC::Core {
     public fun verify_commitment(
         connection: &ConnectionEnd,
         height: Height,
-        proof: Any,
+        proof: vector<u8>,
         path: String,
         commitment: vector<u8>,
     ): u64 {
@@ -594,7 +599,7 @@ module IBC::Core {
 
     public fun generate_connection_identifier(): String acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        let next_sequence_bytes = smart_table::borrow_with_default(
+        let next_sequence_bytes = table::borrow_with_default(
             &store.commitments,
             b"nextConnectionSequence",
             &bcs::to_bytes<u64>(&0)
@@ -603,7 +608,7 @@ module IBC::Core {
         let identifier = string::utf8(b"connection-");
         string::append(&mut identifier, string_utils::to_string(&next_sequence));
         let new_sequence = next_sequence + 1;
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             b"nextConnectionSequence",
             bcs::to_bytes(&new_sequence)
@@ -620,15 +625,20 @@ module IBC::Core {
         let encoded_connection = connection_end::encode_proto(*connection);
         let key = IBCCommitment::connection_commitment_key(connection_id);
         let hash = hash::sha2_256(encoded_connection);
-        smart_table::upsert(&mut store.commitments, key, hash);
+        table::upsert(&mut store.commitments, key, hash);
     }
 
-    public fun connection_open_init(
+    public entry fun connection_open_init(
         client_id: String,
-        version: connection_end::Version,
-        counterparty: connection_end::Counterparty,
+        version_identifier: String,
+        version_features: vector<String>,
+        counterparty_client_id: String,
+        counterparty_connection_id: String,
+        counterparty_prefix: vector<u8>,
         delay_period: u64,
-    ): String acquires IBCStore {
+    ) acquires IBCStore {
+        let version = connection_end::new_version(version_identifier, version_features);
+        let counterparty = connection_end::new_counterparty(counterparty_client_id, counterparty_connection_id, counterparty_prefix);
 
         let connection_id = generate_connection_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
@@ -661,7 +671,6 @@ module IBC::Core {
                     counterparty_client_id: *connection_end::conn_counterparty_client_id(&connection)
                 },
             );
-        connection_id
     }
 
     public fun get_compatible_versions(): vector<connection_end::Version> {
@@ -684,24 +693,30 @@ module IBC::Core {
     public fun get_connection_commitment(connection_id: String): vector<u8> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let key = IBCCommitment::connection_commitment_key(connection_id);
-        *smart_table::borrow(
+        *table::borrow(
             &store.commitments,
             key,
         )
     }
 
-    public fun connection_open_try(
-        counterparty: connection_end::Counterparty,
+    public entry fun connection_open_try(
+        counterparty_client_id: String,
+        counterparty_connection_id: String,
+        counterparty_prefix: vector<u8>,
         delay_period: u64,
         client_id: String,
         client_state_bytes: vector<u8>,
-        counterparty_versions: vector<connection_end::Version>,
-        proof_init: Any,
-        proof_client: Any,
-        _proof_consensus: vector<u8>,
-        proof_height: height::Height,
-        _consensus_height: height::Height,
-    ):String acquires IBCStore {
+        counterparty_version_identifiers: vector<String>,
+        counterparty_version_features: vector<vector<String>>,
+        proof_init: vector<u8>,
+        proof_client: vector<u8>,
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
+    ) acquires IBCStore {
+        let counterparty = connection_end::new_counterparty(counterparty_client_id, counterparty_connection_id, counterparty_prefix);
+        let counterparty_versions = connection_end::new_versions(counterparty_version_identifiers, counterparty_version_features);
+        let proof_height = height::new(proof_height_revision_num, proof_height_revision_height);
+
         // Generate a new connection identifier
         let connection_id = generate_connection_identifier();
 
@@ -776,16 +791,14 @@ module IBC::Core {
 
         connection_end::set_state(connection, CONN_STATE_TRYOPEN);
         update_connection_commitment(store, connection_id);
-
-        connection_id
     }
 
     public fun connection_open_ack(
         connection_id: String,
         client_state_bytes: vector<u8>,
         version: connection_end::Version,
-        proof_try: Any,
-        proof_client: Any,
+        proof_try: vector<u8>,
+        proof_client: vector<u8>,
         _proof_consensus: vector<u8>,
         counterparty_connection_id: String,
         proof_height: height::Height,
@@ -867,7 +880,7 @@ module IBC::Core {
 
     public fun connection_open_confirm(
         connection_id: String,
-        proof_ack: Any,
+        proof_ack: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
@@ -955,7 +968,7 @@ module IBC::Core {
 
     public fun generate_channel_identifier(): String acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        let next_sequence_bytes = smart_table::borrow_with_default(
+        let next_sequence_bytes = table::borrow_with_default(
             &store.commitments,
             b"nextChannelSequence",
             &bcs::to_bytes<u64>(&0)
@@ -964,7 +977,7 @@ module IBC::Core {
         let identifier = string::utf8(b"channel-");
         string::append(&mut identifier, string_utils::to_string(&next_sequence));
         let new_sequence = next_sequence + 1;
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             b"nextChannelSequence",
             bcs::to_bytes(&new_sequence)
@@ -1029,14 +1042,14 @@ module IBC::Core {
 
         let encoded = channel::encode_proto(*channel);
         let key = IBCCommitment::channel_commitment_key(port_id, channel_id);
-        smart_table::upsert(&mut store.commitments, key, hash::sha2_256(encoded));
+        table::upsert(&mut store.commitments, key, hash::sha2_256(encoded));
     }
 
 
     public fun verify_channel_state(
         connection: &ConnectionEnd,
         height: height::Height,
-        proof: Any,
+        proof: vector<u8>,
         port_id: String,
         channel_id: String,
         channel_bytes: vector<u8>
@@ -1097,19 +1110,19 @@ module IBC::Core {
         let channel = channel::new(CHAN_STATE_INIT, ordering, counterparty, connection_hops, version);
         smart_table::upsert(&mut store.channels, channel_port, channel);
         
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::next_sequence_send_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::next_sequence_recv_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::next_sequence_ack_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
@@ -1141,7 +1154,7 @@ module IBC::Core {
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
-        proof_try: Any,
+        proof_try: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
         // Retrieve the channel from the store
@@ -1201,7 +1214,7 @@ module IBC::Core {
         ibc_app: &signer,
         port_id: String,
         channel_id: String,
-        proof_ack: Any,
+        proof_ack: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
         // Retrieve the channel from the store
@@ -1262,7 +1275,7 @@ module IBC::Core {
         counterparty: channel::Counterparty,
         counterparty_version: String,
         version: String,
-        proof_init: Any,
+        proof_init: vector<u8>,
         proof_height: height::Height
     ): (Channel, u64) acquires IBCStore {
         let (connection_id, connection) = ensure_connection_feature(connection_hops, ordering);
@@ -1306,19 +1319,19 @@ module IBC::Core {
         let channel = channel::new(CHAN_STATE_TRYOPEN, ordering, counterparty, connection_hops, version);
         smart_table::upsert(&mut store.channels, channel_port, channel);
 
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::next_sequence_send_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::next_sequence_recv_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
         );
 
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::next_sequence_ack_commitment_key(port_id, channel_id),
             bcs::to_bytes(&1)
@@ -1404,19 +1417,19 @@ module IBC::Core {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let packet_sequence = from_bcs::to_u64(
-            *smart_table::borrow_with_default(
+            *table::borrow_with_default(
                 &store.commitments,
                 IBCCommitment::next_sequence_send_commitment_key(source_port, source_channel),
                 &bcs::to_bytes(&0u64)
             )
         );
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::next_sequence_send_commitment_key(source_port, source_channel),
             bcs::to_bytes(&(packet_sequence + 1))
         );
 
-        smart_table::upsert(
+        table::upsert(
             &mut store.commitments,
             IBCCommitment::packet_commitment_key(source_port, source_channel, packet_sequence),            
             packet::commitment_from_parts(timeout_timestamp, timeout_height, data),
@@ -1443,7 +1456,7 @@ module IBC::Core {
         msg_port_id: String,
         msg_channel_id: String,
         msg_packet: Packet,
-        msg_proof: Any,
+        msg_proof: vector<u8>,
         msg_proof_height: height::Height,
         acknowledgement: vector<u8>
     ) acquires IBCStore {
@@ -1499,14 +1512,14 @@ module IBC::Core {
 
         if (channel::ordering(&channel) == CHAN_ORDERING_UNORDERED) {
             let receipt_commitment_key = IBCCommitment::packet_receipt_commitment_key(*packet::destination_port(&msg_packet), *packet::destination_channel(&msg_packet), packet::sequence(&msg_packet));
-            let receipt = smart_table::borrow_with_default(&store.commitments, receipt_commitment_key, &bcs::to_bytes(&0u8));
+            let receipt = table::borrow_with_default(&store.commitments, receipt_commitment_key, &bcs::to_bytes(&0u8));
             if (*receipt != bcs::to_bytes(&0u8)) {
                 abort E_PACKET_ALREADY_RECEIVED
             };
-            smart_table::upsert(&mut store.commitments, receipt_commitment_key, bcs::to_bytes(&1u8));
+            table::upsert(&mut store.commitments, receipt_commitment_key, bcs::to_bytes(&1u8));
         } else if (channel::ordering(&channel) == CHAN_ORDERING_ORDERED) { // ORDER_ORDERED
             let expected_recv_sequence = from_bcs::to_u64(
-                *smart_table::borrow_with_default(
+                *table::borrow_with_default(
                     &store.commitments,
                     IBCCommitment::next_sequence_recv_commitment_key(*packet::destination_port(&msg_packet), *packet::destination_channel(&msg_packet)),
                     &bcs::to_bytes(&0u64)
@@ -1515,7 +1528,7 @@ module IBC::Core {
             if (expected_recv_sequence != packet::sequence(&msg_packet)) {
                 abort E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
             };
-            smart_table::upsert(
+            table::upsert(
                 &mut store.commitments,
                 IBCCommitment::next_sequence_recv_commitment_key(*packet::destination_port(&msg_packet), *packet::destination_channel(&msg_packet)),
                 bcs::to_bytes(&(expected_recv_sequence + 1))
@@ -1563,7 +1576,7 @@ module IBC::Core {
             *packet::destination_channel(&packet),
             packet::sequence(&packet)
         );
-        let ack_commitment = smart_table::borrow_with_default(
+        let ack_commitment = table::borrow_with_default(
             &store.commitments,
             ack_commitment_key,
             &bcs::to_bytes(&0u8)
@@ -1571,7 +1584,7 @@ module IBC::Core {
         if (*ack_commitment != bcs::to_bytes(&0u8)) {
             abort E_ACKNOWLEDGEMENT_ALREADY_EXISTS
         };
-        smart_table::upsert(&mut store.commitments, ack_commitment_key, hash::sha2_256(acknowledgement));
+        table::upsert(&mut store.commitments, ack_commitment_key, hash::sha2_256(acknowledgement));
 
         event::emit(WriteAcknowledgement {
             packet,
@@ -1583,7 +1596,7 @@ module IBC::Core {
         caller: &signer,
         packet: packet::Packet,
         acknowledgement: vector<u8>,
-        proof: Any,
+        proof: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
         let port_id = *packet::source_port(&packet);
@@ -1633,7 +1646,7 @@ module IBC::Core {
 
         if (channel::ordering(&channel) == CHAN_ORDERING_ORDERED) {
             let expected_ack_sequence = from_bcs::to_u64(
-                *smart_table::borrow_with_default(
+                *table::borrow_with_default(
                     &borrow_global<IBCStore>(get_vault_addr()).commitments,
                     IBCCommitment::next_sequence_ack_commitment_key(port_id, channel_id),
                     &bcs::to_bytes(&0u64)
@@ -1644,14 +1657,14 @@ module IBC::Core {
                 abort E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
             };
 
-            smart_table::upsert(
+            table::upsert(
                 &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
                 IBCCommitment::next_sequence_ack_commitment_key(port_id, channel_id),
                 bcs::to_bytes(&(expected_ack_sequence + 1))
             );
         };
 
-        smart_table::remove(&mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments, packet_commitment_key);
+        table::remove(&mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments, packet_commitment_key);
         
         event::emit(AcknowledgePacket {
             packet,
@@ -1663,7 +1676,7 @@ module IBC::Core {
         port_id: String,
         channel_id: String,
         packet: Packet,
-        proof: Any,
+        proof: vector<u8>,
         proof_height: height::Height,
         next_sequence_recv: u64
     ) acquires IBCStore {
@@ -1747,7 +1760,7 @@ module IBC::Core {
             abort E_UNKNOWN_CHANNEL_ORDERING
         };
 
-        smart_table::remove(&mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments, packet_commitment_key);
+        table::remove(&mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments, packet_commitment_key);
 
         event::emit(TimeoutPacket { packet });
     }
@@ -1755,7 +1768,7 @@ module IBC::Core {
     public fun verify_absent_commitment(
         connection: &ConnectionEnd,
         height: height::Height,
-        proof: Any,
+        proof: vector<u8>,
         path: String
     ): u64 {
         LightClient::verify_non_membership(
