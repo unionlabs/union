@@ -1,4 +1,6 @@
 module IBC::LightClient {
+    use IBC::proto_utils;
+    use std::option;
     use std::vector;
     use std::bcs;
     use std::string::{Self, String};
