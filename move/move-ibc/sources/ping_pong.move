@@ -1,14 +1,13 @@
 module IBCModuleAddr::PingPong {
-    use aptos_framework::event;
-    use aptos_framework::timestamp;
+    use std::event;
+    use std::timestamp;
     use std::object;
     use std::signer;
-    use aptos_std::string::{Self, String};
+    use std ::string::{Self, String};
     use IBC::Core;
     use std::vector;
     use std::bcs;
-    use aptos_std::from_bcs;
-    use aptos_std::any::{Any};
+    use std::from_bcs;
     use IBC::height;
     use IBC::channel;
     use IBC::packet::{Self, Packet};
@@ -108,7 +107,7 @@ module IBCModuleAddr::PingPong {
         msg_port_id: String,
         msg_channel_id: String,
         packet: Packet,
-        msg_proof: Any,
+        msg_proof: vector<u8>,
         msg_proof_height: height::Height,
     ) acquires PingPong, SignerRef {
         let pp_packet = decode_packet(packet::data(&packet));
@@ -135,7 +134,7 @@ module IBCModuleAddr::PingPong {
     public fun acknowledge_packet(
         packet: packet::Packet,
         acknowledgement: vector<u8>,
-        proof: Any,
+        proof: vector<u8>,
         proof_height: height::Height
     ) acquires SignerRef {
         Core::acknowledge_packet(&get_signer(), packet, acknowledgement, proof, proof_height);
@@ -176,7 +175,7 @@ module IBCModuleAddr::PingPong {
         counterparty: channel::Counterparty,
         counterparty_version: String,
         version: String,
-        proof_init: Any,
+        proof_init: vector<u8>,
         proof_height: height::Height,
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
@@ -202,7 +201,7 @@ module IBCModuleAddr::PingPong {
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
-        proof_try: Any,
+        proof_try: vector<u8>,
         proof_height: height::Height
     ) acquires PingPong, SignerRef {
         // Store the channel_id
@@ -221,7 +220,7 @@ module IBCModuleAddr::PingPong {
     public fun chan_open_confirm(
         port_id: String,
         channel_id: String,
-        proof_ack: Any,
+        proof_ack: vector<u8>,
         proof_height: height::Height
     ) acquires PingPong, SignerRef {
         Core::channel_open_confirm(

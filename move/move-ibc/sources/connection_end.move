@@ -67,6 +67,21 @@ module IBC::connection_end {
         }
     }
 
+    public fun new_versions(
+        identifiers: vector<String>,
+        features: vector<vector<String>>,
+    ): vector<Version> {        
+        let i = 0;
+        let versions = vector::empty();
+        while (i < vector::length(&identifiers)) {
+            let ident = *vector::borrow(&identifiers, i);
+            let f = *vector::borrow(&features, i);
+            vector::push_back(&mut versions, new_version(ident, f));
+            i = i + 1;
+        };
+        versions
+    }
+
     public fun delay_period(connection_end: &ConnectionEnd): u64 {
         connection_end.delay_period
     }
