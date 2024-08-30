@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 profiles:
   default:
     network: Custom
@@ -11,5 +12,14 @@ profiles:
     private_key: "0x0000000000000000000000000000000000000000000000000000000000000002"
     public_key: "0x7422B9887598068E32C4448A949ADB290D0F4E35B9E01B0EE5F1A1E600FE2674"
     account: 666991e71f97612af2872dbc611812ef4afc3e2850563c65443111736b6be87b
+=======
+---
+profiles:
+  default:
+    network: Custom
+    private_key: "0xade2150781b08de08ec632e1fcec0e323034e2507cebdf30dfe8ee16948a5b51"
+    public_key: "0x615b2faa883ae2289ed6de17f12e7c889be416bf9f8f198b88e34702460aa3f5"
+    account: dc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771
+>>>>>>> 61fae93a0 (wip)
     rest_url: "http://localhost:30731/"
     faucet_url: "http://localhost:30732/"

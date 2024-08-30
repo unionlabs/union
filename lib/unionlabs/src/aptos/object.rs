@@ -9,7 +9,7 @@ pub const OBJECT_FROM_SEED_ADDRESS_SCHEME: u8 = 254;
 #[must_use]
 pub fn create_object_address(address: H256, seed: &[u8]) -> H256 {
     sha3::Sha3_256::new()
-        .chain_update(address)
+        .chain_update(address.0)
         .chain_update(seed)
         .chain_update([OBJECT_FROM_SEED_ADDRESS_SCHEME])
         .finalize()
