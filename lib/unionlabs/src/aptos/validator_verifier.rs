@@ -3,7 +3,7 @@ use macros::model;
 use super::public_key::PublicKey;
 use crate::{
     aptos::account::AccountAddress,
-    errors::{required, ExpectedLength, InvalidLength, MissingField},
+    errors::{required, InvalidLength, MissingField},
 };
 
 /// Supports validation of signatures for known authors with individual voting powers. This struct
@@ -42,7 +42,7 @@ impl From<ValidatorVerifier> for protos::union::ibc::lightclients::movement::v1:
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromValidatorVerifierError {
     #[error("invalid validator infos: {0}")]
-    ValidatorInfos(#[from] TryFromValidatorConsensusInfo),
+    ValidatorInfos(#[from] TryFromValidatorConsensusInfoError),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorVerifier>
@@ -68,7 +68,7 @@ impl From<ValidatorConsensusInfo>
 {
     fn from(value: ValidatorConsensusInfo) -> Self {
         Self {
-            address: value.address.0.to_vec(),
+            address: value.address.0 .0.to_vec(),
             public_key: Some(value.public_key.into()),
             voting_power: value.voting_power,
         }
@@ -76,7 +76,7 @@ impl From<ValidatorConsensusInfo>
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromValidatorConsensusInfo {
+pub enum TryFromValidatorConsensusInfoError {
     #[error(transparent)]
     MissingField(#[from] MissingField),
     #[error("invalid address")]
@@ -86,18 +86,19 @@ pub enum TryFromValidatorConsensusInfo {
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo>
     for ValidatorConsensusInfo
 {
-    type Error = TryFromValidatorConsensusInfo;
+    type Error = TryFromValidatorConsensusInfoError;
 
     fn try_from(
         value: protos::union::ibc::lightclients::movement::v1::ValidatorConsensusInfo,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            address: AccountAddress::new(value.address.as_slice().try_into().map_err(|_| {
-                TryFromValidatorConsensusInfo::Address(InvalidLength {
-                    expected: ExpectedLength::Exact(AccountAddress::LENGTH),
-                    found: value.address.len(),
-                })
-            })?),
+            address: AccountAddress(
+                value
+                    .address
+                    .as_slice()
+                    .try_into()
+                    .map_err(TryFromValidatorConsensusInfoError::Address)?,
+            ),
             public_key: required!(value.public_key)?.into(),
             voting_power: value.voting_power,
         })

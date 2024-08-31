@@ -226,7 +226,7 @@
   },
   "voyager": {
     "num_workers": 10,
-    "laddr": "0.0.0.0:65534",
+    "laddr": "0.0.0.0:7717",
     "max_batch_size": 20,
     "queue": {
       "type": "pg-queue",

@@ -1,3 +1,5 @@
+// TODO: hasher.chain_update() can be used throughout this file
+
 pub mod error;
 
 pub use error::Error;
@@ -6,17 +8,17 @@ use hex_literal::hex;
 use sha3::{Digest, Sha3_256};
 use unionlabs::{
     aptos::{
-        hash_value::HashValue,
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         transaction_info::TransactionInfo,
         transaction_proof::TransactionInfoWithProof,
     },
     encoding::{DecodeAs, Proto},
+    hash::H256,
 };
 
 pub(crate) const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 // "SPARSE_MERKLE_PLACEHOLDER_HASH"
-pub(crate) const SPARSE_MERKLE_PLACEHOLDER_HASH: HashValue = HashValue(hex!(
+pub(crate) const SPARSE_MERKLE_PLACEHOLDER_HASH: H256 = H256(hex!(
     "00005350415253455F4D45524B4C455F504C414345484F4C4445525F48415348"
 ));
 
@@ -24,7 +26,7 @@ pub(crate) const SPARSE_MERKLE_PLACEHOLDER_HASH: HashValue = HashValue(hex!(
 /// the accumulator whose root hash is `expected_root_hash` using the provided proof.
 pub fn verify_tx_state(
     tx_info: &TransactionInfoWithProof,
-    expected_root_hash: HashValue,
+    expected_root_hash: H256,
     element_index: u64,
 ) -> Result<(), Error> {
     let element_hash = hash_tx_info(&tx_info.transaction_info);
@@ -67,16 +69,16 @@ pub fn verify_tx_state(
 
 pub fn verify_existence_proof(
     proof: &[u8],
-    expected_root_hash: HashValue,
-    element_key: HashValue,
-    element_hash: HashValue,
+    expected_root_hash: H256,
+    element_key: H256,
+    element_hash: H256,
 ) -> Result<(), Error> {
     let proof = SparseMerkleProof::decode_as::<Proto>(proof).unwrap();
 
-    if proof.siblings.len() > HashValue::LENGTH_IN_BITS {
+    if proof.siblings.len() > H256::BITS_LEN {
         // "Sparse Merkle Tree proof has more than {} ({} + {}) siblings.",
         return Err(StorageVerificationError::MaxSiblingsExceeded(
-            HashValue::LENGTH_IN_BITS,
+            H256::BITS_LEN,
             proof.siblings.len(),
         )
         .into());
@@ -111,7 +113,7 @@ pub fn verify_existence_proof(
             element_key
                 .iter_bits()
                 .rev()
-                .skip(HashValue::LENGTH_IN_BITS - proof.siblings.len()),
+                .skip(H256::BITS_LEN - proof.siblings.len()),
         )
         .fold(current_hash, |hash, (sibling_hash, bit)| {
             if bit {
@@ -132,7 +134,7 @@ pub fn verify_existence_proof(
     Ok(())
 }
 
-fn hash_tx_info(tx_info: &TransactionInfo) -> HashValue {
+fn hash_tx_info(tx_info: &TransactionInfo) -> H256 {
     let mut state = Sha3_256::new();
     state.update(
         Sha3_256::new()
@@ -140,10 +142,11 @@ fn hash_tx_info(tx_info: &TransactionInfo) -> HashValue {
             .finalize(),
     );
     bcs::serialize_into(&mut state, tx_info).expect("expected to be able to serialize");
-    HashValue(state.finalize().into())
+
+    state.finalize().into()
 }
 
-fn hash_sparse_merkle_leaf_node(leaf: &SparseMerkleLeafNode) -> HashValue {
+fn hash_sparse_merkle_leaf_node(leaf: &SparseMerkleLeafNode) -> H256 {
     let mut state = Sha3_256::new();
     state.update(
         Sha3_256::new()
@@ -152,10 +155,10 @@ fn hash_sparse_merkle_leaf_node(leaf: &SparseMerkleLeafNode) -> HashValue {
     );
     state.update(leaf.key.as_ref());
     state.update(leaf.value_hash.as_ref());
-    HashValue(state.finalize().into())
+    state.finalize().into()
 }
 
-fn hash_inner_node(left_child: HashValue, right_child: HashValue) -> HashValue {
+fn hash_inner_node(left_child: H256, right_child: H256) -> H256 {
     let mut state = Sha3_256::new();
     state.update(
         Sha3_256::new()
@@ -164,23 +167,23 @@ fn hash_inner_node(left_child: HashValue, right_child: HashValue) -> HashValue {
     );
     state.update(left_child.as_ref());
     state.update(right_child.as_ref());
-    HashValue(state.finalize().into())
+    state.finalize().into()
 }
 
 pub struct SparseMerkleInternalNode {
-    left_child: HashValue,
-    right_child: HashValue,
+    left_child: H256,
+    right_child: H256,
 }
 
 impl SparseMerkleInternalNode {
-    pub fn new(left_child: HashValue, right_child: HashValue) -> Self {
+    pub fn new(left_child: H256, right_child: H256) -> Self {
         Self {
             left_child,
             right_child,
         }
     }
 
-    pub fn hash(&self) -> HashValue {
+    pub fn hash(&self) -> H256 {
         let mut state = Sha3_256::new();
         state.update(
             Sha3_256::new()
@@ -189,6 +192,6 @@ impl SparseMerkleInternalNode {
         );
         state.update(self.left_child.as_ref());
         state.update(self.right_child.as_ref());
-        HashValue(state.finalize().into())
+        state.finalize().into()
     }
 }

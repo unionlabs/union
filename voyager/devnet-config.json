@@ -102,7 +102,7 @@
     },
     {
       "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-packet-filter",
-      "config": {    
+      "config": {
         "connection_event_filters": [{}],
         "channel_event_filters": [{}],
         "packet_event_filters": [{}]
@@ -125,7 +125,7 @@
   ],
   "voyager": {
     "num_workers": 5,
-    "laddr": "0.0.0.0:65534",
+    "laddr": "0.0.0.0:7717",
     "queue": {
       "type": "pg-queue",
       "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",

@@ -97,11 +97,7 @@ message PublicKey {
 
 message AggregateSignature {
   bytes validator_bitmask = 1;
-  Signature sig = 2;
-}
-
-message Signature {
-  bytes sig = 1;
+  bytes sig = 2;
 }
 
 message EpochChangeProof {

@@ -3,6 +3,7 @@ autotests = false
 edition   = "2021"
 name      = "queue-msg-macro"
 version   = "0.0.0"
+resolver = "2"
 
 [package.metadata.crane]
 test-include = ["lib/queue-msg-macro/tests/"]
@@ -17,14 +18,14 @@ proc-macro = true
 name = "tests"
 path = "tests/all-tests.rs"
 
+[dependencies]
+proc-macro2 = "1.0.79"
+quote       = "1.0.35"
+syn         = { version = "2.0.55", features = ["full", "extra-traits", "visit-mut"] }
+
 [dev-dependencies]
 frame-support-procedural = { workspace = true }
 macros.workspace         = true
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true, features = ["std"] }
-trybuild                 = { version = "1.0.49", features = ["diff"] }
-
-[dependencies]
-proc-macro2 = "1.0.79"
-quote       = "1.0.35"
-syn         = { version = "2.0.55", features = ["full", "extra-traits", "visit-mut"] }
+trybuild                 = { version = "1.0.91", features = ["diff"] }

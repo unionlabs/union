@@ -42,6 +42,7 @@ use crate::{conc, noop, race, repeat, retry, seq, void, Op, QueueMessage};
 /// Note how if the flattening occurred first, then the `conc(effect) -> effect` transformation could
 /// never have occurred since the data and noop messages would still be there, resulting in an
 /// incomplete normalization.
+#[allow(clippy::let_and_return)]
 pub fn normalize<T: QueueMessage>(msgs: Vec<Op<T>>) -> Vec<(Vec<usize>, Op<T>)> {
     // dbg!(&msgs);
 

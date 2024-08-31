@@ -3,7 +3,7 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       # Replace the port with the port your /metrics endpoint is running on
-      - targets: ['localhost:65534']
+      - targets: ['localhost:7717']
     # For a real deployment, you would want the scrape interval to be
     # longer but for testing, you want the data to show up quickly
     scrape_interval: 200ms

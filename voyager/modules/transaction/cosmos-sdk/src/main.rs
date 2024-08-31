@@ -603,6 +603,7 @@ end
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    #[allow(clippy::collapsible_match)]
     async fn call(
         &self,
         msg: ModuleCall,

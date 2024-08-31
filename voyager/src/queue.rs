@@ -40,7 +40,8 @@ type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 pub struct Voyager {
     pub context: Context,
     num_workers: u16,
-    pub laddr: SocketAddr,
+    pub rest_laddr: SocketAddr,
+    pub rpc_laddr: SocketAddr,
     // NOTE: pub temporarily
     pub queue: AnyQueue<VoyagerMessage>,
     // pub tx_batch: TxBatch,
@@ -250,7 +251,8 @@ impl Voyager {
                 .await
                 .map_err(VoyagerInitError::Plugin)?,
             num_workers: config.voyager.num_workers,
-            laddr: config.voyager.laddr,
+            rest_laddr: config.voyager.rest_laddr,
+            rpc_laddr: config.voyager.rpc_laddr,
             queue,
             // tx_batch: config.voyager.tx_batch,
             optimizer_delay_milliseconds: config.voyager.optimizer_delay_milliseconds,
@@ -315,7 +317,7 @@ impl Voyager {
                     })
             }
 
-            tokio::spawn(axum::Server::bind(&self.laddr).serve(app.into_make_service()));
+            tokio::spawn(axum::Server::bind(&self.rest_laddr).serve(app.into_make_service()));
 
             let mut tasks =
                 FuturesUnordered::<BoxFuture<Result<Result<(), BoxDynError>, _>>>::new();

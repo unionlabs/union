@@ -83,6 +83,8 @@ macro_rules! hex_string_array_wrapper {
             impl $Struct {
                 pub const BYTES_LEN: usize = $N;
 
+                pub const BITS_LEN: usize = $N * 8;
+
                 #[doc = concat!("The [`Display`](core::fmt::Display) impl for [`", stringify!($Struct), "`]")]
                 /// prefixes the output with `0x`, which may not be desirable in all contexts.
                 /// This fn serves as a convenience around [`hex::encode(&self)`](hex::encode).
@@ -93,6 +95,11 @@ macro_rules! hex_string_array_wrapper {
 
                 pub fn iter(&self) -> core::slice::Iter<u8> {
                     (&self).into_iter()
+                }
+
+                #[must_use]
+                pub fn iter_bits(&self) -> $crate::hash::BytesBitIterator<'_> {
+                    $crate::hash::BytesBitIterator::new(self)
                 }
             }
 

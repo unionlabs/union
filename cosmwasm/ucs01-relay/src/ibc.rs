@@ -21,6 +21,9 @@ use crate::{
     state::{ChannelInfo, PfmRefundPacketKey, CHANNEL_INFO, IN_FLIGHT_PFM_PACKETS},
 };
 
+#[cfg(test)]
+mod tests;
+
 fn to_response<T>(
     IbcReceiveResponse {
         acknowledgement,
@@ -309,6 +312,3 @@ pub fn ibc_packet_timeout(
         }),
     }
 }
-
-#[cfg(test)]
-mod tests;

@@ -19,7 +19,7 @@ tokio                             = { workspace = true, features = ["full"] }
 unionlabs                         = { workspace = true, features = ["near"] }
 # near-primitives = { git = "https://github.com/near/nearcore" }
 base64                  = { workspace = true }
-env_logger              = "0.9"
+env_logger              = "0.11.5"
 hex.workspace           = true
 near-crypto             = "0.20"
 near-jsonrpc-client     = "0.8"

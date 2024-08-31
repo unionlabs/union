@@ -1,10 +1,7 @@
 use macros::model;
 
-use super::{
-    epoch_state::{EpochState, TryFromEpochStateError},
-    hash_value::HashValue,
-};
-use crate::errors::{ExpectedLength, InvalidLength};
+use super::epoch_state::{EpochState, TryFromEpochStateError};
+use crate::{errors::InvalidLength, hash::H256};
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
 /// monotonically.
@@ -35,9 +32,9 @@ pub struct BlockInfo {
     /// The consensus protocol is executed in rounds, which monotonically increase per epoch.
     pub round: Round,
     /// The identifier (hash) of the block.
-    pub id: HashValue,
+    pub id: H256,
     /// The accumulator root hash after executing this block.
-    pub executed_state_id: HashValue,
+    pub executed_state_id: H256,
     /// The version of the latest transaction after executing this block.
     pub version: Version,
     /// The timestamp this block was proposed by a proposer.
@@ -79,20 +76,9 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::BlockInfo> for Bloc
         Ok(Self {
             epoch: value.epoch,
             round: value.round,
-            id: HashValue::new(value.id.as_slice().try_into().map_err(|_| {
-                TryFromBlockInfoError::Id(InvalidLength {
-                    expected: ExpectedLength::Exact(HashValue::LENGTH),
-                    found: value.id.len(),
-                })
-            })?),
-            executed_state_id: HashValue::new(
-                value.executed_state_id.as_slice().try_into().map_err(|_| {
-                    TryFromBlockInfoError::ExecutedStateId(InvalidLength {
-                        expected: ExpectedLength::Exact(HashValue::LENGTH),
-                        found: value.executed_state_id.len(),
-                    })
-                })?,
-            ),
+            id: H256::try_from(value.id).map_err(TryFromBlockInfoError::Id)?,
+            executed_state_id: H256::try_from(value.executed_state_id)
+                .map_err(TryFromBlockInfoError::ExecutedStateId)?,
             version: value.version,
             timestamp_usecs: value.timestamp_usecs,
             next_epoch_state: value.next_epoch_state.map(TryInto::try_into).transpose()?,
