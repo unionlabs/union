@@ -1,12 +1,15 @@
 use std::collections::VecDeque;
 
-use aptos_rest_client::aptos_api_types::{Address, EntryFunctionId, ViewRequest};
+use aptos_rest_client::{
+    aptos_api_types::{Address, EntryFunctionId, ViewRequest},
+    Transaction,
+};
 // use aptos_rpc::AptosRpcClient;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{BoxDynError, Op};
+use queue_msg::{call, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -18,12 +21,17 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
+    call::Call,
     data::{ClientInfo, Data},
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
-use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
+use crate::{
+    call::{FetchBlock, FetchBlocks, ModuleCall},
+    callback::ModuleCallback,
+    data::ModuleData,
+};
 
 pub mod call;
 pub mod callback;
@@ -72,32 +80,38 @@ impl Module {
             Cmd::ChainId => println!("{}", self.chain_id),
             Cmd::LatestHeight => println!("{}", self.query_latest_height().await?),
             Cmd::VaultAddress => {
-                let response = self
-                    .aptos_client
-                    .view(
-                        &ViewRequest {
-                            function: EntryFunctionId {
-                                module: aptos_rest_client::aptos_api_types::MoveModuleId {
-                                    address: self.ibc_handler_address,
-                                    name: "Core".parse().unwrap(),
-                                },
-                                name: "get_vault_addr".parse().unwrap(),
-                            },
-                            type_arguments: vec![],
-                            arguments: vec![],
-                        },
-                        None,
-                    )
-                    .await?
-                    .into_inner();
-
-                let addr = serde_json::from_value::<Address>(response[0].clone())?;
+                let addr = self.fetch_vault_addr().await?;
 
                 println!("{addr}");
             }
         }
 
         Ok(())
+    }
+
+    async fn fetch_vault_addr(&self) -> Result<Address, BoxDynError> {
+        let response = self
+            .aptos_client
+            .view(
+                &ViewRequest {
+                    function: EntryFunctionId {
+                        module: aptos_rest_client::aptos_api_types::MoveModuleId {
+                            address: self.ibc_handler_address,
+                            name: "Core".parse().unwrap(),
+                        },
+                        name: "get_vault_addr".parse().unwrap(),
+                    },
+                    type_arguments: vec![],
+                    arguments: vec![],
+                },
+                None,
+            )
+            .await?
+            .into_inner();
+
+        let addr = serde_json::from_value::<Address>(response[0].clone())?;
+
+        Ok(addr)
     }
 
     fn plugin_name(&self) -> String {
@@ -155,7 +169,33 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         msg: ModuleCall,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match msg {}
+        match msg {
+            ModuleCall::FetchBlock(FetchBlock { height }) => {
+                let _ = self
+                    .aptos_client
+                    .get_block_by_height(height, true)
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            format!("error fetching height: {}", ErrorReporter(e)),
+                            None::<()>,
+                        )
+                    })?
+                    .into_inner()
+                    .transactions
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter_map(|tx| match tx {
+                        Transaction::UserTransaction(tx) => Some(tx),
+                        _ => None,
+                    })
+                    .flat_map(|tx| tx.events);
+
+                todo!()
+            }
+            ModuleCall::FetchBlocks(_) => todo!(),
+        }
     }
 }
 
@@ -223,7 +263,13 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         from_height: Height,
         to_height: Height,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        todo!()
+        Ok(call(Call::plugin(
+            self.plugin_name(),
+            FetchBlocks {
+                from_height: from_height.revision_height,
+                to_height: to_height.revision_height,
+            },
+        )))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]

@@ -26,7 +26,7 @@ impl From<AggregateSignature>
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromAggregateSignatureError {
     #[error("invalid sig")]
-    Sig(InvalidLength),
+    Sig(#[from] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::movement::v1::AggregateSignature>
