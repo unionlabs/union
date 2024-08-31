@@ -246,24 +246,11 @@ impl ::prost::Name for PublicKey {
 pub struct AggregateSignature {
     #[prost(bytes = "vec", tag = "1")]
     pub validator_bitmask: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "2")]
-    pub sig: ::core::option::Option<Signature>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub sig: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for AggregateSignature {
     const NAME: &'static str = "AggregateSignature";
-    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Signature {
-    #[prost(bytes = "vec", tag = "1")]
-    pub sig: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for Signature {
-    const NAME: &'static str = "Signature";
     const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)

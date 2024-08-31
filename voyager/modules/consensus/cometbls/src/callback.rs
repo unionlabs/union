@@ -59,9 +59,7 @@ pub struct AggregateHeader {
     pub update_to: Height,
 }
 
-impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
-    for AggregateProveRequest
-{
+impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for AggregateProveRequest {
     type Params = HList![
         PluginMessage<UntrustedCommit>,
         PluginMessage<TrustedValidators>,

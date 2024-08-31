@@ -6,7 +6,7 @@ version = "0.0.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ethers    = { workspace = true, features = ["abigen"] }
-serde     = { workspace = true, features = ["derive"] }
+ethers = { workspace = true, features = ["abigen"] }
+serde  = { workspace = true, features = ["derive"] }
 [features]
 providers = ["ethers/providers"]

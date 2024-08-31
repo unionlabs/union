@@ -2,8 +2,8 @@
 autotests = false
 edition   = "2021"
 name      = "queue-msg-macro"
+resolver  = "2"
 version   = "0.0.0"
-resolver = "2"
 
 [package.metadata.crane]
 test-include = ["lib/queue-msg-macro/tests/"]

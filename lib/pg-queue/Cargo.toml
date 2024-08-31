@@ -13,7 +13,7 @@ test-include = []
 [dependencies]
 frame-support-procedural.workspace = true
 prometheus                         = "0.13.4"
-queue-msg.workspace = true
+queue-msg.workspace                = true
 serde                              = { workspace = true }
 serde_json                         = { workspace = true, features = ["unbounded_depth"] }
 sqlx                               = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio", "time"] }

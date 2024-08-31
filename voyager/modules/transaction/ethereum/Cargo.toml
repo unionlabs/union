@@ -5,7 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 beacon-api         = { workspace = true }
-bip32.workspace = true
+bip32.workspace    = true
 chain-utils        = { workspace = true }
 contracts          = { workspace = true, features = ["providers"] }
 enumorph.workspace = true

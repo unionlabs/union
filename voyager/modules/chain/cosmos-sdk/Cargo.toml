@@ -4,7 +4,7 @@ name    = "voyager-chain-module-cosmos-sdk"
 version = "0.1.0"
 
 [dependencies]
-voyager-message      = { workspace = true }
+clap               = { workspace = true, features = ["derive"] }
 cometbft-rpc       = { workspace = true }
 dashmap            = { workspace = true }
 enumorph.workspace = true
@@ -23,4 +23,4 @@ tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
+voyager-message    = { workspace = true }

@@ -163,13 +163,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "&signer",
-                "0x1::string::String"
-              ],
-              "return": [
-                "bool"
-              ]
+              "params": ["&signer", "0x1::string::String"],
+              "return": ["bool"]
             },
             {
               "name": "channel_open_ack",
@@ -250,10 +245,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "address"
-              ],
+              "params": ["0x1::string::String", "address"],
               "return": []
             },
             {
@@ -262,12 +254,8 @@
               "is_entry": false,
               "is_view": true,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "connection_open_ack",
@@ -313,9 +301,7 @@
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Counterparty",
                 "u64"
               ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "return": ["0x1::string::String"]
             },
             {
               "name": "connection_open_try",
@@ -335,9 +321,7 @@
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height",
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "return": ["0x1::string::String"]
             },
             {
               "name": "copy_version",
@@ -369,11 +353,7 @@
               "is_entry": true,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "vector<u8>",
-                "vector<u8>"
-              ],
+              "params": ["0x1::string::String", "vector<u8>", "vector<u8>"],
               "return": []
             },
             {
@@ -404,10 +384,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
+              "params": ["0x1::string::String", "0x1::string::String"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ]
@@ -418,10 +395,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "vector<0x1::string::String>",
-                "u8"
-              ],
+              "params": ["vector<0x1::string::String>", "u8"],
               "return": [
                 "0x1::string::String",
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
@@ -433,9 +407,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
+              "params": ["0x1::string::String"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ]
@@ -462,9 +434,7 @@
               "is_view": false,
               "generic_type_params": [],
               "params": [],
-              "return": [
-                "0x1::string::String"
-              ]
+              "return": ["0x1::string::String"]
             },
             {
               "name": "generate_client_identifier",
@@ -472,12 +442,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "generate_connection_identifier",
@@ -486,9 +452,7 @@
               "is_view": false,
               "generic_type_params": [],
               "params": [],
-              "return": [
-                "0x1::string::String"
-              ]
+              "return": ["0x1::string::String"]
             },
             {
               "name": "get_capability_from_store",
@@ -496,12 +460,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "address"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["address"]
             },
             {
               "name": "get_channel_from_store",
@@ -509,10 +469,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
+              "params": ["0x1::string::String", "0x1::string::String"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ]
@@ -523,12 +480,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "vector<u8>"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["vector<u8>"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "get_compatible_versions",
@@ -547,9 +500,7 @@
               "is_entry": false,
               "is_view": true,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
+              "params": ["0x1::string::String"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ]
@@ -560,12 +511,8 @@
               "is_entry": false,
               "is_view": true,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "get_counterparty_hops",
@@ -573,12 +520,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<0x1::string::String>"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["vector<0x1::string::String>"]
             },
             {
               "name": "get_feature_set_intersection",
@@ -586,13 +529,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "&vector<0x1::string::String>",
-                "&vector<0x1::string::String>"
-              ],
-              "return": [
-                "vector<0x1::string::String>"
-              ]
+              "params": ["&vector<0x1::string::String>", "&vector<0x1::string::String>"],
+              "return": ["vector<0x1::string::String>"]
             },
             {
               "name": "get_ibc_signer",
@@ -601,9 +539,7 @@
               "is_view": false,
               "generic_type_params": [],
               "params": [],
-              "return": [
-                "signer"
-              ]
+              "return": ["signer"]
             },
             {
               "name": "get_next_channel_sequence",
@@ -612,9 +548,7 @@
               "is_view": false,
               "generic_type_params": [],
               "params": [],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "get_vault_addr",
@@ -623,9 +557,7 @@
               "is_view": true,
               "generic_type_params": [],
               "params": [],
-              "return": [
-                "address"
-              ]
+              "return": ["address"]
             },
             {
               "name": "is_lowercase",
@@ -633,12 +565,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "&0x1::string::String"
-              ],
-              "return": [
-                "bool"
-              ]
+              "params": ["&0x1::string::String"],
+              "return": ["bool"]
             },
             {
               "name": "is_supported_version",
@@ -650,9 +578,7 @@
                 "&vector<0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version>",
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version"
               ],
-              "return": [
-                "bool"
-              ]
+              "return": ["bool"]
             },
             {
               "name": "pick_version",
@@ -698,9 +624,7 @@
                 "u64",
                 "vector<u8>"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "set_capability",
@@ -708,10 +632,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "address"
-              ],
+              "params": ["0x1::string::String", "address"],
               "return": []
             },
             {
@@ -733,10 +654,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "vector<u8>",
-                "vector<u8>"
-              ],
+              "params": ["vector<u8>", "vector<u8>"],
               "return": []
             },
             {
@@ -757,9 +675,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u64"
-              ],
+              "params": ["u64"],
               "return": []
             },
             {
@@ -796,12 +712,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u8"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["u8"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "update_channel_commitment",
@@ -809,10 +721,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
+              "params": ["0x1::string::String", "0x1::string::String"],
               "return": []
             },
             {
@@ -839,9 +748,7 @@
                 "0x1::any::Any",
                 "0x1::string::String"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "verify_channel_state",
@@ -857,9 +764,7 @@
                 "0x1::string::String",
                 "vector<u8>"
               ],
-              "return": [
-                "bool"
-              ]
+              "return": ["bool"]
             },
             {
               "name": "verify_client_state",
@@ -874,9 +779,7 @@
                 "0x1::any::Any",
                 "vector<u8>"
               ],
-              "return": [
-                "bool"
-              ]
+              "return": ["bool"]
             },
             {
               "name": "verify_commitment",
@@ -891,9 +794,7 @@
                 "0x1::string::String",
                 "vector<u8>"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "verify_connection_state",
@@ -908,9 +809,7 @@
                 "0x1::string::String",
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ],
-              "return": [
-                "bool"
-              ]
+              "return": ["bool"]
             },
             {
               "name": "verify_proposed_version",
@@ -922,9 +821,7 @@
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version",
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version"
               ],
-              "return": [
-                "bool"
-              ]
+              "return": ["bool"]
             },
             {
               "name": "verify_supported_feature",
@@ -936,9 +833,7 @@
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version",
                 "0x1::string::String"
               ],
-              "return": [
-                "bool"
-              ]
+              "return": ["bool"]
             },
             {
               "name": "write_ack_impl",
@@ -970,10 +865,7 @@
             {
               "name": "AcknowledgePacket",
               "is_native": false,
-              "abilities": [
-                "drop",
-                "store"
-              ],
+              "abilities": ["drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -989,11 +881,7 @@
             {
               "name": "ChannelOpenAck",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1021,11 +909,7 @@
             {
               "name": "ChannelOpenConfirm",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1053,11 +937,7 @@
             {
               "name": "ChannelOpenInit",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1085,11 +965,7 @@
             {
               "name": "ChannelOpenTry",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1121,11 +997,7 @@
             {
               "name": "ChannelPort",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1141,11 +1013,7 @@
             {
               "name": "ClientCreatedEvent",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1157,11 +1025,7 @@
             {
               "name": "ConnectionOpenAck",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1185,11 +1049,7 @@
             {
               "name": "ConnectionOpenConfirm",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1213,11 +1073,7 @@
             {
               "name": "ConnectionOpenInit",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1237,11 +1093,7 @@
             {
               "name": "ConnectionOpenTry",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1265,9 +1117,7 @@
             {
               "name": "IBCStore",
               "is_native": false,
-              "abilities": [
-                "key"
-              ],
+              "abilities": ["key"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1299,10 +1149,7 @@
             {
               "name": "RecvPacket",
               "is_native": false,
-              "abilities": [
-                "drop",
-                "store"
-              ],
+              "abilities": ["drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1314,10 +1161,7 @@
             {
               "name": "SendPacket",
               "is_native": false,
-              "abilities": [
-                "drop",
-                "store"
-              ],
+              "abilities": ["drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1349,9 +1193,7 @@
             {
               "name": "SignerRef",
               "is_native": false,
-              "abilities": [
-                "key"
-              ],
+              "abilities": ["key"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1363,10 +1205,7 @@
             {
               "name": "TimeoutPacket",
               "is_native": false,
-              "abilities": [
-                "drop",
-                "store"
-              ],
+              "abilities": ["drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1378,10 +1217,7 @@
             {
               "name": "WriteAcknowledgement",
               "is_native": false,
-              "abilities": [
-                "drop",
-                "store"
-              ],
+              "abilities": ["drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1422,18 +1258,14 @@
                 "vector<u8>",
                 "vector<u8>"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             }
           ],
           "structs": [
             {
               "name": "ExistenceProof",
               "is_native": false,
-              "abilities": [
-                "drop"
-              ],
+              "abilities": ["drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1457,10 +1289,7 @@
             {
               "name": "InnerOp",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop"
-              ],
+              "abilities": ["copy", "drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1476,9 +1305,7 @@
             {
               "name": "MembershipProof",
               "is_native": false,
-              "abilities": [
-                "drop"
-              ],
+              "abilities": ["drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1494,9 +1321,7 @@
             {
               "name": "NonExistenceProof",
               "is_native": false,
-              "abilities": [
-                "drop"
-              ],
+              "abilities": ["drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1516,9 +1341,7 @@
             {
               "name": "ProofSpec",
               "is_native": false,
-              "abilities": [
-                "drop"
-              ],
+              "abilities": ["drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1562,10 +1385,7 @@
                 "u64",
                 "&mut 0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "u64",
-                "u64"
-              ]
+              "return": ["u64", "u64"]
             },
             {
               "name": "default",
@@ -1587,9 +1407,7 @@
               "params": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "vector<u8>"
-              ]
+              "return": ["vector<u8>"]
             },
             {
               "name": "get_revision_height",
@@ -1600,9 +1418,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "get_revision_number",
@@ -1613,9 +1429,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "gte",
@@ -1627,9 +1441,7 @@
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height",
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "bool"
-              ]
+              "return": ["bool"]
             },
             {
               "name": "is_zero",
@@ -1640,9 +1452,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "bool"
-              ]
+              "return": ["bool"]
             },
             {
               "name": "new",
@@ -1650,10 +1460,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u64",
-                "u64"
-              ],
+              "params": ["u64", "u64"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ]
@@ -1675,12 +1482,7 @@
             {
               "name": "Height",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store",
-                "key"
-              ],
+              "abilities": ["copy", "drop", "store", "key"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1717,9 +1519,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "vector<u8>"
-              ]
+              "return": ["vector<u8>"]
             },
             {
               "name": "commitment_from_parts",
@@ -1732,9 +1532,7 @@
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height",
                 "vector<u8>"
               ],
-              "return": [
-                "vector<u8>"
-              ]
+              "return": ["vector<u8>"]
             },
             {
               "name": "data",
@@ -1745,9 +1543,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "&vector<u8>"
-              ]
+              "return": ["&vector<u8>"]
             },
             {
               "name": "decode_proto",
@@ -1755,9 +1551,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "vector<u8>"
-              ],
+              "params": ["vector<u8>"],
               "return": [
                 "0x1::option::Option<0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet>"
               ]
@@ -1782,9 +1576,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "destination_port",
@@ -1795,9 +1587,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "encode_proto",
@@ -1808,9 +1598,7 @@
               "params": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "vector<u8>"
-              ]
+              "return": ["vector<u8>"]
             },
             {
               "name": "new",
@@ -1841,9 +1629,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "source_channel",
@@ -1854,9 +1640,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "source_port",
@@ -1867,9 +1651,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "timeout_height",
@@ -1893,21 +1675,14 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::packet::Packet"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             }
           ],
           "structs": [
             {
               "name": "Packet",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store",
-                "key"
-              ],
+              "abilities": ["copy", "drop", "store", "key"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -1968,9 +1743,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "chan_counterparty_port_id",
@@ -1981,9 +1754,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "connection_hops",
@@ -1994,9 +1765,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ],
-              "return": [
-                "&vector<0x1::string::String>"
-              ]
+              "return": ["&vector<0x1::string::String>"]
             },
             {
               "name": "counterparty_channel_id",
@@ -2007,9 +1776,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Counterparty"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "counterparty_port_id",
@@ -2020,9 +1787,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Counterparty"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "decode_proto",
@@ -2030,9 +1795,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "vector<u8>"
-              ],
+              "params": ["vector<u8>"],
               "return": [
                 "0x1::option::Option<0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel>"
               ]
@@ -2068,9 +1831,7 @@
               "params": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ],
-              "return": [
-                "vector<u8>"
-              ]
+              "return": ["vector<u8>"]
             },
             {
               "name": "encode_proto_counterparty",
@@ -2081,9 +1842,7 @@
               "params": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Counterparty"
               ],
-              "return": [
-                "vector<u8>"
-              ]
+              "return": ["vector<u8>"]
             },
             {
               "name": "new",
@@ -2108,10 +1867,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
+              "params": ["0x1::string::String", "0x1::string::String"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Counterparty"
               ]
@@ -2125,9 +1881,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ],
-              "return": [
-                "u8"
-              ]
+              "return": ["u8"]
             },
             {
               "name": "set_chan_counterparty_channel_id",
@@ -2186,9 +1940,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ],
-              "return": [
-                "u8"
-              ]
+              "return": ["u8"]
             },
             {
               "name": "version",
@@ -2199,20 +1951,14 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::channel::Channel"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             }
           ],
           "structs": [
             {
               "name": "Channel",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2240,11 +1986,7 @@
             {
               "name": "Counterparty",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2278,15 +2020,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "&signer",
-                "0x1::string::String",
-                "vector<u8>",
-                "vector<u8>"
-              ],
-              "return": [
-                "u64"
-              ]
+              "params": ["&signer", "0x1::string::String", "vector<u8>", "vector<u8>"],
+              "return": ["u64"]
             },
             {
               "name": "get_client_state",
@@ -2294,12 +2029,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "get_timestamp_at_height",
@@ -2311,9 +2042,7 @@
                 "0x1::string::String",
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "latest_height",
@@ -2321,9 +2050,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
+              "params": ["0x1::string::String"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ]
@@ -2367,9 +2094,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "vector<u8>"
-              ],
+              "params": ["vector<u8>"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::LightClient::MerkleRoot"
               ]
@@ -2380,10 +2105,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::any::Any"
-              ],
+              "params": ["0x1::string::String", "0x1::any::Any"],
               "return": [
                 "vector<0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height>",
                 "u64"
@@ -2403,9 +2125,7 @@
                 "vector<u8>",
                 "vector<u8>"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "verify_non_membership",
@@ -2420,20 +2140,14 @@
                 "vector<u8>",
                 "vector<u8>"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             }
           ],
           "structs": [
             {
               "name": "ClientState",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2465,11 +2179,7 @@
             {
               "name": "ConsensusState",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2489,9 +2199,7 @@
             {
               "name": "Header",
               "is_native": false,
-              "abilities": [
-                "drop"
-              ],
+              "abilities": ["drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2511,9 +2219,7 @@
             {
               "name": "LightHeader",
               "is_native": false,
-              "abilities": [
-                "drop"
-              ],
+              "abilities": ["drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2541,11 +2247,7 @@
             {
               "name": "MerkleRoot",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2557,9 +2259,7 @@
             {
               "name": "Proof",
               "is_native": false,
-              "abilities": [
-                "drop"
-              ],
+              "abilities": ["drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2579,10 +2279,7 @@
             {
               "name": "State",
               "is_native": false,
-              "abilities": [
-                "store",
-                "key"
-              ],
+              "abilities": ["store", "key"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2598,10 +2295,7 @@
             {
               "name": "Timestamp",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop"
-              ],
+              "abilities": ["copy", "drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2617,9 +2311,7 @@
             {
               "name": "ZKP",
               "is_native": false,
-              "abilities": [
-                "drop"
-              ],
+              "abilities": ["drop"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -2657,15 +2349,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u64",
-                "&vector<u8>",
-                "u64"
-              ],
-              "return": [
-                "0x1::option::Option<vector<u8>>",
-                "u64"
-              ]
+              "params": ["u64", "&vector<u8>", "u64"],
+              "return": ["0x1::option::Option<vector<u8>>", "u64"]
             },
             {
               "name": "decode_nested_len",
@@ -2673,16 +2358,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u64",
-                "&vector<u8>",
-                "u64"
-              ],
-              "return": [
-                "u64",
-                "u64",
-                "u64"
-              ]
+              "params": ["u64", "&vector<u8>", "u64"],
+              "return": ["u64", "u64", "u64"]
             },
             {
               "name": "decode_prefix",
@@ -2690,16 +2367,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "&vector<u8>",
-                "u64"
-              ],
-              "return": [
-                "u64",
-                "u64",
-                "u64",
-                "u64"
-              ]
+              "params": ["&vector<u8>", "u64"],
+              "return": ["u64", "u64", "u64", "u64"]
             },
             {
               "name": "decode_string",
@@ -2707,15 +2376,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u64",
-                "&vector<u8>",
-                "u64"
-              ],
-              "return": [
-                "0x1::option::Option<0x1::string::String>",
-                "u64"
-              ]
+              "params": ["u64", "&vector<u8>", "u64"],
+              "return": ["0x1::option::Option<0x1::string::String>", "u64"]
             },
             {
               "name": "decode_untagged_bytes",
@@ -2723,14 +2385,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "&vector<u8>",
-                "u64"
-              ],
-              "return": [
-                "0x1::option::Option<vector<u8>>",
-                "u64"
-              ]
+              "params": ["&vector<u8>", "u64"],
+              "return": ["0x1::option::Option<vector<u8>>", "u64"]
             },
             {
               "name": "decode_untagged_string",
@@ -2738,14 +2394,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "&vector<u8>",
-                "u64"
-              ],
-              "return": [
-                "0x1::option::Option<0x1::string::String>",
-                "u64"
-              ]
+              "params": ["&vector<u8>", "u64"],
+              "return": ["0x1::option::Option<0x1::string::String>", "u64"]
             },
             {
               "name": "decode_varint",
@@ -2753,16 +2403,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u64",
-                "&vector<u8>",
-                "u64"
-              ],
-              "return": [
-                "u64",
-                "u64",
-                "u64"
-              ]
+              "params": ["u64", "&vector<u8>", "u64"],
+              "return": ["u64", "u64", "u64"]
             },
             {
               "name": "decode_varint_raw",
@@ -2770,15 +2412,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "&vector<u8>",
-                "u64"
-              ],
-              "return": [
-                "u64",
-                "u64",
-                "u64"
-              ]
+              "params": ["&vector<u8>", "u64"],
+              "return": ["u64", "u64", "u64"]
             },
             {
               "name": "encode_bytes",
@@ -2786,13 +2421,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u8",
-                "vector<u8>"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["u8", "vector<u8>"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "encode_prefix",
@@ -2800,13 +2430,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u8",
-                "u8"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["u8", "u8"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "encode_string",
@@ -2814,13 +2439,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u8",
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["u8", "0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "encode_u32",
@@ -2828,13 +2448,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u8",
-                "u32"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["u8", "u32"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "encode_u64",
@@ -2842,13 +2457,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u8",
-                "u64"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["u8", "u64"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "encode_varint",
@@ -2856,12 +2466,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "u64"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["u64"],
+              "return": ["vector<u8>"]
             }
           ],
           "structs": []
@@ -2885,13 +2491,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "channel_commitment_key",
@@ -2899,13 +2500,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "channel_path",
@@ -2913,13 +2509,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "client_state_commitment_key",
@@ -2927,12 +2518,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "client_state_path",
@@ -2940,12 +2527,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "connection_commitment_key",
@@ -2953,12 +2536,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "connection_path",
@@ -2966,12 +2545,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "consensus_state_commitment_key",
@@ -2983,9 +2558,7 @@
                 "0x1::string::String",
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::height::Height"
               ],
-              "return": [
-                "vector<u8>"
-              ]
+              "return": ["vector<u8>"]
             },
             {
               "name": "consensus_state_path",
@@ -2993,14 +2566,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "u64",
-                "u64"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "u64", "u64"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "keccak256",
@@ -3008,12 +2575,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "next_sequence_ack_commitment_key",
@@ -3021,13 +2584,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "next_sequence_ack_commitment_path",
@@ -3035,13 +2593,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "next_sequence_recv_commitment_key",
@@ -3049,13 +2602,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "next_sequence_recv_commitment_path",
@@ -3063,13 +2611,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "next_sequence_send_commitment_key",
@@ -3077,13 +2620,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "next_sequence_send_commitment_path",
@@ -3091,13 +2629,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "packet_acknowledgement_commitment_key",
@@ -3105,14 +2638,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String",
-                "u64"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String", "u64"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "packet_acknowledgement_commitment_path",
@@ -3120,14 +2647,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String",
-                "u64"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String", "u64"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "packet_commitment_key",
@@ -3135,14 +2656,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String",
-                "u64"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String", "u64"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "packet_commitment_path",
@@ -3150,14 +2665,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String",
-                "u64"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String", "u64"],
+              "return": ["0x1::string::String"]
             },
             {
               "name": "packet_receipt_commitment_key",
@@ -3165,14 +2674,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String",
-                "u64"
-              ],
-              "return": [
-                "vector<u8>"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String", "u64"],
+              "return": ["vector<u8>"]
             },
             {
               "name": "packet_receipt_commitment_path",
@@ -3180,14 +2683,8 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String",
-                "u64"
-              ],
-              "return": [
-                "0x1::string::String"
-              ]
+              "params": ["0x1::string::String", "0x1::string::String", "u64"],
+              "return": ["0x1::string::String"]
             }
           ],
           "structs": []
@@ -3214,9 +2711,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "conn_counterparty_client_id",
@@ -3227,9 +2722,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "conn_counterparty_connection_id",
@@ -3240,9 +2733,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "conn_counterparty_key_prefix",
@@ -3253,9 +2744,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ],
-              "return": [
-                "&vector<u8>"
-              ]
+              "return": ["&vector<u8>"]
             },
             {
               "name": "counterparty_client_id",
@@ -3266,9 +2755,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Counterparty"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "counterparty_connection_id",
@@ -3279,9 +2766,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Counterparty"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "decode_proto",
@@ -3289,9 +2774,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "vector<u8>"
-              ],
+              "params": ["vector<u8>"],
               "return": [
                 "0x1::option::Option<0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd>"
               ]
@@ -3327,9 +2810,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "encode_proto",
@@ -3340,9 +2821,7 @@
               "params": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ],
-              "return": [
-                "vector<u8>"
-              ]
+              "return": ["vector<u8>"]
             },
             {
               "name": "new",
@@ -3367,11 +2846,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "0x1::string::String",
-                "vector<u8>"
-              ],
+              "params": ["0x1::string::String", "0x1::string::String", "vector<u8>"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Counterparty"
               ]
@@ -3382,10 +2857,7 @@
               "is_entry": false,
               "is_view": false,
               "generic_type_params": [],
-              "params": [
-                "0x1::string::String",
-                "vector<0x1::string::String>"
-              ],
+              "params": ["0x1::string::String", "vector<0x1::string::String>"],
               "return": [
                 "0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version"
               ]
@@ -3459,9 +2931,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::ConnectionEnd"
               ],
-              "return": [
-                "u64"
-              ]
+              "return": ["u64"]
             },
             {
               "name": "version_features",
@@ -3472,9 +2942,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version"
               ],
-              "return": [
-                "&vector<0x1::string::String>"
-              ]
+              "return": ["&vector<0x1::string::String>"]
             },
             {
               "name": "version_features_mut",
@@ -3485,9 +2953,7 @@
               "params": [
                 "&mut 0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version"
               ],
-              "return": [
-                "&mut vector<0x1::string::String>"
-              ]
+              "return": ["&mut vector<0x1::string::String>"]
             },
             {
               "name": "version_identifier",
@@ -3498,9 +2964,7 @@
               "params": [
                 "&0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version"
               ],
-              "return": [
-                "&0x1::string::String"
-              ]
+              "return": ["&0x1::string::String"]
             },
             {
               "name": "version_identifier_mut",
@@ -3511,9 +2975,7 @@
               "params": [
                 "&mut 0xdc08d8da6e3de03f62fdab618dc36f2e4e9cd70b03722c1d46df767370602771::connection_end::Version"
               ],
-              "return": [
-                "&mut 0x1::string::String"
-              ]
+              "return": ["&mut 0x1::string::String"]
             },
             {
               "name": "versions",
@@ -3533,11 +2995,7 @@
             {
               "name": "ConnectionEnd",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -3565,11 +3023,7 @@
             {
               "name": "Counterparty",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -3589,11 +3043,7 @@
             {
               "name": "MerklePrefix",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store"
-              ],
+              "abilities": ["copy", "drop", "store"],
               "generic_type_params": [],
               "fields": [
                 {
@@ -3605,12 +3055,7 @@
             {
               "name": "Version",
               "is_native": false,
-              "abilities": [
-                "copy",
-                "drop",
-                "store",
-                "key"
-              ],
+              "abilities": ["copy", "drop", "store", "key"],
               "generic_type_params": [],
               "fields": [
                 {

@@ -4,12 +4,13 @@ name    = "voyager-plugin-transaction-batch"
 version = "0.1.0"
 
 [dependencies]
-voyager-message      = { workspace = true }
 cometbft-rpc       = { workspace = true }
 dashmap            = { workspace = true }
+either.workspace   = true
 enumorph.workspace = true
 frunk.workspace    = true
 futures.workspace  = true
+itertools          = "0.13.0"
 jsonrpsee          = { version = "0.24.1", features = ["macros", "server", "tracing"] }
 macros.workspace   = true
 prost.workspace    = true
@@ -22,5 +23,4 @@ tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
-itertools = "0.13.0"
-either.workspace = true
+voyager-message    = { workspace = true }

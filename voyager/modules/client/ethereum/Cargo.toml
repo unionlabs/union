@@ -4,7 +4,6 @@ name    = "voyager-client-module-ethereum"
 version = "0.1.0"
 
 [dependencies]
-voyager-message      = { workspace = true }
 chain-utils        = { workspace = true }
 enumorph.workspace = true
 frunk.workspace    = true
@@ -21,3 +20,4 @@ tokio              = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
+voyager-message    = { workspace = true }
