@@ -133,6 +133,7 @@ const DISABLE_TAB_INDEX = -1
   preventScroll={true}
   closeOnEscape={true}
   closeOnOutsideClick={true}
+  onKeydown={onEnterPress}
   bind:open={commandDialogOpen}
 >
   <Command.Root
