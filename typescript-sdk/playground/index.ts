@@ -15,7 +15,7 @@ createUnionClient({
 createUnionClient({
   chainId: "stride-internal-1",
   transport: http("stride.testnet-1.stridenet.co")
-}).approveTransaction
+})
 
 const clients = createUnionClients([
   {
@@ -28,6 +28,6 @@ const clients = createUnionClients([
   }
 ])
 
-clients["11155111"].approveTransaction
+// clients["11155111"].approveTransaction
 
-clients["stride-internal-1"].approveTransaction
+// clients["stride-internal-1"].approveTransaction
