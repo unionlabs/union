@@ -2,14 +2,12 @@
 import "#patch.ts"
 import { http } from "viem"
 import { parseArgs } from "node:util"
-import { sepolia } from "viem/chains"
-import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { consola } from "../scripts/logger.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
+import { createUnionClient, offchainQuery } from "#mod.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
 
 /* `bun playground/union-to-sepolia.ts --private-key "..."` --estimate-gas */
 
@@ -48,49 +46,42 @@ try {
 
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const client = createCosmosSdkClient({
-    evm: {
-      chain: sepolia,
-      account: evmAccount,
-      transport: http("https://rpc2.sepolia.org")
-    },
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet-8.union.build")
-    }
+  const client = createUnionClient({
+    account: cosmosAccount,
+    chainId: "union-testnet-8",
+    gasPrice: { amount: "0.0025", denom: "muno" },
+    transport: http("https://rpc.testnet-8.union.build")
   })
 
-  const gasEstimationResponse = await client.simulateTransaction({
+  const transferPayload = {
     amount: 1n,
     denomAddress: "muno",
-    network: unionTestnetInfo.rpc_type,
+    destinationChainId: "11155111",
     sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,
-    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
-    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
-  })
+    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
+  }
+
+  const gasEstimationResponse = await client.simulateTransaction(transferPayload)
 
   consola.box("Union to Sepolia gas cost:", gasEstimationResponse)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
-  if (!gasEstimationResponse.success) {
+  if (!gasEstimationResponse.isOk()) {
     console.info("Transaction simulation failed")
     process.exit(1)
   }
 
-  const transfer = await client.transferAsset({
-    amount: 1n,
-    denomAddress: "muno",
-    network: unionTestnetInfo.rpc_type,
-    sourceChannel: ucsConfiguration.channel_id,
-    relayContractAddress: ucsConfiguration.contract_address,
-    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
-    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
-  })
+  const transfer = await client.transferAsset(transferPayload)
 
-  console.info(transfer)
+  if (transfer.isErr()) {
+    console.error(transfer.error)
+    process.exit(1)
+  }
+
+  consola.info(transfer.value)
+  process.exit(0)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   console.error(errorMessage)

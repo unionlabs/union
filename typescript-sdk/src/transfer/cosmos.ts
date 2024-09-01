@@ -1,4 +1,3 @@
-import { ok, err, type Result, ResultAsync } from "neverthrow"
 import {
   GasPrice,
   SigningStargateClient,
@@ -11,19 +10,40 @@ import type {
   OfflineSigner as CosmosOfflineSigner
 } from "../types.ts"
 import { timestamp } from "../utilities/index.ts"
+import { ok, err, type Result, ResultAsync } from "neverthrow"
 import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 
-function connectWithSigner(
-  rpcUrl: string,
-  account: CosmosOfflineSigner,
+export function connectStargateWithSigner({
+  rpcUrl,
+  account,
+  gasPrice
+}: {
+  rpcUrl: string
+  account: CosmosOfflineSigner
   gasPrice: { amount: string; denom: string }
-) {
-  
+}): ResultAsync<SigningStargateClient, Error> {
   return ResultAsync.fromPromise(
     SigningStargateClient.connectWithSigner(rpcUrl, account, {
       gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
     }),
-    error => new Error("Failed to connect with signer", { cause: error })
+    error => new Error("Failed to connect with stargate signer", { cause: error })
+  )
+}
+
+export function connectCosmwasmWithSigner({
+  rpcUrl,
+  account,
+  gasPrice
+}: {
+  rpcUrl: string
+  account: CosmosOfflineSigner
+  gasPrice: { amount: string; denom: string }
+}): ResultAsync<SigningCosmWasmClient, Error> {
+  return ResultAsync.fromPromise(
+    SigningCosmWasmClient.connectWithSigner(rpcUrl, account, {
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+    }),
+    error => new Error("Failed to connect with cosmwasm signer", { cause: error })
   )
 }
 
@@ -53,25 +73,25 @@ export async function ibcTransfer({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  return connectWithSigner(rpcUrl, account, gasPrice).andThen(signingClient =>
-    ResultAsync.fromPromise(
-      signingClient.signAndBroadcast(
-        _account.address,
-        messageTransfers.map(
-          ({ sender = _account.address, timeoutTimestamp = 0n, ...messageTransfer }) => ({
-            typeUrl: "/ibc.applications.transfer.v1.MsgTransfer",
-            value: { sender, timeoutTimestamp, ...messageTransfer }
-          })
-        ) satisfies Array<MsgTransferEncodeObject>,
-        "auto"
-      ),
-      error => new Error("Failed to sign and broadcast", { cause: error })
-    ).map(response => {
-      assertIsDeliverTxSuccess(response)
-      signingClient.disconnect()
-      return response.transactionHash
-    })
+  const signingClient = await connectStargateWithSigner({ rpcUrl, account, gasPrice })
+
+  if (signingClient.isErr()) return err(signingClient.error)
+  const _signingClient = signingClient.value
+
+  const response = await _signingClient.signAndBroadcast(
+    _account.address,
+    messageTransfers.map(
+      ({ sender = _account.address, timeoutTimestamp = 0n, ...messageTransfer }) => ({
+        typeUrl: "/ibc.applications.transfer.v1.MsgTransfer",
+        value: { sender, timeoutTimestamp, ...messageTransfer }
+      })
+    ) satisfies Array<MsgTransferEncodeObject>,
+    "auto"
   )
+
+  assertIsDeliverTxSuccess(response)
+  _signingClient.disconnect()
+  return ok(response.transactionHash)
 }
 
 /**
@@ -96,11 +116,11 @@ export async function ibcTransferSimulate({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  const signingClient = await SigningStargateClient.connectWithSigner(rpcUrl, account, {
-    gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
-  })
+  const signingClient = await connectStargateWithSigner({ rpcUrl, account, gasPrice })
+  if (signingClient.isErr()) return err(signingClient.error)
+  const _signingClient = signingClient.value
 
-  const gas = await signingClient.simulate(
+  const gas = await _signingClient.simulate(
     _account.address,
     messageTransfers.map(
       ({ sender = _account.address, timeoutTimestamp = 0n, ...messageTransfer }) => ({
@@ -111,7 +131,7 @@ export async function ibcTransferSimulate({
     "auto"
   )
 
-  signingClient.disconnect()
+  _signingClient.disconnect()
 
   return ok(gas.toString())
 }
@@ -135,20 +155,14 @@ export async function cosmwasmTransfer({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  return ResultAsync.fromPromise(
-    SigningCosmWasmClient.connectWithSigner(rpcUrl, account, {
-      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
-    }),
-    error => new Error("Failed to connect with signer", { cause: error })
-  ).andThen(signingClient =>
-    ResultAsync.fromPromise(
-      signingClient.executeMultiple(_account.address, instructions, "auto"),
-      error => new Error("Failed to execute multiple", { cause: error })
-    ).map(response => {
-      signingClient.disconnect()
-      return response.transactionHash
-    })
-  )
+  const signingClient = await connectCosmwasmWithSigner({ rpcUrl, account, gasPrice })
+  if (signingClient.isErr()) return err(signingClient.error)
+  const _signingClient = signingClient.value
+
+  const response = await _signingClient.executeMultiple(_account.address, instructions, "auto")
+
+  _signingClient.disconnect()
+  return ok(response.transactionHash)
 }
 
 export async function cosmwasmTransferSimulate({
@@ -164,41 +178,32 @@ export async function cosmwasmTransferSimulate({
 }): Promise<Result<string, Error>> {
   const accountResult = await ResultAsync.fromPromise(
     account.getAccounts(),
-    () => new Error("Failed to get accounts")
+    error => new Error("Failed to get accounts", { cause: error })
   ).andThen(([_account]) => (_account ? ok(_account) : err(new Error("No account found"))))
 
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  return ResultAsync.fromPromise(
-    SigningCosmWasmClient.connectWithSigner(rpcUrl, account, {
-      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
-    }),
-    error => new Error("Failed to connect with signer", { cause: error })
-  ).andThen(signingClient =>
-    ResultAsync.fromPromise(
-      signingClient.simulate(
-        _account.address,
-        instructions.map(instruction => ({
-          typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-          value: {
-            sender: _account.address,
-            contract: instruction.contractAddress,
-            msg: new TextEncoder().encode(JSON.stringify(instruction.msg)),
-            funds: instruction.funds?.map(fund => ({
-              denom: fund.denom,
-              amount: fund.amount.toString()
-            }))
-          }
-        })),
-        "auto"
-      ),
-      error => new Error("Failed to simulate", { cause: error })
-    ).map(gas => {
-      signingClient.disconnect()
-      return gas.toString()
-    })
+  const signingClient = await connectCosmwasmWithSigner({ rpcUrl, account, gasPrice })
+  if (signingClient.isErr()) return err(signingClient.error)
+  const _signingClient = signingClient.value
+
+  const response = await _signingClient.simulate(
+    _account.address,
+    instructions.map(instruction => ({
+      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+      value: {
+        sender: _account.address,
+        contract: instruction.contractAddress,
+        msg: new TextEncoder().encode(JSON.stringify(instruction.msg)),
+        funds: instruction.funds
+      }
+    })),
+    "auto"
   )
+
+  _signingClient.disconnect()
+  return ok(response.toString())
 }
 
 export async function cosmosSameChainTransfer({
@@ -222,35 +227,28 @@ export async function cosmosSameChainTransfer({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  return ResultAsync.fromPromise(
-    SigningStargateClient.connectWithSigner(rpcUrl, account, {
-      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
-    }),
-    error => new Error("Failed to connect with signer", { cause: error })
-  ).andThen(signingClient =>
-    ResultAsync.fromPromise(
-      signingClient.signAndBroadcast(
-        _account.address,
-        [
-          {
-            typeUrl: "/cosmos.bank.v1beta1.MsgSend",
-            value: {
-              fromAddress: _account.address,
-              toAddress: recipient,
-              amount: [asset]
-            }
-          }
-        ],
-        "auto",
-        `${timestamp()} Sending ${asset.amount} ${asset.denom} to ${recipient}`
-      ),
-      error => new Error("Failed to sign and broadcast", { cause: error })
-    ).map(response => {
-      assertIsDeliverTxSuccess(response)
-      signingClient.disconnect()
-      return response.transactionHash
-    })
+  const signingClient = await connectStargateWithSigner({ rpcUrl, account, gasPrice })
+  if (signingClient.isErr()) return err(signingClient.error)
+  const _signingClient = signingClient.value
+
+  const response = await _signingClient.signAndBroadcast(
+    _account.address,
+    [
+      {
+        typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+        value: {
+          fromAddress: _account.address,
+          toAddress: recipient,
+          amount: [asset]
+        }
+      }
+    ],
+    "auto",
+    `${timestamp()} Sending ${asset.amount} ${asset.denom} to ${recipient}`
   )
+  assertIsDeliverTxSuccess(response)
+  _signingClient.disconnect()
+  return ok(response.transactionHash)
 }
 
 export async function cosmosSameChainTransferSimulate({
@@ -274,31 +272,25 @@ export async function cosmosSameChainTransferSimulate({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  return ResultAsync.fromPromise(
-    SigningStargateClient.connectWithSigner(rpcUrl, account, {
-      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
-    }),
-    error => new Error("Failed to connect with signer", { cause: error })
-  ).andThen(signingClient =>
-    ResultAsync.fromPromise(
-      signingClient.simulate(
-        _account.address,
-        [
-          {
-            typeUrl: "/cosmos.bank.v1beta1.MsgSend",
-            value: {
-              amount: [asset],
-              toAddress: recipient,
-              fromAddress: _account.address
-            }
-          }
-        ],
-        "auto"
-      ),
-      error => new Error("Failed to simulate", { cause: error })
-    ).map(gas => {
-      signingClient.disconnect()
-      return gas.toString()
-    })
+  const signingClient = await connectStargateWithSigner({ rpcUrl, account, gasPrice })
+  if (signingClient.isErr()) return err(signingClient.error)
+  const _signingClient = signingClient.value
+
+  const response = await _signingClient.simulate(
+    _account.address,
+    [
+      {
+        typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+        value: {
+          amount: [asset],
+          toAddress: recipient,
+          fromAddress: _account.address
+        }
+      }
+    ],
+    "auto"
   )
+
+  _signingClient.disconnect()
+  return ok(response.toString())
 }

@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
+import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { cosmosHttp } from "#transport.ts"
+import { createUnionClient } from "#mod.ts"
 import { raise } from "#utilities/index.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/union-to-union.ts --private-key "..."` --estimate-gas */
 
@@ -27,36 +27,22 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
 )
 
 try {
-  const client = createCosmosSdkClient({
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet-8.union.build")
-    }
+  const client = createUnionClient({
+    account: cosmosAccount,
+    chainId: "union-testnet-8",
+    transport: http("https://rpc.testnet-8.union.build")
   })
 
-  const transferAssetsParameters = {
+  const transfer = await client.transferAsset({
     amount: 1n,
-    network: "cosmos",
     denomAddress: "muno",
-    path: ["union-testnet-8", "union-testnet-8"],
-    recipient: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-  } satisfies TransferAssetsParameters
+    destinationChainId: "union-testnet-8",
+    gasPrice: { amount: "0.0025", denom: "muno" },
+    recipient: "union1qp0wtsfltjk9rnvyu3fkdv0s0skp4y5y3py96f"
+  })
 
-  const gasEstimationResponse = await client.simulateTransaction(transferAssetsParameters)
-
-  consola.box("union to union gas cost:", gasEstimationResponse)
-
-  if (!gasEstimationResponse.success) {
-    console.info("Transaction simulation failed")
-    process.exit(1)
-  }
-
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
-
-  const transfer = await client.transferAsset(transferAssetsParameters)
-
-  console.info(transfer)
+  consola.info(transfer)
+  process.exit(0)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   console.error(errorMessage)
