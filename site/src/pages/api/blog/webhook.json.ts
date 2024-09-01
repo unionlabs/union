@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ params, request, ...context }) => {
   await purgeCache({ tags: [body.sys.id, "blog"] }).catch(error =>
     Response.json(
       {
-        error: error.message,
+        error: error instanceof Error ? error.message : error,
         message: `Failed to revalidate entry with id ${body.sys.id}`
       },
       { status: 500 }
