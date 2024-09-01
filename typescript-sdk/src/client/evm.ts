@@ -36,9 +36,6 @@ export const chainIdToChain = (chainId: EvmChainId) =>
     chain => chain.id === Number(chainId)
   )
 
-/**
- * TODO: add JSDoc with examples
- */
 export const createEvmClient = (parameters: EvmClientParameters) => {
   return createWalletClient({ ...parameters, chain: chainIdToChain(parameters.chainId) })
     .extend(publicActions)

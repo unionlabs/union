@@ -3,6 +3,8 @@ import type { OfflineSigner } from "../types.ts"
 import type { evmChainId, EvmChainId } from "./evm.ts"
 import type { cosmosChainId, CosmosChainId } from "./cosmos.ts"
 
+export type { evmChainId, EvmChainId, cosmosChainId, CosmosChainId }
+
 export type ChainId = (typeof evmChainId)[number] | (typeof cosmosChainId)[number]
 
 export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId> = {
@@ -10,10 +12,6 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
   amount: bigint
   recipient: string
   approve?: boolean
-
-  // sourcePort?: string
-  // sourceChannel?: string
-
   destinationChainId: ChainId | (string & {})
 } & (CHAIN_ID extends CosmosChainId
   ? {
@@ -26,7 +24,7 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
     ? {
         simulate?: boolean
         denomAddress: Address
-        relayContractAddress?: Address
         account?: Account | undefined
+        relayContractAddress?: Address
       }
     : undefined)

@@ -2,7 +2,7 @@ export const zkgm = "o______o"
 
 import "./patch.ts"
 export type * from "./types.ts"
-import {
+export {
   bytesToHex,
   bech32AddressToHex,
   hexAddressToBech32,
@@ -11,7 +11,7 @@ import {
   hexStringToUint8Array,
   uint8ArrayToHexString
 } from "./convert.ts"
-import {
+export {
   truncateAddress,
   isValidEvmTxHash,
   isValidEvmAddress,
@@ -24,10 +24,15 @@ import {
   type EvmChainId,
   type EvmClientParameters
 } from "./client/evm.ts"
-import { createPfmMemo } from "./pfm.ts"
-import { offchainQuery } from "./query/offchain/hubble.ts"
-import type { ChainId, TransferAssetsParameters } from "src/client/types.ts"
-import { cosmosChainId, createCosmosClient, type CosmosClientParameters } from "./client/cosmos.ts"
+import {
+  cosmosChainId,
+  type CosmosChainId,
+  createCosmosClient,
+  type CosmosClientParameters
+} from "./client/cosmos.ts"
+export { offchainQuery } from "./query/offchain/hubble.ts"
+export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
+import type { ChainId, TransferAssetsParameters } from "./client/types.ts"
 
 type EvmClient = ReturnType<typeof createEvmClient>
 type CosmosClient = ReturnType<typeof createCosmosClient>
@@ -41,7 +46,17 @@ export function createUnionClient(
 ): ReturnType<typeof createCosmosClient>
 
 /**
- * TODO: add JSDoc with examples
+ * @example
+ * ```ts
+ * import { createUnionClient } from "@union/client"
+ * import { privateKeyToAccount } from "viem/accounts"
+ *
+ * const client = createUnionClient({
+ *   chainId: "11155111",
+ *   transport: http("https://rpc.sepolia.org"),
+ *   account: privateKeyToAccount(`0x${PRIVATE_KEY}`) // or from wagmi configuration
+ * })
+ * ```
  */
 export function createUnionClient(parameters: EvmClientParameters | CosmosClientParameters) {
   if (evmChainId.includes(parameters.chainId)) {
@@ -54,9 +69,32 @@ export function createUnionClient(parameters: EvmClientParameters | CosmosClient
 }
 
 /**
- * TODO: add JSDoc with examples
+ * @example
+ * ```ts
+ * import { privateKeyToAccount } from "viem/accounts"
+ * import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+ * import { createUnionClient, hexStringToUint8Array } from "@union/client"
+ *
+ * const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
+ *   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+ *   "stride"
+ * )
+ *
+ * const clients = createMultiUnionClient([
+ *   {
+ *     chainId: "11155111",
+ *     transport: http("https://rpc.sepolia.org"),
+ *     account: privateKeyToAccount(`0x${PRIVATE_KEY}`) // or from wagmi configuration
+ *   },
+ *   {
+ *     account: cosmosAccount,
+ *     chainId: "stride-internal-1",
+ *     transport: http("stride.testnet-1.stridenet.co")
+ *   }
+ * ])
+ * ```
  */
-export function createUnionClients<TChainId extends ChainId>(
+export function createMultiUnionClient<TChainId extends ChainId>(
   parameters: Array<
     {
       [KChainId in TChainId]: (EvmClientParameters | CosmosClientParameters) & { chainId: KChainId }
@@ -74,23 +112,12 @@ export function createUnionClients<TChainId extends ChainId>(
 }
 
 export {
+  evmChainId,
   type ChainId,
-  type TransferAssetsParameters,
-  /**
-   * We export this as a standalone so that it can be used to fetch data that get passed to `createUnionClient`
-   */
-  bytesToHex,
-  offchainQuery,
-  createPfmMemo,
-  truncateAddress,
-  isValidEvmTxHash,
-  isValidEvmAddress,
-  bech32AddressToHex,
-  hexAddressToBech32,
-  isValidCosmosTxHash,
-  bytesToBech32Address,
-  isValidBech32Address,
-  bech32ToBech32Address,
-  hexStringToUint8Array,
-  uint8ArrayToHexString
+  cosmosChainId,
+  type EvmChainId,
+  type CosmosChainId,
+  type EvmClientParameters,
+  type CosmosClientParameters,
+  type TransferAssetsParameters
 }

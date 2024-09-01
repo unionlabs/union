@@ -33,9 +33,6 @@ export interface CosmosClientParameters {
   gasPrice?: { amount: string; denom: string }
 }
 
-/**
- * TODO: add JSDoc with examples
- */
 export const createCosmosClient = (parameters: CosmosClientParameters) =>
   createClient({ transport: fallback([]) }).extend(_ => ({
     transferAsset: async ({

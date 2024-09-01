@@ -1,5 +1,5 @@
 import { fallback, http } from "viem"
-import { createUnionClient, createUnionClients } from "../src/mod.ts"
+import { createUnionClient, createMultiUnionClient } from "../src/mod.ts"
 
 /**
  * evm chain, where ERC20 approval is a thing
@@ -17,7 +17,7 @@ createUnionClient({
   transport: http("stride.testnet-1.stridenet.co")
 })
 
-const clients = createUnionClients([
+const clients = createMultiUnionClient([
   {
     chainId: "stride-internal-1",
     transport: http("stride.testnet-1.stridenet.co")
