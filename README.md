@@ -15,7 +15,7 @@
   [![built with garnix](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fgarnix.io%2Fapi%2Fbadges%2Funionlabs%2Funion%3Fbranch%3Dmain)](https://garnix.io)
   [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
   [![Discord badge][]](https://discord.union.build)
-  [![Twitter handle][]][Twitter badge]
+  ![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/union_build)
 
 </div>
 
@@ -42,17 +42,19 @@ The upgradability of contracts on other chains, connections, token configuration
 ## Quickstart
 
 Install [Nix] to _[reproducibly build](https://en.wikipedia.org/wiki/Reproducible_builds) any component_, and to enter a dev shell with _all dependencies_:
-```
+
+```sh
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 ```
+
 _(Note that some components can only be built on Linux. If you are using macOS, we recommend using [OrbStack] to easily set up a [NixOS] VM within two minutes. Most Union developers use macOS with [OrbStack], and there is no need to install Nix inside of the [NixOS] VM.)_
 
 You can now _reproducibly_ build any of Union's components from source:
 
 ```sh
-nix build .#uniond -L
-nix build .#voyager -L
-nix build .#app -L
+nix build .#uniond --print-build-logs
+nix build .#voyager --print-build-logs
+nix build .#app --print-build-logs
 
 # to see all packages, run:
 nix flake show
@@ -70,7 +72,7 @@ nix develop
 Run the following to format the entire repo and check your spelling before each PR:
 
 ```sh
-nix run .#pre-commit -L
+nix run .#pre-commit --print-build-logs
 ```
 
 Check the `#developers` channel on [Union's discord](https://discord.union.build) if you need any help with this.
