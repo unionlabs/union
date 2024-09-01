@@ -1,17 +1,11 @@
 #!/usr/bin/env bun
-import {
-  createPfmMemo,
-  offchainQuery,
-  createUnionClient,
-  bech32AddressToHex,
-  type TransferAssetsParameters
-} from "#mod.ts"
 import { parseArgs } from "node:util"
+import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
-import { fallback, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio } from "viem/chains"
+import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/berachain-to-stride.ts --private-key "..."` --estimate-gas */
 
@@ -33,31 +27,6 @@ const WBTC_CONTRACT_ADDRESS = "0x286F1C3f0323dB9c91D1E8f45c8DF2d065AB5fae"
 const HONEY_CONTRACT_ADDRESS = "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03"
 
 try {
-  /**
-   * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
-   */
-  const {
-    data: [beraInfo]
-  } = await offchainQuery.chain({
-    chainId: "80084",
-    includeContracts: true,
-    includeEndpoints: true
-  })
-
-  if (!beraInfo) raise("Stride testnet info not found")
-
-  const ucsConfiguration = beraInfo.ucs1_configurations
-    ?.filter(config => config.destination_chain.chain_id === "union-testnet-8")
-    .at(0)
-
-  if (!ucsConfiguration) raise("UCS configuration not found")
-
-  const forward = ucsConfiguration.forward.find(
-    item => item.destination_chain.chain_id === "stride-internal-1"
-  )
-
-  if (!forward) raise("Forward configuration not found")
-
   const client = createUnionClient({
     account: berachainAccount,
     chainId: `${berachainTestnetbArtio.id}`,
@@ -69,29 +38,13 @@ try {
     ])
   })
 
-  const pfmMemo = createPfmMemo({
-    port: forward.port,
-    channel: forward.channel_id,
-    receiver: bech32AddressToHex({
-      address: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
-    })
-  })
-
-  if (pfmMemo.isErr()) {
-    consola.error(pfmMemo.error)
-    process.exit(1)
-  }
-
   const transactionPayload = {
     amount: 1n,
     approve: true,
-    memo: pfmMemo.value,
     denomAddress: HONEY_CONTRACT_ADDRESS,
-    sourceChannel: ucsConfiguration.channel_id,
+    destinationChainId: "stride-internal-1",
     // or `client.cosmos.account.address` if you want to send to yourself
-    recipient: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3",
-    destinationChainId: ucsConfiguration.destination_chain.chain_id,
-    relayContractAddress: getAddress(ucsConfiguration.contract_address)
+    recipient: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
   } satisfies TransferAssetsParameters<"80084">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)

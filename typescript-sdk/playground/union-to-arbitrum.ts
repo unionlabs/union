@@ -7,7 +7,7 @@ import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { offchainQuery, createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/union-to-arbitrum.ts --private-key "..."` --estimate-gas */
 
@@ -33,24 +33,6 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
 const [account] = await cosmosAccount.getAccounts()
 
 try {
-  /**
-   * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
-   */
-  const {
-    data: [unionTestnetInfo]
-  } = await offchainQuery.chain({
-    chainId: "union-testnet-8",
-    includeEndpoints: true,
-    includeContracts: true
-  })
-
-  if (!unionTestnetInfo) raise("Union testnet info not found")
-
-  const ucsConfiguration = unionTestnetInfo.ucs1_configurations
-    ?.filter(config => config.destination_chain.chain_id === `${arbitrumSepolia.id}`)
-    .at(0)
-  if (!ucsConfiguration) raise("UCS configuration not found")
-
   const client = createUnionClient({
     account: cosmosAccount,
     chainId: "union-testnet-8",
@@ -63,9 +45,7 @@ try {
     denomAddress: "muno",
     // or `client.evm.account.address` if you want to send to yourself
     recipient: evmAccount.address,
-    sourceChannel: ucsConfiguration.channel_id,
-    relayContractAddress: ucsConfiguration.contract_address,
-    destinationChainId: ucsConfiguration.destination_chain.chain_id
+    destinationChainId: `${arbitrumSepolia.id}`
   } satisfies TransferAssetsParameters<"union-testnet-8">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
@@ -75,7 +55,7 @@ try {
     process.exit(1)
   }
 
-  consola.success("Union to Berachain gas cost:", gasEstimationResponse.value)
+  consola.success("Union to Arbitrum gas cost:", gasEstimationResponse.value)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 

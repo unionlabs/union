@@ -2,6 +2,7 @@ import {
   erc20Abi,
   getAddress,
   type Account,
+  type Address,
   publicActions,
   createWalletClient,
   type FallbackTransport
@@ -9,11 +10,10 @@ import {
 import {
   transferAssetFromEvm,
   approveTransferAssetFromEvm,
-  transferAssetFromEvmSimulate,
-  type TransferAssetFromEvmParams,
-  type ApproveTransferAssetFromEvmParams
+  transferAssetFromEvmSimulate
 } from "../transfer/evm.ts"
 import { err, ok, type Result } from "neverthrow"
+import { getHubbleChainDetails } from "../pfm.ts"
 import type { TransferAssetsParameters } from "./types.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
 
@@ -39,69 +39,66 @@ export const chainIdToChain = (chainId: EvmChainId) =>
 /**
  * TODO: add JSDoc with examples
  */
-export const createEvmClient = (parameters: EvmClientParameters) =>
-  createWalletClient({ ...parameters, chain: chainIdToChain(parameters.chainId) })
+export const createEvmClient = (parameters: EvmClientParameters) => {
+  return createWalletClient({ ...parameters, chain: chainIdToChain(parameters.chainId) })
     .extend(publicActions)
     .extend(client => ({
       transferAsset: async ({
-        memo,
         amount,
         account,
         recipient,
         denomAddress,
-        sourceChannel,
         approve = false,
         simulate = true,
-        destinationChainId,
-        relayContractAddress
-      }: TransferAssetFromEvmParams): Promise<Result<string, Error>> => {
+        destinationChainId
+      }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
         account ||= client.account
-        const transaction = await transferAssetFromEvm(client, {
-          memo,
+
+        const pfmDetails = await getHubbleChainDetails({
+          recipient,
+          destinationChainId,
+          sourceChainId: parameters.chainId
+        })
+
+        if (pfmDetails.isErr()) return err(pfmDetails.error)
+
+        return await transferAssetFromEvm(client, {
           amount,
           account,
           approve,
           simulate,
           recipient,
           denomAddress,
-          sourceChannel,
           destinationChainId,
-          relayContractAddress
+          memo: pfmDetails.value.memo,
+          sourceChannel: pfmDetails.value.sourceChannel,
+          relayContractAddress: getAddress(pfmDetails.value.relayContractAddress)
         })
-        return transaction
-      }
-    }))
-    .extend(client => ({
+      },
       approveTransaction: async ({
         amount,
         account,
         denomAddress,
         simulate = true,
         relayContractAddress
-      }: ApproveTransferAssetFromEvmParams): Promise<Result<string, Error>> => {
-        return await approveTransferAssetFromEvm(client, {
+      }: TransferAssetsParameters<EvmChainId> & {
+        relayContractAddress: Address
+      }): Promise<Result<string, Error>> =>
+        await approveTransferAssetFromEvm(client, {
           amount,
           account,
           simulate,
           denomAddress,
           relayContractAddress
-        })
-      }
-    }))
-    .extend(client => ({
+        }),
       simulateTransaction: async ({
         memo,
         amount,
         recipient,
         denomAddress,
-        sourceChannel,
-        destinationChainId,
-        relayContractAddress
+        destinationChainId
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
         const sourceChainId = parameters.chainId
-
-        if (!sourceChannel) return err(new Error("Source channel not found"))
-        if (!relayContractAddress) return err(new Error("Relay contract address not found"))
 
         if (sourceChainId === destinationChainId) {
           const gas = await client.estimateContractGas({
@@ -113,6 +110,20 @@ export const createEvmClient = (parameters: EvmClientParameters) =>
           })
           return ok(gas.toString())
         }
+
+        const pfmDetails = await getHubbleChainDetails({
+          recipient,
+          sourceChainId,
+          destinationChainId
+        })
+
+        if (pfmDetails.isErr()) return err(pfmDetails.error)
+
+        const { relayContractAddress, sourceChannel } = pfmDetails.value
+
+        if (!sourceChannel) return err(new Error("Source channel not found"))
+        if (!relayContractAddress) return err(new Error("Relay contract address not found"))
+
         return await transferAssetFromEvmSimulate(client, {
           memo,
           amount,
@@ -124,3 +135,4 @@ export const createEvmClient = (parameters: EvmClientParameters) =>
         })
       }
     }))
+}

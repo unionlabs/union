@@ -6,7 +6,8 @@ import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { offchainQuery, createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { berachainTestnetbArtio } from "viem/chains"
 
 /* `bun playground/union-to-berachain.ts --private-key "..."` --estimate-gas */
 
@@ -33,24 +34,6 @@ const [account] = await cosmosAccount.getAccounts()
 console.info(account?.address)
 
 try {
-  /**
-   * Calls Hubble, Union's indexer, to grab desired data that's always up-to-date.
-   */
-  const {
-    data: [unionTestnetInfo]
-  } = await offchainQuery.chain({
-    chainId: "union-testnet-8",
-    includeEndpoints: true,
-    includeContracts: true
-  })
-
-  if (!unionTestnetInfo) raise("Union testnet info not found")
-
-  const ucsConfiguration = unionTestnetInfo.ucs1_configurations
-    ?.filter(config => config.destination_chain.chain_id === "80084")
-    .at(0)
-  if (!ucsConfiguration) raise("UCS configuration not found")
-
   const client = createUnionClient({
     account: cosmosAccount,
     chainId: "union-testnet-8",
@@ -61,12 +44,9 @@ try {
   const transactionPayload = {
     amount: 1n,
     denomAddress: "muno",
-    sourceChannel: ucsConfiguration.channel_id,
-
     // or `client.evm.account.address` if you want to send to yourself
     recipient: berachainAccount.address,
-    relayContractAddress: ucsConfiguration.contract_address,
-    destinationChainId: ucsConfiguration.destination_chain.chain_id
+    destinationChainId: `${berachainTestnetbArtio.id}`
   } satisfies TransferAssetsParameters<"union-testnet-8">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)

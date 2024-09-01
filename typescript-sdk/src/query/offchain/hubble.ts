@@ -1,4 +1,5 @@
 import { ofetch } from "ofetch"
+import type { ChainId } from "../../mod.ts"
 
 const HUBBLE_URL = import.meta.env
   ? import.meta.env.HUBBLE_URL
@@ -109,7 +110,7 @@ export interface Ucs1Configuration {
     id: number
     testnet: boolean
     enabled: boolean
-    chain_id: string
+    chain_id: ChainId
     addr_prefix: string
     display_name: string
     logo_uri: string | null

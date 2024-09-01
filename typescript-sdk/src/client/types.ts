@@ -10,8 +10,10 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
   amount: bigint
   recipient: string
   approve?: boolean
-  sourcePort?: string
-  sourceChannel?: string
+
+  // sourcePort?: string
+  // sourceChannel?: string
+
   destinationChainId: ChainId | (string & {})
 } & (CHAIN_ID extends CosmosChainId
   ? {
@@ -22,8 +24,9 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
     }
   : CHAIN_ID extends EvmChainId
     ? {
+        simulate?: boolean
         denomAddress: Address
         relayContractAddress?: Address
-        account?: `0x${string}` | Account | undefined
+        account?: Account | undefined
       }
     : undefined)
