@@ -5,13 +5,14 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
+use macros::model;
 use queue_msg::{BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, instrument, warn};
 use unionlabs::{
     self,
-    encoding::{DecodeAs, EncodeAs, EthAbi},
+    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi},
     ibc::lightclients::cometbls::{
         client_state::ClientState, consensus_state::ConsensusState, header::Header,
     },
@@ -32,10 +33,6 @@ pub mod call;
 pub mod callback;
 pub mod data;
 
-const SUPPORTED_CLIENT_TYPE: ClientType<'static> = ClientType::new_static(ClientType::COMETBLS);
-const SUPPORTED_IBC_INTERFACE: IbcInterface<'static> =
-    IbcInterface::new_static(IbcInterface::IBC_SOLIDITY);
-
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     tracing_subscriber::fmt()
@@ -50,18 +47,29 @@ async fn main() {
     .await
 }
 
+#[model(no_serde)]
+pub enum SupportedIbcInterfaces {
+    IbcSolidity,
+    IbcMoveAptos,
+}
+
+impl SupportedIbcInterfaces {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SupportedIbcInterfaces::IbcSolidity => IbcInterface::IBC_SOLIDITY,
+            SupportedIbcInterfaces::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Module {
-    // REVIEW: Make configurable?
-    // pub client_type: ClientType<'static>,
-    // pub ibc_interface: IbcInterface<'static>,
+    pub ibc_interface: SupportedIbcInterfaces,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    // REVIEW: Make configurable?
-    // pub client_type: ClientType<'static>,
-    // pub ibc_interface: IbcInterface<'static>,
+    pub ibc_interface: IbcInterface<'static>,
 }
 
 #[derive(Subcommand)]
@@ -83,36 +91,63 @@ impl Module {
     fn plugin_name(&self) -> String {
         pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
-        format!("{PLUGIN_NAME}/{SUPPORTED_CLIENT_TYPE}/{SUPPORTED_IBC_INTERFACE}")
+        format!("{PLUGIN_NAME}/{}", self.ibc_interface.as_str())
     }
 
-    pub async fn new(_config: Config) -> Result<Self, ModuleInitError> {
-        Ok(Self {})
-    }
-
-    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<ConsensusState> {
-        ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode consensus state: {}", ErrorReporter(err)),
-                None::<()>,
-            )
+    pub async fn new(config: Config) -> Result<Self, BoxDynError> {
+        Ok(Self {
+            ibc_interface: match config.ibc_interface.as_str() {
+                IbcInterface::IBC_SOLIDITY => SupportedIbcInterfaces::IbcSolidity,
+                IbcInterface::IBC_MOVE_APTOS => SupportedIbcInterfaces::IbcMoveAptos,
+                i => return Err(format!("unsupported IBC interface {i}").into()),
+            },
         })
     }
 
-    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
-        ClientState::decode_as::<EthAbi>(client_state).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode client state: {}", ErrorReporter(err)),
-                None::<()>,
-            )
-        })
+    pub fn decode_consensus_state(&self, consensus_state: &[u8]) -> RpcResult<ConsensusState> {
+        match self.ibc_interface {
+            SupportedIbcInterfaces::IbcSolidity => {
+                ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode consensus state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                })
+            }
+            SupportedIbcInterfaces::IbcMoveAptos => {
+                ConsensusState::decode_as::<Bcs>(consensus_state).map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode consensus state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                })
+            }
+        }
+    }
+
+    pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<ClientState> {
+        match self.ibc_interface {
+            SupportedIbcInterfaces::IbcSolidity => ClientState::decode_as::<EthAbi>(client_state)
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                }),
+            SupportedIbcInterfaces::IbcMoveAptos => ClientState::decode_as::<Bcs>(client_state)
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                }),
+        }
     }
 }
-
-#[derive(Debug, thiserror::Error)]
-pub enum ModuleInitError {}
 
 #[async_trait]
 impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
@@ -148,8 +183,8 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all)]
     async fn supported_interface(&self) -> RpcResult<SupportedInterface> {
         Ok(SupportedInterface {
-            client_type: SUPPORTED_CLIENT_TYPE,
-            ibc_interface: SUPPORTED_IBC_INTERFACE,
+            client_type: ClientType::new(ClientType::COMETBLS),
+            ibc_interface: IbcInterface::new(self.ibc_interface.as_str()),
         })
     }
 
@@ -158,7 +193,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         client_state: Cow<'static, [u8]>,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = Self::decode_client_state(&client_state)?;
+        let cs = self.decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.chain_id),
@@ -171,7 +206,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         consensus_state: Cow<'static, [u8]>,
     ) -> RpcResult<ConsensusStateMeta> {
-        let cs = Self::decode_consensus_state(&consensus_state)?;
+        let cs = self.decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
             timestamp_nanos: cs.timestamp,
@@ -180,7 +215,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all)]
     async fn decode_client_state(&self, client_state: Cow<'static, [u8]>) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Self::decode_client_state(&client_state)?).unwrap())
+        Ok(serde_json::to_value(self.decode_client_state(&client_state)?).unwrap())
     }
 
     #[instrument(skip_all)]
@@ -188,7 +223,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         consensus_state: Cow<'static, [u8]>,
     ) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Self::decode_consensus_state(&consensus_state)?).unwrap())
+        Ok(serde_json::to_value(self.decode_consensus_state(&consensus_state)?).unwrap())
     }
 
     #[instrument(skip_all)]
@@ -216,7 +251,10 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<EthAbi>())
+            .map(|cs| match self.ibc_interface {
+                SupportedIbcInterfaces::IbcSolidity => cs.encode_as::<EthAbi>(),
+                SupportedIbcInterfaces::IbcMoveAptos => cs.encode_as::<Bcs>(),
+            })
     }
 
     #[instrument(skip_all)]
@@ -232,7 +270,10 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<EthAbi>())
+            .map(|cs| match self.ibc_interface {
+                SupportedIbcInterfaces::IbcSolidity => cs.encode_as::<EthAbi>(),
+                SupportedIbcInterfaces::IbcMoveAptos => cs.encode_as::<Bcs>(),
+            })
     }
 
     #[instrument(skip_all)]
@@ -263,7 +304,10 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| cs.encode_as::<EthAbi>())
+            .map(|header| match self.ibc_interface {
+                SupportedIbcInterfaces::IbcSolidity => header.encode_as::<EthAbi>(),
+                SupportedIbcInterfaces::IbcMoveAptos => header.encode_as::<Bcs>(),
+            })
     }
 
     #[instrument(skip_all)]
@@ -278,12 +322,22 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     None::<()>,
                 )
             })
-            .map(|cs| {
-                unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
-                    protos::ibc::core::commitment::v1::MerkleProof::from(cs),
-                )
-                .unwrap()
-                .encode_as::<EthAbi>()
+            .map(|cs| match self.ibc_interface {
+                SupportedIbcInterfaces::IbcSolidity => {
+                    unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
+                        protos::ibc::core::commitment::v1::MerkleProof::from(cs),
+                    )
+                    .unwrap()
+                    .encode_as::<EthAbi>()
+                }
+                SupportedIbcInterfaces::IbcMoveAptos => {
+                    // TODO: Currently disabled, test this later
+                    unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
+                        protos::ibc::core::commitment::v1::MerkleProof::from(cs),
+                    )
+                    .unwrap()
+                    .encode_as::<Bcs>()
+                }
             })
     }
 }

@@ -67,6 +67,7 @@ members = [
   "tools/devnet-utils",
   "tools/parse-wasm-client-type",
   "tools/tidy",
+  "tools/move-bindgen",
 
   "ucli",
   "unionvisor",
@@ -84,6 +85,7 @@ members = [
 
   "voyager/modules/transaction/cosmos-sdk",
   "voyager/modules/transaction/ethereum",
+  "voyager/modules/transaction/aptos",
 
   "voyager/plugins/packet-filter",
   "voyager/plugins/transaction-batch",
@@ -163,6 +165,9 @@ near-workspaces = { git = "https://github.com/unionlabs/near-workspaces-rs-union
 
 # https://github.com/aptos-labs/aptos-core/pull/12636
 aptos-rest-client = { git = "https://github.com/unionlabs/aptos-core" }
+aptos-types       = { git = "https://github.com/unionlabs/aptos-core" }
+aptos-crypto      = { git = "https://github.com/unionlabs/aptos-core" }
+move-core-types   = { git = "https://github.com/unionlabs/aptos-core" }
 # aptos-rest-client = { path = "/home/ben/projects/aptos-labs/aptos-core/crates/aptos-rest-client" }
 
 

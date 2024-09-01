@@ -1,21 +1,21 @@
 [package]
 edition = "2021"
-name    = "voyager-chain-module-movement"
+name    = "voyager-transaction-module-aptos"
 version = "0.1.0"
 
 [dependencies]
 aptos-rest-client  = { workspace = true }
 aptos-types        = { workspace = true }
 aptos-crypto       = { workspace = true }
-clap               = { workspace = true, features = ["derive"] }
+move-core-types    = { workspace = true }
+
+bip32.workspace    = true
+chain-utils        = { workspace = true }
 enumorph.workspace = true
 frunk.workspace    = true
 futures.workspace  = true
-hex.workspace = true
 jsonrpsee          = { version = "0.24.1", features = ["macros", "server", "tracing"] }
 macros.workspace   = true
-prost.workspace    = true
-protos.workspace   = true
 queue-msg          = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
@@ -27,4 +27,3 @@ tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
 voyager-message    = { workspace = true }
 sha3.workspace = true
-hex-literal = "0.4.1"

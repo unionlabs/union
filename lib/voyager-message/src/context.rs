@@ -76,6 +76,8 @@ impl RpcClient {
             plugin_config: PluginConfig {
                 config: config.clone(),
                 path: path.clone(),
+                // if we're creating a client to this plugin then it must be enabled
+                enabled: true,
             },
         })
     }
@@ -101,6 +103,12 @@ impl RpcClient {
 pub struct PluginConfig {
     pub path: String,
     pub config: Value,
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+}
+
+fn default_enabled() -> bool {
+    true
 }
 
 impl Context {
@@ -136,7 +144,12 @@ impl Context {
 
         let plugins = plugins
             .into_iter()
-            .map(|plugin_config| {
+            .filter_map(|plugin_config| {
+                if !plugin_config.enabled {
+                    info!(plugin_path = %plugin_config.path, "plugin is not enabled, skipping");
+                    return None;
+                }
+
                 let healthy = Arc::new(AtomicBool::new(true));
 
                 handles.lock().unwrap().spawn(run_plugin_client(
@@ -149,7 +162,7 @@ impl Context {
                     healthy.clone(),
                 ));
 
-                async move {
+                Some(async move {
                     let rpc_client = loop {
                         match RpcClient::new(
                             plugin_config.path.to_owned(),
@@ -226,7 +239,7 @@ impl Context {
                         rpc_client,
                         kind,
                     })
-                }
+                })
             })
             .collect::<FuturesUnordered<_>>()
             .try_collect::<Vec<_>>()

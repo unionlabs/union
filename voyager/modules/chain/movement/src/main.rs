@@ -1,20 +1,24 @@
 use std::collections::VecDeque;
 
+use aptos_crypto::PrivateKey;
 use aptos_rest_client::{
-    aptos_api_types::{Address, EntryFunctionId, ViewRequest},
+    aptos_api_types::{Address, MoveModuleId, MoveType},
     Transaction,
 };
-// use aptos_rpc::AptosRpcClient;
+use aptos_types::transaction::{EntryFunction, RawTransaction};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{call, BoxDynError, Op};
+use queue_msg::{call, noop, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
+use sha3::Digest;
 use tracing::{debug, instrument, warn};
 use unionlabs::{
+    events::{CreateClient, IbcEvent, UpdateClient},
+    hash::H256,
     ibc::core::client::height::Height,
     ics24::{ClientStatePath, Path},
     id::ClientId,
@@ -30,12 +34,16 @@ use voyager_message::{
 use crate::{
     call::{FetchBlock, FetchBlocks, ModuleCall},
     callback::ModuleCallback,
+    client::Core::ClientExt,
     data::ModuleData,
 };
 
 pub mod call;
 pub mod callback;
 pub mod data;
+
+pub mod client;
+pub mod events;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -56,6 +64,8 @@ pub enum Cmd {
     ChainId,
     LatestHeight,
     VaultAddress,
+    SubmitTx,
+    FetchAbi,
 }
 
 #[derive(Debug, Clone)]
@@ -74,44 +84,128 @@ pub struct Config {
     pub ibc_handler_address: Address,
 }
 
+impl client::Core::ClientExt for Module {
+    fn client(&self) -> &aptos_rest_client::Client {
+        &self.aptos_client
+    }
+
+    fn module_address(&self) -> aptos_types::account_address::AccountAddress {
+        self.ibc_handler_address.into()
+    }
+}
+
 impl Module {
     pub async fn cmd(&self, cmd: Cmd) -> Result<(), BoxDynError> {
         match cmd {
             Cmd::ChainId => println!("{}", self.chain_id),
             Cmd::LatestHeight => println!("{}", self.query_latest_height().await?),
             Cmd::VaultAddress => {
-                let addr = self.fetch_vault_addr().await?;
+                let addr = self.get_vault_addr(None).await?;
 
                 println!("{addr}");
+            }
+            Cmd::SubmitTx => {
+                let pk = aptos_crypto::ed25519::Ed25519PrivateKey::try_from(
+                    hex_literal::hex!(
+                        "f90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16"
+                    )
+                    .as_slice(),
+                )
+                .unwrap();
+
+                let sender = H256::from(
+                    sha3::Sha3_256::new()
+                        .chain_update(pk.public_key().to_bytes())
+                        .chain_update([0])
+                        .finalize(),
+                )
+                .0
+                .into();
+
+                dbg!(&sender);
+
+                let account = self
+                    .aptos_client
+                    .get_account(sender)
+                    .await
+                    .unwrap()
+                    .into_inner();
+
+                dbg!(&account);
+
+                let raw = RawTransaction::new_entry_function(
+                    sender,
+                    account.sequence_number,
+                    EntryFunction::new(
+                        MoveModuleId {
+                            address: self.ibc_handler_address,
+                            name: "Core".parse().unwrap(),
+                        }
+                        .into(),
+                        "hackerman".parse().unwrap(),
+                        vec![],
+                        vec![],
+                    ),
+                    400000,
+                    100,
+                    queue_msg::now() + 10,
+                    aptos_types::chain_id::ChainId::new(27),
+                );
+
+                // let hash = raw.test_only_hash()
+
+                let sig = raw.sign(&pk, pk.public_key()).unwrap();
+
+                dbg!(&sig);
+
+                let res = self.aptos_client.submit_and_wait(&sig).await.unwrap();
+
+                dbg!(&res);
+
+                let tx_events = match res.into_inner() {
+                    Transaction::UserTransaction(tx) => tx.events,
+                    e => panic!("{e:?}"),
+                };
+
+                let (typ, data) = tx_events
+                    .into_iter()
+                    .find_map(|e| match e.typ {
+                        MoveType::Struct(s) => {
+                            (s.address == self.ibc_handler_address).then_some((s, e.data))
+                        }
+                        _ => None,
+                    })
+                    .unwrap();
+
+                dbg!(&typ, &data);
+
+                let event = serde_json::from_value::<crate::events::IbcEvent>(data).unwrap();
+                // let event: unionlabs::events::IbcEvent = match typ.name.as_str() {
+                //     "ClientCreatedEvent" => {
+                //         serde_json::from_value::<unionlabs::events::CreateClient>(data)
+                //             .unwrap()
+                //             .into()
+                //     }
+                //     unknown => panic!("unknown event {unknown}"),
+                // };
+
+                println!("{:?}", event);
+            }
+            Cmd::FetchAbi => {
+                let abis = self
+                    .aptos_client
+                    .get_account_modules(self.ibc_handler_address.into())
+                    .await?
+                    .into_inner()
+                    .into_iter()
+                    .flat_map(|x| x.try_parse_abi().unwrap().abi)
+                    .collect::<Vec<_>>();
+
+                dbg!(abis);
             }
         }
 
         Ok(())
-    }
-
-    async fn fetch_vault_addr(&self) -> Result<Address, BoxDynError> {
-        let response = self
-            .aptos_client
-            .view(
-                &ViewRequest {
-                    function: EntryFunctionId {
-                        module: aptos_rest_client::aptos_api_types::MoveModuleId {
-                            address: self.ibc_handler_address,
-                            name: "Core".parse().unwrap(),
-                        },
-                        name: "get_vault_addr".parse().unwrap(),
-                    },
-                    type_arguments: vec![],
-                    arguments: vec![],
-                },
-                None,
-            )
-            .await?
-            .into_inner();
-
-        let addr = serde_json::from_value::<Address>(response[0].clone())?;
-
-        Ok(addr)
     }
 
     fn plugin_name(&self) -> String {
@@ -171,7 +265,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
             ModuleCall::FetchBlock(FetchBlock { height }) => {
-                let _ = self
+                let events = self
                     .aptos_client
                     .get_block_by_height(height, true)
                     .await
@@ -190,9 +284,79 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         Transaction::UserTransaction(tx) => Some(tx),
                         _ => None,
                     })
-                    .flat_map(|tx| tx.events);
+                    .flat_map(|tx| tx.events)
+                    .filter_map(|e| match e.typ {
+                        MoveType::Struct(s) => {
+                            (s.address == self.ibc_handler_address).then_some((s, e.data))
+                        }
+                        _ => None,
+                    })
+                    .map(|(typ, data)| {
+                        // TODO: Check the type before deserializing
+                        serde_json::from_value::<crate::events::IbcEvent>(data).unwrap()
+                    })
+                    // .map(|e| ChainEvent {
+                    //     chain_id: todo!(),
+                    //     client_info: todo!(),
+                    //     counterparty_chain_id: todo!(),
+                    //     tx_hash: todo!(),
+                    //     provable_height: todo!(),
+                    //     event: match e {
+                    //         events::IbcEvent::CreateClient {
+                    //             client_id,
+                    //             client_type,
+                    //             consensus_height,
+                    //         } => CreateClient {
+                    //             client_id,
+                    //             client_type,
+                    //             consensus_height: consensus_height.into(),
+                    //         }
+                    //         .into(),
+                    //         events::IbcEvent::UpdateClient {
+                    //             client_id,
+                    //             client_type,
+                    //             consensus_heights,
+                    //         } => UpdateClient {
+                    //             client_id,
+                    //             client_type,
+                    //             consensus_heights: consensus_heights
+                    //                 .into_iter()
+                    //                 .map(Into::into)
+                    //                 .collect(),
+                    //         }
+                    //         .into(),
+                    //     },
+                    // });
+                    .map(|e| match e {
+                        events::IbcEvent::CreateClient {
+                            client_id,
+                            client_type,
+                            consensus_height,
+                        } => CreateClient {
+                            client_id,
+                            client_type,
+                            consensus_height: consensus_height.into(),
+                        }
+                        .into(),
+                        events::IbcEvent::UpdateClient {
+                            client_id,
+                            client_type,
+                            consensus_heights,
+                        } => UpdateClient {
+                            client_id,
+                            client_type,
+                            consensus_heights: consensus_heights
+                                .into_iter()
+                                .map(Into::into)
+                                .collect(),
+                        }
+                        .into(),
+                    })
+                    .collect::<Vec<IbcEvent>>();
 
-                todo!()
+                dbg!(events);
+
+                Ok(noop())
             }
             ModuleCall::FetchBlocks(_) => todo!(),
         }

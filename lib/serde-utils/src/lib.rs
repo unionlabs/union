@@ -453,6 +453,41 @@ pub mod string {
     }
 }
 
+pub mod string_list {
+    use alloc::{format, string::String, vec::Vec};
+    use core::{fmt::Debug, str::FromStr};
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    use crate::alloc::string::ToString;
+
+    pub fn serialize<S, T, C>(list: &C, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: core::fmt::Display,
+        for<'a> &'a C: IntoIterator<Item = &'a T>,
+    {
+        serializer.collect_seq(list.into_iter().map(|t| t.to_string()))
+    }
+
+    pub fn deserialize<'de, D, T, C>(deserializer: D) -> Result<C, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: FromStr<Err: Debug + 'static>,
+        C: TryFrom<Vec<T>, Error: Debug>,
+    {
+        Vec::<String>::deserialize(deserializer)?
+            .into_iter()
+            .map(|s| {
+                s.parse()
+                    .map_err(|err| de::Error::custom(format!("{err:?}")))
+            })
+            .collect::<Result<Vec<_>, D::Error>>()?
+            .try_into()
+            .map_err(|err| de::Error::custom(format!("failed to collect list: {err:#?}")))
+    }
+}
+
 pub mod map_numeric_keys_as_string {
     use alloc::{
         collections::BTreeMap,

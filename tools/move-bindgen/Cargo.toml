@@ -1,0 +1,21 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "move-bindgen"
+publish      = false
+repository   = { workspace = true }
+version      = "0.0.0"
+
+[dependencies]
+aptos-crypto      = { workspace = true }
+aptos-rest-client = { workspace = true }
+aptos-types       = { workspace = true }
+futures.workspace = true
+prettyplease = "0.2.22"
+proc-macro2       = "*"
+quote             = "1.0.35"
+syn = "2.0.77"
+tokio             = { workspace = true, features = ["full"] }
+
+[lints]
+workspace = true
