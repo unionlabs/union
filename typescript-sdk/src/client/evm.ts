@@ -1,16 +1,17 @@
 import {
   erc20Abi,
   getAddress,
+  type Account,
   publicActions,
   createWalletClient,
-  type WalletClientConfig
+  type FallbackTransport
 } from "viem"
 import {
   transferAssetFromEvm,
   approveTransferAssetFromEvm,
   transferAssetFromEvmSimulate,
-  type ApproveTransferAssetFromEvmParams,
-  type TransferAssetFromEvmParams
+  type TransferAssetFromEvmParams,
+  type ApproveTransferAssetFromEvmParams
 } from "../transfer/evm.ts"
 import { err, ok, type Result } from "neverthrow"
 import type { TransferAssetsParameters } from "./types.ts"
@@ -24,18 +25,26 @@ export const evmChainId = [
 ] as const
 export type EvmChainId = `${(typeof evmChainId)[number]}`
 
-export interface EvmClientParameters extends WalletClientConfig {
+export interface EvmClientParameters {
   chainId: EvmChainId
+  transport: FallbackTransport
+  account?: `0x${string}` | Account | undefined
 }
+
+export const chainIdToChain = (chainId: EvmChainId) =>
+  [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio].find(
+    chain => chain.id === Number(chainId)
+  )
 
 /**
  * TODO: add JSDoc with examples
  */
 export const createEvmClient = (parameters: EvmClientParameters) =>
-  createWalletClient(parameters)
+  createWalletClient({ ...parameters, chain: chainIdToChain(parameters.chainId) })
     .extend(publicActions)
     .extend(client => ({
       transferAsset: async ({
+        memo,
         amount,
         account,
         recipient,
@@ -48,6 +57,7 @@ export const createEvmClient = (parameters: EvmClientParameters) =>
       }: TransferAssetFromEvmParams): Promise<Result<string, Error>> => {
         account ||= client.account
         const transaction = await transferAssetFromEvm(client, {
+          memo,
           amount,
           account,
           approve,

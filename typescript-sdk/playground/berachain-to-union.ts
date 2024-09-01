@@ -49,7 +49,6 @@ try {
   const client = createUnionClient({
     chainId: "80084",
     account: berachainAccount,
-    chain: berachainTestnetbArtio,
     transport: fallback([
       http(
         "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"

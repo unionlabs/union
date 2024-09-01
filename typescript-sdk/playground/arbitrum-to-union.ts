@@ -46,7 +46,6 @@ try {
 
   const client = createUnionClient({
     account: evmAccount,
-    chain: arbitrumSepolia,
     chainId: `${arbitrumSepolia.id}`,
     transport: fallback([http(arbitrumSepolia?.rpcUrls.default.http.at(0))])
   })
