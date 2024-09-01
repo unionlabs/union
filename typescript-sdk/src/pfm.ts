@@ -101,7 +101,7 @@ export async function getHubbleChainDetails({
     memo: memo.value,
     destinationChannel: forward.channel_id,
     sourceChannel: ucsConfiguration.channel_id,
-    relayContractAddress: forward.contract_address,
+    relayContractAddress: ucsConfiguration.contract_address,
     destinationChainId: ucsConfiguration.destination_chain.chain_id
   })
 }

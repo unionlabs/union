@@ -3,23 +3,11 @@ import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
 import { bech32AddressToHex } from "../../convert.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 
-const TENDERLY_URL = import.meta.env.TENDERLY_URL
-  ? import.meta.env.TENDERLY_URL
-  : process.env?.TENDERLY_URL ?? "https://api.tenderly.co/api/v1/account/amor-fati/project/project"
-
 const queryHeaders = new Headers({
   Accept: "application/json",
   "User-Agent": "typescript-sdk",
   "Content-Type": "application/json",
   "X-Access-Key": "zQs9t0eoXQybyVbGfV4dSihLElP0Uyl1"
-})
-
-const tenderlyRequest = ofetch.create({
-  retry: 2,
-  retryDelay: 500,
-  timeout: 6_000,
-  headers: queryHeaders,
-  baseURL: TENDERLY_URL
 })
 
 export async function simulateTransaction({
@@ -39,6 +27,27 @@ export async function simulateTransaction({
   sourceChannel: string
   relayContractAddress: Address
 }) {
+  const TENDERLY_URL =
+    (import.meta.env.TENDERLY_URL
+      ? import.meta.env.TENDERLY_URL
+      : process.env?.TENDERLY_URL ??
+        "https://api.tenderly.co/api/v1/account/amor-fati/project/project") || ""
+
+  const queryHeaders = new Headers({
+    Accept: "application/json",
+    "User-Agent": "typescript-sdk",
+    "Content-Type": "application/json",
+    "X-Access-Key": "zQs9t0eoXQybyVbGfV4dSihLElP0Uyl1"
+  })
+
+  const tenderlyRequest = ofetch.create({
+    retry: 2,
+    retryDelay: 500,
+    timeout: 6_000,
+    headers: queryHeaders,
+    baseURL: TENDERLY_URL
+  })
+
   const encodedFunctionData = encodeFunctionData({
     abi: ucs01RelayAbi,
     functionName: "send",

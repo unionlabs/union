@@ -1,6 +1,6 @@
 {
   "name": "@union/client",
-  "version": "0.0.1-rc.64",
+  "version": "0.0.1-rc.65",
   "homepage": "https://jsr.io/@union/client",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
