@@ -1,4 +1,4 @@
-import type { Account } from "viem"
+import type { Account, Address } from "viem"
 import type { OfflineSigner } from "../types.ts"
 import type { evmChainId, EvmChainId } from "./evm.ts"
 import type { cosmosChainId, CosmosChainId } from "./cosmos.ts"
@@ -11,15 +11,19 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
   recipient: string
   approve?: boolean
   sourcePort?: string
-  denomAddress: string
   sourceChannel?: string
-  relayContractAddress?: string
   destinationChainId: ChainId | (string & {})
 } & (CHAIN_ID extends CosmosChainId
   ? {
+      denomAddress: string
       account?: OfflineSigner
+      relayContractAddress?: string
       gasPrice?: { amount: string; denom: string }
     }
   : CHAIN_ID extends EvmChainId
-    ? { account?: `0x${string}` | Account | undefined }
+    ? {
+        denomAddress: Address
+        relayContractAddress?: Address
+        account?: `0x${string}` | Account | undefined
+      }
     : undefined)

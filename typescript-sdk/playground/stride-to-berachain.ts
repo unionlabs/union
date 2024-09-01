@@ -1,12 +1,13 @@
 #!/usr/bin/env bun
+import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import type { TransferAssetsParameters } from "#client/types.ts"
+import { createUnionClient, createPfmMemo, offchainQuery } from "#mod.ts"
 
 /* `bun playground/stride-to-berachain.ts --private-key "..."` --estimate-gas */
 
@@ -54,47 +55,55 @@ try {
 
   if (!forward) raise("Forward configuration not found")
 
-  const client = createCosmosSdkClient({
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "ustrd" },
-      transport: cosmosHttp("https://stride-testnet-rpc.polkachu.com")
-    }
+  const client = createUnionClient({
+    account: cosmosAccount,
+    chainId: "stride-internal-1",
+    gasPrice: { amount: "0.0025", denom: "ustrd" },
+    transport: http("https://stride-testnet-rpc.polkachu.com")
   })
 
-  const pfmMemo = client.createPfmMemo({
+  const pfmMemo = createPfmMemo({
     port: forward.port,
     channel: forward.channel_id,
     receiver: berachainAccount.address
   })
 
-  const transactionPayload = {
-    amount: 1n,
-    memo: pfmMemo,
-    approve: true,
-    denomAddress: "ustrd",
-    network: strideTestnetInfo.rpc_type,
-    sourceChannel: ucsConfiguration.channel_id,
-    // or `client.evm.account.address` if you want to send to yourself
-    recipient: berachainAccount.address,
-    relayContractAddress: ucsConfiguration.contract_address,
-    path: [ucsConfiguration.source_chain.chain_id, ucsConfiguration.destination_chain.chain_id]
-  } satisfies TransferAssetsParameters
-
-  const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
-
-  consola.info(`Gas cost: ${gasEstimationResponse.data}`)
-
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
-
-  if (!gasEstimationResponse.success) {
-    consola.info("Transaction simulation failed")
+  if (pfmMemo.isErr()) {
+    consola.error(pfmMemo.error)
     process.exit(1)
   }
 
+  const transactionPayload = {
+    amount: 1n,
+    approve: true,
+    memo: pfmMemo.value,
+    denomAddress: "ustrd",
+    // or `client.evm.account.address` if you want to send to yourself
+    recipient: berachainAccount.address,
+    sourceChannel: ucsConfiguration.channel_id,
+    relayContractAddress: ucsConfiguration.contract_address,
+    destinationChainId: ucsConfiguration.destination_chain.chain_id
+  } satisfies TransferAssetsParameters<"stride-internal-1">
+
+  const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
+
+  if (gasEstimationResponse.isErr()) {
+    consola.error(gasEstimationResponse.error)
+    process.exit(1)
+  }
+
+  consola.info(`Gas cost: ${gasEstimationResponse.value}`)
+
+  if (ONLY_ESTIMATE_GAS) process.exit(0)
+
   const transfer = await client.transferAsset(transactionPayload)
 
-  consola.info(transfer)
+  if (transfer.isErr()) {
+    consola.error(transfer.error)
+    process.exit(1)
+  }
+
+  consola.info(transfer.value)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   consola.error(errorMessage)

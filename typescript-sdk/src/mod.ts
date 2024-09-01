@@ -3,7 +3,7 @@ export const zkgm = "o______o"
 import "./patch.ts"
 export type * from "./types.ts"
 import {
-  byteArrayToHex,
+  bytesToHex,
   bech32AddressToHex,
   hexAddressToBech32,
   bytesToBech32Address,
@@ -25,9 +25,8 @@ import {
   type EvmClientParameters
 } from "./client/evm.ts"
 import { createPfmMemo } from "./pfm.ts"
-import { cosmosHttp } from "./transport.ts"
-import type { ChainId } from "src/client/types.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
+import type { ChainId, TransferAssetsParameters } from "src/client/types.ts"
 import { cosmosChainId, createCosmosClient, type CosmosClientParameters } from "./client/cosmos.ts"
 
 type EvmClient = ReturnType<typeof createEvmClient>
@@ -75,13 +74,14 @@ export function createUnionClients<TChainId extends ChainId>(
 }
 
 export {
+  type ChainId,
+  type TransferAssetsParameters,
   /**
    * We export this as a standalone so that it can be used to fetch data that get passed to `createUnionClient`
    */
-  cosmosHttp,
+  bytesToHex,
   offchainQuery,
   createPfmMemo,
-  byteArrayToHex,
   truncateAddress,
   isValidEvmTxHash,
   isValidEvmAddress,

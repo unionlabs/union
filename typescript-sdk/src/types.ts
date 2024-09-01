@@ -1,8 +1,3 @@
-export interface TransactionResponse {
-  data: string
-  success: boolean
-}
-
 export type TypeFromSet<T extends Set<any>> = T extends Set<infer U> ? U : never
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>

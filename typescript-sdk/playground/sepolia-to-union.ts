@@ -66,8 +66,8 @@ try {
     sourceChannel: channel_id,
     account: evmAccount.address,
     denomAddress: LINK_CONTRACT_ADDRESS,
-    relayContractAddress: contract_address,
     destinationChainId: destination_chain.chain_id,
+    relayContractAddress: getAddress(contract_address),
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
   })

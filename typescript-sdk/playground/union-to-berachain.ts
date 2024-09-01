@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
+import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { cosmosHttp } from "#transport.ts"
 import { raise } from "#utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import { offchainQuery, createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/union-to-berachain.ts --private-key "..."` --estimate-gas */
 
@@ -51,41 +51,48 @@ try {
     .at(0)
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
-
-  const client = createCosmosSdkClient({
-    cosmos: {
-      account: cosmosAccount,
-      gasPrice: { amount: "0.0025", denom: "muno" },
-      transport: cosmosHttp("https://rpc.testnet-8.union.build")
-    }
+  const client = createUnionClient({
+    account: cosmosAccount,
+    chainId: "union-testnet-8",
+    gasPrice: { amount: "0.0025", denom: "muno" },
+    transport: http("https://rpc.testnet-8.union.build")
   })
 
   const transactionPayload = {
     amount: 1n,
     denomAddress: "muno",
-    sourceChannel: channel_id,
-    network: unionTestnetInfo.rpc_type,
+    sourceChannel: ucsConfiguration.channel_id,
+
     // or `client.evm.account.address` if you want to send to yourself
     recipient: berachainAccount.address,
-    relayContractAddress: contract_address,
-    path: [source_chain.chain_id, destination_chain.chain_id]
-  } satisfies TransferAssetsParameters
+    relayContractAddress: ucsConfiguration.contract_address,
+    destinationChainId: ucsConfiguration.destination_chain.chain_id
+  } satisfies TransferAssetsParameters<"union-testnet-8">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
-  consola.box("Union to Berachain gas cost:", gasEstimationResponse)
+  if (gasEstimationResponse.isErr()) {
+    consola.error(gasEstimationResponse.error)
+    process.exit(1)
+  }
+
+  consola.success("Union to Berachain gas cost:", gasEstimationResponse.value)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
-  if (!gasEstimationResponse.success) {
-    console.info("Transaction simulation failed")
+  if (gasEstimationResponse.isErr()) {
+    console.info("Transaction simulation failed", gasEstimationResponse.error)
     process.exit(1)
   }
 
   const transfer = await client.transferAsset(transactionPayload)
 
-  console.info(transfer)
+  if (transfer.isErr()) {
+    console.error(transfer.error)
+    process.exit(1)
+  }
+
+  consola.info(transfer.value)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   console.error(errorMessage)

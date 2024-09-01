@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
+import { fallback, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio } from "viem/chains"
-import { createCosmosSdkClient, offchainQuery, type TransferAssetsParameters } from "#mod.ts"
+import { offchainQuery, createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/berachain-to-union.ts --private-key "..."` */
 
@@ -46,47 +46,53 @@ try {
     .at(0)
   if (!ucsConfiguration) raise("UCS configuration not found")
 
-  const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
-
-  const client = createCosmosSdkClient({
-    evm: {
-      account: berachainAccount,
-      chain: berachainTestnetbArtio,
-      transport: fallback([
-        http(
-          "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
-        ),
-        http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
-      ])
-    }
+  const client = createUnionClient({
+    chainId: "80084",
+    account: berachainAccount,
+    chain: berachainTestnetbArtio,
+    transport: fallback([
+      http(
+        "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
+      ),
+      http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
+    ])
   })
 
   const transactionPayload = {
     amount: 1n,
     approve: true,
-    sourceChannel: channel_id,
-    network: beraInfo.rpc_type,
+    sourceChannel: ucsConfiguration.channel_id,
     denomAddress: DAI_CONTRACT_ADDRESS,
-    relayContractAddress: contract_address,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    path: [source_chain.chain_id, destination_chain.chain_id]
-  } satisfies TransferAssetsParameters
+    destinationChainId: ucsConfiguration.destination_chain.chain_id,
+    relayContractAddress: getAddress(ucsConfiguration.contract_address)
+  } satisfies TransferAssetsParameters<"80084">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
-  consola.box("Berachain to union gas cost:", gasEstimationResponse)
+  if (gasEstimationResponse.isErr()) {
+    consola.error(gasEstimationResponse.error)
+    process.exit(1)
+  }
+
+  consola.success("Union to Berachain gas cost:", gasEstimationResponse.value)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
-  if (!gasEstimationResponse.success) {
-    console.info("Transaction simulation failed")
+  if (gasEstimationResponse.isErr()) {
+    console.info("Transaction simulation failed", gasEstimationResponse.error)
     process.exit(1)
   }
 
   const transfer = await client.transferAsset(transactionPayload)
 
-  consola.info(transfer)
+  if (transfer.isErr()) {
+    console.error(transfer.error)
+    process.exit(1)
+  }
+
+  consola.info(transfer.value)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   console.error(errorMessage)
