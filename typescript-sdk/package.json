@@ -1,6 +1,6 @@
 {
   "name": "@union/client",
-  "version": "0.0.1-rc.53",
+  "version": "0.0.1-rc.64",
   "homepage": "https://jsr.io/@union/client",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
@@ -51,6 +51,7 @@
     "url": "https://github.com/unionlabs/union.git",
     "directory": "typescript-sdk"
   },
+  "license": "MIT",
   "engineStrict": true,
   "sideEffects": false
 }

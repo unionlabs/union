@@ -1,7 +1,7 @@
 import { err, ok, Result } from "neverthrow"
 import type { ChainId } from "./client/types.ts"
 import { bech32AddressToHex } from "./convert.ts"
-import { cosmosChainId } from "#client/cosmos.ts"
+import { cosmosChainId } from "./client/cosmos.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 
 export const createPfmMemo = Result.fromThrowable(

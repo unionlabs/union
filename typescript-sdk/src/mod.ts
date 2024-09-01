@@ -34,13 +34,62 @@ export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
 import type { ChainId, TransferAssetsParameters } from "./client/types.ts"
 
+/**
+ * @module
+ *
+ * Union Labs TypeScript SDK providing utilities for cross-chain transfers and more.
+ *
+ * @example
+ * ```ts
+ * import { createUnionClient } from "@union/client"
+ * import { privateKeyToAccount } from "viem/accounts"
+ *
+ * const client = createUnionClient({
+ *   chainId: "11155111",
+ *   transport: http("https://rpc.sepolia.org"),
+ *   account: privateKeyToAccount(`0x${PRIVATE_KEY}`) // or from wagmi configuration
+ * })
+ * ```
+ */
+
 type EvmClient = ReturnType<typeof createEvmClient>
 type CosmosClient = ReturnType<typeof createCosmosClient>
 
+/**
+ * @example
+ * ```ts
+ * import { createUnionClient } from "@union/client"
+ * import { privateKeyToAccount } from "viem/accounts"
+ *
+ * const client = createUnionClient({
+ *   chainId: "11155111",
+ *   transport: http("https://rpc.sepolia.org"),
+ *   account: privateKeyToAccount(`0x${PRIVATE_KEY}`) // or from wagmi configuration
+ * })
+ * ```
+ */
 export function createUnionClient(
   parameters: EvmClientParameters
 ): ReturnType<typeof createEvmClient>
 
+/**
+ * @example
+ * ```ts
+ * import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+ * import { createUnionClient, hexStringToUint8Array } from "@union/client"
+ *
+ * const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
+ *   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+ *   "stride"
+ * )
+ *
+ * const client = createUnionClient({
+ *   account: cosmosAccount,
+ *   chainId: "stride-internal-1",
+ *   transport: http("stride.testnet-1.stridenet.co"),
+ * })
+ * ```
+ */
 export function createUnionClient(
   parameters: CosmosClientParameters
 ): ReturnType<typeof createCosmosClient>
