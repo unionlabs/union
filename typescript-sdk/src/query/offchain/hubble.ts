@@ -1,15 +1,13 @@
 import { ofetch } from "ofetch"
 import type { ChainId } from "../../mod.ts"
 
-const HUBBLE_URL = import.meta.env
-  ? import.meta.env.HUBBLE_URL
-  : process.env.HUBBLE_URL ?? "https://blue.graphql.union.build"
-
 const queryHeaders = new Headers({
   Accept: "application/json",
   "User-Agent": "typescript-sdk",
   "Content-Type": "application/json"
 })
+
+const HUBBLE_URL = "https://graphql.union.build"
 
 const hubbleRestFetch = ofetch.create({
   method: "GET",
