@@ -108,7 +108,7 @@ let metamaskAlertDialogOpen = false
               "opacity-75 hover:opacity-100 dark:hover:text-black",
             hoverState === "hover" &&
               connectedWalletId === id &&
-              "hover:text-destructive border-destructive hover:bg-transparent",
+              "hover:text-destructive border-destructive hover:bg-transparent dark:hover:text-white",
           )}
           on:click={async () => {
             if (connectStatus === "connected") onDisconnectClick()
@@ -126,7 +126,7 @@ let metamaskAlertDialogOpen = false
           {#if connectStatus === "connected"}
             {#if connectedWalletId === id}
               {#if hoverState === "hover"}
-                <XIcon class="ml-auto" />
+                <XIcon class="ml-auto text-red-500" />
               {:else}
                 <CheckIcon class="ml-auto" />
               {/if}
