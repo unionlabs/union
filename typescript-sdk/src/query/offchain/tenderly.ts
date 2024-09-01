@@ -3,14 +3,15 @@ import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
 import { bech32AddressToHex } from "../../convert.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 
-const TENDERLY_URL =
-  process.env?.TENDERLY_URL ?? "https://api.tenderly.co/api/v1/account/amor-fati/project/project"
+const TENDERLY_URL = import.meta.env.TENDERLY_URL
+  ? import.meta.env.TENDERLY_URL
+  : process.env?.TENDERLY_URL ?? "https://api.tenderly.co/api/v1/account/amor-fati/project/project"
 
 const queryHeaders = new Headers({
   Accept: "application/json",
   "User-Agent": "typescript-sdk",
   "Content-Type": "application/json",
-  "X-Access-Key": "QuVUQN413ao7WmlTQR82YTTiNSCYRRSi"
+  "X-Access-Key": "zQs9t0eoXQybyVbGfV4dSihLElP0Uyl1"
 })
 
 const tenderlyRequest = ofetch.create({

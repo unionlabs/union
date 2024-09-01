@@ -5,7 +5,7 @@ import { consola } from "scripts/logger"
 import { raise } from "#utilities/index.ts"
 import { fallback, getAddress, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
-import { createCosmosSdkClient, offchainQuery } from "#mod.ts"
+import { createUnionClient, offchainQuery } from "#mod.ts"
 import type { ApproveTransferAssetFromEvmParams } from "#transfer/evm.js"
 
 /* `bun playground/sepolia-to-union.ts --private-key "..."` --estimate-gas */
@@ -48,42 +48,36 @@ try {
 
   const { channel_id, contract_address, source_chain, destination_chain } = ucsConfiguration
 
-  const client = createCosmosSdkClient({
-    evm: {
-      chain: sepolia,
-      account: evmAccount,
-      transport: fallback(
-        [
-          http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
-          http(
-            "https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e"
-          ),
-          http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
-          http(sepolia?.rpcUrls.default.http.at(0))
-        ],
-        { rank: true, retryCount: 3 }
-      )
-    }
+  const client = createUnionClient({
+    chainId: "11155111",
+    account: evmAccount,
+    transport: fallback([
+      http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
+      http(
+        "https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e"
+      ),
+      http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
+      http(sepolia?.rpcUrls.default.http.at(0))
+    ])
   })
 
   const gasEstimationResponse = await client.simulateTransaction({
     amount: 1n,
     sourceChannel: channel_id,
-    evmSigner: evmAccount.address,
-    network: sepoliaInfo.rpc_type,
+    account: evmAccount.address,
     denomAddress: LINK_CONTRACT_ADDRESS,
     relayContractAddress: contract_address,
+    destinationChainId: destination_chain.chain_id,
     // or `client.cosmos.account.address` if you want to send to yourself
-    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    path: [source_chain.chain_id, destination_chain.chain_id]
+    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
   })
 
   consola.box("Sepolia to Union gas cost:", gasEstimationResponse)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 
-  if (!gasEstimationResponse.success) {
-    consola.info("Transaction simulation failed")
+  if (gasEstimationResponse.isErr()) {
+    consola.info("Transaction simulation failed", gasEstimationResponse.error)
     process.exit(1)
   }
 
@@ -97,24 +91,29 @@ try {
 
   const approvalTransfer = await client.approveTransaction(approvalParams)
 
-  consola.box("Approval transaction:", approvalTransfer)
+  consola.success("Approval transaction:", approvalTransfer)
 
-  if (!approvalTransfer.success) {
-    consola.info("Approval transaction failed")
+  if (approvalTransfer.isErr()) {
+    consola.info("Approval transaction failed", approvalTransfer.error)
     process.exit(1)
   }
 
   const transfer = await client.transferAsset({
     approve: false,
     sourceChannel: channel_id,
-    network: sepoliaInfo.rpc_type,
+    destinationChainId: destination_chain.chain_id,
     // or `client.cosmos.account.address` if you want to send to yourself
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-    path: [source_chain.chain_id, destination_chain.chain_id],
     ...approvalParams
   })
 
-  consola.info(transfer)
+  if (transfer.isErr()) {
+    consola.info("Transfer failed", transfer.error)
+    process.exit(1)
+  }
+
+  consola.info("Transfer successful", transfer.value)
+  process.exit(0)
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : error
   consola.error(errorMessage)

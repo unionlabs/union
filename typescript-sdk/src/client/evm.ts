@@ -1,8 +1,6 @@
 import {
   erc20Abi,
   getAddress,
-  type Address,
-  type Account,
   publicActions,
   createWalletClient,
   type WalletClientConfig
@@ -11,9 +9,10 @@ import {
   transferAssetFromEvm,
   approveTransferAssetFromEvm,
   transferAssetFromEvmSimulate,
-  type ApproveTransferAssetFromEvmParams
+  type ApproveTransferAssetFromEvmParams,
+  type TransferAssetFromEvmParams
 } from "../transfer/evm.ts"
-import type { TransactionResponse } from "../types.ts"
+import { err, ok, type Result } from "neverthrow"
 import type { TransferAssetsParameters } from "./types.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
 
@@ -44,17 +43,9 @@ export const createEvmClient = (parameters: EvmClientParameters) =>
         sourceChannel,
         approve = false,
         simulate = true,
+        destinationChainId,
         relayContractAddress
-      }: {
-        amount: bigint
-        account?: Account
-        recipient: string
-        approve?: boolean
-        simulate?: boolean
-        denomAddress: Address
-        sourceChannel: string
-        relayContractAddress: Address
-      }): Promise<TransactionResponse> => {
+      }: TransferAssetFromEvmParams): Promise<Result<string, Error>> => {
         account ||= client.account
         const transaction = await transferAssetFromEvm(client, {
           amount,
@@ -64,6 +55,7 @@ export const createEvmClient = (parameters: EvmClientParameters) =>
           recipient,
           denomAddress,
           sourceChannel,
+          destinationChainId,
           relayContractAddress
         })
         return transaction
@@ -76,7 +68,7 @@ export const createEvmClient = (parameters: EvmClientParameters) =>
         denomAddress,
         simulate = true,
         relayContractAddress
-      }: ApproveTransferAssetFromEvmParams): Promise<TransactionResponse> => {
+      }: ApproveTransferAssetFromEvmParams): Promise<Result<string, Error>> => {
         return await approveTransferAssetFromEvm(client, {
           amount,
           account,
@@ -88,22 +80,18 @@ export const createEvmClient = (parameters: EvmClientParameters) =>
     }))
     .extend(client => ({
       simulateTransaction: async ({
-        path,
         memo,
         amount,
         recipient,
         denomAddress,
         sourceChannel,
+        destinationChainId,
         relayContractAddress
-      }: TransferAssetsParameters<
-        EvmClientParameters["chainId"]
-      >): Promise<TransactionResponse> => {
-        const [sourceChainId, destinationChainId] = path
+      }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
+        const sourceChainId = parameters.chainId
 
-        if (!sourceChannel) return { success: false, data: "Source channel not found" }
-        if (!relayContractAddress) {
-          return { success: false, data: "Relay contract address not found" }
-        }
+        if (!sourceChannel) return err(new Error("Source channel not found"))
+        if (!relayContractAddress) return err(new Error("Relay contract address not found"))
 
         if (sourceChainId === destinationChainId) {
           const gas = await client.estimateContractGas({
@@ -113,7 +101,7 @@ export const createEvmClient = (parameters: EvmClientParameters) =>
             address: getAddress(denomAddress),
             args: [getAddress(recipient), amount]
           })
-          return { success: true, data: gas.toString() }
+          return ok(gas.toString())
         }
         return await transferAssetFromEvmSimulate(client, {
           memo,
