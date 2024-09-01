@@ -88,18 +88,18 @@ module IBC::LightClient {
     public fun create_client(
         ibc_signer: &signer,
         client_id: String, 
-        client_state: Any, 
-        consensus_state: Any,
-    ): u64 {
-        let client_state = any::unpack<ClientState>(client_state);
-        let consensus_state = any::unpack<ConsensusState>(consensus_state);
+        client_state_bytes: vector<u8>, 
+        consensus_state_bytes: vector<u8>,
+    ): (u64, vector<u8>, vector<u8>) {
+        let client_state = decode_client_state(client_state_bytes);
+        let consensus_state = decode_consensus_state(consensus_state_bytes);
         
         if (height::get_revision_height(&client_state.latest_height) == 0 || consensus_state.timestamp == 0) {
-            return 1
+            return (1, vector::empty(), vector::empty())
         };
 
         if (string::length(&client_state.chain_id) > 31) {
-            return 1
+            return (1, vector::empty(), vector::empty())
         };
 
         let consensus_states = smart_table::new<height::Height, ConsensusState>();
@@ -115,7 +115,7 @@ module IBC::LightClient {
 
         move_to(&client_signer, state);
         
-        0
+        (0, client_state_bytes, consensus_state_bytes)
     }
 
     public fun latest_height(
@@ -470,5 +470,210 @@ module IBC::LightClient {
         let state = borrow_global<State>(get_client_address(&client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         bcs::to_bytes(consensus_state)
+    }
+
+    fun default_client_state(): ClientState {
+        ClientState {
+            chain_id: utf8(b""),
+            trusting_period: 0,
+            unbonding_period: 0,
+            max_clock_drift: 0,
+            frozen_height: height::default(),
+            latest_height: height::default(),
+        }
+    }
+
+    fun decode_client_state(buf: vector<u8>): ClientState {
+        let cursor = 0;
+        let client_state = default_client_state();
+        if (vector::is_empty(&buf)) {
+            return client_state
+        };
+        while (cursor < vector::length(&buf)) {
+            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(&buf, cursor);
+            assert!(err == 0, 1);
+            cursor = cursor + advance;
+            let n_read = if (tag == 1) {
+                let (str, advance) = proto_utils::decode_string(wire_type, &buf, cursor);
+                client_state.chain_id = option::extract(&mut str);
+                advance
+            } else if (tag == 2) {                
+                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                client_state.trusting_period = num;
+                advance
+            } else if (tag == 3) {
+                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                client_state.unbonding_period = num;
+                advance
+            } else if (tag == 4) {
+                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                client_state.max_clock_drift = num;
+                advance
+            } else if (tag == 5) {
+                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                cursor = cursor + advance;
+                let (n_read, err) = height::decode_proto(&buf, cursor, len, &mut client_state.frozen_height);
+                assert!(err == 0 && n_read == len, 1);
+                len
+            } else if (tag == 6) {
+                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                cursor = cursor + advance;
+                let (n_read, err) = height::decode_proto(&buf, cursor, len, &mut client_state.latest_height);
+                assert!(err == 0 && n_read == len, 1);
+                len
+            } else {
+                abort 1
+            };
+            cursor = cursor + n_read;
+        };
+
+        client_state
+    }
+
+    fun encode_client_state(client_state: ClientState): vector<u8> {
+        let buf = vector::empty();
+
+        if (!string::is_empty(&client_state.chain_id)) {
+            vector::append(&mut buf, proto_utils::encode_string(1, client_state.chain_id));
+        };
+
+        if (client_state.trusting_period != 0) {
+            vector::append(&mut buf, proto_utils::encode_u64(2, client_state.trusting_period));
+        };
+
+        if (client_state.unbonding_period != 0) {
+            vector::append(&mut buf, proto_utils::encode_u64(3, client_state.unbonding_period));
+        };
+
+        if (client_state.max_clock_drift!= 0) {
+            vector::append(&mut buf, proto_utils::encode_u64(4, client_state.max_clock_drift));
+        };
+
+        let frozen_height = height::encode_proto(client_state.frozen_height);
+        if (!vector::is_empty(&frozen_height)) {
+            vector::append(&mut buf, proto_utils::encode_prefix(5, 2));
+            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&frozen_height)));
+            vector::append(&mut buf, frozen_height);
+        };
+
+        let latest_height = height::encode_proto(client_state.latest_height);
+        if (!vector::is_empty(&latest_height)) {
+            vector::append(&mut buf, proto_utils::encode_prefix(6, 2));
+            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&latest_height)));
+            vector::append(&mut buf, latest_height);
+        };
+
+        buf
+    }
+
+    fun default_consensus_state(): ConsensusState {
+        ConsensusState {
+            timestamp: 0,
+            app_hash: MerkleRoot {
+                hash: vector::empty(),
+            },
+            next_validators_hash: vector::empty(),
+        }
+    }
+
+    fun decode_consensus_state(buf: vector<u8>): ConsensusState {
+        let cursor = 0;
+        let consensus_state = default_consensus_state();
+        if (vector::is_empty(&buf)) {
+            return consensus_state
+        };
+        while (cursor < vector::length(&buf)) {
+            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(&buf, cursor);
+            assert!(err == 0, 1);
+            cursor = cursor + advance;
+            let n_read = if (tag == 1) {
+                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                consensus_state.timestamp = num;
+                advance
+            } else if (tag == 2) {                
+                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                cursor = cursor + advance;
+                let n_read = decode_merkle_root(&buf, cursor, len, &mut consensus_state.app_hash);
+                assert!(n_read == len, 1);
+                len
+            } else if (tag == 3) {
+                let (bytes, advance) = proto_utils::decode_bytes(wire_type, &buf, cursor);
+                consensus_state.next_validators_hash = option::extract(&mut bytes);
+                advance
+            } else {
+                abort 1
+            };
+            
+            cursor = cursor + n_read;
+        };
+
+        consensus_state
+    }
+
+    fun encode_consensus_state(consensus_state: ConsensusState): vector<u8> {
+        let buf = vector::empty();
+
+        if (consensus_state.timestamp != 0) {
+            vector::append(&mut buf, proto_utils::encode_u64(1, consensus_state.timestamp));
+        };
+
+        let app_hash = encode_merkle_root(consensus_state.app_hash);
+        if (!vector::is_empty(&app_hash)) {
+            vector::append(&mut buf, proto_utils::encode_prefix(1, 2));
+            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&app_hash)));
+            vector::append(&mut buf, app_hash);
+        };
+
+        if (!vector::is_empty(&consensus_state.next_validators_hash)) {
+            vector::append(&mut buf, proto_utils::encode_bytes(3, consensus_state.next_validators_hash));
+        };
+
+        buf
+    }
+
+    fun default_merkle_root(): MerkleRoot {
+        MerkleRoot {
+            hash: vector::empty(),
+        }
+    }
+
+    fun decode_merkle_root(buf: &vector<u8>, cursor: u64, len: u64, merkle_root: &mut MerkleRoot): u64 {
+        let first_pos = cursor;
+        while (cursor - first_pos < len) {
+            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(buf, cursor);
+            assert!(err == 0, 1);
+            cursor = cursor + advance;
+            let advance = if (tag == 1) {
+                let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
+                merkle_root.hash = option::extract(&mut bytes);
+                advance
+            } else {
+                abort 1
+            };
+            cursor = cursor + advance;
+        };
+
+        // nullable = false
+        if (vector::is_empty(&merkle_root.hash)) {
+            abort 1
+        };
+
+        cursor - first_pos
+    }
+
+    public fun encode_merkle_root(merkle_root: MerkleRoot): vector<u8> {
+        let buf = vector::empty();
+
+        // nullable = false
+        vector::append(&mut buf, proto_utils::encode_bytes(1, merkle_root.hash));
+
+        buf
     }
 }

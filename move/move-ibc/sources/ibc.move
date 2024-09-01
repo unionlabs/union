@@ -1,5 +1,4 @@
 module IBC::Core {
-    use std::any;
     use std::signer;
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
@@ -329,32 +328,32 @@ module IBC::Core {
 
 
     /// Create a client with an initial client and consensus state
-    public entry fun create_client<CliT: copy + drop + store, ConT: copy + drop + store>(
+    public entry fun create_client(
         client_type: String,
-        client_state: CliT,
-        consensus_state: ConT,
+        client_state: vector<u8>,
+        consensus_state: vector<u8>,
     ) acquires IBCStore, SignerRef {
         let client_id = generate_client_identifier(client_type);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let status_code = LightClient::create_client(
+        let (status_code, client_state, consensus_state) = LightClient::create_client(
             &get_ibc_signer(),
             client_id, 
-            any::pack(client_state), 
-            any::pack(consensus_state),
+            client_state, 
+            consensus_state,
         );
     
         assert!(status_code == 0, status_code);
 
         // Update commitments
-        table::upsert(&mut store.commitments, IBCCommitment::client_state_commitment_key(client_id), hash::sha2_256(bcs::to_bytes(&client_state)));
+        table::upsert(&mut store.commitments, IBCCommitment::client_state_commitment_key(client_id), hash::sha2_256(client_state));
 
         let latest_height = LightClient::latest_height(client_id);
 
         table::upsert(
             &mut store.commitments,
             IBCCommitment::consensus_state_commitment_key(client_id, latest_height),
-            hash::sha2_256(bcs::to_bytes(&consensus_state))
+            hash::sha2_256(consensus_state)
         );
 
         event::emit(
