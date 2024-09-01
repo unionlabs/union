@@ -68,6 +68,7 @@ members = [
   "tools/parse-wasm-client-type",
   "tools/tidy",
   "tools/move-bindgen",
+  "lib/move-bindgen-derive",
 
   "ucli",
   "unionvisor",
@@ -128,6 +129,7 @@ ics23                      = { path = "lib/ics23", default-features = false }
 linea-verifier             = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie               = { path = "lib/linea-zktrie", default-features = false }
 macros                     = { path = "lib/macros", default-features = false }
+move-bindgen               = { path = "tools/move-bindgen", default-featurs = false }
 pg-queue                   = { path = "lib/pg-queue", default-features = false }
 poseidon-rs                = { path = "lib/poseidon-rs", default-features = false }
 protos                     = { path = "generated/rust/protos", default-features = false }
@@ -164,9 +166,9 @@ ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branc
 near-workspaces = { git = "https://github.com/unionlabs/near-workspaces-rs-union", branch = "near-ibc", default-features = false }
 
 # https://github.com/aptos-labs/aptos-core/pull/12636
+aptos-crypto      = { git = "https://github.com/unionlabs/aptos-core" }
 aptos-rest-client = { git = "https://github.com/unionlabs/aptos-core" }
 aptos-types       = { git = "https://github.com/unionlabs/aptos-core" }
-aptos-crypto      = { git = "https://github.com/unionlabs/aptos-core" }
 move-core-types   = { git = "https://github.com/unionlabs/aptos-core" }
 # aptos-rest-client = { path = "/home/ben/projects/aptos-labs/aptos-core/crates/aptos-rest-client" }
 

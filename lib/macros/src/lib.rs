@@ -34,9 +34,7 @@ pub fn apply(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(Debug, attributes(debug))]
 pub fn debug(ts: TokenStream) -> TokenStream {
-    let di = parse_macro_input!(ts as DeriveInput);
-
-    derive_debug(di)
+    derive_debug(parse_macro_input!(ts as DeriveInput))
         // .inspect(|x| println!("{x}"))
         .map_err(|e| e.into_compile_error())
         .unwrap_or_else(convert::identity)

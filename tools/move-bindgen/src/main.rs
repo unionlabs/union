@@ -4,7 +4,6 @@ use aptos_rest_client::{
     aptos_api_types::{Address, MoveFunctionVisibility, MoveStructTag, MoveType},
     Client,
 };
-use futures::{stream, Future, StreamExt, TryFutureExt, TryStreamExt};
 use quote::{format_ident, quote};
 use syn::{parse_quote, ItemFn, ItemStruct};
 
@@ -59,9 +58,11 @@ async fn main() -> Result<(), Bde> {
                         })
                     })
                     .collect::<Result<Vec<_>, _>>()
-                    .map(move |fs| {
+                    .map(|fs| {
                         parse_quote! {
                             #[macros::model]
+                            #[derive(::move_bindgen::TypeTagged)]
+                            #[type_tag(module = #mod_name)]
                             pub struct #ident {
                                 #(#fs)*
                             }
@@ -124,7 +125,7 @@ clippy::too_many_arguments)]
                     .map(|ps| {
                         let (mts, (idents, (param_tys, field_tys))): (Vec<_>, (Vec<_>, (Vec<_>, Vec<_>))) = ps.into_iter().unzip();
 
-                        let mts = mts.iter().map(|typ| move_type_to_type_literal(typ));
+                        let mts_ts = mts.iter().map(|typ| move_type_to_type_literal(typ));
 
                         let raw_ret = quote!((#(#ret,)*));
 
@@ -135,8 +136,11 @@ clippy::too_many_arguments)]
                             (quote!((#(#ret,)*)), quote!(ret))
                         };
 
-                        let params = if param_tys.is_empty() {quote!()} else {
-                        quote!((#(#idents,)*): (#(#param_tys,)*),)};
+                        let params = if param_tys.is_empty() {
+                            quote!()
+                        } else {
+                            quote!((#(#idents,)*): (#(#param_tys,)*),)
+                        };
 
                         if f.is_view {
                             parse_quote! {
@@ -152,13 +156,13 @@ clippy::too_many_arguments)]
                                             &::aptos_rest_client::aptos_api_types::ViewRequest {
                                                 function: ::aptos_rest_client::aptos_api_types::EntryFunctionId {
                                                     module:
-                                                        aptos_rest_client::aptos_api_types::MoveModuleId {
+                                                        ::aptos_rest_client::aptos_api_types::MoveModuleId {
                                                             address: self.module_address().into(),
                                                             name: stringify!(#mod_name).parse().unwrap(),
                                                         },
                                                     name: stringify!(#ident).parse().unwrap(),
                                                 },
-                                                type_arguments: vec![#(#mts,)*],
+                                                type_arguments: vec![#(#mts_ts,)*],
                                                 arguments: vec![#(serde_json::to_value(#field_tys::from(#idents)).unwrap(),)*],
                                             },
                                             ledger_version,
@@ -176,8 +180,35 @@ clippy::too_many_arguments)]
                                 .iter().enumerate()
                                 .map(|(index, _)| format_ident!("T{index}"));
 
+                            let params = if param_tys.is_empty() {
+                                quote!()
+                            } else {
+                                quote!((#(#idents,)*): (#(impl ::move_bindgen::IntoTypeTagged<#param_tys>,)*),)
+                            };
+
                             parse_quote! {
-                                async fn #ident<#(#generic_type_params,)*>(&self, #(#idents: #param_tys,)*) -> #raw_ret {todo!()}
+                                fn #ident<
+                                    #(#generic_type_params: ::serde::Serialize + ::move_bindgen::TypeTagged,)*
+                                >(&self, #params) -> ::aptos_types::transaction::EntryFunction
+                                {
+                                    let (values, type_args): (Vec<_>, Vec<_>) = vec![#({
+                                        let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(#idents);
+                                        (
+                                            bcs::to_bytes(&t).unwrap(),
+                                            <#param_tys as ::move_bindgen::TypeTagged>::type_tag(ctx),
+                                        )
+                                    },)*].into_iter().unzip();
+
+                                    ::aptos_types::transaction::EntryFunction::new(
+                                        ::aptos_rest_client::aptos_api_types::MoveModuleId {
+                                            address: self.module_address().into(),
+                                            name: stringify!(#mod_name).parse().unwrap(),
+                                        }.into(),
+                                        stringify!(#ident).parse().unwrap(),
+                                        type_args,
+                                        values,
+                                    )
+                                }
                             }
                         }
                     })

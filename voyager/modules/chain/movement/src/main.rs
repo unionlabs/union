@@ -136,23 +136,12 @@ impl Module {
                 let raw = RawTransaction::new_entry_function(
                     sender,
                     account.sequence_number,
-                    EntryFunction::new(
-                        MoveModuleId {
-                            address: self.ibc_handler_address,
-                            name: "Core".parse().unwrap(),
-                        }
-                        .into(),
-                        "hackerman".parse().unwrap(),
-                        vec![],
-                        vec![],
-                    ),
+                    self.connection_open_init(),
                     400000,
                     100,
                     queue_msg::now() + 10,
                     aptos_types::chain_id::ChainId::new(27),
                 );
-
-                // let hash = raw.test_only_hash()
 
                 let sig = raw.sign(&pk, pk.public_key()).unwrap();
 

@@ -7,15 +7,17 @@ repository   = { workspace = true }
 version      = "0.0.0"
 
 [dependencies]
-aptos-crypto      = { workspace = true }
-aptos-rest-client = { workspace = true }
-aptos-types       = { workspace = true }
-futures.workspace = true
-prettyplease = "0.2.22"
-proc-macro2       = "*"
-quote             = "1.0.35"
-syn = "2.0.77"
-tokio             = { workspace = true, features = ["full"] }
+aptos-crypto              = { workspace = true }
+aptos-rest-client         = { workspace = true }
+aptos-types               = { workspace = true }
+futures.workspace         = true
+move-bindgen-derive       = { path = "../../lib/move-bindgen-derive" }
+move-core-types.workspace = true
+prettyplease              = "0.2.22"
+proc-macro2               = "*"
+quote                     = "1.0.35"
+syn                       = "2.0.77"
+tokio                     = { workspace = true, features = ["full"] }
 
 [lints]
 workspace = true
