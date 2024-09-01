@@ -1,21 +1,11 @@
 import type { LayoutLoad } from "./$types.ts"
-import IndexIcon from "$lib/components/union-icons/color/icon-index-color.svelte"
-import ChannelsIcon from "$lib/components/union-icons/color/icon-channel-color.svelte"
-import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-color.svelte"
-import ConnectionIcon from "$lib/components/union-icons/color/icon-connection-color.svelte"
+import { UnionIcons } from "$lib/components/union-icons/union-icons.ts"
 
-const tables = [
-  //
-  "channels",
-  "transfers",
-  "packets",
-  "connections",
-  "index-status"
-] as const
+const tables = ["channels", "transfers", "packets", "connections", "index-status"] as const
 
 export interface Table {
   route: (typeof tables)[number]
-  icon: typeof TransfersIcon
+  icon: typeof UnionIcons.transfers.variants.color
   description: string
 }
 
@@ -24,27 +14,27 @@ export const load = (loadEvent => ({
   tables: [
     {
       route: "transfers",
-      icon: TransfersIcon,
+      icon: UnionIcons.transfers.variants.color,
       description: "All transfers"
     },
     {
       route: "packets",
-      icon: TransfersIcon,
+      icon: UnionIcons.packet.variants.color,
       description: "All packets"
     },
     {
       route: "connections",
-      icon: ConnectionIcon,
+      icon: UnionIcons.connection.variants.color,
       description: "Confirmed IBC Connections based on on-chain four-way handshake events."
     },
     {
       route: "channels",
-      icon: ChannelsIcon,
+      icon: UnionIcons.channel.variants.color,
       description: "Open IBC Channels"
     },
     {
       route: "index-status",
-      icon: IndexIcon,
+      icon: UnionIcons.index.variants.color,
       description: "Statuses of Hubble indices for connected chains"
     }
   ] as const satisfies Array<Table>
