@@ -190,10 +190,12 @@
             x86_64-linux = {
               site = self.packages.x86_64-linux.site;
               app = self.packages.x86_64-linux.app;
+              ceremony = self.packages.x86_64-linux.ceremony;
             };
             aarch64-linux = {
               site = self.packages.aarch64-linux.site;
               app = self.packages.aarch64-linux.app;
+              ceremony = self.packages.aarch64-linux.ceremony;
             };
           };
           herculesCI = {
@@ -241,6 +243,7 @@
         ./app/app.nix
         ./docs/docs.nix
         ./docs/openapi.nix
+        ./ceremony/ceremony.nix
         ./site/site.nix
         ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix

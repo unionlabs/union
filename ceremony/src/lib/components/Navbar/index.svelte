@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { supabase } from "$lib/supabase.ts";
-  import { userSession } from "$lib/stores/session.ts";
+  import {supabase} from "$lib/supabase.ts";
+  import {userSession} from "$lib/stores/session.ts";
 
   async function logout() {
-    const { error } = await supabase.auth.signOut();
-    if ( error ) {
+    const {error} = await supabase.auth.signOut();
+    if (error) {
       console.error('Error logging out:', error.message);
     } else {
       window.location.href = '/auth/login';
@@ -21,16 +21,18 @@
     </a>
   </div>
 
-  <nav>
-    {#if $userSession}
-      <div class="flex flex-1 items-center gap-8 uppercase font-mono font-bold">
+  <nav class="hidden md:block">
+    <div class="flex flex-1 items-center gap-4 uppercase font-mono font-bold">
+      {#if $userSession}
         <a href="/app/install" class="hover:underline underline-offset-4">Install Cli</a>
-        <button on:click={logout} class="bg-black text-white px-4 py-2 hover:bg-neutral-700">Log out</button>
-      </div>
-    {:else}
-      <a href="/auth/login" class="border border-black text-black px-4 py-2 hover:bg-neutral-200">Log in</a>
-      <a href="/auth/register" class="bg-black border border-black text-white px-4 py-2 hover:bg-neutral-700">Register</a>
-    {/if}
+        <button on:click={logout} class="bg-black text-white px-4 py-2 hover:text-black hover:bg-accent-500 uppercase">
+          Log out
+        </button>
+      {:else}
+        <a href="/auth/login" class="text-black px-4 py-2 hover:bg-accent-500">Log in</a>
+        <a href="/auth/register" class="bg-black text-white px-4 py-2 hover:bg-accent-500 hover:text-black">Register</a>
+      {/if}
+    </div>
   </nav>
 
 </header>
