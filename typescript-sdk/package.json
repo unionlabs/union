@@ -1,6 +1,6 @@
 {
   "name": "@union/client",
-  "version": "0.0.1-rc.66",
+  "version": "0.0.4",
   "homepage": "https://jsr.io/@union/client",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
@@ -31,7 +31,7 @@
     "@arethetypeswrong/cli": "^0.15.4",
     "@cosmjs/amino": "0.32.4",
     "@scure/base": "^1.1.7",
-    "@total-typescript/ts-reset": "^0.6.0",
+    "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.8",
     "@types/node": "^22.5.2",
     "consola": "^3.2.3",

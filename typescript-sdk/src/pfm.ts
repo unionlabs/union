@@ -2,7 +2,11 @@ import { err, ok, Result } from "neverthrow"
 import type { ChainId } from "./client/types.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 
-export const createPfmMemo = Result.fromThrowable(
+export const createPfmMemo: (_args: {
+  port: string
+  channel: string
+  receiver: string
+}) => Result<string, Error> = Result.fromThrowable(
   ({
     port,
     channel,
@@ -11,7 +15,7 @@ export const createPfmMemo = Result.fromThrowable(
     port: string
     channel: string
     receiver: string
-  }) =>
+  }): string =>
     JSON.stringify({
       forward: {
         port,

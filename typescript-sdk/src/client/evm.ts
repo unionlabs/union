@@ -19,14 +19,21 @@ import type { TransferAssetsParameters } from "./types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
 
-export const evmChainId = [
+export {
+  sepolia,
+  scrollSepolia,
+  arbitrumSepolia,
+  berachainTestnetbArtio
+} from "viem/chains"
+
+export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
+export const evmChainId: ReadonlyArray<`${(typeof evmChains)[number]["id"]}`> = [
   `${sepolia.id}`,
   `${scrollSepolia.id}`,
   `${arbitrumSepolia.id}`,
   `${berachainTestnetbArtio.id}`
 ] as const
 export type EvmChainId = `${(typeof evmChainId)[number]}`
-export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
 
 export interface EvmClientParameters {
   chainId: EvmChainId
@@ -40,7 +47,10 @@ export const chainIdToChain = (chainId: EvmChainId) =>
   )
 
 export const createEvmClient = (parameters: EvmClientParameters) => {
-  return createWalletClient({ ...parameters, chain: chainIdToChain(parameters.chainId) })
+  return createWalletClient({
+    ...parameters,
+    chain: chainIdToChain(parameters.chainId)
+  })
     .extend(publicActions)
     .extend(client => ({
       transferAsset: async ({

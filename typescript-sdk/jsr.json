@@ -1,12 +1,12 @@
 {
   "$schema": "https://jsr.io/schema/config-file.v1.json",
   "name": "@union/client",
-  "version": "0.0.1-rc.66",
+  "version": "0.0.4",
   "license": "MIT",
   "exports": {
     ".": "./src/mod.ts"
   },
   "publish": {
-    "include": ["./src/**/*.ts", "./jsr.json", "./README.md"]
+    "include": ["./src/**/*.ts", "./jsr.json", "./README.md", "./LICENSE"]
   }
 }

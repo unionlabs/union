@@ -4,6 +4,7 @@ import {
   assertIsDeliverTxSuccess,
   type MsgTransferEncodeObject
 } from "@cosmjs/stargate"
+import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 import type {
   Coin,
   MessageTransferWithOptionals,
@@ -11,8 +12,22 @@ import type {
 } from "../types.ts"
 import { timestamp } from "../utilities/index.ts"
 import { ok, err, type Result, ResultAsync } from "neverthrow"
-import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 
+/**
+ * connect a stargate client with a signer
+ * @example
+ * ```ts
+ * const client = await connectStargateWithSigner({
+ *   account: cosmosAccount,
+ *   rpcUrl: "https://rpc.testnet-8.union.build",
+ *   gasPrice: { amount: "0.0025", denom: "muno" },
+ * })
+ *
+ * if (client.isOk()) {
+ *   const tx = await client.value.getTx("A6E276CE66CDB35C0CAAC49EC9AAB3CB2CF8A34C807A4C729EA385E64C88D69B")
+ * }
+ * ```
+ */
 export function connectStargateWithSigner({
   rpcUrl,
   account,
@@ -30,6 +45,21 @@ export function connectStargateWithSigner({
   )
 }
 
+/**
+ * connect a stargate client with a signer
+ * @example
+ * ```ts
+ * const client = await connectCosmwasmWithSigner({
+ *   account: cosmosAccount,
+ *   rpcUrl: "https://rpc.testnet-8.union.build",
+ *   gasPrice: { amount: "0.0025", denom: "muno" },
+ * })
+ *
+ * if (client.isOk()) {
+ *   const tx = await client.value.getTx("A6E276CE66CDB35C0CAAC49EC9AAB3CB2CF8A34C807A4C729EA385E64C88D69B")
+ * }
+ * ```
+ */
 export function connectCosmwasmWithSigner({
   rpcUrl,
   account,
@@ -52,7 +82,25 @@ export function connectCosmwasmWithSigner({
  * - https://github.com/cosmos/ibc/blob/main/spec/app/ics-020-fungible-token-transfer/README.md
  * - transfer tokens from ibc-enabled chain to another ibc-enabled chain
  *
- * TODO: add JSDoc with examples
+ * @example
+ * ```ts
+ * const transfer = await ibcTransfer(client, {
+ *   gasPrice: { amount: "0.0025", denom: "muno" },
+ *   account: cosmosAccount,
+ *   rpcUrl: "https://rpc.testnet-8.union.build",
+ *   messageTransfers: [
+ *     {
+ *       sourcePort: "transfer",
+ *       sourceChannel: "channel-1",
+ *       sender: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *       token: { denom: "muno", amount: "1" },
+ *       timeoutHeight: { revisionHeight: 888n, revisionNumber: 8n },
+ *       receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *       memo: "test",
+ *     },
+ *   ],
+ * })
+ * ```
  */
 export async function ibcTransfer({
   gasPrice,
@@ -73,7 +121,11 @@ export async function ibcTransfer({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  const signingClient = await connectStargateWithSigner({ rpcUrl, account, gasPrice })
+  const signingClient = await connectStargateWithSigner({
+    rpcUrl,
+    account,
+    gasPrice
+  })
 
   if (signingClient.isErr()) return err(signingClient.error)
   const _signingClient = signingClient.value
@@ -95,7 +147,26 @@ export async function ibcTransfer({
 }
 
 /**
- * TODO: add JSDoc with examples
+ * simulate an ibc transfer
+ * @example
+ * ```ts
+ * const transfer = await ibcTransferSimulate(client, {
+ *   gasPrice: { amount: "0.0025", denom: "muno" },
+ *   account: cosmosAccount,
+ *   rpcUrl: "https://rpc.testnet-8.union.build",
+ *   messageTransfers: [
+ *     {
+ *       sourcePort: "transfer",
+ *       sourceChannel: "channel-1",
+ *       sender: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *       token: { denom: "muno", amount: "1" },
+ *       timeoutHeight: { revisionHeight: 888n, revisionNumber: 8n },
+ *       receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *       memo: "test",
+ *     },
+ *   ],
+ * })
+ * ```
  */
 export async function ibcTransferSimulate({
   gasPrice,
@@ -116,7 +187,11 @@ export async function ibcTransferSimulate({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  const signingClient = await connectStargateWithSigner({ rpcUrl, account, gasPrice })
+  const signingClient = await connectStargateWithSigner({
+    rpcUrl,
+    account,
+    gasPrice
+  })
   if (signingClient.isErr()) return err(signingClient.error)
   const _signingClient = signingClient.value
 
@@ -136,6 +211,30 @@ export async function ibcTransferSimulate({
   return ok(gas.toString())
 }
 
+/**
+ * transfer a wasm contract
+ * @example
+ * ```ts
+ * const transfer = await cosmwasmTransfer(client, {
+ *   gasPrice: { amount: "0.0025", denom: "muno" },
+ *   account: cosmosAccount,
+ *   rpcUrl: "https://rpc.testnet-8.union.build",
+ *   instructions: [
+ *     {
+ *       contractAddress: "0x2222222222222222222222222222222222222222",
+ *       msg: {
+ *         transfer: {
+ *           channel: "channel-1",
+ *           receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *           memo: "test",
+ *         },
+ *       },
+ *       funds: [{ denom: "muno", amount: "1" }],
+ *     },
+ *   ],
+ * })
+ * ```
+ */
 export async function cosmwasmTransfer({
   gasPrice,
   instructions,
@@ -155,7 +254,11 @@ export async function cosmwasmTransfer({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  const signingClient = await connectCosmwasmWithSigner({ rpcUrl, account, gasPrice })
+  const signingClient = await connectCosmwasmWithSigner({
+    rpcUrl,
+    account,
+    gasPrice
+  })
   if (signingClient.isErr()) return err(signingClient.error)
   const _signingClient = signingClient.value
 
@@ -165,6 +268,30 @@ export async function cosmwasmTransfer({
   return ok(response.transactionHash)
 }
 
+/**
+ * simulate a wasm contract
+ * @example
+ * ```ts
+ * const transfer = await cosmwasmTransferSimulate(client, {
+ *   gasPrice: { amount: "0.0025", denom: "muno" },
+ *   account: cosmosAccount,
+ *   rpcUrl: "https://rpc.testnet-8.union.build",
+ *   instructions: [
+ *     {
+ *       contractAddress: "0x2222222222222222222222222222222222222222",
+ *       msg: {
+ *         transfer: {
+ *           channel: "channel-1",
+ *           receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *           memo: "test",
+ *         },
+ *       },
+ *       funds: [{ denom: "muno", amount: "1" }],
+ *     },
+ *   ],
+ * })
+ * ```
+ */
 export async function cosmwasmTransferSimulate({
   gasPrice,
   instructions,
@@ -184,7 +311,11 @@ export async function cosmwasmTransferSimulate({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  const signingClient = await connectCosmwasmWithSigner({ rpcUrl, account, gasPrice })
+  const signingClient = await connectCosmwasmWithSigner({
+    rpcUrl,
+    account,
+    gasPrice
+  })
   if (signingClient.isErr()) return err(signingClient.error)
   const _signingClient = signingClient.value
 
@@ -206,6 +337,19 @@ export async function cosmwasmTransferSimulate({
   return ok(response.toString())
 }
 
+/**
+ * transfer an asset from cosmos
+ * @example
+ * ```ts
+ * const transfer = await cosmosSameChainTransfer(client, {
+ *   asset: { denom: "muno", amount: "1" },
+ *   gasPrice: { amount: "0.0025", denom: "muno" },
+ *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   account: cosmosAccount,
+ *   rpcUrl: "https://rpc.testnet-8.union.build",
+ * })
+ * ```
+ */
 export async function cosmosSameChainTransfer({
   asset,
   gasPrice,
@@ -227,7 +371,11 @@ export async function cosmosSameChainTransfer({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  const signingClient = await connectStargateWithSigner({ rpcUrl, account, gasPrice })
+  const signingClient = await connectStargateWithSigner({
+    rpcUrl,
+    account,
+    gasPrice
+  })
   if (signingClient.isErr()) return err(signingClient.error)
   const _signingClient = signingClient.value
 
@@ -251,6 +399,19 @@ export async function cosmosSameChainTransfer({
   return ok(response.transactionHash)
 }
 
+/**
+ * simulate a transfer asset from cosmos
+ * @example
+ * ```ts
+ * const transfer = await cosmosSameChainTransferSimulate(client, {
+ *   asset: { denom: "muno", amount: "1" },
+ *   gasPrice: { amount: "0.0025", denom: "muno" },
+ *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   account: cosmosAccount,
+ *   rpcUrl: "https://rpc.testnet-8.union.build",
+ * })
+ * ```
+ */
 export async function cosmosSameChainTransferSimulate({
   asset,
   gasPrice,
@@ -272,7 +433,11 @@ export async function cosmosSameChainTransferSimulate({
   if (accountResult.isErr()) return err(accountResult.error)
   const _account = accountResult.value
 
-  const signingClient = await connectStargateWithSigner({ rpcUrl, account, gasPrice })
+  const signingClient = await connectStargateWithSigner({
+    rpcUrl,
+    account,
+    gasPrice
+  })
   if (signingClient.isErr()) return err(signingClient.error)
   const _signingClient = signingClient.value
 
