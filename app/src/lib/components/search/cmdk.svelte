@@ -15,14 +15,15 @@ import Kbd from "$lib/components/kbd.svelte"
 import { sepoliaStore } from "$lib/wallet/evm"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { derived, writable } from "svelte/store"
-import SmileIcon from "virtual:icons/lucide/smile"
-import TableIcon from "virtual:icons/lucide/table"
-import BrainIcon from "virtual:icons/lucide/brain"
 import Badge from "$lib/components/ui/badge/badge.svelte"
 import * as Command from "$lib/components/ui/command/index.ts"
-import DollarSignIcon from "virtual:icons/lucide/badge-dollar-sign"
-import UnionIcon from "$lib/components/union-icons/index.svelte"
-import { mode } from "mode-watcher"
+import FaucetIcon from "$lib/components/union-icons/mono/icon-faucet-mono.svelte"
+import TransfersIcon from "$lib/components/union-icons/mono/icon-transfers-mono.svelte"
+import UserTransfersIcon from "$lib/components/union-icons/mono/icon-usertransfers-mono.svelte"
+import ChannelIcon from "$lib/components/union-icons/mono/icon-channel-mono.svelte"
+import IbcConnectionsIcon from "$lib/components/union-icons/mono/icon-ibcconnections-mono.svelte"
+import IbcChannelsIcon from "$lib/components/union-icons/mono/icon-ibcchannels-mono.svelte"
+import HubbleStatusIcon from "$lib/components/union-icons/mono/icon-hubblestatus-mono.svelte"
 
 let searchInput = writable("")
 searchInput.update($searchInput => $searchInput.replaceAll(" ", ""))
@@ -206,7 +207,7 @@ const DISABLE_TAB_INDEX = -1
           }}
         >
 
-          <UnionIcon theme="mono" name="faucet" class="mr-2 size-5"/>
+          <FaucetIcon class="mr-2 size-5"/>
           <span>Get tokens from faucet</span>
           {#if $page.route.id?.startsWith('/faucet')}
             <Badge
@@ -233,11 +234,7 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <UnionIcon
-                  theme="mono"
-                  name="transfers"
-                  class="mr-2 size-5"
-          />
+          <TransfersIcon class="mr-2 size-5"/>
           <span>Transfer assets across chains</span>
           {#if $page.route.id?.startsWith('/transfer')}
             <Badge
@@ -270,11 +267,7 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <UnionIcon
-                  theme="mono"
-                  name="usertransfers"
-                  class="mr-2 size-5"
-          />
+          <UserTransfersIcon class="mr-2 size-5"/>
           <span>Your transfers</span>
           {#if $page.route.id?.startsWith('/explorer/address')}
             <Badge
@@ -300,11 +293,7 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <UnionIcon
-                  theme="mono"
-                  name="channel"
-                  class="mr-2 size-5"
-          />
+          <ChannelIcon class="mr-2 size-5"/>
           <span>All transfers</span>
           {#if $page.route.id?.startsWith('/explorer/transfers')}
             <Badge
@@ -330,11 +319,7 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <UnionIcon
-                  theme="mono"
-                  name="ibcconnections"
-                  class="mr-2 size-5"
-          />
+          <IbcConnectionsIcon class="mr-2 size-5"/>
           <span>IBC connections</span>
           {#if $page.route.id?.startsWith('/explorer/connections')}
             <Badge
@@ -361,11 +346,7 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <UnionIcon
-                  theme="mono"
-                  name="ibcchannels"
-                  class="mr-2 size-5"
-          />
+          <IbcChannelsIcon class="mr-2 size-5" />
           <span>IBC channels</span>
           {#if $page.route.id?.startsWith('/explorer/channels')}
             <Badge
@@ -392,11 +373,7 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <UnionIcon
-                  theme="mono"
-                  name="hubblestatus"
-                  class="mr-2 size-5"
-          />
+          <HubbleStatusIcon class="mr-2 size-5" />
           <span>Hubble index status</span>
           {#if $page.route.id?.startsWith('/explorer/index-status')}
             <Badge
