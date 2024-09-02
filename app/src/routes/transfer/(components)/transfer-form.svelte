@@ -42,7 +42,7 @@ import {
   switchChain
 } from "@wagmi/core"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "viem/chains"
-import {isValidCosmosAddress, isValidEvmAddress} from "$lib/wallet/utilities/validate.ts";
+import { isValidCosmosAddress, isValidEvmAddress } from "$lib/wallet/utilities/validate.ts"
 
 function getChainById(chainId: number): ViemChain | null {
   const chains: { [key: number]: ViemChain } = {
@@ -867,15 +867,14 @@ const resetInput = () => {
 }
 
 const addressIsValid = derived([receiver, toChain], ([$receiver, $toChain]) => {
-  if(!$toChain) return
-  if($toChain.rpc_type === 'cosmos') {
+  if (!$toChain) return
+  if ($toChain.rpc_type === "cosmos") {
     return isValidCosmosAddress($receiver, $toChain.addr_prefix)
   }
-  if($toChain.rpc_type === 'evm') {
+  if ($toChain.rpc_type === "evm") {
     return isValidEvmAddress($receiver)
   }
 })
-
 </script>
 
 <div

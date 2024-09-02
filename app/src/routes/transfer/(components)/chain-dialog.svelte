@@ -16,8 +16,7 @@ export let userAddr: UserAddresses | null
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 
 function selectChain(chain: { chain_id: string; display_name: string; rpc_type: string }) {
-
-  if (kind === 'from') {
+  if (kind === "from") {
     if (chain.rpc_type === "evm" && !userAddr?.evm) {
       toast.info(`Connect EVM wallet`)
       return

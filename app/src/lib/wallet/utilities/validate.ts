@@ -8,7 +8,7 @@ export function isValidEvmAddress(address: unknown): address is EvmAddress {
 
 export function isValidCosmosAddress(
   address: unknown,
-  expectedPrefixes: string[] | string = ["union"]
+  expectedPrefixes: Array<string> | string = ["union"]
 ): address is CosmosAddress {
   if (typeof address !== "string") return false
 
@@ -23,4 +23,3 @@ export function isValidCosmosAddress(
     return false
   }
 }
-
