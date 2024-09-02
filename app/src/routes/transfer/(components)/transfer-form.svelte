@@ -874,6 +874,7 @@ const addressIsValid = derived([receiver, toChain], ([$receiver, $toChain]) => {
   if ($toChain.rpc_type === "evm") {
     return isValidEvmAddress($receiver)
   }
+  return false
 })
 </script>
 
