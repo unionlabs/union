@@ -5,7 +5,6 @@ import TransfersIcon from "$lib/components/union-icons/color/icon-transfers-colo
 import ConnectionIcon from "$lib/components/union-icons/color/icon-connection-color.svelte"
 import PacketIcon from "$lib/components/union-icons/color/icon-packet-color.svelte"
 
-
 const tables = ["channels", "transfers", "packets", "connections", "index-status"] as const
 
 export interface Table {
