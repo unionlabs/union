@@ -1,6 +1,4 @@
-
 <!-- GENERATED: DO NOT EDIT -->
-
 
 # Unionvisor
 

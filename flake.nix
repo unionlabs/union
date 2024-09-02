@@ -647,11 +647,15 @@
                   meta.mainProgram = "forge";
                 };
               };
+              mdformat = {
+                enable = true;
+                package = unstablePkgs.mdformat;
+              };
             };
             settings = {
               global = {
                 hidden = true;
-                excludes = [ ".git/**" "**/vendor/**" "**/.sqlx/**" "uniond/docs/static/**" ];
+                excludes = [ ".git/**" "**/vendor/**" "**/.sqlx/**" "uniond/docs/static/**" ".github/**/*.md" ];
               };
             };
           };
