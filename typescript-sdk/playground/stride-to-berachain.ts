@@ -43,7 +43,7 @@ try {
 
   const transactionPayload = {
     amount: 1n,
-    approve: true,
+    autoApprove: true,
     denomAddress: "ustrd",
     // or `client.evm.account.address` if you want to send to yourself
     recipient: berachainAccount.address,

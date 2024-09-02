@@ -11,7 +11,7 @@ export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId
   memo?: string
   amount: bigint
   recipient: string
-  approve?: boolean
+  autoApprove?: boolean
   destinationChainId: ChainId | (string & {})
 } & (CHAIN_ID extends CosmosChainId
   ? {

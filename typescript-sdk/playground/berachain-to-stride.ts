@@ -40,7 +40,7 @@ try {
 
   const transactionPayload = {
     amount: 1n,
-    approve: true,
+    autoApprove: true,
     denomAddress: HONEY_CONTRACT_ADDRESS,
     destinationChainId: "stride-internal-1",
     // or `client.cosmos.account.address` if you want to send to yourself

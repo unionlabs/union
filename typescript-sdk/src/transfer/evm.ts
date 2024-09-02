@@ -18,7 +18,7 @@ export type TransferAssetFromEvmParams = {
   amount: bigint
   account?: Account
   recipient: string
-  approve?: boolean
+  autoApprove?: boolean
   simulate?: boolean
   denomAddress: Address
   sourceChannel: string
@@ -38,7 +38,7 @@ export async function transferAssetFromEvm(
     recipient,
     denomAddress,
     sourceChannel,
-    approve = false,
+    autoApprove = false,
     simulate = true,
     relayContractAddress
   }: TransferAssetFromEvmParams
@@ -50,7 +50,7 @@ export async function transferAssetFromEvm(
   /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
   relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
 
-  if (approve) {
+  if (autoApprove) {
     const approveResponse = await approveTransferAssetFromEvm(client, {
       amount,
       account,

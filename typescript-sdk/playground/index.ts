@@ -1,21 +1,9 @@
-import { fallback, http } from "viem"
-import { createUnionClient, createMultiUnionClient } from "../src/mod.ts"
+import { http } from "viem"
+import { consola } from "scripts/logger.ts"
+import { privateKeyToAccount } from "viem/accounts"
+import { createMultiUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
-/**
- * evm chain, where ERC20 approval is a thing
- */
-createUnionClient({
-  chainId: "11155111",
-  transport: fallback([http("https://rpc.sepolia.org")])
-}).approveTransaction
-
-/**
- * cosmos sdk chain, where there's no concept of token approval
- */
-createUnionClient({
-  chainId: "stride-internal-1",
-  transport: http("stride.testnet-1.stridenet.co")
-})
+const account = privateKeyToAccount(`0x${process.env["PRIVATE_KEY"]}`)
 
 const clients = createMultiUnionClient([
   {
@@ -23,11 +11,43 @@ const clients = createMultiUnionClient([
     transport: http("stride.testnet-1.stridenet.co")
   },
   {
+    account,
     chainId: "11155111",
-    transport: fallback([http("https://rpc.sepolia.org")])
+    transport: http("https://rpc.sepolia.org")
   }
 ])
 
-// clients["11155111"].approveTransaction
+const payload = {
+  amount: 1n,
+  autoApprove: false,
+  destinationChainId: "stride-internal-1",
+  denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
+  recipient: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
+} satisfies TransferAssetsParameters<"11155111">
 
-// clients["stride-internal-1"].approveTransaction
+const gasResponse = await clients["11155111"].simulateTransaction(payload)
+
+if (gasResponse.isErr()) {
+  consola.error(gasResponse.error)
+  process.exit(1)
+}
+
+consola.success(`gas: ${gasResponse.value}`)
+
+const approvalResponse = await clients["11155111"].approveTransaction(payload)
+
+if (approvalResponse.isErr()) {
+  consola.error(approvalResponse.error)
+  process.exit(1)
+}
+
+consola.box(`Approval success: ${approvalResponse.value}`)
+
+const sepoliaTransfer = await clients["11155111"].transferAsset(payload)
+
+if (sepoliaTransfer.isErr()) {
+  console.error(sepoliaTransfer.error)
+  process.exit(1)
+}
+
+consola.success(`Transfer success: ${sepoliaTransfer.value}`)

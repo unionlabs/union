@@ -2,8 +2,8 @@ import {
   erc20Abi,
   getAddress,
   type Account,
-  type Address,
   publicActions,
+  type HttpTransport,
   createWalletClient,
   type FallbackTransport
 } from "viem"
@@ -12,9 +12,11 @@ import {
   approveTransferAssetFromEvm,
   transferAssetFromEvmSimulate
 } from "../transfer/evm.ts"
+import { cosmosChainId } from "./cosmos.ts"
 import { err, ok, type Result } from "neverthrow"
-import { getHubbleChainDetails } from "../pfm.ts"
+import { bech32AddressToHex } from "../convert.ts"
 import type { TransferAssetsParameters } from "./types.ts"
+import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
 
 export const evmChainId = [
@@ -24,10 +26,11 @@ export const evmChainId = [
   `${berachainTestnetbArtio.id}`
 ] as const
 export type EvmChainId = `${(typeof evmChainId)[number]}`
+export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
 
 export interface EvmClientParameters {
   chainId: EvmChainId
-  transport: FallbackTransport
+  transport: FallbackTransport | HttpTransport
   account?: `0x${string}` | Account | undefined
 }
 
@@ -45,29 +48,38 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         account,
         recipient,
         denomAddress,
-        approve = false,
         simulate = true,
-        destinationChainId
+        destinationChainId,
+        autoApprove = false
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
         account ||= client.account
 
         const pfmDetails = await getHubbleChainDetails({
-          recipient,
           destinationChainId,
           sourceChainId: parameters.chainId
         })
 
         if (pfmDetails.isErr()) return err(pfmDetails.error)
 
+        const pfmMemo = createPfmMemo({
+          channel: pfmDetails.value.destinationChannel,
+          port: `${pfmDetails.value.port}`,
+          receiver: cosmosChainId.includes(destinationChainId)
+            ? bech32AddressToHex({ address: `${recipient}` })
+            : `${recipient}`
+        })
+
+        if (pfmMemo.isErr()) return err(pfmMemo.error)
+
         return await transferAssetFromEvm(client, {
           amount,
           account,
-          approve,
+          autoApprove,
           simulate,
           recipient,
           denomAddress,
           destinationChainId,
-          memo: pfmDetails.value.memo,
+          memo: pfmMemo.value,
           sourceChannel: pfmDetails.value.sourceChannel,
           relayContractAddress: getAddress(pfmDetails.value.relayContractAddress)
         })
@@ -77,17 +89,22 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         account,
         denomAddress,
         simulate = true,
-        relayContractAddress
-      }: TransferAssetsParameters<EvmChainId> & {
-        relayContractAddress: Address
-      }): Promise<Result<string, Error>> =>
-        await approveTransferAssetFromEvm(client, {
+        destinationChainId
+      }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
+        const ucsDetails = await getHubbleChainDetails({
+          destinationChainId,
+          sourceChainId: parameters.chainId
+        })
+        if (ucsDetails.isErr()) return err(ucsDetails.error)
+
+        return await approveTransferAssetFromEvm(client, {
           amount,
           account,
           simulate,
           denomAddress,
-          relayContractAddress
-        }),
+          relayContractAddress: getAddress(ucsDetails.value.relayContractAddress)
+        })
+      },
       simulateTransaction: async ({
         memo,
         amount,
@@ -107,14 +124,22 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           })
           return ok(gas.toString())
         }
-
         const pfmDetails = await getHubbleChainDetails({
-          recipient,
-          sourceChainId,
-          destinationChainId
+          destinationChainId,
+          sourceChainId: parameters.chainId
         })
 
         if (pfmDetails.isErr()) return err(pfmDetails.error)
+
+        const pfmMemo = createPfmMemo({
+          channel: pfmDetails.value.destinationChannel,
+          port: `${pfmDetails.value.port}`,
+          receiver: cosmosChainId.includes(destinationChainId)
+            ? bech32AddressToHex({ address: `${recipient}` })
+            : `${recipient}`
+        })
+
+        if (pfmMemo.isErr()) return err(pfmMemo.error)
 
         const { relayContractAddress, sourceChannel } = pfmDetails.value
 

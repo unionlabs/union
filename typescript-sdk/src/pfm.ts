@@ -1,7 +1,5 @@
 import { err, ok, Result } from "neverthrow"
 import type { ChainId } from "./client/types.ts"
-import { bech32AddressToHex } from "./convert.ts"
-import { cosmosChainId } from "./client/cosmos.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 
 export const createPfmMemo = Result.fromThrowable(
@@ -25,18 +23,17 @@ export const createPfmMemo = Result.fromThrowable(
 )
 
 export async function getHubbleChainDetails({
-  recipient,
   sourceChainId,
   destinationChainId
 }: {
-  recipient: string
   sourceChainId: ChainId | (string & {})
   destinationChainId: ChainId | (string & {})
 }): Promise<
   Result<
     {
+      port?: string
       sourceChannel: string
-      memo?: string | undefined
+      // memo?: string | undefined
       destinationChannel: string
       destinationChainId: ChainId
       relayContractAddress: string
@@ -85,20 +82,9 @@ export async function getHubbleChainDetails({
   )
 
   if (!forward) return err(new Error("Forward configuration not found"))
-
-  const memo = createPfmMemo({
-    channel: forward.channel_id,
-    port: forward.port,
-    receiver: cosmosChainId.includes(destinationChainId)
-      ? bech32AddressToHex({ address: recipient })
-      : recipient
-  })
-
-  if (memo.isErr()) return err(memo.error)
-
   return ok({
     transferType,
-    memo: memo.value,
+    port: forward.port,
     destinationChannel: forward.channel_id,
     sourceChannel: ucsConfiguration.channel_id,
     relayContractAddress: ucsConfiguration.contract_address,

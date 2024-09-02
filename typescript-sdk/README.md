@@ -27,7 +27,7 @@ const client = createUnionClient({
 
 ### Examples
 
-Transfer `UNO` from Union Testnet (`union-testnet-8`) chain to Sepolia on EVM (`1111551111`) chain.
+Transfer `strd` from Stride Testnet on Cosmos (`stride-internal-1`) chain to Sepolia on EVM (`1111551111`) chain.
 
 ```ts
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
@@ -37,25 +37,25 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
-  "union"
+  "stride"
 )
 
 const client = createUnionClient({
   account: cosmosAccount,
-  chainId: "union-testnet-8",
-  transport: http("https://rpc.testnet-8.union.build"),
+  chainId: "stride-internal-1",
+  transport: http("stride.testnet-1.stridenet.co"),
 })
 
 const transfer = await client.transferAsset({
   amount: 1n,
-  denomAddress: "muno",
+  denomAddress: "strd",
   destinationChainId: "11155111",
   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
 })
 
-if (transfer.isOk()) {
-  return console.info("Transfer successful", transfer.value)
+if (transfer.isErr()) {
+  return console.error("Transfer failed", transfer.error)
 }
 
-return console.error("Transfer failed", transfer.error)
+return console.info("Transfer successful", transfer.value)
 ```

@@ -53,9 +53,9 @@ export const offchainQuery = {
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
     >(`/chains/${chainId}`, {
       query: {
+        include_assets: includeAssets,
         include_rpcs: includeEndpoints,
-        include_contracts: includeContracts,
-        include_assets: includeAssets
+        include_contracts: includeContracts
       }
     })
   }

@@ -19,6 +19,7 @@ export {
   isValidBech32Address
 } from "./utilities/address.ts"
 import {
+  evmChains,
   evmChainId,
   createEvmClient,
   type EvmChainId,
@@ -161,6 +162,7 @@ export function createMultiUnionClient<TChainId extends ChainId>(
 }
 
 export {
+  evmChains,
   evmChainId,
   type ChainId,
   cosmosChainId,
