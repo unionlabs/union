@@ -1,8 +1,5 @@
 { ... }: {
   perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, mkCi, ... }:
-    let
-      packageJSON = lib.importJSON ./package.json;
-    in
     {
       apps = {
         ts-sdk-check = {
