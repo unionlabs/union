@@ -134,9 +134,9 @@ zktrie                     = { path = "lib/zktrie-rs", default-features = false 
 # external dependencies
 milagro_bls = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
 
-tendermint       = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.34.0-bn254", default-features = false }
-tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.34.0-bn254", default-features = false }
-tendermint-rpc   = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.34.0-bn254", default-features = false }
+tendermint       = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
+tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
+tendermint-rpc   = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
 ethers                 = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
