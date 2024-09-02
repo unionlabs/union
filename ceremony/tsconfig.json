@@ -1,0 +1,32 @@
+{
+  "extends": ["./.svelte-kit/tsconfig.json"],
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": true,
+    "sourceMap": true,
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "alwaysStrict": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
+    "types": ["typed-query-selector/strict", "unplugin-icons/types/svelte"],
+    "paths": {
+      "$*": ["./src/*"]
+    },
+  },
+  "files": [
+    "reset.d.ts",
+    "vite.config.ts",
+    "svelte.config.js",
+    "environment.d.ts",
+    "postcss.config.cjs",
+    "tailwind.config.ts"
+  ]
+}
