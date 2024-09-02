@@ -1,0 +1,64 @@
+name: 'Cleanup Netlify PR Comments'
+
+on:
+  workflow_dispatch:
+  issue_comment:
+    types:
+      - edited
+      - created
+      - deleted
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  NODE_OPTIONS: '--no-warnings'
+
+jobs:
+  cleanup:
+    runs-on: ['ubuntu-latest']
+    name: 'Cleanup PR comments'
+    if: |
+      contains(github.event.comment.body, 'Deploy Preview for *unionlabs* ready!') ||
+      github.event.comment.user.name == 'netlify[bot]'
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      
+      - name: 'Get Changed Files'
+        id: 'changed-files'
+        uses: tj-actions/changed-files@v45
+        with:
+          since_last_remote_commit: true
+          files: |
+            ./site/**/*
+
+      # delete Netlify comment if no site files changed
+      - name: 'Site Files Changed'
+        if: steps.changed-files.outputs.any_changed == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+              const { owner, repo } = context.repo
+              // https://octokit.github.io/rest.js/v21/#issues-list-comments
+              const comment = await github.rest.issues.listComments({
+                repo: 'union',
+                owner: 'unionlabs',
+                issue_number: context.issue.number,
+              })
+
+              const relevantComment = comments.data.find(
+                comment => comment.user.login === 'netlify[bot]'
+              );
+              if (!relevantComment) return
+
+              // https://octokit.github.io/rest.js/v21/#issues-delete-comment
+              const deleteComment = await github.rest.issues.deleteComment({
+                repo: 'union',
+                owner: 'unionlabs',
+                comment_id: relevantComment.id,
+              })
+              console.info(deleteComment)
