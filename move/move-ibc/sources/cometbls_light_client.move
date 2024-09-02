@@ -5,7 +5,7 @@ module IBC::LightClient {
     use std::from_bcs;
     use std::bcs;
     use std::hash;
-    use std::any::{Self, Any};
+    use std::any::Any;
     use std::string::{Self, String, utf8};
     use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr, G2, Gt, FormatG2Compr};
     use std::crypto_algebra::{deserialize, serialize, zero, add, scalar_mul, multi_pairing, Element, eq};
@@ -463,13 +463,13 @@ module IBC::LightClient {
 
     public fun get_client_state(client_id: String): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(&client_id));
-        bcs::to_bytes(&state.client_state)
+        encode_client_state(state.client_state)
     }
 
     public fun get_consensus_state(client_id: String, height: Height): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(&client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
-        bcs::to_bytes(consensus_state)
+        encode_consensus_state(*consensus_state)
     }
 
     fun default_client_state(): ClientState {
