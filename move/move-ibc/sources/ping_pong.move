@@ -147,11 +147,12 @@ module IBCModuleAddr::PingPong {
         event::emit(TimedOutEvent {});
     }
 
-    public fun chan_open_init(
+    public entry fun chan_open_init(
         port_id: String,
         connection_hops: vector<String>,
         ordering: u8,
-        counterparty: channel::Counterparty,
+        counterparty_port_id: String,
+        counterparty_channel_id: String,
         version: String,
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
@@ -160,7 +161,7 @@ module IBCModuleAddr::PingPong {
             port_id,
             connection_hops,
             ordering,
-            counterparty,
+            channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
             version,
         );
         if (string::length(&borrow_global<PingPong>(@0x1).channel_id) != 0) {
@@ -168,15 +169,17 @@ module IBCModuleAddr::PingPong {
         };
     }
 
-    public fun chan_open_try(
+    public entry fun chan_open_try(
         port_id: String,
         connection_hops: vector<String>,
         ordering: u8,
-        counterparty: channel::Counterparty,
+        counterparty_port_id: String,
+        counterparty_channel_id: String,
         counterparty_version: String,
         version: String,
         proof_init: vector<u8>,
-        proof_height: height::Height,
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
         Core::channel_open_try(
@@ -184,11 +187,11 @@ module IBCModuleAddr::PingPong {
             port_id,
             connection_hops,
             ordering,
-            counterparty,
+            channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
             counterparty_version,
             version,
             proof_init,
-            proof_height,
+            height::new(proof_height_revision_num, proof_height_revision_height),
         );
 
         if (string::length(&borrow_global<PingPong>(@0x1).channel_id) != 0) {
@@ -196,13 +199,14 @@ module IBCModuleAddr::PingPong {
         };
     }
 
-    public fun chan_open_ack(
+    public entry fun chan_open_ack(
         port_id: String,
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
         proof_try: vector<u8>,
-        proof_height: height::Height
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
     ) acquires PingPong, SignerRef {
         // Store the channel_id
         Core::channel_open_ack(
@@ -212,7 +216,7 @@ module IBCModuleAddr::PingPong {
             counterparty_channel_id,
             counterparty_version,
             proof_try,
-            proof_height
+            height::new(proof_height_revision_num, proof_height_revision_height),
         );
         borrow_global_mut<PingPong>(@0x1).channel_id = channel_id;
     }
@@ -221,27 +225,28 @@ module IBCModuleAddr::PingPong {
         port_id: String,
         channel_id: String,
         proof_ack: vector<u8>,
-        proof_height: height::Height
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
     ) acquires PingPong, SignerRef {
         Core::channel_open_confirm(
             &get_signer(),
             port_id,
             channel_id,
             proof_ack,
-            proof_height
+            height::new(proof_height_revision_num, proof_height_revision_height),
         );
 
         borrow_global_mut<PingPong>(@0x1).channel_id = channel_id;
     }
 
-    public fun chan_close_init(
+    public entry fun chan_close_init(
         _port_id: String,
         _channel_id: String
     ) {
         abort ERR_INFINITE_GAME
     }
 
-    public fun chan_close_confirm(
+    public entry fun chan_close_confirm(
         _port_id: String,
         _channel_id: String
     ) {
