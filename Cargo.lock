@@ -7701,11 +7701,22 @@ dependencies = [
  "aptos-rest-client",
  "aptos-types",
  "futures",
+ "move-bindgen-derive",
+ "move-core-types",
  "prettyplease",
  "proc-macro2",
  "quote",
  "syn 2.0.77",
  "tokio",
+]
+
+[[package]]
+name = "move-bindgen-derive"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -13555,6 +13566,7 @@ dependencies = [
  "aptos-crypto",
  "aptos-rest-client",
  "aptos-types",
+ "bcs 0.1.6",
  "clap 4.5.4",
  "enumorph",
  "frunk",
@@ -13563,6 +13575,8 @@ dependencies = [
  "hex-literal",
  "jsonrpsee 0.24.3",
  "macros",
+ "move-bindgen",
+ "move-core-types",
  "prost 0.12.6",
  "protos",
  "queue-msg",

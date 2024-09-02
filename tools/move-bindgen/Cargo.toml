@@ -16,7 +16,7 @@ move-core-types.workspace = true
 prettyplease              = "0.2.22"
 proc-macro2               = "*"
 quote                     = "1.0.35"
-syn                       = "2.0.77"
+syn                       = { version = "2.0.52", default-features = false, features = ["clone-impls", "parsing", "printing", "proc-macro", "derive", "extra-traits"] }
 tokio                     = { workspace = true, features = ["full"] }
 
 [lints]

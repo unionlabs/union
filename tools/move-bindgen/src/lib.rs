@@ -96,6 +96,19 @@ impl<T: TypeTagged> TypeTagged for Vec<T> {
     }
 }
 
+impl<T: TypeTagged> TypeTagged for Option<T> {
+    type Ctx = T::Ctx;
+
+    fn type_tag(ctx: Self::Ctx) -> TypeTag {
+        TypeTag::Struct(Box::new(StructTag {
+            address: AccountAddress::ONE,
+            module: ident_str!("option").into(),
+            name: ident_str!("Option").into(),
+            type_args: vec![T::type_tag(ctx)],
+        }))
+    }
+}
+
 pub struct Struct {
     pub field: String,
 }

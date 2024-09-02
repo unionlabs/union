@@ -136,7 +136,14 @@ impl Module {
                 let raw = RawTransaction::new_entry_function(
                     sender,
                     account.sequence_number,
-                    self.connection_open_init(),
+                    self.hackerman(
+                        // client::height::Height {
+                        //     revision_number: 1.into(),
+                        //     revision_height: 1.into(),
+                        // }
+                        // .with_address(self.ibc_handler_address.into()),
+                        "hi".to_owned(),
+                    ),
                     400000,
                     100,
                     queue_msg::now() + 10,

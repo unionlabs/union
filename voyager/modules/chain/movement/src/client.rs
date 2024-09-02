@@ -6,6 +6,66 @@
     clippy::too_many_arguments
 )]
 
+pub mod packet {
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = packet)]
+    pub struct Packet {
+        pub sequence: ::aptos_rest_client::aptos_api_types::U64,
+        pub source_port: String,
+        pub source_channel: String,
+        pub destination_port: String,
+        pub destination_channel: String,
+        pub data: Vec<u8>,
+        pub timeout_height: super::height::Height,
+        pub timeout_timestamp: ::aptos_rest_client::aptos_api_types::U64,
+    }
+}
+
+pub mod height {
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = height)]
+    pub struct Height {
+        pub revision_number: ::aptos_rest_client::aptos_api_types::U64,
+        pub revision_height: ::aptos_rest_client::aptos_api_types::U64,
+    }
+}
+
+pub mod connection_end {
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = connection_end)]
+    pub struct ConnectionEnd {
+        pub client_id: String,
+        pub versions: Vec<super::connection_end::Version>,
+        pub state: ::aptos_rest_client::aptos_api_types::U64,
+        pub delay_period: ::aptos_rest_client::aptos_api_types::U64,
+        pub counterparty: super::connection_end::Counterparty,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = connection_end)]
+    pub struct Counterparty {
+        pub client_id: String,
+        pub connection_id: String,
+        pub prefix: super::connection_end::MerklePrefix,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = connection_end)]
+    pub struct MerklePrefix {
+        pub key_prefix: Vec<u8>,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = connection_end)]
+    pub struct Version {
+        pub identifier: String,
+        pub features: Vec<String>,
+    }
+}
+
 pub mod Core {
     pub trait ClientExt {
         fn client(&self) -> &::aptos_rest_client::Client;
@@ -284,15 +344,12 @@ pub mod Core {
             let ret = ::serde_json::from_value::<(Vec<u8>,)>(::serde_json::Value::from(response))?;
             Ok(ret.0)
         }
-        fn create_client<
-            T0: ::serde::Serialize + ::move_bindgen::TypeTagged,
-            T1: ::serde::Serialize + ::move_bindgen::TypeTagged,
-        >(
+        fn create_client(
             &self,
             (_0, _1, _2): (
                 impl ::move_bindgen::IntoTypeTagged<String>,
-                impl ::move_bindgen::IntoTypeTagged<T0>,
-                impl ::move_bindgen::IntoTypeTagged<T1>,
+                impl ::move_bindgen::IntoTypeTagged<Vec<u8>>,
+                impl ::move_bindgen::IntoTypeTagged<Vec<u8>>,
             ),
         ) -> ::aptos_types::transaction::EntryFunction {
             let (values, type_args): (Vec<_>, Vec<_>) = vec![
@@ -307,14 +364,14 @@ pub mod Core {
                     let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_1);
                     (
                         bcs::to_bytes(&t).unwrap(),
-                        <T0 as ::move_bindgen::TypeTagged>::type_tag(ctx),
+                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
                     )
                 },
                 {
                     let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_2);
                     (
                         bcs::to_bytes(&t).unwrap(),
-                        <T1 as ::move_bindgen::TypeTagged>::type_tag(ctx),
+                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
                     )
                 },
             ]
@@ -436,8 +493,19 @@ pub mod Core {
             )?;
             Ok(ret.0)
         }
-        fn hackerman(&self) -> ::aptos_types::transaction::EntryFunction {
-            let (values, type_args): (Vec<_>, Vec<_>) = vec![].into_iter().unzip();
+        fn hackerman<T0: ::serde::Serialize + ::move_bindgen::TypeTagged>(
+            &self,
+            (_0,): (impl ::move_bindgen::IntoTypeTagged<T0>,),
+        ) -> ::aptos_types::transaction::EntryFunction {
+            let (values, type_args): (Vec<_>, Vec<_>) = vec![{
+                let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_0);
+                (
+                    bcs::to_bytes(&t).unwrap(),
+                    <T0 as ::move_bindgen::TypeTagged>::type_tag(ctx),
+                )
+            }]
+            .into_iter()
+            .unzip();
             ::aptos_types::transaction::EntryFunction::new(
                 ::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: self.module_address().into(),
@@ -450,92 +518,131 @@ pub mod Core {
             )
         }
     }
-}
-
-pub mod ics23 {}
-
-pub mod height {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = height)]
-    pub struct Height {
-        revision_number: ::aptos_rest_client::aptos_api_types::U64,
-        revision_height: ::aptos_rest_client::aptos_api_types::U64,
-    }
-}
-
-pub mod packet {
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = packet)]
-    pub struct Packet {
-        sequence: ::aptos_rest_client::aptos_api_types::U64,
-        source_port: String,
-        source_channel: String,
-        destination_port: String,
-        destination_channel: String,
-        data: Vec<u8>,
-        timeout_height: super::height::Height,
-        timeout_timestamp: ::aptos_rest_client::aptos_api_types::U64,
-    }
-}
-
-pub mod channel {
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = channel)]
-    pub struct Counterparty {
-        port_id: String,
-        channel_id: String,
+    #[type_tag(module = Core)]
+    pub struct ChannelOpenAck {
+        pub port_id: String,
+        pub channel_id: String,
+        pub counterparty_port_id: String,
+        pub counterparty_channel_id: String,
+        pub connection_id: String,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = channel)]
-    pub struct Channel {
-        state: u8,
-        ordering: u8,
-        counterparty: super::channel::Counterparty,
-        connection_hops: Vec<String>,
-        version: String,
-    }
-}
-
-pub mod LightClient {}
-
-pub mod proto_utils {}
-
-pub mod IBCCommitment {}
-
-pub mod connection_end {
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = connection_end)]
-    pub struct Counterparty {
-        client_id: String,
-        connection_id: String,
-        prefix: super::connection_end::MerklePrefix,
+    #[type_tag(module = Core)]
+    pub struct WriteAcknowledgement {
+        pub packet: super::packet::Packet,
+        pub acknowledgement: Vec<u8>,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = connection_end)]
-    pub struct Version {
-        identifier: String,
-        features: Vec<String>,
+    #[type_tag(module = Core)]
+    pub struct Hackerman<T0> {
+        pub t: T0,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = connection_end)]
-    pub struct ConnectionEnd {
-        client_id: String,
-        versions: Vec<super::connection_end::Version>,
-        state: ::aptos_rest_client::aptos_api_types::U64,
-        delay_period: ::aptos_rest_client::aptos_api_types::U64,
-        counterparty: super::connection_end::Counterparty,
+    #[type_tag(module = Core)]
+    pub struct ChannelOpenTry {
+        pub port_id: String,
+        pub channel_id: String,
+        pub counterparty_port_id: String,
+        pub counterparty_channel_id: String,
+        pub connection_id: String,
+        pub version: String,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = connection_end)]
-    pub struct MerklePrefix {
-        key_prefix: Vec<u8>,
+    #[type_tag(module = Core)]
+    pub struct ConnectionOpenTry {
+        pub connection_id: String,
+        pub client_id: String,
+        pub counterparty_client_id: String,
+        pub counterparty_connection_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ConnectionOpenAck {
+        pub connection_id: String,
+        pub client_id: String,
+        pub counterparty_client_id: String,
+        pub counterparty_connection_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ChannelOpenInit {
+        pub port_id: String,
+        pub channel_id: String,
+        pub counterparty_port_id: String,
+        pub connection_id: String,
+        pub version: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct RecvPacket {
+        pub packet: super::packet::Packet,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct SendPacket {
+        pub sequence: ::aptos_rest_client::aptos_api_types::U64,
+        pub source_port: String,
+        pub source_channel: String,
+        pub timeout_height: super::height::Height,
+        pub timeout_timestamp: ::aptos_rest_client::aptos_api_types::U64,
+        pub data: Vec<u8>,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ConnectionOpenConfirm {
+        pub connection_id: String,
+        pub client_id: String,
+        pub counterparty_client_id: String,
+        pub counterparty_connection_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ClientCreatedEvent {
+        pub client_id: String,
+        pub client_type: String,
+        pub consensus_height: super::height::Height,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ConnectionOpenInit {
+        pub connection_id: String,
+        pub client_id: String,
+        pub counterparty_client_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct AcknowledgePacket {
+        pub packet: super::packet::Packet,
+        pub acknowledgement: Vec<u8>,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ChannelOpenConfirm {
+        pub port_id: String,
+        pub channel_id: String,
+        pub counterparty_port_id: String,
+        pub counterparty_channel_id: String,
+        pub connection_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct TimeoutPacket {
+        pub packet: super::packet::Packet,
     }
 }

@@ -1,11 +1,16 @@
-use std::{collections::HashMap, error::Error, fmt::Write};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fmt::Write,
+};
 
 use aptos_rest_client::{
-    aptos_api_types::{Address, MoveFunctionVisibility, MoveStructTag, MoveType},
+    aptos_api_types::{Address, MoveFunctionVisibility, MoveStruct, MoveStructTag, MoveType},
     Client,
 };
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, ItemFn, ItemStruct};
+use syn::{parse_quote, GenericArgument, Ident, ItemFn, ItemStruct, PathArguments, Type};
 
 type Bde = Box<dyn Error + Send + Sync>;
 
@@ -31,72 +36,92 @@ async fn main() -> Result<(), Bde> {
 
     let mut mod_map = HashMap::<_, HashMap<_, _>>::new();
 
-    // resolve types
+    let mut referenced_structs = HashSet::new();
+
+    let mut already_found_structs = HashSet::new();
+
+    let mk_struct = |module: Address, mod_name: &Ident, t: &MoveStruct| {
+        let ident = format_ident!("{}", t.name.to_string());
+        println!("{ident}");
+
+        let generics = t
+            .generic_type_params
+            .iter()
+            .enumerate()
+            .map(|(i, _)| format_ident!("T{i}"));
+
+        t.fields
+            .iter()
+            .map(|f| {
+                let ident = format_ident!("{}", f.name.to_string());
+                // println!("  {ident}: {:?}", f.typ);
+
+                move_type_to_rust_type(module, &f.typ).map(|(_param_ty, field_ty)| {
+                    (
+                        quote! {
+                            pub #ident: #field_ty,
+                        },
+                        find_struct_types_in_type(&field_ty),
+                    )
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map::<(ItemStruct, Vec<_>), _>(|fs| {
+                let (fs, rs): (Vec<_>, Vec<_>) = fs.into_iter().unzip();
+
+                (
+                    parse_quote! {
+                        #[macros::model]
+                        #[derive(::move_bindgen::TypeTagged)]
+                        #[type_tag(module = #mod_name)]
+                        pub struct #ident<#(#generics)*> {
+                            #(#fs)*
+                        }
+                    },
+                    rs.into_iter().flatten().collect(),
+                )
+            })
+    };
+
+    // resolve events
     for abi in &abis {
         assert_eq!(abi.address, module);
 
         let mod_name = format_ident!("{}", abi.name.to_string());
 
-        let structs = abi
+        let events = abi
             .structs
             .iter()
-            // .filter(|t| futures::future::ready(t.is_event && !t.is_native))
-            .map(|t| {
-                let ident = format_ident!("{}", t.name.to_string());
-                // println!("{ident}");
+            .filter(|t| t.is_event)
+            .map(|t| mk_struct(module, &mod_name, t));
 
-                t.fields
-                    .iter()
-                    .map(|f| {
-                        let ident = format_ident!("{}", f.name.to_string());
-                        // println!("  {ident}: {:?}", f.typ);
+        for event in events {
+            match event {
+                Ok((event, rs)) => {
+                    referenced_structs.extend(rs);
+                    already_found_structs.insert((mod_name.clone(), event.ident.clone()));
 
-                        move_type_to_rust_type(module, &f.typ).map(|(_param_ty, field_ty)| {
-                            quote! {
-                                #ident: #field_ty,
-                            }
-                        })
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-                    .map(|fs| {
-                        parse_quote! {
-                            #[macros::model]
-                            #[derive(::move_bindgen::TypeTagged)]
-                            #[type_tag(module = #mod_name)]
-                            pub struct #ident {
-                                #(#fs)*
-                            }
-                        }
-                    })
-            })
-            .collect::<Result<Vec<ItemStruct>, _>>();
-
-        match structs {
-            Ok(ok) => mod_map
-                .entry(mod_name.clone())
-                .or_default()
-                .extend(ok.into_iter().map(|s| (s.ident.clone(), s))),
-            Err(err) => {
-                eprintln!("{err}")
+                    mod_map
+                        .entry(mod_name.clone())
+                        .or_default()
+                        .insert(event.ident.clone(), event);
+                }
+                Err(err) => {
+                    eprintln!("{err}");
+                }
             }
         }
     }
 
-    let mut output = String::new();
+    let mut output_ts = HashMap::<_, TokenStream>::new();
 
-    output += "#![allow(async_fn_in_trait,
-non_snake_case,
-clippy::useless_conversion,
-clippy::unused_unit,
-clippy::too_many_arguments)]
-";
-
-    for abi in abis {
+    // resolve fns
+    for abi in &abis {
         assert_eq!(abi.address, module);
 
         let mod_name = format_ident!("{}", abi.name.to_string());
 
-        let fns = abi
+        let (fns, rs): (Vec<_>, Vec<_>) = abi
             .exposed_functions
             .iter()
             .filter(|f| {
@@ -104,26 +129,31 @@ clippy::too_many_arguments)]
             })
             .map(|f| {
                 let ident = format_ident!("{}", f.name.to_string());
-                // println!("{ident}");
+                println!("======= {ident}");
 
-                let ret = f
+                let (ret, ret_rs): (Vec<_>, Vec<_>) = f
                     .return_
                     .iter()
-                    .map(|r| move_type_to_rust_type(module, r).map(|(param_ty, _field_ty)|param_ty))
-                    .collect::<Result<Vec<_>, _>>()?;
+                    .map(|r| move_type_to_rust_type(module, r).map(|(param_ty, field_ty)| (param_ty, find_struct_types_in_type(&field_ty))))
+                    .collect::<Result<Vec<_>, _>>()?.into_iter().unzip();
 
                 f.params
                     .iter()
                     .enumerate()
                     .map(|(i, p)| {
-                        move_type_to_rust_type(module, p).map(|ty| {
+                        move_type_to_rust_type(module, p).map(|(param, field)| {
                             let ident = format_ident!("_{i}");
-                            (p, (ident, ty))
+                            let rs = find_struct_types_in_type(&field);
+
+                            // dbg!(&rs);
+
+                            (p, (ident, ((param, field), rs)))
                         })
                     })
                     .collect::<Result<Vec<_>, _>>()
                     .map(|ps| {
-                        let (mts, (idents, (param_tys, field_tys))): (Vec<_>, (Vec<_>, (Vec<_>, Vec<_>))) = ps.into_iter().unzip();
+                        #[allow(clippy::type_complexity)] // all hail our lord and saviour `unzip`
+                        let (mts, (idents, ((param_tys, field_tys), rs))): (Vec<_>, (Vec<_>, ((Vec<_>, Vec<_>), Vec<_>))) = ps.into_iter().unzip();
 
                         let mts_ts = mts.iter().map(|typ| move_type_to_type_literal(typ));
 
@@ -142,7 +172,7 @@ clippy::too_many_arguments)]
                             quote!((#(#idents,)*): (#(#param_tys,)*),)
                         };
 
-                        if f.is_view {
+                        let ts = if f.is_view {
                             parse_quote! {
                                 async fn #ident(
                                     &self,
@@ -210,33 +240,104 @@ clippy::too_many_arguments)]
                                     )
                                 }
                             }
-                        }
+                        };
+
+                        (ts, ret_rs.into_iter().chain(rs))
                     })
             })
-            .collect::<Result<Vec<ItemFn>, _>>()?;
+            .collect::<Result<Vec<(ItemFn, _)>, _>>()?
+            .into_iter()
+            .unzip();
 
-        let structs = mod_map.get(&mod_name).into_iter().flat_map(|m| m.values());
+        referenced_structs.extend(rs.into_iter().flatten().flatten());
 
-        let client_ext_trait = if fns.is_empty() {
-            quote!()
-        } else {
-            quote! {
+        // dbg!(&mod_map);
+
+        if !fns.is_empty() {
+            output_ts.entry(mod_name).or_default().extend(quote! {
                 pub trait ClientExt {
                     fn client(&self) -> &::aptos_rest_client::Client;
                     fn module_address(&self) -> ::aptos_types::account_address::AccountAddress;
 
                     #(#fns)*
                 }
-            }
+            });
         };
+    }
 
+    let mut output = String::new();
+
+    output += "#![allow(async_fn_in_trait,
+non_snake_case,
+clippy::useless_conversion,
+clippy::unused_unit,
+clippy::too_many_arguments)]
+";
+
+    // resolve types referenced in events and fns
+    while !referenced_structs.is_empty() {
+        dbg!(&referenced_structs, &already_found_structs);
+
+        for abi in &abis {
+            let mod_name = format_ident!("{}", abi.name.to_string());
+            println!("{mod_name}");
+
+            let structs = abi
+                .structs
+                .iter()
+                .filter(|t| {
+                    let key = (mod_name.clone(), format_ident!("{}", t.name.to_string()));
+                    // not an event, referenced, but not already found
+                    !t.is_event
+                        && referenced_structs.contains(&key)
+                        && !already_found_structs.contains(&key)
+                })
+                .map(|t| mk_struct(module, &mod_name, t))
+                .collect::<Vec<_>>();
+
+            for s in structs {
+                match s {
+                    Ok((s, rs)) => {
+                        let key = (mod_name.clone(), s.ident.clone());
+                        referenced_structs.remove(&key);
+                        already_found_structs.insert(key);
+
+                        dbg!(&rs);
+                        for r in rs {
+                            if !already_found_structs.contains(&r) {
+                                referenced_structs.insert(r);
+                            }
+                        }
+
+                        mod_map
+                            .entry(mod_name.clone())
+                            .or_default()
+                            .insert(s.ident.clone(), s);
+                    }
+                    Err(err) => {
+                        eprintln!("{err}");
+                    }
+                }
+            }
+        }
+    }
+
+    for (k, v) in mod_map {
+        let structs = v.into_iter().map(|m| {
+            // dbg!(m.keys());
+
+            m.1
+        });
+
+        output_ts.entry(k).or_default().extend(quote!(#(#structs)*));
+    }
+
+    for (k, v) in output_ts {
         writeln!(&mut output).unwrap();
 
         output += &prettyplease::unparse(&syn::parse_quote! {
-            pub mod #mod_name {
-                #client_ext_trait
-
-                #(#structs)*
+            pub mod #k {
+                #v
             }
         });
     }
@@ -246,11 +347,38 @@ clippy::too_many_arguments)]
     Ok(())
 }
 
+fn find_struct_types_in_type(ty: &Type) -> Vec<(Ident, Ident)> {
+    match ty {
+        Type::Path(ty) => {
+            if ty.path.segments.first().unwrap().ident == "super" {
+                vec![(
+                    ty.path.segments.get(1).unwrap().ident.clone(),
+                    ty.path.segments.get(2).unwrap().ident.clone(),
+                )]
+            } else if let PathArguments::AngleBracketed(args) =
+                &ty.path.segments.last().unwrap().arguments
+            {
+                args.args
+                    .iter()
+                    .flat_map(|t| {
+                        if let GenericArgument::Type(ty) = t {
+                            find_struct_types_in_type(ty)
+                        } else {
+                            vec![]
+                        }
+                    })
+                    .collect()
+            } else {
+                vec![]
+            }
+            // TODO: Recurse into the generics here to find all types
+        }
+        _ => vec![],
+    }
+}
+
 /// (param type, field type)
-fn move_type_to_rust_type(
-    this_module: Address,
-    typ: &MoveType,
-) -> Result<(proc_macro2::TokenStream, proc_macro2::TokenStream), Bde> {
+fn move_type_to_rust_type(this_module: Address, typ: &MoveType) -> Result<(Type, Type), Bde> {
     let is_string = |mt: &MoveStructTag| {
         mt.address == "0x1".parse().unwrap()
             && mt.module == "string".parse().unwrap()
@@ -259,49 +387,49 @@ fn move_type_to_rust_type(
     };
 
     Ok(match typ {
-        MoveType::Bool => (quote!(bool), quote!(bool)),
-        MoveType::U8 => (quote!(u8), quote!(u8)),
+        MoveType::Bool => (parse_quote!(bool), parse_quote!(bool)),
+        MoveType::U8 => (parse_quote!(u8), parse_quote!(u8)),
         MoveType::U16 => (
-            quote!(u16),
-            quote!(::aptos_rest_client::aptos_api_types::U16),
+            parse_quote!(u16),
+            parse_quote!(::aptos_rest_client::aptos_api_types::U16),
         ),
         MoveType::U32 => (
-            quote!(u32),
-            quote!(::aptos_rest_client::aptos_api_types::U32),
+            parse_quote!(u32),
+            parse_quote!(::aptos_rest_client::aptos_api_types::U32),
         ),
         MoveType::U64 => (
-            quote!(u64),
-            quote!(::aptos_rest_client::aptos_api_types::U64),
+            parse_quote!(u64),
+            parse_quote!(::aptos_rest_client::aptos_api_types::U64),
         ),
         MoveType::U128 => (
-            quote!(u128),
-            quote!(::aptos_rest_client::aptos_api_types::U128),
+            parse_quote!(u128),
+            parse_quote!(::aptos_rest_client::aptos_api_types::U128),
         ),
         MoveType::U256 => (
-            quote!(U256),
-            quote!(::aptos_rest_client::aptos_api_types::U256),
+            parse_quote!(U256),
+            parse_quote!(::aptos_rest_client::aptos_api_types::U256),
         ),
         MoveType::Address => (
-            quote!(::aptos_rest_client::aptos_api_types::Address),
-            quote!(::aptos_rest_client::aptos_api_types::Address),
+            parse_quote!(::aptos_rest_client::aptos_api_types::Address),
+            parse_quote!(::aptos_rest_client::aptos_api_types::Address),
         ),
-        MoveType::Signer => (quote!(Signer), quote!(Signer)),
+        MoveType::Signer => (parse_quote!(Signer), parse_quote!(Signer)),
         MoveType::Vector { items } => {
             let (param, field) = move_type_to_rust_type(this_module, items)?;
-            (quote!(Vec<#param>), quote!(Vec<#field>))
+            (parse_quote!(Vec<#param>), parse_quote!(Vec<#field>))
         }
-        MoveType::Struct(s) if is_string(s) => (quote!(String), quote!(String)),
+        MoveType::Struct(s) if is_string(s) => (parse_quote!(String), parse_quote!(String)),
         // MoveType::Struct(s) if is_smart_table(&s) => {
         //     let t0 = move_type_to_rust_type(this_module, &s.generic_type_params[0])?;
         //     let t1 = move_type_to_rust_type(this_module, &s.generic_type_params[1])?;
 
-        //     quote!(SmartTable<#t0, #t1>)
+        //     parse_quote!(SmartTable<#t0, #t1>)
         // }
         // MoveType::Struct(s) if is_table(&s) => {
         //     let t0 = move_type_to_rust_type(this_module, &s.generic_type_params[0])?;
         //     let t1 = move_type_to_rust_type(this_module, &s.generic_type_params[1])?;
 
-        //     quote!(Table<#t0, #t1>)
+        //     parse_quote!(Table<#t0, #t1>)
         // }
         MoveType::Struct(MoveStructTag {
             address,
@@ -323,16 +451,16 @@ fn move_type_to_rust_type(
                 .unzip();
 
             (
-                quote!(super::#module::#ident<#(#param,)*>),
-                quote!(super::#module::#ident<#(#field,)*>),
+                parse_quote!(super::#module::#ident<#(#param,)*>),
+                parse_quote!(super::#module::#ident<#(#field,)*>),
             )
         }
         MoveType::GenericTypeParam { index } => {
             let ident = format_ident!("T{index}");
 
-            (quote!(#ident), quote!(#ident))
+            (parse_quote!(#ident), parse_quote!(#ident))
         }
-        MoveType::Reference { mutable, to } => move_type_to_rust_type(this_module, to)?,
+        MoveType::Reference { mutable: _, to } => move_type_to_rust_type(this_module, to)?,
         MoveType::Unparsable(_) => todo!(),
     })
 }
@@ -374,7 +502,7 @@ fn move_type_to_type_literal(typ: &MoveType) -> proc_macro2::TokenStream {
         MoveType::GenericTypeParam { index } => {
             quote!(::aptos_rest_client::aptos_api_types::MoveType::GenericTypeParam { index: #index })
         }
-        MoveType::Reference { mutable, to } => todo!(),
+        MoveType::Reference { mutable: _, to: _ } => todo!(),
         MoveType::Unparsable(_) => todo!(),
     }
 }

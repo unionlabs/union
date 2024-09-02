@@ -24,14 +24,16 @@ fn derive_type_tagged(
         ..
     }: DeriveInput,
 ) -> Result<proc_macro2::TokenStream, syn::Error> {
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let (impl_generics, ty_generics, original_where_clause) = generics.split_for_impl();
 
     let bounds = mk_where_clause(&data);
 
-    let mut where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
-        where_token: parse_quote!(where),
-        predicates: Default::default(),
-    });
+    let mut where_clause = original_where_clause
+        .cloned()
+        .unwrap_or_else(|| WhereClause {
+            where_token: parse_quote!(where),
+            predicates: Default::default(),
+        });
     where_clause.predicates.extend(bounds.clone());
 
     let [module] = attrs
@@ -89,6 +91,13 @@ fn derive_type_tagged(
 
                 fn type_tag(ctx: Self::Ctx) -> ::move_bindgen::move_core_types::language_storage::TypeTag {
                     #body
+                }
+            }
+
+            #[automatically_derived]
+            impl #impl_generics #ident #ty_generics #original_where_clause {
+                pub fn with_address(self, address: ::move_bindgen::move_core_types::account_address::AccountAddress) -> (Self, ::move_bindgen::move_core_types::account_address::AccountAddress) {
+                    (self, address)
                 }
             }
         };
