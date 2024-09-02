@@ -16,8 +16,8 @@ CREATE TABLE queue (
 ALTER TABLE queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE queue ADD FOREIGN KEY (id) REFERENCES auth.users(id);
 CREATE UNIQUE INDEX idx_queue_score_id ON queue(score, id);
-CREATE UNIQUE INDEX idx_queue_score ON queue(score);
 CREATE UNIQUE INDEX idx_queue_id_payload ON queue(id, payload_id);
+CREATE INDEX idx_queue_score ON queue(score);
 
 CREATE POLICY view_all
   ON queue

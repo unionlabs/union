@@ -13,15 +13,15 @@
     in
     {
       packages = mpc-coordinator.packages // mpc-client.packages // {
-        mpc-image = pkgs.dockerTools.buildImage {
+        mpc-client-image = pkgs.dockerTools.buildImage {
           name = "${self'.packages.mpc-client.name}-image";
           copyToRoot = pkgs.buildEnv {
             name = "image-root";
-            paths = [ pkgs.coreutils-full pkgs.cacert ];
+            paths = [ pkgs.coreutils-full pkgs.cacert pkgs.ncurses ];
             pathsToLink = [ "/bin" ];
           };
           config = {
-            Entrypoint = [ (pkgs.lib.getExe self'.packages.mpc) ];
+            Entrypoint = [ (pkgs.lib.getExe self'.packages.mpc-client) ];
             Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
           };
         };

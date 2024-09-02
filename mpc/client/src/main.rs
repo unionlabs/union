@@ -38,12 +38,12 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use types::Status;
 
-const SUPABASE_PROJECT: &str = "https://wwqpylbrcpriyaqugzsi.supabase.co";
 const ENDPOINT: &str = "/contribute";
 
 #[derive(PartialEq, Eq, Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Contribute {
+    supabase_project: String,
     bucket: String,
     jwt: String,
     api_key: String,
@@ -74,6 +74,7 @@ type DynError = Box<dyn std::error::Error + Send + Sync>;
 async fn contribute(
     tx_status: Sender<Status>,
     Contribute {
+        supabase_project,
         bucket,
         jwt,
         api_key,
@@ -81,7 +82,7 @@ async fn contribute(
         payload_id,
     }: Contribute,
 ) -> Result<(), DynError> {
-    let client = SupabaseMPCApi::new(SUPABASE_PROJECT.into(), api_key, jwt);
+    let client = SupabaseMPCApi::new(supabase_project.clone(), api_key, jwt);
     let current_contributor = client
         .current_contributor()
         .await?
@@ -183,7 +184,7 @@ async fn contribute(
             // https://tus.io/protocols/resumable-upload#creation ==
             // =====================================================
             let response = upload_client
-                .post(format!("{SUPABASE_PROJECT}/storage/v1/upload/resumable"))
+                .post(format!("{supabase_project}/storage/v1/upload/resumable"))
                 .header("Tus-Resumable", "1.0.0")
                 .header("Upload-Length", CONTRIBUTION_SIZE.to_string())
                 .header(
@@ -415,7 +416,7 @@ async fn main() -> Result<(), DynError> {
     let token = CancellationToken::new();
     let token_clone = token.clone();
     let handle = tokio::spawn(async move {
-        let addr = SocketAddr::from(([127, 0, 0, 1], 0x1337));
+        let addr = SocketAddr::from(([0, 0, 0, 0], 0x1337));
         let listener = TcpListener::bind(addr).await.unwrap();
         loop {
             tokio::select! {
