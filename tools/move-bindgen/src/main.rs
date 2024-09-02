@@ -1,3 +1,7 @@
+//! buon appetito, hope you like italian
+//!
+//! cuz this is pure spaghetti
+
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
@@ -276,7 +280,7 @@ clippy::too_many_arguments)]
 
     // resolve types referenced in events and fns
     while !referenced_structs.is_empty() {
-        dbg!(&referenced_structs, &already_found_structs);
+        // dbg!(&referenced_structs, &already_found_structs);
 
         for abi in &abis {
             let mod_name = format_ident!("{}", abi.name.to_string());
@@ -302,7 +306,7 @@ clippy::too_many_arguments)]
                         referenced_structs.remove(&key);
                         already_found_structs.insert(key);
 
-                        dbg!(&rs);
+                        // dbg!(&rs);
                         for r in rs {
                             if !already_found_structs.contains(&r) {
                                 referenced_structs.insert(r);
