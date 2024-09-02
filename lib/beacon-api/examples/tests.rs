@@ -1,5 +1,5 @@
 use beacon_api::client::{BeaconApiClient, BlockId};
-use unionlabs::ethereum::config::Minimal;
+use unionlabs::ethereum::config::Mainnet;
 
 #[tokio::main]
 async fn main() {
@@ -9,45 +9,48 @@ async fn main() {
 }
 
 async fn do_main() {
-    let client = BeaconApiClient::<Minimal>::new("http://localhost:9596".to_string())
-        .await
-        .unwrap();
+    let client =
+        BeaconApiClient::<Mainnet>::new("https://lodestar-sepolia.chainsafe.io".to_string())
+            .await
+            .unwrap();
 
     // genesis
-    client.block(BlockId::Genesis).await.unwrap();
-    client.header(BlockId::Genesis).await.unwrap();
+    let block = client.block(BlockId::Slot(5772606)).await.unwrap();
+    dbg!(block);
 
-    // head
-    client.block(BlockId::Head).await.unwrap();
-    client.header(BlockId::Head).await.unwrap();
+    // client.header(BlockId::Genesis).await.unwrap();
 
-    // finalized
-    let finalized_block = client.block(BlockId::Finalized).await.unwrap();
-    let finalized_header = client.header(BlockId::Finalized).await.unwrap();
+    // // head
+    // client.block(BlockId::Head).await.unwrap();
+    // client.header(BlockId::Head).await.unwrap();
 
-    dbg!(&finalized_block);
-    dbg!(&finalized_header);
+    // // finalized
+    // let finalized_block = client.block(BlockId::Finalized).await.unwrap();
+    // let finalized_header = client.header(BlockId::Finalized).await.unwrap();
 
-    // slot
-    client
-        .block(BlockId::Slot(finalized_block.data.message.slot - 1))
-        .await
-        .unwrap();
-    let slot_header = client.header(BlockId::Slot(32)).await.unwrap();
+    // dbg!(&finalized_block);
+    // dbg!(&finalized_header);
 
-    // hash
-    client
-        .block(BlockId::Hash(slot_header.data.root))
-        .await
-        .unwrap();
-    client
-        .header(BlockId::Hash(slot_header.data.root))
-        .await
-        .unwrap();
+    // // slot
+    // client
+    //     .block(BlockId::Slot(finalized_block.data.message.slot - 1))
+    //     .await
+    //     .unwrap();
+    // let slot_header = client.header(BlockId::Slot(32)).await.unwrap();
 
-    // bootstrap
-    client.bootstrap(finalized_header.data.root).await.unwrap();
+    // // hash
+    // client
+    //     .block(BlockId::Hash(slot_header.data.root))
+    //     .await
+    //     .unwrap();
+    // client
+    //     .header(BlockId::Hash(slot_header.data.root))
+    //     .await
+    //     .unwrap();
 
-    // finality update
-    // client.finality_update().await.unwrap();
+    // // bootstrap
+    // client.bootstrap(finalized_header.data.root).await.unwrap();
+
+    // // finality update
+    // // client.finality_update().await.unwrap();
 }

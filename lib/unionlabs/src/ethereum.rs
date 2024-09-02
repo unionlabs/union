@@ -195,7 +195,7 @@ pub struct Attestation<C: MAX_VALIDATORS_PER_COMMITTEE> {
 #[serde(deny_unknown_fields)]
 pub struct Deposit<C: DEPOSIT_CONTRACT_TREE_DEPTH> {
     /// Merkle path to deposit root
-    pub proof: Vector<[u8; 32], C::DEPOSIT_CONTRACT_TREE_DEPTH>,
+    pub proof: Vector<H256, C::DEPOSIT_CONTRACT_TREE_DEPTH>,
     pub data: DepositData,
 }
 
@@ -204,7 +204,7 @@ pub struct Deposit<C: DEPOSIT_CONTRACT_TREE_DEPTH> {
 #[serde(deny_unknown_fields)]
 pub struct DepositData {
     pub pubkey: BlsPublicKey,
-    pub withdrawal_credentials: [u8; 32],
+    pub withdrawal_credentials: H256,
     #[serde(with = "::serde_utils::string")]
     pub amount: u64,
     /// Signing over `DepositMessage`
