@@ -8,7 +8,7 @@
     {
       packages = {
         site = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-SEEXWNrvG9WdDjMH1AIMsmJvWZbhtqpL9CUt1C9u/as=";
+          npmDepsHash = "sha256-kyPU5Up+vJkLZRcy3YuVWdLlwrUXnP6p0NF1XGEvAYk=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";
