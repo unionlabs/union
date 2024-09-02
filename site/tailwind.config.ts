@@ -31,6 +31,7 @@ export default {
       colors: {
         accent: {
           DEFAULT: "#A0ECFD",
+          0: "#FAFEFF",
           50: "#FAFEFF",
           100: "#F0FCFF",
           200: "#DCF8FE",

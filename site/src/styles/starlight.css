@@ -3,6 +3,20 @@
   --dark-blue: #00262f;
 }
 
+.copy-code {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #3730a3;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.copy-code:hover {
+  background-color: #312e81;
+}
+
 :root[data-theme="light"] {
   --logo-text-color: #000000;
   --sl-color-text-accent: #04acd2;

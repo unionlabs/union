@@ -3,8 +3,7 @@ import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
 import { bech32AddressToHex } from "../../convert.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 
-const TENDERLY_URL =
-  process.env?.TENDERLY_URL ?? "https://api.tenderly.co/api/v1/account/amor-fati/project/project"
+const TENDERLY_URL = "https://api.tenderly.co/api/v1/account/amor-fati/project/project"
 
 const queryHeaders = new Headers({
   Accept: "application/json",

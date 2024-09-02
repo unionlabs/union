@@ -1,7 +1,8 @@
 {
   "$schema": "https://jsr.io/schema/config-file.v1.json",
   "name": "@union/client",
-  "version": "0.0.1-rc.53",
+  "version": "0.0.1-rc.59",
+  "license": "MIT",
   "exports": {
     ".": "./src/mod.ts"
   },

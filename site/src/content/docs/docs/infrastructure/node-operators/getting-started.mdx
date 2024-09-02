@@ -5,9 +5,10 @@ sidebar:
 ---
 
 import { dedent } from "ts-dedent"
+import Code from "astro/components/Code.astro";
 import DownloadFile from "#/components/DownloadFile.astro"
 import FunctionResult from '#/components/FunctionResult.astro'
-import { Tabs, TabItem, Code } from "@astrojs/starlight/components"
+import { Tabs, TabItem } from "@astrojs/starlight/components"
 import { chainVersion, getSeedsParts } from '#/lib/constants/versions.ts'
 
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](/docs/infrastructure/node-operators/nixos/) and the [Kubernetes](/docs/infrastructure/node-operators/kubernetes/) guide for more production-ready deployments.

@@ -6,6 +6,14 @@ interface EventTarget {
   value?: string
 }
 
+interface Window {
+  EventEmitter: typeof EventEmitter
+}
+
+interface BigInt {
+  toJSON(): string
+}
+
 interface EnvironmentVariables {
   readonly NODE_ENV: "development" | "production" | "test"
   readonly PORT: string

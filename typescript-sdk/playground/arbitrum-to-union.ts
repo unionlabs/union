@@ -65,6 +65,8 @@ try {
     recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
     path: [source_chain.chain_id, destination_chain.chain_id]
   } satisfies TransferAssetsParameters
+  
+  console.info(JSON.stringify(transactionPayload, null, 2))
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 

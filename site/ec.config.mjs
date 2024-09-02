@@ -1,15 +1,21 @@
-import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections";
+import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
+import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections"
 
 /** @type {import('@astrojs/starlight/expressive-code').StarlightExpressiveCodeOptions} */
 export default {
   frames: {
     extractFileNameFromCode: true,
     showCopyToClipboardButton: true,
-    removeCommentsWhenCopyingTerminalFrames: true,
+    removeCommentsWhenCopyingTerminalFrames: true
   },
-  styleOverrides: {},
   useStarlightUiThemeColors: true,
   useStarlightDarkModeSwitch: true,
-  themes: ["starlight-dark", "starlight-light"],
-  plugins: [pluginCollapsibleSections()],
-};
+  themes: ["vesper", "rose-pine-dawn"],
+  plugins: [pluginLineNumbers(), pluginCollapsibleSections()],
+  defaultProps: {
+    showLineNumbers: false
+  },
+  styleOverrides: {
+    codeBackground: ({ theme }) => theme.colors["editor.background"]
+  }
+}

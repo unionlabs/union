@@ -11,6 +11,7 @@
       "*.ts",
       "*.mts",
       "*.js",
+      "*.mjs",
       "*.cjs",
       "*.jsx",
       "*.tsx",
@@ -59,6 +60,7 @@
       "*.ts",
       "*.mts",
       "*.js",
+      "*.mjs",
       "*.cjs",
       "*.jsx",
       "*.tsx",
@@ -110,6 +112,7 @@
       "*.ts",
       "*.mts",
       "*.js",
+      "*.mjs",
       "*.cjs",
       "*.jsx",
       "*.tsx",
@@ -171,6 +174,7 @@
         "noConsole": "off",
         "useTopLevelRegex": "off",
         "noExportedImports": "off",
+        "noReactSpecificProps": "off",
         "useImportRestrictions": "off",
         "noUndeclaredDependencies": "off",
         "noUnusedFunctionParameters": "off",
@@ -207,7 +211,8 @@
         "noExcessiveCognitiveComplexity": "off"
       },
       "security": {
-        "all": true
+        "all": true,
+        "noDangerouslySetInnerHtml": "off"
       }
     },
     "enabled": true,
@@ -215,6 +220,7 @@
       "*.ts",
       "*.mts",
       "*.js",
+      "*.mjs",
       "*.cjs",
       "*.jsx",
       "*.tsx",
@@ -315,7 +321,7 @@
       }
     },
     {
-      "include": ["./app/src/lib/polyfill.ts"],
+      "include": ["./app/src/lib/polyfill.ts", "./site/src/lib/wagmi-polyfills.ts"],
       "linter": {
         "rules": {
           "style": {
