@@ -90,9 +90,6 @@ disallowed_types = "deny"
 lto       = "thin"
 opt-level = 3
 
-[profile.dev]
-strip = true
-
 [workspace.dependencies]
 aptos-verifier             = { path = "lib/aptos-verifier", default-features = false }
 arbitrum-verifier          = { path = "lib/arbitrum-verifier", default-features = false }
