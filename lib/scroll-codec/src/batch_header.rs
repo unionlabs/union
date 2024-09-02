@@ -24,6 +24,8 @@ use unionlabs::{
 /// extra code jump in solidity, which increase gas costs.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BatchHeaderV3 {
+    /// The batch version
+    pub version: u8,
     /// The index of the batch
     pub batch_index: u64,
     /// Number of L1 messages popped in the batch
@@ -49,7 +51,6 @@ pub enum BatchHeaderV3DecodeError {
 }
 
 impl BatchHeaderV3 {
-    const VERSION: u8 = 3;
     const FIXED_LENGTH: usize = 193;
 
     /// Try to decode the batch header from the input stream.
@@ -68,10 +69,8 @@ impl BatchHeaderV3 {
             })
         })?;
 
-        let version = slice.array_slice::<0, 1>()[0];
-        debug_assert_eq!(version, Self::VERSION);
-
         Ok(Self {
+            version: slice.array_slice::<0, 1>()[0],
             batch_index: u64::from_be_bytes(slice.array_slice::<1, 8>()),
             l1_message_popped: u64::from_be_bytes(slice.array_slice::<9, 8>()),
             total_l1_message_popped: u64::from_be_bytes(slice.array_slice::<17, 8>()),
@@ -87,7 +86,7 @@ impl BatchHeaderV3 {
     pub fn compute_batch_hash(&self) -> H256 {
         let mut hasher = Keccak256::new();
 
-        hasher.update([Self::VERSION]);
+        hasher.update([self.version]);
         hasher.update(self.batch_index.to_be_bytes());
         hasher.update(self.l1_message_popped.to_be_bytes());
         hasher.update(self.total_l1_message_popped.to_be_bytes());
