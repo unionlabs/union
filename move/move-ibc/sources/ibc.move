@@ -313,12 +313,6 @@ module IBC::Core {
         move_to(vault_signer, SignerRef {
             self_ref: object::generate_extend_ref(vault_constructor_ref)
         });
-
-        event::emit(
-            ClientCreatedEvent {
-                client_id
-            },
-        );
     }
 
     // Function to generate a client identifier

@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, sync::Arc};
 
 use chain_utils::{
     cosmos_sdk::{
@@ -6,6 +6,7 @@ use chain_utils::{
         CosmosKeyring, GasConfig,
     },
     keyring::{KeyringConfig, KeyringEntry},
+    BoxDynError,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -38,6 +39,7 @@ use voyager_message::{
     call::Call,
     data::{Data, IbcMessage, WithChainId},
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
+    reth_ipc::client::IpcClientBuilder,
     run_module_server, ChainId, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -63,6 +65,8 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    pub client: Arc<jsonrpsee::ws_client::WsClient>,
+
     pub chain_id: ChainId<'static>,
     pub keyring: CosmosKeyring,
     pub tm_client: cometbft_rpc::Client,
@@ -86,7 +90,9 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, InitError> {
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
@@ -103,6 +109,7 @@ impl Module {
         .bech32_prefix;
 
         Ok(Self {
+            client,
             keyring: CosmosKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|entry| {
@@ -567,12 +574,6 @@ pub enum BroadcastTxCommitError {
     AccountSequenceMismatch(#[source] Option<tonic::Status>),
     #[error("out of gas")]
     OutOfGas,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum InitError {
-    #[error("cometbft rpc error")]
-    Cometbft(#[from] cometbft_rpc::JsonRpcError),
 }
 
 #[async_trait]

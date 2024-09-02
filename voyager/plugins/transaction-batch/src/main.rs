@@ -2,6 +2,7 @@ use std::{
     collections::{HashMap, VecDeque},
     convert,
     num::NonZeroUsize,
+    sync::Arc,
 };
 
 use either::Either;
@@ -12,7 +13,7 @@ use queue_msg::{
     aggregation::{do_callback, HListTryFromIterator, SubsetOf},
     call, data,
     optimize::OptimizationResult,
-    promise, Op,
+    promise, BoxDynError, Op,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, instrument, trace, warn};
@@ -28,6 +29,7 @@ use voyager_message::{
     data::{ChainEvent, Data, DecodedClientStateMeta, FullIbcEvent, OrderedMsgUpdateClients},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
+    reth_ipc::{self, client::IpcClientBuilder},
     run_module_server, ChainId, PluginMessage, VoyagerMessage,
 };
 
@@ -60,6 +62,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    pub client: Arc<jsonrpsee::ws_client::WsClient>,
     pub chain_id: ChainId<'static>,
     pub max_batch_size: NonZeroUsize,
 }
@@ -77,16 +80,16 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, ModuleInitError> {
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
         Ok(Self {
+            client,
             chain_id: config.chain_id,
             max_batch_size: config.max_batch_size,
         })
     }
 }
-
-#[derive(Debug, thiserror::Error)]
-pub enum ModuleInitError {}
 
 #[async_trait]
 impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {

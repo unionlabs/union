@@ -7,16 +7,17 @@ use futures::{stream::FuturesUnordered, TryStreamExt};
 use macros::model;
 use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
-use tokio::task::JoinSet;
+use tokio::task::{JoinHandle, JoinSet};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, instrument};
-use unionlabs::{ethereum::keccak256, id::ClientId, traits::Member, ErrorReporter};
+use unionlabs::{ethereum::keccak256, traits::Member, ErrorReporter};
 
 use crate::{
     plugin::{
         ChainModuleClient, ClientModuleClient, ConsensusModuleClient, ConsensusModuleInfo,
         PluginInfo, PluginKind, PluginModuleClient, SupportedInterface,
     },
+    rpc::{server::Server, VoyagerRpcServer},
     ChainId, ClientType, IbcInterface,
 };
 
@@ -24,13 +25,15 @@ pub const PLUGIN_NAME_CACHE_FILE: &str = "/tmp/voyager-plugin-name-cache.json";
 
 #[derive(Debug)]
 pub struct Context {
-    modules: Modules,
+    modules: Arc<Modules>,
 
     plugins: HashMap<String, RpcClient>,
 
     interest_filters: HashMap<String, String>,
 
     cancellation_token: CancellationToken,
+
+    plugin_servers: Vec<RpcServer>,
 
     handles: JoinSet<()>,
 }
@@ -84,7 +87,7 @@ impl RpcClient {
 
     fn make_socket_path(path: String, config: Value) -> String {
         format!(
-            "/tmp/voyager-plugin-{}.sock",
+            "/tmp/voyager-to-plugin-{}.sock",
             keccak256(&(config.to_string() + &path)).to_string_unprefixed()
         )
     }
@@ -95,6 +98,50 @@ impl RpcClient {
 
     pub fn plugin_config(&self) -> &PluginConfig {
         &self.plugin_config
+    }
+}
+
+#[derive(macros::Debug)]
+pub struct RpcServer {
+    #[allow(dead_code)]
+    socket: String,
+    #[debug(skip)]
+    server_handle: Server,
+    #[debug(skip)]
+    #[allow(dead_code)]
+    server_task_handle: JoinHandle<()>,
+}
+
+impl RpcServer {
+    async fn new(path: String, config: Value) -> Result<Self, BoxDynError> {
+        let socket = Self::make_socket_path(path.clone(), config.clone());
+        let rpc_server = reth_ipc::server::Builder::default().build(socket.clone());
+
+        let server_handle = Server::new();
+
+        let server_task_handle = tokio::spawn(
+            rpc_server
+                .start(server_handle.clone().into_rpc())
+                .await?
+                .stopped(),
+        );
+
+        Ok(Self {
+            socket,
+            server_handle,
+            server_task_handle,
+        })
+    }
+
+    fn start(&self, modules: Arc<Modules>) {
+        self.server_handle.start(modules)
+    }
+
+    fn make_socket_path(path: String, config: Value) -> String {
+        format!(
+            "/tmp/plugin-to-voyager-{}.sock",
+            keccak256(&(config.to_string() + &path)).to_string_unprefixed()
+        )
     }
 }
 
@@ -112,20 +159,17 @@ fn default_enabled() -> bool {
 }
 
 impl Context {
-    pub async fn new(plugins: Vec<PluginConfig>) -> Result<Self, BoxDynError> {
+    pub async fn new(plugin_configs: Vec<PluginConfig>) -> Result<Self, BoxDynError> {
         let cancellation_token = CancellationToken::new();
 
-        let mut this = Self {
-            modules: Modules {
-                chain_modules: Default::default(),
-                client_modules: Default::default(),
-                consensus_modules: Default::default(),
-            },
-            plugins: Default::default(),
-            interest_filters: Default::default(),
-            cancellation_token: cancellation_token.clone(),
-            handles: JoinSet::new(),
+        let mut modules = Modules {
+            chain_modules: Default::default(),
+            client_modules: Default::default(),
+            consensus_modules: Default::default(),
         };
+        let mut plugins = HashMap::default();
+        let mut plugin_servers = Vec::default();
+        let mut interest_filters = HashMap::default();
 
         pub enum PluginKindFilled {
             Chain(ChainId<'static>),
@@ -138,11 +182,12 @@ impl Context {
             interest_filter: Option<String>,
             rpc_client: RpcClient,
             kind: Option<PluginKindFilled>,
+            rpc_server: RpcServer,
         }
 
         let handles = std::sync::Mutex::new(JoinSet::new());
 
-        let plugins = plugins
+        let plugins_processed = plugin_configs
             .into_iter()
             .filter_map(|plugin_config| {
                 if !plugin_config.enabled {
@@ -163,6 +208,12 @@ impl Context {
                 ));
 
                 Some(async move {
+                    let rpc_server = RpcServer::new(
+                        plugin_config.path.to_owned(),
+                        plugin_config.config.to_owned(),
+                    )
+                    .await?;
+
                     let rpc_client = loop {
                         match RpcClient::new(
                             plugin_config.path.to_owned(),
@@ -238,6 +289,7 @@ impl Context {
                         interest_filter,
                         rpc_client,
                         kind,
+                        rpc_server,
                     })
                 })
             })
@@ -250,21 +302,21 @@ impl Context {
             interest_filter,
             rpc_client,
             kind,
-        } in plugins
+            rpc_server,
+        } in plugins_processed
         {
-            this.plugins.insert(name.clone(), rpc_client.clone());
+            plugins.insert(name.clone(), rpc_client.clone());
+
+            plugin_servers.push(rpc_server);
 
             if let Some(interest_filter) = interest_filter {
-                this.interest_filters.insert(name.clone(), interest_filter);
+                interest_filters.insert(name.clone(), interest_filter);
             }
 
             match kind {
                 Some(kind) => match kind {
                     PluginKindFilled::Chain(chain_id) => {
-                        let prev = this
-                            .modules
-                            .chain_modules
-                            .insert(chain_id.clone(), rpc_client);
+                        let prev = modules.chain_modules.insert(chain_id.clone(), rpc_client);
 
                         if prev.is_some() {
                             return Err(format!(
@@ -280,13 +332,11 @@ impl Context {
                         );
                     }
                     PluginKindFilled::Client(client_type, ibc_interface) => {
-                        let entry = this
-                            .modules
+                        let prev = modules
                             .client_modules
                             .entry(client_type.clone())
-                            .or_default();
-
-                        let prev = entry.insert(ibc_interface.clone(), rpc_client.clone());
+                            .or_default()
+                            .insert(ibc_interface.clone(), rpc_client.clone());
 
                         if prev.is_some() {
                             return Err(format!(
@@ -305,8 +355,7 @@ impl Context {
                         );
                     }
                     PluginKindFilled::Consensus(chain_id) => {
-                        let prev = this
-                            .modules
+                        let prev = modules
                             .consensus_modules
                             .insert(chain_id.clone(), rpc_client.clone());
 
@@ -333,15 +382,10 @@ impl Context {
             }
         }
 
-        // dbg!(&this);
-
-        this.handles = handles.into_inner().unwrap();
-
         if let Err(err) = tokio::fs::write(
             PLUGIN_NAME_CACHE_FILE,
             serde_json::to_string(
-                &this
-                    .plugins
+                &plugins
                     .iter()
                     .map(|(plugin_name, client)| (plugin_name, &client.plugin_config))
                     .collect::<HashMap<&String, &PluginConfig>>(),
@@ -353,11 +397,20 @@ impl Context {
             error!(err = %ErrorReporter(err), "unable to write cache file")
         }
 
-        Ok(this)
-    }
+        let modules = Arc::new(modules);
 
-    pub fn modules(&self) -> &Modules {
-        &self.modules
+        for rpc_server in &plugin_servers {
+            rpc_server.start(modules.clone());
+        }
+
+        Ok(Self {
+            modules,
+            plugins,
+            interest_filters,
+            cancellation_token,
+            plugin_servers,
+            handles: handles.into_inner().unwrap(),
+        })
     }
 
     pub async fn shutdown(self) {
@@ -399,6 +452,32 @@ impl Context {
 
     pub fn interest_filters(&self) -> &HashMap<String, String> {
         &self.interest_filters
+    }
+
+    pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+        &'a self,
+        chain_id: &'b ChainId<'c>,
+    ) -> Result<&'a (impl ChainModuleClient<D, C, Cb> + 'a), ChainModuleNotFound> {
+        self.modules.chain_module(chain_id)
+    }
+
+    pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+        &'a self,
+        chain_id: &'b ChainId<'c>,
+    ) -> Result<&'a (impl ConsensusModuleClient<D, C, Cb> + 'a), ConsensusModuleNotFound> {
+        self.modules.consensus_module(chain_id)
+    }
+
+    pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+        &'a self,
+        client_type: &'b ClientType<'c>,
+        ibc_interface: &'b IbcInterface<'c>,
+    ) -> Result<&'a (impl ClientModuleClient<D, C, Cb> + 'a), ClientModuleNotFound> {
+        self.modules.client_module(client_type, ibc_interface)
+    }
+
+    pub fn modules(&self) -> Arc<Modules> {
+        self.modules.clone()
     }
 }
 
@@ -481,6 +560,10 @@ async fn run_plugin_client(
         let mut cmd = tokio::process::Command::new(&plugin_config.path);
         cmd.arg("run");
         cmd.arg(&plugin_socket);
+        cmd.arg(RpcServer::make_socket_path(
+            plugin_config.path.clone(),
+            plugin_config.config.clone(),
+        ));
         cmd.arg(plugin_config.config.to_string());
 
         let mut child = loop {

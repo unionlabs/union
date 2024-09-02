@@ -21,6 +21,7 @@ use voyager_message::{
     data::{Data, IbcMessage, WithChainId},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
+    reth_ipc::client::IpcClientBuilder,
     run_module_server, ChainId, VoyagerMessage,
 };
 
@@ -46,6 +47,8 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    pub client: Arc<jsonrpsee::ws_client::WsClient>,
+
     pub chain_id: ChainId<'static>,
 
     pub ibc_handler_address: Address,
@@ -71,12 +74,15 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, BoxDynError> {
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
         let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;
 
         Ok(Self {
+            client,
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             aptos_client,

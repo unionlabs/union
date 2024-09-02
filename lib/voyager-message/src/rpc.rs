@@ -3,7 +3,7 @@ use macros::model;
 use serde_json::Value;
 use unionlabs::{ibc::core::client::height::Height, ics24::Path, id::ClientId, QueryHeight};
 
-use crate::{context::Modules, data::ClientInfo, ChainId, ClientType, IbcInterface};
+use crate::{data::ClientInfo, ChainId, ClientType, IbcInterface};
 
 #[rpc(
     client,
@@ -138,6 +138,8 @@ pub struct SelfConsensusState {
 // Plugin(PluginMessage<C>),
 
 pub mod server {
+    use std::sync::{Arc, OnceLock};
+
     use jsonrpsee::{
         core::RpcResult,
         types::{ErrorObject, ErrorObjectOwned},
@@ -158,8 +160,36 @@ pub mod server {
         ChainId, FATAL_JSONRPC_ERROR_CODE,
     };
 
-    pub struct Server {
-        pub modules: Modules,
+    #[derive(Clone)]
+    pub struct Server(Arc<ServerInner>);
+
+    #[derive(Clone)]
+    pub struct ServerInner {
+        modules: OnceLock<Arc<Modules>>,
+    }
+
+    impl Server {
+        #[allow(clippy::new_without_default)]
+        pub fn new() -> Self {
+            Server(Arc::new(ServerInner {
+                modules: OnceLock::new(),
+            }))
+        }
+
+        pub fn start(&self, modules: Arc<Modules>) {
+            assert!(
+                self.0.modules.set(modules).is_ok(),
+                "server has already been started"
+            );
+        }
+
+        fn modules(&self) -> RpcResult<&Modules> {
+            self.0
+                .modules
+                .get()
+                .map(|x| &**x)
+                .ok_or_else(|| ErrorObject::owned(-2, "server has not been started", None::<()>))
+        }
     }
 
     impl Server {
@@ -172,7 +202,7 @@ pub mod server {
             match height {
                 QueryHeight::Latest => {
                     let latest_height = self
-                        .modules
+                        .modules()?
                         .chain_module::<Value, Value, Value>(chain_id)
                         .map_err(fatal_error)?
                         .query_latest_height()
@@ -192,10 +222,14 @@ pub mod server {
     impl VoyagerRpcServer for Server {
         #[instrument(skip_all)]
         async fn info(&self) -> RpcResult<Info> {
-            let chain = self.modules.loaded_chain_modules().cloned().collect();
-            let consensus = self.modules.loaded_consensus_modules().cloned().collect();
+            let chain = self.modules()?.loaded_chain_modules().cloned().collect();
+            let consensus = self
+                .modules()?
+                .loaded_consensus_modules()
+                .cloned()
+                .collect();
             let client = self
-                .modules
+                .modules()?
                 .loaded_client_modules()
                 .flat_map(|(c, is)| is.map(|i| (c.clone(), i.clone())))
                 .collect();
@@ -212,7 +246,7 @@ pub mod server {
             debug!("querying latest height");
 
             let latest_height = self
-                .modules
+                .modules()?
                 .chain_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?
                 .query_latest_height()
@@ -233,7 +267,9 @@ pub mod server {
             debug!("fetching client info");
 
             let client_info = <_ as ChainModuleClient<Value, Value, Value>>::client_info(
-                self.modules.chain_module(&chain_id).map_err(fatal_error)?,
+                self.modules()?
+                    .chain_module(&chain_id)
+                    .map_err(fatal_error)?,
                 client_id,
             )
             .await
@@ -254,7 +290,7 @@ pub mod server {
             debug!("fetching ibc state");
 
             let chain_module = self
-                .modules
+                .modules()?
                 .chain_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?;
 
@@ -286,7 +322,7 @@ pub mod server {
             debug!("fetching ibc state");
 
             let chain_module = self
-                .modules
+                .modules()?
                 .chain_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?;
 
@@ -317,7 +353,7 @@ pub mod server {
             debug!("querying self client state");
 
             let chain_module = self
-                .modules
+                .modules()?
                 .consensus_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?;
 
@@ -343,7 +379,7 @@ pub mod server {
             debug!("querying self consensus state");
 
             let chain_module = self
-                .modules
+                .modules()?
                 .consensus_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?;
 

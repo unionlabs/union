@@ -1,5 +1,4 @@
 use beacon_api::client::{BeaconApiClient, BlockId};
-use unionlabs::ethereum::config::Mainnet;
 
 #[tokio::main]
 async fn main() {

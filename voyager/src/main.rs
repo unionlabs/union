@@ -177,10 +177,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
         Command::Query { on, height, path } => {
             let voyager = Voyager::new(voyager_config.clone()).await?;
 
-            let chain = voyager
-                .context
-                .modules()
-                .chain_module::<Value, Value, Value>(&on)?;
+            let chain = voyager.context.chain_module::<Value, Value, Value>(&on)?;
 
             let height = match height {
                 QueryHeight::Latest => chain.query_latest_height().await?,
@@ -195,7 +192,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                     voyager
                         .context
-                        .modules()
                         .client_module::<Value, Value, Value>(
                             &client_info.client_type,
                             &client_info.ibc_interface,
@@ -213,7 +209,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                     voyager
                         .context
-                        .modules()
                         .client_module::<Value, Value, Value>(
                             &client_info.client_type,
                             &client_info.ibc_interface,
@@ -373,7 +368,6 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
             let chain = voyager
                 .context
-                .modules()
                 .chain_module::<Value, Value, Value>(&ChainId::new(&chain_id))
                 .unwrap();
 

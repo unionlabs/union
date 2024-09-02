@@ -9,7 +9,7 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{call, conc, promise, BoxDynError, Op};
+use queue_msg::{call, conc, noop, promise, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -42,6 +42,8 @@ use voyager_message::{
         ChainModuleServer, IbcGo08WasmClientMetadata, PluginInfo, PluginKind, PluginModuleServer,
         RawClientState,
     },
+    reth_ipc::client::IpcClientBuilder,
+    rpc::VoyagerRpcClient,
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
@@ -66,7 +68,7 @@ async fn main() {
     run_module_server(
         Module::new,
         ChainModuleServer::into_rpc,
-        |config, cmd| async move { Module::new(config).await?.cmd(cmd).await },
+        |config, cmd| async move { Module::new(config, String::new()).await?.cmd(cmd).await },
     )
     .await
 }
@@ -79,6 +81,8 @@ pub enum Cmd {
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    pub client: Arc<jsonrpsee::ws_client::WsClient>,
+
     pub chain_id: ChainId<'static>,
     pub chain_revision: u64,
 
@@ -111,7 +115,9 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, InitError> {
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network;
@@ -119,17 +125,18 @@ impl Module {
         let chain_revision = chain_id
             .split('-')
             .last()
-            .ok_or_else(|| InitError::ChainIdParse {
+            .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,
             })?
             .parse()
-            .map_err(|err| InitError::ChainIdParse {
+            .map_err(|err| ChainIdParseError {
                 found: chain_id.clone(),
                 source: Some(err),
             })?;
 
         Ok(Self {
+            client,
             tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
@@ -270,17 +277,11 @@ impl Module {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum InitError {
-    #[error("tendermint rpc error")]
-    Cometbft(#[from] cometbft_rpc::JsonRpcError),
-    #[error(
-        "unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`"
-    )]
-    ChainIdParse {
-        found: String,
-        #[source]
-        source: Option<ParseIntError>,
-    },
+#[error("unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`")]
+pub struct ChainIdParseError {
+    found: String,
+    #[source]
+    source: Option<ParseIntError>,
 }
 
 #[async_trait]

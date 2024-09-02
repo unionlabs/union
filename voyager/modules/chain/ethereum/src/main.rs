@@ -8,7 +8,7 @@ use contracts::{
 };
 use ethers::{
     contract::EthLogDecode,
-    providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
+    providers::{Middleware, Provider, Ws},
     types::Filter,
 };
 use futures::{stream::FuturesUnordered, TryStreamExt};
@@ -41,6 +41,7 @@ use voyager_message::{
     },
     data::{ClientInfo, Data},
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
+    reth_ipc::client::IpcClientBuilder,
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
@@ -72,6 +73,8 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    pub client: Arc<jsonrpsee::ws_client::WsClient>,
+
     pub chain_id: ChainId<'static>,
 
     /// The address of the `IBCHandler` smart contract.
@@ -100,12 +103,15 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, InitError> {
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
 
         let chain_id = provider.get_chainid().await?;
 
         Ok(Self {
+            client,
             chain_id: ChainId::new(U256(chain_id).to_string()),
             ibc_handler_address: config.ibc_handler_address,
             provider,
@@ -773,16 +779,6 @@ impl Module {
             .unwrap(),
         })
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum InitError {
-    #[error("unable to connect to websocket")]
-    Ws(#[from] WsClientError),
-    #[error("provider error")]
-    Provider(#[from] ProviderError),
-    #[error("beacon error")]
-    Beacon(#[from] beacon_api::client::NewError),
 }
 
 #[async_trait]

@@ -79,7 +79,7 @@ impl Module {
         format!("{PLUGIN_NAME}/{SUPPORTED_CLIENT_TYPE}/{SUPPORTED_IBC_INTERFACE}")
     }
 
-    pub async fn new(_config: Config) -> Result<Self, ModuleInitError> {
+    pub async fn new(_config: Config, _voyager_config: String) -> Result<Self, ModuleInitError> {
         Ok(Self {})
     }
 

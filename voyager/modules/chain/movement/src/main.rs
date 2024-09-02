@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, sync::Arc};
 
 use aptos_crypto::PrivateKey;
 use aptos_rest_client::{
@@ -28,6 +28,7 @@ use voyager_message::{
     call::Call,
     data::{ClientInfo, Data},
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
+    reth_ipc::client::IpcClientBuilder,
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
@@ -54,7 +55,7 @@ async fn main() {
     run_module_server(
         Module::new,
         ChainModuleServer::into_rpc,
-        |config, cmd| async move { Module::new(config).await?.cmd(cmd).await },
+        |config, cmd| async move { Module::new(config, String::new()).await?.cmd(cmd).await },
     )
     .await
 }
@@ -70,6 +71,8 @@ pub enum Cmd {
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    pub client: Arc<jsonrpsee::ws_client::WsClient>,
+
     pub chain_id: ChainId<'static>,
 
     pub aptos_client: aptos_rest_client::Client,
@@ -211,12 +214,15 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, BoxDynError> {
-        let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse().unwrap());
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
+        let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse()?);
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;
 
         Ok(Self {
+            client,
             chain_id: ChainId::new(chain_id.to_string()),
             aptos_client,
             ibc_handler_address: config.ibc_handler_address,

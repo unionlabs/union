@@ -5,6 +5,7 @@ use std::{
     fmt::{Debug, Display},
     net::SocketAddr,
     panic::AssertUnwindSafe,
+    sync::Arc,
 };
 
 use axum::{
@@ -328,14 +329,11 @@ impl Voyager {
                         .build(self.rpc_laddr)
                         .await?;
                     let mut module = jsonrpsee::RpcModule::new(&self.context);
-                    module
-                        .merge(
-                            voyager_message::rpc::server::Server {
-                                modules: self.context.modules().clone(),
-                            }
-                            .into_rpc(),
-                        )
-                        .unwrap();
+
+                    let s = voyager_message::rpc::server::Server::new();
+                    s.start(self.context.modules().clone());
+
+                    module.merge(s.into_rpc()).unwrap();
 
                     dbg!(&module);
 

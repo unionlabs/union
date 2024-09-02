@@ -262,7 +262,8 @@ pub async fn run_module_server<
     Cmd: clap::Subcommand,
     CmdFut: Future<Output = Result<(), impl Debug>>,
 >(
-    new_fn: fn(Config) -> Fut,
+    // (config, voyager socket)
+    new_fn: fn(Config, String) -> Fut,
     into_rpc_fn: fn(M) -> jsonrpsee::RpcModule<M>,
     do_cmd: fn(Config, Cmd) -> CmdFut,
 ) {
@@ -270,6 +271,7 @@ pub async fn run_module_server<
     enum Args<Cmd: clap::Subcommand> {
         Run {
             socket: String,
+            voyager_socket: String,
             config: String,
         },
         Cmd {
@@ -283,10 +285,14 @@ pub async fn run_module_server<
     let app = <Args<Cmd> as clap::Parser>::parse();
 
     match app {
-        Args::Run { socket, config } => {
+        Args::Run {
+            socket,
+            voyager_socket,
+            config,
+        } => {
             let config = serde_json::from_str(&config).expect("unable to parse config");
 
-            let module = new_fn(config)
+            let module = new_fn(config, voyager_socket)
                 .await
                 .expect("error instantiating client module");
 

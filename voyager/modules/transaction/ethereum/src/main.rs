@@ -3,6 +3,7 @@ use std::{collections::VecDeque, sync::Arc};
 use chain_utils::{
     ethereum::{EthereumSignerMiddleware, IbcHandlerErrors},
     keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
+    BoxDynError,
 };
 use contracts::{
     ibc_handler::{
@@ -43,6 +44,7 @@ use voyager_message::{
     data::{log_msg, Data, IbcMessage, MsgCreateClientData, WithChainId},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
+    reth_ipc::client::IpcClientBuilder,
     run_module_server, ChainId, VoyagerMessage,
 };
 
@@ -108,7 +110,9 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, InitError> {
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
 
         let chain_id = provider.get_chainid().await?;
@@ -142,14 +146,6 @@ impl Module {
             legacy: config.legacy,
         })
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum InitError {
-    #[error("unable to connect to websocket")]
-    Ws(#[from] WsClientError),
-    #[error("provider error")]
-    Provider(#[from] ProviderError),
 }
 
 #[async_trait]

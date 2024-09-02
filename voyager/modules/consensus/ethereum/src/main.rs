@@ -87,7 +87,7 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, ModuleInitError> {
+    pub async fn new(config: Config, _voyager_config: String) -> Result<Self, ModuleInitError> {
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
 
         let chain_id = provider.get_chainid().await?;

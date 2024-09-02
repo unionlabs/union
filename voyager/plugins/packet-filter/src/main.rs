@@ -1,7 +1,7 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, sync::Arc};
 
 use jsonrpsee::core::{async_trait, RpcResult};
-use queue_msg::{optimize::OptimizationResult, Op};
+use queue_msg::{optimize::OptimizationResult, BoxDynError, Op};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -10,6 +10,7 @@ use voyager_message::{
     data::Data,
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
+    reth_ipc::client::IpcClientBuilder,
     run_module_server, VoyagerMessage,
 };
 
@@ -197,7 +198,9 @@ impl Module {
         PLUGIN_NAME.to_owned()
     }
 
-    pub async fn new(config: Config) -> Result<Self, ModuleInitError> {
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
         Ok(Self {
             connection_event_filters: config.connection_event_filters,
             channel_event_filters: config.channel_event_filters,
@@ -273,9 +276,6 @@ impl Module {
         )
     }
 }
-
-#[derive(Debug, thiserror::Error)]
-pub enum ModuleInitError {}
 
 #[async_trait]
 impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {

@@ -2,11 +2,12 @@ use std::{
     collections::VecDeque,
     fmt::Debug,
     num::{NonZeroU64, ParseIntError},
+    sync::Arc,
 };
 
 use jsonrpsee::core::{async_trait, RpcResult};
 use protos::union::galois::api::v3::union_prover_api_client;
-use queue_msg::{call, data, defer, now, promise, seq, void, Op};
+use queue_msg::{call, data, defer, now, promise, seq, void, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, instrument, warn};
@@ -28,6 +29,7 @@ use voyager_message::{
     plugin::{
         ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginKind, PluginModuleServer,
     },
+    reth_ipc::client::IpcClientBuilder,
     run_module_server, ChainId, ClientType, VoyagerMessage,
 };
 
@@ -60,6 +62,8 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    pub client: Arc<jsonrpsee::ws_client::WsClient>,
+
     pub chain_id: ChainId<'static>,
 
     pub tm_client: cometbft_rpc::Client,
@@ -84,7 +88,9 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, UnionInitError> {
+    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
@@ -92,17 +98,18 @@ impl Module {
         let chain_revision = chain_id
             .split('-')
             .last()
-            .ok_or_else(|| UnionInitError::ChainIdParse {
+            .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,
             })?
             .parse()
-            .map_err(|err| UnionInitError::ChainIdParse {
+            .map_err(|err| ChainIdParseError {
                 found: chain_id.clone(),
                 source: Some(err),
             })?;
 
         Ok(Self {
+            client,
             tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
@@ -113,18 +120,11 @@ impl Module {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum UnionInitError {
-    #[error("tendermint rpc error")]
-    Cometbft(#[from] cometbft_rpc::JsonRpcError),
-    #[error(
-        "unable to parse chain id: expected format \
-        `<chain>-<revision-number>`, found `{found}`"
-    )]
-    ChainIdParse {
-        found: String,
-        #[source]
-        source: Option<ParseIntError>,
-    },
+#[error("unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`")]
+pub struct ChainIdParseError {
+    found: String,
+    #[source]
+    source: Option<ParseIntError>,
 }
 
 #[async_trait]

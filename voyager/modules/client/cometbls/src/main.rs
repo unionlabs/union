@@ -42,7 +42,7 @@ async fn main() {
     run_module_server(
         Module::new,
         ClientModuleServer::into_rpc,
-        |config, cmd| async move { Module::new(config).await?.cmd(cmd).await },
+        |config, cmd| async move { Module::new(config, String::new()).await?.cmd(cmd).await },
     )
     .await
 }
@@ -94,7 +94,7 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.ibc_interface.as_str())
     }
 
-    pub async fn new(config: Config) -> Result<Self, BoxDynError> {
+    pub async fn new(config: Config, _voyager_socket: String) -> Result<Self, BoxDynError> {
         Ok(Self {
             ibc_interface: match config.ibc_interface.as_str() {
                 IbcInterface::IBC_SOLIDITY => SupportedIbcInterfaces::IbcSolidity,
