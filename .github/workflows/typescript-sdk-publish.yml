@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
-      
+
       - name: 'Publish to JSR'
         working-directory: './typescript-sdk'
         run: |
