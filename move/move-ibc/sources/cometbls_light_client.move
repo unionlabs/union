@@ -48,7 +48,7 @@ module IBC::LightClient {
 
     struct Timestamp has drop, copy {
         seconds: u64,
-        nanos: u64,
+        nanos: u32,
     }
 
     struct LightHeader has drop {
@@ -143,7 +143,7 @@ module IBC::LightClient {
         };
 
         let trusted_timestamp = consensus_state.timestamp;
-        let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + header.signed_header.time.nanos;
+        let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
         if (untrusted_timestamp <= trusted_timestamp) {
             return 1  
         };
@@ -177,25 +177,25 @@ module IBC::LightClient {
 
     public fun update_client(
         client_id: String,
-        client_msg: Any
-    ): (vector<height::Height>, u64) acquires State { // second parameter is error code
-        let header = std::any::unpack<Header>(client_msg);
+        client_msg: vector<u8>
+    ): (vector<u8>, vector<vector<u8>>, vector<height::Height>, u64) acquires State {
+        let header = decode_header(client_msg);
 
         let state = borrow_global_mut<State>(get_client_address(&client_id));
 
         if (height::is_zero(&state.client_state.frozen_height)) {
-            return (vector<height::Height>[], 1)
+            return (vector::empty(), vector::empty(), vector::empty(), 1)
         };
 
         let consensus_state = smart_table::borrow<height::Height, ConsensusState>(&state.consensus_states, header.trusted_height);
 
         let err = verify_header(&header, state, consensus_state);
         if (err != 0) {
-            return (vector<height::Height>[], err)
+            return (vector::empty(), vector::empty(), vector::empty(), err)
         };
 
         let untrusted_height_number = header.signed_header.height;
-        let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + header.signed_header.time.nanos;
+        let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
 
         if (untrusted_height_number > height::get_revision_height(&state.client_state.latest_height)) {
             height::set_revision_height(&mut state.client_state.latest_height, untrusted_height_number);
@@ -214,6 +214,8 @@ module IBC::LightClient {
         smart_table::upsert<height::Height, ConsensusState>(&mut state.consensus_states, new_height, new_consensus_state);
 
         (
+            encode_client_state(state.client_state),
+            vector<vector<u8>>[encode_consensus_state(new_consensus_state)],
             vector<height::Height>[
                 new_height
             ],
@@ -638,12 +640,6 @@ module IBC::LightClient {
         buf
     }
 
-    fun default_merkle_root(): MerkleRoot {
-        MerkleRoot {
-            hash: vector::empty(),
-        }
-    }
-
     fun decode_merkle_root(buf: &vector<u8>, cursor: u64, len: u64, merkle_root: &mut MerkleRoot): u64 {
         let first_pos = cursor;
         while (cursor - first_pos < len) {
@@ -675,5 +671,187 @@ module IBC::LightClient {
         vector::append(&mut buf, proto_utils::encode_bytes(1, merkle_root.hash));
 
         buf
+    }
+
+    public fun default_zkp(): ZKP {
+        ZKP {
+            proof: Proof {
+                a: zero<G1>(),
+                b: zero<G2>(),
+                c: zero<G1>(),
+            },
+            proof_commitment: zero<G1>(),
+            proof_commitment_pok: zero<G1>(),
+        }
+    }
+
+    public fun default_header(): Header {
+        Header {
+            signed_header: default_light_header(),
+            trusted_height: height::default(),
+            zero_knowledge_proof: default_zkp(),
+        }
+    }
+
+    fun decode_header(buf: vector<u8>): Header {
+        let cursor = 0;
+        let header = default_header();
+        if (vector::is_empty(&buf)) {
+            return header
+        };
+        while (cursor < vector::length(&buf)) {
+            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(&buf, cursor);
+            assert!(err == 0, 1);
+            cursor = cursor + advance;
+            let n_read = if (tag == 1) {
+                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                cursor = cursor + advance;
+                let n_read = decode_light_header(&buf, cursor, len, &mut header.signed_header);
+                assert!(n_read == len, 1);
+                len
+            } else if (tag == 2) {                
+                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
+                assert!(err == 0, 1);
+                cursor = cursor + advance;
+                let (n_read, err) = height::decode_proto(&buf, cursor, len, &mut header.trusted_height);
+                assert!(err == 0 && n_read == len, 1);
+                len
+            } else if (tag == 3) {
+                let (bytes, advance) = proto_utils::decode_bytes(wire_type, &buf, cursor);
+                let _zkp = option::extract(&mut bytes);
+                // TODO(aeryz): parse zkp here
+                advance
+            } else {
+                abort 1
+            };
+            
+            cursor = cursor + n_read;
+        };
+
+        header
+    }
+
+
+    public fun default_light_header(): LightHeader {
+        LightHeader {
+            height: 0,
+            time: Timestamp {
+                nanos: 0,
+                seconds: 0,
+            },
+            validators_hash: vector::empty(),
+            next_validators_hash: vector::empty(),
+            app_hash: vector::empty(),
+        }
+    }
+
+    public fun encode_light_header(header: LightHeader): vector<u8> {
+        let buf = vector::empty();
+
+        if (header.height != 0) {
+            vector::append(&mut buf, proto_utils::encode_u64(1, header.height));
+        };
+
+        let time = encode_timestamp(header.time);
+        if (!vector::is_empty(&time)) {
+            vector::append(&mut buf, proto_utils::encode_prefix(1, 2));
+            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&time)));
+            vector::append(&mut buf, time);
+        };
+
+        if (!vector::is_empty(&header.validators_hash)) {
+            vector::append(&mut buf, proto_utils::encode_bytes(3, header.validators_hash));
+        };
+
+        if (!vector::is_empty(&header.next_validators_hash)) {
+            vector::append(&mut buf, proto_utils::encode_bytes(4, header.next_validators_hash));
+        };
+
+        if (!vector::is_empty(&header.app_hash)) {
+            vector::append(&mut buf, proto_utils::encode_bytes(5, header.app_hash));
+        };
+
+        buf
+    }
+    
+    public fun decode_light_header(buf: &vector<u8>, cursor: u64, len: u64, light_header: &mut LightHeader): u64 {
+        let first_pos = cursor;
+        while (cursor - first_pos < len) {
+            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(buf, cursor);
+            assert!(err == 0, 1);
+            cursor = cursor + advance;
+            let advance = if (tag == 1) {
+                let (num, advance, err) = proto_utils::decode_varint(wire_type, buf, cursor);
+                assert!(err == 0, 1);
+                light_header.height = num;
+                advance
+            } else if (tag == 2) {
+                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, buf, cursor);
+                assert!(err == 0, 1);
+                cursor = cursor + advance;
+                let n_read = decode_timestamp(buf, cursor, len, &mut light_header.time);
+                assert!(n_read == len, 1);
+                len
+            } else if (tag == 3) {
+                let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
+                light_header.validators_hash = option::extract(&mut bytes);
+                advance
+            } else if (tag == 4) {
+                let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
+                light_header.validators_hash = option::extract(&mut bytes);
+                advance
+            } else if (tag == 5) {
+                let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
+                light_header.validators_hash = option::extract(&mut bytes);
+                advance
+            }
+            
+            else {
+                abort 1
+            };
+            cursor = cursor + advance;
+        };
+
+        cursor - first_pos
+    }
+
+    public fun encode_timestamp(timestamp: Timestamp): vector<u8> {
+        let buf = vector::empty();
+
+        if (timestamp.seconds != 0) {
+            vector::append(&mut buf, proto_utils::encode_u64(1, timestamp.seconds));
+        };
+
+        if (timestamp.nanos != 0) {
+            vector::append(&mut buf, proto_utils::encode_u32(2, timestamp.nanos));
+        };
+
+        buf
+    }
+
+    fun decode_timestamp(buf: &vector<u8>, cursor: u64, len: u64, timestamp: &mut Timestamp): u64 {
+        let first_pos = cursor;
+        while (cursor - first_pos < len) {
+            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(buf, cursor);
+            assert!(err == 0, 1);
+            cursor = cursor + advance;
+            let advance = if (tag == 1) {
+                let (num, advance, err) = proto_utils::decode_varint(wire_type, buf, cursor);
+                assert!(err == 0, 1);
+                timestamp.seconds = num;
+                advance
+            } else if (tag == 2) {
+                let (num, advance, err) = proto_utils::decode_varint(wire_type, buf, cursor);
+                assert!(err == 0, 1);
+                timestamp.nanos = (num as u32);
+                advance
+            } else {
+                abort 1
+            };
+            cursor = cursor + advance;
+        };
+
+        cursor - first_pos
     }
 }

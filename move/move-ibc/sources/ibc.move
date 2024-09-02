@@ -37,7 +37,7 @@ module IBC::Core {
     const SEED: vector<u8> = b"Move Seed Example";
     const VAULT_SEED: vector<u8> = b"Vault Seed Example";
     const E_CLIENT_ALREADY_EXISTS: u64 = 1001;
-    const E_CLIENT_IMPL_NOT_FOUND: u64 = 1002;
+    const E_CLIENT_NOT_FOUND: u64 = 1002;
     const E_LIGHT_CLIENT_CALL_FAILED: u64 = 1003;
     const E_SWAP_NOT_INITIALIZED: u64 = 1004;
     const E_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE: u64 = 1005;
@@ -74,6 +74,7 @@ module IBC::Core {
     const E_INVALID_PACKET_COMMITMENT: u64 = 1033;
     const E_TIMESTAMP_TIMEOUT_NOT_REACHED: u64 = 1034;
     const E_TIMEOUT_HEIGHT_NOT_REACHED: u64 = 1035;
+    const E_INVALID_UPDATE: u64 = 1036;
     const E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE: u64 = 1036;
 
      
@@ -81,6 +82,12 @@ module IBC::Core {
     #[event]
     struct ClientCreatedEvent has copy, drop, store {
         client_id: String,
+    }
+
+    #[event]
+    struct ClientUpdated has copy, drop, store {
+        client_id: String,
+        height: Height,
     }
 
     #[event]
@@ -645,6 +652,50 @@ module IBC::Core {
         );
 
         update_connection_commitment(store, connection_id);
+    }
+
+    public entry fun update_client(client_id: String, client_message: vector<u8>) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+
+        if (!table::contains(&store.commitments, IBCCommitment::client_state_commitment_key(client_id))) {
+            abort E_CLIENT_NOT_FOUND
+        };
+
+        let (client_state, consensus_states, heights, err) = LightClient::update_client(
+            client_id,
+            client_message
+        );
+
+        assert!(err == 0, err);
+
+        let heights_len = vector::length(&heights); 
+
+        assert!(
+            !vector::is_empty(&consensus_states) 
+                && !vector::is_empty(&heights) 
+                && heights_len == vector::length(&consensus_states), 
+            E_INVALID_UPDATE
+        );
+        
+        table::upsert(&mut store.commitments, IBCCommitment::client_state_commitment_key(client_id), hash::sha2_256(client_state));
+
+        let i = 0;
+        while (i < heights_len) {
+            let height = *vector::borrow(&heights, i);
+
+            table::upsert(
+                &mut store.commitments,
+                IBCCommitment::consensus_state_commitment_key(client_id, height),
+                hash::sha2_256(*vector::borrow(&consensus_states, i))
+            );
+
+            event::emit(ClientUpdated {
+                client_id,
+                height,
+            });
+
+            i = i + 1;
+        };
     }
 
     public fun channel_open_init(
@@ -1786,6 +1837,4 @@ module IBC::Core {
             *string::bytes(&path)
         )
     }
-
-
 }   
