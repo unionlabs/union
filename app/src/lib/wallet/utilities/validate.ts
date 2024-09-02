@@ -8,14 +8,19 @@ export function isValidEvmAddress(address: unknown): address is EvmAddress {
 
 export function isValidCosmosAddress(
   address: unknown,
-  expectedPrefixes = ["union"]
+  expectedPrefixes: string[] | string = ["union"]
 ): address is CosmosAddress {
   if (typeof address !== "string") return false
 
   try {
-    const nromalized = normalizeBech32(address)
-    return expectedPrefixes.includes(nromalized.slice(0, nromalized.indexOf("1")))
+    const normalized = normalizeBech32(address)
+    const prefix = normalized.slice(0, normalized.indexOf("1"))
+
+    const prefixes = Array.isArray(expectedPrefixes) ? expectedPrefixes : [expectedPrefixes]
+
+    return prefixes.includes(prefix)
   } catch (error) {
     return false
   }
 }
+

@@ -16,14 +16,17 @@ export let userAddr: UserAddresses | null
 $: document.body.style.overflow = dialogOpen ? "hidden" : "auto"
 
 function selectChain(chain: { chain_id: string; display_name: string; rpc_type: string }) {
-  if (chain.rpc_type === "evm" && !userAddr?.evm) {
-    toast.info(`Connect EVM wallet`)
-    return
-  }
 
-  if (chain.rpc_type === "cosmos" && !userAddr?.cosmos) {
-    toast.info(`Connect Cosmos wallet`)
-    return
+  if (kind === 'from') {
+    if (chain.rpc_type === "evm" && !userAddr?.evm) {
+      toast.info(`Connect EVM wallet`)
+      return
+    }
+
+    if (chain.rpc_type === "cosmos" && !userAddr?.cosmos) {
+      toast.info(`Connect Cosmos wallet`)
+      return
+    }
   }
   onChainSelect(chain.chain_id)
   dialogOpen = false
@@ -80,7 +83,7 @@ function selectChain(chain: { chain_id: string; display_name: string; rpc_type: 
               <span class="text-lg font-bold">
                 {chain.display_name}
               </span>
-                {#if (chain.rpc_type === "evm" && !userAddr?.evm) || (chain.rpc_type === "cosmos" && !userAddr?.cosmos) }
+                {#if ((chain.rpc_type === "evm" && !userAddr?.evm) || (chain.rpc_type === "cosmos" && !userAddr?.cosmos))}
                   <Badge variant={selected ? 'secondary' : 'default'}>Disconnected</Badge>
                 {:else}
                   <Badge variant={selected ? 'secondary' : 'default'}>Connected</Badge>

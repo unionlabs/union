@@ -42,6 +42,7 @@ import {
   switchChain
 } from "@wagmi/core"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "viem/chains"
+import {isValidCosmosAddress, isValidEvmAddress} from "$lib/wallet/utilities/validate.ts";
 
 function getChainById(chainId: number): ViemChain | null {
   const chains: { [key: number]: ViemChain } = {
@@ -69,7 +70,7 @@ let fromChainId = writable("")
 let toChainId = writable("")
 let assetSymbol = writable("")
 let assetAddress = writable("")
-let address = writable("")
+let receiver = writable("")
 
 let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
@@ -129,7 +130,7 @@ $: asset = derived(
   }
 )
 
-let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
+let connectedWalletReceiver = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
   switch ($toChain?.rpc_type) {
     case "evm": {
       const evmAddr = $userAddr.evm
@@ -147,9 +148,9 @@ let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
 })
 
 let ucs01Configuration = derived(
-  [fromChain, toChainId, address],
-  ([$fromChain, $toChainId, $address]) => {
-    if ($fromChain === null || $toChainId === null || $address === null) return null
+  [fromChain, toChainId, receiver],
+  ([$fromChain, $toChainId, $receiver]) => {
+    if ($fromChain === null || $toChainId === null || $receiver === null) return null
 
     let ucs1_configuration =
       $toChainId in $fromChain.ucs1_configurations
@@ -177,7 +178,7 @@ let ucs01Configuration = derived(
         pfmMemo = generatePfmMemo(
           forwardConfig.channel_id,
           forwardConfig.port,
-          $toChain?.rpc_type === "evm" ? $address.slice(2) : $address
+          $toChain?.rpc_type === "evm" ? $receiver.slice(2) : $receiver
         )
         break
       }
@@ -234,7 +235,9 @@ const transfer = async () => {
   if ($fromChain.rpc_type === "evm" && !$userAddr.evm) return toast.error("No evm wallet connected")
   if ($fromChain.rpc_type === "cosmos" && !$userAddr.cosmos)
     return toast.error("No cosmos wallet connected")
-  if (!$address) return toast.error("Invalid recipient")
+
+  if (!$receiver) return toast.error("Invalid connectedWalletReceiver")
+
   if (!$ucs01Configuration)
     return toast.error(
       `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
@@ -330,7 +333,7 @@ const transfer = async () => {
         let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
         console.log({ ucs1_configuration })
         if (ucs1_configuration.contract_address === "ics20") {
-          console.log({ $address })
+          console.log({ $receiver })
           transferAssetsMessage = {
             kind: "ibc",
             messageTransfers: [
@@ -339,7 +342,7 @@ const transfer = async () => {
                 sourceChannel: ucs1_configuration.channel_id,
                 token: { denom: $assetAddress, amount: parsedAmount.toString() },
                 sender: rawToBech32($fromChain.addr_prefix, $userAddrCosmos.bytes),
-                receiver: $address,
+                receiver: $receiver,
                 memo: pfmMemo ?? "",
                 timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
               }
@@ -355,7 +358,7 @@ const transfer = async () => {
                 msg: {
                   transfer: {
                     channel: ucs1_configuration.channel_id,
-                    receiver: $toChain.rpc_type === "evm" ? $address?.slice(2) : $address,
+                    receiver: $toChain.rpc_type === "evm" ? $receiver?.slice(2) : $receiver,
                     memo: pfmMemo ?? ""
                   }
                 },
@@ -555,7 +558,7 @@ const transfer = async () => {
             ? $userAddrCosmos?.normalized
             : $userAddrEvm?.normalized,
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
-        receiver: $address,
+        receiver: $receiver,
         assets: {
           [$assetSymbol]: {
             info: $fromChain?.assets?.find(d => d.denom === $assetSymbol) ?? null,
@@ -850,18 +853,29 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 let userInput = writable(false)
 
 $: if (!$userInput) {
-  $address = $recipient ?? ""
+  $receiver = $connectedWalletReceiver ?? ""
 }
 
 const handleInput = (event: Event) => {
-  address.set((event.target as HTMLInputElement).value)
+  receiver.set((event.target as HTMLInputElement).value)
   userInput.set(true)
 }
 
 const resetInput = () => {
   userInput.set(false)
-  address.set($recipient ?? "")
+  receiver.set($connectedWalletReceiver ?? "")
 }
+
+const addressIsValid = derived([receiver, toChain], ([$receiver, $toChain]) => {
+  if(!$toChain) return
+  if($toChain.rpc_type === 'cosmos') {
+    return isValidCosmosAddress($receiver, $toChain.addr_prefix)
+  }
+  if($toChain.rpc_type === 'evm') {
+    return isValidEvmAddress($receiver)
+  }
+})
+
 </script>
 
 <div
@@ -924,7 +938,7 @@ const resetInput = () => {
           {/if}
         </section>
         <section>
-          <CardSectionHeading>Recipient</CardSectionHeading>
+          <CardSectionHeading>Receiver</CardSectionHeading>
           <div class="flex items-start gap-2">
             <div class="w-full">
               <div class="relative w-full mb-2">
@@ -932,12 +946,14 @@ const resetInput = () => {
                         autocapitalize="none"
                         autocomplete="off"
                         autocorrect="off"
-                        bind:value={$address}
-                        class="disabled:bg-black/30"
-                        disabled={!$toChain}
+                        bind:value={$receiver}
+                        class={cn(
+                            "disabled:bg-black/30",
+                            $receiver && $toChain && !$addressIsValid? 'border-red-500' : ""
+                            )}
                         id="address"
                         on:input={handleInput}
-                        placeholder="Enter recipient's address"
+                        placeholder="Enter receiver's address"
                         required={true}
                         spellcheck="false"
                         type="text"
@@ -950,7 +966,7 @@ const resetInput = () => {
                           on:click={resetInput}
                           class="text-xs text-muted-foreground hover:text-primary transition"
                   >
-                    Reset
+                    {$connectedWalletReceiver ? 'Reset to connected wallet' : 'Reset'}
                   </button>
                 {/if}
               </div>
@@ -983,8 +999,8 @@ const resetInput = () => {
           <Button
             disabled={!amount ||
           !$asset ||
+          !$addressIsValid ||
           !$toChainId ||
-          !$recipient ||
           !$assetSymbol ||
           !$fromChainId ||
           !amountLargerThanZero ||
