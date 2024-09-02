@@ -1129,7 +1129,7 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env, mock_info},
+        testing::{message_info, mock_dependencies, mock_env},
         wasm_execute, Addr, BankMsg, Coin, CosmosMsg, IbcEndpoint, Uint128,
     };
     use token_factory_api::TokenFactoryMsg;
@@ -1155,7 +1155,7 @@ mod tests {
                 common: super::ProtocolCommon {
                     deps: deps.as_mut(),
                     env: mock_env(),
-                    info: mock_info("", &[]),
+                    info: message_info(&Addr::unchecked(""), &[]),
                     channel: ChannelInfo {
                         endpoint: IbcEndpoint {
                             port_id: "".to_string(),
