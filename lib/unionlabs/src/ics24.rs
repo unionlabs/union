@@ -24,6 +24,7 @@ pub trait IbcPath: Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
     Debug,
     Clone,
     PartialEq,
+    Eq,
     Serialize,
     Deserialize,
     derive_more::Display,

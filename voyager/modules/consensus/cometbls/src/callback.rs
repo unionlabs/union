@@ -243,9 +243,9 @@ impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for Aggr
     fn call(
         AggregateHeader {
             mut signed_header,
-            chain_id,
+            chain_id: _,
             update_from,
-            update_to,
+            update_to: _,
         }: Self,
         hlist_pat![PluginMessage {
             plugin: _,

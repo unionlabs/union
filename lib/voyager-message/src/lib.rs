@@ -65,7 +65,7 @@ macro_rules! str_newtype {
         // keeping it here for clarity
         #[serde(transparent)]
         #[debug("{}({:?})", stringify!($Struct), self.0)]
-        $vis struct $Struct<'a>(::std::borrow::Cow<'a, str>);
+        $vis struct $Struct<'a>(#[doc(hidden)] ::std::borrow::Cow<'a, str>);
 
         impl<'a> ::core::fmt::Display for $Struct<'a> {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {

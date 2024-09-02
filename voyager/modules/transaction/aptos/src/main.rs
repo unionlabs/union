@@ -10,23 +10,15 @@ use chain_utils::{
     keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
     BoxDynError,
 };
-use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    types::ErrorObject,
-};
-use move_core_types::language_storage::{StructTag, TypeTag};
-use queue_msg::{call, defer, noop, now, optimize::OptimizationResult, seq, Op};
+use jsonrpsee::core::{async_trait, RpcResult};
+use queue_msg::{call, noop, optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
-use tracing::{debug, error, error_span, info, info_span, instrument, warn, Instrument};
-use unionlabs::{
-    hash::{H160, H256},
-    uint::U256,
-    ErrorReporter,
-};
+use tracing::{instrument, warn};
+use unionlabs::hash::{H160, H256};
 use voyager_message::{
     call::Call,
-    data::{log_msg, Data, IbcMessage, MsgCreateClientData, WithChainId},
+    data::{Data, IbcMessage, WithChainId},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
     run_module_server, ChainId, VoyagerMessage,
@@ -266,43 +258,47 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
     }
 }
 
-#[allow(clippy::type_complexity)]
-fn process_msgs(
-    msgs: Vec<IbcMessage>,
-    sender: AccountAddress,
-    relayer: H160,
-) -> Vec<(IbcMessage, EntryFunction)> {
-    msgs.clone()
-        .into_iter()
-        .map(|msg| match msg.clone() {
-            IbcMessage::CreateClient(MsgCreateClientData {
-                msg: data,
-                client_type,
-            }) => (
-                msg,
-                EntryFunction::new(
-                    MoveModuleId {
-                        address: (),
-                        name: (),
-                    }
-                    .into(),
-                    "create_client".parse().unwrap(),
-                    vec![],
-                    vec![client_type, data.client_state, data.consensus_state],
-                ),
-            ),
-            IbcMessage::UpdateClient(data) => (
-                msg,
-                mk_function_call(
-                    ibc_handler,
-                    UpdateClientCall(contracts::shared_types::MsgUpdateClient {
-                        client_id: data.client_id.to_string(),
-                        client_message: data.client_message.into(),
-                        relayer: relayer.into(),
-                    }),
-                ),
-            ),
-            _ => todo!(),
-        })
-        .collect()
-}
+// #[allow(clippy::type_complexity)]
+// fn process_msgs(
+//     msgs: Vec<IbcMessage>,
+//     sender: AccountAddress,
+//     relayer: H160,
+// ) -> Vec<(IbcMessage, EntryFunction)> {
+//     let _ = (msgs, sender, relayer);
+
+//     // msgs.clone()
+//     //     .into_iter()
+//     //     .map(|msg| match msg.clone() {
+//     //         IbcMessage::CreateClient(MsgCreateClientData {
+//     //             msg: data,
+//     //             client_type,
+//     //         }) => (
+//     //             msg,
+//     //             EntryFunction::new(
+//     //                 MoveModuleId {
+//     //                     address: (),
+//     //                     name: (),
+//     //                 }
+//     //                 .into(),
+//     //                 "create_client".parse().unwrap(),
+//     //                 vec![],
+//     //                 vec![client_type, data.client_state, data.consensus_state],
+//     //             ),
+//     //         ),
+//     //         IbcMessage::UpdateClient(data) => (
+//     //             msg,
+//     //             mk_function_call(
+//     //                 ibc_handler,
+//     //                 UpdateClientCall(contracts::shared_types::MsgUpdateClient {
+//     //                     client_id: data.client_id.to_string(),
+//     //                     client_message: data.client_message.into(),
+//     //                     relayer: relayer.into(),
+//     //                 }),
+//     //             ),
+//     //         ),
+//     //         _ => todo!(),
+//     //     })
+//     //     .collect()
+
+//     todo!()
+// }

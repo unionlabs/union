@@ -325,12 +325,12 @@ impl Voyager {
             tasks.push(Box::pin(
                 AssertUnwindSafe(async {
                     let server = jsonrpsee::server::Server::builder()
-                        .build("127.0.0.1:34157".parse::<SocketAddr>()?)
+                        .build(self.rpc_laddr)
                         .await?;
                     let mut module = jsonrpsee::RpcModule::new(&self.context);
                     module
                         .merge(
-                            voyager_message::rpc::Server {
+                            voyager_message::rpc::server::Server {
                                 modules: self.context.modules().clone(),
                             }
                             .into_rpc(),

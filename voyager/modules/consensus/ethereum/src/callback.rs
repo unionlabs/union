@@ -290,11 +290,11 @@ impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for Crea
             },
             PluginMessage {
                 plugin: _,
-                message: BeaconGenesis { genesis },
+                message: BeaconGenesis { genesis: _ },
             },
             PluginMessage {
                 plugin: _,
-                message: BeaconSpec { spec },
+                message: BeaconSpec { spec: _ },
             },
         ]: Self::Params,
     ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {

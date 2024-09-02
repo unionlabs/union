@@ -10,7 +10,7 @@ use serde_json::Value;
 use tokio::task::JoinSet;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, instrument};
-use unionlabs::{ethereum::keccak256, traits::Member, ErrorReporter};
+use unionlabs::{ethereum::keccak256, id::ClientId, traits::Member, ErrorReporter};
 
 use crate::{
     plugin::{
@@ -403,6 +403,27 @@ impl Context {
 }
 
 impl Modules {
+    pub fn loaded_chain_modules(&self) -> impl Iterator<Item = &ChainId<'static>> {
+        self.chain_modules.keys()
+    }
+
+    pub fn loaded_consensus_modules(&self) -> impl Iterator<Item = &ChainId<'static>> {
+        self.consensus_modules.keys()
+    }
+
+    pub fn loaded_client_modules(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            &ClientType<'static>,
+            impl Iterator<Item = &IbcInterface<'static>>,
+        ),
+    > {
+        self.client_modules
+            .iter()
+            .map(|(client_type, ibc_interfaces)| (client_type, ibc_interfaces.keys()))
+    }
+
     pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,

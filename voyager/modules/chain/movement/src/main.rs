@@ -2,10 +2,10 @@ use std::collections::VecDeque;
 
 use aptos_crypto::PrivateKey;
 use aptos_rest_client::{
-    aptos_api_types::{Address, MoveModuleId, MoveType},
+    aptos_api_types::{Address, MoveType},
     Transaction,
 };
-use aptos_types::transaction::{EntryFunction, RawTransaction};
+use aptos_types::transaction::RawTransaction;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -142,7 +142,8 @@ impl Module {
                         //     revision_height: 1.into(),
                         // }
                         // .with_address(self.ibc_handler_address.into()),
-                        "hi".to_owned(),
+                        // ("hi".to_owned(),),
+                        (69_420_u64,),
                     ),
                     400000,
                     100,
@@ -175,7 +176,7 @@ impl Module {
 
                 dbg!(&typ, &data);
 
-                let event = serde_json::from_value::<crate::events::IbcEvent>(data).unwrap();
+                // let event = serde_json::from_value::<crate::events::IbcEvent>(data).unwrap();
                 // let event: unionlabs::events::IbcEvent = match typ.name.as_str() {
                 //     "ClientCreatedEvent" => {
                 //         serde_json::from_value::<unionlabs::events::CreateClient>(data)
@@ -185,7 +186,7 @@ impl Module {
                 //     unknown => panic!("unknown event {unknown}"),
                 // };
 
-                println!("{:?}", event);
+                // println!("{:?}", event);
             }
             Cmd::FetchAbi => {
                 let abis = self
@@ -287,7 +288,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         }
                         _ => None,
                     })
-                    .map(|(typ, data)| {
+                    .map(|(_typ, data)| {
                         // TODO: Check the type before deserializing
                         serde_json::from_value::<crate::events::IbcEvent>(data).unwrap()
                     })
@@ -452,6 +453,8 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_state(&self, at: Height, path: Path) -> RpcResult<Value> {
+        let _ = (at, path);
+
         // const IBC_STORE_PATH: &str = "store/ibc/key";
 
         // let path_string = path.to_string();
@@ -523,6 +526,8 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_proof(&self, at: Height, path: Path) -> RpcResult<Value> {
+        let _ = (at, path);
+
         // const IBC_STORE_PATH: &str = "store/ibc/key";
 
         // let path_string = path.to_string();
