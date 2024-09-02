@@ -1,14 +1,13 @@
 import { ofetch } from "ofetch"
-
-const HUBBLE_URL = import.meta.env
-  ? import.meta.env.HUBBLE_URL
-  : process.env.HUBBLE_URL ?? "https://blue.graphql.union.build"
+import type { ChainId } from "../../mod.ts"
 
 const queryHeaders = new Headers({
   Accept: "application/json",
   "User-Agent": "typescript-sdk",
   "Content-Type": "application/json"
 })
+
+const HUBBLE_URL = "https://graphql.union.build"
 
 const hubbleRestFetch = ofetch.create({
   method: "GET",
@@ -54,9 +53,9 @@ export const offchainQuery = {
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
     >(`/chains/${chainId}`, {
       query: {
+        include_assets: includeAssets,
         include_rpcs: includeEndpoints,
-        include_contracts: includeContracts,
-        include_assets: includeAssets
+        include_contracts: includeContracts
       }
     })
   }
@@ -109,7 +108,7 @@ export interface Ucs1Configuration {
     id: number
     testnet: boolean
     enabled: boolean
-    chain_id: string
+    chain_id: ChainId
     addr_prefix: string
     display_name: string
     logo_uri: string | null

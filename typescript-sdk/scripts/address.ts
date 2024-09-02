@@ -1,6 +1,6 @@
-import { hexStringToUint8Array, uint8ArrayToHexString } from "#mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { hexStringToUint8Array, uint8ArrayToHexString } from "../src/mod.ts"
 
 const PRIVATE_KEY = "1bdd5c2105f62c51d72c90d9e5ca6854a94337bcbcbb0b959846b85813d69380"
 

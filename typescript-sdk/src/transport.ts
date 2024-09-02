@@ -34,6 +34,7 @@ export type CosmosHttpTransport = Transport<
 
 /**
  * @description Creates a HTTP transport that connects to a JSON-RPC API.
+ * @deprecated use `http` from `viem` instead
  */
 export function cosmosHttp(
   /** URL of the JSON-RPC API. Defaults to the chain's public RPC URL. */
@@ -113,6 +114,7 @@ export function cosmosHttp(
     )
   }
 }
+
 /**
  * Given an array of rpc URLs, check the latency of each and return them ranked by latency
  */

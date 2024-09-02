@@ -1,9 +1,23 @@
-export interface TransactionResponse {
-  data: string
-  success: boolean
-}
+export type TypeFromSet<T extends Set<any>> = T extends Set<infer U> ? U : never
+
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
+export type ExtractParameters<T> = T extends new (..._args: infer P) => any ? P[0] : never
+
+export type HexAddress = `0x${string}`
+export type Bech32Address<T extends string = string> = `${T}${string}`
+
+export type NoRepetition<U extends string, ResultT extends Array<any> = []> =
+  | ResultT
+  | {
+      [k in U]: NoRepetition<Exclude<U, k>, [k, ...ResultT]>
+    }[U]
 
 export type MaybePromise<TValue> = TValue | Promise<TValue>
+
+export type Pretty<T> = {
+  [K in keyof T]: T[K]
+} & {}
 
 export type ErrorType<name extends string = "Error"> = Error & { name: name }
 
@@ -13,9 +27,6 @@ export type RpcRequest = {
   params?: any | undefined
   id?: number | undefined
 }
-
-export type HexAddress = `0x${string}`
-export type Bech32Address<T extends string = string> = `${T}${string}`
 
 export type OfflineSigner = OfflineAminoSigner | OfflineDirectSigner
 
@@ -148,17 +159,3 @@ export interface Pubkey {
   readonly type: string
   readonly value: any
 }
-
-export type Pretty<T> = {
-  [K in keyof T]: T[K]
-} & {}
-
-export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
-
-export type ExtractParameters<T> = T extends new (..._args: infer P) => any ? P[0] : never
-
-export type NoRepetition<U extends string, ResultT extends Array<any> = []> =
-  | ResultT
-  | {
-      [k in U]: NoRepetition<Exclude<U, k>, [k, ...ResultT]>
-    }[U]

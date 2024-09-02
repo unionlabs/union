@@ -1,16 +1,8 @@
 > [!NOTE] Work in progress
 
-<br />
-
-<p align="center">
-  <img width="675" src="https://i.imgur.com/yFpIuzm.jpeg" alt="Union logo" />
-</p>
-<br />
-<p align="center">
-  <!-- <a href="https://npmjs.com/package/@unionlabs/client"><img src="https://img.shields.io/npm/v/@unionlabs/client.svg" alt="npm package"></a> -->
-</p>
-
 <h1 align="center" style="font-size: 2.75rem; font-weight: 900; color: white;">Union Labs TypeScript SDK</h1>
+
+[![JSR](https://jsr.io/badges/@union/client)](https://jsr.io/@union/client)
 
 Union Labs TypeScript SDK providing utilities for cross-chain transfers and more.
 
@@ -18,54 +10,52 @@ Union Labs TypeScript SDK providing utilities for cross-chain transfers and more
 npx jsr add @union/client
 ```
 
-### Quick Start
+## Usage
+
+### Initiate a client
 
 ```ts
-import { http } from "viem"
-import { sepolia } from "viem/chains"
-import { createCosmosSdkClient, cosmosHttp } from "@union/client"
+import { createUnionClient } from "@union/client"
+import { privateKeyToAccount } from "viem/accounts"
 
-
-const unionClient = createCosmosSdkClient({
-  evm: {
-    chain: sepolia,
-    // browser wallet or `privateKeyToAccount` from `viem/accounts`
-    account: evmAccount,
-    transport: http("https://rpc2.sepolia.org")
-  },
-  cosmos: {
-    // browser wallet or `DirectSecp256k1Wallet.fromKey`
-    account: cosmosAccount,
-    gasPrice: { amount: "0.0025", denom: "muno" },
-    transport: cosmosHttp("https://rpc.testnet.bonlulu.uno")
-  }
-})
-
-const gasCostResponse = await unionClient.simulateTransaction({
-  amount: 1n,
-  network: "evm",
-  sourceChannel: "channel-69",
-  path: ["11155111", "union-testnet-8"],
-  recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-  denomAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-  relayContractAddress: "0x3C148Ec863404e48d88757E88e456963A14238ef"
-})
-
-if(!gasCostResponse.success) {
-  throw new Error("Failed to simulate transaction")
-}
-
-console.info("Gas cost", gasCostResponse.data)
-
-const transfer = await unionClient.transferAsset({
-  amount: 1n,
-  network: "evm",
-  sourceChannel: "channel-69",
-  path: ["11155111", "union-testnet-8"],
-  recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
-  denomAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-  relayContractAddress: "0x3C148Ec863404e48d88757E88e456963A14238ef"
+const client = createUnionClient({
+  chainId: "11155111",
+  transport: http("https://rpc.sepolia.org"),
+  account: privateKeyToAccount(`0x${PRIVATE_KEY}`) // or from wagmi configuration
 })
 ```
 
-See [`./playground/berachain-to-union.ts`](./playground/berachain-to-union.ts) and [`./playground`](./playground) in general for more examples.
+### Examples
+
+Transfer `strd` from Stride Testnet on Cosmos (`stride-internal-1`) chain to Sepolia on EVM (`1111551111`) chain.
+
+```ts
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createUnionClient, hexStringToUint8Array } from "@union/client"
+
+const PRIVATE_KEY = process.env.PRIVATE_KEY
+
+const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
+  Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
+  "stride"
+)
+
+const client = createUnionClient({
+  account: cosmosAccount,
+  chainId: "stride-internal-1",
+  transport: http("stride.testnet-1.stridenet.co"),
+})
+
+const transfer = await client.transferAsset({
+  amount: 1n,
+  denomAddress: "strd",
+  destinationChainId: "11155111",
+  recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+})
+
+if (transfer.isErr()) {
+  return console.error("Transfer failed", transfer.error)
+}
+
+return console.info("Transfer successful", transfer.value)
+```
