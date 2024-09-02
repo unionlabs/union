@@ -3,13 +3,13 @@
 /// The address of the asset can be obtained via get_metadata(). As a simple version, it only deals with primary stores.
 module UCS01::fa_coin {
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset};
-    use aptos_framework::object::{Self, Object, ConstructorRef};
+    use aptos_framework::object::{Self, Object};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::function_info;
     use aptos_framework::dispatchable_fungible_asset;
     use std::error;
     use std::signer;
-    use std::string::{Self, utf8};
+    use std::string::{Self};
     use std::option;
 
     /// Only fungible asset metadata owner can make changes.
@@ -94,7 +94,7 @@ module UCS01::fa_coin {
         new_decimals: u8
     ) {
         let asset = get_metadata();
-        let metadata_address = object::object_address(&asset);
+        let _metadata_address = object::object_address(&asset);
 
         // Check if the caller is the owner of the metadata
         assert!(
@@ -350,7 +350,7 @@ module UCS01::fa_coin {
         );
 
         let recipient = @0xface;
-        let creator_address = signer::address_of(creator);
+        let _creator_address = signer::address_of(creator);
 
         mint(aaron, recipient, 1000);
     }
