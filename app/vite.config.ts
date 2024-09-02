@@ -1,7 +1,6 @@
 import Icons from "unplugin-icons/vite"
 import Inspect from "vite-plugin-inspect"
 import { sveltekit } from "@sveltejs/kit/vite"
-import { sentrySvelteKit } from "@sentry/sveltekit"
 import { visualizer } from "rollup-plugin-visualizer"
 import { purgeCss } from "vite-plugin-tailwind-purgecss"
 import { partytownVite } from "@builder.io/partytown/utils"
@@ -17,13 +16,6 @@ export default defineConfig(config => {
 
   const plugins = [
     purgeCss(),
-    sentrySvelteKit({
-      sourceMapsUploadOptions: {
-        project: "app",
-        telemetry: true,
-        org: "unionlabs"
-      }
-    }),
     sveltekit(),
     partytownVite({
       debug: NODE_ENV === "development",

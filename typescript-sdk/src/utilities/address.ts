@@ -2,6 +2,21 @@ import { bech32 } from "@scure/base"
 import type { HexAddress, Bech32Address } from "../types.ts"
 
 /**
+ * extract the bech32 prefix from a bech32 address
+ * @example
+ * ```ts
+ * extractBech32AddressPrefix("union1qp0wtsfltjk9rnvyu3fkdv0s0skp4y5y3py96f")
+ * ```
+ */
+export function extractBech32AddressPrefix(address: string) {
+  const pattern = /^([a-z]+)1[a-zA-Z0-9]{38,58}$/
+
+  const match = address.match(pattern)
+  if (match) return match[1]
+  return
+}
+
+/**
  * check if a string is a valid cosmos transaction hash
  * @example
  * ```ts

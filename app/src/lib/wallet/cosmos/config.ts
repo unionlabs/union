@@ -1,11 +1,12 @@
-import { derived, get, type Readable } from "svelte/store"
+import type { Address } from "viem"
 import { sleep } from "$lib/utilities/index.ts"
 import { persisted } from "svelte-persisted-store"
-import type { ChainWalletStore } from "$lib/wallet/types"
-import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import type { UserAddressCosmos } from "$lib/types"
-import { rawToHex } from "$lib/utilities/address"
-import type { Address } from "viem"
+import type { OfflineSigner } from "@leapwallet/types"
+import type { ChainWalletStore } from "$lib/wallet/types"
+import { derived, get, type Readable } from "svelte/store"
+import { bytesToBech32Address, extractBech32AddressPrefix } from "@union/client"
+import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 
 export const cosmosWalletsInformation = [
   {
@@ -38,7 +39,10 @@ export const cosmosWalletsInformation = [
 export type CosmosWalletId = (typeof cosmosWalletsInformation)[number]["id"]
 
 function createCosmosStore(
-  previousState: ChainWalletStore<"cosmos"> = {
+  previousState: ChainWalletStore<"cosmos"> & {
+    rawAddress: Uint8Array | undefined
+    connectedWallet: CosmosWalletId | "none"
+  } = {
     chain: "cosmos",
     hoverState: "none",
     address: undefined,
@@ -49,7 +53,7 @@ function createCosmosStore(
 ) {
   const { subscribe, set, update } = persisted("cosmos-store", previousState, {
     syncTabs: true,
-    storage: "session"
+    storage: "local"
   })
   return {
     set,
@@ -115,11 +119,24 @@ function createCosmosStore(
 
 export const cosmosStore = createCosmosStore()
 
+export const getCosmosOfflineSigner = (chainId: string): OfflineSigner =>
+  get(cosmosStore).connectedWallet === "keplr"
+    ? window.keplr?.getOfflineSigner(chainId, { disableBalanceCheck: false })
+    : window.leap?.getOfflineSigner(chainId, { disableBalanceCheck: false })
+
 export const userAddrCosmos: Readable<UserAddressCosmos | null> = derived(
   [cosmosStore],
   ([$cosmosStore]) => {
+    console.info("[cosmos] userAddrCosmos", $cosmosStore)
     if ($cosmosStore?.rawAddress && $cosmosStore?.address) {
-      const cosmos_normalized = rawToHex($cosmosStore.rawAddress)
+      const bech32Prefix = extractBech32AddressPrefix($cosmosStore.address)
+      if (!bech32Prefix) return null
+      console.info("[cosmos] bech32Prefix", bech32Prefix)
+      if (!($cosmosStore.rawAddress instanceof Uint8Array)) return null
+      const cosmos_normalized = bytesToBech32Address({
+        toPrefix: bech32Prefix,
+        bytes: $cosmosStore.rawAddress
+      })
       return {
         canonical: $cosmosStore.address,
         normalized: cosmos_normalized,

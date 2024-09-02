@@ -28,5 +28,5 @@ $: $navigationState = $navigating ? "loading" : "loaded"
 </script>
 
 <div class="absolute top-0 z-[999] h-[2px] w-full">
-  <div class="h-full bg-union-accent-600 transition" style="width: {$progress * 100}%" />
+  <div class="h-full bg-union-accent-600 transition" style="width: {$progress * 100}%"></div>
 </div>

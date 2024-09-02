@@ -64,8 +64,9 @@ export async function getHubbleChainDetails({
 
   if (!data) return err(new Error("Chain not found in hubble"))
 
+  const checkAgainst = sourceChainId === "union-testnet-8" ? destinationChainId : "union-testnet-8"
   const ucsConfiguration = data.ucs1_configurations
-    ?.filter(config => config.destination_chain.chain_id === "union-testnet-8")
+    ?.filter(config => config.destination_chain.chain_id === checkAgainst)
     .at(0)
 
   if (!ucsConfiguration) return err(new Error("UCS configuration not found"))

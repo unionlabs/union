@@ -1,5 +1,6 @@
 import {
   erc20Abi,
+  type Hex,
   getAddress,
   type Address,
   type Account,
@@ -55,7 +56,7 @@ export async function transferAssetFromEvm(
     autoApprove = false,
     relayContractAddress
   }: TransferAssetFromEvmParams
-): Promise<Result<string, Error>> {
+): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
 
@@ -146,7 +147,7 @@ export async function approveTransferAssetFromEvm(
     simulate = true,
     relayContractAddress
   }: ApproveTransferAssetFromEvmParams
-): Promise<Result<string, Error>> {
+): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
 

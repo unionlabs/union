@@ -2,7 +2,7 @@
 import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
-import { UnionClient } from "@union/client/v0"
+import { createUnionClient, type CosmosChainId, type EvmChainId } from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"
@@ -19,14 +19,21 @@ import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
-import { ucs01abi } from "$lib/abi/ucs-01.ts"
-import { type Address, parseUnits, toHex, formatUnits, type Chain as ViemChain } from "viem"
+import {
+  type Address,
+  parseUnits,
+  toHex,
+  formatUnits,
+  type Chain as ViemChain,
+  http,
+  custom,
+  type HttpTransport
+} from "viem"
 import Stepper from "$lib/components/stepper.svelte"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { erc20Abi } from "viem"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { toIsoString } from "$lib/utilities/date"
@@ -34,13 +41,7 @@ import { config } from "$lib/wallet/evm/config"
 import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
-import {
-  writeContract,
-  simulateContract,
-  waitForTransactionReceipt,
-  getConnectorClient,
-  switchChain
-} from "@wagmi/core"
+import { waitForTransactionReceipt, getConnectorClient, switchChain } from "@wagmi/core"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "viem/chains"
 
 function getChainById(chainId: number): ViemChain | null {
@@ -62,6 +63,9 @@ let userAddr: Readable<UserAddresses> = derived(
   })
 )
 
+$: {
+  // console.info("userAddr", JSON.stringify($userAddr, undefined, 2))
+}
 $: userBalances = userBalancesQuery({ chains, userAddr: $userAddr, connected: true })
 
 // CURRENT FORM STATE
@@ -176,6 +180,7 @@ let ucs01Configuration = derived(
         pfmMemo = generatePfmMemo(
           forwardConfig.channel_id,
           forwardConfig.port_id,
+          // @ts-expect-error
           $toChain?.rpc_type === "evm" ? $recipient.slice(2) : $recipient
         )
         break
@@ -317,57 +322,77 @@ const transfer = async () => {
                 })
               : undefined
         ) as OfflineSigner
-        let cosmosClient = new UnionClient({
-          cosmosOfflineSigner,
-          evmSigner: undefined,
-          bech32Prefix: $fromChain.addr_prefix,
-          chainId: $fromChain.chain_id,
-          gas: { denom: $assetSymbol, amount: "0.0025" },
-          rpcUrl: `https://${rpcUrl}`
+        // let cosmosClient = new UnionClient({
+        //   cosmosOfflineSigner,
+        //   evmSigner: undefined,
+        //   bech32Prefix: $fromChain.addr_prefix,
+        //   chainId: $fromChain.chain_id,
+        //   gas: { denom: $assetSymbol, amount: "0.0025" },
+        //   rpcUrl: `https://${rpcUrl}`
+        // })
+        const unionClient = createUnionClient({
+          account: cosmosOfflineSigner,
+          transport: http(`https://${rpcUrl}`),
+          chainId: $fromChain.chain_id as CosmosChainId,
+          gasPrice: { amount: "0.0025", denom: $assetSymbol }
         })
 
-        let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
-        console.log({ ucs1_configuration })
-        if (ucs1_configuration.contract_address === "ics20") {
-          console.log({ $recipient })
-          transferAssetsMessage = {
-            kind: "ibc",
-            messageTransfers: [
-              {
-                sourcePort: "transfer",
-                sourceChannel: ucs1_configuration.channel_id,
-                token: { denom: $assetAddress, amount: parsedAmount.toString() },
-                sender: rawToBech32($fromChain.addr_prefix, $userAddrCosmos.bytes),
-                receiver: $recipient,
-                memo: pfmMemo ?? "",
-                timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
-              }
-            ]
-          }
-        } else {
-          console.log("THIS SHOULD NOT HAPPEN")
-          transferAssetsMessage = {
-            kind: "cosmwasm",
-            instructions: [
-              {
-                contractAddress: ucs1_configuration.contract_address,
-                msg: {
-                  transfer: {
-                    channel: ucs1_configuration.channel_id,
-                    receiver: $toChain.rpc_type === "evm" ? $recipient?.slice(2) : $recipient,
-                    memo: pfmMemo ?? ""
-                  }
-                },
-                funds: [{ denom: $assetAddress, amount: parsedAmount.toString() }]
-              }
-            ]
-          }
-        }
+        console.info({
+          account: cosmosOfflineSigner,
+          chainId: $fromChain.chain_id as CosmosChainId,
+          gasPrice: { amount: "0.0025", denom: $assetSymbol }
+        })
 
-        console.log({ transferAssetsMessage })
+        // let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
 
-        const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
-        transferState.set({ kind: "TRANSFERRING", transferHash: cosmosTransfer.transactionHash })
+        // if (ucs1_configuration.contract_address === "ics20") {
+        //   console.log({ $recipient })
+        //   transferAssetsMessage = {
+        //     kind: "ibc",
+        //     messageTransfers: [
+        //       {
+        //         sourcePort: "transfer",
+        //         sourceChannel: ucs1_configuration.channel_id,
+        //         token: { denom: $assetAddress, amount: parsedAmount.toString() },
+        //         sender: rawToBech32($fromChain.addr_prefix, $userAddrCosmos.bytes),
+        //         receiver: $recipient,
+        //         memo: pfmMemo ?? "",
+        //         timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
+        //       }
+        //     ]
+        //   }
+        // } else {
+        //   console.log("THIS SHOULD NOT HAPPEN")
+        //   transferAssetsMessage = {
+        //     kind: "cosmwasm",
+        //     instructions: [
+        //       {
+        //         contractAddress: ucs1_configuration.contract_address,
+        //         msg: {
+        //           transfer: {
+        //             channel: ucs1_configuration.channel_id,
+        //             receiver: $toChain.rpc_type === "evm" ? $recipient?.slice(2) : $recipient,
+        //             memo: pfmMemo ?? ""
+        //           }
+        //         },
+        //         funds: [{ denom: $assetAddress, amount: parsedAmount.toString() }]
+        //       }
+        //     ]
+        //   }
+        // }
+
+        // console.log({ transferAssetsMessage })
+
+        // const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
+        const transfer = await unionClient.transferAsset({
+          autoApprove: true,
+          amount: parsedAmount,
+          recipient: $recipient,
+          denomAddress: $assetAddress,
+          destinationChainId: $toChain.chain_id
+        })
+        if (transfer.isErr()) throw transfer.error
+        transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
       } catch (error) {
         if (error instanceof Error) {
           // @ts-ignore
@@ -379,6 +404,12 @@ const transfer = async () => {
   } else if ($fromChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
     const selectedChain = getChainById(Number($fromChainId))
+
+    const unionClient = createUnionClient({
+      account: connectorClient.account,
+      chainId: $fromChain.chain_id as EvmChainId,
+      transport: custom(window.ethereum) as unknown as HttpTransport
+    })
 
     if (!selectedChain) {
       toast.error("From chain not found or supported")
@@ -411,6 +442,7 @@ const transfer = async () => {
       // ^ the user is continuing continuing after having seen the warning
 
       try {
+        // @ts-expect-error
         await switchChain(config, { chainId: selectedChain.id })
       } catch (error) {
         if (error instanceof Error) {
@@ -425,14 +457,24 @@ const transfer = async () => {
       let hash: `0x${string}` | null = null
 
       try {
-        hash = await writeContract(config, {
-          chain: selectedChain,
-          account: $userAddrEvm.canonical,
-          abi: erc20Abi,
-          address: $asset.address as Address,
-          functionName: "approve",
-          args: [ucs01address, parsedAmount]
+        // hash = await writeContract(config, {
+        //   chain: selectedChain,
+        //   account: $userAddrEvm.canonical,
+        //   abi: erc20Abi,
+        //   address: $asset.address as Address,
+        //   functionName: "approve",
+        //   args: [ucs01address, parsedAmount]
+        // })
+        const approve = await unionClient.approveTransaction({
+          amount: parsedAmount,
+          recipient: $recipient,
+          denomAddress: $assetAddress,
+          destinationChainId: $toChain.chain_id
         })
+
+        if (approve.isErr()) throw approve.error
+        // @ts-expect-error
+        hash = approve.value
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({ kind: "APPROVING_ASSET", error })
@@ -440,6 +482,7 @@ const transfer = async () => {
         return
       }
 
+      // @ts-expect-error
       transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash })
     }
 
@@ -465,25 +508,25 @@ const transfer = async () => {
       if (pfmMemo === null && $userAddrCosmos === null)
         return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
 
-      const contractRequest = {
-        chainId: selectedChain.id,
-        abi: ucs01abi,
-        account: $userAddrEvm.canonical,
-        functionName: "send",
-        address: ucs01address,
-        args: [
-          ucs1_configuration.channel_id,
-          // @ts-ignore see the assertion above
-          pfmMemo === null ? $userAddrCosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
-          [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
-          pfmMemo ?? "", // memo
-          { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-          0n
-        ]
-      } as const
+      // const contractRequest = {
+      //   chainId: selectedChain.id,
+      //   abi: ucs01abi,
+      //   account: $userAddrEvm.canonical,
+      //   functionName: "send",
+      //   address: ucs01address,
+      //   args: [
+      //     ucs1_configuration.channel_id,
+      //     // @ts-ignore see the assertion above
+      //     pfmMemo === null ? $userAddrCosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
+      //     [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
+      //     pfmMemo ?? "", // memo
+      //     { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
+      //     0n
+      //   ]
+      // } as const
 
       if ($transferState.warning) {
-        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
         transfer()
         return
       }
@@ -493,9 +536,9 @@ const transfer = async () => {
       console.log("confirming transfers test")
 
       try {
-        console.log("contract request", contractRequest)
-        const simulationResult = await simulateContract(config, contractRequest)
-        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest })
+        // console.log("contract request", contractRequest)
+        // const simulationResult = await simulateContract(config, contractRequest)
+        transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({ kind: "SIMULATING_TRANSFER", warning: error })
@@ -506,8 +549,17 @@ const transfer = async () => {
 
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
-        const transferHash = await writeContract(config, $transferState.contractRequest)
-        transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash })
+        // const transferHash = await writeContract(config, $transferState.contractRequest)
+        const transfer = await unionClient.transferAsset({
+          autoApprove: false,
+          amount: parsedAmount,
+          recipient: $recipient,
+          denomAddress: $assetAddress,
+          destinationChainId: $toChain.chain_id
+        })
+        if (transfer.isErr()) throw transfer.error
+        // @ts-expect-error
+        transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash: transfer.value })
       } catch (error) {
         if (error instanceof Error) {
           transferState.set({
@@ -726,6 +778,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         ts => ({
           status: "ERROR",
           title: `Error simulating transfer on ${$fromChain.display_name}`,
+          // @ts-expect-error
           description: `${ts.error}`
         }),
         () => ({
