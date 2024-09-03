@@ -8,24 +8,29 @@
         };
       };
 
-      voy-modules-list = builtins.filter (member: 
-        (pkgs.lib.hasPrefix "voyager/modules" member) 
-        ||(pkgs.lib.hasPrefix "voyager/plugins" member)
-      ) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
+      voy-modules-list = builtins.filter
+        (member:
+          (pkgs.lib.hasPrefix "voyager/modules" member)
+          || (pkgs.lib.hasPrefix "voyager/plugins" member)
+        )
+        (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
 
-      voyager-modules = builtins.foldl' 
-        (mods: mod: 
-          { 
-            packages = mods.packages // mod.packages; 
+      voyager-modules = builtins.foldl'
+        (mods: mod:
+          {
+            packages = mods.packages // mod.packages;
             checks = mods.checks // mod.checks;
           }
-        ) 
-        { 
-          packages = {};
-          checks = {}; 
-        } 
-        (builtins.map 
-          (module: crane.buildWorkspaceMember { crateDirFromRoot = module; }) 
+        )
+        {
+          packages = { };
+          checks = { };
+        }
+        (builtins.map
+          (module: crane.buildWorkspaceMember {
+            crateDirFromRoot = module;
+            dev = true;
+          })
           voy-modules-list
         );
 
@@ -89,8 +94,8 @@
           # of effort to fix the type for now.
           type = types.listOf (types.submodule {
             options = {
-              enabled = mkOption { 
-                type = types.nullOr types.bool; 
+              enabled = mkOption {
+                type = types.nullOr types.bool;
                 default = null;
               };
               path = mkOption { type = types.path; };
