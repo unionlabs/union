@@ -1,4 +1,4 @@
-import type { Icon } from "@astrojs/starlight/components"
+import type { Icon } from "astro-icon/components"
 
 type IconProps = Parameters<typeof Icon>[0]
 
@@ -9,12 +9,12 @@ export const socialLinks: Array<{
 }> = [
   {
     href: "https://x.com/union_build",
-    icon: "x.com",
+    icon: "fa6-brands:x-twitter",
     cta: "Follow us on X"
   },
   {
     href: "https://discord.union.build",
-    icon: "discord",
+    icon: "tabler:brand-discord-filled",
     cta: "Join our Discord"
   }
 ]

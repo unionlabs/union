@@ -6,10 +6,11 @@
 *.woff2 filter=lfs diff=lfs merge=lfs -text
 *.woff filter=lfs diff=lfs merge=lfs -text
 *.ttf filter=lfs diff=lfs merge=lfs -text
+.zip filter=lfs diff=lfs merge=lfs -text
+*.otf filter=lfs diff=lfs merge=lfs -text
+*.splinecode filter=lfs diff=lfs merge=lfs -text
 **/vendor/** linguist-vendored
 **/generated/** linguist-generated
 evm/contracts/proto/** linguist-generated
-.zip filter=lfs diff=lfs merge=lfs -text
-*.splinecode filter=lfs diff=lfs merge=lfs -text
 *.lockb binary diff=lockb
-*.otf filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text

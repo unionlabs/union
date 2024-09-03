@@ -4,7 +4,7 @@ import CodeSnippet from "#/components/CodeSnippet.astro"
 import Card from "#/components/Card.astro"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import { codeSnippets } from "#/content/_snippets/landing.ts"
-import { Tabs, TabItem } from "@astrojs/starlight/components"
+// import { Tabs, TabItem } from "@astrojs/starlight/components"
 ---
 
 <LanderSection gradient="to-b">
@@ -20,7 +20,7 @@ import { Tabs, TabItem } from "@astrojs/starlight/components"
     id="code-snippets"
     class="antialiased bg-black text-left font-monospace text-[15px] to-black md:hidden"
   >
-    <Tabs>
+    <!-- <Tabs>
       {
         codeSnippets.map(snippet => (
           <TabItem label={snippet.title}>
@@ -30,6 +30,6 @@ import { Tabs, TabItem } from "@astrojs/starlight/components"
           </TabItem>
         ))
       }
-    </Tabs>
+    </Tabs> -->
   </Card>
 </LanderSection>
