@@ -256,9 +256,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        Ok(match cb {
-            ModuleCallback::MakeFullEvent(aggregate) => aggregate.do_aggregate(data),
-        })
+        match cb {}
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]

@@ -209,6 +209,15 @@ impl Client {
             .request("broadcast_tx_sync", rpc_params![BASE64_STANDARD.encode(tx)])
             .await
     }
+
+    // pub async fn block_results(
+    //     &self,
+    //     height: Option<BoundedI64<1>>,
+    // ) -> Result<TxSearchResponse, JsonRpcError> {
+    //     self.client
+    //         .request("block_results", rpc_params![height.map(|x| x.to_string())])
+    //         .await
+    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

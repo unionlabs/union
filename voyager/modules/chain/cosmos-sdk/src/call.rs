@@ -2,7 +2,9 @@ use std::num::NonZeroU32;
 
 use enumorph::Enumorph;
 use queue_msg::queue_msg;
-use unionlabs::{ibc::core::client::height::Height, id::ConnectionId};
+use unionlabs::{
+    events::IbcEvent, hash::H256, ibc::core::client::height::Height, id::ConnectionId,
+};
 use voyager_message::callback::InfoOrMeta;
 
 #[queue_msg]
@@ -10,7 +12,7 @@ use voyager_message::callback::InfoOrMeta;
 pub enum ModuleCall {
     FetchBlocks(FetchBlocks),
     FetchTransactions(FetchTransactions),
-    FetchClientFromConnectionId(FetchClientFromConnectionId),
+    MakeChainEvent(MakeChainEvent),
 }
 
 #[queue_msg]
@@ -26,7 +28,8 @@ pub struct FetchTransactions {
 }
 
 #[queue_msg]
-pub struct FetchClientFromConnectionId {
-    pub connection_id: ConnectionId,
-    pub fetch_type: InfoOrMeta,
+pub struct MakeChainEvent {
+    pub height: Height,
+    pub tx_hash: H256,
+    pub event: IbcEvent,
 }

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument, warn};
 use unionlabs::{
-    ethereum::IBC_HANDLER_COMMITMENTS_SLOT,
+    ethereum::{config::PresetBaseKind, IBC_HANDLER_COMMITMENTS_SLOT},
     hash::H160,
     ibc::{
         core::client::height::Height,
@@ -62,6 +62,8 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId<'static>,
 
+    pub chain_spec: PresetBaseKind,
+
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
@@ -92,11 +94,16 @@ impl Module {
 
         let chain_id = provider.get_chainid().await?;
 
+        let beacon_api_client = BeaconApiClient::new(config.eth_beacon_rpc_api).await?;
+
+        let spec = beacon_api_client.spec().await.unwrap().data;
+
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
+            chain_spec: spec.preset_base,
             ibc_handler_address: config.ibc_handler_address,
             provider,
-            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
+            beacon_api_client,
         })
     }
 }
@@ -289,7 +296,10 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo> {
         Ok(ConsensusModuleInfo {
             chain_id: self.chain_id.clone(),
-            client_type: ClientType::new(ClientType::ETHEREUM_MINIMAL),
+            client_type: ClientType::new(match self.chain_spec {
+                PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
+                PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
+            }),
         })
     }
 

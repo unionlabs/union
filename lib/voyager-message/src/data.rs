@@ -357,6 +357,8 @@ pub struct PacketMetadata {
     pub source_channel: ChannelMetadata,
     pub destination_channel: ChannelMetadata,
 
+    pub channel_ordering: Order,
+
     pub timeout_height: Height,
     pub timeout_timestamp: u64,
 }
@@ -365,7 +367,7 @@ pub struct PacketMetadata {
 pub struct ChannelMetadata {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub ordering: Order,
+    // REVIEW: Can this be different on either end of a channel?
     pub version: String,
     pub connection: ConnectionMetadata,
 }

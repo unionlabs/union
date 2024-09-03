@@ -340,7 +340,7 @@ impl Context {
 
                         if prev.is_some() {
                             return Err(format!(
-                                "multiple chain modules configured for \
+                                "multiple client modules configured for \
                                     client type `{client_type}` and IBC \
                                     interface `{ibc_interface}`",
                             )

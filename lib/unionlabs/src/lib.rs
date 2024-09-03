@@ -274,6 +274,12 @@ pub enum QueryHeight {
     Specific(Height),
 }
 
+impl From<Height> for QueryHeight {
+    fn from(height: Height) -> Self {
+        Self::Specific(height)
+    }
+}
+
 impl Display for QueryHeight {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {

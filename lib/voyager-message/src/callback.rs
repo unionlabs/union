@@ -3018,7 +3018,6 @@ pub fn mk_packet_metadata_from_hlist<D: Member>(
         ChannelMetadata {
             port_id: packet_src_port,
             channel_id: packet_src_channel,
-            ordering: source_channel.ordering,
             version: source_channel.version,
             connection: ConnectionMetadata {
                 client_id: source_connection.state.client_id,
@@ -3028,7 +3027,6 @@ pub fn mk_packet_metadata_from_hlist<D: Member>(
         ChannelMetadata {
             port_id: packet_dst_port,
             channel_id: packet_dst_channel,
-            ordering: destination_channel.ordering,
             version: destination_channel.version,
             connection: ConnectionMetadata {
                 client_id: destination_connection.state.client_id,

@@ -1,9 +1,23 @@
-use jsonrpsee::{self, core::RpcResult, proc_macros::rpc};
+use jsonrpsee::{
+    self,
+    core::RpcResult,
+    proc_macros::rpc,
+    types::{ErrorObject, ErrorObjectOwned},
+};
 use macros::model;
-use serde_json::Value;
-use unionlabs::{ibc::core::client::height::Height, ics24::Path, id::ClientId, QueryHeight};
+use serde_json::{json, Value};
+use tracing::debug;
+use unionlabs::{
+    ibc::core::client::height::Height,
+    ics24::{IbcPath, Path},
+    id::ClientId,
+    ErrorReporter, QueryHeight,
+};
 
-use crate::{data::ClientInfo, ChainId, ClientType, IbcInterface};
+use crate::{
+    data::ClientInfo, plugin::ClientStateMeta, ChainId, ClientType, IbcInterface,
+    FATAL_JSONRPC_ERROR_CODE,
+};
 
 #[rpc(
     client,
@@ -25,6 +39,14 @@ pub trait VoyagerRpc {
         chain_id: ChainId<'static>,
         client_id: ClientId,
     ) -> RpcResult<ClientInfo>;
+
+    #[method(name = "clientMeta")]
+    async fn client_meta(
+        &self,
+        chain_id: ChainId<'static>,
+        at: QueryHeight,
+        client_id: ClientId,
+    ) -> RpcResult<ClientStateMeta>;
 
     #[method(name = "queryibcState")]
     async fn query_ibc_state(
@@ -65,12 +87,12 @@ pub struct Info {
 }
 
 #[model]
-pub struct IbcState {
+pub struct IbcState<State = Value> {
     pub chain_id: ChainId<'static>,
     pub path: Path,
     /// The height that the state was read at.
     pub height: Height,
-    pub state: Value,
+    pub state: State,
 }
 
 #[model]
@@ -93,6 +115,46 @@ pub struct SelfConsensusState {
     pub height: Height,
     pub state: Value,
 }
+
+/// Serves the same purpose as `ChainModuleClientExt`.
+pub trait VoyagerRpcClientExt: VoyagerRpcClient {
+    // TODO: Maybe rename? Cor likes "_checked"
+    // TODO: Maybe take by ref here?
+    #[allow(async_fn_in_trait)]
+    async fn query_ibc_state_typed<P: IbcPath>(
+        &self,
+        chain_id: ChainId<'static>,
+        at: QueryHeight,
+        path: P,
+    ) -> Result<IbcState<P::Value>, jsonrpsee::core::client::Error> {
+        debug!(%path, %at, "querying ibc state");
+
+        let ibc_state = self
+            .query_ibc_state(chain_id.clone(), at, path.clone().into())
+            .await?;
+
+        Ok(serde_json::from_value::<P::Value>(ibc_state.state.clone())
+            .map(|value| IbcState {
+                chain_id: ibc_state.chain_id,
+                path: ibc_state.path,
+                height: ibc_state.height,
+                state: value,
+            })
+            .map_err(|e| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("unable to deserialize state: {}", ErrorReporter(e)),
+                    Some(json!({
+                        "chain_id": chain_id,
+                        "path": path,
+                        "state": ibc_state.state
+                    })),
+                )
+            })?)
+    }
+}
+
+impl<T> VoyagerRpcClientExt for T where T: VoyagerRpcClient {}
 
 // State(FetchState),
 // RawProof(FetchRawProof),
@@ -148,15 +210,23 @@ pub mod server {
     use tonic::async_trait;
     use tracing::{debug, instrument};
     use unionlabs::{
-        ibc::core::client::height::Height, ics24::Path, id::ClientId, ErrorReporter, QueryHeight,
+        ibc::core::client::height::Height,
+        ics24::{ClientStatePath, Path},
+        id::ClientId,
+        ErrorReporter, QueryHeight,
     };
 
-    use super::{IbcProof, IbcState, SelfClientState, SelfConsensusState, VoyagerRpcServer};
     use crate::{
         context::Modules,
         data::ClientInfo,
-        plugin::{ChainModuleClient, ConsensusModuleClient},
-        rpc::Info,
+        plugin::{
+            ChainModuleClient, ChainModuleClientExt, ClientModuleClient, ClientStateMeta,
+            ConsensusModuleClient,
+        },
+        rpc::{
+            json_rpc_error_to_rpc_error, IbcProof, IbcState, Info, SelfClientState,
+            SelfConsensusState, VoyagerRpcServer,
+        },
         ChainId, FATAL_JSONRPC_ERROR_CODE,
     };
 
@@ -207,7 +277,7 @@ pub mod server {
                         .map_err(fatal_error)?
                         .query_latest_height()
                         .await
-                        .map_err(fatal_error)?;
+                        .map_err(json_rpc_error_to_rpc_error)?;
 
                     debug!(%latest_height, "queried latest height");
 
@@ -251,7 +321,7 @@ pub mod server {
                 .map_err(fatal_error)?
                 .query_latest_height()
                 .await
-                .map_err(fatal_error)?;
+                .map_err(json_rpc_error_to_rpc_error)?;
 
             debug!(%latest_height, "queried latest height");
 
@@ -273,11 +343,60 @@ pub mod server {
                 client_id,
             )
             .await
-            .map_err(fatal_error)?;
+            .map_err(json_rpc_error_to_rpc_error)?;
 
             debug!(%client_info.ibc_interface, %client_info.client_type, "fetched client info");
 
             Ok(client_info)
+        }
+
+        #[instrument(skip_all, fields(%chain_id, height = %at, %client_id))]
+        async fn client_meta(
+            &self,
+            chain_id: ChainId<'static>,
+            at: QueryHeight,
+            client_id: ClientId,
+        ) -> RpcResult<ClientStateMeta> {
+            debug!("fetching client meta");
+
+            let height = self.fetch_query_height(&chain_id, at).await?;
+
+            let client_info = self
+                .modules()?
+                .chain_module::<Value, Value, Value>(&chain_id)
+                .map_err(fatal_error)?
+                .client_info(client_id.clone())
+                .await
+                .map_err(json_rpc_error_to_rpc_error)?;
+
+            let client_state = self
+                .modules()?
+                .chain_module::<Value, Value, Value>(&chain_id)
+                .map_err(fatal_error)?
+                .query_ibc_state_typed(height, ClientStatePath { client_id })
+                .await
+                .map_err(json_rpc_error_to_rpc_error)?;
+
+            let meta = self
+                .modules()?
+                .client_module::<Value, Value, Value>(
+                    &client_info.client_type,
+                    &client_info.ibc_interface,
+                )
+                .map_err(fatal_error)?
+                .decode_client_state_meta(client_state.0.into())
+                .await
+                .map_err(json_rpc_error_to_rpc_error)?;
+
+            debug!(
+                client_state_meta.height = %meta.height,
+                client_state_meta.chain_id = %meta.chain_id,
+                %client_info.ibc_interface,
+                %client_info.client_type,
+                "fetched client meta"
+            );
+
+            Ok(meta)
         }
 
         #[instrument(skip_all, fields(%chain_id, %path, %height))]
@@ -299,7 +418,7 @@ pub mod server {
             let state = chain_module
                 .query_ibc_state(height, path.clone())
                 .await
-                .map_err(fatal_error)?;
+                .map_err(json_rpc_error_to_rpc_error)?;
 
             // TODO: Use valuable here
             debug!(%state, "fetched ibc state");
@@ -331,7 +450,7 @@ pub mod server {
             let proof = chain_module
                 .query_ibc_proof(height, path.clone())
                 .await
-                .map_err(fatal_error)?;
+                .map_err(json_rpc_error_to_rpc_error)?;
 
             // TODO: Use valuable here
             debug!(%proof, "fetched ibc proof");
@@ -362,7 +481,7 @@ pub mod server {
             let state = chain_module
                 .self_client_state(height)
                 .await
-                .map_err(fatal_error)?;
+                .map_err(json_rpc_error_to_rpc_error)?;
 
             // TODO: Use valuable here
             debug!(%state, "fetched self client state");
@@ -388,7 +507,7 @@ pub mod server {
             let state = chain_module
                 .self_consensus_state(height)
                 .await
-                .map_err(fatal_error)?;
+                .map_err(json_rpc_error_to_rpc_error)?;
 
             // TODO: Use valuable here
             debug!(%state, "fetched self consensus state");
@@ -403,5 +522,12 @@ pub mod server {
             ErrorReporter(t).to_string(),
             None::<()>,
         )
+    }
+}
+
+pub fn json_rpc_error_to_rpc_error(value: jsonrpsee::core::client::Error) -> ErrorObjectOwned {
+    match value {
+        jsonrpsee::core::client::Error::Call(error) => error,
+        value => ErrorObject::owned(-1, format!("error: {}", ErrorReporter(value)), None::<()>),
     }
 }

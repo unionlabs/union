@@ -12,6 +12,7 @@ use tracing::{instrument, warn};
 use unionlabs::{
     self,
     encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
+    ethereum::config::PresetBaseKind,
     google::protobuf::any::Any,
     ibc::{
         core::client::height::Height,
@@ -38,9 +39,6 @@ pub mod call;
 pub mod callback;
 pub mod data;
 
-// TODO: Thread this value through the config (or something similar)
-const SUPPORTED_CLIENT_TYPE: ClientType<'static> =
-    ClientType::new_static(ClientType::ETHEREUM_MINIMAL);
 const SUPPORTED_IBC_INTERFACE: IbcInterface<'static> =
     IbcInterface::new_static(IbcInterface::IBC_GO_V8_08_WASM);
 
@@ -60,13 +58,13 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    // TODO: Make configurable?
-    // pub client_type: ClientType<'static>,
-    // pub ibc_interface: IbcInterface<'static>,
+    pub chain_spec: PresetBaseKind,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {}
+pub struct Config {
+    pub chain_spec: PresetBaseKind,
+}
 
 type SelfConsensusState =
     Any<wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>>;
@@ -76,11 +74,16 @@ impl Module {
     fn plugin_name(&self) -> String {
         pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
-        format!("{PLUGIN_NAME}/{SUPPORTED_CLIENT_TYPE}/{SUPPORTED_IBC_INTERFACE}")
+        format!(
+            "{PLUGIN_NAME}/{}/{SUPPORTED_IBC_INTERFACE}",
+            self.chain_spec
+        )
     }
 
-    pub async fn new(_config: Config, _voyager_config: String) -> Result<Self, ModuleInitError> {
-        Ok(Self {})
+    pub async fn new(config: Config, _voyager_config: String) -> Result<Self, ModuleInitError> {
+        Ok(Self {
+            chain_spec: config.chain_spec,
+        })
     }
 
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
@@ -148,7 +151,10 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn supported_interface(&self) -> RpcResult<SupportedInterface> {
         Ok(SupportedInterface {
-            client_type: SUPPORTED_CLIENT_TYPE,
+            client_type: ClientType::new_static(match self.chain_spec {
+                PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
+                PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
+            }),
             ibc_interface: SUPPORTED_IBC_INTERFACE,
         })
     }

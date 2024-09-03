@@ -1,4 +1,7 @@
-use core::{fmt::Debug, str::FromStr};
+use core::{
+    fmt::{self, Debug},
+    str::FromStr,
+};
 
 use serde::{Deserialize, Serialize};
 use typenum::{NonZero, Unsigned};
@@ -22,6 +25,15 @@ pub struct Mainnet;
 pub enum PresetBaseKind {
     Minimal,
     Mainnet,
+}
+
+impl fmt::Display for PresetBaseKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            PresetBaseKind::Minimal => "minimal",
+            PresetBaseKind::Mainnet => "mainnet",
+        })
+    }
 }
 
 impl FromStr for PresetBaseKind {
