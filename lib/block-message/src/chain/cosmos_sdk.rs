@@ -111,9 +111,12 @@ where
                                         .attributes
                                         .into_iter()
                                         .map(|attr| EventAttribute {
-                                            key: attr.key,
-                                            value: attr.value,
-                                            index: attr.index,
+                                            key: attr.key_str().expect("key in event").to_string(),
+                                            value: attr
+                                                .value_str()
+                                                .expect("value in event")
+                                                .to_string(),
+                                            index: attr.index(),
                                         })
                                         .collect(),
                                 })
