@@ -69,7 +69,6 @@
     "@types/postcss-import": "^14.0.3",
     "astro-icon": "^1.1.1",
     "autoprefixer": "^10.4.20",
-    "netlify-cli": "^17.34.3",
     "postcss": "^8.4.44",
     "postcss-import": "^16.1.0",
     "tailwindcss": "^3.4.10",
