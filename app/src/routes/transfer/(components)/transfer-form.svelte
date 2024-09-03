@@ -2,7 +2,12 @@
 import { onMount } from "svelte"
 import { toast } from "svelte-sonner"
 import Chevron from "./chevron.svelte"
-import { createUnionClient, type CosmosChainId, type EvmChainId } from "@union/client"
+import {
+  createUnionClient,
+  type CosmosChainId,
+  type EvmChainId,
+  bytesToBech32Address
+} from "@union/client"
 import { cn } from "$lib/utilities/shadcn.ts"
 import { raise, sleep } from "$lib/utilities/index.ts"
 import type { OfflineSigner } from "@leapwallet/types"
@@ -15,7 +20,7 @@ import ChainButton from "./chain-button.svelte"
 import AssetsDialog from "./assets-dialog.svelte"
 import { truncate } from "$lib/utilities/format.ts"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
-import { rawToBech32, userAddrOnChain } from "$lib/utilities/address.ts"
+import { userAddrOnChain } from "$lib/utilities/address.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import { page } from "$app/stores"
 import { goto } from "$app/navigation"
@@ -142,7 +147,7 @@ let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
     case "cosmos": {
       const cosmosAddr = $userAddr.cosmos
       if (cosmosAddr === null) return null
-      return rawToBech32($toChain.addr_prefix, cosmosAddr.bytes)
+      return bytesToBech32Address({ bytes: cosmosAddr.bytes, toPrefix: $toChain.addr_prefix })
     }
     default:
       return null
@@ -473,7 +478,6 @@ const transfer = async () => {
         })
 
         if (approve.isErr()) throw approve.error
-        // @ts-expect-error
         hash = approve.value
       } catch (error) {
         if (error instanceof Error) {
@@ -482,7 +486,6 @@ const transfer = async () => {
         return
       }
 
-      // @ts-expect-error
       transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash })
     }
 
@@ -558,7 +561,6 @@ const transfer = async () => {
           destinationChainId: $toChain.chain_id
         })
         if (transfer.isErr()) throw transfer.error
-        // @ts-expect-error
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash: transfer.value })
       } catch (error) {
         if (error instanceof Error) {
@@ -920,14 +922,20 @@ const resetInput = () => {
 </script>
 
 <div
-  class={cn("size-full duration-1000 transition-colors dark:bg-muted", $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "")}></div>
+  class={cn(
+    'size-full duration-1000 transition-colors dark:bg-muted',
+    $transferState.kind !== 'PRE_TRANSFER' ? 'bg-black/60' : '',
+  )}
+></div>
 
 <div class="cube-scene" id="scene">
-
-  <div class={cn("cube ",
-  $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "no-transition")}>
-    <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
-    <Card.Root class={cn($transferState.kind === "PRE_TRANSFER" ? "no-transition" : "cube-front")}>
+  <div
+    class={cn('cube ', $transferState.kind !== 'PRE_TRANSFER' ? 'cube--flipped' : 'no-transition')}
+  >
+    <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">
+      UNION TESTNET
+    </div>
+    <Card.Root class={cn($transferState.kind === 'PRE_TRANSFER' ? 'no-transition' : 'cube-front')}>
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
@@ -935,16 +943,16 @@ const resetInput = () => {
         <section>
           <CardSectionHeading>From</CardSectionHeading>
           <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>
-            {$fromChain?.display_name ?? "Select chain"}
+            {$fromChain?.display_name ?? 'Select chain'}
           </ChainButton>
           <div class="flex flex-col items-center pt-4 -mb-6">
             <Button on:click={swapChainsClick} size="icon" variant="outline">
-              <ArrowLeftRight class="size-5 dark:text-white rotate-90"/>
+              <ArrowLeftRight class="size-5 dark:text-white rotate-90" />
             </Button>
           </div>
           <CardSectionHeading>To</CardSectionHeading>
           <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>
-            {$toChain?.display_name ?? "Select chain"}
+            {$toChain?.display_name ?? 'Select chain'}
           </ChainButton>
         </section>
         <section>
@@ -953,18 +961,26 @@ const resetInput = () => {
             {#if $sendableBalances === null}
               Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
             {:else if $sendableBalances && $sendableBalances.length === 0}
-              You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some from <a
-              class="underline font-bold" href="/faucet">the faucet</a>
+              You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some
+              from <a class="underline font-bold" href="/faucet">the faucet</a>
             {:else}
               <Button
                 class="w-full"
                 variant="outline"
                 on:click={() => (dialogOpenToken = !dialogOpenToken)}
               >
-                <div
-                  class="flex-1 text-left font-bold text-md">{truncate(supportedAsset ? supportedAsset.display_symbol : $assetSymbol ? $assetSymbol : 'Select Asset', 12)}</div>
+                <div class="flex-1 text-left font-bold text-md">
+                  {truncate(
+                    supportedAsset
+                      ? supportedAsset.display_symbol
+                      : $assetSymbol
+                        ? $assetSymbol
+                        : 'Select Asset',
+                    12,
+                  )}
+                </div>
 
-                <Chevron/>
+                <Chevron />
               </Button>
             {/if}
           {:else}
@@ -972,99 +988,99 @@ const resetInput = () => {
           {/if}
           {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
             <div class="mt-4 text-xs text-muted-foreground">
-              <b>{truncate(supportedAsset ? supportedAsset?.display_symbol : $assetSymbol, 12)}</b> balance on
+              <b>{truncate(supportedAsset ? supportedAsset?.display_symbol : $assetSymbol, 12)}</b>
+              balance on
               <b>{$fromChain?.display_name}</b> is
               {formatUnits(BigInt($asset.balance), supportedAsset?.decimals ?? 0)}
             </div>
           {/if}
         </section>
-        
-          <section>
-            <CardSectionHeading>Amount</CardSectionHeading>
-            <Input
-              autocapitalize="none"
-              autocomplete="off"
-              autocorrect="off"
-              type="number"
-              inputmode="decimal"
-              bind:value={amount}
-              class={cn(
-                !balanceCoversAmount && amount ? 'border-red-500' : '',
-                'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
-              )}
-              disabled={!$asset}
-              maxlength={64}
-              minlength={1}
-              pattern="^[0-9]*[.,]?[0-9]*$"
-              placeholder="0.00"
-              spellcheck="false"
-            />
-          </section>
-          <section>
-            <CardSectionHeading>Recipient</CardSectionHeading>
-            <div class="flex items-start gap-2">
-              <div class="w-full">
-                <div class="relative w-full mb-2">
-                  <Input
-                    autocapitalize="none"
-                    autocomplete="off"
-                    autocorrect="off"
-                    bind:value={address}
-                    class="disabled:bg-black/30"
-                    disabled={inputState === 'locked'}
-                    id="address"
-                    on:input={handleInput}
-                    placeholder="Select chain"
-                    required={true}
-                    spellcheck="false"
-                    type="text"
-                  />
-                </div>
-                <div class="flex justify-between px-1">
-                  {#if userInput}
-                    <button
-                      type="button"
-                      on:click={resetInput}
-                      class="text-xs text-muted-foreground hover:text-primary transition"
-                    >
-                      Reset
-                    </button>
-                  {/if}
-                </div>
+
+        <section>
+          <CardSectionHeading>Amount</CardSectionHeading>
+          <Input
+            autocapitalize="none"
+            autocomplete="off"
+            autocorrect="off"
+            type="number"
+            inputmode="decimal"
+            bind:value={amount}
+            class={cn(
+              !balanceCoversAmount && amount ? 'border-red-500' : '',
+              'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
+            )}
+            disabled={!$asset}
+            maxlength={64}
+            minlength={1}
+            pattern="^[0-9]*[.,]?[0-9]*$"
+            placeholder="0.00"
+            spellcheck="false"
+          />
+        </section>
+        <section>
+          <CardSectionHeading>Recipient</CardSectionHeading>
+          <div class="flex items-start gap-2">
+            <div class="w-full">
+              <div class="relative w-full mb-2">
+                <Input
+                  autocapitalize="none"
+                  autocomplete="off"
+                  autocorrect="off"
+                  bind:value={address}
+                  class="disabled:bg-black/30"
+                  disabled={inputState === 'locked'}
+                  id="address"
+                  on:input={handleInput}
+                  placeholder="Select chain"
+                  required={true}
+                  spellcheck="false"
+                  type="text"
+                />
               </div>
-              <!--            <Button-->
-              <!--              aria-label="Toggle address lock"-->
-              <!--              class="px-3"-->
-              <!--              on:click={onLockClick}-->
-              <!--              variant="ghost"-->
-              <!--            >-->
-              <!--              {#if inputState === 'locked'}-->
-              <!--                <LockLockedIcon class="size-4.5"/>-->
-              <!--              {:else}-->
-              <!--                <LockOpenIcon class="size-4.5"/>-->
-              <!--              {/if}-->
-              <!--            </Button>-->
+              <div class="flex justify-between px-1">
+                {#if userInput}
+                  <button
+                    type="button"
+                    on:click={resetInput}
+                    class="text-xs text-muted-foreground hover:text-primary transition"
+                  >
+                    Reset
+                  </button>
+                {/if}
+              </div>
             </div>
-          </section>
-        </Card.Content>
-        <Card.Footer class="flex flex-col gap-4 items-start">
-          <Button
-            disabled={!amount ||
-          !$asset ||
-          !$toChainId ||
-          !$recipient ||
-          !$assetSymbol ||
-          !$fromChainId ||
-          !amountLargerThanZero ||
-          // >= because need some sauce for gas
-          !balanceCoversAmount
-          }
+            <!--            <Button-->
+            <!--              aria-label="Toggle address lock"-->
+            <!--              class="px-3"-->
+            <!--              on:click={onLockClick}-->
+            <!--              variant="ghost"-->
+            <!--            >-->
+            <!--              {#if inputState === 'locked'}-->
+            <!--                <LockLockedIcon class="size-4.5"/>-->
+            <!--              {:else}-->
+            <!--                <LockOpenIcon class="size-4.5"/>-->
+            <!--              {/if}-->
+            <!--            </Button>-->
+          </div>
+        </section>
+      </Card.Content>
+      <Card.Footer class="flex flex-col gap-4 items-start">
+        <Button
+          disabled={!amount ||
+            !$asset ||
+            !$toChainId ||
+            !$recipient ||
+            !$assetSymbol ||
+            !$fromChainId ||
+            !amountLargerThanZero ||
+            // >= because need some sauce for gas
+            !balanceCoversAmount}
           on:click={async event => {
-          event.preventDefault()
-          transferState.set({ kind: "FLIPPING" })
-          await sleep(1200)
-          transfer()
-        }}
+            event.preventDefault()
+            transferState.set({ kind: 'FLIPPING' })
+            await sleep(1200)
+            transfer()
+          }}
           type="button"
         >
           {buttonText}
@@ -1072,9 +1088,8 @@ const resetInput = () => {
       </Card.Footer>
     </Card.Root>
 
-    {#if $transferState.kind !== "PRE_TRANSFER"}
-      <Card.Root
-        class={cn("cube-back p-6")}>
+    {#if $transferState.kind !== 'PRE_TRANSFER'}
+      <Card.Root class={cn('cube-back p-6')}>
         {#if $fromChain}
           <Stepper
             steps={stepperSteps}
@@ -1090,11 +1105,12 @@ const resetInput = () => {
           />
         {/if}
       </Card.Root>
-      <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">UNION TESTNET</div>
+      <div class="cube-left font-bold flex items-center justify-center text-xl font-supermolot">
+        UNION TESTNET
+      </div>
     {/if}
   </div>
 </div>
-
 
 <ChainDialog
   bind:dialogOpen={dialogOpenFromChain}
@@ -1132,74 +1148,69 @@ const resetInput = () => {
 {/if}
 
 <style global lang="postcss">
+  .cube-scene {
+    @apply absolute -my-6 py-6 z-20;
+    top: calc(50% - (var(--height) / 2));
+    --width: calc(min(500px, (100dvw - 32px)));
+    --height: calc(min(740px, (100dvh - 144px)));
+    --depth: 80px;
+    --speed: 2s;
+    width: var(--width);
+    height: var(--height);
+    perspective: 1000px;
+  }
 
+  .cube {
+    @apply relative;
+    width: var(--width);
+    height: var(--height);
+    transform-style: preserve-3d;
+    transition: transform var(--speed);
+    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
+  }
 
-    .cube-scene {
-        @apply absolute -my-6 py-6 z-20;
-        top: calc(50% - (var(--height) / 2));
-        --width: calc(min(500px, (100dvw - 32px)));
-        --height: calc(min(740px, (100dvh - 144px)));
-        --depth: 80px;
-        --speed: 2s;
-        width: var(--width);
-        height: var(--height);
-        perspective: 1000px;
-    }
+  .cube--flipped {
+    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
+  }
 
-    .cube {
-        @apply relative;
-        width: var(--width);
-        height: var(--height);
-        transform-style: preserve-3d;
-        transition: transform var(--speed);
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(0deg);
-    }
+  .cube-front,
+  .cube-back {
+    @apply absolute overflow-y-auto overflow-x-hidden;
 
-    .cube--flipped {
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
-    }
+    width: var(--width);
+    height: var(--height);
+  }
 
-    .cube-front, .cube-back {
-        @apply absolute overflow-y-auto overflow-x-hidden;
+  .cube-left {
+    @apply absolute bg-card border;
+    width: var(--height);
+    height: var(--depth);
+    top: calc((var(--height) / 2) - (var(--depth) / 2));
+    right: calc((var(--width) / 2) - (var(--height) / 2));
+    transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
+  }
 
-        width: var(--width);
-        height: var(--height);
-    }
+  .cube-right {
+    @apply absolute bg-card border;
+    width: var(--height);
+    height: var(--depth);
+    top: calc((var(--height) / 2) - (var(--depth) / 2));
+    left: calc((var(--width) / 2) - (var(--height) / 2));
+    transform: rotateZ(-90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
+  }
 
-    .cube-left {
-        @apply absolute bg-card border;
-        width: var(--height);
-        height: var(--depth);
-        top: calc((var(--height) / 2) - (var(--depth) / 2));
-        right: calc((var(--width) / 2) - (var(--height) / 2));
-        transform: rotateZ(90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
-    }
+  .cube-front {
+    transform: translateZ(calc(var(--depth) * 0.5));
+  }
 
-    .cube-right {
-        @apply absolute bg-card border;
-        width: var(--height);
-        height: var(--depth);
-        top: calc((var(--height) / 2) - (var(--depth) / 2));
-        left: calc((var(--width) / 2) - (var(--height) / 2));
-        transform: rotateZ(-90deg) translateY(calc(var(--width) * 0.5)) rotateX(-90deg);
-    }
+  .cube-back {
+    transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
+  }
 
-    .cube-front {
-        transform: translateZ(calc(var(--depth) * 0.5));
-    }
-
-    .cube-back {
-        transform: translateZ(calc(var(--depth) * -0.5)) rotateY(180deg);
-    }
-
-    .no-transition {
-        @apply overflow-y-auto overflow-x-hidden;
-        width: var(--width);
-        height: var(--height);
-        transition: none !important;
-    }
-
-
+  .no-transition {
+    @apply overflow-y-auto overflow-x-hidden;
+    width: var(--width);
+    height: var(--height);
+    transition: none !important;
+  }
 </style>
-
-

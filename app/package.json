@@ -28,7 +28,6 @@
     "@union/client": "npm:@jsr/union__client@^0.0.7",
     "@wagmi/connectors": "^5.1.8",
     "@wagmi/core": "^2.13.4",
-    "bech32": "^2.0.0",
     "bits-ui": "^0.21.13",
     "cmdk-sv": "^0.0.18",
     "gql.tada": "^1.8.6",
@@ -41,7 +40,6 @@
     "svelte-ux": "^0.74.6",
     "temporal-polyfill": "^0.2.5",
     "three": "^0.168.0",
-    "uint8array-extras": "^1.4.0",
     "valibot": "^0.41.0",
     "vaul-svelte": "^0.3.2",
     "viem": "^2.21.1"

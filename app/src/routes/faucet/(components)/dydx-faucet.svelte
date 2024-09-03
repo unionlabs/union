@@ -13,9 +13,9 @@ import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { derived, writable, type Writable } from "svelte/store"
 import { dydxFaucetMutation } from "$lib/graphql/queries/faucet"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
-import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
+import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
+import { bech32ToBech32Address, isValidBech32Address } from "@union/client"
 import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
-import { convertCosmosAddress, createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 
 type DydxFaucetState = DiscriminatedUnion<
   "kind",
@@ -30,7 +30,7 @@ type DydxFaucetState = DiscriminatedUnion<
 
 let dydxAddress = derived(cosmosStore, $cosmosStore =>
   $cosmosStore.address
-    ? convertCosmosAddress({
+    ? bech32ToBech32Address({
         address: $cosmosStore.address,
         toPrefix: "dydx"
       })
@@ -242,7 +242,7 @@ let dydxBalance = createQuery(
               requestDydxFromFaucet()
             }}
             disabled={$dydxFaucetState.kind !== "IDLE" ||
-              isValidCosmosAddress($dydxAddress, ["dydx"]) === false}
+              isValidBech32Address($dydxAddress) === false}
             class={cn(
               "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
               "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]"
@@ -270,5 +270,3 @@ let dydxBalance = createQuery(
     {/if}
   </Card.Content>
 </Card.Root>
-
-<style lang="postcss"></style>
