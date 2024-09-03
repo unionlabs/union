@@ -2,7 +2,7 @@
 
 [![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
 
-[docs.union.build](https://docs.union.build) introduces Union, hosts our [docs](https://docs.union.build).
+[docs.union.build](https://docs.union.build) hosts our [docs](https://docs.union.build).
 
 ## Quickstart
 
