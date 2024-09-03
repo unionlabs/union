@@ -64,7 +64,7 @@ jobs:
       pull-requests: write
     env:
       npm_config_yes: true
-    environment: 'app-preview'
+    environment: 'docs-preview'
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
       - name: Fetch from Cache
         run: |
           nix develop
-          nix build .#app
+          nix build .#docs
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -126,7 +126,7 @@ jobs:
     env:
       npm_config_yes: true
     environment: 'docs-production'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/release/app'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release/docs'
     steps:
       - uses: actions/checkout@v4
         with:
