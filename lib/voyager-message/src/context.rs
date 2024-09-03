@@ -4,6 +4,10 @@ use std::{
 };
 
 use futures::{stream::FuturesUnordered, TryStreamExt};
+use jsonrpsee::{
+    core::RpcResult,
+    types::{ErrorObject, ErrorObjectOwned},
+};
 use macros::model;
 use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
@@ -18,14 +22,14 @@ use crate::{
         PluginInfo, PluginKind, PluginModuleClient, SupportedInterface,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    ChainId, ClientType, IbcInterface,
+    ChainId, ClientType, IbcInterface, FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub const PLUGIN_NAME_CACHE_FILE: &str = "/tmp/voyager-plugin-name-cache.json";
 
 #[derive(Debug)]
 pub struct Context {
-    modules: Arc<Modules>,
+    pub rpc_server: Server,
 
     plugins: HashMap<String, RpcClient>,
 
@@ -106,35 +110,21 @@ pub struct RpcServer {
     #[allow(dead_code)]
     socket: String,
     #[debug(skip)]
-    server_handle: Server,
-    #[debug(skip)]
     #[allow(dead_code)]
     server_task_handle: JoinHandle<()>,
 }
 
 impl RpcServer {
-    async fn new(path: String, config: Value) -> Result<Self, BoxDynError> {
+    async fn new(path: String, config: Value, server: Server) -> Result<Self, BoxDynError> {
         let socket = Self::make_socket_path(path.clone(), config.clone());
         let rpc_server = reth_ipc::server::Builder::default().build(socket.clone());
 
-        let server_handle = Server::new();
-
-        let server_task_handle = tokio::spawn(
-            rpc_server
-                .start(server_handle.clone().into_rpc())
-                .await?
-                .stopped(),
-        );
+        let server_task_handle = tokio::spawn(rpc_server.start(server.into_rpc()).await?.stopped());
 
         Ok(Self {
             socket,
-            server_handle,
             server_task_handle,
         })
-    }
-
-    fn start(&self, modules: Arc<Modules>) {
-        self.server_handle.start(modules)
     }
 
     fn make_socket_path(path: String, config: Value) -> String {
@@ -187,6 +177,8 @@ impl Context {
 
         let handles = std::sync::Mutex::new(JoinSet::new());
 
+        let main_rpc_server = Server::new();
+
         let plugins_processed = plugin_configs
             .into_iter()
             .filter_map(|plugin_config| {
@@ -207,10 +199,13 @@ impl Context {
                     healthy.clone(),
                 ));
 
+                let main_rpc_server_handle = main_rpc_server.clone();
+
                 Some(async move {
-                    let rpc_server = RpcServer::new(
+                    let plugin_rpc_server = RpcServer::new(
                         plugin_config.path.to_owned(),
                         plugin_config.config.to_owned(),
+                        main_rpc_server_handle,
                     )
                     .await?;
 
@@ -289,7 +284,7 @@ impl Context {
                         interest_filter,
                         rpc_client,
                         kind,
-                        rpc_server,
+                        rpc_server: plugin_rpc_server,
                     })
                 })
             })
@@ -397,14 +392,12 @@ impl Context {
             error!(err = %ErrorReporter(err), "unable to write cache file")
         }
 
-        let modules = Arc::new(modules);
+        // let modules = Arc::new(modules);
 
-        for rpc_server in &plugin_servers {
-            rpc_server.start(modules.clone());
-        }
+        main_rpc_server.start(Arc::new(modules));
 
         Ok(Self {
-            modules,
+            rpc_server: main_rpc_server,
             plugins,
             interest_filters,
             cancellation_token,
@@ -457,28 +450,31 @@ impl Context {
     pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a (impl ChainModuleClient<D, C, Cb> + 'a), ChainModuleNotFound> {
-        self.modules.chain_module(chain_id)
+    ) -> RpcResult<&'a (impl ChainModuleClient<D, C, Cb> + 'a)> {
+        Ok(self.rpc_server.modules()?.chain_module(chain_id)?)
     }
 
     pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a (impl ConsensusModuleClient<D, C, Cb> + 'a), ConsensusModuleNotFound> {
-        self.modules.consensus_module(chain_id)
+    ) -> RpcResult<&'a (impl ConsensusModuleClient<D, C, Cb> + 'a)> {
+        Ok(self.rpc_server.modules()?.consensus_module(chain_id)?)
     }
 
     pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         client_type: &'b ClientType<'c>,
         ibc_interface: &'b IbcInterface<'c>,
-    ) -> Result<&'a (impl ClientModuleClient<D, C, Cb> + 'a), ClientModuleNotFound> {
-        self.modules.client_module(client_type, ibc_interface)
+    ) -> RpcResult<&'a (impl ClientModuleClient<D, C, Cb> + 'a)> {
+        Ok(self
+            .rpc_server
+            .modules()?
+            .client_module(client_type, ibc_interface)?)
     }
 
-    pub fn modules(&self) -> Arc<Modules> {
-        self.modules.clone()
-    }
+    // pub fn modules(&self) -> Arc<Modules> {
+    //     self.modules.clone()
+    // }
 }
 
 impl Modules {
@@ -647,6 +643,18 @@ impl From<ChainModuleNotFound> for QueueError {
     }
 }
 
+impl From<ChainModuleNotFound> for ErrorObjectOwned {
+    fn from(value: ChainModuleNotFound) -> Self {
+        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
+    }
+}
+
+impl From<ChainModuleNotFound> for jsonrpsee::core::client::Error {
+    fn from(value: ChainModuleNotFound) -> Self {
+        ErrorObject::from(value).into()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("no module loaded for consensus on chain `{0}`")]
 pub struct ConsensusModuleNotFound(pub ChainId<'static>);
@@ -657,13 +665,15 @@ impl From<ConsensusModuleNotFound> for QueueError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("no module loaded for transaction submission on chain `{0}`")]
-pub struct TransactionModuleNotFound(pub String);
+impl From<ConsensusModuleNotFound> for jsonrpsee::core::client::Error {
+    fn from(value: ConsensusModuleNotFound) -> Self {
+        ErrorObject::from(value).into()
+    }
+}
 
-impl From<TransactionModuleNotFound> for QueueError {
-    fn from(value: TransactionModuleNotFound) -> Self {
-        Self::Fatal(Box::new(value))
+impl From<ConsensusModuleNotFound> for ErrorObjectOwned {
+    fn from(value: ConsensusModuleNotFound) -> Self {
+        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
     }
 }
 
@@ -688,6 +698,18 @@ impl From<ClientModuleNotFound> for QueueError {
     }
 }
 
+impl From<ClientModuleNotFound> for jsonrpsee::core::client::Error {
+    fn from(value: ClientModuleNotFound) -> Self {
+        ErrorObject::from(value).into()
+    }
+}
+
+impl From<ClientModuleNotFound> for ErrorObjectOwned {
+    fn from(value: ClientModuleNotFound) -> Self {
+        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error("plugin `{plugin_name}` not found")]
 pub struct PluginNotFound {
@@ -697,5 +719,17 @@ pub struct PluginNotFound {
 impl From<PluginNotFound> for QueueError {
     fn from(value: PluginNotFound) -> Self {
         Self::Fatal(Box::new(value))
+    }
+}
+
+impl From<PluginNotFound> for ErrorObjectOwned {
+    fn from(value: PluginNotFound) -> Self {
+        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, value.to_string(), None::<()>)
+    }
+}
+
+impl From<PluginNotFound> for jsonrpsee::core::client::Error {
+    fn from(value: PluginNotFound) -> Self {
+        ErrorObject::from(value).into()
     }
 }

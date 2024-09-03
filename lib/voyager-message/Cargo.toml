@@ -28,6 +28,7 @@ jaq-std                      = "1.6.0"
 jaq-syn                      = "1.6.0"
 jsonrpsee                    = { version = "0.24.2", features = ["server", "client", "async-client", "macros", "tracing"] }
 macros                       = { workspace = true }
+moka                         = { version = "0.12.8", features = ["future", "sync"] }
 num-bigint                   = { workspace = true }
 prost                        = { workspace = true }
 protos                       = { workspace = true, features = ["proto_full", "client"] }
@@ -41,7 +42,7 @@ tendermint                   = { workspace = true }
 tendermint-proto             = { workspace = true }
 tendermint-rpc               = { workspace = true, features = ["http-client", "websocket-client"] }
 thiserror                    = { workspace = true }
-tokio                        = { workspace = true, features = ["time", "process"] }
+tokio                        = { workspace = true, features = ["time", "process", "fs"] }
 tokio-util                   = "0.7.11"
 tonic                        = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing                      = { workspace = true }

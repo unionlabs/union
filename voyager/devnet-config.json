@@ -143,7 +143,7 @@
     }
   ],
   "voyager": {
-    "num_workers": 5,
+    "num_workers": 50,
     "queue": {
       "type": "pg-queue",
       "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",

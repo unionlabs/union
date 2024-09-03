@@ -24,7 +24,7 @@ use serde_json::{json, Value};
 use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
 use tracing::debug;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
 use unionlabs::{ethereum::ibc_commitment_key, ics24, ErrorReporter, QueryHeight};
 use voyager_message::{
     call::FetchBlock,
@@ -54,11 +54,13 @@ fn main() -> ExitCode {
         cli::LogFormat::Text => {
             tracing_subscriber::fmt()
                 .with_env_filter(EnvFilter::from_default_env())
+                .with_span_events(FmtSpan::CLOSE)
                 .init();
         }
         cli::LogFormat::Json => {
             tracing_subscriber::fmt()
                 .with_env_filter(EnvFilter::from_default_env())
+                .with_span_events(FmtSpan::CLOSE)
                 .json()
                 .init();
         }

@@ -98,12 +98,8 @@ pub enum Op<T: QueueMessage> {
     /// Inert data that will either be used in an aggregation or bubbled up to the top and sent as
     /// an output.
     Data(T::Data),
-    /// Fetch some data from the outside world. This can also be thought of as a "read" operation.
+    /// Execute an action.
     Call(T::Call),
-    // /// Send a message to the outside world. This can also be thought of as a "write" operation.
-    // Effect(T::Effect),
-    // /// Wait for some external condition.
-    // Wait(T::Wait),
     Defer {
         until: u64,
     },

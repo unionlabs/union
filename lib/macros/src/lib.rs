@@ -998,7 +998,7 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
     let serde_de_bound = item_struct.generics.params.to_token_stream().to_string();
 
     quote! {
-        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ::clap::Args)]
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, ::clap::Args)]
         #[serde(bound(
             serialize = #serde_ser_bound,
             deserialize = #serde_de_bound,

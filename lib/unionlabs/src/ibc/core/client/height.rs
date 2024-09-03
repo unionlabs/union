@@ -11,6 +11,7 @@ use ssz::Ssz;
 #[model(proto(raw(protos::ibc::core::client::v1::Height), into, from))]
 #[debug("Height({self})")]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
+#[derive(Hash)]
 pub struct Height {
     // REVIEW: Why default?
     #[serde(default)]

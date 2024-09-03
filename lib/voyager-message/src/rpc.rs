@@ -208,7 +208,7 @@ pub mod server {
     };
     use serde_json::Value;
     use tonic::async_trait;
-    use tracing::{debug, instrument};
+    use tracing::{debug, error, info_span, instrument, Instrument};
     use unionlabs::{
         ibc::core::client::height::Height,
         ics24::{ClientStatePath, Path},
@@ -230,41 +230,87 @@ pub mod server {
         ChainId, FATAL_JSONRPC_ERROR_CODE,
     };
 
-    #[derive(Clone)]
-    pub struct Server(Arc<ServerInner>);
+    #[derive(Debug, Clone)]
+    pub struct Server {
+        inner: Arc<ServerInner>,
+    }
 
-    #[derive(Clone)]
+    #[derive(macros::Debug, Clone)]
     pub struct ServerInner {
         modules: OnceLock<Arc<Modules>>,
+        #[debug("Cache({:?}, {})", self.ibc_state_cache.name(), self.ibc_state_cache.entry_count())]
+        ibc_state_cache: moka::future::Cache<(ChainId<'static>, Path, Height), Value>,
     }
+
+    // #[derive(Debug, Clone, Hash, PartialEq, Eq)]
+    // pub struct IbcStateCacheKey<'a> {
+    //     chain_id: ChainId<'a>,
+    //     path: Cow<'a, Path>,
+    //     // height is copy so don't bother wrapping it
+    //     height: Height,
+    // }
+
+    // impl<'a> IbcStateCacheKey<'a> {
+    //     pub fn new(chain_id: ChainId<'a>, path: &'a Path, height: Height) -> Self {
+    //         Self {
+    //             chain_id,
+    //             path: Cow::Borrowed(path),
+    //             height,
+    //         }
+    //     }
+    // }
+
+    // impl IbcStateCacheKey<'static> {
+    //     pub fn new_owned(chain_id: ChainId<'static>, path: Path, height: Height) -> Self {
+    //         Self {
+    //             chain_id,
+    //             path: Cow::Owned(path),
+    //             height,
+    //         }
+    //     }
+    // }
 
     impl Server {
         #[allow(clippy::new_without_default)]
         pub fn new() -> Self {
-            Server(Arc::new(ServerInner {
-                modules: OnceLock::new(),
-            }))
+            Server {
+                inner: Arc::new(ServerInner {
+                    modules: OnceLock::new(),
+                    ibc_state_cache: moka::future::Cache::builder()
+                        .eviction_listener(|k, v, why| {
+                            error!(?k, ?v, ?why, "value evicted from the cache")
+                        })
+                        .max_capacity(10_000)
+                        .name("ibc_state_cache")
+                        .build(),
+                }),
+            }
         }
 
         pub fn start(&self, modules: Arc<Modules>) {
             assert!(
-                self.0.modules.set(modules).is_ok(),
+                self.inner.modules.set(modules).is_ok(),
                 "server has already been started"
             );
         }
 
-        fn modules(&self) -> RpcResult<&Modules> {
-            self.0
-                .modules
-                .get()
-                .map(|x| &**x)
-                .ok_or_else(|| ErrorObject::owned(-2, "server has not been started", None::<()>))
+        /// Returns the contained modules, if they have been loaded.
+        pub fn modules(&self) -> RpcResult<&Modules> {
+            self.inner.modules()
         }
     }
 
-    impl Server {
+    impl ServerInner {
+        /// Returns the contained modules, if tey have been loaded.
+        fn modules(&self) -> RpcResult<&Modules> {
+            self.modules
+                .get()
+                .map(|x| &**x)
+                .ok_or_else(|| ErrorObject::owned(-2, "server has not started", None::<()>))
+        }
+
         #[instrument(skip_all, fields(%height, %chain_id))]
-        async fn fetch_query_height(
+        async fn query_height(
             &self,
             chain_id: &ChainId<'_>,
             height: QueryHeight,
@@ -286,19 +332,91 @@ pub mod server {
                 QueryHeight::Specific(height) => Ok(height),
             }
         }
+
+        async fn query_ibc_state_cached<'a>(
+            &self,
+            chain_id: ChainId<'a>,
+            at: Height,
+            path: Path,
+        ) -> Result<IbcState, jsonrpsee::core::client::Error> {
+            let key = (chain_id.clone().into_static(), path.clone(), at);
+
+            let state = self
+                .ibc_state_cache
+                .entry_by_ref(&key)
+                .or_try_insert_with(
+                    async {
+                        debug!(%path, %at, "querying ibc state");
+
+                        let state = self
+                            .modules()?
+                            .chain_module::<Value, Value, Value>(&chain_id)
+                            .map_err(fatal_error)?
+                            .query_ibc_state(at, path)
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        RpcResult::Ok(state)
+                    }
+                    .instrument(info_span!("ibc state cache fetcher")),
+                )
+                .await
+                .map_err(Arc::unwrap_or_clone)?;
+
+            let (chain_id, path, height) = key;
+
+            if !state.is_fresh() {
+                debug!(
+                    cache = %self.ibc_state_cache.name().unwrap_or_default(),
+                    key.chain_id = %chain_id,
+                    key.path = %path,
+                    key.height = %height,
+                    "cache hit"
+                );
+            }
+
+            Ok(IbcState {
+                chain_id,
+                path,
+                height,
+                state: state.into_value(),
+            })
+
+            // Ok(
+            //     serde_json::from_value::<P::Value>(state.clone()).map_err(|e| {
+            //         ErrorObject::owned(
+            //             FATAL_JSONRPC_ERROR_CODE,
+            //             format!("unable to deserialize state: {}", ErrorReporter(e)),
+            //             Some(json!({
+            //                 "path": path,
+            //                 "state": state
+            //             })),
+            //         )
+            //     })?,
+            // )
+        }
     }
 
     #[async_trait]
     impl VoyagerRpcServer for Server {
         #[instrument(skip_all)]
         async fn info(&self) -> RpcResult<Info> {
-            let chain = self.modules()?.loaded_chain_modules().cloned().collect();
+            dbg!(self.inner.ibc_state_cache.iter().collect::<Vec<_>>());
+
+            let chain = self
+                .inner
+                .modules()?
+                .loaded_chain_modules()
+                .cloned()
+                .collect();
             let consensus = self
+                .inner
                 .modules()?
                 .loaded_consensus_modules()
                 .cloned()
                 .collect();
             let client = self
+                .inner
                 .modules()?
                 .loaded_client_modules()
                 .flat_map(|(c, is)| is.map(|i| (c.clone(), i.clone())))
@@ -316,6 +434,7 @@ pub mod server {
             debug!("querying latest height");
 
             let latest_height = self
+                .inner
                 .modules()?
                 .chain_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?
@@ -336,14 +455,14 @@ pub mod server {
         ) -> RpcResult<ClientInfo> {
             debug!("fetching client info");
 
-            let client_info = <_ as ChainModuleClient<Value, Value, Value>>::client_info(
-                self.modules()?
-                    .chain_module(&chain_id)
-                    .map_err(fatal_error)?,
-                client_id,
-            )
-            .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            let client_info = self
+                .inner
+                .modules()?
+                .chain_module::<Value, Value, Value>(&chain_id)
+                .map_err(fatal_error)?
+                .client_info(client_id)
+                .await
+                .map_err(json_rpc_error_to_rpc_error)?;
 
             debug!(%client_info.ibc_interface, %client_info.client_type, "fetched client info");
 
@@ -359,9 +478,10 @@ pub mod server {
         ) -> RpcResult<ClientStateMeta> {
             debug!("fetching client meta");
 
-            let height = self.fetch_query_height(&chain_id, at).await?;
+            let height = self.inner.query_height(&chain_id, at).await?;
 
             let client_info = self
+                .inner
                 .modules()?
                 .chain_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?
@@ -370,6 +490,7 @@ pub mod server {
                 .map_err(json_rpc_error_to_rpc_error)?;
 
             let client_state = self
+                .inner
                 .modules()?
                 .chain_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?
@@ -378,6 +499,7 @@ pub mod server {
                 .map_err(json_rpc_error_to_rpc_error)?;
 
             let meta = self
+                .inner
                 .modules()?
                 .client_module::<Value, Value, Value>(
                     &client_info.client_type,
@@ -408,27 +530,18 @@ pub mod server {
         ) -> RpcResult<IbcState> {
             debug!("fetching ibc state");
 
-            let chain_module = self
-                .modules()?
-                .chain_module::<Value, Value, Value>(&chain_id)
-                .map_err(fatal_error)?;
+            let height = self.inner.query_height(&chain_id, height).await?;
 
-            let height = self.fetch_query_height(&chain_id, height).await?;
-
-            let state = chain_module
-                .query_ibc_state(height, path.clone())
+            let state = self
+                .inner
+                .query_ibc_state_cached(chain_id, height, path.clone())
                 .await
                 .map_err(json_rpc_error_to_rpc_error)?;
 
             // TODO: Use valuable here
-            debug!(%state, "fetched ibc state");
+            debug!(state = %state.state, "fetched ibc state");
 
-            Ok(IbcState {
-                chain_id,
-                path,
-                height,
-                state,
-            })
+            Ok(state)
         }
 
         #[instrument(skip_all, fields(%chain_id, %path, %height))]
@@ -441,11 +554,12 @@ pub mod server {
             debug!("fetching ibc state");
 
             let chain_module = self
+                .inner
                 .modules()?
                 .chain_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?;
 
-            let height = self.fetch_query_height(&chain_id, height).await?;
+            let height = self.inner.query_height(&chain_id, height).await?;
 
             let proof = chain_module
                 .query_ibc_proof(height, path.clone())
@@ -472,11 +586,12 @@ pub mod server {
             debug!("querying self client state");
 
             let chain_module = self
+                .inner
                 .modules()?
                 .consensus_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?;
 
-            let height = self.fetch_query_height(&chain_id, height).await?;
+            let height = self.inner.query_height(&chain_id, height).await?;
 
             let state = chain_module
                 .self_client_state(height)
@@ -498,11 +613,12 @@ pub mod server {
             debug!("querying self consensus state");
 
             let chain_module = self
+                .inner
                 .modules()?
                 .consensus_module::<Value, Value, Value>(&chain_id)
                 .map_err(fatal_error)?;
 
-            let height = self.fetch_query_height(&chain_id, height).await?;
+            let height = self.inner.query_height(&chain_id, height).await?;
 
             let state = chain_module
                 .self_consensus_state(height)

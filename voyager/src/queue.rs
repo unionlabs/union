@@ -27,7 +27,8 @@ use queue_msg::{
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, error, info, info_span, trace, Instrument};
+use tracing::{debug, error, info, info_span, trace, trace_span};
+use tracing_futures::Instrument;
 use voyager_message::{
     context::Context, pass::JaqInterestFilter, plugin::OptimizationPassPluginClient,
     rpc::VoyagerRpcServer, VoyagerMessage,
@@ -330,12 +331,11 @@ impl Voyager {
                         .await?;
                     let mut module = jsonrpsee::RpcModule::new(&self.context);
 
-                    let s = voyager_message::rpc::server::Server::new();
-                    s.start(self.context.modules().clone());
+                    module
+                        .merge(self.context.rpc_server.clone().into_rpc())
+                        .unwrap();
 
-                    module.merge(s.into_rpc()).unwrap();
-
-                    dbg!(&module);
+                    // dbg!(&module);
 
                     let addr = server.local_addr()?;
                     let handle = server.start(module);
@@ -371,8 +371,10 @@ impl Voyager {
                 .catch_unwind(),
             ));
 
-            for i in 0..self.num_workers {
-                info!("spawning worker {i}");
+            info!("spawning {} workers", self.num_workers);
+
+            for id in 0..self.num_workers {
+                info!("spawning worker {id}");
 
                 // let engine = ;
 
@@ -387,7 +389,8 @@ impl Voyager {
                                 );
 
                                 Ok(())
-                            }),
+                            })
+                            .instrument(trace_span!("engine task", %id)),
                     )
                     .catch_unwind(),
                 ));

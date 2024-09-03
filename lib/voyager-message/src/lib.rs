@@ -97,6 +97,31 @@ macro_rules! str_newtype {
             pub fn as_str(&self) -> &str {
                 self.0.as_ref()
             }
+
+
+            /// Borrow this [`
+            #[doc = stringify!($Struct)]
+            /// `], returning a new owned value pointing to the same data.
+            ///
+            /// ```
+            #[doc = concat!("let t = ", stringify!($Struct), "::new_static(\"static\");")]
+            ///
+            /// takes_ownership(t.borrow());
+            /// takes_ownership(t);
+            ///
+            #[doc = concat!("fn takes_ownership<'a>(c: ", stringify!($Struct), "<'a>) {}")]
+            /// ```
+            fn borrow<'b>(&'a self) -> $Struct<'b>
+            where
+                'a: 'b,
+            {
+                use std::borrow::Cow;
+
+                match self.0 {
+                    Cow::Borrowed(s) => Self(Cow::Borrowed(s)),
+                    Cow::Owned(ref s) => Self(Cow::Borrowed(s.as_str())),
+                }
+            }
         }
     };
 }

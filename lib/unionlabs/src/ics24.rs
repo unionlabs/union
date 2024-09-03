@@ -27,6 +27,7 @@ pub trait IbcPath: Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
     Eq,
     Serialize,
     Deserialize,
+    Hash,
     derive_more::Display,
     clap::Subcommand,
     enumorph::Enumorph,

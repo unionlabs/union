@@ -140,28 +140,30 @@ impl<D: Member, C: Member, Cb: Member> HandleCallback<VoyagerMessage<D, C, Cb>> 
                     panic!("bad data")
                 };
 
-                let client_module =
-                    ctx.client_module::<Value, Value, Value>(&client_type, &ibc_interface)?;
+                // let client_module =
+                //     ctx.client_module::<Value, Value, Value>(&client_type, &ibc_interface)?;
 
-                Ok(queue_msg::data(OrderedMsgUpdateClients {
-                    updates: stream::iter(headers.into_iter())
-                        .then(|(meta, header)| {
-                            client_module
-                                .encode_header(header)
-                                .map_ok(|encoded_header| {
-                                    (
-                                        meta,
-                                        MsgUpdateClient {
-                                            client_id: counterparty_client_id.clone(),
-                                            client_message: encoded_header,
-                                        },
-                                    )
-                                })
-                                .map_err(json_rpc_error_to_queue_error)
-                        })
-                        .try_collect::<Vec<_>>()
-                        .await?,
-                }))
+                // Ok(queue_msg::data(OrderedMsgUpdateClients {
+                //     updates: stream::iter(headers.into_iter())
+                //         .then(|(meta, header)| {
+                //             client_module
+                //                 .encode_header(header)
+                //                 .map_ok(|encoded_header| {
+                //                     (
+                //                         meta,
+                //                         MsgUpdateClient {
+                //                             client_id: counterparty_client_id.clone(),
+                //                             client_message: encoded_header,
+                //                         },
+                //                     )
+                //                 })
+                //                 .map_err(json_rpc_error_to_queue_error)
+                //         })
+                //         .try_collect::<Vec<_>>()
+                //         .await?,
+                // }))
+
+                todo!()
             }
             // Aggregate::AggregateMsgUpdateClientFromEncodedHeader(aggregate) => {
             //     Ok(do_aggregate(aggregate, data))
