@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - release/docs
     paths:
       - 'evm/**'
       - 'docs/**'
@@ -132,7 +131,7 @@ jobs:
     env:
       npm_config_yes: true
     environment: 'docs-production'
-    if: github.event_name == 'push' && github.ref == 'refs/heads/release/docs'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
         with:
