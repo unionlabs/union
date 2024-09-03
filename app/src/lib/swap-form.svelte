@@ -7,7 +7,7 @@ import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 
 import * as Card from "$lib/components/ui/card/index.ts"
-import { UnionClient } from "@union/client"
+// import { UnionClient } from "@union/client"
 import { Button } from "$lib/components/ui/button"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 
@@ -42,66 +42,66 @@ const BERACHAIN_CONTRACTS = {
   ucs01_handler: "0x6F270608fB562133777AF0f71F6386ffc1737C30"
 }
 
-const swap = async () => {
-  const cosmosOfflineSigner = window?.keplr?.getOfflineSigner($fromChainId, {
-    disableBalanceCheck: false
-  })
+// const swap = async () => {
+//   const cosmosOfflineSigner = window?.keplr?.getOfflineSigner($fromChainId, {
+//     disableBalanceCheck: false
+//   })
 
-  // TODO: don't hardcode union
-  const cosmosClient = new UnionClient({
-    cosmosOfflineSigner,
-    evmSigner: undefined,
-    bech32Prefix: "union",
-    chainId: $fromChainId,
-    gas: { denom: "UNO", amount: "0.0025" },
-    rpcUrl: `https://rpc.testnet-8.union.build`
-  })
+//   // TODO: don't hardcode union
+//   const cosmosClient = new UnionClient({
+//     cosmosOfflineSigner,
+//     evmSigner: undefined,
+//     bech32Prefix: "union",
+//     chainId: $fromChainId,
+//     gas: { denom: "UNO", amount: "0.0025" },
+//     rpcUrl: `https://rpc.testnet-8.union.build`
+//   })
 
-  const evmNoteMsg = {
-    kind: "cosmwasm",
-    instructions: [
-      {
-        contractAddress: "union1c4wl7ytmf7kp6vupf50y3n8myu7m6xn8vspufledqd8x8hj9dn2s3clks5",
-        msg: {
-          execute: {
-            msgs: [
-              {
-                call: {
-                  to: "0x08247b1C6D6AACF6C655f711661D5810380C8385",
-                  data: "095ea7b3000000000000000000000000ab827b1cc3535a9e549ee387a6e9c3f02f481b490000000000000000000000000000000000000000000000000000000000000007"
-                }
-              },
-              {
-                call: {
-                  to: "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49",
-                  data: "3d719cd900000000000000000000000008247b1c6d6aacf6c655f711661d5810380c83850000000000000000000000000e4aaf1351de4c0264c5c7056ef3777b41bd8e030000000000000000000000000000000000000000000000000000000000008ca00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ffff5433e2b3d8211706e6102aa947100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-                }
-              },
-              {
-                ibc_send: {
-                  tokens: [
-                    {
-                      address: "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
-                      amount: "718283233153"
-                    }
-                  ],
-                  channel_id: "channel-3",
-                  receiver: "15cbba30256b961c37b3fd7224523abdf562fd72"
-                }
-              }
-            ],
-            callback: null,
-            timeout_seconds: "5000000"
-          }
-        }
-      }
-    ]
-  }
+//   const evmNoteMsg = {
+//     kind: "cosmwasm",
+//     instructions: [
+//       {
+//         contractAddress: "union1c4wl7ytmf7kp6vupf50y3n8myu7m6xn8vspufledqd8x8hj9dn2s3clks5",
+//         msg: {
+//           execute: {
+//             msgs: [
+//               {
+//                 call: {
+//                   to: "0x08247b1C6D6AACF6C655f711661D5810380C8385",
+//                   data: "095ea7b3000000000000000000000000ab827b1cc3535a9e549ee387a6e9c3f02f481b490000000000000000000000000000000000000000000000000000000000000007"
+//                 }
+//               },
+//               {
+//                 call: {
+//                   to: "0xAB827b1Cc3535A9e549EE387A6E9C3F02F481B49",
+//                   data: "3d719cd900000000000000000000000008247b1c6d6aacf6c655f711661d5810380c83850000000000000000000000000e4aaf1351de4c0264c5c7056ef3777b41bd8e030000000000000000000000000000000000000000000000000000000000008ca00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ffff5433e2b3d8211706e6102aa947100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+//                 }
+//               },
+//               {
+//                 ibc_send: {
+//                   tokens: [
+//                     {
+//                       address: "0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03",
+//                       amount: "718283233153"
+//                     }
+//                   ],
+//                   channel_id: "channel-3",
+//                   receiver: "15cbba30256b961c37b3fd7224523abdf562fd72"
+//                 }
+//               }
+//             ],
+//             callback: null,
+//             timeout_seconds: "5000000"
+//           }
+//         }
+//       }
+//     ]
+//   }
 
-  // @ts-ignore
-  const cosmosTransfer = await cosmosClient.transferAssets(evmNoteMsg)
-  console.log(cosmosTransfer.transactionHash)
-}
+//   // @ts-ignore
+//   const cosmosTransfer = await cosmosClient.transferAssets(evmNoteMsg)
+//   console.log(cosmosTransfer.transactionHash)
+// }
 </script>
 
 
@@ -131,7 +131,7 @@ const swap = async () => {
     </Card.Root>
     <Button
       on:click={async event => {
-        swap()
+        // swap()
       }}
       type="button"
     >
