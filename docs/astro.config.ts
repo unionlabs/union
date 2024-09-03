@@ -22,7 +22,7 @@ export default defineConfig({
     serverIslands: true,
     clientPrerender: true,
     directRenderScript: true,
-    contentIntellisense: true,
+    contentIntellisense: true
   },
   trailingSlash: "ignore",
   markdown: markdownConfiguration,

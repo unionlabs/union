@@ -35,6 +35,9 @@
 
               echo "Running Site Check"
               nix run .\#site-check
+
+              echo "Running Docs Check"
+              nix run .\#docs-check
             '';
           };
         };

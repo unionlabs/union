@@ -39,8 +39,10 @@
     "networks/genesis/union-testnet-7/**",
     "networks/genesis/union-testnet-8/**",
     "site/public/genesis.json",
+    "docs/public/genesis.json",
     "hubble/hasura/**",
     "site/src/lib/abi/**",
+    "docs/src/lib/abi/**",
     "typescript-sdk/scripts/**",
     "e2e/upgrades.nix",
     "yarn.lock",
@@ -51,6 +53,7 @@
     "app/scripts/_index.ts",
     "lib/pg-queue/migrations",
     "./site/src/content/openapi/**",
+    "./docs/src/content/openapi/**",
     "uniond/docs/static/openapi.yml"
   ]
 }
