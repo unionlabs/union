@@ -8,6 +8,24 @@
         };
       };
 
+      voy-modules-list = builtins.filter (member: pkgs.lib.hasPrefix "voyager/modules" member) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
+
+      voyager-modules = builtins.foldl' 
+        (mods: mod: 
+          { 
+            packages = mods.packages // mod.packages; 
+            checks = mods.checks // mod.checks;
+          }
+        ) 
+        { 
+          packages = {};
+          checks = {}; 
+        } 
+        (builtins.map 
+          (module: crane.buildWorkspaceMember { crateDirFromRoot = module; }) 
+          voy-modules-list
+        );
+
       voyager = crane.buildWorkspaceMember attrs;
       voyager-dev = pkgs.lib.warn
         "voyager-dev is not intended to be used in production"
@@ -47,8 +65,8 @@
           '';
         };
         voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
-      };
-      checks = voyager.checks;
+      } // voyager-modules.packages;
+      checks = voyager.checks // voyager-modules.checks;
     };
 
   flake.nixosModules.voyager = { lib, pkgs, config, ... }:
@@ -68,6 +86,7 @@
           # of effort to fix the type for now.
           type = types.listOf (types.submodule {
             options = {
+              enabled = mkOption { type = types.bool; };
               path = mkOption { type = types.path; };
               config = mkOption { type = types.attrs; };
             };
@@ -135,6 +154,7 @@
         let
           configJson = pkgs.writeText "config.json" (builtins.toJSON {
             chain = cfg.chains;
+            plugins = cfg.plugins;
             voyager = cfg.voyager-extra // {
               num_workers = cfg.workers;
               queue = {
