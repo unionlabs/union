@@ -239,6 +239,7 @@
         ./lib/scroll-verifier/scroll-verifier.nix
         ./uniond/proto.nix
         ./app/app.nix
+        ./docs/docs.nix
         ./site/site.nix
         ./site/openapi.nix
         ./lib/near/near.nix

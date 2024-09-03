@@ -1,0 +1,142 @@
+---
+title: "Creating a Validator"
+sidebar:
+  order: 4
+---
+
+import { Steps } from "@astrojs/starlight/components";
+import { Tabs, TabItem } from "@astrojs/starlight/components"
+
+Before trying to create a validator, ensure you have the following task complete:
+
+<Steps>
+
+1. Initialize your node
+
+2. Complete our intake form
+
+3. Receive UNO tokens
+
+4. Start your node
+
+5. Ensure your node has caught up to the network's current height
+
+</Steps>
+
+Once all of these tasks are finished, you can continue with creating your validator.
+
+## How Delegations Will Work
+
+To ensure quick update cycles of the testnet, we ask that you only have a self delegation of 1 UNO. The Union team will delegate more to you to ensure you and the other validators have a similar delegation. This will enable us to maintain the majority of the total voting power so that we can quickly conduct updates to the network.
+
+As we get closer to a mainnet release, we will update staking and slashing parameters and ask for more realistic self delegations. For the meantime, we will ensure to testnet is configured to change quickly with minimum friction.
+
+## Creating your validator
+
+Now that you're ready to create your validator, you can follow the steps below:
+
+### 1) Create a Validator JSON File
+
+```sh frame="none"
+touch validator.json
+```
+
+Add the following content to the file:
+
+```json title="validator.json"
+{
+	"pubkey": <PUBKEY>,
+	"amount": "1000000muno",
+	"moniker": "<MONIKER>",
+	"identity": "optional identity signature (ex. UPort or Keybase)",
+	"website": "validator's (optional) website",
+	"security": "validator's (optional) security contact email",
+	"details": "validator's (optional) details",
+	"commission-rate": "0.1",
+	"commission-max-rate": "0.2",
+	"commission-max-change-rate": "0.01",
+	"min-self-delegation": "1"
+}
+```
+
+Replacing:
+
+- `<PUBKEY>` with the result of running `uniond comet show-validator`
+- `<MONIKER>` with your moniker
+- And the optional content with your preferred details
+
+### 2) Create a Proof of Possession
+
+:::note
+
+This step is currently specific to the Union network, other Cosmos based chains do not currently replicate this process.
+
+:::
+
+Assuming your private validator key is in the default location:
+
+<Tabs>
+  <TabItem label='uniond-release'>
+    ```sh frame="none"
+	export PRIV_KEY=$(jq -r '.priv_key.value' ~/.union/config/priv_validator_key.json)
+	export POSSESSION_PROOF=$(uniond prove-possession "$PRIV_KEY")
+	```
+  </TabItem>
+  <TabItem label='Unionvisor'>
+    ```sh frame="none"
+	export PRIV_KEY=$(jq -r '.priv_key.value' ~/.unionvisor/home/config/priv_validator_key.json)
+	export POSSESSION_PROOF=$(uniond prove-possession "$PRIV_KEY")
+	```
+  </TabItem>
+</Tabs>
+
+
+### 3) Run the Create Validator Command
+
+Then you can submit this file using the `create-union-validator` sub-command:
+
+```sh frame="none"
+uniond union-staking create-union-validator $VALIDATOR_JSON_PATH $POSSESSION_PROOF \
+	--from $KEY_NAME \
+	--chain-id union-testnet-8
+```
+
+_Where `VALIDATOR_JSON_PATH` is the path to your `validator.json`_
+
+:::caution
+
+If you're running a node with a Docker container, your `validator.json` will need to be in a folder accessible by your Docker container.
+
+If you've followed our instructions for setting up either of our Docker images, you should be able to place this file under `/.unionvisor` (for Unionvisor containers) or under `/.union` (for union-release containers).
+
+For example, when creating a validator with `unionvisor`, you can
+
+```sh frame="none"
+touch ~/.unionvisor/validator.json
+
+# Then after editing the json content
+
+uniond union-staking create-union-validator /.unionvisor/validator.json $POSSESSION_PROOF \
+	--from $KEY_NAME \
+	--chain-id union-testnet-8
+```
+
+:::
+
+:::note
+
+If your keys are stored on a machine other than your node, you can pass the `--node-id` flag to override the node ID ensuring it's the one from the node you're making into a validator.
+
+:::
+
+:::note
+
+If your own node isn't set up to accept RPC request, you can send them to another node via the `--node` option.
+
+:::
+
+## Epoch Staking & Validator Set Updates
+
+Union uses [Epoch Staking](/docs/architecture/cometbls/#epoch-based-validator-rotation) to perform validator set updates. This means that the validator set is only updated once per epoch. 
+
+If you successfully create your validator during the middle of an epoch, your validator will join the active set once it rotates at the end of the current epoch.

@@ -1,0 +1,18 @@
+---
+/**
+ * When you need to display the result of a JS/TS function in markdown/mdx
+ * Since you can't call a function in markdown, you can use this component to display the result of the function
+ * @example
+ * ```mdx
+ * import { multiply } from '#/utilities.ts'
+ *
+ * <FunctionResult result={multiply(2, 3)} />
+ * ```
+ */
+
+interface Props {
+  result: string | number | boolean
+}
+---
+
+{Astro.props.result}

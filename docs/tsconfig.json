@@ -1,0 +1,44 @@
+{
+  "extends": ["astro/tsconfigs/strict"],
+  "compilerOptions": {
+    "verbatimModuleSyntax": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "allowArbitraryExtensions": true,
+    "alwaysStrict": true,
+    "strictNullChecks": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "preserve",
+    "skipDefaultLibCheck": true,
+    "allowJs": true,
+    "checkJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "#/*": ["./src/*"],
+      "~root/*": ["../*"],
+      "tailwind.config": ["./tailwind.config.ts"]
+    },
+    "plugins": [
+      {
+        "name": "@astrojs/ts-plugin"
+      }
+    ],
+    "types": ["node", "bun", "typed-query-selector/strict"]
+  },
+  "include": ["src", "public", "scripts"],
+  "files": [
+    "reset.d.ts",
+    "ec.config.mjs",
+    "astro.config.ts",
+    "svelte.config.js",
+    "tailwind.config.ts",
+    "postcss.config.cjs",
+    "markdown.config.ts"
+  ],
+  "exclude": ["_", "dist", "node_modules"]
+}

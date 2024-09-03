@@ -1,0 +1,287 @@
+---
+title: "Opening a Connection"
+sidebar:
+  order: 2
+---
+
+For new chains or rollups, the first step to sending messages or transferring assets is opening a connection. 
+The connection codifies the security assumptions between Union and your chain and is updated using 
+consensus proofs. This should be done after having a `Cometbls` light client configured.
+
+### Relaying
+
+`Voyager` is our relayer: an off-chain tool to submit packets and consensus proofs. Voyager can initiate the connection 
+during initial setup, as well as relaying packets and proofs once the connection is live. First, we need to download the binary:
+
+```bash
+# Download voyager
+wget https://github.com/unionlabs/union/releases/download/$LATEST/voyager-x86_64-linux -O voyager && chmod +x voyager
+```
+
+On top of the relayer, a proving server is necessary to generate the ZKPs:
+
+```bash
+# Download galoisd
+wget https://github.com/unionlabs/union/releases/download/$LATEST/galoisd-x86_64-linux -O galoisd && chmod +x galoisd
+
+# Download the circuit and keys
+wget https://github.com/unionlabs/union/releases/download/$LATEST/circuit.zip && unzip circuit.zip
+```
+
+Finally, Voyager uses a Postgres instance to persist state. You can use an appropriate SaaS solution or a local installation.
+
+### Starting galoisd
+
+We need to run `galoisd`, our prover to be able to generate ZKPs. We recommend running Galois on a separate server with at least 32 GB of RAM and 8 physical cores.
+
+```bash
+galoisd \
+    --serve 0.0.0.0:9999 \
+    --cs-path=./circuit/r1cs.bin \
+    --pk-path=./circuit/pk.bin \
+    --vk-path=./circuit/vk.bin  \
+    --max-conn 1	
+```
+
+### Setting up Voyager
+
+We recommend running Voyager on a machine co-located with your chain's RPC nodes, to ensure low latency. Below is an example configuration file (minimal-config.json).
+
+```json
+{
+  "chain": {
+    "union-testnet": {
+      "chain_type": "union",
+      "enabled": true,
+      "keyring": {
+        "name": "cosmos-testnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "alice",
+            "key": "0xaa820fa947...b10a7d6f"
+          }
+        ]
+      },
+      "ws_url": "ws://localhost:26657/websocket",
+      "prover_endpoints": ["http://localhost:9999"],
+      "grpc_url": "http://localhost:9090",
+      "gas_config": {
+        "gas_price": "1.0",
+        "gas_denom": "muno",
+        "gas_multiplier": "1.1",
+        "max_gas": 400000
+      }
+    },
+    "cosmos-testnet": {
+      "chain_type": "cosmos",
+      "enabled": true,
+      "keyring": {
+        "name": "cosmos-testnet",
+        "keys": [
+          {
+            "type": "raw",
+            "name": "alice",
+            "key": "0xaa820fa947...b10a7d6f"
+          }
+        ]
+      },
+      "gas_config": {
+        "gas_price": "1.0",
+        "gas_denom": "stake",
+        "gas_multiplier": "1.1",
+        "max_gas": 400000
+      },
+      "ws_url": "ws://localhost:26957/websocket",
+      "grpc_url": "http://localhost:9390"
+    }
+  },
+  "voyager": {
+    "num_workers": 4,
+    "laddr": "0.0.0.0:65534",
+    "queue": {
+      "type": "pg-queue",
+      "database_url": "postgres://user:password@127.0.0.1:5432/default",
+      "max_connections": 20,
+      "min_connections": 20,
+      "idle_timeout": null,
+      "max_lifetime": null
+    }
+  }
+}
+```
+
+We now need to change the configuration parameters for our chain accordingly. `voyager` needs an account with funds to send transactions.
+You need to supply your private key to `voyager`. Let's first export it, then add it to the config.
+
+```bash
+$NODE_BIN keys export $KEY_NAME --unarmored-hex --unsafe
+```
+
+The following command puts the private key in the config. Be aware that the key should be `0x` prefixed.
+
+```bash
+cat <<< $(jq '.chain."cosmos-testnet".keyring.keys[0].key = "0x$PRIVATE_KEY"' minimal-config.json) > minimal-config.json
+```
+
+We also need to specify the `$WS_URL` (websocket), `$GRPC_URL`, and the denom `$DENOM` for our network:
+
+```bash
+cat <<< $(jq '.chain."cosmos-testnet".ws_url = "$WS_URL" | .chain."cosmos-testnet".grpc_url = "$GRPC_URL" | .chain."cosmos-testnet".gas_config.gas_denom = "$DENOM"' minimal-config.json) > minimal-config.json
+```
+
+You should change the `max_gas`, `gas_multiplier`, and `gas_price` according to your chain's configuration.
+
+The final thing about the configuration is to set up the `union` account. 
+If you do not already have one, you could follow [this guide](/docs/joining-testnet/getting-tokens).
+
+Let's set our `union` private key too:
+
+```bash
+cat <<< $(jq '.chain."union-testnet".keyring.keys[0].key = "0x$UNION_PRIVATE_KEY"' minimal-config.json) > minimal-config.json
+```
+
+### Starting Voyager
+
+Voyager manages database migrations internally. Run the following command on startup to set up the database. This command is 
+idempotent and can always be safely run.
+
+```bash
+voyager -c minimal-config.json run-migrations
+```
+
+Next, we need to start voyager. We recommend daemonizing this or running it under systemd for production usage.
+
+```bash
+voyager -c minimal-config.json relay
+```
+
+Now in a new window, instruct the voyager to monitor Union and your chain.
+
+```bash
+voyager -c ./minimal-config.json  init-fetch union-testnet --enqueue
+voyager -c ./minimal-config.json  init-fetch cosmos-testnet --enqueue
+```
+
+## Creating the Clients
+
+We first need to create a light client on both chains to track each other's consensus:
+
+```bash
+voyager -c ./minimal-config.json \
+  handshake \
+  union-testnet\
+  cosmos-testnet \
+  --create-clients \
+  --client-a-config null \
+  --client-b-config '{"checksum":"0x$COMETBLS_CLIENT_CHECKSUM"}' \
+  --enqueue
+```
+
+As soon as you run the command, you will see that `voyager` will create the clients. You should see similar messages in your logs:
+
+{/* spell-checker: disable */}
+
+```bash
+2024-06-25T13:32:40.195484Z  INFO processing item{id=7303}:relay:handle{chain_id=osmosis-devnet-1}:using signer{keyring=osmosis-devnet key_name=alice address=osmo1jk9psyhvgkrt2cumz8eytll2244m2nnzhgejsf}: relay_message::chain::cosmos_sdk: cosmos tx tx_hash=0xb2290d735a024554f1b05a4e3cf20e4f21f940ee5b40a2e34392af481938d332 msgs=/ibc.core.client.v1.MsgCreateClient
+```
+
+And also the corresponding event:
+
+```bash
+2024-06-25T13:32:43.178552Z  INFO processing item{id=7377}:relay:handle{chain_id=union-devnet-1}: relay_message::event: event=create_client height=1-541 tx_hash=0x215343a69bfbc6b2c7e367c0c4870a80a68ba7710a9812c8419fe890aff64ec4 client_id=07-tendermint-0 client_type=07-tendermint consensus_height=1-860	
+```
+{/* spell-checker: enable */}
+
+## Opening the IBC Connection
+
+Now we are going to open the IBC connection. Each chain has a single connection to another chain or rollup.
+
+```bash
+voyager -c ./minimal-config.json \
+	handshake \
+	union-testnet \
+	cosmos-testnet \
+	--open-connection \
+	--client-a $TENDERMINT_CLIENT_ID \
+	--client-b $COMETBLS_CLIENT_ID \
+	--connection-ordering unordered \
+  --enqueue
+```
+
+Again, you will see the transactions happening on `voyager`'s logs. You can also try tracking `ConnectionOpenInit`, `ConnectionOpenTry`, `ConnectionOpenAck`, and `ConnectionOpenConfirm` transactions from the explorers.
+
+You need to confirm that the connection is opened on both sides:
+
+```bash
+# Query the connection on Union
+uniond query ibc connection end $UNION_CONNECTION_ID --node https://rpc.testnet-8.union.build:443 	
+
+# Query the connection on your chain
+$NODE_BIN query ibc connection end $YOUR_CONNECTION_ID --node $YOUR_RPC
+```
+
+Make sure that the `state` is `OPEN` on both ends before moving on to channel opening.
+
+## Opening the channel
+
+Finally, we can start opening a channel between the `ics20 transfer` module on your chain and the `ucs01` module on `Union`. 
+Note that the command below only requires the connection ID on `Union` to be specified.
+
+```bash
+voyager -c ./minimal-config.json \
+	handshake \
+	union-testnet\
+	cosmos-testnet \
+	--open-channel \
+	--connection-a $UNION_CONNECTION_ID \
+	--port-a $UCS01_RELAY_PORT \
+	--port-b transfer \
+	--channel-version ics20-1 \
+	--channel-ordering unordered \
+  --enqueue
+```
+
+This time, the transactions to watch will be  `ChannelOpenInit`, `ChannelOpenTry`, `ChannelOpenAck`, and `ChannelOpenConfirm`.
+
+Make sure the `state` of the channel is `OPEN` on both ends:
+
+```bash
+# Query the connection on Union
+uniond query ibc channel end $UCS01_PORT_ID $UNION_CHANNEL_ID --node https://rpc.testnet-8.union.build:443 	
+
+# Query the connection on your chain
+$NODE_BIN query ibc channel end transfer $YOUR_CHANNEL_ID --node $YOUR_RPC
+```
+
+### Alternative Setup
+
+`voyager` is also capable of doing all of the above in a single command once:
+
+```bash
+voyager -c ./minimal-config.json \
+    handshake \
+    union-testnet\
+    cosmos-testnet \
+    --create-clients \
+    --open-connection \
+    --client-a-config null \
+    --client-b-config '{"checksum":"0x$COMETBLS_CLIENT_CHECKSUM"}' \
+    --connection-ordering unordered \
+    --open-channel \
+    --port-a $UCS01_RELAY_PORT \
+    --port-b transfer \
+    --channel-version ics20-1 \
+    --channel-ordering unordered \
+    --enqueue
+```
+
+## Verify the Connection
+
+Now that the previous steps are completed, you can start receiving and sending funds to any chain within the Union:
+
+```bash
+$COSMOS_BIN tx ibc-transfer transfer transfer channel-0 10000$DENOM \
+  --from $KEY \
+  --fees 500$DENOM
+```

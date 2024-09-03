@@ -1,0 +1,63 @@
+---
+title: "Adding the Module"
+sidebar:
+  order: 1
+---
+
+Opening a connection from a CometBFT-based chain is a straightforward process. Until the recent release of [wasm light clients](https://www.ibcprotocol.dev/blog/wasm-client), the traditional way of having a light client on a Cosmos-SDK chain was
+to implement a light client with Go and bundling it with the chain which meant modifying the light client code requires a binary upgrade to the chain. After IBC proved its capability
+to be extended into other platforms, [the wasm light client module](https://www.ibcprotocol.dev/blog/wasm-client) was introduced for chains to easily, deploy and modify
+light clients. Union supports a native, Golang-based light client, and a modular and flexible wasm light client.
+
+### Add the `08-wasm` Module
+
+Firstly, your chain needs to support wasm clients. [The official docs](https://ibc.cosmos.network/v8/ibc/light-clients/wasm/integration/) have an extensive guide on enabling this integration. Before diving into this
+documentation, note that the `08-wasm` module requires your chain to be on `IBC-go` v7 or v8. And also note that adding this module will also add the dependency to [libwasmvm](https://github.com/CosmWasm/wasmvm)
+to your chain which is already there if you are already using [CosmWasm](https://github.com/cosmwasm/cosmwasm).
+
+### Upload the CometBLS Client
+
+By default, the wasm light client module is gated through governance. Storing a contract requires you to submit a `store-code` proposal:
+
+1. Download the latest `CometBLS` light client:
+```bash
+wget https://github.com/unionlabs/union/releases/download/v0.24.0/cometbls-light-client.wasm
+```
+
+This will create a file locally, called 'cometbls-light-client.wasm', which is the compiled binary for the CometBLS light client.
+
+2. Submit a proposal to store the `CometBLS` light client:
+```bash
+$NODE_BIN tx ibc-wasm store-code cometbls-light-client.wasm \
+  --title "Upload CometBLS Wasm client" \
+  --summary "Upload CometBLS Wasm client" \
+  --deposit 100000$DENOM \
+  --from $KEY \
+  --gas auto \
+  --gas-adjustment 2
+```
+
+3. Add a deposit for the proposal:
+```bash
+$NODE_BIN tx gov deposit $PROPOSAL_ID 1000000000$DENOM \
+  --from $KEY \
+  --gas auto \
+  --gas-adjustment 2
+```
+
+4. Vote `yes` on the proposal:
+```bash
+$NODE_BIN tx gov vote "$PROPOSAL_ID" yes \
+  --from $KEY \
+  -y \
+  --gas auto \
+  --gas-adjustment 2
+```
+
+After the proposal passes, query for the stored light client's checksum:
+
+```bash
+$NODE_BIN query ibc-wasm checksums
+```
+
+[Read more](https://ibc.cosmos.network/v8/ibc/light-clients/wasm/governance/) in the official docs.

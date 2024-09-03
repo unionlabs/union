@@ -1,0 +1,259 @@
+---
+title: "GraphQL"
+sidebar:
+  order: 1
+---
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+Unionlabs provides a hosted indexing service for all connected chains, served at [graphql.union.build](https://graphql.union.build/v1/graphql).
+A [Playground UI](https://cloud.hasura.io/public/graphiql?endpoint=https://graphql.union.build/v1/graphql) is also provided, which can be used 
+to explore all available data. This guide goes through the most useful queries and types.
+
+Although most HTTP clients can be used to query our API, we recommend [URQL](https://commerce.nearform.com/open-source/urql/). Our GraphQL schema can
+be downloaded using [`graphqurl`](https://github.com/hasura/graphqurl) or [`graphql-inspector`](https://the-guild.dev/graphql/inspector):
+
+<Tabs>
+  <TabItem label="graphqurl" icon="seti:npm">
+```sh frame="none"
+# download .graphql schema
+npx graphqurl https://graphql.union.build/v1/graphql \
+  --introspect > schema.graphql
+```
+```sh frame="none"
+# download .json schema
+npx graphqurl https://graphql.union.build/v1/graphql \
+  --introspect \
+  --format json > schema.json
+```
+  </TabItem>
+  <TabItem label="graphql-inspector" icon="seti:npm">
+```sh frame="none"
+# download .graphql schema
+npx @graphql-inspector/cli \
+  introspect https://graphql.union.build/v1/graphql \
+  --write schema.graphql
+```
+```bash frame="none"
+# download .json schema
+npx @graphql-inspector/cli \
+  introspect https://graphql.union.build/v1/graphql \
+  --write schema.json
+```
+  </TabItem>
+  <TabItem label="curl" icon="seti:shell">
+```sh frame="none"
+curl --silent --location \
+    --request POST \
+    --url 'https://graphql.union.build/v1/graphql' \
+    --header 'Content-Type: application/json' \
+    --data '{"query":"query IntrospectionQuery { __schema { description queryType { name description } mutationType { name description } subscriptionType { name description } types { ...FullType } directives { name description locations args { ...InputValue } } } } fragment FullType on __Type { kind name description fields(includeDeprecated: true) { name description args { ...InputValue } type { ...TypeRef } isDeprecated deprecationReason } inputFields { ...InputValue } interfaces { ...TypeRef } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { ...TypeRef } } fragment InputValue on __InputValue { name description type { ...TypeRef } defaultValue } fragment TypeRef on __Type { kind name description ofType { kind name description ofType { kind name description ofType { kind name description ofType { kind name description ofType { kind name description ofType { kind name description ofType { kind name description } } } } } } } }","variables":{}}' \
+    | jq '.data' > schema.json
+```
+  </TabItem>
+</Tabs>
+
+
+This schema can be used by API clients and editors like VSCode to provide a better developer experience.
+
+## Concepts
+
+The following definitions are used across the schema and documentation:
+
+- `source`: The chain or rollup where the packet is sent from, often prefixed such as `source_timestamp` or `source_transaction_hash`.
+- `destination`: The chain or roll-up that receives the packet. 
+- `sender`: the contract or [EOA](https://ethereum.org/en/developers/docs/accounts/) that made the transfer.
+- `receiver`: the contract or [EOA](https://ethereum.org/en/developers/docs/accounts/) that received the transfer.
+
+## Queries
+
+Below we have documented some common useful queries that are also leveraged in [app.union.build](https://app.union.build). For all queries, Union
+provides caches to increase performance. Use the syntax `@cached(ttl: ${time_in_seconds})` to cache the query. The cache key, which is used 
+to map the query to the response, is computed by hashing:
+
+- the GraphQL query.
+- the GraphQL operation name.
+- the GraphQL variables of the query.
+
+Caching can dramatically improve performance. Always add at least `@cached(ttl: 1)` to cache data between different windows, tabs, or users.
+
+### Transfers
+
+Transfers facilitated by Union (either `ucs01-relay-1` or `ics20-1`) are queryable using v1_transfers.
+
+```graphql
+query GetLatest10Transfers @cached(ttl: 1) {
+  v1_transfers(
+    limit: 10,
+    order_by: { source_timestamp: desc }
+  ) {
+    tokens {
+      denom
+      amount
+    }
+	  sender
+	  receiver
+  }
+}
+```
+
+It provides information on the sender, receiver, current stage of the transfer, and asset metadata.
+
+To query for specific addresses, add the `sender` and `receiver` to the where clause:
+
+```graphql
+query GetAllUserTransfers @cached(ttl: 1) {
+  v1_transfers(
+    order_by: { source_timestamp: desc }, 
+    where: {
+      _or: [
+        { sender: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }},  
+        { receiver: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }}
+      ]
+    }
+  ) {
+    tokens {
+      denom
+      amount
+    }
+    receiver
+    sender
+    source_chain { display_name }
+    destination_chain { display_name }
+  }
+}
+
+```
+Aggregate statistics about all transfers and packets are also available, such as the total amount of transfers and packets:
+
+```graphql
+query {
+ 	v1_statistics {
+    name
+    value
+  }
+}
+```
+
+### Packets
+
+Packets, used in general message passing, can be tracked using v1_packets, similar to v1_transfers.
+
+```graphql
+query GetLatest10Packets @cached(ttl: 1) {
+  v1_packets(
+    limit: 10,
+    order_by: { source_timestamp: desc }
+  ) {
+    source_chain { display_name }
+    destination_chain { display_name }
+		source_packet_data
+		source_sequence
+    destination_sequence
+  }
+}
+```
+
+### Traces
+
+Both transfers and packets come with traces to track the progress of the message. There are four different trace types:
+
+- `SEND_PACKET`
+- `LIGHTCLIENT_UPDATE`
+- `RECEIVE_PACKET`
+- `ACKNOWLEDGE_PACKET`
+
+For a specific transaction hash, you can obtain all traces of transfers and packets caused by this transaction (the `initiating_transaction_hash`) by querying
+
+```graphql
+query GetTracesByHash @cached(ttl: 1) {
+  v1_traces(
+    where: {
+      initiating_transaction_hash: {
+        _eq: "91C934788FD13D5325F5A1D9CF1634D1861E318D6DDD2C141E91CBE8A68A053D"
+      }
+    }
+  ) {
+    type
+    data
+	  transaction_hash
+    chain { display_name }
+  }
+}
+```
+
+The `v1_traces.data` field is dependent on the type and may contain chain-specific information as well. The `v1_transfers` and `v1_packets` 
+also have a relation to traces, to allow for all info of a specific transfer or packet.
+
+```graphql
+query GetLatest10TransfersWithTraces @cached(ttl: 1) {
+  v1_transfers(
+    limit: 10,
+    order_by: {
+      source_timestamp: desc
+    }
+  ) {
+    tokens {
+      denom
+      amount
+    }
+    receiver
+    sender
+    traces {
+      type
+      data
+      transaction_hash
+      chain { display_name }
+    }
+  }
+}
+```
+
+### Assets
+
+Unionlabs provides a curated registry of different assets across different chains, including the bridged asset info for Union's assets. 
+
+```graphql
+query GetAllSupportedAssets @cached(ttl: 1) {
+  v1_assets {
+    chain {
+      display_name
+    }
+    denom
+    decimals
+    display_name
+    display_symbol
+    logo_uri
+  }
+}
+```
+
+The assets can also be grouped and filtered by specific chains.
+
+```graphql
+query GetAllSupportedAssetsByChain @cached(ttl: 1) {
+  v1_chains {
+    chain_id
+    assets {
+      decimals
+      denom
+      display_name
+      display_symbol
+      gas_token
+      logo_uri
+    }
+  }
+}
+```
+
+## Pagination
+
+Each model has a maximum number of rows that will be returned per query. Prefer using `timestamp` or `source_timestamp` as cursors when paginating.
+
+## Rate Limits
+
+Rate limits are dynamically applied depending on traffic and abuse detection. If you require increased privilege to datasets and waived rate limits, contact us [here](mailto:cor@union.build)
+
+## Next Steps
+
+Go to the [explorer](https://cloud.hasura.io/public/graphiql?endpoint=https://graphql.union.build/v1/graphql) and check out all data available. These
+endpoints can be used for data analytics, scraping, or used in frontends for rapid app development.
