@@ -1,6 +1,7 @@
 <script lang="ts">
   import {supabase} from "$lib/supabase.ts";
   import {userSession} from "$lib/stores/session.ts";
+  import {invalidateAll} from "$app/navigation";
 
   async function logout() {
     const {error} = await supabase.auth.signOut();
@@ -9,6 +10,7 @@
     } else {
       window.location.href = '/auth/login';
       userSession.set(null)
+      invalidateAll()
     }
   }
 </script>

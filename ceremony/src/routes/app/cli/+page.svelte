@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fetchStatus } from "$lib/data/api";
+  import { fetchStatus } from "$lib/data/api/index.ts";
   import type { Status } from "$lib/data/api/types.ts";
   import { onMount, onDestroy } from "svelte";
 

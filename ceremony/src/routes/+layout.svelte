@@ -10,7 +10,6 @@
   import "../styles/tailwind.css";
   import "../styles/fonts.css";
 
-
   let { children }: { children: Snippet } = $props();
 
   beforeNavigate(async ({ from, to, cancel }) => {
