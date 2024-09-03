@@ -10,7 +10,7 @@ import FunctionResult from '#/components/FunctionResult.astro'
 import { Tabs, TabItem, Code } from "@astrojs/starlight/components"
 import { chainVersion, getSeedsParts } from '#/lib/constants/versions.ts'
 
-This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](/docs/infrastructure/node-operators/nixos/) and the [Kubernetes](/docs/infrastructure/node-operators/kubernetes/) guide for more production-ready deployments.
+This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](/infrastructure/node-operators/nixos/) and the [Kubernetes](/infrastructure/node-operators/kubernetes/) guide for more production-ready deployments.
 
 Validators are the backbone of the network. Becoming one requires significant token bonding and delegations, and is not intended for non-power users.
 
@@ -71,7 +71,7 @@ docker pull ghcr.io/unionlabs/uniond-release:$UNIOND_VERSION
 
 _Where `UNIOND_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-8'}).current} />_
 
-When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](/docs/infrastructure/node-operators/docker-compose/) section is more suited for docker users.
+When running the container, make sure to map a volume to the path passed in `--home` options to ensure data persistence. From here on the guide assumes the usage of a regular binary. The [docker-compose](/infrastructure/node-operators/docker-compose/) section is more suited for docker users.
 
 :::caution
 

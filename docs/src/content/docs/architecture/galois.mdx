@@ -4,9 +4,9 @@ title: "Galois"
 
 import Mermaid from "#/components/Mermaid.astro";
 
-Galois is Union's **Zero-Knowledge [Consensus](/docs/concepts/consensus-verification) Proving system**. We've built Galois around three fundamental principles:
+Galois is Union's **Zero-Knowledge [Consensus](/concepts/consensus-verification) Proving system**. We've built Galois around three fundamental principles:
 
-1. **Extremely fast**: fast proving times equate to fast bridging and good user experience. Galois can generate consensus proofs for 128 validators [within seven seconds](/docs/architecture/galois/#benchmarks).
+1. **Extremely fast**: fast proving times equate to fast bridging and good user experience. Galois can generate consensus proofs for 128 validators [within seven seconds](/architecture/galois/#benchmarks).
 2. **Low-cost**: Burning millions of dollars in monthly cloud infrastructure costs to generate ZK proofs is not a sustainable model. Generating proofs should be super cheap.
 3. **Censorship-resistance**: in order to combat censorship attacks, _anyone should be able to generate consensus proofs_ on their own machines. Galois is so efficient that proof generation only consumes 5GB RAM for 128 validators, enabling the generation of proofs for mainnet on entry-level consumer laptops.
 4. **Decentralized**: infrastructure operators do not need complex cloud architecture to operate a relayer and prover. Anyone can participate in the system. Because of this, we focused on efficient CPU-based generation of ZKPs, as we don't want to depend on specific GPU vendors.[^1]
