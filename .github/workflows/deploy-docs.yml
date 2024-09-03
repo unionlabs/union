@@ -48,10 +48,10 @@ jobs:
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "/repos/$REPO/commits/$REF/check-suites")
 
-            status=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.docs.name == "Garnix CI") | .status')
+            status=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .status')
             sleep 15
           done
-          conclusion=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.docs.name == "Garnix CI") | .conclusion')
+          conclusion=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .conclusion')
           case "$conclusion" in
             failure | timed_out | action_required | stale | startup_failure)
               echo "ERROR: Garnix CI concluded with $conclusion"
