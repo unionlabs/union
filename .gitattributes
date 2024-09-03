@@ -14,3 +14,4 @@
 evm/contracts/proto/** linguist-generated
 *.lockb binary diff=lockb
 *.zip filter=lfs diff=lfs merge=lfs -text
+site/public/union-logo.zip filter=lfs diff=lfs merge=lfs -text
