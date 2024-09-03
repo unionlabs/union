@@ -11,7 +11,7 @@ aptos-crypto              = { workspace = true }
 aptos-rest-client         = { workspace = true }
 aptos-types               = { workspace = true }
 futures.workspace         = true
-move-bindgen-derive       = { path = "../../lib/move-bindgen-derive" }
+move-bindgen-derive       = { workspace = true }
 move-core-types.workspace = true
 prettyplease              = "0.2.22"
 proc-macro2               = "*"

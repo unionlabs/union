@@ -15,24 +15,12 @@
         )
         (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
 
-      voyager-modules = builtins.foldl'
-        (mods: mod:
-          {
-            packages = mods.packages // mod.packages;
-            checks = mods.checks // mod.checks;
-          }
-        )
-        {
-          packages = { };
-          checks = { };
-        }
-        (builtins.map
-          (module: crane.buildWorkspaceMember {
-            crateDirFromRoot = module;
-            dev = true;
-          })
-          voy-modules-list
-        );
+      voyager-modules = crane.buildWorkspaceMember {
+        crateDirFromRoot = voy-modules-list;
+        pname = "voyager-modules";
+        version = "0.0.0";
+        dev = true;
+      };
 
       voyager = crane.buildWorkspaceMember attrs;
       voyager-dev = pkgs.lib.warn

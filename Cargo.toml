@@ -130,6 +130,7 @@ linea-verifier             = { path = "lib/linea-verifier", default-features = f
 linea-zktrie               = { path = "lib/linea-zktrie", default-features = false }
 macros                     = { path = "lib/macros", default-features = false }
 move-bindgen               = { path = "tools/move-bindgen", default-featurs = false }
+move-bindgen-derive        = { path = "lib/move-bindgen-derive", default-featurs = false }
 pg-queue                   = { path = "lib/pg-queue", default-features = false }
 poseidon-rs                = { path = "lib/poseidon-rs", default-features = false }
 protos                     = { path = "generated/rust/protos", default-features = false }
