@@ -6,3 +6,8 @@ publish = "dist"
 
 [build.processing.html]
 pretty_urls = true
+
+[[redirects]]
+from   = "/docs"
+status = 301
+to     = "https://docs.union.build"
