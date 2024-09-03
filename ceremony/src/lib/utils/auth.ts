@@ -1,9 +1,16 @@
 import { supabase } from "$lib/supabase.ts";
-import { userSession } from "$lib/stores/session.ts";
+import {err, ok, Result} from "neverthrow";
 
-export const isLoggedIn = () => {
-  return supabase.auth.getSession().then(({ data }) => {
-    userSession.set(data.session ?? null);
-    return !!data.session;
-  });
+export type SessionError = {
+  message: string;
 };
+
+export async function checkAuth(): Promise<Result<null, SessionError>> {
+  const { data: { session }, error } = await supabase.auth.getSession();
+
+  if (error || !session) {
+    return err({ message: 'User not authenticated' });
+  }
+
+  return ok(null);
+}

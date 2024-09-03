@@ -1,7 +1,5 @@
 <script lang="ts">
   import toast from "svelte-french-toast";
-  import {onMount} from "svelte";
-  import {fetchStatus} from "$lib/data/api";
 
   let command = "docker run -p 4919:4919 -it haitlahcen/union-mpc-cli:latest"
   const copy = () => {

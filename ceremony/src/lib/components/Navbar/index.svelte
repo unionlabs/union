@@ -24,6 +24,7 @@
   <nav class="hidden md:block">
     <div class="flex flex-1 items-center gap-4 uppercase font-mono font-bold">
       {#if $userSession}
+        <a href="/app/cli" class="hover:underline underline-offset-4">Cli</a>
         <a href="/app/install" class="hover:underline underline-offset-4">Install Cli</a>
         <button on:click={logout} class="bg-black text-white px-4 py-2 hover:text-black hover:bg-accent-500 uppercase">
           Log out
