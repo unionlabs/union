@@ -1,12 +1,23 @@
-module UCS01::Relay {    use std::string::{Self, String};
+module UCS01::Relay {    
+    use IBC::Core;
+    use IBC::channel;
+    use IBC::height;
+    use IBC::packet::{Self, Packet};
+    use aptos_framework::primary_fungible_store;
+    use aptos_framework::object::{Self, Object};
+
+    use std::string::{Self, String};
     use std::string_utils;
     use std::from_bcs;
+    use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset};
     use std::bcs;
     use aptos_framework::signer;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::vector;
-    use std::object;
+    use aptos_framework::coin;
+    use UCS01::fa_coin;
 
+    const ASSET_SYMBOL: vector<u8> = b"FA";
     // Constants
     const ORDER_UNORDERED: u8 = 1;
     const VERSION: vector<u8> = b"ucs01-relay-1";
@@ -58,11 +69,23 @@ module UCS01::Relay {    use std::string::{Self, String};
         token: address,
     }
 
+    /// Stores the metadata required for the token pairs
+    struct TokenPairMetadata has key {
+        /// The admin of the token pair
+        creator: address,
+        /// Mint capacity of LP Token
+        mint_cap: coin::MintCapability<LocalToken>,
+        /// Burn capacity of LP Token
+        burn_cap: coin::BurnCapability<LocalToken>,
+    }
+
     struct RelayStore has key {
         denom_to_address: SmartTable<DenomToAddressPair, address>,
         address_to_denom: SmartTable<AddressToDenomPair, String>,
         outstanding: SmartTable<OutstandingPair, u128>,
     }
+
+
 
     struct SignerRef has key {
         self_ref: object::ExtendRef,
@@ -176,6 +199,11 @@ module UCS01::Relay {    use std::string::{Self, String};
         object::create_object_address(&@UCS01, VAULT_SEED)
     }
 
+    public fun get_ucs_signer(): signer acquires SignerRef {
+        let vault = borrow_global<SignerRef>(get_vault_addr());
+        object::generate_signer_for_extending(&vault.self_ref)
+    }
+
     public fun increase_outstanding(source_channel: String, token: address, amount: u128) acquires RelayStore {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         let pair = OutstandingPair { source_channel, token };
@@ -212,6 +240,156 @@ module UCS01::Relay {    use std::string::{Self, String};
         });
     }
 
+    public fun chan_open_init(
+        port_id: String,
+        connection_hops: vector<String>,
+        ordering: u8,
+        counterparty: channel::Counterparty,
+        version: String,
+    ) acquires SignerRef {
+        Core::channel_open_init(
+            &get_ucs_signer(),
+            port_id,
+            connection_hops,
+            ordering,
+            counterparty,
+            version,
+        );
+
+        if (!is_valid_version(version)) {
+            abort E_INVALID_PROTOCOL_VERSION
+        };
+
+        if (ordering != ORDER_UNORDERED) {
+            abort E_INVALID_PROTOCOL_ORDERING
+        };
+    }
+
+
+    public fun chan_open_try(
+        port_id: String,
+        connection_hops: vector<String>,
+        ordering: u8,
+        counterparty: channel::Counterparty,
+        counterparty_version: String,
+        version: String,
+        proof_init: vector<u8>,
+        proof_height: height::Height,
+    ) acquires SignerRef {
+        Core::channel_open_try(
+            &get_ucs_signer(),
+            port_id,
+            connection_hops,
+            ordering,
+            counterparty,
+            counterparty_version,
+            version,
+            proof_init,
+            proof_height,
+        );
+
+        if (!is_valid_version(version)) {
+            abort E_INVALID_PROTOCOL_VERSION
+        };
+
+        if (ordering != ORDER_UNORDERED) {
+            abort E_INVALID_PROTOCOL_ORDERING
+        };
+
+        if (!is_valid_version(counterparty_version)) {
+            abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
+        };
+    }
+
+    public fun chan_open_ack(
+        port_id: String,
+        channel_id: String,
+        counterparty_channel_id: String,
+        counterparty_version: String,
+        proof_try: vector<u8>,
+        proof_height: height::Height
+    ) acquires SignerRef {
+        // Store the channel_id
+        Core::channel_open_ack(
+            &get_ucs_signer(),
+            port_id,
+            channel_id,
+            counterparty_channel_id,
+            counterparty_version,
+            proof_try,
+            proof_height
+        );
+        if (!is_valid_version(counterparty_version)) {
+            abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
+        };
+    }
+
+    public fun chan_open_confirm(
+        port_id: String,
+        channel_id: String,
+        proof_ack: vector<u8>,
+        proof_height: height::Height
+    ) acquires SignerRef {
+        Core::channel_open_confirm(
+            &get_ucs_signer(),
+            port_id,
+            channel_id,
+            proof_ack,
+            proof_height
+        );
+    }
+    public fun chan_close_init(
+        _port_id: String,
+        _channel_id: String
+    ) {
+        abort E_UNSTOPPABLE
+    }
+
+    public fun chan_close_confirm(
+        _port_id: String,
+        _channel_id: String
+    ) {
+        abort E_UNSTOPPABLE
+    }
+
+    public fun timeout_packet(
+        _packet: Packet
+    )  {
+        // TODO: call refund tokens
+        // refund_tokens(sequence(packet), source_channel(packet), decode(packet.data));
+    }
+
+
+    //  public fun send_token<T: store>(
+    //     sender: &signer,
+    //     token: object<ManagedFungibleAsset>,
+    //     source_channel: String,
+    //     denom: String,
+    //     amount: u64,
+    // ) acquires RelayStore {
+    //     if (amount == 0) {
+    //         abort E_INVALID_AMOUNT;
+    //     };
+
+    //     let store = borrow_global<RelayStore>(get_vault_addr());
+
+    //     let pair = DenomToAddressPair { source_channel, denom };
+    //     let token_address = smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0);
+
+
+    //     // TODO: LocalToken is a placeholder for the actual token type,
+    //     // i don't know how to use it / create it so far.
+    //     if (*token_address == @0x0) {
+    //         coin::burn<LocalToken>(localToken, )
+    //         let burn_cap = coin::withdraw_burn_capability<LocalToken>(&token_address);
+    //         coin::burn_from<LocalToken>(burn_cap, sender, amount );
+    //         coin::return_burn_capability<LocalToken>(burn_cap);
+    //     } else {
+    //         let sender_address = signer::address_of(sender);
+    //         coin::transfer<LocalToken>(sender_address, @UCS01, amount);
+    //         increase_outstanding(source_channel, *token_address, amount);
+    //     }
+    // }
     
     #[test]
     public fun test_is_valid_version() {
@@ -224,6 +402,17 @@ module UCS01::Relay {    use std::string::{Self, String};
         // Test with invalid version
         assert!(!is_valid_version(invalid_version), 101);
     }
+
+    // TODO: Getting re-entrancy error on withdraw. Need to fix this.    
+    public entry fun tx(sender: &signer, destination: address, amount: u64, from_token: Object<Metadata>){
+        let fa = primary_fungible_store::withdraw(sender, from_token, amount);
+        primary_fungible_store::deposit(destination, fa);
+
+        // Same error also happens in transfer,  RUNTIME_DISPATCH_ERROR --- Re-entrancy detected:
+        // primary_fungible_store::transfer(sender, from_token, destination, amount);
+    } 
+
+    
 
     #[test]
     public fun test_is_from_channel() {

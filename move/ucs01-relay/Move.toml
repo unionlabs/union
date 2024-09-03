@@ -1,14 +1,11 @@
 [package]
 authors = []
-name    = "move-ibc"
+name    = "ucs01-relay"
 version = "1.0.0"
 
 [addresses]
-IBC                  = "0x46692956fba58020f94c5f2feccf21065c2287e55159630f38594750058bfff2" # This will be storage of our IBCStore
-IBCModuleAddr        = "0x333333333333333"
-mock_relayer_address = "0x222222222222222"
 UCS01 = "0x4444444444444"
-
+zero_account = "0000000000000000000000000000000000000000000000000000000000000000"
 [dev-addresses]
 
 [dependencies.AptosFramework]
@@ -16,7 +13,6 @@ git    = "https://github.com/aeryz/aptos-core.git"
 rev    = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
-[dev-dependencies]
-
-
-
+[dependencies]
+# AptosStdlib = { git = "https://github.com/aeryz/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "movement" }
+move-ibc = {local = "../move-ibc"}

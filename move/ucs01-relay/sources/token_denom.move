@@ -460,5 +460,37 @@ module UCS01::fa_coin {
     }
 
 
+    #[test(creator = @UCS01, alice=@0x1234, bob=@0x5678)]
+    public fun test_to_relay(creator: &signer, alice: &signer, bob: address) acquires ManagedFungibleAsset {
+        initialize(
+            creator,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT)
+        );
+
+        // Mint tokens to the sender first
+        let asset = get_metadata();
+        let alice_addr = signer::address_of(alice);
+        mint(creator, alice_addr, 1000);
+        mint(creator, bob, 1000);
+
+        let alice_balance = primary_fungible_store::balance(alice_addr, asset);
+
+        assert!(alice_balance == 1000, 402);
+        
+        let to_wallet = primary_fungible_store::primary_store(bob, asset);
+
+        
+        UCS01::Relay::tx(alice, bob, 10, asset);
+
+        let alice_balance_after = primary_fungible_store::balance(alice_addr, asset);
+        assert!(alice_balance_after == 9900, 402);
+
+        let bob_balance = primary_fungible_store::balance(bob, asset);
+        assert!(bob_balance == 10, 402);
+    }
 }
 
