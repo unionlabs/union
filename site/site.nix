@@ -10,7 +10,6 @@
         site = mkCi false (unstablePkgs.buildNpmPackage {
           npmDepsHash = "";
           src = ./.;
-          srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "site";
           pname = "site";
           version = "0.0.1";

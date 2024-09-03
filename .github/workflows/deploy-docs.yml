@@ -6,10 +6,16 @@ on:
       - main
       - release/docs
     paths:
+      - 'evm/**'
       - 'docs/**'
+      - 'versions/**'
+      - 'networks/genesis/**'
   pull_request:
     paths:
+      - 'evm/**'
       - 'docs/**'
+      - 'versions/**'
+      - 'networks/genesis/**'
   workflow_dispatch:
 
 concurrency:
