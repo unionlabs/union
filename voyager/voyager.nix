@@ -8,7 +8,10 @@
         };
       };
 
-      voy-modules-list = builtins.filter (member: pkgs.lib.hasPrefix "voyager/modules" member) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
+      voy-modules-list = builtins.filter (member: 
+        (pkgs.lib.hasPrefix "voyager/modules" member) 
+        ||(pkgs.lib.hasPrefix "voyager/plugins" member)
+      ) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
 
       voyager-modules = builtins.foldl' 
         (mods: mod: 
@@ -86,7 +89,10 @@
           # of effort to fix the type for now.
           type = types.listOf (types.submodule {
             options = {
-              enabled = mkOption { type = types.bool; };
+              enabled = mkOption { 
+                type = types.nullOr types.bool; 
+                default = null;
+              };
               path = mkOption { type = types.path; };
               config = mkOption { type = types.attrs; };
             };
@@ -153,7 +159,6 @@
       config =
         let
           configJson = pkgs.writeText "config.json" (builtins.toJSON {
-            chain = cfg.chains;
             plugins = cfg.plugins;
             voyager = cfg.voyager-extra // {
               num_workers = cfg.workers;
