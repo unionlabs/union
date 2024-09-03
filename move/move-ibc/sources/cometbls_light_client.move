@@ -7,7 +7,7 @@ module IBC::LightClient {
     use std::hash;
     use std::any::Any;
     use std::string::{Self, String, utf8};
-    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr, G2, Gt, FormatG2Compr};
+    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr, G2, Gt, FormatG2Compr, FormatG2Uncompr};
     use std::crypto_algebra::{deserialize, serialize, zero, add, scalar_mul, multi_pairing, Element, eq};
     use std::aptos_hash;
     use IBC::height::{Self, Height};
@@ -719,8 +719,7 @@ module IBC::LightClient {
                 len
             } else if (tag == 3) {
                 let (bytes, advance) = proto_utils::decode_bytes(wire_type, &buf, cursor);
-                let _zkp = option::extract(&mut bytes);
-                // TODO(aeryz): parse zkp here
+                header.zero_knowledge_proof = parse_zkp(option::extract(&mut bytes));
                 advance
             } else {
                 abort 1
@@ -853,5 +852,30 @@ module IBC::LightClient {
         };
 
         cursor - first_pos
+    }
+
+    const FQ_SIZE: u64 = 32;
+    const G1_SIZE: u64 = 64; // 2 * FQ_SIZE
+    const G2_SIZE: u64 = 128; // 2 * G1_SIZE;
+
+    fun parse_zkp(buf: vector<u8>): ZKP {
+        let cursor = 0;
+        let a = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&vector::slice(&buf, cursor, cursor + G1_SIZE)));
+        cursor = cursor + G1_SIZE;
+        let b = std::option::extract(&mut deserialize<G2, FormatG2Uncompr>(&vector::slice(&buf, cursor, cursor + G2_SIZE)));
+        cursor = cursor + G2_SIZE;
+        let c = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&vector::slice(&buf, cursor, cursor + G1_SIZE)));
+        cursor = cursor + G1_SIZE;
+        let proof_commitment = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&vector::slice(&buf, cursor, cursor + G1_SIZE)));
+        cursor = cursor + G1_SIZE;
+        let proof_commitment_pok = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&vector::slice(&buf, cursor, cursor + G1_SIZE)));
+
+        ZKP {
+            proof: Proof {
+                a, b, c
+            },
+            proof_commitment,
+            proof_commitment_pok,
+        }
     }
 }
