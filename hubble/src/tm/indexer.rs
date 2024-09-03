@@ -371,6 +371,7 @@ async fn fetch_and_insert_blocks(
 
             let txs = txs
                 .into_iter()
+                .filter(|tx| tx.tx_result.code.is_ok())
                 .map(|tx| {
                     let transaction_hash = tx.hash.to_string();
                     let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
