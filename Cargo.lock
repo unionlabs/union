@@ -1186,18 +1186,19 @@ dependencies = [
 
 [[package]]
 name = "async-tungstenite"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1e9efbe14612da0a19fb983059a0b621e9cf6225d7018ecab4f9988215540dc"
+checksum = "3609af4bbf701ddaf1f6bb4e6257dff4ff8932327d0e685d3f653724c258b1ac"
 dependencies = [
  "futures-io",
  "futures-util",
  "log",
  "pin-project-lite",
- "rustls-native-certs 0.6.3",
+ "rustls-native-certs 0.7.0",
+ "rustls-pki-types",
  "tokio",
- "tokio-rustls 0.24.1",
- "tungstenite 0.20.1",
+ "tokio-rustls 0.25.0",
+ "tungstenite 0.21.0",
 ]
 
 [[package]]
@@ -3377,7 +3378,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6ee87af31d84ef885378aebca32be3d682b0e0dc119d5b4860a2c5bb5046730"
 dependencies = [
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -3959,7 +3960,7 @@ dependencies = [
  "sha2 0.10.8",
  "sha3",
  "thiserror",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -7428,17 +7429,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
 
 [[package]]
-name = "num-derive"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "num-format"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7992,7 +7982,7 @@ checksum = "13f4d162ecaaa1467de5afbe62d597757b674b51da8bb4e587430c5fdb2af7aa"
 dependencies = [
  "fallible-iterator 0.2.0",
  "scroll 0.10.2",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -8003,9 +7993,9 @@ checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "peg"
-version = "0.7.0"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07c0b841ea54f523f7aa556956fbd293bcbe06f2e67d2eb732b7278aaf1d166a"
+checksum = "295283b02df346d1ef66052a757869b2876ac29a6bb0ac3f5f7cd44aebe40e8f"
 dependencies = [
  "peg-macros",
  "peg-runtime",
@@ -8013,9 +8003,9 @@ dependencies = [
 
 [[package]]
 name = "peg-macros"
-version = "0.7.0"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5aa52829b8decbef693af90202711348ab001456803ba2a98eb4ec8fb70844c"
+checksum = "bdad6a1d9cf116a059582ce415d5f5566aabcd4008646779dab7fdc2a9a9d426"
 dependencies = [
  "peg-runtime",
  "proc-macro2",
@@ -8024,9 +8014,9 @@ dependencies = [
 
 [[package]]
 name = "peg-runtime"
-version = "0.7.0"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c719dcf55f09a3a7e764c6649ab594c18a177e3599c467983cdf644bfc0a4088"
+checksum = "e3aeb8f54c078314c2065ee649a7241f46b9d8e418e1a9581ba0546657d7aa3a"
 
 [[package]]
 name = "pem"
@@ -8575,6 +8565,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b2ecbe40f08db5c006b5764a2645f7f3f141ce756412ac9e1dd6087e6d32995"
+dependencies = [
+ "bytes",
+ "prost-derive 0.13.2",
+]
+
+[[package]]
 name = "prost-build"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8602,7 +8602,7 @@ checksum = "c55e02e35260070b6f716a2423c2ff1c3bb1642ddca6f99e1f26d06268a0e2d2"
 dependencies = [
  "bytes",
  "heck 0.4.1",
- "itertools 0.11.0",
+ "itertools 0.10.5",
  "log",
  "multimap",
  "once_cell",
@@ -8637,6 +8637,19 @@ checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
 dependencies = [
  "anyhow",
  "itertools 0.12.1",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
+]
+
+[[package]]
+name = "prost-derive"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acf0c195eebb4af52c752bec4f52f645da98b6e92077a04110c7f349477ae5ac"
+dependencies = [
+ "anyhow",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 2.0.60",
@@ -10733,7 +10746,7 @@ dependencies = [
  "debugid",
  "memmap2",
  "stable_deref_trait",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -10876,8 +10889,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint"
-version = "0.34.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.34.0-bn254#2a874af56d4650945b9c72358738be3c4833c4a0"
+version = "0.39.1"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.39.1-bn254#e891d238e263935b7cae17068d726154f4a95a6b"
 dependencies = [
  "arbitrary",
  "bytes",
@@ -10888,8 +10901,7 @@ dependencies = [
  "futures",
  "num-traits",
  "once_cell",
- "prost 0.12.6",
- "prost-types 0.12.3",
+ "prost 0.13.2",
  "serde",
  "serde_bytes",
  "serde_json",
@@ -10905,14 +10917,14 @@ dependencies = [
 
 [[package]]
 name = "tendermint-config"
-version = "0.34.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.34.0-bn254#2a874af56d4650945b9c72358738be3c4833c4a0"
+version = "0.39.1"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.39.1-bn254#e891d238e263935b7cae17068d726154f4a95a6b"
 dependencies = [
  "flex-error",
  "serde",
  "serde_json",
  "tendermint",
- "toml 0.5.11",
+ "toml 0.8.12",
  "url",
 ]
 
@@ -10943,15 +10955,12 @@ dependencies = [
 
 [[package]]
 name = "tendermint-proto"
-version = "0.34.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.34.0-bn254#2a874af56d4650945b9c72358738be3c4833c4a0"
+version = "0.39.1"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.39.1-bn254#e891d238e263935b7cae17068d726154f4a95a6b"
 dependencies = [
  "bytes",
  "flex-error",
- "num-derive",
- "num-traits",
- "prost 0.12.6",
- "prost-types 0.12.3",
+ "prost 0.13.2",
  "serde",
  "serde_bytes",
  "subtle-encoding",
@@ -10960,8 +10969,8 @@ dependencies = [
 
 [[package]]
 name = "tendermint-rpc"
-version = "0.34.0"
-source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.34.0-bn254#2a874af56d4650945b9c72358738be3c4833c4a0"
+version = "0.39.1"
+source = "git+https://github.com/unionlabs/tendermint-rs?branch=v0.39.1-bn254#e891d238e263935b7cae17068d726154f4a95a6b"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -10971,6 +10980,7 @@ dependencies = [
  "getrandom 0.2.12",
  "peg",
  "pin-project",
+ "rand 0.8.5",
  "reqwest 0.11.27",
  "semver 1.0.22",
  "serde",
@@ -10986,7 +10996,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
- "uuid",
+ "uuid 1.10.0",
  "walkdir",
 ]
 
@@ -11856,6 +11866,8 @@ dependencies = [
  "httparse",
  "log",
  "rand 0.8.5",
+ "rustls 0.22.3",
+ "rustls-pki-types",
  "sha1",
  "thiserror",
  "url",
@@ -12233,6 +12245,12 @@ dependencies = [
  "getrandom 0.2.12",
  "serde",
 ]
+
+[[package]]
+name = "uuid"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 
 [[package]]
 name = "valuable"
