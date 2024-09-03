@@ -43,13 +43,13 @@ export default defineConfig({
         "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
       favicon: "/favicon.svg",
       lastUpdated: true,
+      editLink: {
+        baseUrl: "https://github.com/unionlabs/union/tree/main/docs"
+      },
       social: {
         github: "https://github.com/unionlabs",
         discord: "https://discord.union.build",
         "x.com": "https://x.com/union_build"
-      },
-      components: {
-        EditLink: "./src/components/EditLink.astro"
       },
       head: [
         {
