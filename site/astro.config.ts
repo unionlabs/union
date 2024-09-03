@@ -40,7 +40,11 @@ export default defineConfig({
   server: _ => ({ port: Number(PORT) }),
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
-  redirects: { "/feed": "/rss.xml", "/logo": "/union-logo.zip" },
+  redirects: {
+    "/feed": "/rss.xml",
+    "/logo": "/union-logo.zip",
+    "/docs": "https://docs.union.build"
+  },
   vite: {
     assetsInclude: ["**/*.splinecode"],
     optimizeDeps: {
