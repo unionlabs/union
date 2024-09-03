@@ -7,7 +7,7 @@ module IBC::LightClient {
     use std::hash;
     use std::any::Any;
     use std::string::{Self, String, utf8};
-    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr, G2, Gt, FormatG2Compr, FormatG2Uncompr};
+    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr,FormatG1Compr, G2, Gt, FormatG2Compr, FormatG2Uncompr};
     use std::crypto_algebra::{deserialize, serialize, zero, add, scalar_mul, multi_pairing, Element, eq};
     use std::aptos_hash;
     use IBC::height::{Self, Height};
@@ -28,6 +28,8 @@ module IBC::LightClient {
     const HMAC_O: vector<u8> = x"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
     const HMAC_I: vector<u8> = x"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
     const PRIME_R_MINUS_ONE: vector<u8> = x"000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430";
+    const COMPR_G1_SIZE: u64 = 32;
+    const COMPR_G2_SIZE: u64 = 64;
 
     struct State has key, store {
         client_state: ClientState,
@@ -798,11 +800,11 @@ module IBC::LightClient {
                 advance
             } else if (tag == 4) {
                 let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
-                light_header.validators_hash = option::extract(&mut bytes);
+                light_header.next_validators_hash = option::extract(&mut bytes);
                 advance
             } else if (tag == 5) {
                 let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
-                light_header.validators_hash = option::extract(&mut bytes);
+                light_header.app_hash = option::extract(&mut bytes);
                 advance
             }
             
@@ -854,21 +856,22 @@ module IBC::LightClient {
         cursor - first_pos
     }
 
-    const FQ_SIZE: u64 = 32;
-    const G1_SIZE: u64 = 64; // 2 * FQ_SIZE
-    const G2_SIZE: u64 = 128; // 2 * G1_SIZE;
-
     fun parse_zkp(buf: vector<u8>): ZKP {
         let cursor = 0;
-        let a = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&vector::slice(&buf, cursor, cursor + G1_SIZE)));
-        cursor = cursor + G1_SIZE;
-        let b = std::option::extract(&mut deserialize<G2, FormatG2Uncompr>(&vector::slice(&buf, cursor, cursor + G2_SIZE)));
-        cursor = cursor + G2_SIZE;
-        let c = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&vector::slice(&buf, cursor, cursor + G1_SIZE)));
-        cursor = cursor + G1_SIZE;
-        let proof_commitment = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&vector::slice(&buf, cursor, cursor + G1_SIZE)));
-        cursor = cursor + G1_SIZE;
-        let proof_commitment_pok = std::option::extract(&mut deserialize<G1, FormatG1Uncompr>(&vector::slice(&buf, cursor, cursor + G1_SIZE)));
+
+        let a = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
+        cursor = cursor + COMPR_G1_SIZE;
+
+        let b = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G2_SIZE)));
+        cursor = cursor + COMPR_G2_SIZE;
+
+        let c = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
+        cursor = cursor + COMPR_G1_SIZE;
+
+        let proof_commitment = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
+        cursor = cursor + COMPR_G1_SIZE;
+
+        let proof_commitment_pok = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
 
         ZKP {
             proof: Proof {
@@ -877,5 +880,56 @@ module IBC::LightClient {
             proof_commitment,
             proof_commitment_pok,
         }
+    }
+
+    #[test]
+    fun test_client_state_proto() {
+        let encoded_client_state = x"0a0e756e696f6e2d6465766e65742d3810904e18e7ba0120f4c7072a04080010003206080810e6c707";
+
+        let client_state = decode_client_state(encoded_client_state);
+
+        assert!(client_state.chain_id == utf8(b"union-devnet-8"), 1);
+        assert!(client_state.trusting_period == 10000, 2);
+        assert!(client_state.unbonding_period == 23911, 3);
+        assert!(client_state.max_clock_drift == 123892, 4);
+        assert!(client_state.frozen_height== height::new(0, 0), 5);
+        assert!(client_state.latest_height == height::new(8, 123878), 6);
+    }
+
+    #[test]
+    fun test_consensus_state_proto() {
+        let encoded_consensus_state = x"08d99ad9ce0412220a2001020304050607080102030405060708010203040506070801020304050607081a200808030405060708010203040506070801020304050607080102030405060708";
+
+        let consensus_state = decode_consensus_state(encoded_consensus_state);
+
+        assert!(consensus_state.timestamp == 1238781273, 1);
+        assert!(consensus_state.app_hash.hash == vector[1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8], 2);
+        assert!(consensus_state.next_validators_hash == vector[8, 8, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8], 3);
+    } 
+
+    #[test]
+    fun test_header_proto() {
+        let encoded_header = x"0a7308d1c307120708f64f10e8870d1a200101010101010101010101010101010101010101010101010101010101010101222002020202020202020202020202020202020202020202020202020202020202022a200202020202020202020202020202020202020202020202020202020202020202120808e80710c9ea91011ac0011c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
+
+        let header = decode_header(encoded_header);
+
+        assert!(header.signed_header.height == 123345, 1);
+        assert!(header.signed_header.time == Timestamp {
+            seconds: 10230,
+            nanos: 213992, 
+        }, 2);
+        assert!(header.signed_header.validators_hash == vector[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 3);
+        assert!(header.signed_header.next_validators_hash == vector[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 4);
+        assert!(header.signed_header.app_hash == vector[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 5);
+        assert!(header.trusted_height == height::new(1000, 2389321), 6);
+
+        // NOTE(aeryz): not checking zkp here since it not aborting means it's already been parsed
+    }
+
+    #[test]
+    fun test_parse_zkp() {
+        let zkp = x"1c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
+
+        parse_zkp(zkp);
     }
 }
