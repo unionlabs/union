@@ -1,0 +1,149 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+      - release/docs
+    paths:
+      - 'evm/**'
+      - 'docs/**'
+      - 'versions/**'
+      - 'networks/genesis/**'
+  pull_request:
+    paths:
+      - 'evm/**'
+      - 'docs/**'
+      - 'versions/**'
+      - 'networks/genesis/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: '--no-warnings'
+  ACTIONS_RUNNER_DEBUG: true
+  ASTRO_TELEMETRY_DISABLED: true
+
+jobs:
+  garnix:
+    name: Wait on Garnix CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait on Garnix CI Check Suite
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.head_ref || github.sha }}
+        run: |
+          sleep 15
+
+          status=''
+
+          while [[ $status != 'completed' ]]; do
+            check_suites=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$REPO/commits/$REF/check-suites")
+
+            status=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .status')
+            sleep 15
+          done
+          conclusion=$(echo "$check_suites" | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .conclusion')
+          case "$conclusion" in
+            failure | timed_out | action_required | stale | startup_failure)
+              echo "ERROR: Garnix CI concluded with $conclusion"
+              exit 1
+              ;;
+            *)
+              echo "INFO: Garnix CI concluded with $conclusion"
+              ;;
+          esac
+
+  deploy-preview:
+    runs-on: ['ubuntu-latest']
+    needs: [garnix]
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      npm_config_yes: true
+    environment: 'docs-preview'
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v28
+      - name: Fetch from Cache
+        run: |
+          nix develop
+          nix build .#docs
+      - name: '[preview] 🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="docs" deploy result >> /tmp/docs_deploy.txt
+
+      - name: Set Deploy Output
+        run: |
+          {
+            echo 'DEPLOY_OUTPUT<<EOF'
+            tail -n 2 /tmp/docs_deploy.txt
+            echo 'EOF'
+          } >> $GITHUB_ENV
+
+      - name: Comment Site Deploy Results
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            # Docs 🤌
+            ${{ env.DEPLOY_OUTPUT }}
+
+            **${{ env.LAST_UPDATED_AT }}**
+          comment_tag: deploy-docs-preview-result
+
+  deploy-manual:
+    runs-on: ['ubuntu-latest']
+    needs: [garnix]
+    env:
+      npm_config_yes: true
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v28
+      - name: Fetch from Cache
+        run: |
+          nix develop
+          nix build .#docs
+      - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="docs" deploy result
+
+  deploy-production:
+    runs-on: ['ubuntu-latest']
+    needs: [garnix]
+    env:
+      npm_config_yes: true
+    environment: 'docs-production'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/release/docs'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: nixbuild/nix-quick-install-action@v28
+      - name: Fetch from Cache
+        run: |
+          nix develop
+          nix build .#docs
+      - name: '[production] 🔶 Publish to Cloudflare Pages'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+        run: npx --yes wrangler@latest pages --project-name="docs" --branch="main" deploy result

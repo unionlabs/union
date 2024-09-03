@@ -3,7 +3,6 @@ import type { Config } from "tailwindcss"
 import tailwindAnimate from "tailwindcss-animate"
 import defaultTheme from "tailwindcss/defaultTheme"
 import typographyPlugin from "@tailwindcss/typography"
-import starlightPlugin from "@astrojs/starlight-tailwind"
 import aspectRatioPlugin from "@tailwindcss/aspect-ratio"
 import containerQueriesPlugin from "@tailwindcss/container-queries"
 
@@ -61,7 +60,6 @@ export default {
     }
   },
   plugins: [
-    starlightPlugin(),
     tailwindAnimate,
     typographyPlugin,
     aspectRatioPlugin,

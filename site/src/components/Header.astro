@@ -1,14 +1,13 @@
 ---
 import unionLogo from "#/assets/union-logo/logo.svg"
-import { Icon } from "@astrojs/starlight/components"
-
+import { Icon } from "astro-icon/components"
 const menuItems = [
   {
     url: "/blog",
     name: "Blog"
   },
   {
-    url: "/docs",
+    url: "https://docs.union.build",
     name: "Docs"
   },
   {
@@ -90,7 +89,7 @@ const menuItems = [
             href="https://discord.union.build"
             class="flex gap-2 text-lg"
           >
-            <Icon name="discord" color="#fff" size="1rem" />
+            <Icon name="tabler:brand-discord-filled" color="#fff" size="1rem" />
             <span class="sr-only">Discord</span>
           </a>
         </li>
@@ -101,7 +100,7 @@ const menuItems = [
             href="https://x.com/union_build"
             class="flex gap-2 text-lg"
           >
-            <Icon name="x.com" color="#fff" size="1.1rem" />
+            <Icon name="fa6-brands:x-twitter" color="#fff" size="1.1rem" />
             <span class="sr-only">X</span>
           </a>
         </li>
@@ -116,7 +115,7 @@ const menuItems = [
         title="Menu"
         class="bg-white rounded-full h-[32px] w-[32px] flex items-center justify-center cursor-pointer !p-0"
       >
-        <Icon name="bars" color="#000000" size="1.2rem" />
+        <Icon name="tabler:menu-2" color="#000000" size="1.2rem" />
       </button>
 
       <ul
@@ -140,7 +139,7 @@ const menuItems = [
             class="flex gap-2 text-lg px-4 py-2"
           >
             <label>Discord</label>
-            <Icon name="discord" color="#fff" size="1rem" class="my-auto" />
+            <Icon name="tabler:brand-discord-filled" color="#fff" size="1rem" class="my-auto" />
           </a>
         </li>
         <li class="">
@@ -151,7 +150,7 @@ const menuItems = [
             class="flex gap-2 text-lg px-4 py-2"
           >
             <label>X.com</label>
-            <Icon name="x.com" color="#fff" size="1.1rem" class="my-auto" />
+            <Icon name="fa6-brands:x-twitter" color="#fff" size="1.1rem" class="my-auto" />
           </a>
         </li>
       </ul>

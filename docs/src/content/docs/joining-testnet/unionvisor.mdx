@@ -1,0 +1,167 @@
+---
+title: "Running Unionvisor"
+sidebar:
+  order: 2
+---
+
+import { dedent } from "ts-dedent"
+import { chainVersion } from '#/lib/constants/versions.ts'
+import FunctionResult from '#/components/FunctionResult.astro'
+import { Code, FileTree } from "@astrojs/starlight/components";
+
+Unionvisor is a utility for managing `uniond` deployments. It manages running, upgrading, and interacting with the node.
+
+## Obtaining Unionvisor
+
+We release container images of Unionvisor called bundles. Each bundle contains everything required for running Unionvisor and joining a particular network. The Unionvisor bundle for `union-testnet-8` is `bundle-testnet-8`. You can obtain the Unionvisor bundle for `union-testnet-8` from our [GitHub Container Registry](https://github.com/orgs/unionlabs/packages/container/package/bundle-testnet-8).
+
+Alternatively, you can run the following command:
+
+```sh frame="none"
+docker pull ghcr.io/unionlabs/bundle-testnet-8:$UNIONVISOR_VERSION
+```
+
+_Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-8'}).current} />_
+
+## Running Unionvisor
+
+Before running this image, we need to create a folder to host the chain configuration and state.
+
+You can create this wherever you would like, but we'll be doing so in our current user's home directory.
+
+:::caution
+
+It's important that you will be able to edit this contents of this folder.
+
+:::
+
+To create a directory for `unionvisor` in your user home directory, run:
+
+```sh frame="none"
+mkdir ~/.unionvisor
+```
+
+### Initializing the Chain Config & State Folder
+
+Now, using the `unionvisor` image and the folder we just created, we can initialize the contents of this folder.
+
+To do this, we'll be using Docker volumes.
+
+<Code
+  lang='sh'
+  code={dedent(`
+    docker run \\
+      --volume ~/.unionvisor:/.unionvisor \\
+      --volume /tmp:/tmp \\
+      -it ghcr.io/unionlabs/bundle-testnet-8:$UNIONVISOR_VERSION \\
+      init --moniker $MONIKER \\
+      --network union-testnet-8 \\
+      --seeds "${chainVersion({chainId: 'union-testnet-8'}).seeds}"
+  `)}
+/>
+_Where `MONIKER` is the preferred moniker you'd like to use on this node._
+
+:::note
+
+Note the usage of the flags and arguments we pass to `docker run` run here:
+
+- `--volume ~/.unionvisor:/.unionvisor` mounts the folder we created to the `/.unionvisor` folder of the container
+- `-it` ensures we are running the container interactively
+
+:::
+
+After the above command is done running, you should have a `.unionvisor` folder with the following contents:
+
+<FileTree>
+
+- home
+  - config
+    - app.toml
+    - client.toml
+    - config.toml
+    - genesis.json
+    - node_key.json
+    - priv_validator_key.json
+  - data
+    - priv_validator_state.json
+- versions
+  - <FunctionResult result={chainVersion({chainId: 'union-testnet-8'}).current} />- uniond
+
+</FileTree>
+
+### Migrating an Existing Node (Optional)
+
+If you have an existing node, either from running the `uniond` image or raw binary - you can migrate it to Unionvisor starting here.
+
+To migrate, you only need to copy over your `uniond` state into the `~/.unionvisor/home` directory - then start Unionvisor normally.
+
+If you have a `uniond` state saved to `~/.union`, you can run the following command.
+
+```sh frame="none"
+sudo cp -r ~/.union/* ~/.unionvisor/home
+```
+
+Then continue to follow the guide normally.
+
+:::note
+
+We use `sudo` here because Docker created the files we are copying with elevated permissions.
+
+:::
+
+### Issuing Sub-Commands to uniond via Unionvisor
+
+To run `uniond` sub-commands, it will be useful to alias the Docker command in your shell `.*rc` file.
+
+For example, in `zsh`, you can add the following alias to your `.zshrc`:
+
+```sh frame="none"
+alias uniond='docker run -v ~/.unionvisor:/.unionvisor -v /tmp:/tmp --network host -it ghcr.io/unionlabs/bundle-testnet-8:$UNIONVISOR_VERSION --log-level off call --'
+```
+
+_Where `UNIONVISOR_VERSION` is <FunctionResult result={chainVersion({chainId: 'union-testnet-8'}).current} />_
+
+:::note
+
+- The `unionvisor call` sub-command passes commands and arguments to `uniond`.
+- You may wish to pass `--log-level off` when calling Unionvisor to prevent extra output while issuing sub-commands.
+
+:::
+
+This will enable you to issue `uniond` sub-commands with such as `uniond keys add` with ease.
+
+### Starting the Node
+
+To run a node using Unionvisor, you'll also need to expose ports to the container. We'll use this as an opportunity to create a Docker Compose file four Unionvisor.
+
+A minimal Docker Compose file for Unionvisor looks like this:
+
+```yaml
+services:
+  node:
+    image: ghcr.io/unionlabs/bundle-testnet-8:$UNIONVISOR_VERSION
+    volumes:
+      - ~/.unionvisor:/.unionvisor
+      - /tmp:/tmp
+    network_mode: "host"
+    restart: unless-stopped
+    command: run --poll-interval 1000
+```
+
+This will mount our chain configuration and settings folder while also exposing ports `26657`, `1317`, and `9093`.
+
+After creating a `compose.yml` file with the contents above, you'll be able to start your Union node with `docker compose`.
+
+:::warning
+
+Before starting your Union node for the first time, you should configure your node correctly.
+
+For some configuration recommendations see our [Node Configuration](/infrastructure/node-operators/node-configuration) page.
+
+:::
+
+To run your node in detached mode, run:
+
+```sh frame="none"
+docker compose --file path/to/compose.yaml up --detach
+```

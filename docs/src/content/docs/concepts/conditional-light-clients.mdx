@@ -1,0 +1,39 @@
+---
+title: "Conditional Light Clients"
+---
+
+import Mermaid from "#/components/Mermaid.astro";
+
+When bridging into L2s such as [Scroll](https://scroll.io), the [IBC](/concepts/ibc) light client on $L1_A$ tracking a $L2$ on $L1_B$ needs to take the **Settlement Condition** into account.
+This is known as a conditional client. Union is the first team to ship conditional IBC clients.
+
+<Mermaid
+  content={`
+graph LR
+
+subgraph L1A
+Cond_L2_LC["L2 Light Client*"]
+L1B_LC["L1B Light Client"]
+end
+
+subgraph L1B
+L2_settl["L2 Settlements"]
+end
+
+subgraph L2
+L1A_LC["L1A Light Client"]
+end
+
+L2-->L2_settl
+Cond_L2_LC-.->L2
+Cond_L2_LC-->L1B_LC
+L1B_LC-->L1B
+L1A_LC-->L1A
+`}/>
+
+_\* This is a conditional light client_
+
+Above you can see the IBC L2 Light Client architecture.
+The **L2 Light Client** on $L1_A$ is tracking both the consensus of $L2$, and the settlements of $L2$ on $L1_B$ through the light client of $L1_B$ on $L1_A$.
+
+The $L1_A$ light client on $L2$ is able to track the consensus of $L1_A$ directly, because $L1_A$ does not need to settle.
