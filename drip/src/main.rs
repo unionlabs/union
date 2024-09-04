@@ -57,6 +57,7 @@ async fn main() {
 
     let secret = config.secret.clone().map(CaptchaSecret);
 
+    info!("creating database");
     let pool = PoolBuilder::new()
         .path("db.sqlite3")
         .journal_mode(JournalMode::Wal)
@@ -67,7 +68,9 @@ async fn main() {
     pool.conn(|conn| {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS requests (
-                id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chain_id TEXT NOT NULL,
+                denom TEXT NOT NULL,
                 address TEXT NOT NULL,
                 time TEXT,
                 tx_hash TEXT
@@ -93,6 +96,7 @@ async fn main() {
         Query,
         Mutation {
             ratelimit_seconds: config.ratelimit_seconds,
+            chains: config.chains,
         },
         EmptySubscription,
     )
@@ -133,7 +137,7 @@ async fn main() {
                         .conn(move |conn| {
                             let mut stmt = conn
                                 .prepare_cached(
-                                    "SELECT id, address FROM requests WHERE tx_hash IS NULL LIMIT ?1",
+                                    "SELECT id, chain_id, denom, address FROM requests WHERE tx_hash IS NULL LIMIT ?1",
                                 )
                                 .expect("???");
 
@@ -263,12 +267,7 @@ impl fmt::Display for LogFormat {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub ws_url: WebSocketClientUrl,
-    pub grpc_url: String,
-    pub gas_config: GasConfig,
-    pub signer: H256,
-
-    pub faucet_denom: String,
+    pub chains: Vec<Chain>,
     #[serde(default)]
     pub log_format: LogFormat,
     #[serde(default)]
@@ -282,34 +281,38 @@ pub struct Config {
     pub ratelimit_seconds: u32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Chain {
+    pub id: String,
+    pub bech32_prefix: String,
+    pub ws_url: WebSocketClientUrl,
+    pub grpc_url: String,
+    pub gas_config: GasConfig,
+    pub signer: H256,
+    pub coins: Vec<Coin>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Coin {
+    pub denom: String,
+    pub amount: u64,
+    pub memo: String,
+}
+
 pub struct MaxRequestPolls(pub u32);
-pub struct Bech32Prefix(pub String);
+// pub struct Bech32Prefix(pub String);
 pub struct CaptchaBypassSecret(pub String);
 
 #[derive(Clone)]
-struct DripClient {
-    chain: Chain,
-    faucet_denom: String,
-    memo: String,
+struct ChainClient {
+    pub chain: Chain,
+    pub signer: CosmosSigner,
+    pub tm_client: WebSocketClient,
 }
 
-#[derive(Clone)]
-struct Chain {
-    chain_id: String,
-    grpc_url: String,
-    tm_client: WebSocketClient,
-    gas_config: GasConfig,
-    signer: CosmosSigner,
-}
-
-impl Chain {
-    pub async fn new(
-        grpc_url: String,
-        ws_url: WebSocketClientUrl,
-        gas_config: GasConfig,
-        signer: H256,
-    ) -> Self {
-        let (tm_client, driver) = WebSocketClient::builder(ws_url)
+impl ChainClient {
+    pub async fn new(chain: &Chain) -> Self {
+        let (tm_client, driver) = WebSocketClient::builder(chain.ws_url.clone())
             .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
             .build()
             .await
@@ -325,22 +328,30 @@ impl Chain {
             .network
             .to_string();
 
-        let prefix =
-            protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(grpc_url.clone())
-                .await
-                .unwrap()
-                .bech32_prefix(protos::cosmos::auth::v1beta1::Bech32PrefixRequest {})
-                .await
-                .unwrap()
-                .into_inner()
-                .bech32_prefix;
+        // Check if we are connected to a chain with the correct chain_id
+        assert_eq!(
+            chain_id, chain.id,
+            "ws_url {} is not for chain {}",
+            chain.ws_url, chain.id
+        );
+
+        let bech32_prefix = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(
+            chain.grpc_url.clone(),
+        )
+        .await
+        .unwrap()
+        .bech32_prefix(protos::cosmos::auth::v1beta1::Bech32PrefixRequest {})
+        .await
+        .unwrap()
+        .into_inner()
+        .bech32_prefix;
+
+        let signer = CosmosSigner::new_from_bytes(chain.signer, bech32_prefix.clone()).unwrap();
 
         Self {
-            signer: CosmosSigner::new_from_bytes(signer, prefix.clone()).unwrap(),
+            chain: chain.clone(),
+            signer,
             tm_client,
-            chain_id,
-            grpc_url,
-            gas_config,
         }
     }
 }
@@ -413,6 +424,7 @@ impl DripClient {
 
 struct Mutation {
     ratelimit_seconds: u32,
+    chains: Vec<Chain>,
 }
 
 #[derive(Debug)]
@@ -424,12 +436,19 @@ impl Mutation {
         &self,
         ctx: &Context<'ctx>,
         captcha_token: String,
-        to_address: String,
+        chain_id: String,
+        address: String,
+        denom: String,
     ) -> Result<String> {
         let secret = ctx.data::<Option<CaptchaSecret>>().unwrap();
         let bypass_secret = ctx.data::<Option<CaptchaBypassSecret>>().unwrap();
         let max_request_polls = ctx.data::<MaxRequestPolls>().unwrap();
-        let bech32_prefix = ctx.data::<Bech32Prefix>().unwrap();
+        // let bech32_prefix = ctx.data::<Bech32Prefix>().unwrap();
+
+        // Get chain config
+        let Some(chain) = self.chains.iter().find(|c| c.id == chain_id) else {
+            return Err(format!("invalid chain_id {chain_id}").into());
+        };
 
         let allow_bypass = bypass_secret
             .as_ref()
@@ -443,12 +462,12 @@ impl Mutation {
             }
         }
 
-        match subtle_encoding::bech32::Bech32::lower_case().decode(&to_address) {
+        match subtle_encoding::bech32::Bech32::lower_case().decode(&address) {
             Ok((hrp, _bz)) => {
-                if hrp != bech32_prefix.0 {
+                if hrp != chain.bech32_prefix {
                     return Err(format!(
                         "incorrect bech32 prefix, expected `{}` but found `{hrp}`",
-                        bech32_prefix.0
+                        chain.bech32_prefix
                     )
                     .into());
                 }
@@ -460,13 +479,18 @@ impl Mutation {
 
         let last_request_ts: Option<String> = db
             .conn({
-                let to_address = to_address.clone();
+                let chain_id = chain_id.clone();
+                let denom = denom.clone();
+                let address = address.clone();
+
                 move |conn| {
-                    let mut stmt = conn.prepare_cached(
-                        "select time from requests where address = ? order by id desc limit 1",
+                    let mut statement = conn.prepare_cached(
+                        "SELECT time FROM requests WHERE chain_id = ? AND denom = ? AND address = ? ORDER BY id DESC LIMIT 1",
                     )?;
-                    let id = stmt.query_row([&to_address], |row| row.get(0)).optional()?;
-                    Ok(id)
+                    let time = statement
+                        .query_row([chain_id, denom, address], |row| row.get(0))
+                        .optional()?;
+                    Ok(time)
                 }
             })
             .await?;
@@ -484,7 +508,9 @@ impl Mutation {
                 }
                 if delta.num_seconds() < self.ratelimit_seconds.into() {
                     info!(
-                        %to_address,
+                        %chain_id,
+                        %denom,
+                        %address,
                         %delta,
                         ratelimit_seconds = %self.ratelimit_seconds,
                         "ratelimited"
@@ -494,16 +520,16 @@ impl Mutation {
                 }
             }
             None => {
-                info!(%to_address, "new user");
+                info!(%address, "new user");
             }
         }
 
         let id: i64 = db
             .conn(move |conn| {
-                let mut stmt = conn.prepare_cached(
-                    "INSERT INTO requests (address, time) VALUES (?, datetime('now')) RETURNING id",
+                let mut statement = conn.prepare_cached(
+                    "INSERT INTO requests (chain_id, denom, address, time) VALUES (?, ?, ?, datetime('now')) RETURNING id",
                 )?;
-                let id = stmt.query_row([&to_address], |row| row.get(0))?;
+                let id = statement.query_row([&chain_id, &denom, &address], |row| row.get(0))?;
                 Ok(id)
             })
             .await?;
