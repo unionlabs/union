@@ -16,9 +16,10 @@ use chrono::{offset::LocalResult, TimeZone, Utc};
 use color_eyre::Report;
 use const_hex::ToHexExt;
 use futures::{stream::FuturesOrdered, FutureExt, StreamExt, TryFutureExt};
+use itertools::Either;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use time::OffsetDateTime;
+use time::{error, OffsetDateTime};
 use tracing::{debug, info, info_span, warn, Instrument};
 use url::Url;
 
@@ -303,33 +304,46 @@ async fn index_blocks_by_chunk(
         .ready_chunks(chunk.len());
 
         // The below algorithm is a little complex in syntax but relatively simple:
-        // 1. We take all ready futures from inserts (1 or more).
+        // 1. We take all ready futures from Either<inserts, skipped> (1 or more).
         // 2. We partition such that a chunk of [ok, ok, err, ok, err] becomes blocks: [ok, ok], errs: [err].
-        // 3. if the blocks contain Some(block) (when the filter matches), we insert them.
-        // 4. we update the indexed_height to blocks.last().height.
-        // 5. if err is not empty, throw the error afterwards.
+        // 3. if the blocks contain Either<inserts, _> (when the filter matches), we insert them.
+        // 4. we update the contract_status.height and timestamp to these values of the last block (either insert or skipped)
+        // 5. if err is not empty, throw the error afterward.
         while let Some(blocks) = inserts.next().await {
-            let (blocks, mut err): (Vec<(_, Option<PgLog<_>>)>, Vec<_>) = blocks
+            let (blocks, mut err): (Vec<Either<PgLog<_>, BlockSkipped>>, Vec<_>) = blocks
                 .into_iter()
                 .take_while_inclusive(|(_, block)| block.is_ok())
                 .partition_map(|(h, result)| match result {
-                    Ok(block) => Either::Left((h, block.map(Into::into))),
+                    Ok(block) => Either::Left(block.map_left(|b| b.into())),
                     Err(err) => Either::Right((h, err)),
                 });
 
             if !blocks.is_empty() {
                 let mut tx = pool.begin().await?;
-                let height = blocks.last().unwrap().0.try_into().unwrap();
-                let blocks = blocks.into_iter().filter_map(|(_, b)| b);
 
-                postgres::insert_batch_logs(&mut tx, blocks, mode).await?;
+                let (height, timestamp) = match blocks.last().unwrap() {
+                    Either::Left(insert) => (insert.height, insert.time),
+                    Either::Right(skipped) => (skipped.height, skipped.time),
+                };
+
+                let blocks_to_insert: Vec<PgLog<_>> = blocks
+                    .into_iter()
+                    .filter_map(|either| match either {
+                        Either::Left(block_to_insert) => Some(block_to_insert),
+                        Either::Right(_) => None,
+                    })
+                    .collect();
+
+                postgres::insert_batch_logs(&mut tx, blocks_to_insert, mode).await?;
+
                 let updated = postgres::update_contracts_indexed_heights(
                     &mut tx,
                     filter
                         .iter()
                         .map(|addr| format!("0x{}", addr.encode_hex()))
                         .collect(),
-                    filter.iter().map(|_| height).collect(),
+                    height as i64,
+                    timestamp,
                     chain_id,
                 )
                 .await?;
@@ -367,6 +381,17 @@ pub struct BlockInsert {
     pub transactions: Vec<TransactionInsert>,
 }
 
+#[must_use]
+#[derive(Debug, Clone)]
+pub struct BlockSkipped {
+    #[allow(dead_code)] // will be used when improving reorg handling
+    pub chain_id: ChainId,
+    #[allow(dead_code)]
+    pub hash: String,
+    pub height: i32,
+    pub time: OffsetDateTime,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct LogData {
     pub transactions: Vec<TransactionInsert>,
@@ -379,6 +404,8 @@ pub enum FromProviderError {
     BlockNotFound,
     #[error("data belonging to block not found")]
     DataNotFound(RpcError<TransportErrorKind>),
+    #[error("invalid timestamp")]
+    InvalidTimestamp(error::ComponentRange),
     #[error("something else went wrong")]
     Other(Report),
 }
@@ -386,6 +413,12 @@ pub enum FromProviderError {
 impl From<RpcError<TransportErrorKind>> for FromProviderError {
     fn from(error: RpcError<TransportErrorKind>) -> Self {
         Self::Other(Report::from(error))
+    }
+}
+
+impl From<error::ComponentRange> for FromProviderError {
+    fn from(error: error::ComponentRange) -> Self {
+        Self::InvalidTimestamp(error)
     }
 }
 
@@ -416,7 +449,7 @@ impl BlockInsert {
         id: T,
         provider: RaceClient<RootProvider<Http<Client>>>,
         filter: impl Into<Option<Arc<Vec<Address>>>>,
-    ) -> Result<Option<Self>, FromProviderError> {
+    ) -> Result<Either<Self, BlockSkipped>, FromProviderError> {
         let filter = filter.into();
         let id = id.into();
         debug!(?id, "fetching block from provider");
@@ -435,7 +468,7 @@ impl BlockInsert {
         id: T,
         provider: RaceClient<RootProvider<Http<Client>>>,
         filter: Option<Arc<Vec<Address>>>,
-    ) -> Result<Option<Self>, FromProviderError> {
+    ) -> Result<Either<Self, BlockSkipped>, FromProviderError> {
         use std::collections::HashMap;
 
         let id = id.into();
@@ -444,6 +477,16 @@ impl BlockInsert {
             .get_block(id, BlockTransactionsKind::Full)
             .await?
             .ok_or(FromProviderError::BlockNotFound)?;
+
+        let timestamp_i64 = block.header.timestamp as i64;
+        let datetime = match Utc.timestamp_opt(timestamp_i64, 0) {
+            LocalResult::Single(datetime) => datetime,
+            _ => Utc::now(),
+        };
+        let ts = datetime.timestamp();
+        let time = OffsetDateTime::from_unix_timestamp(ts).map_err(FromProviderError::from)?;
+        let block_hash = block.header.hash.unwrap().to_lower_hex();
+        let height: i32 = block.header.number.unwrap() as i32;
 
         let provider = provider.fastest();
 
@@ -455,7 +498,12 @@ impl BlockInsert {
                 .iter()
                 .any(|address| bloom.contains_input(BloomInput::Raw(&address.into_array())))
             {
-                return Ok(None);
+                return Ok(Either::Right(BlockSkipped {
+                    chain_id,
+                    hash: block_hash,
+                    height,
+                    time,
+                }));
             }
         }
 
@@ -477,7 +525,12 @@ impl BlockInsert {
 
         // The bloom filter returned a false positive, and we don't actually have matching logs.
         if logs.is_empty() && filter.is_some() {
-            return Ok(None);
+            return Ok(Either::Right(BlockSkipped {
+                chain_id,
+                hash: block_hash,
+                height,
+                time,
+            }));
         }
 
         let partitioned = {
@@ -497,17 +550,7 @@ impl BlockInsert {
             map
         };
 
-        let result: Result<Option<Self>, Report> = try {
-            let timestamp_i64 = block.header.timestamp as i64;
-            let datetime = match Utc.timestamp_opt(timestamp_i64, 0) {
-                LocalResult::Single(datetime) => datetime,
-                _ => Utc::now(),
-            };
-            let ts = datetime.timestamp();
-            let time = OffsetDateTime::from_unix_timestamp(ts)?;
-            let block_hash = block.header.hash.unwrap().to_lower_hex();
-            let height: i32 = block.header.number.unwrap() as i32;
-
+        let result: Result<Either<Self, _>, Report> = try {
             let transactions = partitioned
                 .into_iter()
                 .map(|((transaction_hash, transaction_index), logs)| {
@@ -534,7 +577,7 @@ impl BlockInsert {
                 })
                 .collect();
 
-            Some(BlockInsert {
+            Either::Left(BlockInsert {
                 chain_id,
                 hash: block_hash,
                 header: block,

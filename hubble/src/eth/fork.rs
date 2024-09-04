@@ -102,7 +102,7 @@ impl Indexer {
                     None,
                 )
                 .await?
-                .expect("with filter None a block should always be returned");
+                .expect_left("with filter None a block should always be returned");
 
                 if block.hash != hash {
                     info!(
@@ -194,7 +194,7 @@ impl Indexer {
                                     None,
                                 )
                                 .await
-                                .map(|b| b.unwrap().into())
+                                .map(|b| b.unwrap_left().into())
                             }
                         }))
                         .try_collect()

@@ -480,28 +480,56 @@ pub async fn insert_mapped_execution_heights<'a, A: Acquire<'a, Database = Postg
 pub async fn update_contracts_indexed_heights<'a>(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     contracts: Vec<String>,
-    heights: Vec<i64>,
+    height: i64,
+    timestamp: OffsetDateTime,
     chain_id: ChainId,
 ) -> sqlx::Result<usize> {
-    let rows_updated = sqlx::query!(
+    let unique_contracts: Vec<String> = contracts.into_iter().unique().collect();
+
+    sqlx::query!(
+        "
+        INSERT INTO hubble.contract_status(internal_chain_id, address, height, timestamp)
+            SELECT
+                $1::int            as internal_chain_id,
+                unnest($2::text[]) as address,
+                $3::bigint         as height,
+                $4::timestamptz    as timestamp
+            ON CONFLICT (internal_chain_id, address)
+            DO UPDATE
+            SET height    = EXCLUDED.height,
+                timestamp = EXCLUDED.timestamp
+            RETURNING hubble.contract_status.address
+        ",
+        &chain_id.db,
+        &unique_contracts,
+        &height,
+        &timestamp,
+    )
+    .fetch_all(tx.as_mut())
+    .await?
+    .iter()
+    .len();
+
+    let rows_updated_old = sqlx::query!(
         "
         UPDATE v0.contracts 
         SET indexed_height = data.height
         FROM (
-            SELECT unnest($1::bigint[]) as height, unnest($2::text[]) as address
+            SELECT $1::bigint as height, unnest($2::text[]) as address
         ) as data
         WHERE v0.contracts.address = data.address AND chain_id = $3
         RETURNING v0.contracts.address
         ",
-        &heights,
-        &contracts,
+        &height,
+        &unique_contracts,
         &chain_id.db,
     )
     .fetch_all(tx.as_mut())
     .await?
     .iter()
     .len();
-    Ok(rows_updated)
+
+    Ok(rows_updated_old)
 }
 
 pub async fn schedule_replication_reset(
