@@ -83,8 +83,8 @@
           type = types.listOf (types.submodule {
             options = {
               enabled = mkOption {
-                type = types.nullOr types.bool;
-                default = null;
+                type = types.bool;
+                default = true;
               };
               path = mkOption { type = types.path; };
               config = mkOption { type = types.attrs; };
