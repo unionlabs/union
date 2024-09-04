@@ -403,16 +403,6 @@ module UCS01::Relay {
         assert!(!is_valid_version(invalid_version), 101);
     }
 
-    // TODO: Getting re-entrancy error on withdraw. Need to fix this.    
-    public entry fun tx(sender: &signer, destination: address, amount: u64, from_token: Object<Metadata>){
-        let fa = primary_fungible_store::withdraw(sender, from_token, amount);
-        primary_fungible_store::deposit(destination, fa);
-
-        // Same error also happens in transfer,  RUNTIME_DISPATCH_ERROR --- Re-entrancy detected:
-        // primary_fungible_store::transfer(sender, from_token, destination, amount);
-    } 
-
-    
 
     #[test]
     public fun test_is_from_channel() {
