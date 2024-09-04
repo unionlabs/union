@@ -129,8 +129,8 @@ ics23                      = { path = "lib/ics23", default-features = false }
 linea-verifier             = { path = "lib/linea-verifier", default-features = false }
 linea-zktrie               = { path = "lib/linea-zktrie", default-features = false }
 macros                     = { path = "lib/macros", default-features = false }
-move-bindgen               = { path = "tools/move-bindgen", default-featurs = false }
-move-bindgen-derive        = { path = "lib/move-bindgen-derive", default-featurs = false }
+move-bindgen               = { path = "tools/move-bindgen", default-features = false }
+move-bindgen-derive        = { path = "lib/move-bindgen-derive", default-features = false }
 pg-queue                   = { path = "lib/pg-queue", default-features = false }
 poseidon-rs                = { path = "lib/poseidon-rs", default-features = false }
 protos                     = { path = "generated/rust/protos", default-features = false }

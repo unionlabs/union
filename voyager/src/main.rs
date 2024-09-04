@@ -54,13 +54,13 @@ fn main() -> ExitCode {
         cli::LogFormat::Text => {
             tracing_subscriber::fmt()
                 .with_env_filter(EnvFilter::from_default_env())
-                .with_span_events(FmtSpan::CLOSE)
+                // .with_span_events(FmtSpan::CLOSE)
                 .init();
         }
         cli::LogFormat::Json => {
             tracing_subscriber::fmt()
                 .with_env_filter(EnvFilter::from_default_env())
-                .with_span_events(FmtSpan::CLOSE)
+                // .with_span_events(FmtSpan::CLOSE)
                 .json()
                 .init();
         }

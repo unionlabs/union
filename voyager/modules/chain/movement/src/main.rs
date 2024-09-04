@@ -48,10 +48,6 @@ pub mod events;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .init();
-
     run_module_server(
         Module::new,
         ChainModuleServer::into_rpc,

@@ -121,6 +121,8 @@
         log-format = mkOption {
           type = types.enum [ "json" "text" ];
           default = "json";
+          # TODO: This is kinda dirty, find a better way? Probably through each plugin's config
+          description = "The log format for voyager. This will also be passed to all of the plugins as RUST_LOG_FORMAT.";
           example = "text";
         };
         stack-size = mkOption {
@@ -139,10 +141,6 @@
           default = "0.0.0.0:7178";
           example = "0.0.0.0:7178";
         };
-        # max-batch-size = mkOption {
-        #   type = types.number;
-        #   example = 10;
-        # };
         voyager-extra = mkOption {
           type = types.attrs;
           default = { };
@@ -206,6 +204,7 @@
               };
               environment = {
                 RUST_LOG = "${cfg.log-level}";
+                RUST_LOG_FORMAT = "${cfg.log-format}";
               };
             };
           };

@@ -1,6 +1,6 @@
 #![feature(trait_alias)]
 
-use std::{fmt::Debug, marker::PhantomData};
+use std::{env::VarError, fmt::Debug, marker::PhantomData};
 
 use futures::Future;
 use jsonrpsee::types::error::METHOD_NOT_FOUND_CODE;
@@ -8,7 +8,7 @@ use macros::apply;
 use queue_msg::{aggregation::SubsetOf, queue_msg, QueueError, QueueMessage};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{info, trace};
+use tracing::{error, info, trace};
 use unionlabs::{never::Never, traits::Member};
 
 use crate::{
@@ -41,6 +41,7 @@ impl<D: Member, C: Member, Cb: Member> QueueMessage for VoyagerMessage<D, C, Cb>
     type Context = Context;
 }
 
+/// Error code for fatal errors. If a plugin responds with this error code, it will be treated as failed and not retried.
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 
 pub fn json_rpc_error_to_queue_error(value: jsonrpsee::core::client::Error) -> QueueError {
@@ -111,7 +112,7 @@ macro_rules! str_newtype {
             ///
             #[doc = concat!("fn takes_ownership<'a>(c: ", stringify!($Struct), "<'a>) {}")]
             /// ```
-            fn borrow<'b>(&'a self) -> $Struct<'b>
+            pub fn borrow<'b>(&'a self) -> $Struct<'b>
             where
                 'a: 'b,
             {
@@ -277,6 +278,42 @@ pub async fn default_subcommand_handler<T>(_: T, cmd: DefaultCmd) -> Result<(), 
     match cmd {}
 }
 
+pub fn init_log() {
+    enum LogFormat {
+        Text,
+        Json,
+    }
+
+    let format = match std::env::var("RUST_LOG_FORMAT").as_deref() {
+        Err(VarError::NotPresent) | Ok("text") => LogFormat::Text,
+        Ok("json") => LogFormat::Json,
+        Err(VarError::NotUnicode(invalid)) => {
+            eprintln!("invalid non-utf8 log format {invalid:?}, defaulting to text");
+            LogFormat::Text
+        }
+        Ok(invalid) => {
+            eprintln!("invalid log format {invalid}, defaulting to text");
+            LogFormat::Text
+        }
+    };
+
+    match format {
+        LogFormat::Text => {
+            tracing_subscriber::fmt()
+                .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+                // .with_span_events(FmtSpan::CLOSE)
+                .init();
+        }
+        LogFormat::Json => {
+            tracing_subscriber::fmt()
+                .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+                // .with_span_events(FmtSpan::CLOSE)
+                .json()
+                .init();
+        }
+    }
+}
+
 pub async fn run_module_server<
     D: Member,
     C: Member,
@@ -306,6 +343,8 @@ pub async fn run_module_server<
             config: String,
         },
     }
+
+    init_log();
 
     let app = <Args<Cmd> as clap::Parser>::parse();
 

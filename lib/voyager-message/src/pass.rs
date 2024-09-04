@@ -5,7 +5,7 @@ use queue_msg::{
     optimize::{OptimizationResult, PurePass},
     BoxDynError, Op,
 };
-use tracing::{error, info, info_span, trace};
+use tracing::{error, info, info_span, trace, trace_span};
 use unionlabs::ErrorReporter;
 
 use crate::VoyagerMessage;
@@ -79,7 +79,7 @@ impl PurePass<VoyagerMessage> for JaqInterestFilter {
             let msg_json = Val::from(serde_json::to_value(msg.clone()).unwrap());
 
             for (filter, plugin_name) in &self.filters {
-                let _span = info_span!("checking interest", %plugin_name).entered();
+                let _span = trace_span!("checking interest", %plugin_name).entered();
 
                 let mut out = filter.run((
                     Ctx::new([Val::Str(Rc::new(plugin_name.clone()))], &inputs),
