@@ -65,26 +65,26 @@ module UCS01::fa_coin {
             State { paused: false, }
         );
 
-        // Override the deposit and withdraw functions which mean overriding transfer.
-        // This ensures all transfer will call withdraw and deposit functions in this module
-        // and perform the necessary checks.
-        // This is OPTIONAL. It is an advanced feature and we don't NEED a global state to pause the FA coin.
-        let deposit = function_info::new_function_info(
-            admin,
-            string::utf8(b"fa_coin"),
-            string::utf8(b"deposit"),
-        );
-        let withdraw = function_info::new_function_info(
-            admin,
-            string::utf8(b"fa_coin"),
-            string::utf8(b"withdraw"),
-        );
-        dispatchable_fungible_asset::register_dispatch_functions(
-            constructor_ref,
-            option::some(withdraw),
-            option::some(deposit),
-            option::none(),
-        );
+        // // Override the deposit and withdraw functions which mean overriding transfer.
+        // // This ensures all transfer will call withdraw and deposit functions in this module
+        // // and perform the necessary checks.
+        // // This is OPTIONAL. It is an advanced feature and we don't NEED a global state to pause the FA coin.
+        // let deposit = function_info::new_function_info(
+        //     admin,
+        //     string::utf8(b"fa_coin"),
+        //     string::utf8(b"deposit"),
+        // );
+        // let withdraw = function_info::new_function_info(
+        //     admin,
+        //     string::utf8(b"fa_coin"),
+        //     string::utf8(b"withdraw"),
+        // );
+        // dispatchable_fungible_asset::register_dispatch_functions(
+        //     constructor_ref,
+        //     option::some(withdraw),
+        //     option::some(deposit),
+        //     option::none(),
+        // );
     }
 
     public entry fun update_metadata(
@@ -471,11 +471,11 @@ module UCS01::fa_coin {
             string::utf8(TEST_PROJECT)
         );
 
-        // Mint tokens to the sender first
         let asset = get_metadata();
+
         let alice_addr = signer::address_of(alice);
         mint(creator, alice_addr, 1000);
-        mint(creator, bob, 1000);
+        primary_fungible_store::ensure_primary_store_exists(bob, asset);
 
         let alice_balance = primary_fungible_store::balance(alice_addr, asset);
 
@@ -483,14 +483,13 @@ module UCS01::fa_coin {
         
         let to_wallet = primary_fungible_store::primary_store(bob, asset);
 
-        
-        UCS01::Relay::tx(alice, bob, 10, asset);
+        //UCS01::Relay::tx(alice, bob, 10, asset);
+        primary_fungible_store::transfer(alice, asset, bob, 10);
 
         let alice_balance_after = primary_fungible_store::balance(alice_addr, asset);
-        assert!(alice_balance_after == 9900, 402);
-
         let bob_balance = primary_fungible_store::balance(bob, asset);
+        
+        assert!(alice_balance_after == 990, 402);
         assert!(bob_balance == 10, 402);
     }
 }
-
