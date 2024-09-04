@@ -17,10 +17,10 @@ export interface Status {
 }
 
 export interface ContributeBody {
-  supabase_project: string;
+  supabaseProject: string;
   bucket: string;
   jwt: string;
-  api_key: string;
-  contributor_id: string;
-  payload_id: string;
+  apiKey: string;
+  contributorId: string;
+  payloadId: string;
 }

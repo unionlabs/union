@@ -6,9 +6,14 @@ export const fetchStatus = (): Promise<Status | undefined> => {
 };
 
 export const contribute = (body: Partial<ContributeBody>): Promise<Status | undefined> => {
-  return post<Status>('contribute', {}, {
+  // Build the full body with defaults
+  const b = {
     ...body,
-    supabase_project: import.meta.env.VITE_SUPABASE_URL,
-    api_key: import.meta.env.VITE_SUPABASE_URL,
-  });
+    supabaseProject: import.meta.env.VITE_SUPABASE_URL,
+    apiKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    bucket: import.meta.env.VITE_BUCKET_ID,
+  };
+
+  console.log('Request Body:', b);  // Log the body for debugging
+  return post<Status>('contribute', {}, b);
 };
