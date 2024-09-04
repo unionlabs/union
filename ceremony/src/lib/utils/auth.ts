@@ -1,4 +1,4 @@
-import { supabase } from "$lib/supabase.ts";
+import { supabase } from "$lib/supabase/client.ts";
 import {err, ok, Result} from "neverthrow";
 
 export type SessionError = {

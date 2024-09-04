@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {supabase} from '$lib/supabase';
+  import {supabase} from "$lib/supabase/client.ts";
   import H1 from "$lib/components/typography/H1.svelte";
   import Text from "$lib/components/typography/Text.svelte";
   import Button from "$lib/components/Button.svelte";

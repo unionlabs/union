@@ -3,7 +3,7 @@
   import Navbar from "$lib/layout/Navbar/index.svelte";
   import {beforeNavigate, goto} from "$app/navigation";
   import {checkAuth, type SessionError} from "$lib/utils/auth.ts";
-  import {supabase} from "$lib/supabase.ts";
+  import {supabase} from "$lib/supabase/client.ts";
   import {user} from "$lib/stores/user.svelte.ts";
 
   import "../styles/tailwind.css";

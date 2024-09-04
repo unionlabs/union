@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {supabase} from "$lib/supabase.ts";
+  import {supabase} from "$lib/supabase/client.ts";
   import {user} from "$lib/stores/user.svelte.ts";
   import {invalidateAll} from "$app/navigation";
   import Link from "$lib/components/typography/Link.svelte";
