@@ -1,5 +1,5 @@
 <script lang="ts">
-  import toast from "svelte-french-toast";
+  import {toast} from "svelte-sonner";
 
   let command = "docker run -p 4919:4919 -it haitlahcen/union-mpc-cli:latest"
   const copy = () => {

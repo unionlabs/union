@@ -1,18 +1,17 @@
 <script lang="ts">
   import {type Snippet} from "svelte";
-  import Navbar from "$lib/components/Navbar/index.svelte";
-  import {Toaster} from 'svelte-french-toast';
+  import Navbar from "$lib/layout/Navbar/index.svelte";
   import {beforeNavigate, goto} from "$app/navigation";
   import {checkAuth, type SessionError} from "$lib/utils/auth.ts";
   import {supabase} from "$lib/supabase.ts";
-  import {userSession} from "$lib/stores/session.ts";
+  import {user} from "$lib/stores/user.svelte.ts";
 
   import "../styles/tailwind.css";
-  import "../styles/fonts.css";
+  import {Toaster} from "svelte-sonner";
 
-  let { children }: { children: Snippet } = $props();
+  let {children} = $props();
 
-  beforeNavigate(async ({ from, to, cancel }) => {
+  beforeNavigate(async ({from, to, cancel}) => {
     const pathname = to?.route?.id;
     if (pathname) {
       const segments = pathname.split('/').filter(Boolean);
@@ -20,7 +19,8 @@
         const authCheck = await checkAuth();
 
         authCheck.match(
-          () => {},
+          () => {
+          },
           (error: SessionError) => {
             console.error(error.message);
             cancel();
@@ -33,7 +33,7 @@
 
   $effect(() => {
     const {data: {subscription}} = supabase.auth.onAuthStateChange((event, session) => {
-      userSession.set(session);
+      user.session = session
     });
     return () => {
       subscription.unsubscribe();
@@ -42,7 +42,13 @@
 
 </script>
 
-<Toaster/>
+<Toaster
+        position="bottom-right"
+        toastOptions={{
+          class: 'rounded-none border border-black',
+	}}
+/>
+
 <Navbar/>
 <main class="flex flex-col items-center justify-center min-h-screen w-full bg-background-light-secondary">
   {@render children()}

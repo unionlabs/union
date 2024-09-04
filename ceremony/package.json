@@ -25,6 +25,6 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.3",
     "neverthrow": "^7.1.0",
-    "svelte-french-toast": "^1.2.0"
+    "svelte-sonner": "^0.3.27"
   }
 }
