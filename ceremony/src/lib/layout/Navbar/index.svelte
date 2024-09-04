@@ -25,7 +25,7 @@
   }
 </script>
 
-<header class="flex items-center justify-between gap-4  px-2 md:h-16 md:px-4">
+<header class="absolute top-0 inset-x-0 flex items-center justify-between gap-4  px-2 md:h-16 md:px-4 z-50">
   <nav class=" w-full p-4">
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
@@ -75,5 +75,6 @@
         </div>
       </div>
     {/if}
+
   </nav>
 </header>

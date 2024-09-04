@@ -23,7 +23,7 @@
         </span>
     </span>
 
-    <Button onclick={copy} class="bg-transparent text-neutral-500 hover:bg-union-accent-500 hover:text-black">
+    <Button onclick={copy} class="!bg-transparent text-neutral-500">
       <svg class="shrink-0 h-5 w-5" xmlns="http://www.w3.org/2000/svg"
            viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z"></path>
