@@ -82,16 +82,6 @@ async fn main() {
     .await
     .unwrap();
 
-    let prefix =
-        protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(config.grpc_url.clone())
-            .await
-            .unwrap()
-            .bech32_prefix(protos::cosmos::auth::v1beta1::Bech32PrefixRequest {})
-            .await
-            .unwrap()
-            .into_inner()
-            .bech32_prefix;
-
     let schema = Schema::build(
         Query,
         Mutation {
@@ -102,36 +92,27 @@ async fn main() {
     )
     .data(pool.clone())
     .data(MaxRequestPolls(config.max_request_polls))
-    .data(Bech32Prefix(prefix))
     .data(config.bypass_secret.clone().map(CaptchaBypassSecret))
     .data(MaxPaginatedResponses(max_paginated_responses))
     .data(secret)
     .finish();
 
-    info!("spawning worker");
     let config = config.clone();
-    tokio::spawn(async move {
-        loop {
-            let config = config.clone();
-            let pool = pool.clone();
 
-            info!("spawning worker thread");
-            let handle = tokio::spawn(async move {
+    for chain in config.chains {
+        info!(chain_id = chain.id, "spawning worker for chain");
+        tokio::spawn(async move {
+            loop {
+                let config = config.clone();
+                let pool = pool.clone();
+
+                info!("spawning worker thread");
+                let handle = tokio::spawn(async move {
                 // recreate each time so that if this task panics, the keyring gets rebuilt
                 // make sure to panic *here* so that the tokio task will catch the panic!
-                info!("creating drip client");
-                let drip = DripClient {
-                    chain: Chain::new(
-                        config.grpc_url,
-                        config.ws_url,
-                        config.gas_config,
-                        config.signer,
-                    )
-                    .await,
-                    faucet_denom: config.faucet_denom.clone(),
-                    memo: config.memo.clone(),
-                };
-                info!("entering worker poll loop");
+                info!(chain_id=chain.id, "creating chain client");
+                let chain_client = ChainClient::new(&chain).await;
+                info!(chain_id=chain.id, "entering worker poll loop");
                 loop {
                     let (ids, addresses) = pool
                         .conn(move |conn| {
@@ -165,8 +146,10 @@ async fn main() {
                     }
                     let mut i = 0;
                     let result = loop {
-                        let send_res = drip
+                        let send_res = chain_client
                             .send(
+                                chain.id,
+                                denom,
                                 addresses
                                     .clone()
                                     .into_iter()
@@ -217,15 +200,16 @@ async fn main() {
             })
             .await;
 
-            match handle {
-                Ok(()) => {}
-                Err(err) => {
-                    error!(err = %ErrorReporter(err), "handler panicked");
-                    tokio::time::sleep(Duration::from_secs(1)).await;
+                match handle {
+                    Ok(()) => {}
+                    Err(err) => {
+                        error!(err = %ErrorReporter(err), "handler panicked");
+                        tokio::time::sleep(Duration::from_secs(1)).await;
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 
     let router = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
 
@@ -374,15 +358,25 @@ impl CosmosSdkChainRpcs for Chain {
     }
 }
 
-impl DripClient {
+impl ChainClient {
     /// `MultiSend` to the specified addresses. Will return `None` if there are no signers available.
-    async fn send(&self, to_send: Vec<(String, u64)>) -> Result<H256, BroadcastTxCommitError> {
+    async fn send(
+        &self,
+        denom: String,
+        to_send: Vec<(String, u64)>,
+    ) -> Result<H256, BroadcastTxCommitError> {
+        let coin = self
+            .chain
+            .coins
+            .iter()
+            .find(|c| c.denom == denom)
+            .expect("trying to send denom that does not exist in config for chain");
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
             // this is required to be one element
             inputs: vec![protos::cosmos::bank::v1beta1::Input {
                 address: self.chain.signer.to_string(),
                 coins: vec![protos::cosmos::base::v1beta1::Coin {
-                    denom: self.faucet_denom.clone(),
+                    denom: denom.clone(),
                     amount: to_send
                         .iter()
                         .map(|(_, amount)| *amount)
@@ -395,7 +389,7 @@ impl DripClient {
                 .map(|(address, amount)| protos::cosmos::bank::v1beta1::Output {
                     address,
                     coins: vec![protos::cosmos::base::v1beta1::Coin {
-                        denom: self.faucet_denom.clone(),
+                        denom: denom.clone(),
                         amount: amount.to_string(),
                     }],
                 })
@@ -409,10 +403,12 @@ impl DripClient {
 
         let (tx_hash, gas_used) = self
             .chain
-            .broadcast_tx_commit(&self.chain.signer, [msg], self.memo.clone())
+            .broadcast_tx_commit(&self.signer, [msg], coin.memo.clone())
             .await?;
 
         info!(
+            chain_id=self.chain.id,
+            %denom,
             %tx_hash,
             %gas_used,
             "submitted multisend"
