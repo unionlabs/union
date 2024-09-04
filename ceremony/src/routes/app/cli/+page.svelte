@@ -13,7 +13,7 @@
     console.log(status)
     intervalId = setInterval(async () => {
       status = await fetchStatus();
-    }, 30000);
+    }, 1000 * 5);
   });
 
   onDestroy(() => {
