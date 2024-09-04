@@ -36,12 +36,6 @@ module UCS01::Relay {
     const E_INVALID_AMOUNT: u64 = 7;
     const E_UNSTOPPABLE: u64 = 8;
 
-    // Structs
-    struct LocalToken has copy, drop, store {
-        denom: address,
-        amount: u128,
-    }
-
     struct Token has copy, drop, store {
         denom: String,
         amount: u128,
@@ -69,20 +63,10 @@ module UCS01::Relay {
         token: address,
     }
 
-    /// Stores the metadata required for the token pairs
-    struct TokenPairMetadata has key {
-        /// The admin of the token pair
-        creator: address,
-        /// Mint capacity of LP Token
-        mint_cap: coin::MintCapability<LocalToken>,
-        /// Burn capacity of LP Token
-        burn_cap: coin::BurnCapability<LocalToken>,
-    }
-
     struct RelayStore has key {
         denom_to_address: SmartTable<DenomToAddressPair, address>,
         address_to_denom: SmartTable<AddressToDenomPair, String>,
-        outstanding: SmartTable<OutstandingPair, u128>,
+        outstanding: SmartTable<OutstandingPair, u64>,
     }
 
 
@@ -185,13 +169,13 @@ module UCS01::Relay {
     public fun get_denom_address(source_channel: String, denom: String): address acquires RelayStore {
         let store = borrow_global<RelayStore>(get_vault_addr());
         let pair = DenomToAddressPair { source_channel, denom };
-        *smart_table::borrow(&store.denom_to_address, pair)
+        *smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0)
     }
 
-    public fun get_outstanding(source_channel: String, token: address): u128 acquires RelayStore {
+    public fun get_outstanding(source_channel: String, token: address): u64 acquires RelayStore {
         let store = borrow_global<RelayStore>(get_vault_addr());
         let pair = OutstandingPair { source_channel, token };
-        *smart_table::borrow(&store.outstanding, pair)
+        *smart_table::borrow_with_default(&store.outstanding, pair, &0)
     }
 
     #[view]
@@ -204,14 +188,14 @@ module UCS01::Relay {
         object::generate_signer_for_extending(&vault.self_ref)
     }
 
-    public fun increase_outstanding(source_channel: String, token: address, amount: u128) acquires RelayStore {
+    public fun increase_outstanding(source_channel: String, token: address, amount: u64) acquires RelayStore {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         let pair = OutstandingPair { source_channel, token };
         let current_outstanding = smart_table::borrow_mut_with_default(&mut store.outstanding, pair, 0);
         *current_outstanding = *current_outstanding + amount;
     }
 
-    public fun decrease_outstanding(source_channel: String, token: address, amount: u128) acquires RelayStore {
+    public fun decrease_outstanding(source_channel: String, token: address, amount: u64) acquires RelayStore {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         let pair = OutstandingPair { source_channel, token };
         let current_outstanding = smart_table::borrow_mut(&mut store.outstanding, pair);
@@ -359,37 +343,31 @@ module UCS01::Relay {
         // refund_tokens(sequence(packet), source_channel(packet), decode(packet.data));
     }
 
+     public fun send_token(
+        sender: &signer,
+        token: Object<Metadata>,
+        source_channel: String,
+        denom: String,
+        amount: u64,
+    ): address acquires RelayStore {
+        if (amount == 0) {
+            abort E_INVALID_AMOUNT;
+        };
 
-    //  public fun send_token<T: store>(
-    //     sender: &signer,
-    //     token: object<ManagedFungibleAsset>,
-    //     source_channel: String,
-    //     denom: String,
-    //     amount: u64,
-    // ) acquires RelayStore {
-    //     if (amount == 0) {
-    //         abort E_INVALID_AMOUNT;
-    //     };
+        let store = borrow_global<RelayStore>(get_vault_addr());
 
-    //     let store = borrow_global<RelayStore>(get_vault_addr());
+        let pair = DenomToAddressPair { source_channel, denom };
+        let token_address = *smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0);
 
-    //     let pair = DenomToAddressPair { source_channel, denom };
-    //     let token_address = smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0);
-
-
-    //     // TODO: LocalToken is a placeholder for the actual token type,
-    //     // i don't know how to use it / create it so far.
-    //     if (*token_address == @0x0) {
-    //         coin::burn<LocalToken>(localToken, )
-    //         let burn_cap = coin::withdraw_burn_capability<LocalToken>(&token_address);
-    //         coin::burn_from<LocalToken>(burn_cap, sender, amount );
-    //         coin::return_burn_capability<LocalToken>(burn_cap);
-    //     } else {
-    //         let sender_address = signer::address_of(sender);
-    //         coin::transfer<LocalToken>(sender_address, @UCS01, amount);
-    //         increase_outstanding(source_channel, *token_address, amount);
-    //     }
-    // }
+        if (token_address == @0x0) {
+            // transferring to the zero address is basically burning
+            primary_fungible_store::transfer(sender, token, @zero_account, amount);
+        } else {
+            primary_fungible_store::transfer(sender, token, @UCS01, amount);
+            increase_outstanding(source_channel, token_address, amount);
+        };
+        token_address
+    }
     
     #[test]
     public fun test_is_valid_version() {
@@ -467,7 +445,7 @@ module UCS01::Relay {
 
         let source_channel = string::utf8(b"channel-1");
         let token = @0x1;
-        let expected_amount: u128 = 1000;
+        let expected_amount: u64 = 1000;
 
         // Set up the mapping in the Relay module (this is usually done through an entry function)
         let pair = OutstandingPair {
@@ -488,7 +466,7 @@ module UCS01::Relay {
         // Initialize the store
         let source_channel = string::utf8(b"channel-1");
         let token_address: address = @0x1;
-        let initial_amount: u128 = 1000;
+        let initial_amount: u64 = 1000;
         
         // Initialize the store in the admin's account
         initialize_store(admin);
@@ -506,8 +484,8 @@ module UCS01::Relay {
         // Initialize the store
         let source_channel = string::utf8(b"channel-1");
         let token_address: address = @0x1;
-        let initial_amount: u128 = 1000;
-        let decrease_amount: u128 = 400;
+        let initial_amount: u64 = 1000;
+        let decrease_amount: u64 = 400;
 
         // Initialize the store in the admin's account
         initialize_store(admin);
@@ -524,4 +502,123 @@ module UCS01::Relay {
         assert!(outstanding_amount == expected_amount, 701);
     }
 
+    const TEST_NAME: vector<u8> = b"Test Coin";
+    const TEST_SYMBOL: vector<u8> = b"TST";
+    const TEST_DECIMALS: u8 = 8;
+    const TEST_ICON: vector<u8> = b"https://example.com/icon.png";
+    const TEST_PROJECT: vector<u8> = b"Test Project";
+
+
+
+    #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
+    public fun test_send_token_valid_address(admin: &signer, bob: &signer, alice: address) acquires RelayStore {
+        // Initialize the store
+        initialize_store(admin);
+
+        let source_channel = string::utf8(b"channel-1");
+        let denom = string::utf8(b"test-denom");
+        let amount: u64 = 1000;
+
+        // Upsert denom to address pair
+        let pair = DenomToAddressPair {
+            source_channel,
+            denom,
+        };
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        smart_table::upsert(&mut store.denom_to_address, pair, alice);
+
+        UCS01::fa_coin::initialize(
+            admin,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT)
+        );
+
+        let asset = UCS01::fa_coin::get_metadata();
+        let bob_addr = signer::address_of(bob);
+        UCS01::fa_coin::mint(admin, bob_addr, amount);
+
+        // Send tokens
+        let result_address = send_token(bob, asset, source_channel, denom, amount);
+
+        // Verify the result and outstanding balance
+        assert!(result_address == alice, 100);
+        let outstanding_balance = get_outstanding(source_channel, alice);
+        assert!(outstanding_balance == amount, 101);
+
+        let bob_balance = primary_fungible_store::balance(bob_addr, asset);
+        let ucs01_balance = primary_fungible_store::balance(@UCS01, asset);
+        assert!(bob_balance == 0, 102);
+        assert!(ucs01_balance == 1000, 102);
+    }
+
+    #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
+    public fun test_send_token_burn(admin: &signer, bob: &signer, alice: address) acquires RelayStore {
+        // Initialize the store
+        initialize_store(admin);
+
+        let source_channel = string::utf8(b"channel-1");
+        let denom = string::utf8(b"burn-denom");
+        let amount: u64 = 1000;
+
+        // Upsert denom to address pair
+        let pair = DenomToAddressPair {
+            source_channel,
+            denom,
+        };
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        smart_table::upsert(&mut store.denom_to_address, pair, @0x0); // added 0x0 so it'll be burned
+
+        UCS01::fa_coin::initialize(
+            admin,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT)
+        );
+
+        let asset = UCS01::fa_coin::get_metadata();
+        let bob_addr = signer::address_of(bob);
+        UCS01::fa_coin::mint(admin, bob_addr, amount);
+
+        // Send tokens
+        let result_address = send_token(bob, asset, source_channel, denom, amount);
+
+        // Verify the result and outstanding balance
+        assert!(result_address == @0x0, 100); 
+        let outstanding_balance = get_outstanding(source_channel, alice);
+        assert!(outstanding_balance == 0, 101);
+
+        let bob_balance = primary_fungible_store::balance(bob_addr, asset);
+        let ucs01_balance = primary_fungible_store::balance(@UCS01, asset);
+        assert!(bob_balance == 0, 102);
+        assert!(ucs01_balance == 0, 102);
+    }
+
+    #[test(admin = @UCS01, alice = @0x1234)]
+    #[expected_failure(abort_code = E_INVALID_AMOUNT)]
+    public fun test_send_zero_amount(admin: &signer, alice: address) acquires RelayStore {
+        // Initialize the store
+        initialize_store(admin);
+
+        let source_channel = string::utf8(b"channel-1");
+        let denom = string::utf8(b"zero-amount-denom");
+
+        UCS01::fa_coin::initialize(
+            admin,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT)
+        );
+
+        let asset = UCS01::fa_coin::get_metadata();
+
+        // Attempt to send zero amount
+        send_token(admin, asset, source_channel, denom, 0);
+    }
 }

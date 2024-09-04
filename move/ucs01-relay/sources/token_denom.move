@@ -247,7 +247,7 @@ module UCS01::fa_coin {
 
 
 
-    
+
     #[test(creator = @UCS01)]
     public fun test_initialize(creator: &signer) {
         initialize(
@@ -472,7 +472,7 @@ module UCS01::fa_coin {
         );
 
         let asset = get_metadata();
-
+        
         let alice_addr = signer::address_of(alice);
         mint(creator, alice_addr, 1000);
         primary_fungible_store::ensure_primary_store_exists(bob, asset);
@@ -483,9 +483,11 @@ module UCS01::fa_coin {
         
         let to_wallet = primary_fungible_store::primary_store(bob, asset);
 
-        //UCS01::Relay::tx(alice, bob, 10, asset);
-        primary_fungible_store::transfer(alice, asset, bob, 10);
+        // UCS01::Relay::tx(alice, bob, 10, asset);
 
+        let fa = primary_fungible_store::withdraw(alice, asset, 10);
+        primary_fungible_store::deposit(bob, fa);
+        
         let alice_balance_after = primary_fungible_store::balance(alice_addr, asset);
         let bob_balance = primary_fungible_store::balance(bob, asset);
         
