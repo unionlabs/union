@@ -12,7 +12,7 @@ mock_relayer_address = "0x222222222222222"
 
 [dependencies.AptosFramework]
 git    = "https://github.com/aeryz/aptos-core.git"
-rev    = "movement"
+rev    = "c608cfceddab39d5b626ccd332409efb6ae78c08"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

@@ -8,7 +8,7 @@ module IBC::ics23 {
         top_level_proof: ExistenceProof,
     }
 
-    struct ExistenceProof has drop {
+    struct ExistenceProof has drop, copy {
         key: vector<u8>,
         value: vector<u8>,
         leaf_prefix: vector<u8>,

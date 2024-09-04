@@ -1,13 +1,10 @@
 module IBC::LightClient {
-    use IBC::proto_utils;
-    use std::option;
     use std::vector;
     use std::from_bcs;
     use std::bcs;
     use std::hash;
-    use std::any::Any;
-    use std::string::{Self, String, utf8};
-    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr,FormatG1Compr, G2, Gt, FormatG2Compr, FormatG2Uncompr};
+    use std::string::{Self, String};
+    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr,FormatG1Compr, G2, Gt, FormatG2Compr};
     use std::crypto_algebra::{deserialize, serialize, zero, add, scalar_mul, multi_pairing, Element, eq};
     use std::aptos_hash;
     use IBC::height::{Self, Height};
@@ -93,8 +90,8 @@ module IBC::LightClient {
         client_state_bytes: vector<u8>, 
         consensus_state_bytes: vector<u8>,
     ): (u64, vector<u8>, vector<u8>) {
-        let client_state = decode_client_state(client_state_bytes);
-        let consensus_state = decode_consensus_state(consensus_state_bytes);
+        let client_state = from_bcs::from_bytes<ClientState>(client_state_bytes);
+        let consensus_state = from_bcs::from_bytes<ConsensusState>(consensus_state_bytes);
         
         if (height::get_revision_height(&client_state.latest_height) == 0 || consensus_state.timestamp == 0) {
             return (1, vector::empty(), vector::empty())
@@ -181,7 +178,7 @@ module IBC::LightClient {
         client_id: String,
         client_msg: vector<u8>
     ): (vector<u8>, vector<vector<u8>>, vector<height::Height>, u64) acquires State {
-        let header = decode_header(client_msg);
+        let header = from_bcs::from_bytes<Header>(client_msg);
 
         let state = borrow_global_mut<State>(get_client_address(&client_id));
 
@@ -216,8 +213,8 @@ module IBC::LightClient {
         smart_table::upsert<height::Height, ConsensusState>(&mut state.consensus_states, new_height, new_consensus_state);
 
         (
-            encode_client_state(state.client_state),
-            vector<vector<u8>>[encode_consensus_state(new_consensus_state)],
+            bcs::to_bytes(&state.client_state),
+            vector<vector<u8>>[bcs::to_bytes(&new_consensus_state)],
             vector<height::Height>[
                 new_height
             ],
@@ -226,24 +223,22 @@ module IBC::LightClient {
     }
 
     public fun verify_membership(
-        _client_id: String,
-        _height: height::Height,
-        _proof: vector<u8>,
-        _prefix: vector<u8>,
-        _path: vector<u8>,
-        _value: vector<u8>, 
-    ): u64 {
-        // let consensus_state = smart_table::borrow(&borrow_global<State>(get_client_address(&client_id)).consensus_states, height);
-        // let proof = any::unpack<ics23::MembershipProof>(proof);
+        client_id: String,
+        height: height::Height,
+        proof: vector<u8>,
+        prefix: vector<u8>,
+        path: vector<u8>,
+        value: vector<u8>, 
+    ): u64 acquires State {
+        let consensus_state = smart_table::borrow(&borrow_global<State>(get_client_address(&client_id)).consensus_states, height);
 
-        // ics23::verify_membership(
-        //     proof,
-        //     consensus_state.app_hash.hash,
-        //     prefix,
-        //     path,
-        //     value
-        // )
-        0
+        ics23::verify_membership(
+            from_bcs::from_bytes<ics23::MembershipProof>(proof),
+            consensus_state.app_hash.hash,
+            prefix,
+            path,
+            value
+        )
     }
 
     public fun verify_non_membership(
@@ -467,393 +462,13 @@ module IBC::LightClient {
 
     public fun get_client_state(client_id: String): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(&client_id));
-        encode_client_state(state.client_state)
+        bcs::to_bytes(&state.client_state)
     }
 
     public fun get_consensus_state(client_id: String, height: Height): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(&client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
-        encode_consensus_state(*consensus_state)
-    }
-
-    fun default_client_state(): ClientState {
-        ClientState {
-            chain_id: utf8(b""),
-            trusting_period: 0,
-            unbonding_period: 0,
-            max_clock_drift: 0,
-            frozen_height: height::default(),
-            latest_height: height::default(),
-        }
-    }
-
-    fun decode_client_state(buf: vector<u8>): ClientState {
-        let cursor = 0;
-        let client_state = default_client_state();
-        if (vector::is_empty(&buf)) {
-            return client_state
-        };
-        while (cursor < vector::length(&buf)) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(&buf, cursor);
-            assert!(err == 0, 1);
-            cursor = cursor + advance;
-            let n_read = if (tag == 1) {
-                let (str, advance) = proto_utils::decode_string(wire_type, &buf, cursor);
-                client_state.chain_id = option::extract(&mut str);
-                advance
-            } else if (tag == 2) {                
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                client_state.trusting_period = num;
-                advance
-            } else if (tag == 3) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                client_state.unbonding_period = num;
-                advance
-            } else if (tag == 4) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                client_state.max_clock_drift = num;
-                advance
-            } else if (tag == 5) {
-                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                cursor = cursor + advance;
-                let (n_read, err) = height::decode_proto(&buf, cursor, len, &mut client_state.frozen_height);
-                assert!(err == 0 && n_read == len, 1);
-                len
-            } else if (tag == 6) {
-                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                cursor = cursor + advance;
-                let (n_read, err) = height::decode_proto(&buf, cursor, len, &mut client_state.latest_height);
-                assert!(err == 0 && n_read == len, 1);
-                len
-            } else {
-                abort 1
-            };
-            cursor = cursor + n_read;
-        };
-
-        client_state
-    }
-
-    fun encode_client_state(client_state: ClientState): vector<u8> {
-        let buf = vector::empty();
-
-        if (!string::is_empty(&client_state.chain_id)) {
-            vector::append(&mut buf, proto_utils::encode_string(1, client_state.chain_id));
-        };
-
-        if (client_state.trusting_period != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(2, client_state.trusting_period));
-        };
-
-        if (client_state.unbonding_period != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(3, client_state.unbonding_period));
-        };
-
-        if (client_state.max_clock_drift!= 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(4, client_state.max_clock_drift));
-        };
-
-        let frozen_height = height::encode_proto(client_state.frozen_height);
-        if (!vector::is_empty(&frozen_height)) {
-            vector::append(&mut buf, proto_utils::encode_prefix(5, 2));
-            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&frozen_height)));
-            vector::append(&mut buf, frozen_height);
-        };
-
-        let latest_height = height::encode_proto(client_state.latest_height);
-        if (!vector::is_empty(&latest_height)) {
-            vector::append(&mut buf, proto_utils::encode_prefix(6, 2));
-            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&latest_height)));
-            vector::append(&mut buf, latest_height);
-        };
-
-        buf
-    }
-
-    fun default_consensus_state(): ConsensusState {
-        ConsensusState {
-            timestamp: 0,
-            app_hash: MerkleRoot {
-                hash: vector::empty(),
-            },
-            next_validators_hash: vector::empty(),
-        }
-    }
-
-    fun decode_consensus_state(buf: vector<u8>): ConsensusState {
-        let cursor = 0;
-        let consensus_state = default_consensus_state();
-        if (vector::is_empty(&buf)) {
-            return consensus_state
-        };
-        while (cursor < vector::length(&buf)) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(&buf, cursor);
-            assert!(err == 0, 1);
-            cursor = cursor + advance;
-            let n_read = if (tag == 1) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                consensus_state.timestamp = num;
-                advance
-            } else if (tag == 2) {                
-                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                cursor = cursor + advance;
-                let n_read = decode_merkle_root(&buf, cursor, len, &mut consensus_state.app_hash);
-                assert!(n_read == len, 1);
-                len
-            } else if (tag == 3) {
-                let (bytes, advance) = proto_utils::decode_bytes(wire_type, &buf, cursor);
-                consensus_state.next_validators_hash = option::extract(&mut bytes);
-                advance
-            } else {
-                abort 1
-            };
-            
-            cursor = cursor + n_read;
-        };
-
-        consensus_state
-    }
-
-    fun encode_consensus_state(consensus_state: ConsensusState): vector<u8> {
-        let buf = vector::empty();
-
-        if (consensus_state.timestamp != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(1, consensus_state.timestamp));
-        };
-
-        let app_hash = encode_merkle_root(consensus_state.app_hash);
-        if (!vector::is_empty(&app_hash)) {
-            vector::append(&mut buf, proto_utils::encode_prefix(1, 2));
-            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&app_hash)));
-            vector::append(&mut buf, app_hash);
-        };
-
-        if (!vector::is_empty(&consensus_state.next_validators_hash)) {
-            vector::append(&mut buf, proto_utils::encode_bytes(3, consensus_state.next_validators_hash));
-        };
-
-        buf
-    }
-
-    fun decode_merkle_root(buf: &vector<u8>, cursor: u64, len: u64, merkle_root: &mut MerkleRoot): u64 {
-        let first_pos = cursor;
-        while (cursor - first_pos < len) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(buf, cursor);
-            assert!(err == 0, 1);
-            cursor = cursor + advance;
-            let advance = if (tag == 1) {
-                let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
-                merkle_root.hash = option::extract(&mut bytes);
-                advance
-            } else {
-                abort 1
-            };
-            cursor = cursor + advance;
-        };
-
-        // nullable = false
-        if (vector::is_empty(&merkle_root.hash)) {
-            abort 1
-        };
-
-        cursor - first_pos
-    }
-
-    public fun encode_merkle_root(merkle_root: MerkleRoot): vector<u8> {
-        let buf = vector::empty();
-
-        // nullable = false
-        vector::append(&mut buf, proto_utils::encode_bytes(1, merkle_root.hash));
-
-        buf
-    }
-
-    public fun default_zkp(): ZKP {
-        ZKP {
-            proof: Proof {
-                a: zero<G1>(),
-                b: zero<G2>(),
-                c: zero<G1>(),
-            },
-            proof_commitment: zero<G1>(),
-            proof_commitment_pok: zero<G1>(),
-        }
-    }
-
-    public fun default_header(): Header {
-        Header {
-            signed_header: default_light_header(),
-            trusted_height: height::default(),
-            zero_knowledge_proof: default_zkp(),
-        }
-    }
-
-    fun decode_header(buf: vector<u8>): Header {
-        let cursor = 0;
-        let header = default_header();
-        if (vector::is_empty(&buf)) {
-            return header
-        };
-        while (cursor < vector::length(&buf)) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(&buf, cursor);
-            assert!(err == 0, 1);
-            cursor = cursor + advance;
-            let n_read = if (tag == 1) {
-                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                cursor = cursor + advance;
-                let n_read = decode_light_header(&buf, cursor, len, &mut header.signed_header);
-                assert!(n_read == len, 1);
-                len
-            } else if (tag == 2) {                
-                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
-                assert!(err == 0, 1);
-                cursor = cursor + advance;
-                let (n_read, err) = height::decode_proto(&buf, cursor, len, &mut header.trusted_height);
-                assert!(err == 0 && n_read == len, 1);
-                len
-            } else if (tag == 3) {
-                let (bytes, advance) = proto_utils::decode_bytes(wire_type, &buf, cursor);
-                header.zero_knowledge_proof = parse_zkp(option::extract(&mut bytes));
-                advance
-            } else {
-                abort 1
-            };
-            
-            cursor = cursor + n_read;
-        };
-
-        header
-    }
-
-
-    public fun default_light_header(): LightHeader {
-        LightHeader {
-            height: 0,
-            time: Timestamp {
-                nanos: 0,
-                seconds: 0,
-            },
-            validators_hash: vector::empty(),
-            next_validators_hash: vector::empty(),
-            app_hash: vector::empty(),
-        }
-    }
-
-    public fun encode_light_header(header: LightHeader): vector<u8> {
-        let buf = vector::empty();
-
-        if (header.height != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(1, header.height));
-        };
-
-        let time = encode_timestamp(header.time);
-        if (!vector::is_empty(&time)) {
-            vector::append(&mut buf, proto_utils::encode_prefix(1, 2));
-            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&time)));
-            vector::append(&mut buf, time);
-        };
-
-        if (!vector::is_empty(&header.validators_hash)) {
-            vector::append(&mut buf, proto_utils::encode_bytes(3, header.validators_hash));
-        };
-
-        if (!vector::is_empty(&header.next_validators_hash)) {
-            vector::append(&mut buf, proto_utils::encode_bytes(4, header.next_validators_hash));
-        };
-
-        if (!vector::is_empty(&header.app_hash)) {
-            vector::append(&mut buf, proto_utils::encode_bytes(5, header.app_hash));
-        };
-
-        buf
-    }
-    
-    public fun decode_light_header(buf: &vector<u8>, cursor: u64, len: u64, light_header: &mut LightHeader): u64 {
-        let first_pos = cursor;
-        while (cursor - first_pos < len) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(buf, cursor);
-            assert!(err == 0, 1);
-            cursor = cursor + advance;
-            let advance = if (tag == 1) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, buf, cursor);
-                assert!(err == 0, 1);
-                light_header.height = num;
-                advance
-            } else if (tag == 2) {
-                let (len, advance, err) = proto_utils::decode_nested_len(wire_type, buf, cursor);
-                assert!(err == 0, 1);
-                cursor = cursor + advance;
-                let n_read = decode_timestamp(buf, cursor, len, &mut light_header.time);
-                assert!(n_read == len, 1);
-                len
-            } else if (tag == 3) {
-                let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
-                light_header.validators_hash = option::extract(&mut bytes);
-                advance
-            } else if (tag == 4) {
-                let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
-                light_header.next_validators_hash = option::extract(&mut bytes);
-                advance
-            } else if (tag == 5) {
-                let (bytes, advance) = proto_utils::decode_bytes(wire_type, buf, cursor);
-                light_header.app_hash = option::extract(&mut bytes);
-                advance
-            }
-            
-            else {
-                abort 1
-            };
-            cursor = cursor + advance;
-        };
-
-        cursor - first_pos
-    }
-
-    public fun encode_timestamp(timestamp: Timestamp): vector<u8> {
-        let buf = vector::empty();
-
-        if (timestamp.seconds != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(1, timestamp.seconds));
-        };
-
-        if (timestamp.nanos != 0) {
-            vector::append(&mut buf, proto_utils::encode_u32(2, timestamp.nanos));
-        };
-
-        buf
-    }
-
-    fun decode_timestamp(buf: &vector<u8>, cursor: u64, len: u64, timestamp: &mut Timestamp): u64 {
-        let first_pos = cursor;
-        while (cursor - first_pos < len) {
-            let (tag, wire_type, advance, err) = proto_utils::decode_prefix(buf, cursor);
-            assert!(err == 0, 1);
-            cursor = cursor + advance;
-            let advance = if (tag == 1) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, buf, cursor);
-                assert!(err == 0, 1);
-                timestamp.seconds = num;
-                advance
-            } else if (tag == 2) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, buf, cursor);
-                assert!(err == 0, 1);
-                timestamp.nanos = (num as u32);
-                advance
-            } else {
-                abort 1
-            };
-            cursor = cursor + advance;
-        };
-
-        cursor - first_pos
+        bcs::to_bytes(consensus_state)
     }
 
     fun parse_zkp(buf: vector<u8>): ZKP {
@@ -881,51 +496,7 @@ module IBC::LightClient {
             proof_commitment_pok,
         }
     }
-
-    #[test]
-    fun test_client_state_proto() {
-        let encoded_client_state = x"0a0e756e696f6e2d6465766e65742d3810904e18e7ba0120f4c7072a04080010003206080810e6c707";
-
-        let client_state = decode_client_state(encoded_client_state);
-
-        assert!(client_state.chain_id == utf8(b"union-devnet-8"), 1);
-        assert!(client_state.trusting_period == 10000, 2);
-        assert!(client_state.unbonding_period == 23911, 3);
-        assert!(client_state.max_clock_drift == 123892, 4);
-        assert!(client_state.frozen_height== height::new(0, 0), 5);
-        assert!(client_state.latest_height == height::new(8, 123878), 6);
-    }
-
-    #[test]
-    fun test_consensus_state_proto() {
-        let encoded_consensus_state = x"08d99ad9ce0412220a2001020304050607080102030405060708010203040506070801020304050607081a200808030405060708010203040506070801020304050607080102030405060708";
-
-        let consensus_state = decode_consensus_state(encoded_consensus_state);
-
-        assert!(consensus_state.timestamp == 1238781273, 1);
-        assert!(consensus_state.app_hash.hash == vector[1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8], 2);
-        assert!(consensus_state.next_validators_hash == vector[8, 8, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8], 3);
-    } 
-
-    #[test]
-    fun test_header_proto() {
-        let encoded_header = x"0a7308d1c307120708f64f10e8870d1a200101010101010101010101010101010101010101010101010101010101010101222002020202020202020202020202020202020202020202020202020202020202022a200202020202020202020202020202020202020202020202020202020202020202120808e80710c9ea91011ac0011c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
-
-        let header = decode_header(encoded_header);
-
-        assert!(header.signed_header.height == 123345, 1);
-        assert!(header.signed_header.time == Timestamp {
-            seconds: 10230,
-            nanos: 213992, 
-        }, 2);
-        assert!(header.signed_header.validators_hash == vector[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 3);
-        assert!(header.signed_header.next_validators_hash == vector[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 4);
-        assert!(header.signed_header.app_hash == vector[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 5);
-        assert!(header.trusted_height == height::new(1000, 2389321), 6);
-
-        // NOTE(aeryz): not checking zkp here since it not aborting means it's already been parsed
-    }
-
+    
     #[test]
     fun test_parse_zkp() {
         let zkp = x"1c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
