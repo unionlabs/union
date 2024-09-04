@@ -54,15 +54,15 @@
         {/if}
       </div>
 
-      <button on:click={toggleMenu} class="md:hidden text-white focus:outline-none">
+      <Button onclick={toggleMenu} class="md:hidden text-black focus:outline-none">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
         </svg>
-      </button>
+      </Button>
     </div>
 
     {#if isOpen}
-      <div class="md:hidden mt-4 w-full">
+      <div class="md:hidden mt-4 w-full bg-black">
         <div class="flex flex-col divide-y divide-white/50">
           {#if user.session}
             <NavLink class="py-2" href="/app/cli">Cli</NavLink>

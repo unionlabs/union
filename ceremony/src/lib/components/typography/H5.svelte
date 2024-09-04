@@ -1,7 +1,7 @@
 <script lang="ts">
-  let { children, class: CLASS, ...props} = $props()
+  let {children, class: className = '', ...props} = $props()
 </script>
 
-<h5 class={`text-union-heading-primary text-lg font-bold font-supermolot ${CLASS}`} {...props}>
+<h5 class={`text-union-heading-primary text-lg font-bold font-supermolot ${className}`} {...props}>
   {@render children()}
 </h5>
