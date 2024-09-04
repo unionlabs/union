@@ -57,7 +57,7 @@ pub struct Cli {
 pub enum Command {
     /// Set the current binary to a specific version in the bundle.
     /// Use this when using unionvisor in combination with a node snapshot or state sync.
-    SetBinary(SetBinaryCmd),
+    SetUniondVersion(SetUniondVersionCmd),
 
     /// Call the current binary, forwarding all arguments passed.
     /// `unionvisor call ..arg` is equivalent to `uniond ..args`.
@@ -71,7 +71,7 @@ pub enum Command {
 }
 
 #[derive(Clone, Parser)]
-pub struct SetBinaryCmd {
+pub struct SetUniondVersionCmd {
     /// Path to where the binary bundle is stored.
     #[arg(short, long, env = "UNIONVISOR_BUNDLE")]
     bundle: PathBuf,
@@ -129,8 +129,8 @@ pub struct RunCmd {
 impl Cli {
     pub fn run(self) -> Result<(), RunCliError> {
         match &self.command {
-            Command::SetBinary(cmd) => {
-                cmd.set_binary(self.root)?;
+            Command::SetUniondVersion(cmd) => {
+                cmd.set_uniond_version(self.root)?;
                 Ok(())
             }
             Command::Call(cmd) => {
@@ -152,7 +152,7 @@ impl Cli {
 #[derive(Debug, Error)]
 pub enum RunCliError {
     #[error("set binary error")]
-    SetBinary(#[from] SetBinaryError),
+    SetUniondVersion(#[from] SetUniondVersionError),
     #[error("call command error")]
     Call(#[from] CallError),
     #[error("run command error")]
@@ -249,7 +249,7 @@ pub enum RunError {
 }
 
 #[derive(Debug, Error)]
-pub enum SetBinaryError {
+pub enum SetUniondVersionError {
     #[error("runtime error")]
     Runtime(#[from] RuntimeError),
     #[error("new bundle error")]
@@ -258,8 +258,8 @@ pub enum SetBinaryError {
     Symlink(#[from] SymlinkerError),
 }
 
-impl SetBinaryCmd {
-    fn set_binary(&self, root: impl Into<PathBuf>) -> Result<(), SetBinaryError> {
+impl SetUniondVersionCmd {
+    fn set_uniond_version(&self, root: impl Into<PathBuf>) -> Result<(), SetUniondVersionError> {
         let root = root.into();
         let bundle = Bundle::new(self.bundle.clone())?;
         log_bundle(&bundle);
