@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
-      
+
       - name: 'Get Changed Files'
         id: 'changed-files'
         uses: tj-actions/changed-files@v45
@@ -42,23 +42,23 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-              const { owner, repo } = context.repo
-              // https://octokit.github.io/rest.js/v21/#issues-list-comments
-              const comment = await github.rest.issues.listComments({
-                repo: 'union',
-                owner: 'unionlabs',
-                issue_number: context.issue.number,
-              })
+            const { owner, repo } = context.repo
+            // https://octokit.github.io/rest.js/v21/#issues-list-comments
+            const comment = await github.rest.issues.listComments({
+              repo: 'union',
+              owner: 'unionlabs',
+              issue_number: context.issue.number,
+            })
 
-              const relevantComment = comments.data.find(
-                comment => comment.user.login === 'netlify[bot]'
-              );
-              if (!relevantComment) return
+            const relevantComment = comments.data.find(
+              comment => comment.user.login === 'netlify[bot]'
+            );
+            if (!relevantComment) return
 
-              // https://octokit.github.io/rest.js/v21/#issues-delete-comment
-              const deleteComment = await github.rest.issues.deleteComment({
-                repo: 'union',
-                owner: 'unionlabs',
-                comment_id: relevantComment.id,
-              })
-              console.info(deleteComment)
+            // https://octokit.github.io/rest.js/v21/#issues-delete-comment
+            const deleteComment = await github.rest.issues.deleteComment({
+              repo: 'union',
+              owner: 'unionlabs',
+              comment_id: relevantComment.id,
+            })
+            console.info(deleteComment)
