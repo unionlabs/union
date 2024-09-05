@@ -4,11 +4,11 @@ name    = "move-ibc"
 version = "1.0.0"
 
 [addresses]
-IBC                  = "_" # This will be storage of our IBCStore
-IBCModuleAddr        = "_"
+IBC           = "_" # This will be storage of our IBCStore
+IBCModuleAddr = "_"
 
 [dev-addresses]
-IBC = "0x11111"
+IBC           = "0x11111"
 IBCModuleAddr = "0x333333333333333"
 
 [dependencies.AptosFramework]

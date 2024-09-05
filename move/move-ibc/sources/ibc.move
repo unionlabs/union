@@ -36,13 +36,10 @@ module IBC::Core {
     const CONN_STATE_TRYOPEN: u64 = 2;
     const CONN_STATE_OPEN: u64 = 3;
 
-    const SEED: vector<u8> = b"Move Seed Example";
-    const VAULT_SEED: vector<u8> = b"Vault Seed Example";
-    const E_CLIENT_ALREADY_EXISTS: u64 = 1001;
+    const VAULT_SEED: vector<u8> = b"IBC_VAULT_SEED";
+
+    const E_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE: u64 = 1001;
     const E_CLIENT_NOT_FOUND: u64 = 1002;
-    const E_LIGHT_CLIENT_CALL_FAILED: u64 = 1003;
-    const E_SWAP_NOT_INITIALIZED: u64 = 1004;
-    const E_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE: u64 = 1005;
     const E_VERSION_MUST_BE_UNSET: u64 = 1006;
     const E_UNSUPPORTED_VERSION: u64 = 1007;
     const E_INVALID_CONNECTION_STATE: u64 = 1008;
