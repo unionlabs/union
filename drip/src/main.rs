@@ -68,7 +68,7 @@ async fn main() {
         .expect("opening db");
 
     pool.conn(|conn| {
-        rusqlite::vtab::array::load_module(&conn)?;
+        rusqlite::vtab::array::load_module(conn)?;
             
         conn.execute(
             "CREATE TABLE IF NOT EXISTS requests (
@@ -130,7 +130,7 @@ async fn main() {
                                 )
                                 .expect("???");
 
-                            let mut rows = stmt.query((batch_size as i64, chain.id)).expect("can't query rows");
+                            let mut rows = stmt.query((chain.id, batch_size as i64)).expect("can't query rows");
 
                             let mut requests = vec![];
 
@@ -185,12 +185,11 @@ async fn main() {
 
                         // https://docs.rs/rusqlite/latest/rusqlite/vtab/array/index.html
                         let rows_modified = stmt
-                            .execute(( &result, 
-                                
+                            .execute(( 
+                                &result, 
                                 Rc::new(requests.iter().map(|req| req.id)
                                     .map(rusqlite::types::Value::from)
-                                     .collect::<Vec<rusqlite::types::Value>>())
-                             
+                                    .collect::<Vec<rusqlite::types::Value>>())
                              ))
 
  
@@ -265,9 +264,7 @@ pub struct Config {
     pub secret: Option<String>,
     #[serde(default)]
     pub bypass_secret: Option<String>,
-    pub amount: u64,
     pub max_request_polls: u32,
-    pub memo: String,
     #[serde(default)]
     pub ratelimit_seconds: u32,
 }
@@ -281,13 +278,13 @@ pub struct Chain {
     pub gas_config: GasConfig,
     pub signer: H256,
     pub coins: Vec<Coin>,
+    pub memo: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Coin {
     pub denom: String,
     pub amount: u64,
-    pub memo: String,
 }
 
 pub struct MaxRequestPolls(pub u32);
@@ -455,7 +452,7 @@ impl ChainClient {
             .broadcast_tx_commit(
                 &self.signer,
                 [msg],
-                "memos are on chain level actually".to_string(),
+                self.chain.memo.clone(),
             )
             .await?;
 
