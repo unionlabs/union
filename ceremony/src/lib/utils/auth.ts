@@ -22,3 +22,16 @@ export async function checkAuth(): Promise<Result<null, SessionError>> {
 
   return ok(null)
 }
+
+export async function auth(url: string) {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "github",
+    options: {
+      redirectTo: url
+    }
+  })
+
+  if (error) {
+    console.error("Error signing up with GitHub:", error.message)
+  }
+}

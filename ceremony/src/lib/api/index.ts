@@ -4,7 +4,7 @@ import { user } from "$lib/stores/user.svelte.ts"
 import {
   getContribution,
   getContributor,
-  getQueuePosition,
+  getQueuePositionAndLength,
   getSubmittedContribution
 } from "$lib/supabase/queries.ts"
 
@@ -33,13 +33,13 @@ export const checkStatus = async (): Promise<{ status: Status }> => {
   }
 }
 
-export const checkPosition = async (): Promise<{ position: number } | null> => {
+export const checkQueue = async (): Promise<{ position: number; total: number } | null> => {
   const userId = user.session?.user.id
   if (!userId) {
     throw new Error("User is not logged in")
   }
 
-  const { data, error } = await getQueuePosition()
+  const { data, error, count } = await getQueuePositionAndLength()
 
   if (error) {
     console.error("Error fetching queue:", error)
@@ -54,7 +54,8 @@ export const checkPosition = async (): Promise<{ position: number } | null> => {
   const userPosition = position !== -1 ? position + 1 : -1
 
   return {
-    position: userPosition
+    position: userPosition,
+    total: count ?? 0
   }
 }
 

@@ -1,12 +1,12 @@
 <script lang="ts">
 import { contribute, checkStatus, checkContribution } from "$lib/api/index.ts"
 import Text from "$lib/components/typography/Text.svelte"
-import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import Button from "$lib/components/Button.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import Spinner from "$lib/components/Spinner.svelte"
+import { getQueuePayloadId } from "$lib/supabase/queries.ts"
 
 let clientStore = createQuery(
   reactiveQueryArgs(() => ({
@@ -35,16 +35,14 @@ let {
 } = $derived($contributionStore)
 
 const start = async () => {
-  if (!user?.session) {
+  const userId = user?.session?.user.id
+
+  if (!userId) {
     console.error("User not logged in")
     return
   }
 
-  const { data, error } = await supabase
-    .from("queue")
-    .select("payload_id")
-    .filter("id", "eq", user.session.user.id)
-    .single()
+  const { data, error } = await getQueuePayloadId(userId)
 
   if (error) {
     console.error("Error fetching payload_id:", error)
@@ -62,21 +60,28 @@ const start = async () => {
 
 <section class="w-full h-full flex items-center justify-center">
   <div class="max-w-7xl sm:px-6 lg:px-8">
-    {#if contributionData?.shouldContribute}
+    <!-- Client Status -->
+    <div class="mb-4">
       {#if clientError}
         <Text>Client connected?</Text>
       {:else if clientIsLoading}
         <Spinner class="size-4 text-red-500"/>
       {:else if clientData}
         <Text>{clientData.status}</Text>
-        {#if contributionData?.shouldContribute}
-          <Button onclick={start}>Contribute</Button>
+      {:else}
+        <Text>Waiting for client...</Text>
+      {/if}
+    </div>
+
+    <!-- Contribution Section -->
+    <div>
+      {#if contributionData}
+        {#if contributionData.shouldContribute}
+          <Button on:click={start}>Contribute</Button>
         {:else}
           <Text>Thanks for your contribution</Text>
         {/if}
       {/if}
-    {:else}
-      <Text>Thanks for your contribution</Text>
-    {/if}
+    </div>
   </div>
 </section>

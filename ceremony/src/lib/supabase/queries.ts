@@ -33,12 +33,23 @@ export const getContribution = async (userId: string) => {
   return { data, error }
 }
 
-export const getQueuePosition = async () => {
-  const { data, error } = await supabase
+export const getQueuePositionAndLength = async () => {
+  const { data, error, count } = await supabase
     .from("queue")
-    .select("id, joined")
+    .select("id, joined", { count: "exact" })
     .order("joined", { ascending: true })
 
-  if (error) console.error("Error in getQueuePosition:", error)
+  if (error) console.error("Error in getQueuePositionAndLength:", error)
+  return { data, error, count }
+}
+
+export const getQueuePayloadId = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("queue")
+    .select("payload_id")
+    .eq("id", userId)
+    .single()
+
+  if (error) console.error("Error in getQueuePayloadId:", error)
   return { data, error }
 }

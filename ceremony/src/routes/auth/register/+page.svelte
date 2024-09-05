@@ -6,27 +6,19 @@ import Button from "$lib/components/Button.svelte"
 import Link from "$lib/components/typography/Link.svelte"
 import Spinner from "$lib/components/Spinner.svelte"
 import { page } from "$app/stores"
+import { auth } from "$lib/utils/auth.ts"
 
 let loading = false
 
-async function signUpWithGitHub() {
+async function register() {
   loading = true
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "github",
-    options: {
-      redirectTo: `${$page.url.origin}/app/install`
-    }
-  })
-
-  if (error) {
-    console.error("Error signing up with GitHub:", error.message)
-  }
+  await auth(`${$page.url.origin}/app/install`)
 }
 </script>
 
 <div class="p-8 border border-neutral-500 bg-background-primary">
   <H1 class="mb-4">Register</H1>
-  <Button onclick={signUpWithGitHub}>
+  <Button onclick={register}>
     <span>Register with GitHub</span>
     {#if loading}
       <Spinner class="size-4"/>
