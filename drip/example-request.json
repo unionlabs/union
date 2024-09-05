@@ -3,7 +3,7 @@
   "variables": {
     "chain_id": "union-devnet-1",
     "denom": "muno",
-    "address": "union1yt66vjvy3dp3m2e49tffvxe7vwf6qrukge3gr6",
+    "address": "union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h",
     "captchaToken": "helloworld"
   }
 }

@@ -1,5 +1,5 @@
 use std::{
-    borrow::Borrow, collections::HashMap, ffi::OsString, fmt, fs::read_to_string, rc::Rc, time::Duration
+    borrow::{Borrow, BorrowMut}, collections::HashMap, ffi::OsString, fmt, fs::read_to_string, rc::Rc, time::Duration
 };
 
 use async_graphql::{http::GraphiQLSource, *};
@@ -68,8 +68,6 @@ async fn main() {
         .expect("opening db");
 
     pool.conn(|conn| {
-        rusqlite::vtab::array::load_module(conn)?;
-            
         conn.execute(
             "CREATE TABLE IF NOT EXISTS requests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -177,6 +175,9 @@ async fn main() {
                     };
 
                     pool.conn(move |conn| {
+                        debug!("loading vtab array module required for `IN (1,42,76,...)`");
+                        rusqlite::vtab::array::load_module(conn).expect("error loading vtab array module");
+                        
                         let mut stmt = conn
                             .prepare_cached(
                                 "UPDATE requests SET tx_hash = ?1 WHERE id IN rarray(?2)",
@@ -422,7 +423,7 @@ impl ChainClient {
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
             // this is required to be one element
             inputs: vec![protos::cosmos::bank::v1beta1::Input {
-                address: self.chain.signer.to_string(),
+                address: self.signer.to_string(),
                 coins: agg_reqs
                     .iter()
                     .map(|(denom, amount, _)| protos::cosmos::base::v1beta1::Coin {
