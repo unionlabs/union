@@ -5,6 +5,7 @@ module UCS01::Relay {
     use IBC::packet::{Self, Packet};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
+    use std::event;
 
     use std::string::{Self, String};
     use std::string_utils;
@@ -38,7 +39,12 @@ module UCS01::Relay {
 
     struct Token has copy, drop, store {
         denom: String,
-        amount: u128,
+        amount: u64,
+    }
+
+    struct LocalToken has copy, drop, store {
+        denom: address,
+        amount: u64,
     }
 
     struct RelayPacket has copy, drop, store {
@@ -92,7 +98,7 @@ module UCS01::Relay {
         receiver: address,
         denom: String,
         token: address,
-        amount: u128,
+        amount: u64,
     }
 
     #[event]
@@ -103,7 +109,7 @@ module UCS01::Relay {
         receiver: address,
         denom: String,
         token: address,
-        amount: u128,
+        amount: u64,
     }
 
     #[event]
@@ -114,7 +120,7 @@ module UCS01::Relay {
         receiver: address,
         denom: String,
         token: address,
-        amount: u128,
+        amount: u64,
     }
 
     // View/Pure Functions
@@ -146,6 +152,9 @@ module UCS01::Relay {
         true
     }
 
+    public fun get_metadata(asset_addr: address): Object<Metadata> {
+        object::address_to_object<Metadata>(asset_addr)
+    } 
 
     public fun is_from_channel(port_id: String, channel_id: String, denom: String): bool {
         let prefix = make_denom_prefix(port_id, channel_id);
@@ -343,28 +352,210 @@ module UCS01::Relay {
         // refund_tokens(sequence(packet), source_channel(packet), decode(packet.data));
     }
 
+
+
+
+    // TODO: No idea if this encode_packet is correct or not and how to write decode_packet
+    // take a look at here later.
+    public fun encode_packet(packet: &RelayPacket): vector<u8> {
+        let buf = vector::empty<u8>();
+
+        let sender_bytes = bcs::to_bytes(&packet.sender);
+        vector::append(&mut buf, sender_bytes);
+
+        let receiver_bytes = bcs::to_bytes(&packet.receiver);
+        vector::append(&mut buf, receiver_bytes);
+
+        let num_tokens = vector::length(&packet.tokens);
+        let num_tokens_bytes = bcs::to_bytes(&num_tokens);
+        vector::append(&mut buf, num_tokens_bytes);
+
+        let i = 0;
+        while (i < num_tokens) {
+            let token = vector::borrow(&packet.tokens, i);
+            
+            let denom_bytes = bcs::to_bytes(&token.denom);
+            let denom_len_bytes = bcs::to_bytes(&vector::length(&denom_bytes));
+            vector::append(&mut buf, denom_len_bytes);
+            vector::append(&mut buf, denom_bytes);
+
+            let amount_bytes = bcs::to_bytes(&token.amount);
+            vector::append(&mut buf, amount_bytes);
+
+            i = i + 1;
+        };
+
+        let extension_bytes = bcs::to_bytes(&packet.extension);
+        let extension_len_bytes = bcs::to_bytes(&vector::length(&extension_bytes));
+        vector::append(&mut buf, extension_len_bytes);
+        vector::append(&mut buf, extension_bytes);
+
+        buf
+    }
+
+    public fun decode_packet(data: &vector<u8>): RelayPacket {
+        let offset = 0;
+
+        // Decode sender address (address size is 32 bytes)
+        let sender_bytes = vector::slice(data, offset, 32);
+        let sender: address = from_bcs::to_address(sender_bytes);
+        offset = offset + 32;
+
+        // Decode receiver address (address size is 32 bytes)
+        let receiver_bytes = vector::slice(data, offset, 32);
+        let receiver: address = from_bcs::to_address(receiver_bytes);
+        offset = offset + 32;
+
+        // Decode the number of tokens (u32 for simplicity)
+        let num_tokens_bytes = vector::slice(data, offset, 4);
+        let num_tokens: u32 = from_bcs::to_u32(num_tokens_bytes);
+        offset = offset + 4;
+
+        // Decode tokens
+        let tokens: vector<Token> = vector::empty<Token>();
+        let i = 0;
+        while (i < num_tokens) {
+            // Decode token denom length (u32 for simplicity)
+            let denom_len_bytes = vector::slice(data, offset, 4);
+            let denom_len: u64 = from_bcs::to_u64(denom_len_bytes);
+            offset = offset + 4;
+
+            // Decode token denom (String)
+            let denom_bytes = vector::slice(data, offset, denom_len);
+            let denom: String = from_bcs::to_string(denom_bytes);
+            offset = offset + denom_len;
+
+            // Decode token amount (u64)
+            let amount_bytes = vector::slice(data, offset, 8);
+            let amount: u64 = from_bcs::to_u64(amount_bytes);
+            offset = offset + 8;
+
+            // Push the decoded Token into the tokens vector
+            let token = Token { denom, amount };
+            vector::push_back(&mut tokens, token);
+            i = i + 1;
+        };
+
+        // Decode extension length (u32 for simplicity)
+        let extension_len_bytes = vector::slice(data, offset, 4);
+        let extension_len: u64 = from_bcs::to_u64(extension_len_bytes);
+        offset = offset + 4;
+
+        // Decode extension (String)
+        let extension_bytes = vector::slice(data, offset, extension_len);
+        let extension: String = from_bcs::to_string(extension_bytes);
+
+        // Return the decoded RelayPacket
+        RelayPacket {
+            sender,
+            receiver,
+            tokens,
+            extension,
+        }
+    }
+
+    
+
+
+
+    public entry fun send(
+        sender: &signer,
+        source_channel: String,
+        receiver: address,
+        denom_list: vector<address>, 
+        amount_list: vector<u64>, 
+        extension: String,
+        timeout_height_number: u64,
+        timeout_height_height: u64,
+        timeout_timestamp: u64
+    ) acquires RelayStore {
+        let num_tokens = vector::length(&denom_list);
+        
+        if(vector::length(&amount_list) != num_tokens) {
+            abort E_INVALID_BYTES_ADDRESS;
+        };
+
+        let normalized_tokens: vector<Token> = vector::empty<Token>();
+
+        let i = 0;
+        while (i < num_tokens) {
+            let local_token_denom = *vector::borrow(&denom_list, i);
+            let local_token_amount = *vector::borrow(&amount_list, i);
+            
+            let token_address = send_token(
+                sender,
+                source_channel,
+                local_token_denom,
+                local_token_amount
+            );
+
+            // Create a normalized Token struct and push to the vector
+            let normalized_token = Token {
+                denom: token_address,
+                amount: local_token_amount
+            };
+            vector::push_back(&mut normalized_tokens, normalized_token);
+            i = i + 1;
+        };
+        let packet: RelayPacket = RelayPacket {
+            sender: signer::address_of(sender),
+            receiver,
+            tokens: normalized_tokens,
+            extension
+        };
+
+        let timeout_height = height::new(timeout_height_number, timeout_height_height);
+
+        let packet_sequence = IBC::Core::send_packet(
+            sender,
+            source_channel,
+            timeout_height,
+            timeout_timestamp,
+            encode_packet(&packet)
+        );
+
+        let i = 0;
+        while (i < num_tokens) {
+            let local_token_denom = *vector::borrow(&denom_list, i);
+            let local_token_amount = *vector::borrow(&amount_list, i);
+            let normalizedToken = *vector::borrow(&normalized_tokens, i);
+            
+            event::emit(Sent {
+                packet_sequence: packet_sequence,
+                channel_id: source_channel,
+                sender: signer::address_of(sender),
+                receiver: receiver,
+                denom: normalizedToken.denom,
+                token: local_token_denom,
+                amount: local_token_amount
+            });
+
+        }
+    }
+
      public fun send_token(
         sender: &signer,
-        token: Object<Metadata>,
         source_channel: String,
-        denom: String,
+        denom: address,
         amount: u64,
-    ): address acquires RelayStore {
+    ): String acquires RelayStore {
         if (amount == 0) {
             abort E_INVALID_AMOUNT;
         };
 
         let store = borrow_global<RelayStore>(get_vault_addr());
 
-        let pair = DenomToAddressPair { source_channel, denom };
-        let token_address = *smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0);
+        let pair = AddressToDenomPair { source_channel, denom };
+        let token_address = *smart_table::borrow_with_default(&store.address_to_denom, pair, &string::utf8(b""));
 
-        if (token_address == @0x0) {
+        let token = get_metadata(denom);
+        if (string::length(&token_address) == 0) {
             // transferring to the zero address is basically burning
             primary_fungible_store::transfer(sender, token, @zero_account, amount);
         } else {
             primary_fungible_store::transfer(sender, token, @UCS01, amount);
-            increase_outstanding(source_channel, token_address, amount);
+            increase_outstanding(source_channel, denom, amount);
+            token_address = string_utils::to_string_with_canonical_addresses(&denom);
         };
         token_address
     }
@@ -516,16 +707,19 @@ module UCS01::Relay {
         initialize_store(admin);
 
         let source_channel = string::utf8(b"channel-1");
-        let denom = string::utf8(b"test-denom");
+        let denom = UCS01::fa_coin::get_metadata_address();
         let amount: u64 = 1000;
 
         // Upsert denom to address pair
-        let pair = DenomToAddressPair {
+        let pair = AddressToDenomPair {
             source_channel,
             denom,
         };
+
+        let new_denom = string::utf8(b"new-denom");
+        let denom_str = string_utils::to_string_with_canonical_addresses(&denom);
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.denom_to_address, pair, alice);
+        smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
 
         UCS01::fa_coin::initialize(
             admin,
@@ -536,16 +730,17 @@ module UCS01::Relay {
             string::utf8(TEST_PROJECT)
         );
 
-        let asset = UCS01::fa_coin::get_metadata();
+        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        let asset = get_metadata(asset_addr);
         let bob_addr = signer::address_of(bob);
         UCS01::fa_coin::mint(admin, bob_addr, amount);
 
         // Send tokens
-        let result_address = send_token(bob, asset, source_channel, denom, amount);
+        let result_address = send_token(bob, source_channel, asset_addr, amount);
 
         // Verify the result and outstanding balance
-        assert!(result_address == alice, 100);
-        let outstanding_balance = get_outstanding(source_channel, alice);
+        assert!(result_address == denom_str, 100);
+        let outstanding_balance = get_outstanding(source_channel, denom);
         assert!(outstanding_balance == amount, 101);
 
         let bob_balance = primary_fungible_store::balance(bob_addr, asset);
@@ -560,16 +755,14 @@ module UCS01::Relay {
         initialize_store(admin);
 
         let source_channel = string::utf8(b"channel-1");
-        let denom = string::utf8(b"burn-denom");
+        let denom = @0x111111;
         let amount: u64 = 1000;
 
         // Upsert denom to address pair
-        let pair = DenomToAddressPair {
+        let pair = AddressToDenomPair {
             source_channel,
             denom,
         };
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.denom_to_address, pair, @0x0); // added 0x0 so it'll be burned
 
         UCS01::fa_coin::initialize(
             admin,
@@ -580,16 +773,18 @@ module UCS01::Relay {
             string::utf8(TEST_PROJECT)
         );
 
-        let asset = UCS01::fa_coin::get_metadata();
+        
+        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        let asset = get_metadata(asset_addr);
         let bob_addr = signer::address_of(bob);
         UCS01::fa_coin::mint(admin, bob_addr, amount);
 
         // Send tokens
-        let result_address = send_token(bob, asset, source_channel, denom, amount);
+        let result_address = send_token(bob, source_channel, asset_addr, amount);
 
         // Verify the result and outstanding balance
-        assert!(result_address == @0x0, 100); 
-        let outstanding_balance = get_outstanding(source_channel, alice);
+        assert!(string::length(&result_address) == 0, 100); 
+        let outstanding_balance = get_outstanding(source_channel, denom);
         assert!(outstanding_balance == 0, 101);
 
         let bob_balance = primary_fungible_store::balance(bob_addr, asset);
@@ -605,7 +800,7 @@ module UCS01::Relay {
         initialize_store(admin);
 
         let source_channel = string::utf8(b"channel-1");
-        let denom = string::utf8(b"zero-amount-denom");
+        let denom = @0x111111;
 
         UCS01::fa_coin::initialize(
             admin,
@@ -616,9 +811,82 @@ module UCS01::Relay {
             string::utf8(TEST_PROJECT)
         );
 
-        let asset = UCS01::fa_coin::get_metadata();
+        
+        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        let asset = get_metadata(asset_addr);
 
         // Attempt to send zero amount
-        send_token(admin, asset, source_channel, denom, 0);
+        send_token(admin, source_channel, asset_addr, 0);
     }
+
+    #[test]
+    public fun test_encode() {
+        let token = Token {
+            denom: string::utf8(b"denom"),
+            amount: 1000,
+        };
+        let tokens = vector::empty<Token>();
+        vector::push_back(&mut tokens, token);
+        let packet = RelayPacket {
+            sender: @0x1111111111111111111111111111111111111111,
+            receiver: @0x0000000000000000000000000000000000000002,
+            tokens: tokens,
+            extension: string::utf8(b"extension"),
+        };
+        let encoded = encode_packet(&packet);
+        // let decoded = decode_packet(&encoded);
+        
+        // std::debug::print(&encoded);
+        // assert!(decoded.ping == packet.ping, 1);
+        // assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
+    }
+
+    // #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
+    // public fun test_send_tokens(admin: &signer, alice: &signer, bob: address) acquires RelayStore {
+    //     initialize_store(admin);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let denom_list = vector::empty<address>();
+    //     let amount_list = vector::empty<u64>();
+
+    //     UCS01::fa_coin::initialize(
+    //         admin,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT)
+    //     );
+    //     let asset_addr = UCS01::fa_coin::get_metadata_address();
+    //     UCS01::fa_coin::mint(admin, signer::address_of(alice), 1000);
+
+    //     vector::push_back(&mut denom_list, asset_addr);
+    //     vector::push_back(&mut amount_list, 500);  // Send half of the minted amount
+
+    //     let extension = string::utf8(b"optional-extension");
+    //     let timeout_height_number = 1;
+    //     let timeout_height_height = 100;
+    //     let timeout_timestamp = 100000;
+
+    //     send(
+    //         alice,
+    //         source_channel,
+    //         bob,
+    //         denom_list,
+    //         amount_list,
+    //         extension,
+    //         timeout_height_number,
+    //         timeout_height_height,
+    //         timeout_timestamp
+    //     );
+
+    //     let outstanding_balance = get_outstanding(source_channel, asset_addr);
+    //     assert!(outstanding_balance == 500, 100);  // Only 500 tokens were sent
+
+    //     let ucs01_balance = primary_fungible_store::balance(@UCS01, get_metadata(asset_addr));
+    //     assert!(ucs01_balance == 500, 101);  // 500 tokens should be transferred to UCS01
+
+    //     let alice_balance = primary_fungible_store::balance(signer::address_of(alice), get_metadata(asset_addr));
+    //     assert!(alice_balance == 500, 102);  // Alice should have 500 tokens left after sending
+
 }
