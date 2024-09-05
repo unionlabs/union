@@ -1,11 +1,9 @@
 <script lang="ts">
-import { page } from "$app/stores"
 import { getContext } from "svelte"
+import { derived, type Readable } from "svelte/store"
 import ChainsGate from "$lib/components/chains-gate.svelte"
-import { derived, writable, type Readable } from "svelte/store"
-import { decodeTimestampSearchParam } from "$lib/timestamps.ts"
-import TableTransfers from "$lib/components/transfers-table/transfers-table.svelte"
 import AddressMultichain from "$lib/components/address-multichain.svelte"
+import TableTransfers from "$lib/components/transfers-table/transfers-table.svelte"
 
 let addresses =
   getContext<Readable<Array<{ address: string; normalizedAddress: string }>>>("addresses")

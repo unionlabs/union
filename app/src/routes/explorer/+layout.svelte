@@ -4,11 +4,8 @@ import { onNavigate } from "$app/navigation"
 import { cn } from "$lib/utilities/shadcn.ts"
 import type { LayoutData } from "./$types.ts"
 import Menu from "./(components)/menu.svelte"
-import { deviceWidth } from "$lib/utilities/device.ts"
-import StatsBar from "./(components)/stats-bar.svelte"
-import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
+import StatsBar from "./(components)/stats-bar.svelte" 
 import ExplorerBreadcrumbs from "$lib/components/explorer-breadcrumbs.svelte"
-import ExplorerPagination from "$lib/components/explorer-pagination.svelte"
 
 export let data: LayoutData
 
