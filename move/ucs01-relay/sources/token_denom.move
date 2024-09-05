@@ -127,6 +127,13 @@ module UCS01::fa_coin {
     }
 
     #[view]
+    /// Return the address of the managed fungible asset that's created when this module is deployed.
+    public fun get_metadata_address(): address {
+        object::create_object_address(&@UCS01, ASSET_SYMBOL)
+        // object::address_to_object<Metadata>(asset_address)
+    }
+
+    #[view]
     public fun decimals(): u8 {
         let asset_metadata = get_metadata();
         fungible_asset::decimals<Metadata>(asset_metadata)
@@ -472,7 +479,11 @@ module UCS01::fa_coin {
         );
 
         let asset = get_metadata();
-        
+        let asset_addr = get_metadata_address();
+
+        let asset2 = object::address_to_object<Metadata>(asset_addr);
+
+        assert!(asset2 == asset, 402);
         let alice_addr = signer::address_of(alice);
         mint(creator, alice_addr, 1000);
         primary_fungible_store::ensure_primary_store_exists(bob, asset);
