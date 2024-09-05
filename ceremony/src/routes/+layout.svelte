@@ -20,7 +20,7 @@ beforeNavigate(async ({ from, to, cancel }) => {
 
       authCheck.match(
         () => {
-          console.log("User authenticated:")
+          console.log("User authenticated")
         },
         (error: SessionError) => {
           console.error(error.message)
