@@ -1,13 +1,13 @@
 import adapterStatic from "@sveltejs/adapter-static"
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte"
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	preprocess: vitePreprocess(),
+  preprocess: vitePreprocess(),
 
-	kit: {
-		adapter: adapterStatic()
-	}
-};
+  kit: {
+    adapter: adapterStatic()
+  }
+}
 
-export default config;
+export default config

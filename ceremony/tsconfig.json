@@ -19,7 +19,7 @@
     "types": ["typed-query-selector/strict", "unplugin-icons/types/svelte"],
     "paths": {
       "$*": ["./src/*"]
-    },
+    }
   },
   "files": [
     "reset.d.ts",

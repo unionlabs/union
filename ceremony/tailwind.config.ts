@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss"
 import defaultTheme from "tailwindcss/defaultTheme"
 
 export default (<Config>{
-  content: ['./src/**/*.{html,js,svelte,ts}'],
+  content: ["./src/**/*.{html,js,svelte,ts}"],
   safelist: ["dark", "light"],
   darkMode: "class",
   theme: {
@@ -29,7 +29,7 @@ export default (<Config>{
             950: "#025C70"
           },
           text: {
-            primary: "#FFFFFF",
+            primary: "#FFFFFF"
           },
           heading: {
             primary: "#FFFFFF"
@@ -38,12 +38,11 @@ export default (<Config>{
             primary: "#000000",
             secondary: "#1C1C1C",
             black: "#000000",
-            white: "#FFFFFF",
-          },
-        },
-      },
-    },
+            white: "#FFFFFF"
+          }
+        }
+      }
+    }
   },
-  plugins: [],
+  plugins: []
 })
-

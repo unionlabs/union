@@ -1,11 +1,11 @@
 <script lang="ts">
-  import H1 from "$lib/components/typography/H1.svelte";
-  import {onMount} from "svelte";
+import H1 from "$lib/components/typography/H1.svelte"
+import { onMount } from "svelte"
 
-  let imageVisible = false;
-  onMount(() => {
-    imageVisible = true;
-  });
+let imageVisible = false
+onMount(() => {
+  imageVisible = true
+})
 </script>
 
 <section class="relative w-full h-full flex items-center justify-center overflow-hidden">

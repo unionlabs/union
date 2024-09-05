@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.3",
+    "@tanstack/svelte-query": "^5.54.1",
     "neverthrow": "^7.1.0",
     "svelte-sonner": "^0.3.27"
   }

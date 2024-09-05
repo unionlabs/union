@@ -1,8 +1,7 @@
 <script lang="ts">
-
-  import {user} from "$lib/stores/user.svelte.ts";
-  import Text from "$lib/components/typography/Text.svelte";
-  import H1 from "$lib/components/typography/H1.svelte";
+import { user } from "$lib/stores/user.svelte.ts"
+import Text from "$lib/components/typography/Text.svelte"
+import H1 from "$lib/components/typography/H1.svelte"
 </script>
 
 {#if user.session}

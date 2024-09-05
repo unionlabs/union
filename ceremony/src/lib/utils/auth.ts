@@ -1,21 +1,24 @@
-import { supabase } from "$lib/supabase/client.ts";
-import {err, ok, Result} from "neverthrow";
-import {user} from "$lib/stores/user.svelte.ts";
+import { supabase } from "$lib/supabase/client.ts"
+import { err, ok, type Result } from "neverthrow"
+import { user } from "$lib/stores/user.svelte.ts"
 
 export type SessionError = {
-  message: string;
-};
+  message: string
+}
 
 export async function checkAuth(): Promise<Result<null, SessionError>> {
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession()
 
   if (error || !session) {
-    return err({ message: 'User not authenticated' });
+    return err({ message: "User not authenticated" })
   }
 
-  if(session) {
+  if (session) {
     user.session = session
   }
 
-  return ok(null);
+  return ok(null)
 }

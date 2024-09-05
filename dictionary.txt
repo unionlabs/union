@@ -353,6 +353,7 @@ catmull
 cctp
 cdctypes
 cdylib
+cermony
 cerr
 chainer
 chainid
@@ -591,6 +592,7 @@ groupkeeper
 groupmodule
 grpclog
 hackerman
+haitlahcen
 hasher
 hasown
 hastscript
@@ -1117,6 +1119,7 @@ substituters
 substores
 subtrie
 sumbitter
+supabase
 superforms
 supermajority
 supermolot

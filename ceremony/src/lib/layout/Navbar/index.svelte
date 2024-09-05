@@ -1,28 +1,28 @@
 <script lang="ts">
-  import {supabase} from "$lib/supabase/client.ts";
-  import {user} from "$lib/stores/user.svelte.ts";
-  import {invalidateAll} from "$app/navigation";
-  import Link from "$lib/components/typography/Link.svelte";
-  import Button from "$lib/components/Button.svelte";
-  import NavLink from "$lib/layout/Navbar/NavLink.svelte";
-  import Badge from "$lib/components/Badge.svelte";
+import { supabase } from "$lib/supabase/client.ts"
+import { user } from "$lib/stores/user.svelte.ts"
+import { invalidateAll } from "$app/navigation"
+import Link from "$lib/components/typography/Link.svelte"
+import Button from "$lib/components/Button.svelte"
+import NavLink from "$lib/layout/Navbar/NavLink.svelte"
+import Badge from "$lib/components/Badge.svelte"
 
-  let isOpen = $state(false)
+let isOpen = $state(false)
 
-  function toggleMenu() {
-    isOpen = !isOpen
+function toggleMenu() {
+  isOpen = !isOpen
+}
+
+async function logout() {
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    console.error("Error logging out:", error.message)
+  } else {
+    window.location.href = "/auth/login"
+    user.session = null
+    invalidateAll()
   }
-
-  async function logout() {
-    const {error} = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error logging out:', error.message);
-    } else {
-      window.location.href = '/auth/login';
-      user.session = null
-      invalidateAll()
-    }
-  }
+}
 </script>
 
 <header class="absolute top-0 inset-x-0 flex items-center justify-between gap-4  px-2 md:h-16 md:px-4 z-50">
