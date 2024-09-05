@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{
     fmt::Debug,
     num::{NonZeroU32, NonZeroU64, NonZeroU8},
@@ -5,11 +6,20 @@ use std::{
 };
 
 use jsonrpsee::{
-    core::client::ClientT,
+    core::{
+        async_trait,
+        client::{BatchResponse, ClientT},
+        params::BatchRequestBuilder,
+        traits::ToRpcParams,
+    },
+    http_client::{HttpClient, HttpClientBuilder},
     rpc_params,
-    ws_client::{PingConfig, WsClient, WsClientBuilder},
+    ws_client::{PingConfig, WsClientBuilder},
 };
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{
+    de::{self, DeserializeOwned},
+    Deserialize, Deserializer, Serialize,
+};
 use tracing::{debug, instrument};
 use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
@@ -27,27 +37,38 @@ use unionlabs::{
     },
 };
 
+pub type JsonRpcError = jsonrpsee::core::client::Error;
+
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: Arc<jsonrpsee::core::client::Client>,
+    inner: ClientInner,
 }
-
-pub type JsonRpcError = jsonrpsee::core::client::Error;
 
 impl Client {
     pub async fn new(url: impl AsRef<str>) -> Result<Self, JsonRpcError> {
-        Ok(Self {
-            client: Arc::new(
+        let inner = match url.as_ref().split_once("://") {
+            Some(("ws" | "wss", _)) => ClientInner::Ws(Arc::new(
                 WsClientBuilder::default()
                     .enable_ws_ping(PingConfig::new())
                     .build(url)
                     .await?,
-            ),
-        })
+            )),
+            Some(("http" | "https", _)) => {
+                ClientInner::Http(HttpClientBuilder::default().build(url)?)
+            }
+            _ => {
+                return Err(JsonRpcError::Custom(format!(
+                    "invalid url {}",
+                    url.as_ref()
+                )))
+            }
+        };
+
+        Ok(Self { inner })
     }
 
     pub async fn commit(&self, height: Option<NonZeroU64>) -> Result<CommitResponse, JsonRpcError> {
-        self.client
+        self.inner
             .request("commit", (height.map(|x| x.to_string()),))
             .await
     }
@@ -57,7 +78,7 @@ impl Client {
         height: Option<NonZeroU64>,
         pagination: Option<ValidatorsPagination>,
     ) -> Result<ValidatorsResponse, JsonRpcError> {
-        self.client
+        self.inner
             .request(
                 "validators",
                 (
@@ -133,7 +154,7 @@ impl Client {
         debug!("fetching abci query");
 
         let res: AbciQueryResponse = self
-            .client
+            .inner
             // the rpc needs an un-prefixed hex string
             .request(
                 "abci_query",
@@ -162,11 +183,11 @@ impl Client {
     }
 
     pub async fn status(&self) -> Result<StatusResponse, JsonRpcError> {
-        self.client.request("status", rpc_params!()).await
+        self.inner.request("status", rpc_params!()).await
     }
 
     pub async fn block(&self, height: Option<NonZeroU64>) -> Result<BlockResponse, JsonRpcError> {
-        self.client
+        self.inner
             .request("block", (height.map(|x| x.to_string()),))
             .await
     }
@@ -181,7 +202,7 @@ impl Client {
         // REVIEW: There is the enum `cosmos.tx.v1beta.OrderBy`, is that related to this?
         order_by: Order,
     ) -> Result<TxSearchResponse, JsonRpcError> {
-        self.client
+        self.inner
             .request(
                 "tx_search",
                 rpc_params![
@@ -199,7 +220,7 @@ impl Client {
     pub async fn tx(&self, hash: H256, prove: bool) -> Result<TxResponse, JsonRpcError> {
         use base64::prelude::*;
 
-        self.client
+        self.inner
             .request("tx", rpc_params![BASE64_STANDARD.encode(hash), prove])
             .await
     }
@@ -210,7 +231,7 @@ impl Client {
     ) -> Result<TxBroadcastSyncResponse, JsonRpcError> {
         use base64::prelude::*;
 
-        self.client
+        self.inner
             .request("broadcast_tx_sync", rpc_params![BASE64_STANDARD.encode(tx)])
             .await
     }
@@ -223,6 +244,49 @@ impl Client {
     //         .request("block_results", rpc_params![height.map(|x| x.to_string())])
     //         .await
     // }
+}
+
+#[derive(Debug, Clone)]
+enum ClientInner {
+    Http(HttpClient),
+    Ws(Arc<jsonrpsee::core::client::Client>),
+}
+
+#[async_trait]
+impl ClientT for ClientInner {
+    async fn notification<Params>(&self, method: &str, params: Params) -> Result<(), JsonRpcError>
+    where
+        Params: ToRpcParams + Send,
+    {
+        match self {
+            ClientInner::Http(client) => client.notification(method, params).await,
+            ClientInner::Ws(client) => client.notification(method, params).await,
+        }
+    }
+
+    async fn request<R, Params>(&self, method: &str, params: Params) -> Result<R, JsonRpcError>
+    where
+        R: DeserializeOwned,
+        Params: ToRpcParams + Send,
+    {
+        match self {
+            ClientInner::Http(client) => client.request(method, params).await,
+            ClientInner::Ws(client) => client.request(method, params).await,
+        }
+    }
+
+    async fn batch_request<'a, R>(
+        &self,
+        batch: BatchRequestBuilder<'a>,
+    ) -> Result<BatchResponse<'a, R>, JsonRpcError>
+    where
+        R: DeserializeOwned + fmt::Debug + 'a,
+    {
+        match self {
+            ClientInner::Http(client) => client.batch_request(batch).await,
+            ClientInner::Ws(client) => client.batch_request(batch).await,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -11,7 +11,7 @@ workspace = true
 [dependencies]
 base64.workspace    = true
 hex.workspace       = true
-jsonrpsee           = { version = "0.22.3", features = ["tracing", "ws-client"] }
+jsonrpsee           = { version = "0.22.3", features = ["tracing", "ws-client", "http-client"] }
 macros              = { workspace = true }
 protos.workspace    = true
 serde               = { workspace = true, features = ["derive"] }

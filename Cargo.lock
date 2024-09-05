@@ -6330,7 +6330,9 @@ dependencies = [
  "futures-util",
  "http 0.2.12",
  "hyper 0.14.28",
+ "log",
  "rustls 0.21.10",
+ "rustls-native-certs 0.6.3",
  "tokio",
  "tokio-rustls 0.24.1",
 ]
@@ -6922,6 +6924,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3cdbb7cb6f3ba28f5b212dd250ab4483105efc3e381f5c8bb90340f14f0a2cc3"
 dependencies = [
  "jsonrpsee-core 0.22.3",
+ "jsonrpsee-http-client 0.22.3",
  "jsonrpsee-types 0.22.3",
  "jsonrpsee-ws-client 0.22.3",
  "tracing",
@@ -6935,7 +6938,7 @@ checksum = "5ec465b607a36dc5dd45d48b7689bc83f679f66a3ac6b6b21cc787a11e0f8685"
 dependencies = [
  "jsonrpsee-client-transport 0.24.3",
  "jsonrpsee-core 0.24.3",
- "jsonrpsee-http-client",
+ "jsonrpsee-http-client 0.24.3",
  "jsonrpsee-proc-macros",
  "jsonrpsee-server",
  "jsonrpsee-types 0.24.3",
@@ -7003,6 +7006,7 @@ dependencies = [
  "beef",
  "futures-timer",
  "futures-util",
+ "hyper 0.14.28",
  "jsonrpsee-types 0.22.3",
  "pin-project",
  "rustc-hash 1.1.0",
@@ -7039,6 +7043,26 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "jsonrpsee-http-client"
+version = "0.22.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c13987da51270bda2c1c9b40c19be0fe9b225c7a0553963d8f17e683a50ce84"
+dependencies = [
+ "async-trait",
+ "hyper 0.14.28",
+ "hyper-rustls 0.24.2",
+ "jsonrpsee-core 0.22.3",
+ "jsonrpsee-types 0.22.3",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tracing",
+ "url",
 ]
 
 [[package]]
