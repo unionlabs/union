@@ -2,13 +2,14 @@ module IBC::ics23 {
     use std::vector;
     use std::option::Option;
     use std::hash;
+    use IBC::bcs_utils::{Self, BcsBuf};
 
     struct MembershipProof has drop {
         sub_proof: ExistenceProof,
         top_level_proof: ExistenceProof,
     }
 
-    struct ExistenceProof has drop {
+    struct ExistenceProof has drop, copy {
         key: vector<u8>,
         value: vector<u8>,
         leaf_prefix: vector<u8>,
@@ -227,6 +228,31 @@ module IBC::ics23 {
             i = i + 1;
         };
         buf
+    }
+
+    public fun decode_membership_proof(buf: vector<u8>): MembershipProof {
+        let buf = bcs_utils::new(buf);
+
+        MembershipProof {
+            sub_proof: decode_existence_proof(&mut buf),
+            top_level_proof: decode_existence_proof(&mut buf),
+        }
+    }
+
+    public fun decode_existence_proof(buf: &mut BcsBuf): ExistenceProof {
+        let key =  bcs_utils::peel_bytes(buf);
+        let value =  bcs_utils::peel_bytes(buf);
+        let leaf_prefix =  bcs_utils::peel_bytes(buf);
+
+        ExistenceProof {
+            key,
+            value,
+            leaf_prefix,
+            path: bcs_utils::peel_vector<InnerOp>(buf, |buf| InnerOp {
+                prefix: bcs_utils::peel_bytes(buf),
+                suffix: bcs_utils::peel_bytes(buf),
+            }),
+        }
     }
 
     #[test]
