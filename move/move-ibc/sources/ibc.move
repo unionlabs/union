@@ -299,6 +299,11 @@ module IBC::Core {
         let vault_constructor_ref = &object::create_named_object(account, VAULT_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
 
+        let merkle_root = LightClient::new_merkle_root(vector::empty());
+        let encoded = std::bcs::to_bytes(&merkle_root);
+        let merkle_root = std::from_bcs::from_bytes<LightClient::MerkleRoot>(encoded);
+        std::debug::print(&merkle_root);
+
         let store = IBCStore {
             client_registry: smart_table::new(),
             commitments: table::new(),

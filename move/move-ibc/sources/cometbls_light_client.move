@@ -12,6 +12,7 @@ module IBC::LightClient {
     use std::object;
     use std::timestamp;
     use IBC::ics23;
+    use IBC::bcs_utils;
 
     const ALPHA_G1: vector<u8> = x"99a818c167016f7f6d02d84005a5ed1f7c6c19c4ddf15733b67acc0129076709ff810d9d3374808069c1ea1e5d263a90cf8181b98b415805797176357acec708";
     const BETA_G2: vector<u8> = x"742884ea18a00ef31874d5fc5511b18fa9391dc69b971b898a2dbfc644033f15656dc92f1f94dc170026cd80212e5160d2539e7e8b40885d1d60b770d25f3599";
@@ -90,8 +91,8 @@ module IBC::LightClient {
         client_state_bytes: vector<u8>, 
         consensus_state_bytes: vector<u8>,
     ): (u64, vector<u8>, vector<u8>) {
-        let client_state = from_bcs::from_bytes<ClientState>(client_state_bytes);
-        let consensus_state = from_bcs::from_bytes<ConsensusState>(consensus_state_bytes);
+        let client_state = decode_client_state(client_state_bytes);
+        let consensus_state = decode_consensus_state(consensus_state_bytes);
         
         if (height::get_revision_height(&client_state.latest_height) == 0 || consensus_state.timestamp == 0) {
             return (1, vector::empty(), vector::empty())
@@ -365,61 +366,6 @@ module IBC::LightClient {
         eq<Gt>(&res, &zero<Gt>())        
     }
 
-    // #[test(ibc_signer = @IBC)]
-    // fun test_create_client(ibc_signer: &signer) acquires State {
-    //     let client_state = ClientState {
-    //         chain_id: string::utf8(b"this-chain"),
-    //         trusting_period: 0,
-    //         unbonding_period: 0,
-    //         max_clock_drift: 0,
-    //         frozen_height: height::new(0, 0),
-    //         latest_height: height::new(0, 1000),
-    //     };
-
-    //     let consensus_state = ConsensusState {  
-    //         timestamp: 10000,
-    //         app_hash: MerkleRoot {
-    //             hash: vector<u8>[]
-    //         },
-    //         next_validators_hash: vector<u8>[]
-    //     };
-
-    //     assert!(create_client(ibc_signer, string::utf8(b"this_client"), std::any::pack<ClientState>(client_state), std::any::pack<ConsensusState>(consensus_state)) == 0, 1);
-
-    //     let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
-    //     assert!(
-    //         saved_state.client_state == client_state, 0
-    //     );
-
-    //     assert!(
-    //         smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
-    //     );
-
-    //     client_state.trusting_period = 2;
-    //     consensus_state.timestamp = 20000;
-
-    //     assert!(create_client(ibc_signer, string::utf8(b"this_client-2"), std::any::pack<ClientState>(client_state), std::any::pack<ConsensusState>(consensus_state)) == 0, 1);
-
-    //     // new client don't mess with this client's storage
-    //     let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
-    //     assert!(
-    //         saved_state.client_state != client_state, 0
-    //     );
-
-    //     assert!(
-    //         smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) != &consensus_state, 0
-    //     );
-
-    //     let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client-2")));
-    //     assert!(
-    //         saved_state.client_state == client_state, 0
-    //     );
-
-    //     assert!(
-    //         smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
-    //     );
-    // }
-
     public fun new_client_state(
         chain_id: string::String,
         trusting_period: u64,
@@ -503,11 +449,129 @@ module IBC::LightClient {
             proof_commitment_pok,
         }
     }
+
+    fun decode_client_state(buf: vector<u8>): ClientState {
+        let buf = bcs_utils::new(buf);
+
+        ClientState {
+            chain_id: bcs_utils::peel_string(&mut buf),
+            trusting_period: bcs_utils::peel_u64(&mut buf),
+            unbonding_period: bcs_utils::peel_u64(&mut buf),
+            max_clock_drift: bcs_utils::peel_u64(&mut buf),
+            frozen_height: height::decode_bcs(&mut buf),
+            latest_height: height::decode_bcs(&mut buf),
+        }
+    }
+
+    fun decode_consensus_state(buf: vector<u8>): ConsensusState {
+        let buf = bcs_utils::new(buf);
+
+        ConsensusState {
+            timestamp: bcs_utils::peel_u64(&mut buf),
+            app_hash: MerkleRoot {
+                hash: bcs_utils::peel_bytes(&mut buf),
+            },
+            next_validators_hash: bcs_utils::peel_bytes(&mut buf),
+        }
+    }
+
+    fun decode_header(buf: vector<u8>): Header {
+        let buf = bcs_utils::new(buf);
+
+        Header {
+            signed_header: LightHeader {
+                height: bcs_utils::peel_u64(&mut buf),
+                time: Timestamp {
+                    seconds: bcs_utils::peel_u64(&mut buf),
+                    nanos: bcs_utils::peel_u32(&mut buf),
+                },
+                validators_hash: bcs_utils::peel_bytes(&mut buf),
+                next_validators_hash: bcs_utils::peel_bytes(&mut buf),
+                app_hash: bcs_utils::peel_bytes(&mut buf),
+            },
+            trusted_height: height::decode_bcs(&mut buf),
+            zero_knowledge_proof: parse_zkp(bcs_utils::peel_bytes(&mut buf)),
+        }
+    }
+
+
+    #[test]
+    fun parse_client_state() {
+        let client_state = ClientState {
+            chain_id: string::utf8(b"this-chain"),
+            trusting_period: 9999999,
+            unbonding_period: 12367,
+            max_clock_drift: 0,
+            frozen_height: height::new(11, 1273),
+            latest_height: height::new(127638, 1000),
+        };
+
+        let cs = decode_client_state(bcs::to_bytes(&client_state));
+        std::debug::print(&cs);
+    }
     
     #[test]
     fun test_parse_zkp() {
         let zkp = x"1c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
 
         parse_zkp(zkp);
+    }
+
+    #[test(ibc_signer = @IBC)]
+    fun test_create_client(ibc_signer: &signer) acquires State {
+        let client_state = ClientState {
+            chain_id: string::utf8(b"this-chain"),
+            trusting_period: 0,
+            unbonding_period: 0,
+            max_clock_drift: 0,
+            frozen_height: height::new(0, 0),
+            latest_height: height::new(0, 1000),
+        };
+
+        let consensus_state = ConsensusState {  
+            timestamp: 10000,
+            app_hash: MerkleRoot {
+                hash: vector<u8>[]
+            },
+            next_validators_hash: vector<u8>[]
+        };
+
+        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client"), bcs::to_bytes(&client_state), bcs::to_bytes(&consensus_state));
+        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == bcs::to_bytes(&consensus_state), 1);
+
+
+        let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
+        assert!(
+            saved_state.client_state == client_state, 0
+        );
+
+        assert!(
+            smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
+        );
+
+        client_state.trusting_period = 2;
+        consensus_state.timestamp = 20000;
+
+        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client-2"), bcs::to_bytes(&client_state), bcs::to_bytes(&consensus_state));
+        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == bcs::to_bytes(&consensus_state), 1);
+
+        // new client don't mess with this client's storage
+        let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
+        assert!(
+            saved_state.client_state != client_state, 0
+        );
+
+        assert!(
+            smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) != &consensus_state, 0
+        );
+
+        let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client-2")));
+        assert!(
+            saved_state.client_state == client_state, 0
+        );
+
+        assert!(
+            smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
+        );
     }
 }

@@ -2,6 +2,7 @@ module IBC::height {
     use std::vector;
 
     use IBC::proto_utils;
+    use IBC::bcs_utils::{Self, BcsBuf};
 
     struct Height has key, drop, copy, store {
         revision_number: u64,
@@ -86,5 +87,12 @@ module IBC::height {
         };
 
         (cursor - first_pos, 0)
+    }
+
+    public fun decode_bcs(buf: &mut BcsBuf): Height {
+        Height {
+            revision_number: bcs_utils::peel_u64(buf),
+            revision_height: bcs_utils::peel_u64(buf),
+        }
     }
 }

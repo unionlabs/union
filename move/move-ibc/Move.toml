@@ -4,11 +4,12 @@ name    = "move-ibc"
 version = "1.0.0"
 
 [addresses]
-IBC                  = "0x46692956fba58020f94c5f2feccf21065c2287e55159630f38594750058bfff2" # This will be storage of our IBCStore
-IBCModuleAddr        = "0x333333333333333"
-mock_relayer_address = "0x222222222222222"
+IBC                  = "_" # This will be storage of our IBCStore
+IBCModuleAddr        = "_"
 
 [dev-addresses]
+IBC = "0x11111"
+IBCModuleAddr = "0x333333333333333"
 
 [dependencies.AptosFramework]
 git    = "https://github.com/aeryz/aptos-core.git"
