@@ -1,9 +1,11 @@
-use std::{collections::HashMap, ffi::OsString, fmt, fs::read_to_string, time::Duration};
+use std::{
+    borrow::Borrow, collections::HashMap, ffi::OsString, fmt, fs::read_to_string, rc::Rc, time::Duration
+};
 
 use async_graphql::{http::GraphiQLSource, *};
 use async_graphql_axum::GraphQL;
 use async_sqlite::{
-    rusqlite::{params, OptionalExtension},
+    rusqlite::{self, params, OptionalExtension},
     JournalMode, Pool, PoolBuilder,
 };
 use axum::{
@@ -66,6 +68,8 @@ async fn main() {
         .expect("opening db");
 
     pool.conn(|conn| {
+        rusqlite::vtab::array::load_module(&conn)?;
+            
         conn.execute(
             "CREATE TABLE IF NOT EXISTS requests (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +90,7 @@ async fn main() {
         Query,
         Mutation {
             ratelimit_seconds: config.ratelimit_seconds,
-            chains: config.chains,
+            chains: config.clone().chains,
         },
         EmptySubscription,
     )
@@ -99,14 +103,17 @@ async fn main() {
 
     let config = config.clone();
 
-    for chain in config.chains {
+    for chain in config.chains.clone() {
         info!(chain_id = chain.id, "spawning worker for chain");
+        let config = config.clone();
+        let pool = pool.clone();
         tokio::spawn(async move {
             loop {
                 let config = config.clone();
                 let pool = pool.clone();
 
                 info!("spawning worker thread");
+                let chain = chain.clone();
                 let handle = tokio::spawn(async move {
                 // recreate each time so that if this task panics, the keyring gets rebuilt
                 // make sure to panic *here* so that the tokio task will catch the panic!
@@ -114,49 +121,43 @@ async fn main() {
                 let chain_client = ChainClient::new(&chain).await;
                 info!(chain_id=chain.id, "entering worker poll loop");
                 loop {
-                    let (ids, addresses) = pool
+                    let chain = chain.clone();
+                    let requests: Vec<SendRequest> = pool
                         .conn(move |conn| {
                             let mut stmt = conn
                                 .prepare_cached(
-                                    "SELECT id, chain_id, denom, address FROM requests WHERE tx_hash IS NULL LIMIT ?1",
+                                    "SELECT id, denom, address FROM requests WHERE tx_hash IS NULL AND chain_id IS ?1 LIMIT ?2",
                                 )
                                 .expect("???");
 
-                            let mut rows = stmt.query([batch_size as i64]).expect("can't query rows");
+                            let mut rows = stmt.query((batch_size as i64, chain.id)).expect("can't query rows");
 
-                            let mut addresses = vec![];
-                            let mut ids = vec![];
+                            let mut requests = vec![];
+
                             while let Some(row) = rows.next().expect("could not read row") {
                                 let id: i64 = row.get(0).expect("could not read id");
-                                let address: String = row.get(1).expect("could not read address");
+                                let denom: String = row.get(1).expect("could not read denom");
+                                let receiver: String = row.get(2).expect("could not read address");
 
-                                addresses.push(address);
-                                ids.push(id);
+                                requests.push(SendRequest { id, receiver, denom, amount: 42 }); //todo fix amount
                             }
 
-                            Ok((ids, addresses))
+                            Ok(requests)
                         })
                         .await
                         .expect("pool error");
 
-                    if ids.is_empty() {
+                    if requests.is_empty() {
                         debug!("no requests in queue");
                         tokio::time::sleep(Duration::from_millis(1000)).await;
                         continue;
                     }
                     let mut i = 0;
+
+                    // try sending batch 5 times
                     let result = loop {
                         let send_res = chain_client
-                            .send(
-                                chain.id,
-                                denom,
-                                addresses
-                                    .clone()
-                                    .into_iter()
-                                    .map(|a| (a, config.amount))
-                                    .collect(),
-                            )
-                            .await;
+                            .send(&requests).await;
 
                         match send_res {
                             Err(err) => {
@@ -178,16 +179,22 @@ async fn main() {
                     pool.conn(move |conn| {
                         let mut stmt = conn
                             .prepare_cached(
-                                "UPDATE requests SET tx_hash = ?1 WHERE id >= ?2 AND id <= ?3",
+                                "UPDATE requests SET tx_hash = ?1 WHERE id IN rarray(?2)",
                             )
                             .expect("???");
 
+                        // https://docs.rs/rusqlite/latest/rusqlite/vtab/array/index.html
                         let rows_modified = stmt
-                            .execute(params![
-                                &result,
-                                &ids.first().unwrap(),
-                                &ids.last().unwrap()
-                            ])
+                            .execute(( &result, 
+                                
+                                Rc::new(requests.iter().map(|req| req.id)
+                                    .map(rusqlite::types::Value::from)
+                                     .collect::<Vec<rusqlite::types::Value>>())
+                             
+                             ))
+
+ 
+                                
                             .expect("can't query rows");
 
                         info!(rows_modified, "updated requests");
@@ -294,6 +301,26 @@ struct ChainClient {
     pub tm_client: WebSocketClient,
 }
 
+
+impl CosmosSdkChainRpcs for ChainClient {
+    fn tm_chain_id(&self) -> String {
+        self.chain.id.clone()
+    }
+
+    fn grpc_url(&self) -> String {
+        self.chain.grpc_url.clone()
+    }
+
+    fn tm_client(&self) -> &WebSocketClient {
+        &self.tm_client
+    }
+
+    fn gas_config(&self) -> &GasConfig {
+        &self.chain.gas_config
+    }
+}
+
+
 impl ChainClient {
     pub async fn new(chain: &Chain) -> Self {
         let (tm_client, driver) = WebSocketClient::builder(chain.ws_url.clone())
@@ -340,26 +367,27 @@ impl ChainClient {
     }
 }
 
-impl CosmosSdkChainRpcs for Chain {
-    fn tm_chain_id(&self) -> String {
-        self.chain_id.clone()
-    }
+// impl CosmosSdkChainRpcs for Chain {
+//     fn tm_chain_id(&self) -> String {
+//         self.chain_id.clone()
+//     }
 
-    fn grpc_url(&self) -> String {
-        self.grpc_url.clone()
-    }
+//     fn grpc_url(&self) -> String {
+//         self.grpc_url.clone()
+//     }
 
-    fn tm_client(&self) -> &WebSocketClient {
-        &self.tm_client
-    }
+//     fn tm_client(&self) -> &WebSocketClient {
+//         &self.tm_client
+//     }
 
-    fn gas_config(&self) -> &GasConfig {
-        &self.gas_config
-    }
-}
+//     fn gas_config(&self) -> &GasConfig {
+//         &self.gas_config
+//     }
+// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct SendRequest {
+    pub id: i64,
     pub receiver: String,
     pub denom: String,
     pub amount: u64,
@@ -391,7 +419,7 @@ impl SendRequestAggregator for Vec<SendRequest> {
 
 impl ChainClient {
     /// `MultiSend` to the specified addresses. Will return `None` if there are no signers available.
-    async fn send(&self, requests: Vec<SendRequest>) -> Result<H256, BroadcastTxCommitError> {
+    async fn send(&self, requests: &Vec<SendRequest>) -> Result<H256, BroadcastTxCommitError> {
         let agg_reqs = requests.aggregate_by_denom();
 
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
@@ -424,7 +452,6 @@ impl ChainClient {
         };
 
         let (tx_hash, gas_used) = self
-            .chain
             .broadcast_tx_commit(
                 &self.signer,
                 [msg],
