@@ -13614,6 +13614,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-module-movement"
+version = "0.1.0"
+dependencies = [
+ "chain-utils",
+ "enumorph",
+ "frunk",
+ "futures",
+ "jsonrpsee 0.24.3",
+ "macros",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
 name = "voyager-consensus-module-cometbls"
 version = "0.1.0"
 dependencies = [

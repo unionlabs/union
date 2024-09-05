@@ -80,6 +80,7 @@ members = [
 
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
+  "voyager/modules/client/movement",
 
   "voyager/modules/consensus/cometbls",
   "voyager/modules/consensus/ethereum",

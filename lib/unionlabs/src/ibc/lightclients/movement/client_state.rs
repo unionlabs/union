@@ -13,6 +13,7 @@ use crate::{
     from
 ))]
 pub struct ClientState {
+    pub chain_id: u8,
     pub l1_client_id: ClientId,
     pub l1_contract_address: H160,
     // TODO(aeryz): this is not H160
@@ -73,6 +74,7 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::ClientState> for Cl
             ),
             frozen_height: value.frozen_height.unwrap_or_default().into(),
             latest_block_num: value.latest_block_num,
+            chain_id: 0, // TODO(aeryz): add this
         })
     }
 }
