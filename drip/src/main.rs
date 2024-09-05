@@ -1,4 +1,4 @@
-use std::{ffi::OsString, fmt, fs::read_to_string, time::Duration};
+use std::{collections::HashMap, ffi::OsString, fmt, fs::read_to_string, time::Duration};
 
 use async_graphql::{http::GraphiQLSource, *};
 use async_graphql_axum::GraphQL;
@@ -358,39 +358,61 @@ impl CosmosSdkChainRpcs for Chain {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SendRequest {
+    pub receiver: String,
+    pub denom: String,
+    pub amount: u64,
+}
+
+trait SendRequestAggregator {
+    fn aggregate_by_denom(&self) -> Vec<(String, u64, Vec<(String, u64)>)>;
+}
+
+impl SendRequestAggregator for Vec<SendRequest> {
+    fn aggregate_by_denom(&self) -> Vec<(String, u64, Vec<(String, u64)>)> {
+        let mut denom_map: HashMap<String, (u64, Vec<(String, u64)>)> = HashMap::new();
+
+        // Iterate over the requests and populate the hashmap
+        for req in self {
+            let entry = denom_map
+                .entry(req.denom.clone())
+                .or_insert((0, Vec::new()));
+            entry.0 += req.amount; // Update the total amount for this denom
+            entry.1.push((req.receiver.clone(), req.amount)); // Add (receiver, amount) to the list
+        }
+
+        denom_map
+            .into_iter()
+            .map(|(denom, (total_amount, receiver_list))| (denom, total_amount, receiver_list))
+            .collect()
+    }
+}
+
 impl ChainClient {
     /// `MultiSend` to the specified addresses. Will return `None` if there are no signers available.
-    async fn send(
-        &self,
-        denom: String,
-        to_send: Vec<(String, u64)>,
-    ) -> Result<H256, BroadcastTxCommitError> {
-        let coin = self
-            .chain
-            .coins
-            .iter()
-            .find(|c| c.denom == denom)
-            .expect("trying to send denom that does not exist in config for chain");
+    async fn send(&self, requests: Vec<SendRequest>) -> Result<H256, BroadcastTxCommitError> {
+        let agg_reqs = requests.aggregate_by_denom();
+
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
             // this is required to be one element
             inputs: vec![protos::cosmos::bank::v1beta1::Input {
                 address: self.chain.signer.to_string(),
-                coins: vec![protos::cosmos::base::v1beta1::Coin {
-                    denom: denom.clone(),
-                    amount: to_send
-                        .iter()
-                        .map(|(_, amount)| *amount)
-                        .sum::<u64>()
-                        .to_string(),
-                }],
-            }],
-            outputs: to_send
-                .into_iter()
-                .map(|(address, amount)| protos::cosmos::bank::v1beta1::Output {
-                    address,
-                    coins: vec![protos::cosmos::base::v1beta1::Coin {
-                        denom: denom.clone(),
+                coins: agg_reqs
+                    .iter()
+                    .map(|(denom, amount, _)| protos::cosmos::base::v1beta1::Coin {
+                        denom: denom.to_string(),
                         amount: amount.to_string(),
+                    })
+                    .collect(),
+            }],
+            outputs: requests
+                .iter()
+                .map(|req| protos::cosmos::bank::v1beta1::Output {
+                    address: req.receiver.clone(),
+                    coins: vec![protos::cosmos::base::v1beta1::Coin {
+                        denom: req.denom.clone(),
+                        amount: req.amount.to_string(),
                     }],
                 })
                 .collect(),
@@ -403,12 +425,16 @@ impl ChainClient {
 
         let (tx_hash, gas_used) = self
             .chain
-            .broadcast_tx_commit(&self.signer, [msg], coin.memo.clone())
+            .broadcast_tx_commit(
+                &self.signer,
+                [msg],
+                "memos are on chain level actually".to_string(),
+            )
             .await?;
 
         info!(
             chain_id=self.chain.id,
-            %denom,
+            ?requests,
             %tx_hash,
             %gas_used,
             "submitted multisend"
