@@ -12,7 +12,7 @@ module IBC::Core {
 
     use std::string_utils;
     use std::from_bcs;
-    use IBC::IBCCommitment;
+    use IBC::IBCCommitment::{Self, Capability};
     use IBC::LightClient;
     use IBC::height::{Self, Height};
     use IBC::connection_end::{Self, ConnectionEnd};
@@ -79,9 +79,7 @@ module IBC::Core {
     const E_INVALID_UPDATE: u64 = 1036;
     const E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE: u64 = 1037;
     const E_CLIENT_NOT_ACTIVE: u64 = 1038;
-    const E_UNKNOWN_CLIENT_TYPE: u64 = 1039;
-
-     
+    const E_UNKNOWN_CLIENT_TYPE: u64 = 1039;     
 
     #[event]
     struct ClientCreatedEvent has copy, drop, store {
@@ -207,14 +205,14 @@ module IBC::Core {
         commitments: Table<vector<u8>, vector<u8>>,
         connections: SmartTable<String, ConnectionEnd>,
         channels: SmartTable<ChannelPort, Channel>, 
-        capabilities: SmartTable<String, address>,
+        capabilities: SmartTable<Capability, address>,
     }
 
 
     // Sample setter for `capabilities`
-    public fun set_capability(capability_id: String, addr: address) acquires IBCStore {
+    public fun set_capability(capability: Capability, addr: address) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-        smart_table::upsert(&mut store.capabilities, capability_id, addr);
+        smart_table::upsert(&mut store.capabilities, capability, addr);
     }
 
     struct SignerRef has key {
@@ -272,9 +270,9 @@ module IBC::Core {
 
 
     // Getter for Commitments
-    public fun get_capability_from_store(capability_name: String): address acquires IBCStore {
+    public fun get_capability_from_store(capability: Capability): address acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
-        let capability_addr = smart_table::borrow(&store.capabilities, capability_name);
+        let capability_addr = smart_table::borrow(&store.capabilities, capability);
 
         *capability_addr
     }
@@ -521,7 +519,7 @@ module IBC::Core {
         let proof_height = height::new(proof_height_revision_num, proof_height_revision_height);
 
         if (!smart_table::contains(&store.connections, connection_id)) {
-            abort(E_CONNECTION_DOES_NOT_EXIST)
+            abort E_CONNECTION_DOES_NOT_EXIST
         };
 
         let connection = smart_table::borrow_mut(
@@ -605,7 +603,7 @@ module IBC::Core {
         );
 
         if (connection_end::state(connection) != CONN_STATE_TRYOPEN) {
-            abort(E_INVALID_CONNECTION_STATE)
+            abort E_INVALID_CONNECTION_STATE
         };
 
         let expected_counterparty = connection_end::new_counterparty(
@@ -700,7 +698,7 @@ module IBC::Core {
         version: String,
     ): (Channel, u64) acquires IBCStore {
         if (!is_lowercase(&port_id)) {
-            abort(E_PORT_ID_MUST_BE_LOWERCASE)
+            abort E_PORT_ID_MUST_BE_LOWERCASE
         };
 
         let (connection_id, _) = ensure_connection_feature(
@@ -709,7 +707,7 @@ module IBC::Core {
         );
 
         if (!string::is_empty(channel::counterparty_channel_id(&counterparty))) {
-            abort(E_COUNTERPARTY_CHANNEL_NOT_EMPTY)
+            abort E_COUNTERPARTY_CHANNEL_NOT_EMPTY
         };
 
         let channel_id = generate_channel_identifier();
@@ -750,7 +748,8 @@ module IBC::Core {
         update_channel_commitment(port_id, channel_id);
 
         claim_capability(
-            IBCCommitment::channel_capability_path(port_id, channel_id),
+            port_id, 
+            channel_id,
             signer::address_of(ibc_app),
         );
 
@@ -829,7 +828,8 @@ module IBC::Core {
         update_channel_commitment(port_id, channel_id);
 
         claim_capability(
-            IBCCommitment::channel_capability_path(port_id, channel_id),
+            port_id,
+            channel_id,
             signer::address_of(ibc_app),
         );
 
@@ -850,12 +850,12 @@ module IBC::Core {
         let channel_port = ChannelPort { port_id, channel_id };
         let chan = *smart_table::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);
 
-        if (!authenticate_capability(ibc_app, IBCCommitment::channel_capability_path(port_id, channel_id))) {
+        if (!authenticate_capability(ibc_app, port_id, channel_id)) {
             abort E_UNAUTHORIZED
         };
 
         if (channel::state(&chan) != CHAN_STATE_INIT) {
-            abort(E_INVALID_CHANNEL_STATE)
+            abort E_INVALID_CHANNEL_STATE
         };
 
         let connection = ensure_connection_state(*vector::borrow(channel::connection_hops(&chan), 0));
@@ -909,12 +909,12 @@ module IBC::Core {
         let channel_port = ChannelPort { port_id, channel_id };
         let channel = *smart_table::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);
 
-        if (!authenticate_capability(ibc_app, IBCCommitment::channel_capability_path(port_id, channel_id))) {
+        if (!authenticate_capability(ibc_app, port_id, channel_id)) {
             abort E_UNAUTHORIZED
         };
 
-        if (channel::state(&channel) != CHAN_STATE_TRYOPEN) { // STATE_TRYOPEN
-            abort(E_INVALID_CHANNEL_STATE)
+        if (channel::state(&channel) != CHAN_STATE_TRYOPEN) {
+            abort E_INVALID_CHANNEL_STATE
         };
 
         let connection = ensure_connection_state(*vector::borrow(channel::connection_hops(&channel), 0));
@@ -1024,7 +1024,7 @@ module IBC::Core {
             };
             i = i + 1;
         };
-        abort(E_UNSUPPORTED_VERSION)
+        abort E_UNSUPPORTED_VERSION
     }
 
     public fun copy_version(src: &connection_end::Version, dst: &mut connection_end::Version) {
@@ -1292,7 +1292,7 @@ module IBC::Core {
             connection_id,
         );
         if (connection_end::state(connection) != CONN_STATE_OPEN) {
-            abort(E_INVALID_CONNECTION_STATE)
+            abort E_INVALID_CONNECTION_STATE
         };
         *connection
     }
@@ -1300,16 +1300,16 @@ module IBC::Core {
     // TODO(aeryz): borrow instead of copy
     public fun ensure_connection_feature(connection_hops: vector<String>, ordering: u8): (String, ConnectionEnd) acquires IBCStore {
         if (vector::length(&connection_hops) != 1) {
-            abort(E_CONN_NOT_SINGLE_HOP)
+            abort E_CONN_NOT_SINGLE_HOP
         };
         let connection_id = *vector::borrow(&connection_hops, 0);
         let connection = ensure_connection_state(connection_id);
         if (vector::length(connection_end::versions(&connection)) != 1) {
-            abort(E_CONN_NOT_SINGLE_VERSION)
+            abort E_CONN_NOT_SINGLE_VERSION
         };
         let version = *vector::borrow(connection_end::versions(&connection), 0);
         if (!verify_supported_feature(&version, to_string(ordering))) {
-            abort(E_UNSUPPORTED_FEATURE)
+            abort E_UNSUPPORTED_FEATURE
         };
         (connection_id, connection)
     }
@@ -1365,14 +1365,19 @@ module IBC::Core {
         )
     }
 
-    public fun claim_capability(name: String, addr: address) acquires IBCStore {
+    public fun claim_capability(port_id: String, channel_id: String, addr: address) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let default_addr: address = @0x0;
-        let existing_addr = smart_table::borrow_with_default(&store.capabilities, name, &default_addr);
+        let capability = IBCCommitment::channel_capability(port_id, channel_id);
+        let existing_addr = smart_table::borrow_with_default(
+            &store.capabilities,
+            capability,
+            &default_addr
+        );
         if (*existing_addr != default_addr) {
-            abort(E_CAPABILITY_ALREADY_CLAIMED)
+            abort E_CAPABILITY_ALREADY_CLAIMED
         };
-        smart_table::upsert(&mut store.capabilities, name, addr);
+        smart_table::upsert(&mut store.capabilities, capability, addr);
     }
 
     public fun create_new_table(): SmartTable<String, SmartTable<String, Channel>> {
@@ -1398,12 +1403,13 @@ module IBC::Core {
     // Authenticates the capability
     public fun authenticate_capability(
         caller: &signer,
-        name: String
+        port_id: String,
+        channel_id: String,
     ): bool acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let capability_addr = smart_table::borrow_with_default(
             &store.capabilities,
-            name,
+            IBCCommitment::channel_capability(port_id, channel_id),
             &@0x0
         );
         signer::address_of(caller) == *capability_addr
@@ -1422,7 +1428,7 @@ module IBC::Core {
         // let source_port = &signer::address_of(borrow_global<SignerRef>(get_vault_addr()).signer_ref));
 
         // Authenticate capability
-        if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(source_port, source_channel))) {
+        if (!authenticate_capability(caller, source_port, source_channel)) {
             abort E_UNAUTHORIZED
         };
 
@@ -1493,7 +1499,7 @@ module IBC::Core {
         msg_proof_height: height::Height,
         acknowledgement: vector<u8>
     ) acquires IBCStore {
-        if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(msg_port_id, msg_channel_id))) {
+        if (!authenticate_capability(caller, msg_port_id, msg_channel_id)) {
             abort E_UNAUTHORIZED
         };
 
@@ -1584,10 +1590,7 @@ module IBC::Core {
         packet: packet::Packet,
         acknowledgement: vector<u8>
     ) acquires IBCStore {
-        if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(
-                *packet::destination_port(&packet),
-                *packet::destination_channel(&packet)
-            ))) {
+        if (!authenticate_capability(caller, *packet::destination_port(&packet), *packet::destination_channel(&packet))) {
             abort E_UNAUTHORIZED
         };
         write_ack_impl(packet, acknowledgement);
@@ -1635,7 +1638,7 @@ module IBC::Core {
         let port_id = *packet::source_port(&packet);
         let channel_id = *packet::source_channel(&packet);
         
-        if (!authenticate_capability(caller, IBCCommitment::channel_capability_path(port_id, channel_id))) {
+        if (!authenticate_capability(caller, port_id, channel_id)) {
             abort E_UNAUTHORIZED
         };
 
