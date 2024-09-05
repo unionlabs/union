@@ -1,12 +1,12 @@
 <script lang="ts">
 import { user } from "$lib/stores/user.svelte.ts"
 import Text from "$lib/components/typography/Text.svelte"
-import { checkContribution, checkQueue } from "$lib/api"
 import { createQuery } from "@tanstack/svelte-query"
 import Spinner from "$lib/components/Spinner.svelte"
 import Link from "$lib/components/typography/Link.svelte"
 import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import H2 from "$lib/components/typography/H2.svelte"
+import { checkContribution, checkQueue } from "$lib/supabase/index.ts"
 
 let position = createQuery(
   reactiveQueryArgs(() => ({

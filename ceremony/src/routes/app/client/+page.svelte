@@ -1,10 +1,11 @@
 <script lang="ts">
-import { contribute, checkStatus, checkContribution } from "$lib/api/index.ts"
+import { contribute, checkStatus } from "$lib/client/index.ts"
 import Text from "$lib/components/typography/Text.svelte"
 import Button from "$lib/components/Button.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import Spinner from "$lib/components/Spinner.svelte"
+import { checkContribution } from "$lib/supabase/index.ts"
 
 let clientStore = createQuery(
   reactiveQueryArgs(() => ({
