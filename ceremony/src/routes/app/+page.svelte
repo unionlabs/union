@@ -41,20 +41,19 @@ let {
 
   <Text class="uppercase">USER: <span class="text-union-accent-500">{user?.session?.user.email}</span></Text>
 
-  <div class="w-full h-full items-center justify-center">
-    {#if queueData && !queueIsLoading && !contributionIsLoading}
-      {#if queueData.position > 1}
-        <H2>You are <span class="text-union-accent-500">{queueData.position}th</span> in queue</H2>
-        <Text>Queue length {queueData?.total}</Text>
-      {:else if queueData.position === 1 && contributionData?.shouldContribute}
-        <H2>It's Your turn!</H2>
-        <Link href="/app/client" class="font-bold">Click here</Link>
-      {:else if contributionData?.status === 'contributed'}
-        <H2>Contributed</H2>
-      {/if}
-    {:else}
-      <Spinner class="size-6 text-union-accent-500"/>
+  {#if queueData && contributionData && !queueIsLoading && !contributionIsLoading}
+    {#if queueData.position > 1}
+      <H2>You are <span class="text-union-accent-500">{queueData.position}th</span> in queue</H2>
+      <Text>Queue length {queueData?.total}</Text>
+    {:else if queueData.position === 1 && contributionData?.shouldContribute}
+      <H2>It's Your turn!</H2>
+      <Link href="/app/client" class="font-bold">Click here</Link>
+    {:else if contributionData?.status === 'contributed'}
+      <H2>Contributed</H2>
     {/if}
-  </div>
+  {:else}
+    <Spinner class="size-6 text-union-accent-500"/>
+  {/if}
+
 
 </div>
