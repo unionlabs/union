@@ -16,7 +16,7 @@
     "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
-    "types": ["typed-query-selector/strict", "unplugin-icons/types/svelte"],
+    "types": ["typed-query-selector/strict"],
     "paths": {
       "$*": ["./src/*"]
     }
@@ -25,7 +25,6 @@
     "reset.d.ts",
     "vite.config.ts",
     "svelte.config.js",
-    "environment.d.ts",
     "postcss.config.cjs",
     "tailwind.config.ts"
   ]
