@@ -125,7 +125,7 @@ module IBC::LightClient {
         state.client_state.latest_height
     }
 
-    fun verify_header(
+    public fun verify_header(
         header: &Header,
         state: &State,
         consensus_state: &ConsensusState
@@ -248,6 +248,13 @@ module IBC::LightClient {
         _prefix: vector<u8>,
         _path: vector<u8>,
     ): u64 {
+        0
+    }
+
+    public fun status(
+        _client_id: &String,
+    ): u64 {
+        // TODO(aeryz): fetch these status from proper exported consts
         0
     }
 

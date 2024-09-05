@@ -19,6 +19,8 @@ module IBC::Core {
     use IBC::channel::{Self, Channel};
     use IBC::packet::{Self, Packet};
 
+    const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
+
     const CHAN_STATE_UNINITIALIZED: u8 = 0;
     const CHAN_STATE_INIT: u8 = 1;
     const CHAN_STATE_TRYOPEN: u8 = 2;
@@ -75,7 +77,9 @@ module IBC::Core {
     const E_TIMESTAMP_TIMEOUT_NOT_REACHED: u64 = 1034;
     const E_TIMEOUT_HEIGHT_NOT_REACHED: u64 = 1035;
     const E_INVALID_UPDATE: u64 = 1036;
-    const E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE: u64 = 1036;
+    const E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE: u64 = 1037;
+    const E_CLIENT_NOT_ACTIVE: u64 = 1038;
+    const E_UNKNOWN_CLIENT_TYPE: u64 = 1039;
 
      
 
@@ -316,21 +320,11 @@ module IBC::Core {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let next_sequence = table::borrow_with_default(&store.commitments, b"nextClientSequence", &bcs::to_bytes<u64>(&0u64));
-
         let next_sequence = from_bcs::to_u64(*next_sequence);
 
-        let next_sequence_str = string_utils::to_string(&next_sequence);
+        table::upsert(&mut store.commitments, b"nextClientSequence", bcs::to_bytes<u64>(&(next_sequence + 1)));
 
-        let next_sequence = next_sequence + 1;
-
-        // Constructing the identifier string using append
-        let identifier = client_type;
-        string::append_utf8(&mut identifier, b"-");
-        string::append(&mut identifier, next_sequence_str);
-
-        table::upsert(&mut store.commitments, b"nextClientSequence", bcs::to_bytes<u64>(&next_sequence));
-
-        identifier
+        string_utils::format2(&b"{}-{}", client_type, next_sequence)
     }
 
 
@@ -340,6 +334,10 @@ module IBC::Core {
         client_state: vector<u8>,
         consensus_state: vector<u8>,
     ) acquires IBCStore, SignerRef {
+        // NOTE(aeryz): At this point, we don't need to have a routing mechanism because it will introduce
+        // additional gas cost. We should only enforce the use of `cometbls` for the `client_type`
+        assert!(string::bytes(&client_type) == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
+
         let client_id = generate_client_identifier(client_type);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -351,6 +349,9 @@ module IBC::Core {
         );
     
         assert!(status_code == 0, status_code);
+
+        // TODO(aeryz): fetch these status from proper exported consts
+        assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Update commitments
         table::upsert(&mut store.commitments, IBCCommitment::client_state_commitment_key(client_id), hash::sha2_256(client_state));
@@ -382,6 +383,8 @@ module IBC::Core {
         let version = connection_end::new_version(version_identifier, version_features);
         let counterparty = connection_end::new_counterparty(counterparty_client_id, counterparty_connection_id, counterparty_prefix);
 
+        assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
+
         let connection_id = generate_connection_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let connection = connection_end::new(
@@ -392,19 +395,19 @@ module IBC::Core {
             counterparty
         );
 
-        if (vector::length(connection_end::version_features(&version)) > 0) {
+        if (vector::is_empty(connection_end::version_features(&version))) {
+            connection_end::set_versions(&mut connection, get_compatible_versions());
+        } else {
             if (!is_supported_version(&get_compatible_versions(), &version)) {
-                abort(E_UNSUPPORTED_VERSION)
+                abort E_UNSUPPORTED_VERSION
             };
 
             connection_end::set_versions(&mut connection, vector<connection_end::Version>[version]);
-        } else {
-            connection_end::set_versions(&mut connection, get_compatible_versions());
         };
 
         smart_table::upsert(&mut store.connections, connection_id, connection);
 
-        update_connection_commitment(store, connection_id);
+        update_connection_commitment(store, connection_id, connection);
 
         event::emit(
                 ConnectionOpenInit {
@@ -433,6 +436,8 @@ module IBC::Core {
         let counterparty_versions = connection_end::new_versions(counterparty_version_identifiers, counterparty_version_features);
         let proof_height = height::new(proof_height_revision_num, proof_height_revision_height);
 
+        assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
+
         // Generate a new connection identifier
         let connection_id = generate_connection_identifier();
 
@@ -444,23 +449,12 @@ module IBC::Core {
             connection_id,
             connection_end::new(
                 client_id,
-                vector::empty<connection_end::Version>(),
-                CONN_STATE_UNSPECIFIED,
+                vector[pick_version(&get_compatible_versions(), &counterparty_versions)],
+                CONN_STATE_TRYOPEN,
                 delay_period,
                 counterparty
             )
         );
-
-        // Check if the connection is already initialized
-        if (connection_end::state(connection) != CONN_STATE_UNSPECIFIED) {
-            abort(E_CONNECTION_ALREADY_EXISTS)
-        };
-
-        // Set the client ID and versions
-        let version = pick_version(&get_compatible_versions(), &counterparty_versions);
-        connection_end::set_versions(connection, vector<connection_end::Version>[version]);
-
-        // smart_table::upsert(&mut store.connections, connection_id, connection);
 
         // Create the expected connection
         let expected_connection = connection_end::new(
@@ -472,29 +466,27 @@ module IBC::Core {
         );
 
         // Verify the connection state
-        if (!verify_connection_state(
+        let err = verify_connection_state(
             connection,
             proof_height,
             proof_init,
             *connection_end::counterparty_connection_id(&counterparty),
             expected_connection
-        )) {
-            abort(E_INVALID_PROOF)
-        };
+        ); 
+        assert!(err == 0, E_INVALID_PROOF);
+        
 
         let counterparty_client_id = connection_end::conn_counterparty_client_id(connection);
 
         // Verify the client state
-        if (!verify_client_state(
+        let err = verify_client_state(
             connection,
             proof_height,
             IBCCommitment::client_state_commitment_key(*counterparty_client_id),
             proof_client,
             client_state_bytes
-        )) {
-            abort(E_INVALID_PROOF)
-        };
-
+        );
+        assert!(err == 0, E_INVALID_PROOF);
 
         event::emit(
             ConnectionOpenTry {
@@ -505,8 +497,7 @@ module IBC::Core {
             },
         );
 
-        connection_end::set_state(connection, CONN_STATE_TRYOPEN);
-        update_connection_commitment(store, connection_id);
+        update_connection_commitment(store, connection_id, *connection);
     }
 
     public entry fun connection_open_ack(
@@ -533,12 +524,12 @@ module IBC::Core {
             connection_id,
         );
 
-        if (connection_end::state(connection) != CONN_STATE_INIT) { // STATE_INIT
-            abort(E_INVALID_CONNECTION_STATE)
+        if (connection_end::state(connection) != CONN_STATE_INIT) {
+            abort E_INVALID_CONNECTION_STATE
         };
 
         if (!is_supported_version(connection_end::versions(connection), &version)) {
-            abort(E_UNSUPPORTED_VERSION)
+            abort E_UNSUPPORTED_VERSION
         };
 
         let expected_counterparty = connection_end::new_counterparty(
@@ -555,27 +546,25 @@ module IBC::Core {
             expected_counterparty
         );
 
-        if (!verify_connection_state(
+        let err = verify_connection_state(
             connection,
             proof_height,
             proof_try,
             counterparty_connection_id,
             expected_connection
-        )) {
-            abort(E_INVALID_PROOF)
-        };
+        );
+        assert!(err == 0, E_INVALID_PROOF);
 
         let counterparty_client_id = *connection_end::conn_counterparty_client_id(connection);
 
-        if (!verify_client_state(
+        let err = verify_client_state(
             connection,
             proof_height,
             IBCCommitment::client_state_commitment_key(counterparty_client_id),
             proof_client,
             client_state_bytes
-        )) {
-            abort(E_INVALID_PROOF)
-        };
+        );
+        assert!(err == 0, E_INVALID_PROOF);
 
         connection_end::set_state(connection, CONN_STATE_OPEN);
 
@@ -593,7 +582,7 @@ module IBC::Core {
             },
         );
 
-        update_connection_commitment(store, connection_id);
+        update_connection_commitment(store, connection_id, *connection);
     }
 
     public entry fun connection_open_confirm(
@@ -630,15 +619,14 @@ module IBC::Core {
 
         let counterparty_conn_id = *connection_end::conn_counterparty_connection_id(connection);
 
-        if (!verify_connection_state(
+        let err = verify_connection_state(
             connection,
             proof_height,
             proof_ack,
             counterparty_conn_id,
             expected_connection
-        )) {
-            abort(E_INVALID_PROOF)
-        };
+        );
+        assert!(err == 0, E_INVALID_PROOF);
 
         connection_end::set_state(connection, CONN_STATE_OPEN);
 
@@ -651,7 +639,7 @@ module IBC::Core {
             },
         );
 
-        update_connection_commitment(store, connection_id);
+        update_connection_commitment(store, connection_id, *connection);
     }
 
     public entry fun update_client(client_id: String, client_message: vector<u8>) acquires IBCStore {
@@ -786,16 +774,15 @@ module IBC::Core {
             counterparty_version
         );
 
-        if (!verify_channel_state(
+        let err = verify_channel_state(
             &connection,
             proof_height,
             proof_init,
             *channel::counterparty_port_id(&counterparty),
             *channel::counterparty_channel_id(&counterparty),
             bcs::to_bytes(&expected_channel)
-        )) {
-            abort(E_INVALID_PROOF)
-        };
+        );
+        assert!(err == 0, E_INVALID_PROOF);
 
         let channel_id = generate_channel_identifier();
 
@@ -877,16 +864,15 @@ module IBC::Core {
             counterparty_version
         );
 
-        if (!verify_channel_state(
+        let err = verify_channel_state(
             &connection,
             proof_height,
             proof_try,
             *channel::chan_counterparty_port_id(&chan),
             counterparty_channel_id,
             bcs::to_bytes(&expected_channel)
-        )) {
-            abort(E_INVALID_PROOF)
-        };
+        );
+        assert!(err == 0, E_INVALID_PROOF);
 
         update_channel_commitment(port_id, channel_id);
 
@@ -937,16 +923,15 @@ module IBC::Core {
             *channel::version(&channel),
         );
 
-        if (!verify_channel_state(
+        let err = verify_channel_state(
             &connection,
             proof_height,
             proof_ack,
             *channel::chan_counterparty_port_id(&channel),
             *channel::chan_counterparty_channel_id(&channel),
             bcs::to_bytes(&expected_channel)
-        )) {
-            abort(E_INVALID_PROOF)
-        };
+        );
+        assert!(err == 0, E_INVALID_PROOF);
 
         channel::set_state(&mut channel, CHAN_STATE_OPEN);
         update_channel_commitment(port_id, channel_id);
@@ -1148,17 +1133,15 @@ module IBC::Core {
         path: vector<u8>,
         proof: vector<u8>,
         client_state_bytes: vector<u8>
-    ): bool {
-        let error_code = LightClient::verify_membership(
+    ): u64 {
+        LightClient::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
             path,
             client_state_bytes
-        );
-        assert!(error_code == 0, E_INVALID_CONNECTION_STATE);
-        true
+        )
     }
 
     public fun verify_connection_state(
@@ -1167,17 +1150,15 @@ module IBC::Core {
         proof: vector<u8>,
         connection_id: String,
         counterparty_connection: ConnectionEnd
-    ): bool {
-        let error_code = LightClient::verify_membership(
+    ): u64 {
+        LightClient::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
             bcs::to_bytes(&IBCCommitment::connection_path(connection_id)),
             connection_end::encode_proto(counterparty_connection)
-        );
-        assert!(error_code == 0, E_INVALID_CONNECTION_STATE);
-        true
+        )
     }
 
     public fun verify_commitment(
@@ -1187,16 +1168,14 @@ module IBC::Core {
         path: String,
         commitment: vector<u8>,
     ): u64 {
-        let err = LightClient::verify_membership(
+        LightClient::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
             *string::bytes(&path),
             commitment
-        );
-
-        err
+        )
     }
 
     public fun generate_connection_identifier(): String acquires IBCStore {
@@ -1207,24 +1186,17 @@ module IBC::Core {
             &bcs::to_bytes<u64>(&0)
         );
         let next_sequence = from_bcs::to_u64(*next_sequence_bytes);
-        let identifier = string::utf8(b"connection-");
-        string::append(&mut identifier, string_utils::to_string(&next_sequence));
-        let new_sequence = next_sequence + 1;
         table::upsert(
             &mut store.commitments,
             b"nextConnectionSequence",
-            bcs::to_bytes(&new_sequence)
+            bcs::to_bytes(&(next_sequence + 1))
         );
-        identifier
+
+        string_utils::format1(&b"connection-{}", next_sequence)
     }
 
-    public fun update_connection_commitment(store: &mut IBCStore, connection_id: String) {
-        let connection = smart_table::borrow(
-            &store.connections,
-            connection_id,
-        );
-
-        let encoded_connection = connection_end::encode_proto(*connection);
+    public fun update_connection_commitment(store: &mut IBCStore, connection_id: String, connection: ConnectionEnd) {
+        let encoded_connection = connection_end::encode_proto(connection);
         let key = IBCCommitment::connection_commitment_key(connection_id);
         let hash = hash::sha2_256(encoded_connection);
         table::upsert(&mut store.commitments, key, hash);
@@ -1376,18 +1348,16 @@ module IBC::Core {
         port_id: String,
         channel_id: String,
         channel_bytes: vector<u8>
-    ): bool {
+    ): u64 {
         let path = IBCCommitment::channel_commitment_key(port_id, channel_id);
-        let error_code = LightClient::verify_membership(
+        LightClient::verify_membership(
             *connection_end::client_id(connection),
             height,
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
             path,
             channel_bytes
-        );
-        assert!(error_code == 0, E_INVALID_PROOF);
-        true
+        )
     }
 
     public fun claim_capability(name: String, addr: address) acquires IBCStore {
