@@ -352,9 +352,6 @@ module UCS01::Relay {
         // refund_tokens(sequence(packet), source_channel(packet), decode(packet.data));
     }
 
-
-
-
     // TODO: No idea if this encode_packet is correct or not and how to write decode_packet
     // take a look at here later.
     public fun encode_packet(packet: &RelayPacket): vector<u8> {
@@ -367,8 +364,13 @@ module UCS01::Relay {
         vector::append(&mut buf, receiver_bytes);
 
         let num_tokens = vector::length(&packet.tokens);
-        let num_tokens_bytes = bcs::to_bytes(&num_tokens);
+        let num_tokens_bytes = bcs::to_bytes(&(num_tokens as u256));
+        vector::reverse(&mut num_tokens_bytes);
+        std::debug::print(&num_tokens);
+        std::debug::print(&num_tokens_bytes);
         vector::append(&mut buf, num_tokens_bytes);
+
+        std::debug::print(&buf);
 
         let i = 0;
         while (i < num_tokens) {
@@ -455,6 +457,44 @@ module UCS01::Relay {
     }
 
     
+    // fun refund_tokens(
+    //     sequence: u64,
+    //     channel_id: String,
+    //     packet: &RelayPacket
+    // ) acquires RelayStore {
+    //     let receiver = packet.receiver;
+    //     let user_to_refund = packet.sender;
+
+    //     let packet_tokens_length = vector::length(&packet.tokens);
+    //     let i = 0;
+    //     while (i < packet_tokens_length) {
+    //         let token = vector::borrow(&packet.tokens, i);
+    //         let denom_address = get_denom_address(channel_id, token.denom);
+
+    //         if (denom_address != @0x0) {
+    //             // The token originated from the remote chain (burnt on send), so refunding means minting.
+    //             UCS01::fa_coin::mint(&get_ucs_signer(), user_to_refund, token.amount);
+    //         } else {
+    //             // The token originated from the local chain (escrowed on send), so refunding means unescrowing.
+    //             denom_address = from_bcs::to_address(string::bytes(&token.denom));
+    //             decrease_outstanding(channel_id, denom_address, token.amount);
+    //             UCS01::fa_coin::transfer_escrowed_tokens(&get_ucs_signer(), user_to_refund, denom_address, token.amount);
+    //         };
+
+    //         // Emit a Refunded event
+    //         event::emit(Refunded {
+    //             packet_sequence: sequence,
+    //             channel_id: channel_id,
+    //             sender: user_to_refund,
+    //             receiver: receiver,
+    //             denom: token.denom,
+    //             token: denom_address,
+    //             amount: token.amount
+    //         });
+
+    //         i = i + 1;
+    //     }
+    // }
 
 
 
@@ -829,7 +869,7 @@ module UCS01::Relay {
         vector::push_back(&mut tokens, token);
         let packet = RelayPacket {
             sender: @0x1111111111111111111111111111111111111111,
-            receiver: @0x0000000000000000000000000000000000000002,
+            receiver: @0x0000000000000000000000000000000000000033,
             tokens: tokens,
             extension: string::utf8(b"extension"),
         };
