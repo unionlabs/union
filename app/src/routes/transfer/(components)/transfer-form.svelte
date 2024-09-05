@@ -11,7 +11,7 @@ import {
   type EvmChainId,
   createUnionClient,
   type CosmosChainId,
-  bytesToBech32Address
+  bech32ToBech32Address
 } from "@union/client"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
@@ -143,7 +143,10 @@ let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
     case "cosmos": {
       const cosmosAddr = $userAddr.cosmos
       if (cosmosAddr === null) return null
-      return bytesToBech32Address({ bytes: cosmosAddr.bytes, toPrefix: $toChain.addr_prefix })
+      return bech32ToBech32Address({
+        address: cosmosAddr.canonical,
+        toPrefix: $toChain.addr_prefix
+      })
     }
     default:
       return null
