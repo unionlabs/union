@@ -16,7 +16,7 @@ nix run .#docs-dev-server
 
 It's an [Astro] site, hosted on [Cloudflare Pages]. The docs are built using [Starlight]. Styling is done using [Tailwind].
 
-[Astro]: https://astro.build
-[Tailwind]: https://tailwindcss.com
-[Starlight]: https://starlight.astro.build
-[Cloudflare Pages]: https://pages.cloudflare.com
+[astro]: https://astro.build
+[cloudflare pages]: https://pages.cloudflare.com
+[starlight]: https://starlight.astro.build
+[tailwind]: https://tailwindcss.com

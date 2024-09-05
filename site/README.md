@@ -15,8 +15,8 @@ nix run .#site-dev-server
 It's an [Astro] site, hosted by [Netlify] to fetch from our [Contentful] CMS.
 Styling is done using [Tailwind]. 3D models are made using [Spline].
 
-[Astro]: https://astro.build
-[Tailwind]: https://tailwindcss.com
-[Netlify]: https://www.netlify.com
-[Contentful]: https://www.contentful.com
-[Spline]: https://spline.design
+[astro]: https://astro.build
+[contentful]: https://www.contentful.com
+[netlify]: https://www.netlify.com
+[spline]: https://spline.design
+[tailwind]: https://tailwindcss.com
