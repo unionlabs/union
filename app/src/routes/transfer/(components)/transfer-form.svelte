@@ -1,51 +1,50 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import { toast } from "svelte-sonner"
-import Chevron from "./chevron.svelte"
 import {
-  createUnionClient,
-  type CosmosChainId,
-  type EvmChainId,
-  bytesToBech32Address
-} from "@union/client"
-import { cn } from "$lib/utilities/shadcn.ts"
-import { raise, sleep } from "$lib/utilities/index.ts"
-import type { OfflineSigner } from "@leapwallet/types"
-import * as Card from "$lib/components/ui/card/index.ts"
-import { Input } from "$lib/components/ui/input/index.js"
-import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { Button } from "$lib/components/ui/button/index.ts"
-import ChainDialog from "./chain-dialog.svelte"
-import ChainButton from "./chain-button.svelte"
-import AssetsDialog from "./assets-dialog.svelte"
-import { truncate } from "$lib/utilities/format.ts"
-import { type Writable, writable, derived, get, type Readable } from "svelte/store"
-import { userAddrOnChain } from "$lib/utilities/address.ts"
-import { userBalancesQuery } from "$lib/queries/balance"
-import { page } from "$app/stores"
-import { goto } from "$app/navigation"
-import {
-  type Address,
-  parseUnits,
-  toHex,
-  formatUnits,
-  type Chain as ViemChain,
   http,
   custom,
-  type HttpTransport
+  parseUnits,
+  formatUnits,
+  type HttpTransport,
+  type Chain as ViemChain
 } from "viem"
+import {
+  type EvmChainId,
+  createUnionClient,
+  type CosmosChainId,
+  bytesToBech32Address
+} from "@union/client"
+import { onMount } from "svelte"
+import { page } from "$app/stores"
+import { toast } from "svelte-sonner"
+import { goto } from "$app/navigation"
+import Chevron from "./chevron.svelte"
+import { cn } from "$lib/utilities/shadcn.ts"
+import { userAddrEvm } from "$lib/wallet/evm"
+import type { Step } from "$lib/stepper-types"
+import { config } from "$lib/wallet/evm/config"
+import ChainDialog from "./chain-dialog.svelte"
+import ChainButton from "./chain-button.svelte"
+import { toIsoString } from "$lib/utilities/date"
+import AssetsDialog from "./assets-dialog.svelte"
+import { userAddrCosmos } from "$lib/wallet/cosmos"
+import { truncate } from "$lib/utilities/format.ts"
 import Stepper from "$lib/components/stepper.svelte"
-import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
+import { raise, sleep } from "$lib/utilities/index.ts"
+import type { OfflineSigner } from "@leapwallet/types"
+import { userBalancesQuery } from "$lib/queries/balance"
+import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
+import { Input } from "$lib/components/ui/input/index.js"
+import { userAddrOnChain } from "$lib/utilities/address.ts"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
+import { Button } from "$lib/components/ui/button/index.ts"
+import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { getSupportedAsset } from "$lib/utilities/helpers.ts"
-import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
-import { toIsoString } from "$lib/utilities/date"
-import { config } from "$lib/wallet/evm/config"
-import { userAddrEvm } from "$lib/wallet/evm"
-import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
+import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
+import { type Writable, writable, derived, get, type Readable } from "svelte/store"
+import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 import { waitForTransactionReceipt, getConnectorClient, switchChain } from "@wagmi/core"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "viem/chains"
 
@@ -68,9 +67,6 @@ let userAddr: Readable<UserAddresses> = derived(
   })
 )
 
-$: {
-  // console.info("userAddr", JSON.stringify($userAddr, undefined, 2))
-}
 $: userBalances = userBalancesQuery({ chains, userAddr: $userAddr, connected: true })
 
 // CURRENT FORM STATE
@@ -217,21 +213,6 @@ const generatePfmMemo = (channel: string, port: string, receiver: string): strin
   })
 }
 
-// async function windowEthereumAddChain(chainSpec) {
-//   if (!window?.ethereum?.request) return
-//   return await window.ethereum?.request({
-//     method: "wallet_addEthereumChain",
-//     params: [chainSpec]
-//   })
-// }
-// async function windowEthereumSwitchChain(id: number) {
-//   if (!window?.ethereum?.request) return
-//   return await window.ethereum?.request({
-//     method: "wallet_switchEthereumChain",
-//     params: [{ chainId: toHex(id) }]
-//   })
-// }
-
 const transfer = async () => {
   if (!$assetSymbol) return toast.error("Please select an asset")
   if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)
@@ -244,16 +225,16 @@ const transfer = async () => {
   if ($fromChain.rpc_type === "cosmos" && !$userAddr.cosmos)
     return toast.error("No cosmos wallet connected")
   if (!$recipient) return toast.error("Invalid recipient")
-  if (!$ucs01Configuration)
-    return toast.error(
-      `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
-    )
+  // if (!$ucs01Configuration)
+  //   return toast.error(
+  //     `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
+  //   )
 
   let supported = getSupportedAsset($fromChain, $asset.address)
   let decimals = supported?.decimals ?? 0
   let parsedAmount = parseUnits(amount, decimals)
 
-  let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
+  // let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
@@ -327,14 +308,7 @@ const transfer = async () => {
                 })
               : undefined
         ) as OfflineSigner
-        // let cosmosClient = new UnionClient({
-        //   cosmosOfflineSigner,
-        //   evmSigner: undefined,
-        //   bech32Prefix: $fromChain.addr_prefix,
-        //   chainId: $fromChain.chain_id,
-        //   gas: { denom: $assetSymbol, amount: "0.0025" },
-        //   rpcUrl: `https://${rpcUrl}`
-        // })
+
         const unionClient = createUnionClient({
           account: cosmosOfflineSigner,
           transport: http(`https://${rpcUrl}`),
@@ -348,47 +322,6 @@ const transfer = async () => {
           gasPrice: { amount: "0.0025", denom: $assetSymbol }
         })
 
-        // let transferAssetsMessage: Parameters<UnionClient["transferAssets"]>[0]
-
-        // if (ucs1_configuration.contract_address === "ics20") {
-        //   console.log({ $recipient })
-        //   transferAssetsMessage = {
-        //     kind: "ibc",
-        //     messageTransfers: [
-        //       {
-        //         sourcePort: "transfer",
-        //         sourceChannel: ucs1_configuration.channel_id,
-        //         token: { denom: $assetAddress, amount: parsedAmount.toString() },
-        //         sender: rawToBech32($fromChain.addr_prefix, $userAddrCosmos.bytes),
-        //         receiver: $recipient,
-        //         memo: pfmMemo ?? "",
-        //         timeoutHeight: { revisionHeight: 888888888n, revisionNumber: 8n }
-        //       }
-        //     ]
-        //   }
-        // } else {
-        //   console.log("THIS SHOULD NOT HAPPEN")
-        //   transferAssetsMessage = {
-        //     kind: "cosmwasm",
-        //     instructions: [
-        //       {
-        //         contractAddress: ucs1_configuration.contract_address,
-        //         msg: {
-        //           transfer: {
-        //             channel: ucs1_configuration.channel_id,
-        //             receiver: $toChain.rpc_type === "evm" ? $recipient?.slice(2) : $recipient,
-        //             memo: pfmMemo ?? ""
-        //           }
-        //         },
-        //         funds: [{ denom: $assetAddress, amount: parsedAmount.toString() }]
-        //       }
-        //     ]
-        //   }
-        // }
-
-        // console.log({ transferAssetsMessage })
-
-        // const cosmosTransfer = await cosmosClient.transferAssets(transferAssetsMessage)
         const transfer = await unionClient.transferAsset({
           autoApprove: true,
           amount: parsedAmount,
@@ -422,15 +355,15 @@ const transfer = async () => {
     }
 
     if ($userAddrEvm === null) return toast.error("No Cosmos user address found")
-    if (pfmMemo === null && $userAddrCosmos === null)
-      return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
+    // if (pfmMemo === null && $userAddrCosmos === null)
+    //   return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
     // if (connectorClient?.chain?.id !== selectedChain.id) {
     // await windowEthereumAddChain(selectedChain)
     // await windowEthereumSwitchChain(selectedChain.id)
     //   await sleep(1_500)
     // }
 
-    const ucs01address = ucs1_configuration.contract_address as Address
+    // const ucs01address = ucs1_configuration.contract_address as Address
 
     if (window.ethereum === undefined) raise("no ethereum browser extension")
 
@@ -462,14 +395,6 @@ const transfer = async () => {
       let hash: `0x${string}` | null = null
 
       try {
-        // hash = await writeContract(config, {
-        //   chain: selectedChain,
-        //   account: $userAddrEvm.canonical,
-        //   abi: erc20Abi,
-        //   address: $asset.address as Address,
-        //   functionName: "approve",
-        //   args: [ucs01address, parsedAmount]
-        // })
         const approve = await unionClient.approveTransaction({
           amount: parsedAmount,
           recipient: $recipient,
@@ -485,7 +410,6 @@ const transfer = async () => {
         }
         return
       }
-
       transferState.set({ kind: "AWAITING_APPROVAL_RECEIPT", hash })
     }
 
@@ -508,25 +432,8 @@ const transfer = async () => {
     if ($transferState.kind === "SIMULATING_TRANSFER") {
       console.log("simulating transfer step")
 
-      if (pfmMemo === null && $userAddrCosmos === null)
-        return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
-
-      // const contractRequest = {
-      //   chainId: selectedChain.id,
-      //   abi: ucs01abi,
-      //   account: $userAddrEvm.canonical,
-      //   functionName: "send",
-      //   address: ucs01address,
-      //   args: [
-      //     ucs1_configuration.channel_id,
-      //     // @ts-ignore see the assertion above
-      //     pfmMemo === null ? $userAddrCosmos.normalized_prefixed : "0x01", // TODO: make dependent on target
-      //     [{ denom: $asset.address.toLowerCase() as Address, amount: parsedAmount }],
-      //     pfmMemo ?? "", // memo
-      //     { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-      //     0n
-      //   ]
-      // } as const
+      // if (pfmMemo === null && $userAddrCosmos === null)
+      //   return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
 
       if ($transferState.warning) {
         transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
@@ -552,7 +459,6 @@ const transfer = async () => {
 
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
-        // const transferHash = await writeContract(config, $transferState.contractRequest)
         const transfer = await unionClient.transferAsset({
           autoApprove: false,
           amount: parsedAmount,
@@ -667,9 +573,12 @@ $: sendableBalances = derived([fromChainId, userBalances], ([$fromChainId, $user
   const cosmosBalance = $userBalances[chainIndex]
   if (!cosmosBalance?.isSuccess || cosmosBalance.data instanceof Error) {
     console.log("trying to send from cosmos but no balances fetched yet")
-    return null
+    return null as any
   }
-  return cosmosBalance.data.map(balance => ({ ...balance, balance: BigInt(balance.balance) }))
+  return cosmosBalance.data.map(balance => ({
+    ...balance,
+    balance: BigInt(balance.balance)
+  })) as any
 })
 
 function swapChainsClick(_event: MouseEvent) {
@@ -841,7 +750,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           description: `Successfully initiated transfer`
         })
       )
-    ]
+    ] as Array<Step>
   }
   if ($fromChain?.rpc_type === "cosmos") {
     return [
@@ -896,7 +805,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
           description: `Successfully initiated transfer`
         })
       )
-    ]
+    ] as Array<Step>
   }
   raise("trying to make stepper for unsupported chain")
 })
@@ -1049,18 +958,6 @@ const resetInput = () => {
                 {/if}
               </div>
             </div>
-            <!--            <Button-->
-            <!--              aria-label="Toggle address lock"-->
-            <!--              class="px-3"-->
-            <!--              on:click={onLockClick}-->
-            <!--              variant="ghost"-->
-            <!--            >-->
-            <!--              {#if inputState === 'locked'}-->
-            <!--                <LockLockedIcon class="size-4.5"/>-->
-            <!--              {:else}-->
-            <!--                <LockOpenIcon class="size-4.5"/>-->
-            <!--              {/if}-->
-            <!--            </Button>-->
           </div>
         </section>
       </Card.Content>
@@ -1116,9 +1013,7 @@ const resetInput = () => {
   bind:dialogOpen={dialogOpenFromChain}
   chains={chains.filter(c => c.enabled_staging)}
   kind="from"
-  onChainSelect={newSelectedChain => {
-    fromChainId.set(newSelectedChain)
-  }}
+  onChainSelect={newSelectedChain => fromChainId.set(newSelectedChain)}
   selectedChain={$fromChainId}
   userAddr={$userAddr}
 />
@@ -1127,9 +1022,7 @@ const resetInput = () => {
   bind:dialogOpen={dialogOpenToChain}
   chains={chains.filter(c => c.enabled_staging)}
   kind="to"
-  onChainSelect={newSelectedChain => {
-    toChainId.set(newSelectedChain)
-  }}
+  onChainSelect={newSelectedChain => toChainId.set(newSelectedChain)}
   selectedChain={$toChainId}
   userAddr={$userAddr}
 />
@@ -1139,7 +1032,6 @@ const resetInput = () => {
     chain={$fromChain}
     assets={$sendableBalances}
     onAssetSelect={asset => {
-      console.log('Selected Asset: ', asset)
       assetSymbol.set(asset.symbol)
       assetAddress.set(asset.address)
     }}

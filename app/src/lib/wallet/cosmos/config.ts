@@ -1,11 +1,11 @@
 import type { Address } from "viem"
+import { bytesToHex } from "@union/client"
 import { sleep } from "$lib/utilities/index.ts"
 import { persisted } from "svelte-persisted-store"
 import type { UserAddressCosmos } from "$lib/types"
 import type { OfflineSigner } from "@leapwallet/types"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { derived, get, type Readable } from "svelte/store"
-import { bytesToBech32Address, extractBech32AddressPrefix } from "@union/client"
 import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 
 export const cosmosWalletsInformation = [
@@ -53,16 +53,18 @@ function createCosmosStore(
 ) {
   const { subscribe, set, update } = persisted("cosmos-store", previousState, {
     syncTabs: true,
-    storage: "local"
+    storage: "session"
   })
   return {
     set,
     update,
     subscribe,
     connect: async (walletId: string) => {
+      console.info(walletId)
       if (!walletId || (walletId !== "keplr" && walletId !== "leap")) return
       update(v => ({ ...v, connectionStatus: "connecting", connectedWallet: walletId }))
       const walletApi = window[walletId]
+
       if (!walletApi) {
         const walletInfo = cosmosWalletsInformation.find(wallet => wallet.id === walletId)
         if (walletInfo) {
@@ -127,16 +129,8 @@ export const getCosmosOfflineSigner = (chainId: string): OfflineSigner =>
 export const userAddrCosmos: Readable<UserAddressCosmos | null> = derived(
   [cosmosStore],
   ([$cosmosStore]) => {
-    console.info("[cosmos] userAddrCosmos", $cosmosStore)
     if ($cosmosStore?.rawAddress && $cosmosStore?.address) {
-      const bech32Prefix = extractBech32AddressPrefix($cosmosStore.address)
-      if (!bech32Prefix) return null
-      console.info("[cosmos] bech32Prefix", bech32Prefix)
-      if (!($cosmosStore.rawAddress instanceof Uint8Array)) return null
-      const cosmos_normalized = bytesToBech32Address({
-        toPrefix: bech32Prefix,
-        bytes: $cosmosStore.rawAddress
-      })
+      const cosmos_normalized = bytesToHex($cosmosStore.rawAddress)
       return {
         canonical: $cosmosStore.address,
         normalized: cosmos_normalized,

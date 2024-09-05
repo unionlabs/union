@@ -11,7 +11,10 @@ import type { Bech32Address, HexAddress } from "./types.ts"
  * ```
  */
 export const bytesToHex = (byteArray: Uint8Array): string =>
-  byteArray.reduce((hex, byte) => hex + byte.toString(16).padStart(2, "0"), "")
+  `${Array.from(byteArray)
+    .map(index => index.toString(16).padStart(2, "0"))
+    .join("")
+    .toLowerCase()}`
 
 /**
  * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)

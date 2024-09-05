@@ -4,8 +4,6 @@ import { truncate } from "$lib/utilities/format"
 import ExplorerPrecise from "$lib/components/explorer-precise.svelte"
 
 export let value: object
-
-console.log(value)
 </script>
 
 <div {...$$restProps} class={cn("flex flex-col")}>
