@@ -109,6 +109,24 @@ We use `sudo` here because Docker created the files we are copying with elevated
 
 :::
 
+### Using Snapshots or State Sync
+
+For networks that have been producing blocks for more than a few weeks, syncing from genesis is often not recommended. Most validators and node operators prefer to use node snapshots or state sync to jump start their nodes.
+
+To use state sync or node snapshots with Unionvisor, you will need to use the `set-uniond-version` sub-command of Unionvisor. You should set Unionvisor to use the version of `uniond` that was used to generate the node snapshot or state sync snapshot.
+
+You can use the `set-uniond-version` command as follows:
+
+```sh frame="none"
+docker run \
+  --volume ~/.unionvisor:/.unionvisor \
+  --volume /tmp:/tmp \
+  -it ghcr.io/unionlabs/bundle-testnet-8:$UNIONVISOR_VERSION \
+  set-uniond-version $UNIOND_VERSION
+```
+*Where `UNIOND_VERSION` is the version of `uniond` used when the snapshot was generated*
+
+
 ### Issuing Sub-Commands to uniond via Unionvisor
 
 To run `uniond` sub-commands, it will be useful to alias the Docker command in your shell `.*rc` file.
