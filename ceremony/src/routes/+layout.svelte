@@ -5,9 +5,9 @@ import { checkAuth, type SessionError } from "$lib/utils/auth.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { Toaster } from "svelte-sonner"
-import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query"
 
 import "../styles/tailwind.css"
+import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query"
 
 let { children } = $props()
 
@@ -19,8 +19,8 @@ beforeNavigate(async ({ from, to, cancel }) => {
       const authCheck = await checkAuth()
 
       authCheck.match(
-        success => {
-          console.log("User authenticated:", success)
+        () => {
+          console.log("User authenticated:")
         },
         (error: SessionError) => {
           console.error(error.message)
@@ -46,12 +46,7 @@ $effect(() => {
 const queryClient = new QueryClient()
 </script>
 
-<Toaster
-        position="bottom-right"
-        toastOptions={{
-          class: 'rounded-none border border-black',
-	}}
-/>
+<Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
 
 <QueryClientProvider client={queryClient}>
   <Navbar/>
@@ -59,5 +54,6 @@ const queryClient = new QueryClient()
     {@render children()}
   </main>
 </QueryClientProvider>
+
 
 

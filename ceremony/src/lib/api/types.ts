@@ -19,3 +19,8 @@ export interface ContributeBody {
   contributorId: string
   payloadId: string
 }
+
+export interface QueueData {
+  id: string
+  joined: string
+}
