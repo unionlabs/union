@@ -5,6 +5,7 @@ import H1 from "$lib/components/typography/H1.svelte"
 import { checkPosition } from "$lib/api"
 import { createQuery } from "@tanstack/svelte-query"
 import Spinner from "$lib/components/Spinner.svelte"
+import Link from "$lib/components/typography/Link.svelte"
 
 let position = createQuery(
   reactiveQueryArgs(() => ({
@@ -26,9 +27,11 @@ let { error, isLoading, isRefetching, data } = $derived($position)
       <Text>
         {#if data && !isLoading}
           {#if data.position === 1}
-            Your turn!
+            It's Your turn! <Link href="/app/client" class="font-bold">Click here</Link>
+            {:else if data.position === -1}
+            Not in q?
             {:else}
-            Your turn in
+            Not your turn.. position {data.position}
           {/if}
           {:else }
           <Spinner class="size-4"/>

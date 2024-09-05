@@ -22,7 +22,6 @@ export const get = async <T>(
     const data: T = await res.json()
     return data ?? undefined
   } catch (error) {
-    console.error("Error during get req:", error)
     return undefined
   }
 }
@@ -41,7 +40,6 @@ export const post = async <T>(resource: string, params: Params, body: object, _f
     const data: T = await res.json()
     return data ?? undefined
   } catch (error) {
-    console.error("Error during post req:", error)
     return undefined
   }
 }

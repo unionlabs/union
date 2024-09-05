@@ -5,17 +5,18 @@ import { supabase } from "$lib/supabase/client.ts"
 import { reactiveQueryArgs, user } from "$lib/stores/user.svelte.ts"
 import Button from "$lib/components/Button.svelte"
 import { createQuery } from "@tanstack/svelte-query"
+import Spinner from "$lib/components/Spinner.svelte"
 
 let clientStore = createQuery(
   reactiveQueryArgs(() => ({
     queryKey: ["client"],
     queryFn: () => checkStatus(),
     refetchInterval: 5_000,
-    retry: 0
+    retry: false
   }))
 )
 
-let { error, isLoading, isRefetching, data } = $derived($clientStore)
+let { error, isLoading, data, status } = $derived($clientStore)
 
 const start = async () => {
   if (!user?.session) {
@@ -46,10 +47,12 @@ const start = async () => {
 <section class="w-full h-full flex items-center justify-center">
   <div class="max-w-7xl sm:px-6 lg:px-8">
     {#if error}
-      <Text class="text-red-500">Client connected?</Text>
-    {:else if data}
-      <Text>Status: {data.status}</Text>
-      <Button onclick={start}>Start Contributing</Button>
+      <Text>Client connected?</Text>
+      {:else if isLoading}
+      <Spinner class="size-4 text-red-500"/>
+      {:else if data}
+      <Text>{data.status}</Text>
+      <Button onclick={start}>Contribute</Button>
     {/if}
   </div>
 </section>
