@@ -20,6 +20,8 @@ thiserror.workspace = true
 tracing-subscriber  = { workspace = true, features = ["env-filter", "fmt"] }
 tracing.workspace   = true
 unionlabs           = { workspace = true }
+arc-swap = "1.7.1"
+tokio = { workspace = true, features = ["rt"] }
 
 [dev-dependencies]
 hex-literal = "0.4.1"

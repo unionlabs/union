@@ -1,12 +1,13 @@
 use std::{collections::VecDeque, ops::Div};
 
-use beacon_api::types::Spec;
+use beacon_api::{client::BeaconApiClient, types::Spec};
 use chain_utils::ethereum::ETHEREUM_REVISION_NUMBER;
 use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
+use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use queue_msg::{
     aggregation::{DoCallback, SubsetOf},
-    call, data, promise, queue_msg, seq, Op,
+    call, data, promise, queue_msg, seq, void, Op,
 };
 use tracing::debug;
 use unionlabs::{
@@ -20,12 +21,13 @@ use unionlabs::{
             trusted_sync_committee::{UnboundedActiveSyncCommittee, UnboundedTrustedSyncCommittee},
         },
     },
+    ErrorReporter,
 };
 use voyager_message::{
-    call::Call,
+    call::{Call, WaitForTimestamp},
     callback::Callback,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
-    PluginMessage, VoyagerMessage,
+    ChainId, PluginMessage, VoyagerMessage,
 };
 
 use crate::{
@@ -53,6 +55,7 @@ pub enum ModuleCallback {
 pub struct MakeCreateUpdates {
     pub update_from: Height,
     pub update_to: Height,
+    pub counterparty_chain_id: ChainId<'static>,
 }
 
 impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for MakeCreateUpdates {
@@ -62,6 +65,7 @@ impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for Make
         MakeCreateUpdates {
             update_from,
             update_to,
+            counterparty_chain_id,
         }: Self,
         hlist_pat![
             PluginMessage {
@@ -102,6 +106,7 @@ impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> for Make
                     update_from,
                     update_to,
                     finality_update,
+                    counterparty_chain_id,
                 },
             ),
         )
@@ -115,6 +120,7 @@ pub struct MakeCreateUpdatesFromLightClientUpdates {
     pub update_from: Height,
     pub update_to: Height,
     pub finality_update: UnboundedLightClientFinalityUpdate,
+    pub counterparty_chain_id: ChainId<'static>,
 }
 
 impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
@@ -127,6 +133,7 @@ impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
             update_from,
             update_to,
             finality_update,
+            counterparty_chain_id,
         }: Self,
         hlist_pat![
             PluginMessage {
@@ -200,7 +207,12 @@ impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
         promise(
             [seq(lc_updates.into_iter().chain(finality_update_msg))],
             [],
-            Callback::plugin(plugin, AggregateHeaders {}),
+            Callback::plugin(
+                plugin,
+                AggregateHeaders {
+                    counterparty_chain_id,
+                },
+            ),
         )
     }
 }
@@ -346,10 +358,16 @@ fn sync_committee_period(height: u64, period: u64) -> u64 {
 
 /// Aggregates all [`Header`] datas into an [`OrderedHeaders`] data.
 #[queue_msg]
-pub struct AggregateHeaders {}
+pub struct AggregateHeaders {
+    pub counterparty_chain_id: ChainId<'static>,
+}
 
 impl AggregateHeaders {
-    pub fn aggregate(self, data: VecDeque<Data<ModuleData>>) -> OrderedHeaders {
+    pub async fn aggregate(
+        self,
+        beacon_api_client: &BeaconApiClient,
+        data: VecDeque<Data<ModuleData>>,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         let mut headers = data
             .into_iter()
             .map(PluginMessage::<Header>::try_from_super)
@@ -358,25 +376,64 @@ impl AggregateHeaders {
 
         headers.sort_by_key(|header| header.consensus_update.attested_header.beacon.slot);
 
-        OrderedHeaders {
-            headers: headers
-                .into_iter()
-                .map(|header| {
-                    (
-                        DecodedHeaderMeta {
-                            height: Height {
-                                revision_number: ETHEREUM_REVISION_NUMBER,
-                                revision_height: header
-                                    .consensus_update
-                                    .attested_header
-                                    .beacon
-                                    .slot,
+        let genesis = beacon_api_client
+            .genesis()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon genesis: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .data;
+
+        let spec = beacon_api_client
+            .spec()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon spec: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .data;
+
+        let last_update_signature_slot = headers
+            .iter()
+            .map(|h| h.consensus_update.signature_slot)
+            .max()
+            .expect("expected at least one update");
+
+        Ok(seq([
+            void(call(WaitForTimestamp {
+                chain_id: self.counterparty_chain_id.clone(),
+                timestamp: (genesis.genesis_time
+                    + (last_update_signature_slot * spec.seconds_per_slot))
+                    .try_into()
+                    .unwrap(),
+            })),
+            queue_msg::data(OrderedHeaders {
+                headers: headers
+                    .into_iter()
+                    .map(|header| {
+                        (
+                            DecodedHeaderMeta {
+                                height: Height {
+                                    revision_number: ETHEREUM_REVISION_NUMBER,
+                                    revision_height: header
+                                        .consensus_update
+                                        .attested_header
+                                        .beacon
+                                        .slot,
+                                },
                             },
-                        },
-                        serde_json::to_value(header).unwrap(),
-                    )
-                })
-                .collect(),
-        }
+                            serde_json::to_value(header).unwrap(),
+                        )
+                    })
+                    .collect(),
+            }),
+        ]))
     }
 }

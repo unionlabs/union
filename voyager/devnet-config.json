@@ -134,14 +134,18 @@
 			"path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
 			"config": {
 				"chain_id": "union-devnet-1",
-				"max_batch_size": 1
+				"min_batch_size": 1,
+				"max_batch_size": 10,
+				"max_wait_time_ms": 10000
 			}
 		},
 		{
 			"path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
 			"config": {
 				"chain_id": "32382",
-				"max_batch_size": 1
+				"min_batch_size": 1,
+				"max_batch_size": 10,
+				"max_wait_time_ms": 10000
 			}
 		}
 	],

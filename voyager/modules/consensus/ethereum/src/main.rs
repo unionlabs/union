@@ -279,8 +279,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             ModuleCallback::MakeCreateUpdatesFromLightClientUpdates(aggregate) => {
                 do_callback(aggregate, data)
             }
-            ModuleCallback::AggregateHeaders(aggregate) => {
-                queue_msg::data(aggregate.aggregate(data))
+            ModuleCallback::AggregateHeaders(cb) => {
+                cb.aggregate(&self.beacon_api_client, data).await?
             }
         })
     }
@@ -401,6 +401,7 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         update_from: Height,
         update_to: Height,
+        counterparty_chain_id: ChainId<'static>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(promise(
             [
@@ -413,6 +414,7 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 MakeCreateUpdates {
                     update_from,
                     update_to,
+                    counterparty_chain_id,
                 },
             ),
         ))

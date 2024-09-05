@@ -332,6 +332,7 @@ pub trait ConsensusModule<D: Member, C: Member, Cb: Member> {
         &self,
         update_from: Height,
         update_to: Height,
+        counterparty_chain_id: ChainId<'static>,
     ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 }
 

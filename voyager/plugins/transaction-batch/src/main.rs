@@ -1,8 +1,10 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap, VecDeque},
     convert,
     num::NonZeroUsize,
+    ops::RangeInclusive,
     sync::Arc,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use either::Either;
@@ -55,13 +57,20 @@ async fn main() {
 pub struct Module {
     pub client: Arc<jsonrpsee::ws_client::WsClient>,
     pub chain_id: ChainId<'static>,
-    pub max_batch_size: NonZeroUsize,
+    pub client_configs: BTreeMap<ClientId, ClientConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub chain_id: ChainId<'static>,
+    pub client_configs: BTreeMap<ClientId, ClientConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClientConfig {
+    pub min_batch_size: NonZeroUsize,
     pub max_batch_size: NonZeroUsize,
+    pub max_wait_time: HashMap<ClientId, Duration>,
 }
 
 impl Module {
@@ -74,10 +83,13 @@ impl Module {
     pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
         let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
 
+        // // TODO: Make this a better error
+        // assert!(config.min_batch_size <= config.max_batch_size);
+
         Ok(Self {
             client,
             chain_id: config.chain_id,
-            max_batch_size: config.max_batch_size,
+            client_configs: config.client_configs,
         })
     }
 }
@@ -86,12 +98,22 @@ impl Module {
 impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn info(&self) -> RpcResult<PluginInfo> {
+        let clients_json = serde_json::to_string(
+            &self
+                .client_configs
+                .into_iter()
+                .map(|(k, _)| (k, ()))
+                .collect::<BTreeMap<_, _>>(),
+        )
+        .unwrap();
+
         Ok(PluginInfo {
             name: self.plugin_name(),
             kind: None,
             interest_filter: Some(
                 format!(
                     r#"
+{clients} as $clients |
 if ."@type" == "data" then
     ."@value" as $data |
 
@@ -99,16 +121,16 @@ if ."@type" == "data" then
     # the counterparty of the event origin is the destination
     if $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" then
         $data."@value".event."@type" as $event_type |
+        $data."@value".event."@value" as $event_data |
 
-        ($event_type == "send_packet") or
-        # ($event_type == "recv_packet") or
-        ($event_type == "write_acknowledgement") or
-        ($event_type == "channel_open_init") or
-        ($event_type == "channel_open_try") or
-        ($event_type == "channel_open_ack") or
-        ($event_type == "connection_open_init") or
-        ($event_type == "connection_open_try") or
-        ($event_type == "connection_open_ack") or
+        ($event_type == "connection_open_init" && ($clients | has($event_data.counterparty_client_id))) or
+        ($event_type == "connection_open_try" && ($clients | has($event_data.counterparty_client_id))) or
+        ($event_type == "connection_open_ack" && ($clients | has($event_data.counterparty_client_id))) or
+        ($event_type == "channel_open_init" && ($clients | has($event_data.connection.counterparty.client_id))) or
+        ($event_type == "channel_open_try" && ($clients | has($event_data.connection.counterparty.client_id))) or
+        ($event_type == "channel_open_ack" && ($clients | has($event_data.connection.counterparty.client_id))) or
+        ($event_type == "send_packet" && ($clients | has($event_data.packet.destination_channel.connection.client_id))) or
+        ($event_type == "write_acknowledgement" && ($clients | has($event_data.packet.source_channel.connection.client_id))) or
         ($data."@type" == "plugin"
             and $data."@value".plugin == "{plugin_name}"
             and $data."@value".message."@type" == "event_batch")
@@ -120,7 +142,8 @@ else
 end
 "#,
                     chain_id = self.chain_id,
-                    plugin_name = self.plugin_name()
+                    plugin_name = self.plugin_name(),
+                    clients = clients_json
                 )
                 .to_string(),
             ),
@@ -189,6 +212,7 @@ end
                 Ok(promise(
                     [promise(
                         [call(FetchUpdateHeaders {
+                            counterparty_chain_id: self.chain_id.clone(),
                             chain_id: client_meta.chain_id,
                             update_from: client_meta.height,
                             update_to: latest_height,
@@ -255,40 +279,53 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
 
                     trace!(%client_id, "batching event");
 
+                    let first_seen_at = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_millis();
+
                     batchers.entry(client_id.clone()).or_default().push((
                         idx,
                         match chain_event.event {
                             FullIbcEvent::ConnectionOpenInit(event) => BatchableEvent {
+                                first_seen_at,
                                 provable_height: chain_event.provable_height,
                                 event: event.into(),
                             },
                             FullIbcEvent::ConnectionOpenTry(event) => BatchableEvent {
+                                first_seen_at,
                                 provable_height: chain_event.provable_height,
                                 event: event.into(),
                             },
                             FullIbcEvent::ConnectionOpenAck(event) => BatchableEvent {
+                                first_seen_at,
                                 provable_height: chain_event.provable_height,
                                 event: event.into(),
                             },
 
                             FullIbcEvent::ChannelOpenInit(event) => BatchableEvent {
+                                first_seen_at,
                                 provable_height: chain_event.provable_height,
                                 event: event.into(),
                             },
                             FullIbcEvent::ChannelOpenTry(event) => BatchableEvent {
+                                first_seen_at,
                                 provable_height: chain_event.provable_height,
                                 event: event.into(),
                             },
                             FullIbcEvent::ChannelOpenAck(event) => BatchableEvent {
+                                first_seen_at,
                                 provable_height: chain_event.provable_height,
                                 event: event.into(),
                             },
 
                             FullIbcEvent::SendPacket(event) => BatchableEvent {
+                                first_seen_at,
                                 provable_height: chain_event.provable_height,
                                 event: event.into(),
                             },
                             FullIbcEvent::WriteAcknowledgement(event) => BatchableEvent {
+                                first_seen_at,
                                 provable_height: chain_event.provable_height,
                                 event: event.into(),
                             },
@@ -322,7 +359,9 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
         let (ready, optimize_further) = batchers
             .into_iter()
             .flat_map(|(client_id, mut events)| {
-                events.sort_by_key(|e| e.1.provable_height);
+                let client_config = self.client_configs[&client_id];
+
+                events.sort_by_key(|e| e.1.first_seen_at);
 
                 events
                     .into_iter()

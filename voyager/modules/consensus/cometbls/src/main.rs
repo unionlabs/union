@@ -340,6 +340,7 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         update_from: Height,
         update_to: Height,
+        _counterparty_chain_id: ChainId<'static>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(seq([
             void(call(WaitForHeight {

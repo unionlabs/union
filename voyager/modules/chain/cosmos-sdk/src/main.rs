@@ -413,7 +413,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         false,
                         page,
                         PER_PAGE_LIMIT,
-                        cometbft_rpc::Order::Desc,
+                        cometbft_rpc::types::Order::Desc,
                     )
                     .await
                     .unwrap();
@@ -1011,20 +1011,42 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     // TODO: Use a better timestamp type here
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_latest_timestamp(&self) -> RpcResult<i64> {
-        match self.tm_client.block(None).await {
-            Ok(block_response) => Ok(block_response
-                .block
-                .header
-                .time
-                .as_unix_nanos()
-                .try_into()
-                .unwrap()),
-            Err(err) => Err(ErrorObject::owned(
-                -1,
-                ErrorReporter(err).to_string(),
-                None::<()>,
-            )),
+        let mut commit_response =
+            self.tm_client.commit(None).await.map_err(|err| {
+                ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
+            })?;
+
+        if commit_response.canonical {
+            debug!("commit is not canonical, fetching commit at previous block");
+            commit_response = self
+                .tm_client
+                .commit(Some(
+                    (u64::try_from(commit_response.signed_header.header.height.inner() - 1)
+                        .unwrap())
+                    .try_into()
+                    .unwrap(),
+                ))
+                .await
+                .map_err(|err| {
+                    ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>)
+                })?;
+
+            if !commit_response.canonical {
+                error!(
+                    ?commit_response,
+                    "commit for previous height is not canonical? continuing \
+                    anyways, but this may cause issues downstream"
+                );
+            }
         }
+
+        Ok(commit_response
+            .signed_header
+            .header
+            .time
+            .as_unix_nanos()
+            .try_into()
+            .unwrap())
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]

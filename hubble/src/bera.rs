@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use backon::{ConstantBuilder, ExponentialBuilder, Retryable};
 use color_eyre::{eyre::eyre, Result};
-use cometbft_rpc::{AbciQueryResponse, Client};
+use cometbft_rpc::{types::AbciQueryResponse, Client};
 use tracing::info;
 use unionlabs::{
     berachain::BerachainChainSpec, encoding::DecodeAs,

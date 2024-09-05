@@ -887,5 +887,17 @@ pub mod cosmos_sdk_error {
             ErrWasmInvalidContractModification = errorsmod.Register(ModuleName, 16, "wasm contract made invalid state modifications")
             ErrVMError                         = errorsmod.Register(ModuleName, 17, "wasm VM error")
         )
+
+        // https://github.com/cosmos/ibc-go/blob/5ef01dae21dd60df22715b8e99bf641087a98879/modules/capability/types/errors.go
+        #[err(name = Capability, codespace = "capability")]
+        var (
+            ErrInvalidCapabilityName    = errorsmod.Register(ModuleName, 2, "capability name not valid")
+            ErrNilCapability            = errorsmod.Register(ModuleName, 3, "provided capability is nil")
+            ErrCapabilityTaken          = errorsmod.Register(ModuleName, 4, "capability name already taken")
+            ErrOwnerClaimed             = errorsmod.Register(ModuleName, 5, "given owner already claimed capability")
+            ErrCapabilityNotOwned       = errorsmod.Register(ModuleName, 6, "capability not owned by module")
+            ErrCapabilityNotFound       = errorsmod.Register(ModuleName, 7, "capability not found")
+            ErrCapabilityOwnersNotFound = errorsmod.Register(ModuleName, 8, "owners not found for capability")
+        )
     }
 }

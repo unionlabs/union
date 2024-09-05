@@ -178,6 +178,7 @@ pub struct FetchState {
 #[queue_msg]
 pub struct FetchUpdateHeaders {
     pub chain_id: ChainId<'static>,
+    pub counterparty_chain_id: ChainId<'static>,
     pub update_from: Height,
     pub update_to: Height,
 }
@@ -890,12 +891,13 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
             // )),
             Call::UpdateHeaders(FetchUpdateHeaders {
                 chain_id,
+                counterparty_chain_id,
                 update_from,
                 update_to,
             }) => ctx
                 .consensus_module(&chain_id)
                 .map_err(error_object_to_queue_error)?
-                .fetch_update_headers(update_from, update_to)
+                .fetch_update_headers(update_from, update_to, counterparty_chain_id)
                 .await
                 .map_err(json_rpc_error_to_queue_error),
 

@@ -3,8 +3,11 @@ use std::{
     fmt::Debug,
     num::{NonZeroU32, NonZeroU64, NonZeroU8},
     sync::Arc,
+    time::Duration,
 };
 
+use ::serde::de::DeserializeOwned;
+use arc_swap::ArcSwap;
 use jsonrpsee::{
     core::{
         async_trait,
@@ -16,26 +19,21 @@ use jsonrpsee::{
     rpc_params,
     ws_client::{PingConfig, WsClientBuilder},
 };
-use serde::{
-    de::{self, DeserializeOwned},
-    Deserialize, Deserializer, Serialize,
-};
-use tracing::{debug, instrument};
+use tokio::{task::JoinHandle, time::sleep};
+use tracing::{debug, debug_span, error, instrument, Instrument};
 use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
-    google::protobuf::timestamp::Timestamp,
-    hash::{H160, H256},
-    option_unwrap, result_unwrap,
-    tendermint::{
-        abci::{exec_tx_result::ExecTxResult, response_query::ResponseQuery},
-        crypto::public_key::PublicKey,
-        p2p::default_node_info::DefaultNodeInfo,
-        types::{
-            block::Block, block_id::BlockId, signed_header::SignedHeader, tx_proof::TxProof,
-            validator::Validator,
-        },
-    },
+    hash::H256,
+    option_unwrap, result_unwrap, ErrorReporter,
 };
+
+use crate::types::{
+    AbciQueryResponse, AllValidatorsResponse, BlockResponse, BroadcastTxSyncResponse,
+    CommitResponse, Order, StatusResponse, TxResponse, TxSearchResponse,
+};
+
+pub mod serde;
+pub mod types;
 
 pub type JsonRpcError = jsonrpsee::core::client::Error;
 
@@ -46,22 +44,85 @@ pub struct Client {
 
 impl Client {
     pub async fn new(url: impl AsRef<str>) -> Result<Self, JsonRpcError> {
-        let inner = match url.as_ref().split_once("://") {
-            Some(("ws" | "wss", _)) => ClientInner::Ws(Arc::new(
-                WsClientBuilder::default()
-                    .enable_ws_ping(PingConfig::new())
-                    .build(url)
-                    .await?,
-            )),
+        let url = url.as_ref().to_owned();
+
+        let inner = match url.split_once("://") {
+            Some(("ws" | "wss", _)) => {
+                let client = Arc::new(ArcSwap::from_pointee(
+                    WsClientBuilder::default()
+                        .enable_ws_ping(PingConfig::new())
+                        .build(&url)
+                        .await?,
+                ));
+
+                let handle = tokio::spawn({
+                    let client = client.clone();
+                    let url_clone = url.clone();
+
+                    async move {
+                        let mut total_reconnects = 0;
+
+                        loop {
+                            client.load().on_disconnect().await;
+
+                            debug!("client disconnected");
+
+                            let reason = client.load().disconnect_reason().await;
+
+                            debug!("disconnect reason: {}", ErrorReporter(reason));
+
+                            let mut retry_ms = 500;
+
+                            const MAX_RETRY_MS: u64 = 8_000;
+
+                            let mut attempt = 0;
+
+                            let new_client = loop {
+                                match WsClientBuilder::default()
+                                    .enable_ws_ping(PingConfig::new())
+                                    .build(&url_clone)
+                                    .await
+                                {
+                                    Ok(client) => break client,
+                                    Err(error) => {
+                                        attempt += 1;
+
+                                        error!(
+                                            error = %ErrorReporter(error),
+                                            %attempt,
+                                            "error while reconnecting client, \
+                                            trying again in {retry_ms} ms"
+                                        );
+
+                                        sleep(Duration::from_millis(retry_ms)).await;
+
+                                        retry_ms = std::cmp::min(retry_ms * 2, MAX_RETRY_MS);
+                                    }
+                                }
+                            };
+
+                            total_reconnects += 1;
+
+                            debug!(%total_reconnects, "client reconnected");
+
+                            client.store(Arc::new(new_client));
+                        }
+                    }
+                    .instrument(debug_span!(
+                        "ws client reconnect task",
+                        %url,
+                    ))
+                });
+
+                ClientInner::Ws {
+                    client,
+                    handle: Arc::new(handle),
+                }
+            }
             Some(("http" | "https", _)) => {
                 ClientInner::Http(HttpClientBuilder::default().build(url)?)
             }
-            _ => {
-                return Err(JsonRpcError::Custom(format!(
-                    "invalid url {}",
-                    url.as_ref()
-                )))
-            }
+            _ => return Err(JsonRpcError::Custom(format!("invalid url {url}"))),
         };
 
         Ok(Self { inner })
@@ -76,8 +137,8 @@ impl Client {
     pub async fn validators(
         &self,
         height: Option<NonZeroU64>,
-        pagination: Option<ValidatorsPagination>,
-    ) -> Result<ValidatorsResponse, JsonRpcError> {
+        pagination: Option<types::ValidatorsPagination>,
+    ) -> Result<types::ValidatorsResponse, JsonRpcError> {
         self.inner
             .request(
                 "validators",
@@ -102,7 +163,7 @@ impl Client {
         let mut out = vec![];
 
         loop {
-            let ValidatorsResponse {
+            let types::ValidatorsResponse {
                 block_height,
                 validators,
                 count: _,
@@ -110,7 +171,7 @@ impl Client {
             } = self
                 .validators(
                     height,
-                    Some(ValidatorsPagination {
+                    Some(types::ValidatorsPagination {
                         page,
                         per_page: Some(PER_PAGE),
                     }),
@@ -228,7 +289,7 @@ impl Client {
     pub async fn broadcast_tx_sync(
         &self,
         tx: &[u8],
-    ) -> Result<TxBroadcastSyncResponse, JsonRpcError> {
+    ) -> Result<BroadcastTxSyncResponse, JsonRpcError> {
         use base64::prelude::*;
 
         self.inner
@@ -249,7 +310,18 @@ impl Client {
 #[derive(Debug, Clone)]
 enum ClientInner {
     Http(HttpClient),
-    Ws(Arc<jsonrpsee::core::client::Client>),
+    Ws {
+        client: Arc<ArcSwap<jsonrpsee::core::client::Client>>,
+        handle: Arc<JoinHandle<()>>,
+    },
+}
+
+impl Drop for ClientInner {
+    fn drop(&mut self) {
+        if let ClientInner::Ws { handle, .. } = self {
+            handle.abort();
+        }
+    }
 }
 
 #[async_trait]
@@ -260,7 +332,7 @@ impl ClientT for ClientInner {
     {
         match self {
             ClientInner::Http(client) => client.notification(method, params).await,
-            ClientInner::Ws(client) => client.notification(method, params).await,
+            ClientInner::Ws { client, .. } => client.load().notification(method, params).await,
         }
     }
 
@@ -271,7 +343,7 @@ impl ClientT for ClientInner {
     {
         match self {
             ClientInner::Http(client) => client.request(method, params).await,
-            ClientInner::Ws(client) => client.request(method, params).await,
+            ClientInner::Ws { client, .. } => client.load().request(method, params).await,
         }
     }
 
@@ -284,193 +356,9 @@ impl ClientT for ClientInner {
     {
         match self {
             ClientInner::Http(client) => client.batch_request(batch).await,
-            ClientInner::Ws(client) => client.batch_request(batch).await,
+            ClientInner::Ws { client, .. } => client.load().batch_request(batch).await,
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum Order {
-    Asc,
-    Desc,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct BlockResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::BlockId, _>")]
-    pub block_id: BlockId,
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::Block, _>")]
-    pub block: Block,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct StatusResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::p2p::DefaultNodeInfo, _>")]
-    pub node_info: DefaultNodeInfo,
-    pub sync_info: SyncInfo,
-    pub validator_info: ValidatorInfo,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SyncInfo {
-    catching_up: bool,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed_maybe_empty")]
-    earliest_app_hash: Option<H256>,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed_maybe_empty")]
-    earliest_block_hash: Option<H256>,
-    #[serde(with = "::serde_utils::string")]
-    earliest_block_height: u64,
-    earliest_block_time: Timestamp,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    latest_app_hash: H256,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    latest_block_hash: H256,
-    #[serde(with = "::serde_utils::string")]
-    latest_block_height: u64,
-    latest_block_time: Timestamp,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ValidatorInfo {
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub address: H160,
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::crypto::PublicKey, _>")]
-    pub pub_key: PublicKey,
-    // REVIEW: is this bounded the same way as Validator?
-    #[serde(with = "::serde_utils::string")]
-    pub voting_power: i64,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ValidatorsResponse {
-    #[serde(with = "::serde_utils::string")]
-    pub block_height: NonZeroU64,
-    #[serde(deserialize_with = "serde_as_list::<_, protos::tendermint::types::Validator, _>")]
-    pub validators: Vec<Validator>,
-    #[serde(with = "::serde_utils::string")]
-    pub count: u64,
-    #[serde(with = "::serde_utils::string")]
-    pub total: u64,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct AllValidatorsResponse {
-    pub block_height: NonZeroU64,
-    pub validators: Vec<Validator>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ValidatorsPagination {
-    page: NonZeroU64,
-    // :]
-    per_page: Option<BoundedU8<1, 100>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AbciQueryResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::abci::ResponseQuery, _>")]
-    pub response: ResponseQuery,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct CommitResponse {
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::types::SignedHeader, _>")]
-    pub signed_header: SignedHeader,
-    pub canonical: bool,
-}
-
-#[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TxResponse {
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub hash: H256,
-    // review: is this really optional?
-    #[serde(with = "::serde_utils::string_opt")]
-    pub height: Option<NonZeroU64>,
-    pub index: u32,
-    #[serde(deserialize_with = "serde_as::<_, protos::tendermint::abci::ExecTxResult, _>")]
-    pub tx_result: ExecTxResult,
-    #[serde(with = "::serde_utils::base64")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub tx: Vec<u8>,
-    #[serde(
-        default,
-        deserialize_with = "serde_as_opt::<_, protos::tendermint::types::TxProof, _>"
-    )]
-    pub proof: Option<TxProof>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TxSearchResponse {
-    pub txs: Vec<TxResponse>,
-    #[serde(with = "::serde_utils::string")]
-    pub total_count: u32,
-}
-
-#[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TxBroadcastSyncResponse {
-    pub codespace: String,
-
-    pub code: u32,
-
-    #[serde(with = "::serde_utils::base64")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub data: Vec<u8>,
-
-    pub log: String,
-
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub hash: H256,
-}
-
-pub fn serde_as<'de, D, Src, Dst>(deserializer: D) -> Result<Dst, D::Error>
-where
-    D: Deserializer<'de>,
-    Src: Deserialize<'de>,
-    Src: TryInto<Dst, Error: Debug>,
-{
-    Src::deserialize(deserializer)?
-        .try_into()
-        .map_err(|e| de::Error::custom(format!("{e:?}")))
-}
-
-pub fn serde_as_opt<'de, D, Src, Dst>(deserializer: D) -> Result<Option<Dst>, D::Error>
-where
-    D: Deserializer<'de>,
-    Src: Deserialize<'de>,
-    Src: TryInto<Dst, Error: Debug>,
-{
-    <Option<Src>>::deserialize(deserializer)?
-        .map(|src| {
-            src.try_into()
-                .map_err(|e| de::Error::custom(format!("{e:?}")))
-        })
-        .transpose()
-}
-
-pub fn serde_as_list<'de, D, Src, Dst>(deserializer: D) -> Result<Vec<Dst>, D::Error>
-where
-    D: Deserializer<'de>,
-    Src: Deserialize<'de>,
-    Src: TryInto<Dst, Error: Debug>,
-{
-    <Vec<Src>>::deserialize(deserializer)?
-        .into_iter()
-        .map(|x| {
-            x.try_into()
-                .map_err(|e| de::Error::custom(format!("{e:?}")))
-        })
-        .collect()
 }
 
 // These tests are useful in testing and debugging, but should not be run in CI

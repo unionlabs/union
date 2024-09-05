@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use cometbft_rpc::AbciQueryResponse;
+use cometbft_rpc::types::AbciQueryResponse;
 use contracts::ibc_handler::IBCHandler;
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use ics23::ibc_api::SDK_SPECS;

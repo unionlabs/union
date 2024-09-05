@@ -611,6 +611,11 @@ end
                     .await
                     .map_err(|err| match &err {
                         BroadcastTxCommitError::Tx(tx_err) => match tx_err {
+                            CosmosSdkError::Capability(capability_error) => ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                ErrorReporter(capability_error).to_string(),
+                                None::<()>,
+                            ),
                             CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
                                 ErrorObject::owned(
                                     FATAL_JSONRPC_ERROR_CODE,

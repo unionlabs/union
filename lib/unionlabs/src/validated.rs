@@ -1,4 +1,5 @@
 use core::{
+    cmp::Ordering,
     fmt::Display,
     hash::{Hash, Hasher},
     marker::PhantomData,
@@ -24,6 +25,18 @@ pub struct Validated<T, V: Validate<T>>(
 impl<T: Hash, V: Validate<T>> Hash for Validated<T, V> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.hash(state);
+    }
+}
+
+impl<T: PartialOrd, V: Validate<T>> PartialOrd for Validated<T, V> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.0.partial_cmp(&other.0)
+    }
+}
+
+impl<T: Ord, V: Validate<T>> Ord for Validated<T, V> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
     }
 }
 
