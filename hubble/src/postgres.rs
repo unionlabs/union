@@ -486,7 +486,7 @@ pub async fn update_contracts_indexed_heights<'a>(
 ) -> sqlx::Result<usize> {
     let unique_contracts: Vec<String> = contracts.into_iter().unique().collect();
 
-    sqlx::query!(
+    let rows_updated = sqlx::query!(
         "
         INSERT INTO hubble.contract_status(internal_chain_id, address, height, timestamp)
             SELECT
@@ -510,26 +510,7 @@ pub async fn update_contracts_indexed_heights<'a>(
     .iter()
     .len();
 
-    let rows_updated_old = sqlx::query!(
-        "
-        UPDATE v0.contracts 
-        SET indexed_height = data.height
-        FROM (
-            SELECT $1::bigint as height, unnest($2::text[]) as address
-        ) as data
-        WHERE v0.contracts.address = data.address AND chain_id = $3
-        RETURNING v0.contracts.address
-        ",
-        &height,
-        &unique_contracts,
-        &chain_id.db,
-    )
-    .fetch_all(tx.as_mut())
-    .await?
-    .iter()
-    .len();
-
-    Ok(rows_updated_old)
+    Ok(rows_updated)
 }
 
 pub async fn schedule_replication_reset(

@@ -90,7 +90,13 @@ impl Config {
 
             let rows = loop {
                 let rows = sqlx::query!(
-                    r#"SELECT address, indexed_height from v0.contracts where chain_id = $1"#,
+                    r#"
+                        SELECT c.address, COALESCE(cs.height, c.height - 1) as indexed_height
+                        FROM v0.contracts c
+                                LEFT JOIN hubble.contract_status cs
+                                        ON c.chain_id = cs.internal_chain_id and c.address = cs.address
+                        WHERE c.chain_id = $1 
+                    "#,
                     chain_id.db
                 )
                 .fetch_all(&pool)
@@ -106,7 +112,7 @@ impl Config {
 
             let lowest: u64 = rows
                 .iter()
-                .map(|row| row.indexed_height)
+                .map(|row| row.indexed_height.expect("query to return indexed_height"))
                 .min()
                 .expect("contracts should exist in the db")
                 .try_into()
@@ -114,7 +120,7 @@ impl Config {
 
             let highest: u64 = rows
                 .iter()
-                .map(|row| row.indexed_height)
+                .map(|row| row.indexed_height.expect("query to return indexed_height"))
                 .max()
                 .expect("contracts should exist in the db")
                 .try_into()
@@ -336,7 +342,7 @@ async fn index_blocks_by_chunk(
 
                 postgres::insert_batch_logs(&mut tx, blocks_to_insert, mode).await?;
 
-                let updated = postgres::update_contracts_indexed_heights(
+                postgres::update_contracts_indexed_heights(
                     &mut tx,
                     filter
                         .iter()
@@ -347,11 +353,6 @@ async fn index_blocks_by_chunk(
                     chain_id,
                 )
                 .await?;
-                assert_eq!(
-                    updated,
-                    filter.len(),
-                    "no contracts should be removed while hubble is running"
-                );
                 tx.commit().await?;
             }
 
