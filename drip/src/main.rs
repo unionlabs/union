@@ -128,16 +128,23 @@ async fn main() {
                                 )
                                 .expect("???");
 
-                            let mut rows = stmt.query((chain.id, batch_size as i64)).expect("can't query rows");
+                            let mut rows = stmt.query((&chain.id, batch_size as i64)).expect("can't query rows");
 
                             let mut requests = vec![];
+
 
                             while let Some(row) = rows.next().expect("could not read row") {
                                 let id: i64 = row.get(0).expect("could not read id");
                                 let denom: String = row.get(1).expect("could not read denom");
                                 let receiver: String = row.get(2).expect("could not read address");
 
-                                requests.push(SendRequest { id, receiver, denom, amount: 42 }); //todo fix amount
+                                let Some(coin) = chain.coins.iter().find(|coin| coin.denom == denom) else {
+                                    error!(%denom, chain_id=&chain.id, "dropping request for unknown denom");
+                                    break;
+                                };
+                                
+
+                                requests.push(SendRequest { id, receiver, denom, amount: coin.amount }); //todo fix amount
                             }
 
                             Ok(requests)
@@ -495,6 +502,11 @@ impl Mutation {
         // Get chain config
         let Some(chain) = self.chains.iter().find(|c| c.id == chain_id) else {
             return Err(format!("invalid chain_id {chain_id}").into());
+        };
+
+        // Ensure denom exists for chain
+        if !chain.coins.iter().any(|coin| coin.denom == denom) {
+            return Err(format!("invalid denom {denom}").into());
         };
 
         let allow_bypass = bypass_secret
