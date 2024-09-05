@@ -1,12 +1,10 @@
 <script lang="ts">
 import { contribute, checkStatus, checkContribution } from "$lib/api/index.ts"
 import Text from "$lib/components/typography/Text.svelte"
-import { user } from "$lib/stores/user.svelte.ts"
 import Button from "$lib/components/Button.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import Spinner from "$lib/components/Spinner.svelte"
-import { getQueuePayloadId } from "$lib/supabase/queries.ts"
 
 let clientStore = createQuery(
   reactiveQueryArgs(() => ({
@@ -33,29 +31,6 @@ let {
   isLoading: contributionIsLoading,
   data: contributionData
 } = $derived($contributionStore)
-
-const start = async () => {
-  const userId = user?.session?.user.id
-
-  if (!userId) {
-    console.error("User not logged in")
-    return
-  }
-
-  const { data, error } = await getQueuePayloadId(userId)
-
-  if (error) {
-    console.error("Error fetching payload_id:", error)
-    return
-  }
-
-  if (!data) {
-    console.log("No data found for the given user ID")
-    return
-  }
-
-  await contribute({ payloadId: data.payload_id })
-}
 </script>
 
 <section class="w-full h-full flex items-center justify-center">
@@ -77,7 +52,7 @@ const start = async () => {
     <div>
       {#if contributionData}
         {#if contributionData.shouldContribute}
-          <Button on:click={start}>Contribute</Button>
+          <Button on:click={contribute}>Contribute</Button>
         {:else}
           <Text>Thanks for your contribution</Text>
         {/if}
