@@ -5,7 +5,7 @@ use queue_msg::{
     optimize::{OptimizationResult, PurePass},
     BoxDynError, Op,
 };
-use tracing::{error, info, info_span, trace, trace_span};
+use tracing::{error, info, trace, trace_span};
 use unionlabs::ErrorReporter;
 
 use crate::VoyagerMessage;

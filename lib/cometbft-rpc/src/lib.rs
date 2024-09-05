@@ -7,7 +7,7 @@ use std::{
 use jsonrpsee::{
     core::client::ClientT,
     rpc_params,
-    ws_client::{WsClient, WsClientBuilder},
+    ws_client::{PingConfig, WsClient, WsClientBuilder},
 };
 use serde::{de, Deserialize, Deserializer, Serialize};
 use tracing::{debug, instrument};
@@ -29,7 +29,7 @@ use unionlabs::{
 
 #[derive(Debug, Clone)]
 pub struct Client {
-    client: Arc<WsClient>,
+    client: Arc<jsonrpsee::core::client::Client>,
 }
 
 pub type JsonRpcError = jsonrpsee::core::client::Error;
@@ -37,7 +37,12 @@ pub type JsonRpcError = jsonrpsee::core::client::Error;
 impl Client {
     pub async fn new(url: impl AsRef<str>) -> Result<Self, JsonRpcError> {
         Ok(Self {
-            client: Arc::new(WsClientBuilder::default().build(url).await?),
+            client: Arc::new(
+                WsClientBuilder::default()
+                    .enable_ws_ping(PingConfig::new())
+                    .build(url)
+                    .await?,
+            ),
         })
     }
 

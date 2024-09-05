@@ -16,38 +16,38 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
 };
-use queue_msg::{aggregation::do_callback, call, conc, noop, promise, BoxDynError, Op};
+use queue_msg::{call, conc, data, noop, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, info, instrument, warn};
 use unionlabs::{
     ethereum::{ibc_commitment_key, IBC_HANDLER_COMMITMENTS_SLOT},
-    hash::{H160, H256},
-    ibc::{core::client::height::Height, lightclients::ethereum::storage_proof::StorageProof},
+    hash::H160,
+    ibc::{
+        core::{channel, client::height::Height},
+        lightclients::ethereum::storage_proof::StorageProof,
+    },
     ics24::{ChannelEndPath, ClientStatePath, ConnectionPath, Path},
-    id::ClientId,
+    id::{ChannelId, ClientId, PortId},
     uint::U256,
     ErrorReporter, QueryHeight,
 };
 use voyager_message::{
-    call::{
-        compound::{fetch_client_state_meta, fetch_connection_from_channel_info},
-        Call, FetchClientInfo, FetchState,
+    call::Call,
+    data::{
+        ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
+        ChannelOpenTry, ClientInfo, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
+        ConnectionOpenInit, ConnectionOpenTry, CreateClient, Data, PacketMetadata, UpdateClient,
     },
-    callback::{
-        AggregateDecodeClientStateMetaFromConnection, AggregateFetchClientFromChannel,
-        AggregateFetchClientFromConnection, AggregateFetchCounterpartyChannelAndConnection,
-        AggregateFetchCounterpartyChannelAndConnectionFromSourceChannel, Callback, InfoOrMeta,
-    },
-    data::{ClientInfo, Data},
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
     reth_ipc::client::IpcClientBuilder,
+    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient, VoyagerRpcClientExt},
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
 use crate::{
-    call::{FetchBeaconBlockRange, FetchEvents, FetchGetLogs, ModuleCall},
-    callback::{EventInfo, ModuleCallback},
+    call::{FetchBeaconBlockRange, FetchEvents, FetchGetLogs, MakeFullEvent, ModuleCall},
+    callback::ModuleCallback,
     data::ModuleData,
 };
 
@@ -123,547 +123,543 @@ impl Module {
         }
     }
 
-    pub fn mk_aggregate_event(
-        &self,
-        event: IBCHandlerEvents,
-        event_height: Height,
-        tx_hash: H256,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
-        let channel_fetch = |port_id: &str, channel_id: &str, height| {
-            call(FetchState {
-                path: ChannelEndPath {
-                    port_id: port_id.parse().unwrap(),
-                    channel_id: channel_id.parse().unwrap(),
-                }
-                .into(),
-                chain_id: self.chain_id.clone(),
-                at: QueryHeight::Specific(height),
-            })
-        };
+    // pub fn mk_aggregate_event(
+    //     &self,
+    //     event: IBCHandlerEvents,
+    //     event_height: Height,
+    //     tx_hash: H256,
+    // ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
+    //     let channel_fetch = |port_id: &str, channel_id: &str, height| {
+    //         call(FetchState {
+    //             path: ChannelEndPath {
+    //                 port_id: port_id.parse().unwrap(),
+    //                 channel_id: channel_id.parse().unwrap(),
+    //             }
+    //             .into(),
+    //             chain_id: self.chain_id.clone(),
+    //             at: QueryHeight::Specific(height),
+    //         })
+    //     };
 
-        let connection_fetch = |connection_id: &str, height| {
-            call(FetchState {
-                path: ConnectionPath {
-                    connection_id: connection_id.parse().unwrap(),
-                }
-                .into(),
-                chain_id: self.chain_id.clone(),
-                at: QueryHeight::Specific(height),
-            })
-        };
+    //     let connection_fetch = |connection_id: &str, height| {
+    //         call(FetchState {
+    //             path: ConnectionPath {
+    //                 connection_id: connection_id.parse().unwrap(),
+    //             }
+    //             .into(),
+    //             chain_id: self.chain_id.clone(),
+    //             at: QueryHeight::Specific(height),
+    //         })
+    //     };
 
-        match event {
-            IBCHandlerEvents::ChannelEvent(
-                IBCChannelHandshakeEvents::ChannelCloseConfirmFilter(_),
-            )
-            | IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelCloseInitFilter(
-                _,
-            )) => {
-                todo!()
-            }
+    //     match event {
+    //         IBCHandlerEvents::ChannelEvent(
+    //             IBCChannelHandshakeEvents::ChannelCloseConfirmFilter(_),
+    //         )
+    //         | IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelCloseInitFilter(
+    //             _,
+    //         )) => {
+    //             todo!()
+    //         }
 
-            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenInitFilter(
-                raw_event,
-            )) => promise(
-                [
-                    connection_fetch(&raw_event.connection_id, event_height),
-                    promise(
-                        [connection_fetch(&raw_event.connection_id, event_height)],
-                        [],
-                        AggregateFetchClientFromConnection {
-                            fetch_type: InfoOrMeta::Both,
-                        },
-                    ),
-                ],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
-            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenTryFilter(
-                raw_event,
-            )) => promise(
-                [
-                    connection_fetch(&raw_event.connection_id, event_height),
-                    promise(
-                        [connection_fetch(&raw_event.connection_id, event_height)],
-                        [],
-                        AggregateFetchClientFromConnection {
-                            fetch_type: InfoOrMeta::Both,
-                        },
-                    ),
-                ],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
-            IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenAckFilter(
-                raw_event,
-            )) => promise(
-                [
-                    channel_fetch(&raw_event.port_id, &raw_event.channel_id, event_height),
-                    connection_fetch(&raw_event.connection_id, event_height),
-                    promise(
-                        [connection_fetch(&raw_event.connection_id, event_height)],
-                        [],
-                        AggregateFetchClientFromConnection {
-                            fetch_type: InfoOrMeta::Both,
-                        },
-                    ),
-                ],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
-            IBCHandlerEvents::ChannelEvent(
-                IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(raw_event),
-            ) => promise(
-                [
-                    channel_fetch(&raw_event.port_id, &raw_event.channel_id, event_height),
-                    connection_fetch(&raw_event.connection_id, event_height),
-                    promise(
-                        [connection_fetch(&raw_event.connection_id, event_height)],
-                        [],
-                        AggregateFetchClientFromConnection {
-                            fetch_type: InfoOrMeta::Both,
-                        },
-                    ),
-                ],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
+    //         IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenInitFilter(
+    //             raw_event,
+    //         )) => promise(
+    //             [
+    //                 connection_fetch(&raw_event.connection_id, event_height),
+    //                 promise(
+    //                     [connection_fetch(&raw_event.connection_id, event_height)],
+    //                     [],
+    //                     AggregateFetchClientFromConnection {
+    //                         fetch_type: InfoOrMeta::Both,
+    //                     },
+    //                 ),
+    //             ],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
+    //         IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenTryFilter(
+    //             raw_event,
+    //         )) => promise(
+    //             [
+    //                 connection_fetch(&raw_event.connection_id, event_height),
+    //                 promise(
+    //                     [connection_fetch(&raw_event.connection_id, event_height)],
+    //                     [],
+    //                     AggregateFetchClientFromConnection {
+    //                         fetch_type: InfoOrMeta::Both,
+    //                     },
+    //                 ),
+    //             ],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
+    //         IBCHandlerEvents::ChannelEvent(IBCChannelHandshakeEvents::ChannelOpenAckFilter(
+    //             raw_event,
+    //         )) => promise(
+    //             [
+    //                 channel_fetch(&raw_event.port_id, &raw_event.channel_id, event_height),
+    //                 connection_fetch(&raw_event.connection_id, event_height),
+    //                 promise(
+    //                     [connection_fetch(&raw_event.connection_id, event_height)],
+    //                     [],
+    //                     AggregateFetchClientFromConnection {
+    //                         fetch_type: InfoOrMeta::Both,
+    //                     },
+    //                 ),
+    //             ],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
+    //         IBCHandlerEvents::ChannelEvent(
+    //             IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(raw_event),
+    //         ) => promise(
+    //             [
+    //                 channel_fetch(&raw_event.port_id, &raw_event.channel_id, event_height),
+    //                 connection_fetch(&raw_event.connection_id, event_height),
+    //                 promise(
+    //                     [connection_fetch(&raw_event.connection_id, event_height)],
+    //                     [],
+    //                     AggregateFetchClientFromConnection {
+    //                         fetch_type: InfoOrMeta::Both,
+    //                     },
+    //                 ),
+    //             ],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
 
-            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenInitFilter(
-                raw_event,
-            )) => promise(
-                [promise(
-                    [connection_fetch(&raw_event.connection_id, event_height)],
-                    [],
-                    AggregateFetchClientFromConnection {
-                        fetch_type: InfoOrMeta::Both,
-                    },
-                )],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
-            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenTryFilter(
-                raw_event,
-            )) => promise(
-                [promise(
-                    [connection_fetch(&raw_event.connection_id, event_height)],
-                    [],
-                    AggregateFetchClientFromConnection {
-                        fetch_type: InfoOrMeta::Both,
-                    },
-                )],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
-            IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenAckFilter(
-                raw_event,
-            )) => promise(
-                [promise(
-                    [connection_fetch(&raw_event.connection_id, event_height)],
-                    [],
-                    AggregateFetchClientFromConnection {
-                        fetch_type: InfoOrMeta::Both,
-                    },
-                )],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
-            IBCHandlerEvents::ConnectionEvent(
-                IBCConnectionEvents::ConnectionOpenConfirmFilter(raw_event),
-            ) => promise(
-                [promise(
-                    [connection_fetch(&raw_event.connection_id, event_height)],
-                    [],
-                    AggregateFetchClientFromConnection {
-                        fetch_type: InfoOrMeta::Both,
-                    },
-                )],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
+    //         IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenInitFilter(
+    //             raw_event,
+    //         )) => promise(
+    //             [promise(
+    //                 [connection_fetch(&raw_event.connection_id, event_height)],
+    //                 [],
+    //                 AggregateFetchClientFromConnection {
+    //                     fetch_type: InfoOrMeta::Both,
+    //                 },
+    //             )],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
+    //         IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenTryFilter(
+    //             raw_event,
+    //         )) => promise(
+    //             [promise(
+    //                 [connection_fetch(&raw_event.connection_id, event_height)],
+    //                 [],
+    //                 AggregateFetchClientFromConnection {
+    //                     fetch_type: InfoOrMeta::Both,
+    //                 },
+    //             )],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
+    //         IBCHandlerEvents::ConnectionEvent(IBCConnectionEvents::ConnectionOpenAckFilter(
+    //             raw_event,
+    //         )) => promise(
+    //             [promise(
+    //                 [connection_fetch(&raw_event.connection_id, event_height)],
+    //                 [],
+    //                 AggregateFetchClientFromConnection {
+    //                     fetch_type: InfoOrMeta::Both,
+    //                 },
+    //             )],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
+    //         IBCHandlerEvents::ConnectionEvent(
+    //             IBCConnectionEvents::ConnectionOpenConfirmFilter(raw_event),
+    //         ) => promise(
+    //             [promise(
+    //                 [connection_fetch(&raw_event.connection_id, event_height)],
+    //                 [],
+    //                 AggregateFetchClientFromConnection {
+    //                     fetch_type: InfoOrMeta::Both,
+    //                 },
+    //             )],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
 
-            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(raw_event)) => {
-                promise(
-                    [
-                        fetch_client_state_meta(
-                            self.chain_id.clone(),
-                            raw_event.client_id.parse().unwrap(),
-                            QueryHeight::Specific(event_height),
-                        ),
-                        call(FetchClientInfo {
-                            chain_id: self.chain_id.clone(),
-                            client_id: raw_event.client_id.parse().unwrap(),
-                        }),
-                    ],
-                    [],
-                    Callback::plugin(
-                        self.plugin_name(),
-                        EventInfo {
-                            chain_id: self.chain_id.clone(),
-                            height: event_height,
-                            tx_hash,
-                            raw_event,
-                        },
-                    ),
-                )
-            }
-            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(raw_event)) => {
-                info!(?raw_event, "observed ClientRegistered event");
+    //         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(raw_event)) => {
+    //             promise(
+    //                 [
+    //                     fetch_client_state_meta(
+    //                         self.chain_id.clone(),
+    //                         raw_event.client_id.parse().unwrap(),
+    //                         QueryHeight::Specific(event_height),
+    //                     ),
+    //                     call(FetchClientInfo {
+    //                         chain_id: self.chain_id.clone(),
+    //                         client_id: raw_event.client_id.parse().unwrap(),
+    //                     }),
+    //                 ],
+    //                 [],
+    //                 Callback::plugin(
+    //                     self.plugin_name(),
+    //                     EventInfo {
+    //                         chain_id: self.chain_id.clone(),
+    //                         height: event_height,
+    //                         tx_hash,
+    //                         raw_event,
+    //                     },
+    //                 ),
+    //             )
+    //         }
+    //         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(raw_event)) => {
+    //             info!(?raw_event, "observed ClientRegistered event");
 
-                noop()
-            }
-            IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(raw_event)) => {
-                promise(
-                    [
-                        fetch_client_state_meta(
-                            self.chain_id.clone(),
-                            raw_event.client_id.parse().unwrap(),
-                            QueryHeight::Specific(event_height),
-                        ),
-                        call(FetchClientInfo {
-                            chain_id: self.chain_id.clone(),
-                            client_id: raw_event.client_id.parse().unwrap(),
-                        }),
-                    ],
-                    [],
-                    Callback::plugin(
-                        self.plugin_name(),
-                        EventInfo {
-                            chain_id: self.chain_id.clone(),
-                            height: event_height,
-                            tx_hash,
-                            raw_event,
-                        },
-                    ),
-                )
-            }
-            IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(raw_event)) => {
-                promise(
-                    [
-                        // client info of the client underlying this connection on this chain
-                        promise(
-                            [channel_fetch(
-                                &raw_event.packet.destination_port,
-                                &raw_event.packet.destination_channel,
-                                event_height,
-                            )],
-                            [],
-                            AggregateFetchClientFromChannel {
-                                fetch_type: InfoOrMeta::Both,
-                            },
-                        ),
-                        // channel on this chain
-                        channel_fetch(
-                            &raw_event.packet.destination_port,
-                            &raw_event.packet.destination_channel,
-                            event_height,
-                        ),
-                        // connection on this chain
-                        fetch_connection_from_channel_info(
-                            self.chain_id.clone(),
-                            QueryHeight::Specific(event_height),
-                            raw_event.packet.destination_port.parse().unwrap(),
-                            raw_event.packet.destination_channel.parse().unwrap(),
-                        ),
-                        // channel and connection on counterparty chain
-                        promise(
-                            [promise(
-                                [fetch_connection_from_channel_info(
-                                    self.chain_id.clone(),
-                                    QueryHeight::Specific(event_height),
-                                    raw_event.packet.destination_port.parse().unwrap(),
-                                    raw_event.packet.destination_channel.parse().unwrap(),
-                                )],
-                                [],
-                                AggregateDecodeClientStateMetaFromConnection {},
-                            )],
-                            [],
-                            AggregateFetchCounterpartyChannelAndConnection {
-                                counterparty_port_id: raw_event.packet.source_port.parse().unwrap(),
-                                counterparty_channel_id: raw_event
-                                    .packet
-                                    .source_channel
-                                    .parse()
-                                    .unwrap(),
-                            },
-                        ),
-                    ],
-                    [],
-                    Callback::plugin(
-                        self.plugin_name(),
-                        EventInfo {
-                            chain_id: self.chain_id.clone(),
-                            height: event_height,
-                            tx_hash,
-                            raw_event,
-                        },
-                    ),
-                )
-            }
-            IBCHandlerEvents::PacketEvent(IBCPacketEvents::SendPacketFilter(raw_event)) => {
-                promise(
-                    [
-                        // client underlying the channel on this chain
-                        promise(
-                            [channel_fetch(
-                                &raw_event.source_port,
-                                &raw_event.source_channel,
-                                event_height,
-                            )],
-                            [],
-                            AggregateFetchClientFromChannel {
-                                fetch_type: InfoOrMeta::Both,
-                            },
-                        ),
-                        // channel on this chain
-                        channel_fetch(
-                            &raw_event.source_port,
-                            &raw_event.source_channel,
-                            event_height,
-                        ),
-                        // connection on this chain
-                        fetch_connection_from_channel_info(
-                            self.chain_id.clone(),
-                            QueryHeight::Specific(event_height),
-                            raw_event.source_port.parse().unwrap(),
-                            raw_event.source_channel.parse().unwrap(),
-                        ),
-                        // channel and connection on the counterparty chain
-                        promise(
-                            [
-                                promise(
-                                    [fetch_connection_from_channel_info(
-                                        self.chain_id.clone(),
-                                        QueryHeight::Specific(event_height),
-                                        raw_event.source_port.parse().unwrap(),
-                                        raw_event.source_channel.parse().unwrap(),
-                                    )],
-                                    [],
-                                    AggregateDecodeClientStateMetaFromConnection {},
-                                ),
-                                channel_fetch(
-                                    &raw_event.source_port,
-                                    &raw_event.source_channel,
-                                    event_height,
-                                ),
-                            ],
-                            [],
-                            AggregateFetchCounterpartyChannelAndConnectionFromSourceChannel {},
-                        ),
-                    ],
-                    [],
-                    Callback::plugin(
-                        self.plugin_name(),
-                        EventInfo {
-                            chain_id: self.chain_id.clone(),
-                            height: event_height,
-                            tx_hash,
-                            raw_event,
-                        },
-                    ),
-                )
-            }
-            IBCHandlerEvents::PacketEvent(IBCPacketEvents::WriteAcknowledgementFilter(
-                raw_event,
-            )) => promise(
-                [
-                    // client underlying the channel on this chain
-                    promise(
-                        [channel_fetch(
-                            &raw_event.packet.destination_port,
-                            &raw_event.packet.destination_channel,
-                            event_height,
-                        )],
-                        [],
-                        AggregateFetchClientFromChannel {
-                            fetch_type: InfoOrMeta::Both,
-                        },
-                    ),
-                    // channel on this chain
-                    channel_fetch(
-                        &raw_event.packet.destination_port,
-                        &raw_event.packet.destination_channel,
-                        event_height,
-                    ),
-                    // connection on this chain
-                    fetch_connection_from_channel_info(
-                        self.chain_id.clone(),
-                        QueryHeight::Specific(event_height),
-                        raw_event.packet.destination_port.parse().unwrap(),
-                        raw_event.packet.destination_channel.parse().unwrap(),
-                    ),
-                    // channel and connection on the counterparty chain
-                    promise(
-                        [promise(
-                            [fetch_connection_from_channel_info(
-                                self.chain_id.clone(),
-                                QueryHeight::Specific(event_height),
-                                raw_event.packet.destination_port.parse().unwrap(),
-                                raw_event.packet.destination_channel.parse().unwrap(),
-                            )],
-                            [],
-                            AggregateDecodeClientStateMetaFromConnection {},
-                        )],
-                        [],
-                        AggregateFetchCounterpartyChannelAndConnection {
-                            counterparty_port_id: raw_event.packet.source_port.parse().unwrap(),
-                            counterparty_channel_id: raw_event
-                                .packet
-                                .source_channel
-                                .parse()
-                                .unwrap(),
-                        },
-                    ),
-                ],
-                [],
-                Callback::plugin(
-                    self.plugin_name(),
-                    EventInfo {
-                        chain_id: self.chain_id.clone(),
-                        height: event_height,
-                        tx_hash,
-                        raw_event,
-                    },
-                ),
-            ),
-            IBCHandlerEvents::PacketEvent(IBCPacketEvents::AcknowledgePacketFilter(raw_event)) => {
-                promise(
-                    [
-                        // client underlying the channel on this chain
-                        promise(
-                            [channel_fetch(
-                                &raw_event.packet.source_port,
-                                &raw_event.packet.source_channel,
-                                event_height,
-                            )],
-                            [],
-                            AggregateFetchClientFromChannel {
-                                fetch_type: InfoOrMeta::Both,
-                            },
-                        ),
-                        // channel on this chain
-                        channel_fetch(
-                            &raw_event.packet.source_port,
-                            &raw_event.packet.source_channel,
-                            event_height,
-                        ),
-                        // connection on this chain
-                        fetch_connection_from_channel_info(
-                            self.chain_id.clone(),
-                            QueryHeight::Specific(event_height),
-                            raw_event.packet.source_port.parse().unwrap(),
-                            raw_event.packet.source_channel.parse().unwrap(),
-                        ),
-                        // channel and connection on the counterparty chain
-                        promise(
-                            [promise(
-                                [fetch_connection_from_channel_info(
-                                    self.chain_id.clone(),
-                                    QueryHeight::Specific(event_height),
-                                    raw_event.packet.source_port.parse().unwrap(),
-                                    raw_event.packet.source_channel.parse().unwrap(),
-                                )],
-                                [],
-                                AggregateDecodeClientStateMetaFromConnection {},
-                            )],
-                            [],
-                            AggregateFetchCounterpartyChannelAndConnection {
-                                counterparty_port_id: raw_event
-                                    .packet
-                                    .destination_port
-                                    .parse()
-                                    .unwrap(),
-                                counterparty_channel_id: raw_event
-                                    .packet
-                                    .destination_channel
-                                    .parse()
-                                    .unwrap(),
-                            },
-                        ),
-                    ],
-                    [],
-                    Callback::plugin(
-                        self.plugin_name(),
-                        EventInfo {
-                            chain_id: self.chain_id.clone(),
-                            height: event_height,
-                            tx_hash,
-                            raw_event,
-                        },
-                    ),
-                )
-            }
-            // TODO: Handle this
-            IBCHandlerEvents::PacketEvent(IBCPacketEvents::TimeoutPacketFilter(raw_event)) => {
-                panic!("{raw_event:?}")
-            }
-            IBCHandlerEvents::OwnableEvent(_) => noop(),
-        }
-    }
+    //             noop()
+    //         }
+    //         IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(raw_event)) => {
+    //             promise(
+    //                 [
+    //                     fetch_client_state_meta(
+    //                         self.chain_id.clone(),
+    //                         raw_event.client_id.parse().unwrap(),
+    //                         QueryHeight::Specific(event_height),
+    //                     ),
+    //                     call(FetchClientInfo {
+    //                         chain_id: self.chain_id.clone(),
+    //                         client_id: raw_event.client_id.parse().unwrap(),
+    //                     }),
+    //                 ],
+    //                 [],
+    //                 Callback::plugin(
+    //                     self.plugin_name(),
+    //                     EventInfo {
+    //                         chain_id: self.chain_id.clone(),
+    //                         height: event_height,
+    //                         tx_hash,
+    //                         raw_event,
+    //                     },
+    //                 ),
+    //             )
+    //         }
+    //         IBCHandlerEvents::PacketEvent(IBCPacketEvents::RecvPacketFilter(raw_event)) => {
+    //             promise(
+    //                 [
+    //                     // client info of the client underlying this connection on this chain
+    //                     promise(
+    //                         [channel_fetch(
+    //                             &raw_event.packet.destination_port,
+    //                             &raw_event.packet.destination_channel,
+    //                             event_height,
+    //                         )],
+    //                         [],
+    //                         AggregateFetchClientFromChannel {
+    //                             fetch_type: InfoOrMeta::Both,
+    //                         },
+    //                     ),
+    //                     // channel on this chain
+    //                     channel_fetch(
+    //                         &raw_event.packet.destination_port,
+    //                         &raw_event.packet.destination_channel,
+    //                         event_height,
+    //                     ),
+    //                     // connection on this chain
+    //                     fetch_connection_from_channel_info(
+    //                         self.chain_id.clone(),
+    //                         QueryHeight::Specific(event_height),
+    //                         raw_event.packet.destination_port.parse().unwrap(),
+    //                         raw_event.packet.destination_channel.parse().unwrap(),
+    //                     ),
+    //                     // channel and connection on counterparty chain
+    //                     promise(
+    //                         [promise(
+    //                             [fetch_connection_from_channel_info(
+    //                                 self.chain_id.clone(),
+    //                                 QueryHeight::Specific(event_height),
+    //                                 raw_event.packet.destination_port.parse().unwrap(),
+    //                                 raw_event.packet.destination_channel.parse().unwrap(),
+    //                             )],
+    //                             [],
+    //                             AggregateDecodeClientStateMetaFromConnection {},
+    //                         )],
+    //                         [],
+    //                         AggregateFetchCounterpartyChannelAndConnection {
+    //                             counterparty_port_id: raw_event.packet.source_port.parse().unwrap(),
+    //                             counterparty_channel_id: raw_event
+    //                                 .packet
+    //                                 .source_channel
+    //                                 .parse()
+    //                                 .unwrap(),
+    //                         },
+    //                     ),
+    //                 ],
+    //                 [],
+    //                 Callback::plugin(
+    //                     self.plugin_name(),
+    //                     EventInfo {
+    //                         chain_id: self.chain_id.clone(),
+    //                         height: event_height,
+    //                         tx_hash,
+    //                         raw_event,
+    //                     },
+    //                 ),
+    //             )
+    //         }
+    //         IBCHandlerEvents::PacketEvent(IBCPacketEvents::SendPacketFilter(raw_event)) => {
+    //             promise(
+    //                 [
+    //                     // client underlying the channel on this chain
+    //                     promise(
+    //                         [channel_fetch(
+    //                             &raw_event.source_port,
+    //                             &raw_event.source_channel,
+    //                             event_height,
+    //                         )],
+    //                         [],
+    //                         AggregateFetchClientFromChannel {
+    //                             fetch_type: InfoOrMeta::Both,
+    //                         },
+    //                     ),
+    //                     // channel on this chain
+    //                     channel_fetch(
+    //                         &raw_event.source_port,
+    //                         &raw_event.source_channel,
+    //                         event_height,
+    //                     ),
+    //                     // connection on this chain
+    //                     fetch_connection_from_channel_info(
+    //                         self.chain_id.clone(),
+    //                         QueryHeight::Specific(event_height),
+    //                         raw_event.source_port.parse().unwrap(),
+    //                         raw_event.source_channel.parse().unwrap(),
+    //                     ),
+    //                     // channel and connection on the counterparty chain
+    //                     promise(
+    //                         [
+    //                             promise(
+    //                                 [fetch_connection_from_channel_info(
+    //                                     self.chain_id.clone(),
+    //                                     QueryHeight::Specific(event_height),
+    //                                     raw_event.source_port.parse().unwrap(),
+    //                                     raw_event.source_channel.parse().unwrap(),
+    //                                 )],
+    //                                 [],
+    //                                 AggregateDecodeClientStateMetaFromConnection {},
+    //                             ),
+    //                             channel_fetch(
+    //                                 &raw_event.source_port,
+    //                                 &raw_event.source_channel,
+    //                                 event_height,
+    //                             ),
+    //                         ],
+    //                         [],
+    //                         AggregateFetchCounterpartyChannelAndConnectionFromSourceChannel {},
+    //                     ),
+    //                 ],
+    //                 [],
+    //                 Callback::plugin(
+    //                     self.plugin_name(),
+    //                     EventInfo {
+    //                         chain_id: self.chain_id.clone(),
+    //                         height: event_height,
+    //                         tx_hash,
+    //                         raw_event,
+    //                     },
+    //                 ),
+    //             )
+    //         }
+    //         IBCHandlerEvents::PacketEvent(IBCPacketEvents::WriteAcknowledgementFilter(
+    //             raw_event,
+    //         )) => promise(
+    //             [
+    //                 // client underlying the channel on this chain
+    //                 promise(
+    //                     [channel_fetch(
+    //                         &raw_event.packet.destination_port,
+    //                         &raw_event.packet.destination_channel,
+    //                         event_height,
+    //                     )],
+    //                     [],
+    //                     AggregateFetchClientFromChannel {
+    //                         fetch_type: InfoOrMeta::Both,
+    //                     },
+    //                 ),
+    //                 // channel on this chain
+    //                 channel_fetch(
+    //                     &raw_event.packet.destination_port,
+    //                     &raw_event.packet.destination_channel,
+    //                     event_height,
+    //                 ),
+    //                 // connection on this chain
+    //                 fetch_connection_from_channel_info(
+    //                     self.chain_id.clone(),
+    //                     QueryHeight::Specific(event_height),
+    //                     raw_event.packet.destination_port.parse().unwrap(),
+    //                     raw_event.packet.destination_channel.parse().unwrap(),
+    //                 ),
+    //                 // channel and connection on the counterparty chain
+    //                 promise(
+    //                     [promise(
+    //                         [fetch_connection_from_channel_info(
+    //                             self.chain_id.clone(),
+    //                             QueryHeight::Specific(event_height),
+    //                             raw_event.packet.destination_port.parse().unwrap(),
+    //                             raw_event.packet.destination_channel.parse().unwrap(),
+    //                         )],
+    //                         [],
+    //                         AggregateDecodeClientStateMetaFromConnection {},
+    //                     )],
+    //                     [],
+    //                     AggregateFetchCounterpartyChannelAndConnection {
+    //                         counterparty_port_id: raw_event.packet.source_port.parse().unwrap(),
+    //                         counterparty_channel_id: raw_event
+    //                             .packet
+    //                             .source_channel
+    //                             .parse()
+    //                             .unwrap(),
+    //                     },
+    //                 ),
+    //             ],
+    //             [],
+    //             Callback::plugin(
+    //                 self.plugin_name(),
+    //                 EventInfo {
+    //                     chain_id: self.chain_id.clone(),
+    //                     height: event_height,
+    //                     tx_hash,
+    //                     raw_event,
+    //                 },
+    //             ),
+    //         ),
+    //         IBCHandlerEvents::PacketEvent(IBCPacketEvents::AcknowledgePacketFilter(raw_event)) => {
+    //             promise(
+    //                 [
+    //                     // client underlying the channel on this chain
+    //                     promise(
+    //                         [channel_fetch(
+    //                             &raw_event.packet.source_port,
+    //                             &raw_event.packet.source_channel,
+    //                             event_height,
+    //                         )],
+    //                         [],
+    //                         AggregateFetchClientFromChannel {
+    //                             fetch_type: InfoOrMeta::Both,
+    //                         },
+    //                     ),
+    //                     // channel on this chain
+    //                     channel_fetch(
+    //                         &raw_event.packet.source_port,
+    //                         &raw_event.packet.source_channel,
+    //                         event_height,
+    //                     ),
+    //                     // connection on this chain
+    //                     fetch_connection_from_channel_info(
+    //                         self.chain_id.clone(),
+    //                         QueryHeight::Specific(event_height),
+    //                         raw_event.packet.source_port.parse().unwrap(),
+    //                         raw_event.packet.source_channel.parse().unwrap(),
+    //                     ),
+    //                     // channel and connection on the counterparty chain
+    //                     promise(
+    //                         [promise(
+    //                             [fetch_connection_from_channel_info(
+    //                                 self.chain_id.clone(),
+    //                                 QueryHeight::Specific(event_height),
+    //                                 raw_event.packet.source_port.parse().unwrap(),
+    //                                 raw_event.packet.source_channel.parse().unwrap(),
+    //                             )],
+    //                             [],
+    //                             AggregateDecodeClientStateMetaFromConnection {},
+    //                         )],
+    //                         [],
+    //                         AggregateFetchCounterpartyChannelAndConnection {
+    //                             counterparty_port_id: raw_event
+    //                                 .packet
+    //                                 .destination_port
+    //                                 .parse()
+    //                                 .unwrap(),
+    //                             counterparty_channel_id: raw_event
+    //                                 .packet
+    //                                 .destination_channel
+    //                                 .parse()
+    //                                 .unwrap(),
+    //                         },
+    //                     ),
+    //                 ],
+    //                 [],
+    //                 Callback::plugin(
+    //                     self.plugin_name(),
+    //                     EventInfo {
+    //                         chain_id: self.chain_id.clone(),
+    //                         height: event_height,
+    //                         tx_hash,
+    //                         raw_event,
+    //                     },
+    //                 ),
+    //             )
+    //         }
+    //         IBCHandlerEvents::OwnableEvent(_) => noop(),
+    //     }
+    // }
 
     fn ibc_handler(&self) -> IBCHandler<Provider<Ws>> {
         IBCHandler::new(self.ibc_handler_address, Arc::new(self.provider.clone()))
@@ -775,6 +771,104 @@ impl Module {
             .unwrap(),
         })
     }
+
+    async fn make_packet_metadata(
+        &self,
+        event_height: Height,
+        self_port_id: PortId,
+        self_channel_id: ChannelId,
+    ) -> RpcResult<(
+        ChainId<'static>,
+        ClientInfo,
+        ChannelMetadata,
+        ChannelMetadata,
+        channel::order::Order,
+    )> {
+        let self_channel = self
+            .client
+            .query_ibc_state_typed(
+                self.chain_id.clone(),
+                event_height.into(),
+                ChannelEndPath {
+                    port_id: self_port_id.clone(),
+                    channel_id: self_channel_id.clone(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?
+            .state;
+
+        let self_connection = self
+            .client
+            .query_ibc_state_typed(
+                self.chain_id.clone(),
+                event_height.into(),
+                ConnectionPath {
+                    connection_id: self_channel.connection_hops[0].clone(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let client_info = self
+            .client
+            .client_info(
+                self.chain_id.clone(),
+                self_connection.state.client_id.clone(),
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let client_meta = self
+            .client
+            .client_meta(
+                self.chain_id.clone(),
+                event_height.into(),
+                self_connection.state.client_id.clone(),
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let other_channel = self
+            .client
+            .query_ibc_state_typed(
+                client_meta.chain_id.clone(),
+                QueryHeight::Latest,
+                ChannelEndPath {
+                    port_id: self_channel.counterparty.port_id.clone(),
+                    channel_id: self_channel.counterparty.channel_id.parse().unwrap(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let source_channel = ChannelMetadata {
+            port_id: self_port_id.clone(),
+            channel_id: self_channel_id.clone(),
+            version: self_channel.version,
+            connection: ConnectionMetadata {
+                client_id: self_connection.state.client_id,
+                connection_id: self_connection.path.connection_id.clone(),
+            },
+        };
+        let destination_channel = ChannelMetadata {
+            port_id: other_channel.path.port_id.clone(),
+            channel_id: other_channel.path.channel_id.clone(),
+            version: other_channel.state.version,
+            connection: ConnectionMetadata {
+                client_id: self_connection.state.counterparty.client_id,
+                connection_id: self_connection.state.counterparty.connection_id.unwrap(),
+            },
+        };
+
+        Ok((
+            client_meta.chain_id,
+            client_info,
+            source_channel,
+            destination_channel,
+            self_channel.ordering,
+        ))
+    }
 }
 
 #[async_trait]
@@ -789,27 +883,27 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn callback(
+    async fn callback(
         &self,
         cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(match cb {
-            ModuleCallback::CreateClient(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::UpdateClient(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::ConnectionOpenInit(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::ConnectionOpenTry(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::ConnectionOpenAck(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::ConnectionOpenConfirm(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::ChannelOpenInit(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::ChannelOpenTry(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::ChannelOpenAck(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::ChannelOpenConfirm(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::SendPacket(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::RecvPacket(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::WriteAcknowledgement(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::PacketAcknowledgement(aggregate) => do_callback(aggregate, data),
-            ModuleCallback::PacketTimeout(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::CreateClient(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::UpdateClient(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::ConnectionOpenInit(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::ConnectionOpenTry(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::ConnectionOpenAck(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::ConnectionOpenConfirm(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::ChannelOpenInit(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::ChannelOpenTry(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::ChannelOpenAck(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::ChannelOpenConfirm(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::SendPacket(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::RecvPacket(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::WriteAcknowledgement(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::PacketAcknowledgement(aggregate) => do_callback(aggregate, data),
+            // ModuleCallback::PacketTimeout(aggregate) => do_callback(aggregate, data),
         })
     }
 
@@ -819,6 +913,717 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         msg: ModuleCall,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
+            ModuleCall::MakeFullEvent(MakeFullEvent {
+                slot,
+                tx_hash,
+                event,
+            }) => {
+                let height = self.make_height(slot);
+
+                match event {
+                    IBCHandlerEvents::ChannelEvent(
+                        IBCChannelHandshakeEvents::ChannelCloseConfirmFilter(_),
+                    )
+                    | IBCHandlerEvents::ChannelEvent(
+                        IBCChannelHandshakeEvents::ChannelCloseInitFilter(_),
+                    ) => {
+                        todo!()
+                    }
+
+                    IBCHandlerEvents::ChannelEvent(
+                        IBCChannelHandshakeEvents::ChannelOpenInitFilter(raw_event),
+                    ) => {
+                        let connection = self
+                            .client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ConnectionPath {
+                                    connection_id: raw_event.connection_id.parse().unwrap(),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_info = self
+                            .client
+                            .client_info(self.chain_id.clone(), connection.state.client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.state.client_id.clone(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let channel = self
+                            .client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ChannelEndPath {
+                                    port_id: raw_event.port_id.parse().unwrap(),
+                                    channel_id: raw_event.channel_id.parse().unwrap(),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ChannelOpenInit {
+                                port_id: raw_event.port_id.parse().unwrap(),
+                                channel_id: raw_event.channel_id.parse().unwrap(),
+                                counterparty_port_id: raw_event
+                                    .counterparty_port_id
+                                    .parse()
+                                    .unwrap(),
+                                connection: connection.state,
+                                version: channel.state.version,
+                            }
+                            .into(),
+                        }))
+                    }
+                    IBCHandlerEvents::ChannelEvent(
+                        IBCChannelHandshakeEvents::ChannelOpenTryFilter(raw_event),
+                    ) => {
+                        let connection = self
+                            .client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ConnectionPath {
+                                    connection_id: raw_event.connection_id.parse().unwrap(),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_info = self
+                            .client
+                            .client_info(self.chain_id.clone(), connection.state.client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.state.client_id.clone(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let channel = self
+                            .client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ChannelEndPath {
+                                    port_id: raw_event.port_id.parse().unwrap(),
+                                    channel_id: raw_event.channel_id.parse().unwrap(),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ChannelOpenTry {
+                                port_id: raw_event.port_id.parse().unwrap(),
+                                channel_id: raw_event.channel_id.parse().unwrap(),
+                                counterparty_port_id: raw_event
+                                    .counterparty_port_id
+                                    .parse()
+                                    .unwrap(),
+                                counterparty_channel_id: raw_event
+                                    .counterparty_channel_id
+                                    .parse()
+                                    .unwrap(),
+                                connection: connection.state,
+                                version: channel.state.version,
+                            }
+                            .into(),
+                        }))
+                    }
+                    IBCHandlerEvents::ChannelEvent(
+                        IBCChannelHandshakeEvents::ChannelOpenAckFilter(raw_event),
+                    ) => {
+                        let connection = self
+                            .client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ConnectionPath {
+                                    connection_id: raw_event.connection_id.parse().unwrap(),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_info = self
+                            .client
+                            .client_info(self.chain_id.clone(), connection.state.client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.state.client_id.clone(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let channel = self
+                            .client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ChannelEndPath {
+                                    port_id: raw_event.port_id.parse().unwrap(),
+                                    channel_id: raw_event.channel_id.parse().unwrap(),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ChannelOpenAck {
+                                port_id: raw_event.port_id.parse().unwrap(),
+                                channel_id: raw_event.channel_id.parse().unwrap(),
+                                counterparty_port_id: raw_event
+                                    .counterparty_port_id
+                                    .parse()
+                                    .unwrap(),
+                                counterparty_channel_id: raw_event
+                                    .counterparty_channel_id
+                                    .parse()
+                                    .unwrap(),
+                                connection: connection.state,
+                                version: channel.state.version,
+                            }
+                            .into(),
+                        }))
+                    }
+                    IBCHandlerEvents::ChannelEvent(
+                        IBCChannelHandshakeEvents::ChannelOpenConfirmFilter(raw_event),
+                    ) => {
+                        let connection = self
+                            .client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ConnectionPath {
+                                    connection_id: raw_event.connection_id.parse().unwrap(),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_info = self
+                            .client
+                            .client_info(self.chain_id.clone(), connection.state.client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                connection.state.client_id.clone(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let channel = self
+                            .client
+                            .query_ibc_state_typed(
+                                self.chain_id.clone(),
+                                height.into(),
+                                ChannelEndPath {
+                                    port_id: raw_event.port_id.parse().unwrap(),
+                                    channel_id: raw_event.channel_id.parse().unwrap(),
+                                },
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ChannelOpenConfirm {
+                                port_id: raw_event.port_id.parse().unwrap(),
+                                channel_id: raw_event.channel_id.parse().unwrap(),
+                                counterparty_port_id: raw_event
+                                    .counterparty_port_id
+                                    .parse()
+                                    .unwrap(),
+                                counterparty_channel_id: raw_event
+                                    .counterparty_channel_id
+                                    .parse()
+                                    .unwrap(),
+                                connection: connection.state,
+                                version: channel.state.version,
+                            }
+                            .into(),
+                        }))
+                    }
+
+                    IBCHandlerEvents::ConnectionEvent(
+                        IBCConnectionEvents::ConnectionOpenInitFilter(raw_event),
+                    ) => {
+                        let client_info = self
+                            .client
+                            .client_info(
+                                self.chain_id.clone(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ConnectionOpenInit {
+                                client_id: raw_event.client_id.parse().unwrap(),
+                                connection_id: raw_event.connection_id.parse().unwrap(),
+                                counterparty_client_id: raw_event
+                                    .counterparty_client_id
+                                    .parse()
+                                    .unwrap(),
+                            }
+                            .into(),
+                        }))
+                    }
+                    IBCHandlerEvents::ConnectionEvent(
+                        IBCConnectionEvents::ConnectionOpenTryFilter(raw_event),
+                    ) => {
+                        let client_info = self
+                            .client
+                            .client_info(
+                                self.chain_id.clone(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ConnectionOpenTry {
+                                client_id: raw_event.client_id.parse().unwrap(),
+                                connection_id: raw_event.connection_id.parse().unwrap(),
+                                counterparty_client_id: raw_event
+                                    .counterparty_client_id
+                                    .parse()
+                                    .unwrap(),
+                                counterparty_connection_id: raw_event
+                                    .counterparty_connection_id
+                                    .parse()
+                                    .unwrap(),
+                            }
+                            .into(),
+                        }))
+                    }
+                    IBCHandlerEvents::ConnectionEvent(
+                        IBCConnectionEvents::ConnectionOpenAckFilter(raw_event),
+                    ) => {
+                        let client_info = self
+                            .client
+                            .client_info(
+                                self.chain_id.clone(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ConnectionOpenAck {
+                                client_id: raw_event.client_id.parse().unwrap(),
+                                connection_id: raw_event.connection_id.parse().unwrap(),
+                                counterparty_client_id: raw_event
+                                    .counterparty_client_id
+                                    .parse()
+                                    .unwrap(),
+                                counterparty_connection_id: raw_event
+                                    .counterparty_connection_id
+                                    .parse()
+                                    .unwrap(),
+                            }
+                            .into(),
+                        }))
+                    }
+                    IBCHandlerEvents::ConnectionEvent(
+                        IBCConnectionEvents::ConnectionOpenConfirmFilter(raw_event),
+                    ) => {
+                        let client_info = self
+                            .client
+                            .client_info(
+                                self.chain_id.clone(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: ConnectionOpenConfirm {
+                                client_id: raw_event.client_id.parse().unwrap(),
+                                connection_id: raw_event.connection_id.parse().unwrap(),
+                                counterparty_client_id: raw_event
+                                    .counterparty_client_id
+                                    .parse()
+                                    .unwrap(),
+                                counterparty_connection_id: raw_event
+                                    .counterparty_connection_id
+                                    .parse()
+                                    .unwrap(),
+                            }
+                            .into(),
+                        }))
+                    }
+
+                    IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientCreatedFilter(
+                        raw_event,
+                    )) => {
+                        let client_id = raw_event.client_id.parse::<ClientId>().unwrap();
+
+                        let client_info = self
+                            .client
+                            .client_info(self.chain_id.clone(), client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info: client_info.clone(),
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: CreateClient {
+                                client_id,
+                                client_type: client_info.client_type,
+                                consensus_height: client_meta.height,
+                            }
+                            .into(),
+                        }))
+                    }
+                    IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientRegisteredFilter(
+                        raw_event,
+                    )) => {
+                        info!(?raw_event, "observed ClientRegistered event");
+
+                        Ok(noop())
+                    }
+                    IBCHandlerEvents::ClientEvent(IBCClientEvents::ClientUpdatedFilter(
+                        raw_event,
+                    )) => {
+                        let client_id = raw_event.client_id.parse::<ClientId>().unwrap();
+
+                        let client_info = self
+                            .client
+                            .client_info(self.chain_id.clone(), client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        let client_meta = self
+                            .client
+                            .client_meta(
+                                self.chain_id.clone(),
+                                height.into(),
+                                raw_event.client_id.parse().unwrap(),
+                            )
+                            .await
+                            .map_err(json_rpc_error_to_rpc_error)?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info: client_info.clone(),
+                            counterparty_chain_id: client_meta.chain_id,
+                            tx_hash,
+                            provable_height: height,
+                            event: UpdateClient {
+                                client_id,
+                                client_type: client_info.client_type,
+                                consensus_heights: vec![raw_event.height.into()],
+                            }
+                            .into(),
+                        }))
+                    }
+                    IBCHandlerEvents::PacketEvent(event) => {
+                        match event {
+                            // packet origin is this chain
+                            IBCPacketEvents::SendPacketFilter(event) => {
+                                let (
+                                    counterparty_chain_id,
+                                    client_info,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                ) = self
+                                    .make_packet_metadata(
+                                        height,
+                                        event.source_port.parse().unwrap(),
+                                        event.source_channel.parse().unwrap(),
+                                    )
+                                    .await?;
+
+                                Ok(data(ChainEvent {
+                                    chain_id: self.chain_id.clone(),
+                                    client_info,
+                                    counterparty_chain_id,
+                                    tx_hash,
+                                    provable_height: height,
+                                    event: voyager_message::data::SendPacket {
+                                        packet_data: event.data.to_vec(),
+                                        packet: PacketMetadata {
+                                            sequence: event.sequence.try_into().unwrap(),
+                                            source_channel,
+                                            destination_channel,
+                                            channel_ordering,
+                                            timeout_height: event.timeout_height.into(),
+                                            timeout_timestamp: event.timeout_timestamp,
+                                        },
+                                    }
+                                    .into(),
+                                }))
+                            }
+                            IBCPacketEvents::TimeoutPacketFilter(event) => {
+                                let (
+                                    counterparty_chain_id,
+                                    client_info,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                ) = self
+                                    .make_packet_metadata(
+                                        height,
+                                        event.packet.source_port.parse().unwrap(),
+                                        event.packet.source_channel.parse().unwrap(),
+                                    )
+                                    .await?;
+
+                                Ok(data(ChainEvent {
+                                    chain_id: self.chain_id.clone(),
+                                    client_info,
+                                    counterparty_chain_id,
+                                    tx_hash,
+                                    provable_height: height,
+                                    event: voyager_message::data::TimeoutPacket {
+                                        packet: PacketMetadata {
+                                            sequence: event.packet.sequence.try_into().unwrap(),
+                                            source_channel,
+                                            destination_channel,
+                                            channel_ordering,
+                                            timeout_height: event.packet.timeout_height.into(),
+                                            timeout_timestamp: event.packet.timeout_timestamp,
+                                        },
+                                    }
+                                    .into(),
+                                }))
+                            }
+                            IBCPacketEvents::AcknowledgePacketFilter(event) => {
+                                let (
+                                    counterparty_chain_id,
+                                    client_info,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                ) = self
+                                    .make_packet_metadata(
+                                        height,
+                                        event.packet.source_port.parse().unwrap(),
+                                        event.packet.source_channel.parse().unwrap(),
+                                    )
+                                    .await?;
+
+                                Ok(data(ChainEvent {
+                                    chain_id: self.chain_id.clone(),
+                                    client_info,
+                                    counterparty_chain_id,
+                                    tx_hash,
+                                    provable_height: height,
+                                    event: voyager_message::data::AcknowledgePacket {
+                                        packet: PacketMetadata {
+                                            sequence: event.packet.sequence.try_into().unwrap(),
+                                            source_channel,
+                                            destination_channel,
+                                            channel_ordering,
+                                            timeout_height: event.packet.timeout_height.into(),
+                                            timeout_timestamp: event.packet.timeout_timestamp,
+                                        },
+                                    }
+                                    .into(),
+                                }))
+                            }
+                            // packet origin is the counterparty chain (if i put this comment above this pattern rustfmt explodes)
+                            IBCPacketEvents::WriteAcknowledgementFilter(event) => {
+                                let (
+                                    counterparty_chain_id,
+                                    client_info,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                ) = self
+                                    .make_packet_metadata(
+                                        height,
+                                        event.packet.destination_port.parse().unwrap(),
+                                        event.packet.destination_channel.parse().unwrap(),
+                                    )
+                                    .await?;
+
+                                Ok(data(ChainEvent {
+                                    chain_id: self.chain_id.clone(),
+                                    client_info,
+                                    counterparty_chain_id,
+                                    tx_hash,
+                                    provable_height: height,
+                                    event: voyager_message::data::WriteAcknowledgement {
+                                        packet_data: event.packet.data.to_vec(),
+                                        packet_ack: event.acknowledgement.to_vec(),
+                                        packet: PacketMetadata {
+                                            sequence: event.packet.sequence.try_into().unwrap(),
+                                            source_channel,
+                                            destination_channel,
+                                            channel_ordering,
+                                            timeout_height: event.packet.timeout_height.into(),
+                                            timeout_timestamp: event.packet.timeout_timestamp,
+                                        },
+                                    }
+                                    .into(),
+                                }))
+                            }
+                            IBCPacketEvents::RecvPacketFilter(event) => {
+                                let (
+                                    counterparty_chain_id,
+                                    client_info,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                ) = self
+                                    .make_packet_metadata(
+                                        height,
+                                        event.packet.destination_port.parse().unwrap(),
+                                        event.packet.destination_channel.parse().unwrap(),
+                                    )
+                                    .await?;
+
+                                Ok(data(ChainEvent {
+                                    chain_id: self.chain_id.clone(),
+                                    client_info,
+                                    counterparty_chain_id,
+                                    tx_hash,
+                                    provable_height: height,
+                                    event: voyager_message::data::RecvPacket {
+                                        packet_data: event.packet.data.to_vec(),
+                                        packet: PacketMetadata {
+                                            sequence: event.packet.sequence.try_into().unwrap(),
+                                            source_channel,
+                                            destination_channel,
+                                            channel_ordering,
+                                            timeout_height: event.packet.timeout_height.into(),
+                                            timeout_timestamp: event.packet.timeout_timestamp,
+                                        },
+                                    }
+                                    .into(),
+                                }))
+                            }
+                        }
+                    }
+                    IBCHandlerEvents::OwnableEvent(_) => Ok(noop()),
+                }
+            }
             ModuleCall::FetchEvents(FetchEvents {
                 from_height,
                 to_height,
@@ -965,7 +1770,14 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             match IBCHandlerEvents::decode_log(&log.into()) {
                                 Ok(event) => {
                                     debug!(?event, "found IBCHandler event");
-                                    msgs.push(self.mk_aggregate_event(event, event_height, tx_hash))
+                                    msgs.push(call(Call::plugin(
+                                        self.plugin_name(),
+                                        MakeFullEvent {
+                                            slot: to_slot,
+                                            tx_hash,
+                                            event,
+                                        },
+                                    )))
                                 }
                                 Err(e) => {
                                     warn!("could not decode evm event {}", e);

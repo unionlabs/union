@@ -153,7 +153,7 @@
                   pname' = cargoToml.name;
                 }
               else
-                abort "expected crateDirFromRoot to be a string or a list of strings, but it was a ${builtins.typeOf crateDirFromRoot}: ${crateDirFromRoot}";
+                abort "expected crateDirFromRoot to be a string or a list of strings, but it was a ${builtins.typeOf crateDirFromRoot}: ${toString crateDirFromRoot}";
 
             inherit (processedCrateInfo)
               crateDirFromRoot' pname' version';
@@ -298,9 +298,9 @@
 
           in
           {
-            packages.${pname'} = cargoBuild.buildPackage (
+            packages."${pname'}${pnameSuffix'}" = cargoBuild.buildPackage (
               crateAttrs // {
-                pnameSuffix = pnameSuffix';
+                pnameSuffix = dbg pnameSuffix';
                 cargoExtraArgs = "${lib.optionalString (!dev) "-j1"} ${packageFilterArgs} ${cargoBuildExtraArgs}" + (lib.optionalString
                   (buildStdTarget != null)
                   # the leading space is important here!
@@ -310,7 +310,7 @@
                 doCheck = false;
                 meta =
                   if (builtins.length (crateDirFromRoot') == 1) then {
-                    mainProgram = builtins.elemAt (crateDirFromRoot') 0;
+                    mainProgram = pname';
                   } else { };
               } // (lib.optionalAttrs (cargoBuildInstallPhase != null) ({
                 installPhaseCommand = cargoBuildInstallPhase;

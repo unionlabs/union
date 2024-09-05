@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::VecDeque};
+use std::collections::VecDeque;
 
 use chain_utils::ethereum::ETHEREUM_REVISION_NUMBER;
 use jsonrpsee::{
@@ -8,6 +8,7 @@ use jsonrpsee::{
 use queue_msg::Op;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use serde_utils::Hex;
 use tracing::{instrument, warn};
 use unionlabs::{
     self,
@@ -133,7 +134,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument]
-    fn callback(
+    async fn callback(
         &self,
         callback: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
@@ -158,9 +159,9 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn decode_client_state_meta(
         &self,
-        client_state: Cow<'static, [u8]>,
+        client_state: Hex<Vec<u8>>,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = Self::decode_client_state(&client_state)?;
+        let cs = Self::decode_client_state(&client_state.0)?;
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.0.data.chain_id.to_string()),
@@ -171,9 +172,9 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
     async fn decode_consensus_state_meta(
         &self,
-        consensus_state: Cow<'static, [u8]>,
+        consensus_state: Hex<Vec<u8>>,
     ) -> RpcResult<ConsensusStateMeta> {
-        let cs = Self::decode_consensus_state(&consensus_state)?;
+        let cs = Self::decode_consensus_state(&consensus_state.0)?;
 
         Ok(ConsensusStateMeta {
             timestamp_nanos: cs.0.data.timestamp,
@@ -181,16 +182,13 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument]
-    async fn decode_client_state(&self, client_state: Cow<'static, [u8]>) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Self::decode_client_state(&client_state)?).unwrap())
+    async fn decode_client_state(&self, client_state: Hex<Vec<u8>>) -> RpcResult<Value> {
+        Ok(serde_json::to_value(Self::decode_client_state(&client_state.0)?).unwrap())
     }
 
     #[instrument]
-    async fn decode_consensus_state(
-        &self,
-        consensus_state: Cow<'static, [u8]>,
-    ) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Self::decode_consensus_state(&consensus_state)?).unwrap())
+    async fn decode_consensus_state(&self, consensus_state: Hex<Vec<u8>>) -> RpcResult<Value> {
+        Ok(serde_json::to_value(Self::decode_consensus_state(&consensus_state.0)?).unwrap())
     }
 
     #[instrument]
@@ -198,7 +196,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         client_state: Value,
         metadata: Value,
-    ) -> RpcResult<Vec<u8>> {
+    ) -> RpcResult<Hex<Vec<u8>>> {
         let IbcGo08WasmClientMetadata { checksum } =
             serde_json::from_value(metadata).map_err(|err| {
                 ErrorObject::owned(
@@ -224,10 +222,11 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 })
                 .encode_as::<Proto>()
             })
+            .map(Hex)
     }
 
     #[instrument]
-    async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Vec<u8>> {
+    async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Hex<Vec<u8>>> {
         serde_json::from_value::<ethereum::consensus_state::ConsensusState>(consensus_state)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -240,43 +239,43 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 )
             })
             .map(|cs| Any(wasm::consensus_state::ConsensusState { data: cs }).encode_as::<Proto>())
+            .map(Hex)
     }
 
     #[instrument(skip_all)]
     async fn reencode_counterparty_client_state(
         &self,
-        client_state: Cow<'static, [u8]>,
+        client_state: Hex<Vec<u8>>,
         client_type: ClientType<'static>,
-    ) -> RpcResult<Vec<u8>> {
+    ) -> RpcResult<Hex<Vec<u8>>> {
         match client_type.as_str() {
-            ClientType::COMETBLS => Ok(Any(
-                cometbls::client_state::ClientState::decode_as::<EthAbi>(&client_state).map_err(
-                    |err| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            format!("unable to decode client state: {}", ErrorReporter(err)),
-                            Some(json!({
-                                "client_type": client_type,
-                            })),
-                        )
-                    },
-                )?,
-            )
-            .encode_as::<Proto>()),
-            _ => Ok(client_state.into()),
+            ClientType::COMETBLS => Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
+                EthAbi,
+            >(&client_state.0)
+            .map_err(|err| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("unable to decode client state: {}", ErrorReporter(err)),
+                    Some(json!({
+                        "client_type": client_type,
+                    })),
+                )
+            })?)
+            .encode_as::<Proto>())),
+            _ => Ok(client_state),
         }
     }
 
     #[instrument(skip_all)]
     async fn reencode_counterparty_consensus_state(
         &self,
-        consensus_state: Cow<'static, [u8]>,
+        consensus_state: Hex<Vec<u8>>,
         client_type: ClientType<'static>,
-    ) -> RpcResult<Vec<u8>> {
+    ) -> RpcResult<Hex<Vec<u8>>> {
         match client_type.as_str() {
-            ClientType::COMETBLS => Ok(Any(wasm::consensus_state::ConsensusState {
+            ClientType::COMETBLS => Ok(Hex(Any(wasm::consensus_state::ConsensusState {
                 data: cometbls::consensus_state::ConsensusState::decode_as::<EthAbi>(
-                    &consensus_state,
+                    &consensus_state.0,
                 )
                 .map_err(|err| {
                     ErrorObject::owned(
@@ -288,13 +287,13 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     )
                 })?,
             })
-            .encode_as::<Proto>()),
-            _ => Ok(consensus_state.into()),
+            .encode_as::<Proto>())),
+            _ => Ok(consensus_state),
         }
     }
 
     #[instrument]
-    async fn encode_header(&self, header: Value) -> RpcResult<Vec<u8>> {
+    async fn encode_header(&self, header: Value) -> RpcResult<Hex<Vec<u8>>> {
         serde_json::from_value::<UnboundedHeader>(header)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -306,10 +305,11 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             .map(|header| {
                 Any(wasm::client_message::ClientMessage { data: header }).encode_as::<Proto>()
             })
+            .map(Hex)
     }
 
     #[instrument]
-    async fn encode_proof(&self, proof: Value) -> RpcResult<Vec<u8>> {
+    async fn encode_proof(&self, proof: Value) -> RpcResult<Hex<Vec<u8>>> {
         serde_json::from_value::<StorageProof>(proof)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -319,5 +319,6 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 )
             })
             .map(|cs| cs.encode_as::<Proto>())
+            .map(Hex)
     }
 }

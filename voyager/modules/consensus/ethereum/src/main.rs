@@ -268,7 +268,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn callback(
+    async fn callback(
         &self,
         cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,

@@ -1416,7 +1416,16 @@ pub mod ibc_connection {
         pub counterparty_connection_id: ::std::string::String,
     }
     /// Container type for all of the contract's events
-    #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
+    )]
     pub enum IBCConnectionEvents {
         ConnectionOpenAckFilter(ConnectionOpenAckFilter),
         ConnectionOpenConfirmFilter(ConnectionOpenConfirmFilter),

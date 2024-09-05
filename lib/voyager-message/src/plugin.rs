@@ -5,6 +5,7 @@ use macros::model;
 use queue_msg::{optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use serde_utils::Hex;
 use tracing::debug;
 use unionlabs::{
     hash::H256,
@@ -45,7 +46,7 @@ pub trait PluginModule<D: Member, C: Member, Cb: Member> {
 
     /// Handle a custom `Aggregate` message for this module.
     #[method(name = "callback")]
-    fn callback(
+    async fn callback(
         &self,
         aggregate: Cb,
         data: VecDeque<Data<D>>,
@@ -96,7 +97,7 @@ impl std::fmt::Display for PluginKind {
 )]
 pub trait OptimizationPassPlugin<D: Member, C: Member, Cb: Member> {
     #[method(name = "runPass")]
-    fn run_pass(
+    async fn run_pass(
         &self,
         msgs: Vec<Op<VoyagerMessage<D, C, Cb>>>,
     ) -> RpcResult<OptimizationResult<VoyagerMessage<D, C, Cb>>>;
@@ -225,7 +226,7 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     #[method(name = "decodeClientStateMeta")]
     async fn decode_client_state_meta(
         &self,
-        client_state: Cow<'static, [u8]>,
+        client_state: Hex<Vec<u8>>,
     ) -> RpcResult<ClientStateMeta>;
 
     /// Decode the raw consensus state, returning the decoded metadata common
@@ -233,26 +234,28 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     #[method(name = "decodeConsensusStateMeta")]
     async fn decode_consensus_state_meta(
         &self,
-        consensus_state: Cow<'static, [u8]>,
+        consensus_state: Hex<Vec<u8>>,
     ) -> RpcResult<ConsensusStateMeta>;
 
     /// Decode the raw client state, returning the decoded state as JSON.
     #[method(name = "decodeClientState")]
-    async fn decode_client_state(&self, client_state: Cow<'static, [u8]>) -> RpcResult<Value>;
+    async fn decode_client_state(&self, client_state: Hex<Vec<u8>>) -> RpcResult<Value>;
 
     /// Decode the raw consensus state, returning the decoded state as JSON.
     #[method(name = "decodeConsensusState")]
-    async fn decode_consensus_state(&self, consensus_state: Cow<'static, [u8]>)
-        -> RpcResult<Value>;
+    async fn decode_consensus_state(&self, consensus_state: Hex<Vec<u8>>) -> RpcResult<Value>;
 
     /// Encode the client state, provided as JSON.
     #[method(name = "encodeClientState")]
-    async fn encode_client_state(&self, client_state: Value, metadata: Value)
-        -> RpcResult<Vec<u8>>;
+    async fn encode_client_state(
+        &self,
+        client_state: Value,
+        metadata: Value,
+    ) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Encode the consensus state, provided as JSON.
     #[method(name = "encodeConsensusState")]
-    async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Vec<u8>>;
+    async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Re-encode the client state of the specified counterparty client type.
     ///
@@ -262,9 +265,9 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     #[method(name = "reencodeCounterpartyClientState")]
     async fn reencode_counterparty_client_state(
         &self,
-        client_state: Cow<'static, [u8]>,
+        client_state: Hex<Vec<u8>>,
         client_type: ClientType<'static>,
-    ) -> RpcResult<Vec<u8>>;
+    ) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Re-encode the client state of the specified counterparty client type.
     ///
@@ -274,17 +277,17 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     #[method(name = "reencodeCounterpartyConsensusState")]
     async fn reencode_counterparty_consensus_state(
         &self,
-        consensus_state: Cow<'static, [u8]>,
+        consensus_state: Hex<Vec<u8>>,
         client_type: ClientType<'static>,
-    ) -> RpcResult<Vec<u8>>;
+    ) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Encode the header, provided as JSON.
     #[method(name = "encodeHeader")]
-    async fn encode_header(&self, header: Value) -> RpcResult<Vec<u8>>;
+    async fn encode_header(&self, header: Value) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Encode the proof, provided as JSON.
     #[method(name = "encodeProof")]
-    async fn encode_proof(&self, proof: Value) -> RpcResult<Vec<u8>>;
+    async fn encode_proof(&self, proof: Value) -> RpcResult<Hex<Vec<u8>>>;
 }
 
 /// Client modules provide functionality for interacting with a specific chain
@@ -321,9 +324,9 @@ pub trait ConsensusModule<D: Member, C: Member, Cb: Member> {
     ///
     /// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data.
     /// This is the entrypoint called when a client update is requested, and
-    /// will be called in the queue of an
-    /// [`AggregateMsgUpdateClientsFromOrderedHeaders`], which will be used to
-    /// build the actual [`MsgUpdateClient`]s.
+    /// is intended to be called in the queue of an
+    /// [`AggregateMsgUpdateClientsFromOrderedHeaders`] message, which will
+    /// be used to build the actual [`MsgUpdateClient`]s.
     #[method(name = "fetchUpdateHeaders")]
     fn fetch_update_headers(
         &self,

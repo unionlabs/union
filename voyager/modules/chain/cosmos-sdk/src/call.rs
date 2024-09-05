@@ -5,7 +5,6 @@ use queue_msg::queue_msg;
 use unionlabs::{
     events::IbcEvent, hash::H256, ibc::core::client::height::Height, id::ConnectionId,
 };
-use voyager_message::callback::InfoOrMeta;
 
 #[queue_msg]
 #[derive(Enumorph)]

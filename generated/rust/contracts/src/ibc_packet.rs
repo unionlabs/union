@@ -2331,7 +2331,16 @@ pub mod ibc_packet {
         pub acknowledgement: ::ethers::core::types::Bytes,
     }
     /// Container type for all of the contract's events
-    #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
+    )]
     pub enum IBCPacketEvents {
         AcknowledgePacketFilter(AcknowledgePacketFilter),
         RecvPacketFilter(RecvPacketFilter),

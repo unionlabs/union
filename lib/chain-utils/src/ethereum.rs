@@ -373,7 +373,7 @@ macro_rules! try_decode {
     };
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum IBCHandlerEvents {
     PacketEvent(IBCPacketEvents),
     ConnectionEvent(IBCConnectionEvents),

@@ -6,40 +6,35 @@ use std::{
 };
 
 use either::Either;
-use frunk::hlist_pat;
+use futures::{stream::FuturesUnordered, TryFutureExt, TryStreamExt};
 use itertools::Itertools;
-use jsonrpsee::core::{async_trait, RpcResult};
+use jsonrpsee::{
+    core::{async_trait, RpcResult},
+    types::ErrorObject,
+};
 use queue_msg::{
-    aggregation::{do_callback, HListTryFromIterator, SubsetOf},
-    call, data,
-    optimize::OptimizationResult,
-    promise, BoxDynError, Op,
+    aggregation::SubsetOf, call, data, now, optimize::OptimizationResult, promise, seq,
+    BoxDynError, Op,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{error, instrument, trace, warn};
+use serde_json::json;
+use tracing::{error, instrument, trace};
 use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
-    call::{
-        compound::fetch_client_state_meta, FetchClientInfo, MakeMsgAcknowledgement,
-        MakeMsgChannelOpenAck, MakeMsgChannelOpenConfirm, MakeMsgChannelOpenTry,
-        MakeMsgConnectionOpenAck, MakeMsgConnectionOpenConfirm, MakeMsgConnectionOpenTry,
-        MakeMsgRecvPacket,
-    },
+    call::{Call, FetchUpdateHeaders, WaitForHeight},
     callback::{AggregateMsgUpdateClientsFromOrderedHeaders, Callback},
-    data::{ChainEvent, Data, DecodedClientStateMeta, FullIbcEvent, OrderedMsgUpdateClients},
+    data::{ChainEvent, Data, FullIbcEvent},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
-    reth_ipc::{self, client::IpcClientBuilder},
-    run_module_server, ChainId, PluginMessage, VoyagerMessage,
+    reth_ipc::client::IpcClientBuilder,
+    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
+    run_module_server, ChainId, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{
-    call::ModuleCall,
-    callback::{
-        MakeBatchTransaction, MakeIbcMessagesFromUpdate,
-        MakeUpdateFromLatestHeightToAtLeastTargetHeight, ModuleCallback,
-    },
-    data::{BatchableEvent, Event, EventBatch, ModuleData},
+    call::{MakeTransactionBatchWithUpdate, ModuleCall},
+    callback::{MakeIbcMessagesFromUpdate, ModuleCallback},
+    data::{BatchableEvent, EventBatch, ModuleData},
 };
 
 pub mod call;
@@ -137,116 +132,98 @@ end
         &self,
         msg: ModuleCall,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match msg {}
+        match msg {
+            ModuleCall::MakeMessages(MakeTransactionBatchWithUpdate {
+                batch: EventBatch { client_id, events },
+            }) => {
+                let client_meta = self
+                    .client
+                    .client_meta(
+                        self.chain_id.clone(),
+                        QueryHeight::Latest,
+                        client_id.clone(),
+                    )
+                    .await
+                    .map_err(json_rpc_error_to_rpc_error)?;
+
+                // let client_info = self
+                //     .client
+                //     .client_info(self.chain_id.clone(), client_id.clone())
+                //     .await
+                //     .map_err(json_rpc_error_to_rpc_error)?;
+
+                let latest_height = self
+                    .client
+                    .query_latest_height(client_meta.chain_id.clone())
+                    .await
+                    .map_err(json_rpc_error_to_rpc_error)?;
+
+                let target_height = events
+                    .iter()
+                    .map(|e| e.provable_height)
+                    .max()
+                    .expect("batch has at least one event; qed;");
+
+                // at this point we assume that a valid update exists - we only ever enqueue this message behind the relevant WaitForHeight on the counterparty chain. to prevent explosions, we do a sanity check here.
+                if latest_height < target_height {
+                    return Err(ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!(
+                            "the latest height of the counterparty chain ({counterparty_chain_id}) \
+                            is {latest_height} and the latest trusted height on the client tracking \
+                            it ({client_id}) on this chain ({self_chain_id}) is {trusted_height}. \
+                            in order to create an update for this client, we need to wait for the \
+                            counterparty chain to progress to the next consensus checkpoint greater \
+                            than the required target height {target_height}",
+                            counterparty_chain_id = client_meta.chain_id,
+                            trusted_height = client_meta.height,
+                            client_id = client_id,
+                            self_chain_id = self.chain_id,
+                        ),
+                        Some(json!({
+                            "current_timestamp": now(),
+                        })),
+                    ));
+                }
+
+                Ok(promise(
+                    [promise(
+                        [call(FetchUpdateHeaders {
+                            chain_id: client_meta.chain_id,
+                            update_from: client_meta.height,
+                            update_to: latest_height,
+                        })],
+                        [],
+                        AggregateMsgUpdateClientsFromOrderedHeaders {
+                            chain_id: self.chain_id.clone(),
+                            counterparty_client_id: client_id.clone(),
+                        },
+                    )],
+                    [],
+                    Callback::plugin(
+                        self.plugin_name(),
+                        MakeIbcMessagesFromUpdate {
+                            batch: EventBatch {
+                                client_id: client_id.clone(),
+                                events,
+                            },
+                        },
+                    ),
+                ))
+            }
+        }
     }
 
     #[instrument]
-    fn callback(
+    async fn callback(
         &self,
         cb: ModuleCallback,
         datas: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match cb {
-            ModuleCallback::MakeUpdateFromLatestHeightToAtLeastTargetHeight(aggregate) => {
-                Ok(do_callback(aggregate, datas))
-            }
-            ModuleCallback::MakeIbcMessagesFromUpdate(MakeIbcMessagesFromUpdate { batch }) => {
-                let Ok(
-                    hlist_pat![
-                        updates @ OrderedMsgUpdateClients { .. },
-                        client_meta @ DecodedClientStateMeta { .. },
-                    ],
-                ) = HListTryFromIterator::try_from_iter(datas)
-                else {
-                    panic!("bad data")
-                };
-
-                let new_trusted_height = updates
-                    .updates
-                    .last()
-                    .expect("must have at least one update")
-                    .0
-                    .height;
-
-                Ok(promise(
-                    batch.events.into_iter().map(|batchable_event| {
-                        assert!(batchable_event.provable_height <= new_trusted_height);
-
-                        let origin_chain_id = client_meta.state.chain_id.clone();
-                        let target_chain_id = self.chain_id.clone();
-
-                        // in this context, we are the destination - the counterparty of the source is the destination
-                        match batchable_event.event {
-                            Event::ConnectionOpenInit(connection_open_init_event) => {
-                                call(MakeMsgConnectionOpenTry {
-                                    origin_chain_id,
-                                    origin_chain_proof_height: new_trusted_height,
-                                    target_chain_id,
-                                    connection_open_init_event,
-                                })
-                            }
-                            Event::ConnectionOpenTry(connection_open_try_event) => {
-                                call(MakeMsgConnectionOpenAck {
-                                    origin_chain_id,
-                                    origin_chain_proof_height: new_trusted_height,
-                                    target_chain_id,
-                                    connection_open_try_event,
-                                })
-                            }
-                            Event::ConnectionOpenAck(connection_open_ack_event) => {
-                                call(MakeMsgConnectionOpenConfirm {
-                                    origin_chain_id,
-                                    origin_chain_proof_height: new_trusted_height,
-                                    target_chain_id,
-                                    connection_open_ack_event,
-                                })
-                            }
-                            Event::ChannelOpenInit(channel_open_init_event) => {
-                                call(MakeMsgChannelOpenTry {
-                                    origin_chain_id,
-                                    origin_chain_proof_height: new_trusted_height,
-                                    target_chain_id,
-                                    channel_open_init_event,
-                                })
-                            }
-                            Event::ChannelOpenTry(channel_open_try_event) => {
-                                call(MakeMsgChannelOpenAck {
-                                    origin_chain_id,
-                                    origin_chain_proof_height: new_trusted_height,
-                                    target_chain_id,
-                                    channel_open_try_event,
-                                })
-                            }
-                            Event::ChannelOpenAck(channel_open_ack_event) => {
-                                call(MakeMsgChannelOpenConfirm {
-                                    origin_chain_id,
-                                    origin_chain_proof_height: new_trusted_height,
-                                    target_chain_id,
-                                    channel_open_ack_event,
-                                })
-                            }
-                            Event::SendPacket(send_packet_event) => call(MakeMsgRecvPacket {
-                                origin_chain_id,
-                                origin_chain_proof_height: new_trusted_height,
-                                target_chain_id,
-                                send_packet_event,
-                            }),
-                            Event::WriteAcknowledgement(write_acknowledgement_event) => {
-                                call(MakeMsgAcknowledgement {
-                                    origin_chain_id,
-                                    origin_chain_proof_height: new_trusted_height,
-                                    target_chain_id,
-                                    write_acknowledgement_event,
-                                })
-                            }
-                        }
-                    }),
-                    [],
-                    Callback::plugin(self.plugin_name(), MakeBatchTransaction { updates }),
-                ))
-            }
+            ModuleCallback::MakeIbcMessagesFromUpdate(cb) => cb.call(self, datas).await,
             ModuleCallback::MakeBatchTransaction(agg) => {
-                Ok(data(agg.do_aggregate(self.chain_id.clone(), datas)))
+                Ok(data(agg.call(self.chain_id.clone(), datas)))
             }
         }
     }
@@ -255,7 +232,7 @@ end
 #[async_trait]
 impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn run_pass(
+    async fn run_pass(
         &self,
         msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
     ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
@@ -342,10 +319,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
             };
         }
 
-        let (
-            ready,
-            optimize_further,
-        ) = batchers
+        let (ready, optimize_further) = batchers
             .into_iter()
             .flat_map(|(client_id, mut events)| {
                 events.sort_by_key(|e| e.1.provable_height);
@@ -372,61 +346,34 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
                                 .max()
                                 .expect("batch has at least one event; qed;");
 
-                            Either::Left((
-                                idxs,
-                                promise(
-                                    [
-                                        fetch_client_state_meta(
-                                            self.chain_id.clone(),
-                                            client_id.clone(),
-                                            QueryHeight::Latest,
-                                        ),
-                                        promise(
-                                            [
-                                                call(FetchClientInfo {
-                                                    chain_id: self.chain_id.clone(),
-                                                    client_id: client_id.clone(),
-                                                }),
-                                                // fetch update
-                                                promise(
-                                                    [fetch_client_state_meta(
-                                                        self.chain_id.clone(),
-                                                        client_id.clone(),
-                                                        QueryHeight::Latest,
-                                                    )],
-                                                    [],
-                                                    Callback::plugin(
+                            Either::Left(
+                                self.client
+                                    .client_meta(
+                                        self.chain_id.clone(),
+                                        QueryHeight::Latest,
+                                        client_id.clone(),
+                                    )
+                                    .map_ok({
+                                        let client_id = client_id.clone();
+                                        move |client_meta| {
+                                            (
+                                                idxs,
+                                                seq([
+                                                    call(WaitForHeight {
+                                                        chain_id: client_meta.chain_id,
+                                                        height: target_height,
+                                                    }),
+                                                    call(Call::plugin(
                                                         self.plugin_name(),
-                                                        MakeUpdateFromLatestHeightToAtLeastTargetHeight {
-                                                            target_height,
+                                                        MakeTransactionBatchWithUpdate {
+                                                            batch: EventBatch { client_id, events },
                                                         },
-                                                    ),
-                                                ),
-                                                // fetch(FetchClientInfo {
-                                                //     chain_id: self.chain_id.clone(),
-                                                //     client_id: client_id.clone(),
-                                                // }),
-                                            ],
-                                            [],
-                                            // make update client messages out of updates
-                                            AggregateMsgUpdateClientsFromOrderedHeaders {
-                                                counterparty_client_id: client_id.clone(),
-                                            },
-                                        ),
-                                    ],
-                                    [],
-                                    // make ibc messages out of the events, from the height of the created update
-                                    Callback::plugin(
-                                        self.plugin_name(),
-                                        MakeIbcMessagesFromUpdate {
-                                            batch: EventBatch {
-                                                client_id: client_id.clone(),
-                                                events,
-                                            },
-                                        },
-                                    ),
-                                ),
-                            ))
+                                                    )),
+                                                ]),
+                                            )
+                                        }
+                                    }),
+                            )
                         } else {
                             Either::Right((
                                 idxs,
@@ -443,11 +390,14 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
                     })
                     .collect::<Vec<_>>()
             })
-            .partition_map::<Vec<_>, Vec<_>, _, _, _>(convert::identity);
+            .partition_map::<FuturesUnordered<_>, Vec<_>, _, _, _>(convert::identity);
 
         Ok(OptimizationResult {
             optimize_further,
-            ready,
+            ready: ready
+                .try_collect()
+                .await
+                .map_err(json_rpc_error_to_rpc_error)?,
         })
     }
 }

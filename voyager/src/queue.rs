@@ -5,7 +5,6 @@ use std::{
     fmt::{Debug, Display},
     net::SocketAddr,
     panic::AssertUnwindSafe,
-    sync::Arc,
 };
 
 use axum::{

@@ -1062,6 +1062,8 @@ pub mod ibc_client {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(name = "ClientRegistered", abi = "ClientRegistered(string,address)")]
     pub struct ClientRegisteredFilter {
@@ -1086,7 +1088,16 @@ pub mod ibc_client {
         pub height: IbcCoreClientV1HeightData,
     }
     /// Container type for all of the contract's events
-    #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
+    )]
     pub enum IBCClientEvents {
         ClientCreatedFilter(ClientCreatedFilter),
         ClientRegisteredFilter(ClientRegisteredFilter),

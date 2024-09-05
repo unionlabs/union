@@ -120,11 +120,11 @@ pub fn extract_data<T: QueueMessage>(msgs: Vec<Op<T>>) -> Vec<(Vec<usize>, Op<T>
                         data.into_iter().chain([conc(msgs)]).collect()
                     }
                 }
-                Op::Aggregate {
+                Op::Promise {
                     queue,
                     data,
                     receiver,
-                } => vec![Op::Aggregate {
+                } => vec![Op::Promise {
                     queue: queue.into_iter().flat_map(extract_data_internal).collect(),
                     data,
                     receiver,
@@ -162,11 +162,11 @@ pub fn remove_noop<T: QueueMessage>(msgs: Vec<Op<T>>) -> Vec<(Vec<usize>, Op<T>)
                 Op::Seq(msgs) => Some(seq(msgs.into_iter().flat_map(go))),
                 Op::Conc(msgs) => Some(conc(msgs.into_iter().flat_map(go))),
                 Op::Retry { remaining, msg } => go(*msg).map(|msg| retry(remaining, msg)),
-                Op::Aggregate {
+                Op::Promise {
                     queue,
                     data,
                     receiver,
-                } => Some(Op::Aggregate {
+                } => Some(Op::Promise {
                     queue: queue.into_iter().flat_map(remove_noop_internal).collect(),
                     data,
                     receiver,
@@ -200,11 +200,11 @@ pub fn flatten_seq<T: QueueMessage>(msgs: Vec<Op<T>>) -> Vec<(Vec<usize>, Op<T>)
                         _ => Some(seq(msgs)),
                     }
                 }))],
-                Op::Aggregate {
+                Op::Promise {
                     queue,
                     data,
                     receiver,
-                } => vec![Op::Aggregate {
+                } => vec![Op::Promise {
                     queue: queue.into_iter().filter_map(flatten_seq_internal).collect(),
                     data,
                     receiver,
@@ -262,11 +262,11 @@ pub fn flatten_conc<T: QueueMessage>(msgs: Vec<Op<T>>) -> Vec<(Vec<usize>, Op<T>
                         _ => Some(conc(msgs)),
                     }
                 }))],
-                Op::Aggregate {
+                Op::Promise {
                     queue,
                     data,
                     receiver,
-                } => vec![Op::Aggregate {
+                } => vec![Op::Promise {
                     queue: queue.into_iter().flat_map(flatten_conc_internal).collect(),
                     data,
                     receiver,

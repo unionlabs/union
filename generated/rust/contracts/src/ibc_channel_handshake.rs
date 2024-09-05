@@ -1558,6 +1558,8 @@ pub mod ibc_channel_handshake {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(name = "ChannelCloseInit", abi = "ChannelCloseInit(string,string)")]
     pub struct ChannelCloseInitFilter {
@@ -1658,7 +1660,16 @@ pub mod ibc_channel_handshake {
         pub version: ::std::string::String,
     }
     /// Container type for all of the contract's events
-    #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
+    )]
     pub enum IBCChannelHandshakeEvents {
         ChannelCloseConfirmFilter(ChannelCloseConfirmFilter),
         ChannelCloseInitFilter(ChannelCloseInitFilter),

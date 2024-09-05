@@ -205,7 +205,7 @@ end
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn callback(
+    async fn callback(
         &self,
         cb: ModuleCallback,
         _data: VecDeque<Data<ModuleData>>,
@@ -216,7 +216,7 @@ end
 
 #[async_trait]
 impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
-    fn run_pass(
+    async fn run_pass(
         &self,
         msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
     ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {

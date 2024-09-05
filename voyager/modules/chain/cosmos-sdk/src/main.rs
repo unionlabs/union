@@ -17,18 +17,19 @@ use tracing::{debug, error, info, instrument, warn};
 use unionlabs::{
     encoding::{DecodeAs, Proto},
     events::{
-        AcknowledgePacket, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
-        ClientMisbehaviour, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, IbcEvent, RecvPacket, SendPacket, SubmitEvidence,
-        TimeoutPacket, UpdateClient, WriteAcknowledgement,
+        ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ClientMisbehaviour,
+        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+        CreateClient, IbcEvent, SubmitEvidence, UpdateClient,
     },
     hash::H256,
     ibc::core::{
-        channel::channel::Channel, client::height::Height, commitment::merkle_proof::MerkleProof,
+        channel::{self, channel::Channel},
+        client::height::Height,
+        commitment::merkle_proof::MerkleProof,
         connection::connection_end::ConnectionEnd,
     },
     ics24::{ChannelEndPath, ClientStatePath, ConnectionPath, Path},
-    id::{ClientId, ConnectionId},
+    id::{ChannelId, ClientId, ConnectionId, PortId},
     option_unwrap, parse_wasm_client_type, ErrorReporter, QueryHeight, WasmClientType,
 };
 use voyager_message::{
@@ -229,24 +230,24 @@ impl Module {
         .unwrap()
     }
 
-    async fn fetch_connection(&self, connection_id: ConnectionId) -> (ConnectionEnd, Height) {
-        let inner = protos::ibc::core::connection::v1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .unwrap()
-        .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
-            connection_id: connection_id.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner();
+    // async fn fetch_connection(&self, connection_id: ConnectionId) -> (ConnectionEnd, Height) {
+    //     let inner = protos::ibc::core::connection::v1::query_client::QueryClient::connect(
+    //         self.grpc_url.clone(),
+    //     )
+    //     .await
+    //     .unwrap()
+    //     .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
+    //         connection_id: connection_id.to_string(),
+    //     })
+    //     .await
+    //     .unwrap()
+    //     .into_inner();
 
-        (
-            inner.connection.unwrap().try_into().unwrap(),
-            inner.proof_height.unwrap().into(),
-        )
-    }
+    //     (
+    //         inner.connection.unwrap().try_into().unwrap(),
+    //         inner.proof_height.unwrap().into(),
+    //     )
+    // }
 
     // async fn fetch_client(&self, client_id: ClientId) -> (Vec<u8>, Height) {
     //     let inner = protos::ibc::core::client::v1::query_client::QueryClient::connect(
@@ -266,6 +267,106 @@ impl Module {
     //         inner.proof_height.unwrap().into(),
     //     )
     // }
+
+    async fn make_packet_metadata(
+        &self,
+        event_height: Height,
+        self_connection_id: ConnectionId,
+        self_port_id: PortId,
+        self_channel_id: ChannelId,
+        other_port_id: PortId,
+        other_channel_id: ChannelId,
+    ) -> RpcResult<(
+        ChainId<'static>,
+        ClientInfo,
+        ChannelMetadata,
+        ChannelMetadata,
+        channel::order::Order,
+    )> {
+        let self_connection = self
+            .client
+            .query_ibc_state_typed(
+                self.chain_id.clone(),
+                event_height.into(),
+                ConnectionPath {
+                    connection_id: self_connection_id.clone(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?
+            .state;
+
+        let client_info = self
+            .client
+            .client_info(self.chain_id.clone(), self_connection.client_id.clone())
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let client_meta = self
+            .client
+            .client_meta(
+                self.chain_id.clone(),
+                event_height.into(),
+                self_connection.client_id.clone(),
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let this_channel = self
+            .client
+            .query_ibc_state_typed(
+                self.chain_id.clone(),
+                event_height.into(),
+                ChannelEndPath {
+                    port_id: self_port_id.clone(),
+                    channel_id: self_channel_id.clone(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?
+            .state;
+
+        let counterparty_channel = self
+            .client
+            .query_ibc_state_typed(
+                client_meta.chain_id.clone(),
+                QueryHeight::Latest,
+                ChannelEndPath {
+                    port_id: other_port_id.clone(),
+                    channel_id: other_channel_id.clone(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?
+            .state;
+
+        let source_channel = ChannelMetadata {
+            port_id: self_port_id.clone(),
+            channel_id: self_channel_id.clone(),
+            version: this_channel.version,
+            connection: ConnectionMetadata {
+                client_id: self_connection.client_id,
+                connection_id: self_connection_id.clone(),
+            },
+        };
+        let destination_channel = ChannelMetadata {
+            port_id: other_port_id.clone(),
+            channel_id: other_channel_id.clone(),
+            version: counterparty_channel.version,
+            connection: ConnectionMetadata {
+                client_id: self_connection.counterparty.client_id,
+                connection_id: self_connection.counterparty.connection_id.unwrap(),
+            },
+        };
+
+        Ok((
+            client_meta.chain_id,
+            client_info,
+            source_channel,
+            destination_channel,
+            this_channel.ordering,
+        ))
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -288,7 +389,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    fn callback(
+    async fn callback(
         &self,
         cb: ModuleCallback,
         _data: VecDeque<Data<ModuleData>>,
@@ -462,7 +563,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 IbcEvent::UpdateClient(event) => {
                                     voyager_message::data::UpdateClient {
                                         client_id: event.client_id,
-                                        client_type: event.client_type,
+                                        client_type: ClientType::new(event.client_type),
                                         consensus_heights: event.consensus_heights,
                                     }
                                     .into()
@@ -665,301 +766,194 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         }))
                     }
                     // packet origin is this chain
-                    IbcEvent::SendPacket(SendPacket {
-                        packet_src_port: ref self_port,
-                        packet_src_channel: ref self_channel,
-                        packet_dst_port: ref other_port,
-                        packet_dst_channel: ref other_channel,
-                        ref connection_id,
-                        ..
-                    })
-                    | IbcEvent::TimeoutPacket(TimeoutPacket {
-                        packet_src_port: ref self_port,
-                        packet_src_channel: ref self_channel,
-                        packet_dst_port: ref other_port,
-                        packet_dst_channel: ref other_channel,
-                        ref connection_id,
-                        ..
-                    })
-                    | IbcEvent::AcknowledgePacket(AcknowledgePacket {
-                        packet_src_port: ref self_port,
-                        packet_src_channel: ref self_channel,
-                        packet_dst_port: ref other_port,
-                        packet_dst_channel: ref other_channel,
-                        ref connection_id,
-                        ..
-                    })
-                    | IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-                        // packet origin is the counterparty chain (if i put this comment above this pattern rustfmt explodes)
-                        packet_src_port: ref other_port,
-                        packet_src_channel: ref other_channel,
-                        packet_dst_port: ref self_port,
-                        packet_dst_channel: ref self_channel,
-                        ref connection_id,
-                        ..
-                    })
-                    | IbcEvent::RecvPacket(RecvPacket {
-                        packet_src_port: ref other_port,
-                        packet_src_channel: ref other_channel,
-                        packet_dst_port: ref self_port,
-                        packet_dst_channel: ref self_channel,
-                        ref connection_id,
-                        ..
-                    }) => {
-                        let connection = self
-                            .client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ConnectionPath {
-                                    connection_id: connection_id.clone(),
-                                },
+                    IbcEvent::SendPacket(event) => {
+                        let (
+                            counterparty_chain_id,
+                            client_info,
+                            source_channel,
+                            destination_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                height,
+                                event.connection_id.to_owned(),
+                                event.packet_src_port.to_owned(),
+                                event.packet_src_channel.to_owned(),
+                                event.packet_dst_port.to_owned(),
+                                event.packet_dst_channel.to_owned(),
                             )
-                            .await
-                            .map_err(json_rpc_error_to_rpc_error)?
-                            .state;
-
-                        let client_info = self
-                            .client
-                            .client_info(self.chain_id.clone(), connection.client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
-
-                        let client_meta = self
-                            .client
-                            .client_meta(
-                                self.chain_id.clone(),
-                                height.into(),
-                                connection.client_id.clone(),
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
-
-                        let channel = self
-                            .client
-                            .query_ibc_state_typed(
-                                self.chain_id.clone(),
-                                height.into(),
-                                ChannelEndPath {
-                                    port_id: self_port.to_owned(),
-                                    channel_id: self_channel.to_owned(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_rpc_error)?
-                            .state;
-
-                        let counterparty_channel = self
-                            .client
-                            .query_ibc_state_typed(
-                                client_meta.chain_id.clone(),
-                                QueryHeight::Latest,
-                                ChannelEndPath {
-                                    port_id: other_port.to_owned(),
-                                    channel_id: other_channel.to_owned(),
-                                },
-                            )
-                            .await
-                            .map_err(json_rpc_error_to_rpc_error)?
-                            .state;
-
-                        // let counterparty_connection = self
-                        //     .client
-                        //     .query_ibc_state_typed(
-                        //         client_meta.chain_id.clone(),
-                        //         height.into(),
-                        //         ConnectionPath {
-                        //             connection_id: counterparty_channel.connection_hops[0].clone(),
-                        //         },
-                        //     )
-                        //     .await
-                        //     .map_err(json_rpc_error_to_rpc_error)?
-                        //     .state;
+                            .await?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
                             client_info,
-                            counterparty_chain_id: client_meta.chain_id,
+                            counterparty_chain_id,
                             tx_hash,
                             provable_height,
-                            event: match event {
-                                IbcEvent::SendPacket(event) => voyager_message::data::SendPacket {
-                                    packet_data: event.packet_data_hex,
-                                    packet: PacketMetadata {
-                                        sequence: event.packet_sequence,
-                                        source_channel: ChannelMetadata {
-                                            port_id: event.packet_src_port,
-                                            channel_id: event.packet_src_channel,
-                                            version: channel.version,
-                                            connection: ConnectionMetadata {
-                                                client_id: connection.client_id,
-                                                connection_id: event.connection_id.clone(),
-                                            },
-                                        },
-                                        destination_channel: ChannelMetadata {
-                                            port_id: event.packet_dst_port,
-                                            channel_id: event.packet_dst_channel,
-                                            version: counterparty_channel.version,
-                                            connection: ConnectionMetadata {
-                                                client_id: connection.counterparty.client_id,
-                                                connection_id: connection
-                                                    .counterparty
-                                                    .connection_id
-                                                    .expect(
-                                                        "counterparty connection is set \
-                                                        if a channel exists on it",
-                                                    ),
-                                            },
-                                        },
-                                        channel_ordering: channel.ordering,
-                                        timeout_height: event.packet_timeout_height,
-                                        timeout_timestamp: event.packet_timeout_timestamp,
-                                    },
-                                }
-                                .into(),
-                                IbcEvent::TimeoutPacket(event) => {
-                                    voyager_message::data::TimeoutPacket {
-                                        packet: PacketMetadata {
-                                            sequence: event.packet_sequence,
-                                            source_channel: ChannelMetadata {
-                                                port_id: event.packet_src_port,
-                                                channel_id: event.packet_src_channel,
-                                                version: channel.version,
-                                                connection: ConnectionMetadata {
-                                                    client_id: connection.client_id,
-                                                    connection_id: event.connection_id.clone(),
-                                                },
-                                            },
-                                            destination_channel: ChannelMetadata {
-                                                port_id: event.packet_dst_port,
-                                                channel_id: event.packet_dst_channel,
-                                                version: counterparty_channel.version,
-                                                connection: ConnectionMetadata {
-                                                    client_id: connection.counterparty.client_id,
-                                                    connection_id: connection
-                                                        .counterparty
-                                                        .connection_id
-                                                        .expect(
-                                                            "counterparty connection is set \
-                                                        if a channel exists on it",
-                                                        ),
-                                                },
-                                            },
-                                            channel_ordering: channel.ordering,
-                                            timeout_height: event.packet_timeout_height,
-                                            timeout_timestamp: event.packet_timeout_timestamp,
-                                        },
-                                    }
-                                }
-                                .into(),
-                                IbcEvent::AcknowledgePacket(event) => {
-                                    voyager_message::data::AcknowledgePacket {
-                                        packet: PacketMetadata {
-                                            sequence: event.packet_sequence,
-                                            source_channel: ChannelMetadata {
-                                                port_id: event.packet_src_port,
-                                                channel_id: event.packet_src_channel,
-                                                version: channel.version,
-                                                connection: ConnectionMetadata {
-                                                    client_id: connection.client_id,
-                                                    connection_id: event.connection_id.clone(),
-                                                },
-                                            },
-                                            destination_channel: ChannelMetadata {
-                                                port_id: event.packet_dst_port,
-                                                channel_id: event.packet_dst_channel,
-                                                version: counterparty_channel.version,
-                                                connection: ConnectionMetadata {
-                                                    client_id: connection.counterparty.client_id,
-                                                    connection_id: connection
-                                                        .counterparty
-                                                        .connection_id
-                                                        .expect(
-                                                            "counterparty connection is set \
-                                                        if a channel exists on it",
-                                                        ),
-                                                },
-                                            },
-                                            channel_ordering: channel.ordering,
-                                            timeout_height: event.packet_timeout_height,
-                                            timeout_timestamp: event.packet_timeout_timestamp,
-                                        },
-                                    }
-                                }
-                                .into(),
-                                IbcEvent::WriteAcknowledgement(event) => {
-                                    voyager_message::data::WriteAcknowledgement {
-                                        packet_data: event.packet_data_hex,
-                                        packet_ack: event.packet_ack_hex,
-                                        packet: PacketMetadata {
-                                            sequence: event.packet_sequence,
-                                            source_channel: ChannelMetadata {
-                                                port_id: event.packet_src_port,
-                                                channel_id: event.packet_src_channel,
-                                                version: channel.version,
-                                                connection: ConnectionMetadata {
-                                                    client_id: connection.client_id,
-                                                    connection_id: event.connection_id.clone(),
-                                                },
-                                            },
-                                            destination_channel: ChannelMetadata {
-                                                port_id: event.packet_dst_port,
-                                                channel_id: event.packet_dst_channel,
-                                                version: counterparty_channel.version,
-                                                connection: ConnectionMetadata {
-                                                    client_id: connection.counterparty.client_id,
-                                                    connection_id: connection
-                                                        .counterparty
-                                                        .connection_id
-                                                        .expect(
-                                                            "counterparty connection is set \
-                                                        if a channel exists on it",
-                                                        ),
-                                                },
-                                            },
-                                            channel_ordering: channel.ordering,
-                                            timeout_height: event.packet_timeout_height,
-                                            timeout_timestamp: event.packet_timeout_timestamp,
-                                        },
-                                    }
-                                }
-                                .into(),
-                                IbcEvent::RecvPacket(event) => voyager_message::data::RecvPacket {
-                                    packet_data: event.packet_data_hex,
-                                    packet: PacketMetadata {
-                                        sequence: event.packet_sequence,
-                                        source_channel: ChannelMetadata {
-                                            port_id: event.packet_src_port,
-                                            channel_id: event.packet_src_channel,
-                                            version: channel.version,
-                                            connection: ConnectionMetadata {
-                                                client_id: connection.client_id,
-                                                connection_id: event.connection_id.clone(),
-                                            },
-                                        },
-                                        destination_channel: ChannelMetadata {
-                                            port_id: event.packet_dst_port,
-                                            channel_id: event.packet_dst_channel,
-                                            version: counterparty_channel.version,
-                                            connection: ConnectionMetadata {
-                                                client_id: connection.counterparty.client_id,
-                                                connection_id: connection
-                                                    .counterparty
-                                                    .connection_id
-                                                    .expect(
-                                                        "counterparty connection is set \
-                                                        if a channel exists on it",
-                                                    ),
-                                            },
-                                        },
-                                        channel_ordering: channel.ordering,
-                                        timeout_height: event.packet_timeout_height,
-                                        timeout_timestamp: event.packet_timeout_timestamp,
-                                    },
-                                }
-                                .into(),
-                                _ => unreachable!("who needs flow typing"),
-                            },
+                            event: voyager_message::data::SendPacket {
+                                packet_data: event.packet_data_hex,
+                                packet: PacketMetadata {
+                                    sequence: event.packet_sequence,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: event.packet_timeout_height,
+                                    timeout_timestamp: event.packet_timeout_timestamp,
+                                },
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvent::TimeoutPacket(event) => {
+                        let (
+                            counterparty_chain_id,
+                            client_info,
+                            source_channel,
+                            destination_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                height,
+                                event.connection_id.to_owned(),
+                                event.packet_src_port.to_owned(),
+                                event.packet_src_channel.to_owned(),
+                                event.packet_dst_port.to_owned(),
+                                event.packet_dst_channel.to_owned(),
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id,
+                            tx_hash,
+                            provable_height,
+                            event: voyager_message::data::TimeoutPacket {
+                                packet: PacketMetadata {
+                                    sequence: event.packet_sequence,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: event.packet_timeout_height,
+                                    timeout_timestamp: event.packet_timeout_timestamp,
+                                },
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvent::AcknowledgePacket(event) => {
+                        let (
+                            counterparty_chain_id,
+                            client_info,
+                            source_channel,
+                            destination_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                height,
+                                event.connection_id.to_owned(),
+                                event.packet_src_port.to_owned(),
+                                event.packet_src_channel.to_owned(),
+                                event.packet_dst_port.to_owned(),
+                                event.packet_dst_channel.to_owned(),
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id,
+                            tx_hash,
+                            provable_height,
+                            event: voyager_message::data::AcknowledgePacket {
+                                packet: PacketMetadata {
+                                    sequence: event.packet_sequence,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: event.packet_timeout_height,
+                                    timeout_timestamp: event.packet_timeout_timestamp,
+                                },
+                            }
+                            .into(),
+                        }))
+                    }
+                    // packet origin is the counterparty chain (if i put this comment above this pattern rustfmt explodes)
+                    IbcEvent::WriteAcknowledgement(event) => {
+                        let (
+                            counterparty_chain_id,
+                            client_info,
+                            source_channel,
+                            destination_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                height,
+                                event.connection_id.to_owned(),
+                                event.packet_dst_port.to_owned(),
+                                event.packet_dst_channel.to_owned(),
+                                event.packet_src_port.to_owned(),
+                                event.packet_src_channel.to_owned(),
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id,
+                            tx_hash,
+                            provable_height,
+                            event: voyager_message::data::WriteAcknowledgement {
+                                packet_data: event.packet_data_hex,
+                                packet_ack: event.packet_ack_hex,
+                                packet: PacketMetadata {
+                                    sequence: event.packet_sequence,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: event.packet_timeout_height,
+                                    timeout_timestamp: event.packet_timeout_timestamp,
+                                },
+                            }
+                            .into(),
+                        }))
+                    }
+                    IbcEvent::RecvPacket(event) => {
+                        let (
+                            counterparty_chain_id,
+                            client_info,
+                            source_channel,
+                            destination_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                height,
+                                event.connection_id.to_owned(),
+                                event.packet_dst_port.to_owned(),
+                                event.packet_dst_channel.to_owned(),
+                                event.packet_src_port.to_owned(),
+                                event.packet_src_channel.to_owned(),
+                            )
+                            .await?;
+
+                        Ok(data(ChainEvent {
+                            chain_id: self.chain_id.clone(),
+                            client_info,
+                            counterparty_chain_id,
+                            tx_hash,
+                            provable_height,
+                            event: voyager_message::data::RecvPacket {
+                                packet_data: event.packet_data_hex,
+                                packet: PacketMetadata {
+                                    sequence: event.packet_sequence,
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: event.packet_timeout_height,
+                                    timeout_timestamp: event.packet_timeout_timestamp,
+                                },
+                            }
+                            .into(),
                         }))
                     }
                 }
@@ -978,15 +972,22 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_latest_height(&self) -> RpcResult<Height> {
-        match self.tm_client.block(None).await {
-            Ok(block_response) => {
-                let height = block_response
-                    .block
+        match self.tm_client.commit(None).await {
+            Ok(commit_response) => {
+                let mut height = commit_response
+                    .signed_header
                     .header
                     .height
                     .inner()
                     .try_into()
                     .expect("value is >= 0; qed;");
+
+                if !commit_response.canonical {
+                    debug!(
+                        "commit is not canonical, latest finalized height is the previous block"
+                    );
+                    height -= 1;
+                }
 
                 debug!(height, "latest height");
 

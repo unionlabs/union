@@ -1,13 +1,23 @@
+use chain_utils::ethereum::IBCHandlerEvents;
 use enumorph::Enumorph;
-use queue_msg::queue_msg;
-use unionlabs::ibc::core::client::height::Height;
+use queue_msg::{queue_msg, SubsetOf};
+use unionlabs::{hash::H256, ibc::core::client::height::Height};
 
 #[queue_msg]
-#[derive(Enumorph)]
+#[derive(Enumorph, SubsetOf)]
 pub enum ModuleCall {
+    MakeFullEvent(MakeFullEvent),
+
     FetchEvents(FetchEvents),
     FetchGetLogs(FetchGetLogs),
     FetchBeaconBlockRange(FetchBeaconBlockRange),
+}
+
+#[queue_msg]
+pub struct MakeFullEvent {
+    pub slot: u64,
+    pub tx_hash: H256,
+    pub event: IBCHandlerEvents,
 }
 
 #[queue_msg]

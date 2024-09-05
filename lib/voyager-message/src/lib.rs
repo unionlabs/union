@@ -3,12 +3,12 @@
 use std::{env::VarError, fmt::Debug, marker::PhantomData};
 
 use futures::Future;
-use jsonrpsee::types::error::METHOD_NOT_FOUND_CODE;
+use jsonrpsee::types::{error::METHOD_NOT_FOUND_CODE, ErrorObject};
 use macros::apply;
 use queue_msg::{aggregation::SubsetOf, queue_msg, QueueError, QueueMessage};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{error, info, trace};
+use tracing::{info, trace};
 use unionlabs::{never::Never, traits::Member};
 
 use crate::{
@@ -44,15 +44,18 @@ impl<D: Member, C: Member, Cb: Member> QueueMessage for VoyagerMessage<D, C, Cb>
 /// Error code for fatal errors. If a plugin responds with this error code, it will be treated as failed and not retried.
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 
-pub fn json_rpc_error_to_queue_error(value: jsonrpsee::core::client::Error) -> QueueError {
-    match value {
-        jsonrpsee::core::client::Error::Call(ref error)
-            if error.code() == FATAL_JSONRPC_ERROR_CODE
-                || error.code() == METHOD_NOT_FOUND_CODE =>
-        {
-            QueueError::Fatal(Box::new(value))
-        }
+pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> QueueError {
+    match error {
+        jsonrpsee::core::client::Error::Call(error) => error_object_to_queue_error(error),
         value => QueueError::Retry(Box::new(value)),
+    }
+}
+
+pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
+    if error.code() == FATAL_JSONRPC_ERROR_CODE || error.code() == METHOD_NOT_FOUND_CODE {
+        QueueError::Fatal(Box::new(error.into_owned()))
+    } else {
+        QueueError::Retry(Box::new(error.into_owned()))
     }
 }
 

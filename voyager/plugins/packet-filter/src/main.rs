@@ -195,7 +195,7 @@ impl Module {
     }
 
     pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
-        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+        // let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
 
         Ok(Self {
             connection_event_filters: config.connection_event_filters,
@@ -293,7 +293,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument]
-    fn callback(
+    async fn callback(
         &self,
         cb: ModuleCallback,
         data: VecDeque<Data<ModuleData>>,
@@ -305,9 +305,9 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 #[async_trait]
 impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument]
-    fn run_pass(
+    async fn run_pass(
         &self,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
+        _msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
     ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         warn!("dropping messages");
 

@@ -1,53 +1,36 @@
 use std::collections::VecDeque;
 
 use enumorph::Enumorph;
-use frunk::{hlist_pat, HList};
+use frunk::hlist_pat;
+use jsonrpsee::core::RpcResult;
 use queue_msg::{
-    aggregation::{DoCallback, SubsetOf},
-    call, queue_msg,
+    aggregation::{HListTryFromIterator, SubsetOf},
+    call, promise, queue_msg, Op,
 };
-use unionlabs::ibc::core::client::height::Height;
+use unionlabs::QueryHeight;
 use voyager_message::{
-    call::FetchUpdateHeaders,
-    data::{Data, DecodedClientStateMeta, IbcMessage, OrderedMsgUpdateClients, WithChainId},
+    call::{
+        MakeMsgAcknowledgement, MakeMsgChannelOpenAck, MakeMsgChannelOpenConfirm,
+        MakeMsgChannelOpenTry, MakeMsgConnectionOpenAck, MakeMsgConnectionOpenConfirm,
+        MakeMsgConnectionOpenTry, MakeMsgRecvPacket,
+    },
+    callback::Callback,
+    data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
+    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
     ChainId, VoyagerMessage,
 };
 
 use crate::{
     call::ModuleCall,
-    data::{EventBatch, ModuleData},
+    data::{Event, EventBatch, ModuleData},
+    Module,
 };
 
 #[queue_msg]
 #[derive(Enumorph)]
 pub enum ModuleCallback {
-    MakeUpdateFromLatestHeightToAtLeastTargetHeight(
-        MakeUpdateFromLatestHeightToAtLeastTargetHeight,
-    ),
     MakeIbcMessagesFromUpdate(MakeIbcMessagesFromUpdate),
     MakeBatchTransaction(MakeBatchTransaction),
-}
-
-#[queue_msg]
-pub struct MakeUpdateFromLatestHeightToAtLeastTargetHeight {
-    pub target_height: Height,
-}
-
-impl DoCallback<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>
-    for MakeUpdateFromLatestHeightToAtLeastTargetHeight
-{
-    type Params = HList![DecodedClientStateMeta];
-
-    fn call(
-        Self { target_height }: Self,
-        hlist_pat![client_meta]: Self::Params,
-    ) -> queue_msg::Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
-        call(FetchUpdateHeaders {
-            chain_id: client_meta.state.chain_id,
-            update_from: client_meta.state.height,
-            update_to: target_height,
-        })
-    }
 }
 
 /// Given an [`OrderedMsgUpdateClients`], returns [`Op`]s that generate [`IbcMessage`]s with proofs at the highest height of the updates.
@@ -56,13 +39,122 @@ pub struct MakeIbcMessagesFromUpdate {
     pub batch: EventBatch,
 }
 
+impl MakeIbcMessagesFromUpdate {
+    pub async fn call(
+        self,
+        module: &Module,
+        datas: VecDeque<Data<ModuleData>>,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        let Ok(
+            hlist_pat![
+                updates @ OrderedMsgUpdateClients { .. },
+            ],
+        ) = HListTryFromIterator::try_from_iter(datas)
+        else {
+            panic!("bad data")
+        };
+
+        let client_meta = module
+            .client
+            .client_meta(
+                module.chain_id.clone(),
+                QueryHeight::Latest,
+                self.batch.client_id.clone(),
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let new_trusted_height = updates
+            .updates
+            .last()
+            .expect("must have at least one update")
+            .0
+            .height;
+
+        Ok(promise(
+            self.batch.events.into_iter().map(|batchable_event| {
+                assert!(batchable_event.provable_height <= new_trusted_height);
+
+                let origin_chain_id = client_meta.chain_id.clone();
+                let target_chain_id = module.chain_id.clone();
+
+                // in this context, we are the destination - the counterparty of the source is the destination
+                match batchable_event.event {
+                    Event::ConnectionOpenInit(connection_open_init_event) => {
+                        call(MakeMsgConnectionOpenTry {
+                            origin_chain_id,
+                            origin_chain_proof_height: new_trusted_height,
+                            target_chain_id,
+                            connection_open_init_event,
+                        })
+                    }
+                    Event::ConnectionOpenTry(connection_open_try_event) => {
+                        call(MakeMsgConnectionOpenAck {
+                            origin_chain_id,
+                            origin_chain_proof_height: new_trusted_height,
+                            target_chain_id,
+                            connection_open_try_event,
+                        })
+                    }
+                    Event::ConnectionOpenAck(connection_open_ack_event) => {
+                        call(MakeMsgConnectionOpenConfirm {
+                            origin_chain_id,
+                            origin_chain_proof_height: new_trusted_height,
+                            target_chain_id,
+                            connection_open_ack_event,
+                        })
+                    }
+                    Event::ChannelOpenInit(channel_open_init_event) => {
+                        call(MakeMsgChannelOpenTry {
+                            origin_chain_id,
+                            origin_chain_proof_height: new_trusted_height,
+                            target_chain_id,
+                            channel_open_init_event,
+                        })
+                    }
+                    Event::ChannelOpenTry(channel_open_try_event) => call(MakeMsgChannelOpenAck {
+                        origin_chain_id,
+                        origin_chain_proof_height: new_trusted_height,
+                        target_chain_id,
+                        channel_open_try_event,
+                    }),
+                    Event::ChannelOpenAck(channel_open_ack_event) => {
+                        call(MakeMsgChannelOpenConfirm {
+                            origin_chain_id,
+                            origin_chain_proof_height: new_trusted_height,
+                            target_chain_id,
+                            channel_open_ack_event,
+                        })
+                    }
+                    Event::SendPacket(send_packet_event) => call(MakeMsgRecvPacket {
+                        origin_chain_id,
+                        origin_chain_proof_height: new_trusted_height,
+                        target_chain_id,
+                        send_packet_event,
+                    }),
+                    Event::WriteAcknowledgement(write_acknowledgement_event) => {
+                        call(MakeMsgAcknowledgement {
+                            origin_chain_id,
+                            origin_chain_proof_height: new_trusted_height,
+                            target_chain_id,
+                            write_acknowledgement_event,
+                        })
+                    }
+                }
+            }),
+            [],
+            Callback::plugin(module.plugin_name(), MakeBatchTransaction { updates }),
+        ))
+    }
+}
+
 #[queue_msg]
 pub struct MakeBatchTransaction {
     pub updates: OrderedMsgUpdateClients,
 }
 
 impl MakeBatchTransaction {
-    pub fn do_aggregate(
+    pub fn call(
         self,
         chain_id: ChainId<'static>,
         datas: VecDeque<Data<ModuleData>>,

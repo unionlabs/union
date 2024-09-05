@@ -24,12 +24,12 @@ use serde_json::{json, Value};
 use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
 use tracing::debug;
-use tracing_subscriber::{fmt::format::FmtSpan, EnvFilter};
+use tracing_subscriber::EnvFilter;
 use unionlabs::{ethereum::ibc_commitment_key, ics24, ErrorReporter, QueryHeight};
 use voyager_message::{
     call::FetchBlock,
     context::{Context, PluginConfig, PLUGIN_NAME_CACHE_FILE},
-    plugin::{ChainModuleClient, ClientModuleClient},
+    plugin::ChainModuleClient,
     ChainId, VoyagerMessage,
 };
 
@@ -194,15 +194,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                     voyager
                         .context
-                        .client_module::<Value, Value, Value>(
+                        .rpc_server
+                        .decode_client_state(
                             &client_info.client_type,
                             &client_info.ibc_interface,
-                        )?
-                        .decode_client_state(
-                            serde_json::from_value::<Hex<Vec<u8>>>(state)
-                                .unwrap()
-                                .0
-                                .into(),
+                            serde_json::from_value::<Hex<Vec<u8>>>(state).unwrap().0,
                         )
                         .await?
                 }
@@ -211,15 +207,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                     voyager
                         .context
-                        .client_module::<Value, Value, Value>(
+                        .rpc_server
+                        .decode_consensus_state(
                             &client_info.client_type,
                             &client_info.ibc_interface,
-                        )?
-                        .decode_consensus_state(
-                            serde_json::from_value::<Hex<Vec<u8>>>(state)
-                                .unwrap()
-                                .0
-                                .into(),
+                            serde_json::from_value::<Hex<Vec<u8>>>(state).unwrap().0,
                         )
                         .await?
                 }

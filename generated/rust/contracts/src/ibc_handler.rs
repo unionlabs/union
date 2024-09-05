@@ -2477,6 +2477,8 @@ pub mod ibc_handler {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "OwnershipTransferred",

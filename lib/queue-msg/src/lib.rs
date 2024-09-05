@@ -151,7 +151,7 @@ pub enum Op<T: QueueMessage> {
         remaining: NonZeroU8,
         msg: Box<Self>,
     },
-    Aggregate {
+    Promise {
         /// Messages that are expected to resolve to [`Data`].
         queue: VecDeque<Self>,
         /// The resolved data messages.
@@ -238,7 +238,7 @@ pub fn promise<T: QueueMessage>(
     data: impl IntoIterator<Item = T::Data>,
     callback: impl Into<T::Callback>,
 ) -> Op<T> {
-    Op::Aggregate {
+    Op::Promise {
         queue: queue.into_iter().collect(),
         data: data.into_iter().collect(),
         receiver: callback.into(),
@@ -390,21 +390,28 @@ impl<T: QueueMessage> Op<T> {
                         },
                     }
                 }
-                Self::Aggregate {
+                Self::Promise {
                     mut queue,
                     mut data,
                     receiver,
                 } => {
                     if let Some(msg) = queue.pop_front() {
-                        let msg = msg.handle(store, depth + 1).await?;
+                        match msg {
+                            Self::Data(d) => {
+                                data.push_back(d);
+                            }
+                            msg => {
+                                let msg = msg.handle(store, depth + 1).await?;
 
-                        if let Some(msg) = msg {
-                            match msg {
-                                Self::Data(d) => {
-                                    data.push_back(d);
-                                }
-                                m => {
-                                    queue.push_back(m);
+                                if let Some(msg) = msg {
+                                    match msg {
+                                        Self::Data(d) => {
+                                            data.push_back(d);
+                                        }
+                                        m => {
+                                            queue.push_back(m);
+                                        }
+                                    }
                                 }
                             }
                         }
