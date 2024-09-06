@@ -134,18 +134,26 @@
 			"path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
 			"config": {
 				"chain_id": "union-devnet-1",
-				"min_batch_size": 1,
-				"max_batch_size": 10,
-				"max_wait_time_ms": 10000
+				"client_configs": {
+					"*": {
+						"min_batch_size": 1,
+						"max_batch_size": 3,
+						"max_wait_time": { "secs": 10, "nanos": 0 }
+					}
+				}
 			}
 		},
 		{
 			"path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
 			"config": {
 				"chain_id": "32382",
-				"min_batch_size": 1,
-				"max_batch_size": 10,
-				"max_wait_time_ms": 10000
+				"client_configs": {
+					"*": {
+						"min_batch_size": 1,
+						"max_batch_size": 3,
+						"max_wait_time": { "secs": 10, "nanos": 0 }
+					}
+				}
 			}
 		}
 	],
@@ -154,8 +162,8 @@
 		"queue": {
 			"type": "pg-queue",
 			"database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
-			"max_connections": 5,
-			"min_connections": 5,
+			"max_connections": 50,
+			"min_connections": 50,
 			"idle_timeout": null,
 			"max_lifetime": null
 		},

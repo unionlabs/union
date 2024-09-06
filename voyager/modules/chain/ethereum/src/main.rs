@@ -1547,13 +1547,13 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                     .into(),
                                 }))
                             }
-                            // packet origin is the counterparty chain (if i put this comment above this pattern rustfmt explodes)
+                            // packet origin is the counterparty chain
                             IBCPacketEvents::WriteAcknowledgementFilter(event) => {
                                 let (
                                     counterparty_chain_id,
                                     client_info,
-                                    source_channel,
                                     destination_channel,
+                                    source_channel,
                                     channel_ordering,
                                 ) = self
                                     .make_packet_metadata(
@@ -1588,8 +1588,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 let (
                                     counterparty_chain_id,
                                     client_info,
-                                    source_channel,
                                     destination_channel,
+                                    source_channel,
                                     channel_ordering,
                                 ) = self
                                     .make_packet_metadata(

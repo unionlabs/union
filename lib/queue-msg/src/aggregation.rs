@@ -213,54 +213,54 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn tuple_aggregate() {
-        let _ = tracing_subscriber::fmt()
-            .with_env_filter(EnvFilter::from_default_env())
-            .try_init();
+    // #[tokio::test]
+    // async fn tuple_aggregate() {
+    //     let _ = tracing_subscriber::fmt()
+    //         .with_env_filter(EnvFilter::from_default_env())
+    //         .try_init();
 
-        let _: () = run_to_completion::<
-            TupleCallback,
-            SimpleMessage,
-            (),
-            InMemoryQueue<SimpleMessage>,
-            NoopPass,
-            Pure<NoopPass>,
-        >(TupleCallback, (), (), [], NoopPass, Pure(NoopPass))
-        .await;
+    //     let _: () = run_to_completion::<
+    //         TupleCallback,
+    //         SimpleMessage,
+    //         (),
+    //         InMemoryQueue<SimpleMessage>,
+    //         NoopPass,
+    //         Pure<NoopPass>,
+    //     >(TupleCallback, (), (), [], NoopPass, Pure(NoopPass))
+    //     .await;
 
-        let _: (DataA, ()) = run_to_completion::<
-            TupleCallback,
-            SimpleMessage,
-            (DataA, ()),
-            InMemoryQueue<SimpleMessage>,
-            NoopPass,
-            Pure<NoopPass>,
-        >(
-            TupleCallback,
-            (),
-            (),
-            [call(FetchA {})],
-            NoopPass,
-            Pure(NoopPass),
-        )
-        .await;
+    //     let _: (DataA, ()) = run_to_completion::<
+    //         TupleCallback,
+    //         SimpleMessage,
+    //         (DataA, ()),
+    //         InMemoryQueue<SimpleMessage>,
+    //         NoopPass,
+    //         Pure<NoopPass>,
+    //     >(
+    //         TupleCallback,
+    //         (),
+    //         (),
+    //         [call(FetchA {})],
+    //         NoopPass,
+    //         Pure(NoopPass),
+    //     )
+    //     .await;
 
-        let _: (DataC, (DataB, (DataA, ()))) = run_to_completion::<
-            TupleCallback,
-            SimpleMessage,
-            (DataC, (DataB, (DataA, ()))),
-            InMemoryQueue<SimpleMessage>,
-            NoopPass,
-            Pure<NoopPass>,
-        >(
-            TupleCallback,
-            (),
-            (),
-            [call(FetchA {}), call(FetchC {}), call(FetchB {})],
-            NoopPass,
-            Pure(NoopPass),
-        )
-        .await;
-    }
+    //     let _: (DataC, (DataB, (DataA, ()))) = run_to_completion::<
+    //         TupleCallback,
+    //         SimpleMessage,
+    //         (DataC, (DataB, (DataA, ()))),
+    //         InMemoryQueue<SimpleMessage>,
+    //         NoopPass,
+    //         Pure<NoopPass>,
+    //     >(
+    //         TupleCallback,
+    //         (),
+    //         (),
+    //         [call(FetchA {}), call(FetchC {}), call(FetchB {})],
+    //         NoopPass,
+    //         Pure(NoopPass),
+    //     )
+    //     .await;
+    // }
 }

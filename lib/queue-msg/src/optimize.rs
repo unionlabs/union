@@ -178,28 +178,37 @@ mod tests {
             ]),
         ])];
 
-        let expected_output = vec![
-            (vec![0], data(DataA {})),
-            (vec![0], data(DataC {})),
-            (
-                vec![0],
-                seq([
-                    call(FetchA {}),
-                    call(FetchA {}),
-                    call(PrintAbc {
-                        a: DataA {},
-                        b: DataB {},
-                        c: DataC {},
-                    }),
-                    call(FetchA {}),
-                ]),
-            ),
-        ];
+        let expected_output = vec![(
+            vec![0],
+            seq([
+                call(FetchA {}),
+                data(DataA {}),
+                call(FetchA {}),
+                data(DataC {}),
+                call(PrintAbc {
+                    a: DataA {},
+                    b: DataB {},
+                    c: DataC {},
+                }),
+                call(FetchA {}),
+            ]),
+        )];
 
         let optimized = normalize(msgs.clone());
         assert_eq!(optimized, expected_output);
 
         let optimized = normalize(msgs);
+        assert_eq!(optimized, expected_output);
+    }
+
+    #[test]
+    fn seq_call_data() {
+        let msg = seq::<SimpleMessage>([call(FetchA {}), data(DataA {})]);
+
+        // should be the same
+        let expected_output = vec![(vec![0_usize], msg.clone())];
+
+        let optimized = normalize(vec![msg]);
         assert_eq!(optimized, expected_output);
     }
 

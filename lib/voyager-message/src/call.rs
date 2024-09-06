@@ -7,7 +7,7 @@ use jsonrpsee::{
 };
 use macros::apply;
 use queue_msg::{
-    call, conc, data, defer, now, promise, queue_msg, seq, HandleCall, Op, QueueError,
+    call, conc, data, defer, noop, now, promise, queue_msg, seq, HandleCall, Op, QueueError,
 };
 use serde_json::Value;
 use serde_utils::Hex;
@@ -325,22 +325,15 @@ pub struct WaitForHeightRelative {
 #[queue_msg]
 pub struct WaitForTimestamp {
     pub chain_id: ChainId<'static>,
+    /// THIS IS NANOSECONDS
     pub timestamp: i64,
 }
 
-/// Wait for the client `.client_id` on `Hc` to trust a height >= `.height`,
-/// returning the counterparty's client state at that height when it's reached.
+/// Wait for the client `.client_id` on `.chain_id` to trust a height >= `.height`.
 #[queue_msg]
 pub struct WaitForTrustedHeight {
     pub chain_id: ChainId<'static>,
-    /// The id of the client on `Hc` who's [`ClientState::height()`] we're
-    /// waiting to be >= `.height`.
     pub client_id: ClientId,
-    /// The id of the counterparty client on `Tr`, who's state will be fetched
-    /// at [`ClientState::height()`] when `.client_id` on `Hc` trusts a height
-    /// >= `.height`.
-    pub counterparty_client_id: ClientId,
-    pub counterparty_chain_id: ChainId<'static>,
     pub height: Height,
 }
 
@@ -972,23 +965,17 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 chain_id,
                 timestamp,
             }) => {
-                let chain_ts = ctx
+                let chain_timestamp = ctx
                     .rpc_server
                     .query_latest_timestamp(&chain_id)
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if chain_ts >= timestamp {
-                    // TODO: Figure out a way to fetch a height at a specific timestamp
-                    Ok(data(LatestHeight {
-                        height: ctx
-                            .rpc_server
-                            .query_latest_height(&chain_id)
-                            .await
-                            .map_err(error_object_to_queue_error)?,
-                        chain_id,
-                    }))
+                if chain_timestamp >= timestamp {
+                    info!(%chain_id, %timestamp, %chain_timestamp, "timestamp reached");
+                    Ok(noop())
                 } else {
+                    debug!(%chain_id, %timestamp, %chain_timestamp, "timestamp not yet reached");
                     Ok(seq([
                         // REVIEW: Defer until `now + chain.block_time()`? Would require a new
                         // method on chain
@@ -1004,8 +991,6 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
             Call::WaitForTrustedHeight(WaitForTrustedHeight {
                 chain_id,
                 client_id,
-                counterparty_client_id,
-                counterparty_chain_id,
                 height,
             }) => {
                 let client_state = ctx
@@ -1031,31 +1016,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                         trusted_client_state_meta.height, height
                     );
 
-                    // the height has been reached, fetch the counterparty client state on `Tr` at
-                    // the trusted height
-                    let crate::rpc::IbcState {
-                        chain_id,
-                        path,
-                        height,
-                        state,
-                    } = ctx
-                        .rpc_server
-                        .query_ibc_state_typed(
-                            &counterparty_chain_id,
-                            trusted_client_state_meta.height,
-                            ClientStatePath {
-                                client_id: counterparty_client_id.clone(),
-                            },
-                        )
-                        .await
-                        .map_err(json_rpc_error_to_queue_error)?;
-
-                    Ok(data(IbcState {
-                        chain_id,
-                        path,
-                        height,
-                        state,
-                    }))
+                    Ok(noop())
                 } else {
                     Ok(seq([
                         // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
@@ -1065,8 +1026,6 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                             chain_id,
                             client_id,
                             height,
-                            counterparty_client_id,
-                            counterparty_chain_id,
                         }),
                     ]))
                 }

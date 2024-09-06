@@ -107,7 +107,7 @@ impl Module {
     }
 
     pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
-        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+        // let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
 
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
 

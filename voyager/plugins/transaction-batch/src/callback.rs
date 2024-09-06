@@ -5,14 +5,14 @@ use frunk::hlist_pat;
 use jsonrpsee::core::RpcResult;
 use queue_msg::{
     aggregation::{HListTryFromIterator, SubsetOf},
-    call, promise, queue_msg, Op,
+    call, conc, data, promise, queue_msg, seq, Op,
 };
-use unionlabs::QueryHeight;
+use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
     call::{
         MakeMsgAcknowledgement, MakeMsgChannelOpenAck, MakeMsgChannelOpenConfirm,
         MakeMsgChannelOpenTry, MakeMsgConnectionOpenAck, MakeMsgConnectionOpenConfirm,
-        MakeMsgConnectionOpenTry, MakeMsgRecvPacket,
+        MakeMsgConnectionOpenTry, MakeMsgRecvPacket, WaitForTrustedHeight,
     },
     callback::Callback,
     data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
@@ -22,7 +22,7 @@ use voyager_message::{
 
 use crate::{
     call::ModuleCall,
-    data::{Event, EventBatch, ModuleData},
+    data::{BatchableEvent, Event, ModuleData},
     Module,
 };
 
@@ -36,7 +36,8 @@ pub enum ModuleCallback {
 /// Given an [`OrderedMsgUpdateClients`], returns [`Op`]s that generate [`IbcMessage`]s with proofs at the highest height of the updates.
 #[queue_msg]
 pub struct MakeIbcMessagesFromUpdate {
-    pub batch: EventBatch,
+    pub client_id: ClientId,
+    pub batches: Vec<Vec<BatchableEvent>>,
 }
 
 impl MakeIbcMessagesFromUpdate {
@@ -59,7 +60,7 @@ impl MakeIbcMessagesFromUpdate {
             .client_meta(
                 module.chain_id.clone(),
                 QueryHeight::Latest,
-                self.batch.client_id.clone(),
+                self.client_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_rpc_error)?;
@@ -71,86 +72,101 @@ impl MakeIbcMessagesFromUpdate {
             .0
             .height;
 
-        Ok(promise(
-            self.batch.events.into_iter().map(|batchable_event| {
-                assert!(batchable_event.provable_height <= new_trusted_height);
+        Ok(conc(self.batches.into_iter().enumerate().map(
+            |(i, batch)| {
+                promise(
+                    batch.into_iter().map(|batchable_event| {
+                        assert!(batchable_event.provable_height <= new_trusted_height);
 
-                let origin_chain_id = client_meta.chain_id.clone();
-                let target_chain_id = module.chain_id.clone();
+                        let origin_chain_id = client_meta.chain_id.clone();
+                        let target_chain_id = module.chain_id.clone();
 
-                // in this context, we are the destination - the counterparty of the source is the destination
-                match batchable_event.event {
-                    Event::ConnectionOpenInit(connection_open_init_event) => {
-                        call(MakeMsgConnectionOpenTry {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            connection_open_init_event,
-                        })
-                    }
-                    Event::ConnectionOpenTry(connection_open_try_event) => {
-                        call(MakeMsgConnectionOpenAck {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            connection_open_try_event,
-                        })
-                    }
-                    Event::ConnectionOpenAck(connection_open_ack_event) => {
-                        call(MakeMsgConnectionOpenConfirm {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            connection_open_ack_event,
-                        })
-                    }
-                    Event::ChannelOpenInit(channel_open_init_event) => {
-                        call(MakeMsgChannelOpenTry {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            channel_open_init_event,
-                        })
-                    }
-                    Event::ChannelOpenTry(channel_open_try_event) => call(MakeMsgChannelOpenAck {
-                        origin_chain_id,
-                        origin_chain_proof_height: new_trusted_height,
-                        target_chain_id,
-                        channel_open_try_event,
+                        // in this context, we are the destination - the counterparty of the source is the destination
+                        match batchable_event.event {
+                            Event::ConnectionOpenInit(connection_open_init_event) => {
+                                call(MakeMsgConnectionOpenTry {
+                                    origin_chain_id,
+                                    origin_chain_proof_height: new_trusted_height,
+                                    target_chain_id,
+                                    connection_open_init_event,
+                                })
+                            }
+                            Event::ConnectionOpenTry(connection_open_try_event) => {
+                                call(MakeMsgConnectionOpenAck {
+                                    origin_chain_id,
+                                    origin_chain_proof_height: new_trusted_height,
+                                    target_chain_id,
+                                    connection_open_try_event,
+                                })
+                            }
+                            Event::ConnectionOpenAck(connection_open_ack_event) => {
+                                call(MakeMsgConnectionOpenConfirm {
+                                    origin_chain_id,
+                                    origin_chain_proof_height: new_trusted_height,
+                                    target_chain_id,
+                                    connection_open_ack_event,
+                                })
+                            }
+                            Event::ChannelOpenInit(channel_open_init_event) => {
+                                call(MakeMsgChannelOpenTry {
+                                    origin_chain_id,
+                                    origin_chain_proof_height: new_trusted_height,
+                                    target_chain_id,
+                                    channel_open_init_event,
+                                })
+                            }
+                            Event::ChannelOpenTry(channel_open_try_event) => {
+                                call(MakeMsgChannelOpenAck {
+                                    origin_chain_id,
+                                    origin_chain_proof_height: new_trusted_height,
+                                    target_chain_id,
+                                    channel_open_try_event,
+                                })
+                            }
+                            Event::ChannelOpenAck(channel_open_ack_event) => {
+                                call(MakeMsgChannelOpenConfirm {
+                                    origin_chain_id,
+                                    origin_chain_proof_height: new_trusted_height,
+                                    target_chain_id,
+                                    channel_open_ack_event,
+                                })
+                            }
+                            Event::SendPacket(send_packet_event) => call(MakeMsgRecvPacket {
+                                origin_chain_id,
+                                origin_chain_proof_height: new_trusted_height,
+                                target_chain_id,
+                                send_packet_event,
+                            }),
+                            Event::WriteAcknowledgement(write_acknowledgement_event) => {
+                                call(MakeMsgAcknowledgement {
+                                    origin_chain_id,
+                                    origin_chain_proof_height: new_trusted_height,
+                                    target_chain_id,
+                                    write_acknowledgement_event,
+                                })
+                            }
+                        }
                     }),
-                    Event::ChannelOpenAck(channel_open_ack_event) => {
-                        call(MakeMsgChannelOpenConfirm {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            channel_open_ack_event,
-                        })
-                    }
-                    Event::SendPacket(send_packet_event) => call(MakeMsgRecvPacket {
-                        origin_chain_id,
-                        origin_chain_proof_height: new_trusted_height,
-                        target_chain_id,
-                        send_packet_event,
-                    }),
-                    Event::WriteAcknowledgement(write_acknowledgement_event) => {
-                        call(MakeMsgAcknowledgement {
-                            origin_chain_id,
-                            origin_chain_proof_height: new_trusted_height,
-                            target_chain_id,
-                            write_acknowledgement_event,
-                        })
-                    }
-                }
-            }),
-            [],
-            Callback::plugin(module.plugin_name(), MakeBatchTransaction { updates }),
-        ))
+                    [],
+                    Callback::plugin(
+                        module.plugin_name(),
+                        MakeBatchTransaction {
+                            client_id: self.client_id.clone(),
+                            updates: (i == 0).then(|| updates.clone()),
+                        },
+                    ),
+                )
+            },
+        )))
     }
 }
 
 #[queue_msg]
 pub struct MakeBatchTransaction {
-    pub updates: OrderedMsgUpdateClients,
+    // NOTE: We could technically fetch this from the information in the callback data messages, but this is just so much easier
+    pub client_id: ClientId,
+    /// Updates to send before the messages in this message's callback data. If this is `None`, then that means the updates have been included in a previous batch, and this will instead be enqueued with a WaitForTrustedHeight in front of it.
+    pub updates: Option<OrderedMsgUpdateClients>,
 }
 
 impl MakeBatchTransaction {
@@ -158,11 +174,10 @@ impl MakeBatchTransaction {
         self,
         chain_id: ChainId<'static>,
         datas: VecDeque<Data<ModuleData>>,
-    ) -> Data<ModuleData> {
+    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         let msgs = datas
             .into_iter()
-            .map(|d| IbcMessage::try_from_super(d).unwrap())
-            .collect::<Vec<_>>();
+            .map(|d| IbcMessage::try_from_super(d).unwrap());
 
         // TODO: We may need to sort packet messages when we support ordered channels
         // msgs.sort_unstable_by(|a, b| match (a, b) {
@@ -177,16 +192,38 @@ impl MakeBatchTransaction {
         //     (IbcMessage::TimeoutPacket(_), IbcMessage::TimeoutPacket(_)) => todo!(),
         // });
 
-        Data::IdentifiedIbcMessageBatch(WithChainId {
-            chain_id,
-            message: self
-                .updates
-                .updates
-                .into_iter()
-                .map(|(_, msg)| IbcMessage::from(msg))
-                .chain(msgs)
-                .collect::<Vec<_>>(),
-        })
+        match self.updates {
+            Some(updates) => data(WithChainId {
+                chain_id,
+                message: updates
+                    .updates
+                    .into_iter()
+                    .map(|(_, msg)| IbcMessage::from(msg))
+                    .chain(msgs)
+                    .collect::<Vec<_>>(),
+            }),
+            None => {
+                let msgs = msgs.collect::<Vec<_>>();
+
+                // TODO: We can probably relax this in the future if we want to reuse this module to work with all IBC messages
+                // NOTE: We assume that all of the IBC messages were generated against the same consensus height
+                let required_consensus_height = msgs[0]
+                    .proof_height()
+                    .expect("all batchable messages have a proof height");
+
+                seq([
+                    call(WaitForTrustedHeight {
+                        chain_id: chain_id.clone(),
+                        client_id: self.client_id,
+                        height: required_consensus_height,
+                    }),
+                    data(WithChainId {
+                        chain_id,
+                        message: msgs,
+                    }),
+                ])
+            }
+        }
     }
 }
 

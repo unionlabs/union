@@ -90,59 +90,74 @@ fn combine_normalization_pass_output<T: QueueMessage>(
 /// Extract all data out of the contained messages, pulling out into top-level messages.
 ///
 /// Both `Sequence` and `Concurrent` are descended into, as well as `Aggregate` - for `Aggregate`,
-/// `Data` messages are pulled out to the top level of the internal aggregation queue.
+/// `Data` messages are pulled out to the top level of the internal aggregation queue. For `seq`,
+// `data` messages are only pulled out if they are in the front of the queue.
 // REVIEW: Should data messages be queued as ready?
 pub fn extract_data<T: QueueMessage>(msgs: Vec<Op<T>>) -> Vec<(Vec<usize>, Op<T>)> {
-    fn extract_data_internal<T: QueueMessage>(msg: Op<T>) -> Vec<Op<T>> {
-        fn go<T: QueueMessage>(msg: Op<T>) -> Vec<Op<T>> {
-            match msg {
-                Op::Seq(msgs) => {
-                    let (data, msgs): (Vec<_>, Vec<_>) = msgs
-                        .into_iter()
-                        .flat_map(go)
-                        .partition(|msg| matches!(msg, Op::Data(_)));
+    // fn extract_data_internal<T: QueueMessage>(msg: Op<T>) -> Vec<Op<T>> {
+    fn go<T: QueueMessage>(msg: Op<T>) -> Vec<Op<T>> {
+        match msg {
+            Op::Seq(msgs) => {
+                let mut msgs = msgs.into_iter().flat_map(go).collect::<Vec<_>>();
 
-                    if data.is_empty() {
-                        vec![seq(msgs)]
-                    } else {
-                        data.into_iter().chain([seq(msgs)]).collect()
-                    }
-                }
-                Op::Conc(msgs) => {
-                    let (data, msgs): (Vec<_>, Vec<_>) = msgs
-                        .into_iter()
-                        .flat_map(go)
-                        .partition(|msg| matches!(msg, Op::Data(_)));
+                let first_non_data_msg_idx = msgs
+                    .iter()
+                    .enumerate()
+                    .find_map(|(idx, msg)| (!matches!(msg, Op::Data(_))).then_some(idx))
+                    .unwrap_or(msgs.len());
 
-                    if data.is_empty() {
-                        vec![conc(msgs)]
-                    } else {
-                        data.into_iter().chain([conc(msgs)]).collect()
-                    }
+                // dbg!(&msgs);
+                // dbg!(first_non_data_msg_idx);
+
+                let non_data_msgs = msgs.split_off(first_non_data_msg_idx);
+                let data_msgs = msgs;
+
+                if non_data_msgs.is_empty() {
+                    data_msgs
+                } else {
+                    data_msgs
+                        .into_iter()
+                        .chain([seq(non_data_msgs.into_iter().flat_map(go))])
+                        .collect()
                 }
-                Op::Promise {
-                    queue,
-                    data,
-                    receiver,
-                } => vec![Op::Promise {
-                    queue: queue.into_iter().flat_map(extract_data_internal).collect(),
-                    data,
-                    receiver,
-                }],
-                _ => vec![msg],
+
+                // if data.is_empty() {
+                //     vec![seq(msgs)]
+                // } else {
+                //     data.into_iter().chain([seq(msgs)]).collect()
+                // }
             }
-        }
+            Op::Conc(msgs) => {
+                let (data, msgs): (Vec<_>, Vec<_>) = msgs
+                    .into_iter()
+                    .flat_map(go)
+                    .partition(|msg| matches!(msg, Op::Data(_)));
 
-        go(msg)
+                if data.is_empty() {
+                    vec![conc(msgs)]
+                } else {
+                    data.into_iter().chain([conc(msgs)]).collect()
+                }
+            }
+            Op::Promise {
+                queue,
+                data,
+                receiver,
+            } => vec![Op::Promise {
+                queue: queue.into_iter().flat_map(go).collect(),
+                data,
+                receiver,
+            }],
+            _ => vec![msg],
+        }
     }
+
+    //     go(msg)
+    // }
 
     msgs.into_iter()
         .enumerate()
-        .flat_map(|(i, msg)| {
-            extract_data_internal(msg)
-                .into_iter()
-                .map(move |msg| (vec![i], msg))
-        })
+        .flat_map(|(i, msg)| go(msg).into_iter().map(move |msg| (vec![i], msg)))
         .collect()
 }
 

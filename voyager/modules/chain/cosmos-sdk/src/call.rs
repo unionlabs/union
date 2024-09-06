@@ -2,9 +2,7 @@ use std::num::NonZeroU32;
 
 use enumorph::Enumorph;
 use queue_msg::queue_msg;
-use unionlabs::{
-    events::IbcEvent, hash::H256, ibc::core::client::height::Height, id::ConnectionId,
-};
+use unionlabs::{events::IbcEvent, hash::H256, ibc::core::client::height::Height};
 
 #[queue_msg]
 #[derive(Enumorph)]

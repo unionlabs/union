@@ -12,6 +12,7 @@ use queue_msg::{
 use tracing::debug;
 use unionlabs::{
     self,
+    constants::metric::NANOS_PER_SECOND,
     ethereum::beacon::light_client_finality_update::UnboundedLightClientFinalityUpdate,
     ibc::{
         core::client::height::Height,
@@ -407,13 +408,16 @@ impl AggregateHeaders {
             .expect("expected at least one update");
 
         Ok(seq([
-            void(call(WaitForTimestamp {
+            call(WaitForTimestamp {
                 chain_id: self.counterparty_chain_id.clone(),
-                timestamp: (genesis.genesis_time
-                    + (last_update_signature_slot * spec.seconds_per_slot))
-                    .try_into()
-                    .unwrap(),
-            })),
+                // we wait for one more block just to be sure the counterparty's block time has caught up
+                timestamp: i64::try_from(
+                    (genesis.genesis_time + (last_update_signature_slot * spec.seconds_per_slot))
+                        + spec.seconds_per_slot,
+                )
+                .unwrap()
+                    * NANOS_PER_SECOND as i64,
+            }),
             queue_msg::data(OrderedHeaders {
                 headers: headers
                     .into_iter()

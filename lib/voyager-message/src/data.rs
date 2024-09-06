@@ -212,6 +212,27 @@ pub enum IbcMessage {
     TimeoutPacket(MsgTimeout),
 }
 
+impl IbcMessage {
+    /// Returns the proof height of the IBC message, if it has one. (ConnectionOpenInit does not contain a proof, for example)
+    pub fn proof_height(&self) -> Option<Height> {
+        match self {
+            IbcMessage::CreateClient(_) => None,
+            IbcMessage::UpdateClient(_) => None,
+            IbcMessage::ConnectionOpenInit(_) => None,
+            IbcMessage::ConnectionOpenTry(msg) => Some(msg.proof_height),
+            IbcMessage::ConnectionOpenAck(msg) => Some(msg.proof_height),
+            IbcMessage::ConnectionOpenConfirm(msg) => Some(msg.proof_height),
+            IbcMessage::ChannelOpenInit(_) => None,
+            IbcMessage::ChannelOpenTry(msg) => Some(msg.proof_height),
+            IbcMessage::ChannelOpenAck(msg) => Some(msg.proof_height),
+            IbcMessage::ChannelOpenConfirm(msg) => Some(msg.proof_height),
+            IbcMessage::RecvPacket(msg) => Some(msg.proof_height),
+            IbcMessage::AcknowledgePacket(msg) => Some(msg.proof_height),
+            IbcMessage::TimeoutPacket(msg) => Some(msg.proof_height),
+        }
+    }
+}
+
 #[queue_msg]
 pub struct CreateClient {
     pub client_id: ClientId,

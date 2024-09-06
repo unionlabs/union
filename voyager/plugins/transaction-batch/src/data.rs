@@ -23,7 +23,7 @@ pub struct EventBatch {
 #[queue_msg]
 pub struct BatchableEvent {
     /// unix timestamp (in ms) of when this event was first seen by this plugin.
-    pub first_seen_at: u128,
+    pub first_seen_at: u64,
     // the 'provable height' of the event
     pub provable_height: Height,
     pub event: Event,

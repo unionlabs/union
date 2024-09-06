@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::collections::VecDeque;
 
 use jsonrpsee::core::{async_trait, RpcResult};
 use queue_msg::{optimize::OptimizationResult, BoxDynError, Op};
@@ -10,7 +10,6 @@ use voyager_message::{
     data::Data,
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
-    reth_ipc::client::IpcClientBuilder,
     run_module_server, VoyagerMessage,
 };
 

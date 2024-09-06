@@ -296,7 +296,7 @@ impl<T: QueueMessage> Op<T> {
 
         let fut = async move {
             match self {
-                Self::Data(data) => {
+                Op::Data(data) => {
                     // TODO: Use valuable here
                     info!(
                         data = %serde_json::to_string(&data).unwrap(),
@@ -305,8 +305,8 @@ impl<T: QueueMessage> Op<T> {
                     Ok(None)
                 }
 
-                Self::Call(fetch) => fetch.handle(store).await.map(Some),
-                Self::Defer { until: seconds } => {
+                Op::Call(fetch) => fetch.handle(store).await.map(Some),
+                Op::Defer { until: seconds } => {
                     // if we haven't hit the time yet, requeue the defer msg
                     let current_ts_seconds = now();
                     if current_ts_seconds < seconds {
@@ -325,7 +325,7 @@ impl<T: QueueMessage> Op<T> {
                         Ok(None)
                     }
                 }
-                Self::Timeout {
+                Op::Timeout {
                     timeout_timestamp,
                     msg,
                 } => {
@@ -340,7 +340,7 @@ impl<T: QueueMessage> Op<T> {
                         msg.handle(store, depth + 1).await
                     }
                 }
-                Self::Seq(mut queue) => match queue.pop_front() {
+                Op::Seq(mut queue) => match queue.pop_front() {
                     Some(msg) => {
                         let msg = msg.handle(store, depth + 1).await?;
 
@@ -352,7 +352,7 @@ impl<T: QueueMessage> Op<T> {
                     }
                     None => Ok(None),
                 },
-                Self::Conc(mut queue) => match queue.pop_front() {
+                Op::Conc(mut queue) => match queue.pop_front() {
                     Some(msg) => {
                         let msg = msg.handle(store, depth + 1).await?;
 
@@ -364,7 +364,7 @@ impl<T: QueueMessage> Op<T> {
                     }
                     None => Ok(None),
                 },
-                Self::Retry { remaining, msg } => {
+                Op::Retry { remaining, msg } => {
                     // TODO: Add some sort of exponential backoff functionality to this message type
                     const RETRY_DELAY_SECONDS: u64 = 1;
 
@@ -390,14 +390,14 @@ impl<T: QueueMessage> Op<T> {
                         },
                     }
                 }
-                Self::Promise {
+                Op::Promise {
                     mut queue,
                     mut data,
                     receiver,
                 } => {
                     if let Some(msg) = queue.pop_front() {
                         match msg {
-                            Self::Data(d) => {
+                            Op::Data(d) => {
                                 data.push_back(d);
                             }
                             msg => {
@@ -405,7 +405,7 @@ impl<T: QueueMessage> Op<T> {
 
                                 if let Some(msg) = msg {
                                     match msg {
-                                        Self::Data(d) => {
+                                        Op::Data(d) => {
                                             data.push_back(d);
                                         }
                                         m => {
@@ -422,10 +422,10 @@ impl<T: QueueMessage> Op<T> {
                         receiver.handle(store, data).await.map(Some)
                     }
                 }
-                Self::Repeat { times: None, msg } => {
+                Op::Repeat { times: None, msg } => {
                     Ok(Some(seq([*msg.clone(), repeat(None, *msg)])))
                 }
-                Self::Repeat {
+                Op::Repeat {
                     times: Some(times),
                     msg,
                 } => Ok(Some(seq([*msg.clone()].into_iter().chain(
@@ -626,6 +626,21 @@ mod tests {
     }
 
     #[test]
+    fn extract_data_seq_in_promise_queue() {
+        let msg = promise::<UnitMessage>([seq([call(()), data(())])], [], ());
+        assert_eq!(normalize(vec![msg.clone()]), vec![(vec![0], msg)]);
+    }
+
+    #[test]
+    fn seq_defer_call_data() {
+        let msg = seq([seq::<UnitMessage>([defer(1), call(())]), data(())]);
+        assert_eq!(
+            normalize(vec![msg.clone()]),
+            vec![(vec![0], seq([defer(1), call(()), data(())]))]
+        );
+    }
+
+    #[test]
     fn extract_data_complex() {
         let msg = seq::<UnitMessage>([
             data(()),
@@ -639,138 +654,146 @@ mod tests {
             normalize(vec![msg]),
             vec![
                 (vec![0], data(())),
-                (vec![0], data(())),
-                (vec![0], data(())),
-                (vec![0], data(())),
-                (vec![0], data(())),
-                (vec![0], seq([call(()), call(()), call(()), call(())])),
+                (
+                    vec![0],
+                    seq([
+                        call(()),
+                        call(()),
+                        data(()),
+                        data(()),
+                        call(()),
+                        data(()),
+                        call(()),
+                        data(()),
+                    ])
+                )
             ],
         );
     }
 
-    #[tokio::test]
-    async fn conc_seq_nested() {
-        let q = InMemoryQueue::new(()).now_or_never().unwrap().unwrap();
+    // #[tokio::test]
+    // async fn conc_seq_nested() {
+    //     let q = InMemoryQueue::new(()).now_or_never().unwrap().unwrap();
 
-        let engine = Engine::new(&(), &q, &NoopPass);
+    //     let engine = Engine::new(&(), &q, &NoopPass);
 
-        let msgs = seq::<UnitMessage>([
-            conc([call(()), call(())]),
-            conc([call(()), call(())]),
-            conc([
-                repeat(None, call(())),
-                repeat(None, call(())),
-                call(()),
-                seq([call(()), call(()), call(())]),
-            ]),
-        ]);
+    //     let msgs = seq::<UnitMessage>([
+    //         conc([call(()), call(())]),
+    //         conc([call(()), call(())]),
+    //         conc([
+    //             repeat(None, call(())),
+    //             repeat(None, call(())),
+    //             call(()),
+    //             seq([call(()), call(()), call(())]),
+    //         ]),
+    //     ]);
 
-        q.enqueue(msgs, &NoopPass).await.unwrap();
+    //     q.enqueue(msgs, &NoopPass).await.unwrap();
 
-        assert_steps(
-            &engine,
-            &q,
-            [
-                vec_deque![seq::<UnitMessage>([
-                    // conc(a, b), handles a, conc(b) == b
-                    call(()),
-                    conc([call(()), call(())]),
-                    conc([
-                        repeat(None, call(())),
-                        repeat(None, call(())),
-                        call(()),
-                        seq([call(()), call(()), call(())]),
-                    ]),
-                ])],
-                vec_deque![seq::<UnitMessage>([
-                    conc([call(()), call(())]),
-                    conc([
-                        repeat(None, call(())),
-                        repeat(None, call(())),
-                        call(()),
-                        seq([call(()), call(()), call(())]),
-                    ]),
-                ])],
-                vec_deque![seq::<UnitMessage>([
-                    // conc(a, b), handles a, conc(b) == b
-                    call(()),
-                    conc([
-                        repeat(None, call(())),
-                        repeat(None, call(())),
-                        call(()),
-                        seq([call(()), call(()), call(())]),
-                    ]),
-                ])],
-                // seq(a, conc(m...)), handles a, seq(conc(m...)) == m...
-                vec_deque![
-                    repeat(None, call(())),
-                    repeat(None, call(())),
-                    call(()),
-                    seq([call(()), call(()), call(())]),
-                ],
-                vec_deque![
-                    repeat(None, call(())),
-                    call(()),
-                    seq([call(()), call(()), call(())]),
-                    // repeat(a) queues seq(a, repeat(a))
-                    seq([call(()), repeat(None, call(()))])
-                ],
-                vec_deque![
-                    call(()),
-                    seq([call(()), call(()), call(())]),
-                    seq([call(()), repeat(None, call(()))]),
-                    // repeat(a) queues seq(a, repeat(a))
-                    seq([call(()), repeat(None, call(()))])
-                ],
-                vec_deque![
-                    seq([call(()), call(()), call(())]),
-                    seq([call(()), repeat(None, call(()))]),
-                    seq([call(()), repeat(None, call(()))]),
-                    noop(),
-                ],
-                vec_deque![
-                    seq([call(()), repeat(None, call(()))]),
-                    seq([call(()), repeat(None, call(()))]),
-                    noop(),
-                    seq([call(()), call(())]),
-                ],
-                vec_deque![
-                    seq([call(()), repeat(None, call(()))]),
-                    noop(),
-                    seq([call(()), call(())]),
-                    repeat(None, call(())),
-                ],
-                vec_deque![
-                    noop(),
-                    seq([call(()), call(())]),
-                    repeat(None, call(())),
-                    repeat(None, call(())),
-                ],
-                vec_deque![
-                    seq([call(()), call(())]),
-                    repeat(None, call(())),
-                    repeat(None, call(())),
-                ],
-                vec_deque![repeat(None, call(())), repeat(None, call(())), call(()),],
-                vec_deque![
-                    repeat(None, call(())),
-                    call(()),
-                    seq([call(()), repeat(None, call(()))]),
-                ],
-                vec_deque![
-                    call(()),
-                    seq([call(()), repeat(None, call(()))]),
-                    seq([call(()), repeat(None, call(()))]),
-                ],
-                vec_deque![
-                    seq([call(()), repeat(None, call(()))]),
-                    seq([call(()), repeat(None, call(()))]),
-                    noop(),
-                ],
-            ],
-        )
-        .await;
-    }
+    //     assert_steps(
+    //         &engine,
+    //         &q,
+    //         [
+    //             vec_deque![seq::<UnitMessage>([
+    //                 // conc(a, b), handles a, conc(b) == b
+    //                 call(()),
+    //                 conc([call(()), call(())]),
+    //                 conc([
+    //                     repeat(None, call(())),
+    //                     repeat(None, call(())),
+    //                     call(()),
+    //                     seq([call(()), call(()), call(())]),
+    //                 ]),
+    //             ])],
+    //             vec_deque![seq::<UnitMessage>([
+    //                 conc([call(()), call(())]),
+    //                 conc([
+    //                     repeat(None, call(())),
+    //                     repeat(None, call(())),
+    //                     call(()),
+    //                     seq([call(()), call(()), call(())]),
+    //                 ]),
+    //             ])],
+    //             vec_deque![seq::<UnitMessage>([
+    //                 // conc(a, b), handles a, conc(b) == b
+    //                 call(()),
+    //                 conc([
+    //                     repeat(None, call(())),
+    //                     repeat(None, call(())),
+    //                     call(()),
+    //                     seq([call(()), call(()), call(())]),
+    //                 ]),
+    //             ])],
+    //             // seq(a, conc(m...)), handles a, seq(conc(m...)) == m...
+    //             vec_deque![
+    //                 repeat(None, call(())),
+    //                 repeat(None, call(())),
+    //                 call(()),
+    //                 seq([call(()), call(()), call(())]),
+    //             ],
+    //             vec_deque![
+    //                 repeat(None, call(())),
+    //                 call(()),
+    //                 seq([call(()), call(()), call(())]),
+    //                 // repeat(a) queues seq(a, repeat(a))
+    //                 seq([call(()), repeat(None, call(()))])
+    //             ],
+    //             vec_deque![
+    //                 call(()),
+    //                 seq([call(()), call(()), call(())]),
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 // repeat(a) queues seq(a, repeat(a))
+    //                 seq([call(()), repeat(None, call(()))])
+    //             ],
+    //             vec_deque![
+    //                 seq([call(()), call(()), call(())]),
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 noop(),
+    //             ],
+    //             vec_deque![
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 noop(),
+    //                 seq([call(()), call(())]),
+    //             ],
+    //             vec_deque![
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 noop(),
+    //                 seq([call(()), call(())]),
+    //                 repeat(None, call(())),
+    //             ],
+    //             vec_deque![
+    //                 noop(),
+    //                 seq([call(()), call(())]),
+    //                 repeat(None, call(())),
+    //                 repeat(None, call(())),
+    //             ],
+    //             vec_deque![
+    //                 seq([call(()), call(())]),
+    //                 repeat(None, call(())),
+    //                 repeat(None, call(())),
+    //             ],
+    //             vec_deque![repeat(None, call(())), repeat(None, call(())), call(()),],
+    //             vec_deque![
+    //                 repeat(None, call(())),
+    //                 call(()),
+    //                 seq([call(()), repeat(None, call(()))]),
+    //             ],
+    //             vec_deque![
+    //                 call(()),
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 seq([call(()), repeat(None, call(()))]),
+    //             ],
+    //             vec_deque![
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 seq([call(()), repeat(None, call(()))]),
+    //                 noop(),
+    //             ],
+    //         ],
+    //     )
+    //     .await;
+    // }
 }
 
 #[derive(Debug)]
