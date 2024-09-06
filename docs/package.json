@@ -19,7 +19,7 @@
     "@astrojs/svelte": "^5.7.0",
     "@astrojs/tailwind": "^5.1.0",
     "@expressive-code/plugin-collapsible-sections": "^0.36.1",
-    "astro": "^4.15.3", 
+    "astro": "^4.15.3",
     "mermaid": "^11.1.0",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-katex": "^7.0.1",
