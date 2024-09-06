@@ -8,6 +8,9 @@ on:
       - created
       - deleted
 
+permissions:
+  contents: write
+
 defaults:
   run:
     shell: bash
