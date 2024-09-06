@@ -5,7 +5,7 @@ import Button from "$lib/components/Button.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import Spinner from "$lib/components/Spinner.svelte"
-import { checkContribution } from "$lib/supabase/index.ts"
+import { checkContributionStatus } from "$lib/supabase"
 
 let clientStore = createQuery(
   reactiveQueryArgs(() => ({
@@ -21,7 +21,7 @@ let { error: clientError, isLoading: clientIsLoading, data: clientData } = $deri
 let contributionStore = createQuery(
   reactiveQueryArgs(() => ({
     queryKey: ["contribution"],
-    queryFn: () => checkContribution(),
+    queryFn: () => checkContributionStatus(),
     refetchInterval: 5_000,
     retry: false
   }))
@@ -48,14 +48,21 @@ let {
     {/if}
   </div>
 
-  <!-- Contribution Section -->
   <div>
     {#if contributionData}
-      {#if contributionData.shouldContribute}
-        <Button on:click={contribute}>Contribute</Button>
+      {#if contributionData.canContribute && contributionData.shouldContribute}
+        {#if clientData}
+          <Button on:click={contribute}>Contribute</Button>
+        {:else}
+          <Text>Client not connected. Unable to contribute at this time.</Text>
+        {/if}
+      {:else if contributionData.isVerifying}
+        <Text>Your contribution is being verified</Text>
       {:else}
-        <Text>Thanks for your contribution</Text>
+        <Text>You can not contribute</Text>
       {/if}
+    {:else}
+      <Text>Loading contribution status...</Text>
     {/if}
   </div>
 </div>

@@ -5,7 +5,7 @@ export const getContributor = async (userId: string) => {
     .from("current_contributor_id")
     .select("id")
     .eq("id", userId)
-    .maybeSingle()
+    .single()
 
   if (error) console.error("Error in getContributor:", error)
   return { data, error }
@@ -33,14 +33,35 @@ export const getContribution = async (userId: string) => {
   return { data, error }
 }
 
-export const getQueuePositionAndLength = async () => {
+export const getUserQueuePosition = async (userId: string) => {
   const { data, error, count } = await supabase
-    .from("queue")
-    .select("id, joined", { count: "exact" })
-    .order("joined", { ascending: true })
+    .from("current_queue")
+    .select("*", { count: "exact" })
+    .eq("id", userId)
+    .single()
 
-  if (error) console.error("Error in getQueuePositionAndLength:", error)
-  return { data, error, count }
+  if (error) {
+    if (error.code === "PGRST116") {
+      return { data: undefined, error: undefined }
+    }
+    console.error("Error getting user data:", error)
+    return { data: undefined, error }
+  }
+
+  return { data, count, error: undefined }
+}
+
+export const getQueueCount = async () => {
+  const { count, error } = await supabase
+    .from("current_queue")
+    .select("*", { count: "exact", head: true })
+
+  if (error) {
+    console.error("Error getting total count:", error)
+    return { count: undefined, error }
+  }
+
+  return { count, error: undefined }
 }
 
 export const getQueuePayloadId = async (userId: string) => {

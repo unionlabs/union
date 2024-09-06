@@ -3,27 +3,28 @@ import { user } from "$lib/stores/user.svelte.ts"
 import Text from "$lib/components/typography/Text.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import Spinner from "$lib/components/Spinner.svelte"
-import Link from "$lib/components/typography/Link.svelte"
 import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import H2 from "$lib/components/typography/H2.svelte"
-import { checkContribution, checkQueue } from "$lib/supabase/index.ts"
+import { checkContributionStatus, getUserQueueInfo } from "$lib/supabase"
+import Button from "$lib/components/Button.svelte"
+import { goto } from "$app/navigation"
 
-let position = createQuery(
+let userQueueStats = createQuery(
   reactiveQueryArgs(() => ({
-    queryKey: ["queue"],
-    queryFn: () => checkQueue(),
+    queryKey: ["userPosition"],
+    queryFn: () => getUserQueueInfo(),
     refetchInterval: 5_000,
     retry: 2,
     retryDelay: 1000
   }))
 )
 
-let { isLoading: queueIsLoading, data: queueData } = $derived($position)
+let { isLoading, data: userQueue, error } = $derived($userQueueStats)
 
 let contributionStore = createQuery(
   reactiveQueryArgs(() => ({
     queryKey: ["contribution"],
-    queryFn: () => checkContribution(),
+    queryFn: () => checkContributionStatus(),
     refetchInterval: 5_000,
     retry: false
   }))
@@ -41,20 +42,17 @@ let {
 
   <Text class="uppercase">USER: <span class="text-union-accent-500">{user?.session?.user.email}</span></Text>
 
-  {#if queueData && contributionData && !queueIsLoading && !contributionIsLoading}
-    {#if queueData.position > 1}
-      <H2>You are <span class="text-union-accent-500">{queueData.position}th</span> in queue</H2>
-      <Text>Queue length {queueData?.total}</Text>
-    {:else if queueData.position === 1 && contributionData?.shouldContribute}
-      <H2>It's Your turn!</H2>
-      <Link href="/app/client" class="font-bold">Click here</Link>
-    {:else if contributionData?.status === 'contributed'}
-      <H2>Contributed</H2>
-    {/if}
+  {#if isLoading}
+    <Spinner class="size-4 text-union-accent-500"/>
+  {:else if userQueue.inQueue}
+    <H2>You are in queue</H2>
+    <Text>Position: {userQueue.position}/{userQueue.count + 1}</Text>
+  {:else if contributionData?.canContribute && contributionData?.shouldContribute}
+    <H2>You can contribute</H2>
+    <Button onclick={() => goto("/app/client")}>Contribute</Button>
+  {:else if contributionData?.isVerifying}
+    <H2>Your contribution is being verified</H2>
   {:else}
-    <Spinner class="size-6 text-union-accent-500"/>
+    <H2>Not eligible for contribution at this time</H2>
   {/if}
-
-
-
 </div>

@@ -2,87 +2,62 @@ import { user } from "$lib/stores/user.svelte.ts"
 import {
   getContribution,
   getContributor,
-  getQueuePositionAndLength,
-  getSubmittedContribution
+  getSubmittedContribution,
+  getUserQueuePosition
 } from "$lib/supabase/queries.ts"
+import type { ContributionStatus } from "$lib/supabase/types.ts"
 
-export const checkQueue = async (): Promise<{ position: number; total: number } | null> => {
+export const getUserQueueInfo = async () => {
   const userId = user.session?.user.id
   if (!userId) {
     throw new Error("User is not logged in")
   }
 
-  const { data, error, count } = await getQueuePositionAndLength()
+  const { data, count, error } = await getUserQueuePosition("73073266-b790-4de1-b2e1-3176c20c3f76")
 
   if (error) {
-    console.error("Error fetching queue:", error)
-    return null
+    console.error("Error getting user queue position:", error)
+    return { error }
   }
 
-  if (!(data && Array.isArray(data))) {
-    console.error("Unexpected data format from getQueuePosition")
-    return null
+  if (!data) {
+    return {
+      inQueue: false,
+      message: "User not found in the queue"
+    }
   }
-  const position = data.findIndex(row => row.id === userId)
-  const userPosition = position !== -1 ? position + 1 : -1
 
   return {
-    position: userPosition,
-    total: count ?? 0
+    inQueue: true,
+    count: count,
+    ...data
   }
 }
 
-export const checkContribution = async (): Promise<{
-  status: string
-  shouldContribute: boolean
-}> => {
+export const checkContributionStatus = async (): Promise<ContributionStatus> => {
   const userId = user.session?.user.id
   if (!userId) {
-    throw new Error("User is not logged in")
+    throw new Error("User ID is required")
   }
 
-  const { data: currentContributorData, error: currentContributorError } =
-    await getContributor(userId)
+  try {
+    const [contributor, submittedContribution, verifiedContribution] = await Promise.all([
+      getContributor("73073266-b790-4de1-b2e1-3176c20c3f76"),
+      getSubmittedContribution("73073266-b790-4de1-b2e1-3176c20c3f76"),
+      getContribution("73073266-b790-4de1-b2e1-3176c20c3f76")
+    ])
 
-  if (currentContributorError) {
-    console.error("Error checking current contributor:", currentContributorError)
-    return { status: "error", shouldContribute: false }
-  }
+    const isContributor = !!contributor?.data
+    const hasSubmitted = !!submittedContribution?.data
+    const hasVerified = !!verifiedContribution?.data
 
-  if (currentContributorData) {
-    const { data: submittedContribution, error: submittedError } =
-      await getSubmittedContribution(userId)
-
-    if (submittedError) {
-      console.error("Error checking submitted contribution:", submittedError)
-      return { status: "error", shouldContribute: false }
+    return {
+      canContribute: isContributor && !hasSubmitted && !hasVerified,
+      shouldContribute: isContributor && !hasSubmitted && !hasVerified,
+      isVerifying: hasSubmitted && !hasVerified
     }
-
-    if (!submittedContribution) {
-      return { status: "contribute", shouldContribute: true }
-    }
-
-    const { data: contributionData, error: contributionError } = await getContribution(userId)
-
-    if (contributionError) {
-      console.error("Error checking contribution:", contributionError)
-      return { status: "error", shouldContribute: false }
-    }
-
-    if (!contributionData) {
-      return { status: "verifying", shouldContribute: false }
-    }
-  }
-
-  const { data: contribution, error: finalContributionError } = await getContribution(userId)
-
-  if (finalContributionError) {
-    console.error("Error in final contribution check:", finalContributionError)
-    return { status: "error", shouldContribute: false }
-  }
-
-  return {
-    status: contribution ? "contributed" : "noContribution",
-    shouldContribute: !contribution
+  } catch (error) {
+    console.error("Error checking contribution status:", error)
+    throw new Error("Failed to check contribution status")
   }
 }
