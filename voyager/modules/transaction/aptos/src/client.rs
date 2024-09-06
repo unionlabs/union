@@ -6,37 +6,29 @@
     clippy::too_many_arguments
 )]
 
-pub mod connection_end {
+pub mod packet {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = connection_end)]
-    pub struct Version {
-        pub identifier: String,
-        pub features: Vec<String>,
+    #[type_tag(module = packet)]
+    pub struct Packet {
+        pub sequence: ::aptos_rest_client::aptos_api_types::U64,
+        pub source_port: String,
+        pub source_channel: String,
+        pub destination_port: String,
+        pub destination_channel: String,
+        pub data: Vec<u8>,
+        pub timeout_height: super::height::Height,
+        pub timeout_timestamp: ::aptos_rest_client::aptos_api_types::U64,
     }
+}
+
+pub mod height {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = connection_end)]
-    pub struct ConnectionEnd {
-        pub client_id: String,
-        pub versions: Vec<super::connection_end::Version>,
-        pub state: ::aptos_rest_client::aptos_api_types::U64,
-        pub delay_period: ::aptos_rest_client::aptos_api_types::U64,
-        pub counterparty: super::connection_end::Counterparty,
-    }
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = connection_end)]
-    pub struct MerklePrefix {
-        pub key_prefix: Vec<u8>,
-    }
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = connection_end)]
-    pub struct Counterparty {
-        pub client_id: String,
-        pub connection_id: String,
-        pub prefix: super::connection_end::MerklePrefix,
+    #[type_tag(module = height)]
+    pub struct Height {
+        pub revision_number: ::aptos_rest_client::aptos_api_types::U64,
+        pub revision_height: ::aptos_rest_client::aptos_api_types::U64,
     }
 }
 
@@ -93,73 +85,6 @@ pub mod Core {
                 impl ::move_bindgen::IntoTypeTagged<u64>,
             ),
         ) -> ::aptos_types::transaction::EntryFunction {
-            let (values, type_args): (Vec<_>, Vec<_>) = vec![
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_0);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_1);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_2);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_3);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<String> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_4);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_5);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_6);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_7);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <u64 as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_8);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <u64 as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-            ]
-            .into_iter()
-            .unzip();
             ::aptos_types::transaction::EntryFunction::new(
                 ::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: self.module_address().into(),
@@ -167,8 +92,18 @@ pub mod Core {
                 }
                 .into(),
                 stringify!(connection_open_ack).parse().unwrap(),
-                type_args,
-                values,
+                vec![],
+                vec![
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_0).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_1).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_2).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_3).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_4).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_5).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_6).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_7).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_8).0).unwrap(),
+                ],
             )
         }
         fn connection_open_confirm(
@@ -180,38 +115,6 @@ pub mod Core {
                 impl ::move_bindgen::IntoTypeTagged<u64>,
             ),
         ) -> ::aptos_types::transaction::EntryFunction {
-            let (values, type_args): (Vec<_>, Vec<_>) = vec![
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_0);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_1);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_2);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <u64 as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_3);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <u64 as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-            ]
-            .into_iter()
-            .unzip();
             ::aptos_types::transaction::EntryFunction::new(
                 ::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: self.module_address().into(),
@@ -219,8 +122,13 @@ pub mod Core {
                 }
                 .into(),
                 stringify!(connection_open_confirm).parse().unwrap(),
-                type_args,
-                values,
+                vec![],
+                vec![
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_0).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_1).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_2).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_3).0).unwrap(),
+                ],
             )
         }
         fn connection_open_init(
@@ -235,59 +143,6 @@ pub mod Core {
                 impl ::move_bindgen::IntoTypeTagged<u64>,
             ),
         ) -> ::aptos_types::transaction::EntryFunction {
-            let (values, type_args): (Vec<_>, Vec<_>) = vec![
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_0);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_1);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_2);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<String> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_3);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_4);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_5);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_6);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <u64 as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-            ]
-            .into_iter()
-            .unzip();
             ::aptos_types::transaction::EntryFunction::new(
                 ::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: self.module_address().into(),
@@ -295,8 +150,16 @@ pub mod Core {
                 }
                 .into(),
                 stringify!(connection_open_init).parse().unwrap(),
-                type_args,
-                values,
+                vec![],
+                vec![
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_0).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_1).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_2).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_3).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_4).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_5).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_6).0).unwrap(),
+                ],
             )
         }
         fn connection_open_try(
@@ -316,94 +179,6 @@ pub mod Core {
                 impl ::move_bindgen::IntoTypeTagged<u64>,
             ),
         ) -> ::aptos_types::transaction::EntryFunction {
-            let (values, type_args): (Vec<_>, Vec<_>) = vec![
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_0);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_1);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_2);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_3);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <u64 as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_4);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_5);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_6);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<String> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_7);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<Vec<String>> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_8);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_9);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_10);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <u64 as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_11);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <u64 as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-            ]
-            .into_iter()
-            .unzip();
             ::aptos_types::transaction::EntryFunction::new(
                 ::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: self.module_address().into(),
@@ -411,8 +186,23 @@ pub mod Core {
                 }
                 .into(),
                 stringify!(connection_open_try).parse().unwrap(),
-                type_args,
-                values,
+                vec![],
+                vec![
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_0).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_1).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_2).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_3).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_4).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_5).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_6).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_7).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_8).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_9).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_10).0)
+                        .unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_11).0)
+                        .unwrap(),
+                ],
             )
         }
         async fn consensus_state(
@@ -470,31 +260,6 @@ pub mod Core {
                 impl ::move_bindgen::IntoTypeTagged<Vec<u8>>,
             ),
         ) -> ::aptos_types::transaction::EntryFunction {
-            let (values, type_args): (Vec<_>, Vec<_>) = vec![
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_0);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_1);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_2);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-            ]
-            .into_iter()
-            .unzip();
             ::aptos_types::transaction::EntryFunction::new(
                 ::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: self.module_address().into(),
@@ -502,8 +267,12 @@ pub mod Core {
                 }
                 .into(),
                 stringify!(create_client).parse().unwrap(),
-                type_args,
-                values,
+                vec![],
+                vec![
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_0).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_1).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_2).0).unwrap(),
+                ],
             )
         }
         async fn get_connection(
@@ -618,24 +387,6 @@ pub mod Core {
                 impl ::move_bindgen::IntoTypeTagged<Vec<u8>>,
             ),
         ) -> ::aptos_types::transaction::EntryFunction {
-            let (values, type_args): (Vec<_>, Vec<_>) = vec![
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_0);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <String as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-                {
-                    let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(_1);
-                    (
-                        bcs::to_bytes(&t).unwrap(),
-                        <Vec<u8> as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                    )
-                },
-            ]
-            .into_iter()
-            .unzip();
             ::aptos_types::transaction::EntryFunction::new(
                 ::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: self.module_address().into(),
@@ -643,53 +394,13 @@ pub mod Core {
                 }
                 .into(),
                 stringify!(update_client).parse().unwrap(),
-                type_args,
-                values,
+                vec![],
+                vec![
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_0).0).unwrap(),
+                    bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(_1).0).unwrap(),
+                ],
             )
         }
-    }
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = Core)]
-    pub struct ConnectionOpenAck {
-        pub connection_id: String,
-        pub client_id: String,
-        pub counterparty_client_id: String,
-        pub counterparty_connection_id: String,
-    }
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = Core)]
-    pub struct ConnectionOpenInit {
-        pub connection_id: String,
-        pub client_id: String,
-        pub counterparty_client_id: String,
-    }
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = Core)]
-    pub struct ChannelOpenConfirm {
-        pub port_id: String,
-        pub channel_id: String,
-        pub counterparty_port_id: String,
-        pub counterparty_channel_id: String,
-        pub connection_id: String,
-    }
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = Core)]
-    pub struct ClientUpdated {
-        pub client_id: String,
-        pub height: super::height::Height,
-    }
-    #[macros::model]
-    #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = Core)]
-    pub struct ConnectionOpenConfirm {
-        pub connection_id: String,
-        pub client_id: String,
-        pub counterparty_client_id: String,
-        pub counterparty_connection_id: String,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
@@ -704,18 +415,30 @@ pub mod Core {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
     #[type_tag(module = Core)]
-    pub struct ChannelOpenTry {
+    pub struct ChannelOpenInit {
         pub port_id: String,
         pub channel_id: String,
         pub counterparty_port_id: String,
-        pub counterparty_channel_id: String,
         pub connection_id: String,
         pub version: String,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
     #[type_tag(module = Core)]
-    pub struct TimeoutPacket {
+    pub struct ClientUpdated {
+        pub client_id: String,
+        pub height: super::height::Height,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ClientCreatedEvent {
+        pub client_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct RecvPacket {
         pub packet: super::packet::Packet,
     }
     #[macros::model]
@@ -730,8 +453,49 @@ pub mod Core {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
     #[type_tag(module = Core)]
-    pub struct RecvPacket {
+    pub struct ConnectionOpenConfirm {
+        pub connection_id: String,
+        pub client_id: String,
+        pub counterparty_client_id: String,
+        pub counterparty_connection_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ChannelOpenConfirm {
+        pub port_id: String,
+        pub channel_id: String,
+        pub counterparty_port_id: String,
+        pub counterparty_channel_id: String,
+        pub connection_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct ConnectionOpenInit {
+        pub connection_id: String,
+        pub client_id: String,
+        pub counterparty_client_id: String,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct TimeoutPacket {
         pub packet: super::packet::Packet,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct WriteAcknowledgement {
+        pub packet: super::packet::Packet,
+        pub acknowledgement: Vec<u8>,
+    }
+    #[macros::model]
+    #[derive(::move_bindgen::TypeTagged)]
+    #[type_tag(module = Core)]
+    pub struct AcknowledgePacket {
+        pub packet: super::packet::Packet,
+        pub acknowledgement: Vec<u8>,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
@@ -747,57 +511,55 @@ pub mod Core {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
     #[type_tag(module = Core)]
-    pub struct AcknowledgePacket {
-        pub packet: super::packet::Packet,
-        pub acknowledgement: Vec<u8>,
+    pub struct ConnectionOpenAck {
+        pub connection_id: String,
+        pub client_id: String,
+        pub counterparty_client_id: String,
+        pub counterparty_connection_id: String,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
     #[type_tag(module = Core)]
-    pub struct ChannelOpenInit {
+    pub struct ChannelOpenTry {
         pub port_id: String,
         pub channel_id: String,
         pub counterparty_port_id: String,
+        pub counterparty_channel_id: String,
         pub connection_id: String,
         pub version: String,
     }
+}
+
+pub mod connection_end {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = Core)]
-    pub struct ClientCreatedEvent {
+    #[type_tag(module = connection_end)]
+    pub struct Counterparty {
         pub client_id: String,
+        pub connection_id: String,
+        pub prefix: super::connection_end::MerklePrefix,
     }
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = Core)]
-    pub struct WriteAcknowledgement {
-        pub packet: super::packet::Packet,
-        pub acknowledgement: Vec<u8>,
+    #[type_tag(module = connection_end)]
+    pub struct Version {
+        pub identifier: String,
+        pub features: Vec<String>,
     }
-}
-
-pub mod height {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = height)]
-    pub struct Height {
-        pub revision_number: ::aptos_rest_client::aptos_api_types::U64,
-        pub revision_height: ::aptos_rest_client::aptos_api_types::U64,
+    #[type_tag(module = connection_end)]
+    pub struct ConnectionEnd {
+        pub client_id: String,
+        pub versions: Vec<super::connection_end::Version>,
+        pub state: ::aptos_rest_client::aptos_api_types::U64,
+        pub delay_period: ::aptos_rest_client::aptos_api_types::U64,
+        pub counterparty: super::connection_end::Counterparty,
     }
-}
-
-pub mod packet {
     #[macros::model]
     #[derive(::move_bindgen::TypeTagged)]
-    #[type_tag(module = packet)]
-    pub struct Packet {
-        pub sequence: ::aptos_rest_client::aptos_api_types::U64,
-        pub source_port: String,
-        pub source_channel: String,
-        pub destination_port: String,
-        pub destination_channel: String,
-        pub data: Vec<u8>,
-        pub timeout_height: super::height::Height,
-        pub timeout_timestamp: ::aptos_rest_client::aptos_api_types::U64,
+    #[type_tag(module = connection_end)]
+    pub struct MerklePrefix {
+        pub key_prefix: Vec<u8>,
     }
 }

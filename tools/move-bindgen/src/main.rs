@@ -225,13 +225,13 @@ async fn main() -> Result<(), Bde> {
                                     #(#generic_type_params: ::serde::Serialize + ::move_bindgen::TypeTagged,)*
                                 >(&self, #params) -> ::aptos_types::transaction::EntryFunction
                                 {
-                                    let (values, type_args): (Vec<_>, Vec<_>) = vec![#({
-                                        let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(#idents);
-                                        (
-                                            bcs::to_bytes(&t).unwrap(),
-                                            <#param_tys as ::move_bindgen::TypeTagged>::type_tag(ctx),
-                                        )
-                                    },)*].into_iter().unzip();
+                                    // let (values, type_args): (Vec<_>, Vec<_>) = vec![#({
+                                    //     let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(#idents);
+                                    //     (
+                                    //         bcs::to_bytes(&t).unwrap(),
+                                    //         <#param_tys as ::move_bindgen::TypeTagged>::type_tag(ctx),
+                                    //     )
+                                    // },)*].into_iter().unzip();
 
                                     ::aptos_types::transaction::EntryFunction::new(
                                         ::aptos_rest_client::aptos_api_types::MoveModuleId {
@@ -239,8 +239,9 @@ async fn main() -> Result<(), Bde> {
                                             name: stringify!(#mod_name).parse().unwrap(),
                                         }.into(),
                                         stringify!(#ident).parse().unwrap(),
-                                        type_args,
-                                        values,
+                                        // TODO: We don't use this currently but this should be fixed somehow(?)
+                                        vec![],
+                                        vec![#(bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(#idents).0).unwrap(),)*],
                                     )
                                 }
                             }

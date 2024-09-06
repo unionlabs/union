@@ -1165,13 +1165,13 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
         .self_client_state(height)
         .await
         .map_err(json_rpc_error_to_queue_error)?;
-    trace!(%self_client_state);
+    debug!(%self_client_state);
 
     let self_consensus_state = counterparty_consensus_module
         .self_consensus_state(height)
         .await
         .map_err(json_rpc_error_to_queue_error)?;
-    trace!(%self_consensus_state);
+    debug!(%self_consensus_state);
 
     let client_type = counterparty_consensus_module
         .consensus_info()

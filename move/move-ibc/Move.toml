@@ -11,7 +11,7 @@ IBC = "0x11111"
 
 [dependencies.AptosFramework]
 git    = "https://github.com/aeryz/aptos-core.git"
-rev    = "c608cfceddab39d5b626ccd332409efb6ae78c08"
+rev    = "17c10f224fd6d76101881799de3cf49750acfe03"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

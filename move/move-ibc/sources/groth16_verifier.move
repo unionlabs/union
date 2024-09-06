@@ -1,4 +1,4 @@
-module IBC::groth16_verifier {    
+module IBC::groth16_verifier {
     use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr,FormatG1Compr, G2, Gt, FormatG2Compr};
     use std::crypto_algebra::{deserialize, serialize, zero, add, scalar_mul, multi_pairing, Element, eq};
     use std::option;

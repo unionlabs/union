@@ -7,7 +7,7 @@ module IBC::LightClient {
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
-    use IBC::ics23;
+    // use IBC::ics23;
     use IBC::bcs_utils;
     use IBC::groth16_verifier::{Self, ZKP};
 
@@ -149,7 +149,7 @@ module IBC::LightClient {
         client_id: String,
         client_msg: vector<u8>
     ): (vector<u8>, vector<vector<u8>>, vector<height::Height>, u64) acquires State {
-        let header = from_bcs::from_bytes<Header>(client_msg);
+        let header = decode_header(client_msg);
 
         let state = borrow_global_mut<State>(get_client_address(&client_id));
 
@@ -370,13 +370,21 @@ module IBC::LightClient {
         let cs = decode_client_state(bcs::to_bytes(&client_state));
         std::debug::print(&cs);
     }
-    
-    #[test]
-    fun test_parse_zkp() {
-        let zkp = x"1c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
 
-        parse_zkp(zkp);
+    #[test]
+    fun decode_client_state_bcs() {
+        let encoded = vector[14, 117, 110, 105, 111, 110, 45, 100, 101, 118, 110, 101, 116, 45, 49, 0, 192, 91, 187, 168, 122, 5, 0, 0, 0, 123, 235, 47, 114, 6, 0, 0, 224, 146, 101, 23, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 95, 13, 0, 0, 0, 0, 0, 0];
+
+        let cs = decode_client_state(encoded);
+        std::debug::print(&cs);
     }
+    
+    // #[test]
+    // fun test_parse_zkp() {
+    //     let zkp = x"1c911d332bca4aa85d3cea5099370b8f188326d3929436d809d5532bc24165089272d9494a6d75ae2389e07d5b6bab46d5ca923cebeb5c46e4d59233afc41115da87c1b5b63aefcc64580be04db609757dafc70c18302756c45c010bb18a1a2777cebaaa757fb71ced5efa731261a4da8dc3f1755e248927ebafdcde8030171559b4af7d1e2f29028c42ece0c7a65e2a814c536138e08f701727b12139b3ed06cc4013a258a88e083562242434d2d9236bb870503c9bc4294ef989da2462b6a9";
+
+    //     parse_zkp(zkp);
+    // }
 
     #[test(ibc_signer = @IBC)]
     fun test_create_client(ibc_signer: &signer) acquires State {

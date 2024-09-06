@@ -18,7 +18,7 @@ use tracing::instrument;
 use unionlabs::hash::H256;
 use voyager_message::{
     call::Call,
-    data::{Data, WithChainId},
+    data::{Data, IbcMessage, MsgCreateClientData, WithChainId},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
     reth_ipc::client::IpcClientBuilder,
@@ -30,6 +30,8 @@ use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 pub mod call;
 pub mod callback;
 pub mod data;
+
+mod client;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -61,6 +63,16 @@ pub struct Config {
     pub ibc_handler_address: Address,
 
     pub keyring: KeyringConfig,
+}
+
+impl client::Core::ClientExt for Module {
+    fn client(&self) -> &aptos_rest_client::Client {
+        &self.aptos_client
+    }
+
+    fn module_address(&self) -> AccountAddress {
+        self.ibc_handler_address.into()
+    }
 }
 
 impl Module {
@@ -141,9 +153,11 @@ end
         msg: ModuleCall,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
-            ModuleCall::SubmitTransaction(msgs) => {
-                self.keyring
-                    .with(|pk| async move {
+            ModuleCall::SubmitTransaction(msgs) => self
+                .keyring
+                .with(|pk| {
+                    let msgs = msgs.clone();
+                    async move {
                         let sender = H256::from(
                             sha3::Sha3_256::new()
                                 .chain_update(pk.public_key().to_bytes())
@@ -162,45 +176,40 @@ end
 
                         dbg!(&account);
 
-                        let raw = RawTransaction::new_entry_function(
-                            sender,
-                            account.sequence_number,
-                            EntryFunction::new(
-                                MoveModuleId {
-                                    address: self.ibc_handler_address,
-                                    name: "Core".parse().unwrap(),
-                                }
-                                .into(),
-                                "hackerman".parse().unwrap(),
-                                vec![],
-                                vec![],
-                            ),
-                            400000,
-                            100,
-                            queue_msg::now() + 10,
-                            self.chain_id.as_str().parse().unwrap(),
-                        );
+                        let msgs = process_msgs(self, msgs.clone());
 
-                        // let hash = raw.test_only_hash()
+                        for (msg, entry_fn) in msgs {
+                            dbg!(msg);
 
-                        let sig = raw.sign(pk, pk.public_key()).unwrap();
+                            let raw = RawTransaction::new_entry_function(
+                                sender,
+                                account.sequence_number,
+                                entry_fn,
+                                400000,
+                                100,
+                                queue_msg::now() + 10,
+                                self.chain_id.as_str().parse().unwrap(),
+                            );
 
-                        dbg!(&sig);
+                            let sig = raw.sign(pk, pk.public_key()).unwrap();
 
-                        let res = self.aptos_client.submit_and_wait(&sig).await.unwrap();
+                            dbg!(&sig);
 
-                        dbg!(&res);
+                            let res = self.aptos_client.submit_and_wait(&sig).await.unwrap();
+
+                            dbg!(&res);
+                        }
 
                         Ok(noop())
-                    })
-                    .await
-                    .unwrap_or_else(|| {
-                        Ok(call(Call::plugin(
-                            self.plugin_name(),
-                            ModuleCall::SubmitTransaction(msgs),
-                        )))
-                    })
-            }
+                    }
+                })
+                .await
+                .unwrap_or_else(|| {
+                    Ok(call(Call::plugin(
+                        self.plugin_name(),
+                        ModuleCall::SubmitTransaction(msgs),
+                    )))
+                }),
         }
     }
 
@@ -260,47 +269,30 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
     }
 }
 
-// #[allow(clippy::type_complexity)]
-// fn process_msgs(
-//     msgs: Vec<IbcMessage>,
-//     sender: AccountAddress,
-//     relayer: H160,
-// ) -> Vec<(IbcMessage, EntryFunction)> {
-//     let _ = (msgs, sender, relayer);
-
-//     // msgs.clone()
-//     //     .into_iter()
-//     //     .map(|msg| match msg.clone() {
-//     //         IbcMessage::CreateClient(MsgCreateClientData {
-//     //             msg: data,
-//     //             client_type,
-//     //         }) => (
-//     //             msg,
-//     //             EntryFunction::new(
-//     //                 MoveModuleId {
-//     //                     address: (),
-//     //                     name: (),
-//     //                 }
-//     //                 .into(),
-//     //                 "create_client".parse().unwrap(),
-//     //                 vec![],
-//     //                 vec![client_type, data.client_state, data.consensus_state],
-//     //             ),
-//     //         ),
-//     //         IbcMessage::UpdateClient(data) => (
-//     //             msg,
-//     //             mk_function_call(
-//     //                 ibc_handler,
-//     //                 UpdateClientCall(contracts::shared_types::MsgUpdateClient {
-//     //                     client_id: data.client_id.to_string(),
-//     //                     client_message: data.client_message.into(),
-//     //                     relayer: relayer.into(),
-//     //                 }),
-//     //             ),
-//     //         ),
-//     //         _ => todo!(),
-//     //     })
-//     //     .collect()
-
-//     todo!()
-// }
+#[allow(clippy::type_complexity)]
+fn process_msgs(
+    client: &impl client::Core::ClientExt,
+    msgs: Vec<IbcMessage>,
+) -> Vec<(IbcMessage, EntryFunction)> {
+    msgs.clone()
+        .into_iter()
+        .map(|msg| match msg.clone() {
+            IbcMessage::CreateClient(MsgCreateClientData {
+                msg: data,
+                client_type,
+            }) => (
+                msg,
+                client.create_client((
+                    client_type.to_string(),
+                    data.client_state,
+                    data.consensus_state,
+                )),
+            ),
+            IbcMessage::UpdateClient(data) => (
+                msg,
+                client.update_client((data.client_id.to_string(), data.client_message)),
+            ),
+            _ => todo!(),
+        })
+        .collect()
+}

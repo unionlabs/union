@@ -54,14 +54,10 @@ async fn main() {
 }
 
 #[derive(Debug, Clone)]
-pub struct Module {
-    pub chain_spec: PresetBaseKind,
-}
+pub struct Module {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
-    pub chain_spec: PresetBaseKind,
-}
+pub struct Config {}
 
 type SelfConsensusState =
     Any<wasm::consensus_state::ConsensusState<movement::consensus_state::ConsensusState>>;
@@ -71,16 +67,11 @@ impl Module {
     fn plugin_name(&self) -> String {
         pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
-        format!(
-            "{PLUGIN_NAME}/{}/{SUPPORTED_IBC_INTERFACE}",
-            self.chain_spec
-        )
+        format!("{PLUGIN_NAME}/{SUPPORTED_IBC_INTERFACE}",)
     }
 
-    pub async fn new(config: Config, _voyager_config: String) -> Result<Self, ModuleInitError> {
-        Ok(Self {
-            chain_spec: config.chain_spec,
-        })
+    pub async fn new(_config: Config, _voyager_config: String) -> Result<Self, ModuleInitError> {
+        Ok(Self {})
     }
 
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
@@ -245,22 +236,23 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         client_state: Hex<Vec<u8>>,
         client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
-        match client_type.as_str() {
-            ClientType::COMETBLS => Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
-                EthAbi,
-            >(&client_state.0)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to decode client state: {}", ErrorReporter(err)),
-                    Some(json!({
-                        "client_type": client_type,
-                    })),
-                )
-            })?)
-            .encode_as::<Proto>())),
-            _ => Ok(client_state),
-        }
+        // match client_type.as_str() {
+        //     ClientType::COMETBLS => Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
+        //         EthAbi,
+        //     >(&client_state.0)
+        //     .map_err(|err| {
+        //         ErrorObject::owned(
+        //             FATAL_JSONRPC_ERROR_CODE,
+        //             format!("unable to decode client state: {}", ErrorReporter(err)),
+        //             Some(json!({
+        //                 "client_type": client_type,
+        //             })),
+        //         )
+        //     })?)
+        //     .encode_as::<Proto>())),
+        //     _ => Ok(client_state),
+        // }
+        Ok(client_state)
     }
 
     #[instrument(skip_all)]
@@ -269,24 +261,25 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         consensus_state: Hex<Vec<u8>>,
         client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
-        match client_type.as_str() {
-            ClientType::COMETBLS => Ok(Hex(Any(wasm::consensus_state::ConsensusState {
-                data: cometbls::consensus_state::ConsensusState::decode_as::<EthAbi>(
-                    &consensus_state.0,
-                )
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {}", ErrorReporter(err)),
-                        Some(json!({
-                            "client_type": client_type,
-                        })),
-                    )
-                })?,
-            })
-            .encode_as::<Proto>())),
-            _ => Ok(consensus_state),
-        }
+        // match client_type.as_str() {
+        //     ClientType::COMETBLS => Ok(Hex(Any(wasm::consensus_state::ConsensusState {
+        //         data: cometbls::consensus_state::ConsensusState::decode_as::<EthAbi>(
+        //             &consensus_state.0,
+        //         )
+        //         .map_err(|err| {
+        //             ErrorObject::owned(
+        //                 FATAL_JSONRPC_ERROR_CODE,
+        //                 format!("unable to decode client state: {}", ErrorReporter(err)),
+        //                 Some(json!({
+        //                     "client_type": client_type,
+        //                 })),
+        //             )
+        //         })?,
+        //     })
+        //     .encode_as::<Proto>())),
+        //     _ => Ok(consensus_state),
+        // }
+        Ok(consensus_state)
     }
 
     #[instrument]

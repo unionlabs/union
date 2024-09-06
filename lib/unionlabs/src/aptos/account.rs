@@ -58,7 +58,7 @@ impl Serialize for AccountAddress {
         S: ::serde::Serializer,
     {
         if serializer.is_human_readable() {
-            hex::encode(self.0).serialize(serializer)
+            self.0.serialize(serializer)
         } else {
             // See comment in deserialize.
             serializer.serialize_newtype_struct("AccountAddress", &self.0)

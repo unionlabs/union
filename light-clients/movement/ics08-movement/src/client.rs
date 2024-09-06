@@ -226,7 +226,7 @@ impl IbcClient for MovementLightClient {
         _deps: Deps<Self::CustomQuery>,
         _env: &cosmwasm_std::Env,
     ) -> Result<ics008_wasm_client::Status, IbcClientError<Self>> {
-        todo!()
+        Ok(ics008_wasm_client::Status::Active)
     }
 
     fn export_metadata(

@@ -9,18 +9,20 @@ aptos-rest-client = { workspace = true }
 aptos-types       = { workspace = true }
 move-core-types   = { workspace = true }
 
-bip32.workspace    = true
+bcs                = "0.1.6"
+bip32              = { workspace = true }
 chain-utils        = { workspace = true }
-enumorph.workspace = true
-frunk.workspace    = true
-futures.workspace  = true
-jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
-macros.workspace   = true
+enumorph           = { workspace = true }
+frunk              = { workspace = true }
+futures            = { workspace = true }
+jsonrpsee          = { version = "0.24.1", features = ["macros", "server", "tracing"] }
+macros             = { workspace = true }
+move-bindgen       = { workspace = true }
 queue-msg          = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
-sha3.workspace     = true
+sha3               = { workspace = true }
 thiserror          = { workspace = true }
 tokio              = { workspace = true }
 tracing            = { workspace = true }
