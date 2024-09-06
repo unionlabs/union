@@ -7,7 +7,7 @@ use serde::{de::Error as _, Deserialize, Serialize};
 
 use crate::hash::H256;
 
-#[derive(macros::Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[debug("AccountAddress({})", self)]
 pub struct AccountAddress(pub H256);
 

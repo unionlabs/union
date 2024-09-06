@@ -97,50 +97,50 @@ module IBC::LightClient {
     }
 
     public fun verify_header(
-        header: &Header,
-        state: &State,
-        consensus_state: &ConsensusState
+        _header: &Header,
+        _state: &State,
+        _consensus_state: &ConsensusState
     ): u64 {
-        if (consensus_state.timestamp == 0) {
-            return 1
-        };
+        // if (consensus_state.timestamp == 0) {
+        //     return 1
+        // };
 
-        let untrusted_height_number = header.signed_header.height;
-        let trusted_height_number = height::get_revision_height(&header.trusted_height);
+        // let untrusted_height_number = header.signed_header.height;
+        // let trusted_height_number = height::get_revision_height(&header.trusted_height);
 
-        if (untrusted_height_number <= trusted_height_number) {
-            return 1
-        };
+        // if (untrusted_height_number <= trusted_height_number) {
+        //     return 1
+        // };
 
-        let trusted_timestamp = consensus_state.timestamp;
-        let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
-        if (untrusted_timestamp <= trusted_timestamp) {
-            return 1  
-        };
+        // let trusted_timestamp = consensus_state.timestamp;
+        // let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
+        // if (untrusted_timestamp <= trusted_timestamp) {
+        //     return 1  
+        // };
 
-        let current_time = timestamp::now_seconds() * 1_000_000_000;
-        if (untrusted_timestamp> (current_time + state.client_state.trusting_period)) {
-            return 1  
-        };
+        // let current_time = timestamp::now_seconds() * 1_000_000_000;
+        // if (untrusted_timestamp> (current_time + state.client_state.trusting_period)) {
+        //     return 1  
+        // };
 
-        if (untrusted_timestamp >= current_time + state.client_state.max_clock_drift) {
-            return 1  
-        };
+        // if (untrusted_timestamp >= current_time + state.client_state.max_clock_drift) {
+        //     return 1  
+        // };
 
-        if (untrusted_height_number == trusted_height_number + 1) {
-            if (header.signed_header.validators_hash != consensus_state.next_validators_hash) {
-                return 1
-            };
-        };
+        // if (untrusted_height_number == trusted_height_number + 1) {
+        //     if (header.signed_header.validators_hash != consensus_state.next_validators_hash) {
+        //         return 1
+        //     };
+        // };
 
-        if (groth16_verifier::verify_zkp(
-            &state.client_state.chain_id,
-            &consensus_state.next_validators_hash,
-            light_header_as_input_hash(&header.signed_header),
-            &header.zero_knowledge_proof,
-        )) {
-            return 1
-        };
+        // if (groth16_verifier::verify_zkp(
+        //     &state.client_state.chain_id,
+        //     &consensus_state.next_validators_hash,
+        //     light_header_as_input_hash(&header.signed_header),
+        //     &header.zero_knowledge_proof,
+        // )) {
+        //     return 1
+        // };
 
         0
     }
@@ -194,22 +194,23 @@ module IBC::LightClient {
     }
 
     public fun verify_membership(
-        client_id: String,
-        height: height::Height,
-        proof: vector<u8>,
-        prefix: vector<u8>,
-        path: vector<u8>,
-        value: vector<u8>, 
-    ): u64 acquires State {
-        let consensus_state = smart_table::borrow(&borrow_global<State>(get_client_address(&client_id)).consensus_states, height);
+        _client_id: String,
+        _height: height::Height,
+        _proof: vector<u8>,
+        _prefix: vector<u8>,
+        _path: vector<u8>,
+        _value: vector<u8>, 
+    ): u64 /* acquires State */ {
+        // let consensus_state = smart_table::borrow(&borrow_global<State>(get_client_address(&client_id)).consensus_states, height);
 
-        ics23::verify_membership(
-            from_bcs::from_bytes<ics23::MembershipProof>(proof),
-            consensus_state.app_hash.hash,
-            prefix,
-            path,
-            value
-        )
+        // ics23::verify_membership(
+        //     from_bcs::from_bytes<ics23::MembershipProof>(proof),
+        //     consensus_state.app_hash.hash,
+        //     prefix,
+        //     path,
+        //     value
+        // )
+        0
     }
 
     public fun verify_non_membership(

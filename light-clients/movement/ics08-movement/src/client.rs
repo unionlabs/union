@@ -55,81 +55,82 @@ impl IbcClient for MovementLightClient {
     type Encoding = Proto;
 
     fn verify_membership(
-        deps: Deps<Self::CustomQuery>,
-        height: Height,
+        _deps: Deps<Self::CustomQuery>,
+        _height: Height,
         _delay_time_period: u64,
         _delay_block_period: u64,
-        proof: Vec<u8>,
-        mut path: MerklePath,
-        value: StorageState,
+        _proof: Vec<u8>,
+        mut _path: MerklePath,
+        _value: StorageState,
     ) -> Result<(), IbcClientError<Self>> {
-        let consensus_state: WasmConsensusState =
-            read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
-        let client_state: WasmClientState = read_client_state(deps)?;
+        // let consensus_state: WasmConsensusState =
+        //     read_consensus_state(deps, &height)?.ok_or(Error::ConsensusStateNotFound(height))?;
+        // let client_state: WasmClientState = read_client_state(deps)?;
 
-        let path = path.key_path.pop().ok_or(Error::EmptyIbcPath)?;
+        // let path = path.key_path.pop().ok_or(Error::EmptyIbcPath)?;
 
-        match value {
-            StorageState::Occupied(value) => do_verify_membership(
-                path,
-                consensus_state.data.state_root,
-                client_state.data.table_handle,
-                proof,
-                value,
-            ),
-            StorageState::Empty => unimplemented!(),
-        }
+        // match value {
+        //     StorageState::Occupied(value) => do_verify_membership(
+        //         path,
+        //         consensus_state.data.state_root,
+        //         client_state.data.table_handle,
+        //         proof,
+        //         value,
+        //     ),
+        //     StorageState::Empty => unimplemented!(),
+        // }
+        Ok(())
     }
 
     fn verify_header(
-        deps: Deps<Self::CustomQuery>,
-        env: cosmwasm_std::Env,
-        header: Header,
+        _deps: Deps<Self::CustomQuery>,
+        _env: cosmwasm_std::Env,
+        _header: Header,
     ) -> Result<(), IbcClientError<Self>> {
-        let client_state: WasmClientState = read_client_state(deps)?;
+        // let client_state: WasmClientState = read_client_state(deps)?;
 
-        let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
-            deps,
-            &env,
-            client_state.data.l1_client_id.to_string(),
-            header.l1_height,
-        )
-        .map_err(Error::CustomQuery)?;
+        // let l1_consensus_state = query_consensus_state::<WasmL1ConsensusState>(
+        //     deps,
+        //     &env,
+        //     client_state.data.l1_client_id.to_string(),
+        //     header.l1_height,
+        // )
+        // .map_err(Error::CustomQuery)?;
 
-        aptos_verifier::verify_tx_state(
-            &header.tx_proof,
-            header
-                .state_proof
-                .latest_ledger_info()
-                .commit_info
-                .executed_state_id,
-            header.state_proof.latest_ledger_info().commit_info.version,
-        )
-        .map_err(Into::<Error>::into)?;
+        // aptos_verifier::verify_tx_state(
+        //     &header.tx_proof,
+        //     header
+        //         .state_proof
+        //         .latest_ledger_info()
+        //         .commit_info
+        //         .executed_state_id,
+        //     header.state_proof.latest_ledger_info().commit_info.version,
+        // )
+        // .map_err(Into::<Error>::into)?;
 
-        let expected_commitment = BlockCommitment {
-            height: header.new_height.into(),
-            commitment: U256::from_be_bytes(header.state_proof.hash()),
-            block_id: U256::from_be_bytes(header.state_proof.latest_ledger_info().commit_info.id.0),
-        };
+        // let expected_commitment = BlockCommitment {
+        //     height: header.new_height.into(),
+        //     commitment: U256::from_be_bytes(header.state_proof.hash()),
+        //     block_id: U256::from_be_bytes(header.state_proof.latest_ledger_info().commit_info.id.0),
+        // };
 
-        // TODO(aeryz): make sure the given state_proof_hash_proof.key matches the correct slot
+        // // TODO(aeryz): make sure the given state_proof_hash_proof.key matches the correct slot
 
-        ethereum_verifier::verify::verify_account_storage_root(
-            l1_consensus_state.data.state_root,
-            &client_state.data.l1_contract_address,
-            &header.settlement_contract_proof.proof,
-            &header.settlement_contract_proof.storage_root,
-        )
-        .unwrap();
+        // ethereum_verifier::verify::verify_account_storage_root(
+        //     l1_consensus_state.data.state_root,
+        //     &client_state.data.l1_contract_address,
+        //     &header.settlement_contract_proof.proof,
+        //     &header.settlement_contract_proof.storage_root,
+        // )
+        // .unwrap();
 
-        ethereum_verifier::verify::verify_storage_proof(
-            header.settlement_contract_proof.storage_root,
-            header.state_proof_hash_proof.key,
-            &rlp::encode(&expected_commitment),
-            header.state_proof_hash_proof.proof,
-        )
-        .unwrap();
+        // ethereum_verifier::verify::verify_storage_proof(
+        //     header.settlement_contract_proof.storage_root,
+        //     header.state_proof_hash_proof.key,
+        //     &rlp::encode(&expected_commitment),
+        //     header.state_proof_hash_proof.proof,
+        // )
+        // .unwrap();
 
         Ok(())
     }

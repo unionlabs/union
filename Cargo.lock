@@ -13691,6 +13691,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-consensus-module-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-rest-client",
+ "aptos-types",
+ "bitvec 1.0.1",
+ "chain-utils",
+ "enumorph",
+ "ethers",
+ "frunk",
+ "futures",
+ "jsonrpsee 0.24.3",
+ "macros",
+ "move-core-types",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
 name = "voyager-message"
 version = "0.1.0"
 dependencies = [
