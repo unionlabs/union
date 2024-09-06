@@ -52,7 +52,7 @@ let {
     {#if contributionData}
       {#if contributionData.canContribute && contributionData.shouldContribute}
         {#if clientData}
-          <Button on:click={contribute}>Contribute</Button>
+          <Button onclick={contribute}>Contribute</Button>
         {:else}
           <Text>Client not connected. Unable to contribute at this time.</Text>
         {/if}
