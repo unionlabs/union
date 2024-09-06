@@ -44,7 +44,7 @@ jobs:
           script: |
             const { owner, repo } = context.repo
             // https://octokit.github.io/rest.js/v21/#issues-list-comments
-            const comment = await github.rest.issues.listComments({
+            const comments = await github.rest.issues.listComments({
               repo: 'union',
               owner: 'unionlabs',
               issue_number: context.issue.number,
