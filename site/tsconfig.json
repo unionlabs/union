@@ -20,7 +20,6 @@
     "baseUrl": ".",
     "paths": {
       "#/*": ["./src/*"],
-      "~root/*": ["../*"],
       "tailwind.config": ["./tailwind.config.ts"]
     },
     "plugins": [
