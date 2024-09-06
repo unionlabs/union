@@ -5,6 +5,7 @@ import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
 import { markdownConfiguration } from "./markdown.config.ts"
+import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
 
 const SITE_URL = "https://docs.union.build"
@@ -30,11 +31,6 @@ export default defineConfig({
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   redirects: { "/logo": "/union-logo.zip" },
-  vite: {
-    define: {
-      global: {}
-    }
-  },
   integrations: [
     starlight({
       title: "Union",
@@ -141,7 +137,7 @@ export default defineConfig({
           }
         }
       ],
-      plugins: [starlightLinksValidator()],
+      plugins: [starlightLinksValidator(), starlightHeadingBadges()],
       customCss: [
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",

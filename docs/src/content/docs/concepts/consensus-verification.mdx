@@ -2,7 +2,7 @@
 title: "Consensus Verification"
 ---
 
-import DrawioDiagram from "#/components/DrawIO.svelte";
+import DrawioDiagram from "#/components/DrawIO.astro";
 import drawIOSVG from "#/assets/images/consensus-verification/drawio.svg?raw";
 
 Union's underlying security model is based on consensus verification, which is the industry standard for secure bridging. When we bridge, each transaction is verified to originate from the counterparty chain. We can formulate the problem as:
@@ -25,7 +25,7 @@ Consensus verification is the next iteration. Instead of trusting a set of keepe
 
 The golden standard of bridging is state verification, which is the foundation for rollups as well. The current iteration of zero-knowledge technology is not performant enough for state verification in bridging applications, however, we are actively doing R&D on implementations.
 
-<DrawioDiagram client:only src={drawIOSVG} />
+<DrawioDiagram src={drawIOSVG} />
 
 ## Categorically Different
 
