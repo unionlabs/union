@@ -9,7 +9,7 @@
     {
       packages = {
         docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-MybxFSU+LWm4VjCsb/+6fqV8eRRr9ouQYS6BBZhQsZc=";
+          npmDepsHash = "";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "docs";
