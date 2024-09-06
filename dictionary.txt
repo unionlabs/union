@@ -501,6 +501,7 @@ evmincosmos
 evmos
 extldflags
 extralight
+fastfetch
 fastnode
 feegrant
 feegrantkeeper

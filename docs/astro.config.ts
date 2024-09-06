@@ -44,7 +44,7 @@ export default defineConfig({
       favicon: "/favicon.svg",
       lastUpdated: true,
       editLink: {
-        baseUrl: "https://github.com/unionlabs/union/tree/main/docs"
+        baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
       },
       social: {
         github: "https://github.com/unionlabs",
