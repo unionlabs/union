@@ -200,11 +200,6 @@ let hopChain = derived(ucs01Configuration, $ucs01Configuration => {
   return chains.find(c => c.chain_id === $ucs01Configuration.hopChainId) ?? null
 })
 
-$: {
-  console.info($ucs01Configuration)
-  console.info($hopChain)
-}
-
 const transfer = async () => {
   if (!$assetSymbol) return toast.error("Please select an asset")
   if (!$asset) return toast.error(`Error finding asset ${$assetSymbol}`)

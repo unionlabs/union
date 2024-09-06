@@ -41,7 +41,7 @@ export type CosmosWalletId = (typeof cosmosWalletsInformation)[number]["id"]
 function createCosmosStore(
   previousState: ChainWalletStore<"cosmos"> & {
     rawAddress: Uint8Array | undefined
-    connectedWallet: CosmosWalletId | "none"
+    connectedWallet: CosmosWalletId | undefined
   } = {
     chain: "cosmos",
     hoverState: "none",
@@ -109,7 +109,7 @@ function createCosmosStore(
         }
         update(v => ({
           ...v,
-          connectedWallet: "none",
+          connectedWallet: undefined,
           connectionStatus: "disconnected",
           address: undefined,
           rawAddress: undefined
