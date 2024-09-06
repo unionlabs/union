@@ -76,3 +76,4 @@ db.sqlite
 db.sqlite3*
 
 move/move-ibc/build
+.openapi-generator*

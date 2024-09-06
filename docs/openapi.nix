@@ -94,8 +94,8 @@
 
             echo "Copying generated OpenAPI to site"
 
-            cat ${generate-openapi-build-phase}/openapi/rpc/openapi.json > site/src/content/openapi/rpc/openapi.json
-            cat ${generate-openapi-build-phase}/openapi/rest/openapi.json > site/src/content/openapi/rest/openapi.json
+            cat ${generate-openapi-build-phase}/openapi/rpc/openapi.json > docs/src/content/openapi/rpc/openapi.json
+            cat ${generate-openapi-build-phase}/openapi/rest/openapi.json > docs/src/content/openapi/rest/openapi.json
           '';
         });
       };
