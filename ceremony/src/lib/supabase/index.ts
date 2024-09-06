@@ -13,7 +13,7 @@ export const getUserQueueInfo = async () => {
     throw new Error("User is not logged in")
   }
 
-  const { data, count, error } = await getUserQueuePosition("73073266-b790-4de1-b2e1-3176c20c3f76")
+  const { data, count, error } = await getUserQueuePosition(userId)
 
   if (error) {
     console.error("Error getting user queue position:", error)
@@ -42,9 +42,9 @@ export const checkContributionStatus = async (): Promise<ContributionStatus> => 
 
   try {
     const [contributor, submittedContribution, verifiedContribution] = await Promise.all([
-      getContributor("73073266-b790-4de1-b2e1-3176c20c3f76"),
-      getSubmittedContribution("73073266-b790-4de1-b2e1-3176c20c3f76"),
-      getContribution("73073266-b790-4de1-b2e1-3176c20c3f76")
+      getContributor(userId),
+      getSubmittedContribution(userId),
+      getContribution(userId)
     ])
 
     const isContributor = !!contributor?.data
