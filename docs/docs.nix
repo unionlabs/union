@@ -4,16 +4,17 @@
       pkgsDeps = with pkgs; [ pkg-config ];
       nodeDeps = with unstablePkgs; [ vips nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
+      packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-53vSl7xI61Hvtjnk0HZE9m5xoz4Otv23E0iA3+KoNZc=";
+          npmDepsHash = "sha256-MybxFSU+LWm4VjCsb/+6fqV8eRRr9ouQYS6BBZhQsZc=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "docs";
-          pname = "docs";
-          version = "0.0.1";
+          pname = packageJSON.name;
+          version = packageJSON.version;
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
           installPhase = ''

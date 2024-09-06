@@ -240,8 +240,8 @@
         ./uniond/proto.nix
         ./app/app.nix
         ./docs/docs.nix
+        ./docs/openapi.nix
         ./site/site.nix
-        ./site/openapi.nix
         ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
         ./light-clients/ethereum-light-client/ethereum-light-client.nix
