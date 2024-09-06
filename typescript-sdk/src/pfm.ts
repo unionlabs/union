@@ -37,7 +37,6 @@ export async function getHubbleChainDetails({
     {
       port?: string
       sourceChannel: string
-      // memo?: string | undefined
       destinationChannel: string
       destinationChainId: ChainId
       relayContractAddress: string
@@ -50,10 +49,6 @@ export async function getHubbleChainDetails({
     return err(new Error("Source and destination chains cannot be the same"))
   }
 
-  const transferType = [sourceChainId, destinationChainId].includes("union-testnet-8")
-    ? "direct"
-    : "pfm"
-
   const {
     data: [data]
   } = await offchainQuery.chain({
@@ -61,6 +56,10 @@ export async function getHubbleChainDetails({
     includeContracts: true,
     includeEndpoints: true
   })
+
+  const transferType = [sourceChainId, destinationChainId].includes("union-testnet-8")
+    ? "direct"
+    : "pfm"
 
   if (!data) return err(new Error("Chain not found in hubble"))
 

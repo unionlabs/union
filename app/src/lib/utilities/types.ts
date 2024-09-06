@@ -1,5 +1,13 @@
 import type { Readable } from "svelte/store"
 
+export type Pretty<T> = { [K in keyof T]: T[K] } & {}
+
+export type MaybePromise<TValue> = TValue | Promise<TValue>
+
+export type TypeFromSet<T extends Set<any>> = T extends Set<infer U> ? U : never
+
+export type ExtractParameters<T> = T extends new (..._args: infer P) => any ? P[0] : never
+
 export type AtLeastOne<T, U = T> = T extends any
   ? T | (U & Record<Exclude<keyof U, keyof T>, never>)
   : never

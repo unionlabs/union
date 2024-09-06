@@ -3,13 +3,6 @@ import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
 import { bech32AddressToHex } from "../../convert.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 
-const queryHeaders = new Headers({
-  Accept: "application/json",
-  "User-Agent": "typescript-sdk",
-  "Content-Type": "application/json",
-  "X-Access-Key": "zQs9t0eoXQybyVbGfV4dSihLElP0Uyl1"
-})
-
 /**
  * simulate a transaction on evm using Tenderly API
  * @example

@@ -20,8 +20,8 @@ import { bech32AddressToHex } from "../convert.ts"
 import type { TransferAssetsParameters } from "./types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
-
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
+
 export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
 export const evmChainId: ReadonlyArray<`${(typeof evmChains)[number]["id"]}`> = [
   `${sepolia.id}`,
@@ -29,6 +29,9 @@ export const evmChainId: ReadonlyArray<`${(typeof evmChains)[number]["id"]}`> = 
   `${arbitrumSepolia.id}`,
   `${berachainTestnetbArtio.id}`
 ] as const
+
+export const evmChainFromChainId = (chainId: string) => evmChains.find(c => `${c.id}` === chainId)
+
 export type EvmChainId = `${(typeof evmChainId)[number]}`
 
 export interface EvmClientParameters {

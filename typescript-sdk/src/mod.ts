@@ -14,7 +14,12 @@ import {
   evmChainId,
   createEvmClient,
   type EvmChainId,
-  type EvmClientParameters
+  evmChainFromChainId,
+  type EvmClientParameters,
+  sepolia,
+  scrollSepolia,
+  arbitrumSepolia,
+  berachainTestnetbArtio
 } from "./client/evm.ts"
 import {
   cosmosChainId,
@@ -167,7 +172,12 @@ export {
   cosmosChainId,
   type EvmChainId,
   type CosmosChainId,
+  evmChainFromChainId,
   type EvmClientParameters,
   type CosmosClientParameters,
-  type TransferAssetsParameters
+  type TransferAssetsParameters,
+  sepolia,
+  scrollSepolia,
+  arbitrumSepolia,
+  berachainTestnetbArtio
 }

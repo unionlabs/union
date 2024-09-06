@@ -1,18 +1,19 @@
 <script lang="ts">
 import {
-  http,
-  custom,
-  parseUnits,
-  formatUnits,
-  type HttpTransport,
-  type Chain as ViemChain
-} from "viem"
-import {
+  createPfmMemo,
   type EvmChainId,
   createUnionClient,
   type CosmosChainId,
+  evmChainFromChainId,
   bech32ToBech32Address
 } from "@union/client"
+import {
+  http,
+  custom,
+  switchChain,
+  getConnectorClient,
+  waitForTransactionReceipt
+} from "@wagmi/core"
 import { onMount } from "svelte"
 import { page } from "$app/stores"
 import { toast } from "svelte-sonner"
@@ -41,25 +42,14 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
+import { parseUnits, formatUnits, type HttpTransport } from "viem"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
-import { waitForTransactionReceipt, getConnectorClient, switchChain } from "@wagmi/core"
-import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "viem/chains"
-
-function getChainById(chainId: number): ViemChain | null {
-  const chains: { [key: number]: ViemChain } = {
-    11155111: sepolia,
-    80084: berachainTestnetbArtio,
-    421614: arbitrumSepolia,
-    534351: scrollSepolia
-  }
-  return chains[chainId] || null
-}
 
 export let chains: Array<Chain>
-let userAddr: Readable<UserAddresses> = derived(
+let userAddress: Readable<UserAddresses> = derived(
   [userAddrCosmos, userAddrEvm],
   ([$userAddrCosmos, $userAddrEvm]) => ({
     evm: $userAddrEvm,
@@ -67,7 +57,7 @@ let userAddr: Readable<UserAddresses> = derived(
   })
 )
 
-$: userBalances = userBalancesQuery({ chains, userAddr: $userAddr, connected: true })
+$: userBalances = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })
 
 // CURRENT FORM STATE
 let fromChainId = writable("")
@@ -133,15 +123,15 @@ $: asset = derived(
   }
 )
 
-let recipient = derived([toChain, userAddr], ([$toChain, $userAddr]) => {
+let recipient = derived([toChain, userAddress], ([$toChain, $userAddress]) => {
   switch ($toChain?.rpc_type) {
     case "evm": {
-      const evmAddr = $userAddr.evm
+      const evmAddr = $userAddress.evm
       if (evmAddr === null) return null
-      return $userAddr.evm?.canonical
+      return $userAddress.evm?.canonical
     }
     case "cosmos": {
-      const cosmosAddr = $userAddr.cosmos
+      const cosmosAddr = $userAddress.cosmos
       if (cosmosAddr === null) return null
       return bech32ToBech32Address({
         address: cosmosAddr.canonical,
@@ -175,18 +165,22 @@ let ucs01Configuration = derived(
     for (const chain of chains) {
       let [foundHopChainId, ucs1Config] =
         Object.entries(chain.ucs1_configurations).find(
-          ([foundHopChainId, config]) => config.forwards[$toChainId] !== undefined
+          ([, config]) => config.forwards[$toChainId] !== undefined
         ) ?? []
       if (foundHopChainId !== undefined && ucs1Config !== undefined) {
         hopChainId = foundHopChainId
         ucs1_configuration = $fromChain.ucs1_configurations[hopChainId]
         let forwardConfig = ucs1_configuration.forwards[$toChainId]
-        pfmMemo = generatePfmMemo(
-          forwardConfig.channel_id,
-          forwardConfig.port_id,
-          // @ts-expect-error
-          $toChain?.rpc_type === "evm" ? $recipient.slice(2) : $recipient
-        )
+        if (!$recipient) return
+
+        const _pfmMemo = createPfmMemo({
+          channel: forwardConfig.channel_id,
+          port: forwardConfig.port_id,
+          // // @ts-expect-error
+          receiver: $toChain?.rpc_type === "evm" ? $recipient.slice(2) : $recipient
+        })
+        if (_pfmMemo.isErr()) throw _pfmMemo.error
+        pfmMemo = _pfmMemo.value
         break
       }
     }
@@ -200,20 +194,15 @@ let ucs01Configuration = derived(
 )
 
 let hopChain = derived(ucs01Configuration, $ucs01Configuration => {
-  if ($ucs01Configuration === null) return null
+  if (!$ucs01Configuration) return null
   if ($ucs01Configuration.hopChainId === null) return null
 
   return chains.find(c => c.chain_id === $ucs01Configuration.hopChainId) ?? null
 })
 
-const generatePfmMemo = (channel: string, port: string, receiver: string): string => {
-  return JSON.stringify({
-    forward: {
-      port,
-      channel,
-      receiver
-    }
-  })
+$: {
+  console.info($ucs01Configuration)
+  console.info($hopChain)
 }
 
 const transfer = async () => {
@@ -224,8 +213,9 @@ const transfer = async () => {
   if (!$toChain) return toast.error("can't find chain in config")
   if (!$toChainId) return toast.error("Please select a to chain")
   if (!amount) return toast.error("Please select an amount")
-  if ($fromChain.rpc_type === "evm" && !$userAddr.evm) return toast.error("No evm wallet connected")
-  if ($fromChain.rpc_type === "cosmos" && !$userAddr.cosmos)
+  if ($fromChain.rpc_type === "evm" && !$userAddress.evm)
+    return toast.error("No evm wallet connected")
+  if ($fromChain.rpc_type === "cosmos" && !$userAddress.cosmos)
     return toast.error("No cosmos wallet connected")
   if (!$recipient) return toast.error("Invalid recipient")
   // if (!$ucs01Configuration)
@@ -319,12 +309,6 @@ const transfer = async () => {
           gasPrice: { amount: "0.0025", denom: $assetSymbol }
         })
 
-        console.info({
-          account: cosmosOfflineSigner,
-          chainId: $fromChain.chain_id as CosmosChainId,
-          gasPrice: { amount: "0.0025", denom: $assetSymbol }
-        })
-
         const transfer = await unionClient.transferAsset({
           autoApprove: true,
           amount: parsedAmount,
@@ -344,7 +328,7 @@ const transfer = async () => {
     }
   } else if ($fromChain.rpc_type === "evm") {
     const connectorClient = await getConnectorClient(config)
-    const selectedChain = getChainById(Number($fromChainId))
+    const selectedChain = evmChainFromChainId($fromChainId)
 
     const unionClient = createUnionClient({
       account: connectorClient.account,
@@ -383,7 +367,6 @@ const transfer = async () => {
       // ^ the user is continuing continuing after having seen the warning
 
       try {
-        // @ts-expect-error
         await switchChain(config, { chainId: selectedChain.id })
       } catch (error) {
         if (error instanceof Error) {
@@ -511,7 +494,7 @@ const transfer = async () => {
         destination_chain_id: $toChainId,
         source_transaction_hash: $transferState.transferHash,
         hop_chain_id: $hopChain?.chain_id,
-        sender: userAddrOnChain($userAddr, $fromChain),
+        sender: userAddrOnChain($userAddress, $fromChain),
         normalized_sender:
           $fromChain?.rpc_type === "cosmos"
             ? $userAddrCosmos?.normalized
@@ -1016,21 +999,25 @@ const resetInput = () => {
   bind:dialogOpen={dialogOpenFromChain}
   chains={chains.filter(c => c.enabled_staging)}
   kind="from"
-  onChainSelect={newSelectedChain => fromChainId.set(newSelectedChain)}
+  onChainSelect={newSelectedChain => {
+    fromChainId.set(newSelectedChain)
+  }}
   selectedChain={$fromChainId}
-  userAddr={$userAddr}
+  userAddress={$userAddress}
 />
 
 <ChainDialog
   bind:dialogOpen={dialogOpenToChain}
   chains={chains.filter(c => c.enabled_staging)}
   kind="to"
-  onChainSelect={newSelectedChain => toChainId.set(newSelectedChain)}
+  onChainSelect={newSelectedChain => {
+    toChainId.set(newSelectedChain)
+  }}
   selectedChain={$toChainId}
-  userAddr={$userAddr}
+  userAddress={$userAddress}
 />
 
-{#if $sendableBalances !== null && $fromChain !== null}
+{#if $sendableBalances && $fromChain}
   <AssetsDialog
     chain={$fromChain}
     assets={$sendableBalances}

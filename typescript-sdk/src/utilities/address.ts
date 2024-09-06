@@ -61,7 +61,7 @@ export function isValidBech32Address(address: unknown): address is Bech32Address
   if (typeof address !== "string") return false
 
   try {
-    const { prefix: _, words } = bech32.decode(address)
+    const { prefix: _, words } = bech32.decode(address as Bech32Address)
     const size = words.length
     if ([20, 32].indexOf(size) === -1) return false
 

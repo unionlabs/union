@@ -4,7 +4,6 @@ import {
   assertIsDeliverTxSuccess,
   type MsgTransferEncodeObject
 } from "@cosmjs/stargate"
-import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 import type {
   Coin,
   MessageTransferWithOptionals,
@@ -12,6 +11,7 @@ import type {
 } from "../types.ts"
 import { timestamp } from "../utilities/index.ts"
 import { ok, err, type Result, ResultAsync } from "neverthrow"
+import { SigningCosmWasmClient, type ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 
 /**
  * connect a stargate client with a signer
