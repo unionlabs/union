@@ -8,7 +8,6 @@ import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import H2 from "$lib/components/typography/H2.svelte"
 import { checkContribution, checkQueue } from "$lib/supabase/index.ts"
 
-
 let position = createQuery(
   reactiveQueryArgs(() => ({
     queryKey: ["queue"],
@@ -35,11 +34,10 @@ let {
   isLoading: contributionIsLoading,
   data: contributionData
 } = $derived($contributionStore)
-
 </script>
 
 
-<div class="resize w-full h-full px-6 lg:px-8 py-24">
+<div class="p-8  bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center flex-col">
 
   <Text class="uppercase">USER: <span class="text-union-accent-500">{user?.session?.user.email}</span></Text>
 

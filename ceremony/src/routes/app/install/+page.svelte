@@ -10,7 +10,7 @@ const copy = () => {
 }
 </script>
 
-<div class="max-w-7xl sm:px-6 lg:px-8">
+<div class="p-8  bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center flex-col">
   <H1 class="text-center mb-4" >Install client</H1>
   <code class="text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-white text-black p-4 pl-6 font-mono">
     <span class="flex gap-4">

@@ -34,30 +34,28 @@ let {
 } = $derived($contributionStore)
 </script>
 
-<section class="w-full h-full flex items-center justify-center">
-  <div class="max-w-7xl sm:px-6 lg:px-8">
-    <!-- Client Status -->
-    <div class="mb-4">
-      {#if clientError}
-        <Text>Client connected?</Text>
-      {:else if clientIsLoading}
-        <Spinner class="size-4 text-red-500"/>
-      {:else if clientData}
-        <Text>{clientData.status}</Text>
-      {:else}
-        <Text>Waiting for client...</Text>
-      {/if}
-    </div>
-
-    <!-- Contribution Section -->
-    <div>
-      {#if contributionData}
-        {#if contributionData.shouldContribute}
-          <Button on:click={contribute}>Contribute</Button>
-        {:else}
-          <Text>Thanks for your contribution</Text>
-        {/if}
-      {/if}
-    </div>
+<div class="p-8  bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center flex-col">
+  <!-- Client Status -->
+  <div class="mb-4">
+    {#if clientError}
+      <Text>Client connected?</Text>
+    {:else if clientIsLoading}
+      <Spinner class="size-4 text-red-500"/>
+    {:else if clientData}
+      <Text>{clientData.status}</Text>
+    {:else}
+      <Text>Waiting for client...</Text>
+    {/if}
   </div>
-</section>
+
+  <!-- Contribution Section -->
+  <div>
+    {#if contributionData}
+      {#if contributionData.shouldContribute}
+        <Button on:click={contribute}>Contribute</Button>
+      {:else}
+        <Text>Thanks for your contribution</Text>
+      {/if}
+    {/if}
+  </div>
+</div>

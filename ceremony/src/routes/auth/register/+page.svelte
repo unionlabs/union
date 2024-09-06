@@ -16,7 +16,7 @@ async function register() {
 }
 </script>
 
-<div class="p-8 border border-neutral-500 bg-background-primary">
+<div class="p-8  bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center flex-col">
   <H1 class="mb-4">Register</H1>
   <Button onclick={register}>
     <span>Register with GitHub</span>

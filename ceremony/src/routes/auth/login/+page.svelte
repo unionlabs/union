@@ -15,7 +15,7 @@ async function login() {
 }
 </script>
 
-<div class="p-8 border border-neutral-500 bg-background-light">
+<div class="p-8  bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center flex-col">
   <H1 class="mb-4">Login</H1>
   <Button onclick={login}>
     <span>Sign in with GitHub</span>
