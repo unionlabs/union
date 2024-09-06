@@ -5,9 +5,11 @@ import { checkAuth, type SessionError } from "$lib/utils/auth.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { Toaster } from "svelte-sonner"
+import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query"
+import {onMount} from "svelte";
+import {Application} from "@splinetool/runtime";
 
 import "../styles/tailwind.css"
-import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query"
 
 let { children } = $props()
 
@@ -43,6 +45,24 @@ $effect(() => {
   }
 })
 
+let canvas
+let app
+let model
+let loading = true
+
+onMount(() => {
+  const canvas = document.getElementById("canvas3d");
+  if (!canvas) return;
+  app = new Application(canvas);
+  if (!app) return;
+  app.load("https://draft.spline.design/r6WgY2-52aHVU2TZ/scene.splinecode").then((splineScene) => {
+    console.log("hello");
+    model = splineScene;
+    loading = false;
+    console.log(loading);
+  });
+})
+
 const queryClient = new QueryClient()
 </script>
 
@@ -50,6 +70,7 @@ const queryClient = new QueryClient()
 
 <QueryClientProvider client={queryClient}>
   <Navbar/>
+  <canvas id="canvas3d" class="pointer-events-none w-full h-auto inset-0 absolute -z-10"></canvas>
   <main class="flex flex-col items-center justify-center min-h-screen w-full bg-background-light-secondary">
     {@render children()}
   </main>

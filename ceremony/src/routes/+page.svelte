@@ -1,26 +1,26 @@
 <script lang="ts">
 import H1 from "$lib/components/typography/H1.svelte"
 import { onMount } from "svelte"
-
-let imageVisible = false
-onMount(() => {
-  imageVisible = true
-})
+//
+// let imageVisible = false
+// onMount(() => {
+//   imageVisible = true
+// })
 </script>
 
 <section class="relative w-full h-full flex items-center justify-center overflow-hidden">
   <div class="max-w-7xl sm:px-6 lg:px-8">
     <div class="max-w-7xl sm:px-6 lg:px-8 fade-in-text">
       <H1 class="text-center">
-        Welcome to<br>Union <span class="text-union-accent-500">Ceremony</span>
+        Welcome to<br>Union Ceremony
       </H1>
     </div>
   </div>
-  <img
-          src="/images/whale.png"
-          alt=""
-          class="absolute -z-10 w-full h-full object-cover deep-sea-rise"
-          class:visible={imageVisible}/>
+<!--  <img-->
+<!--          src="/images/whale.png"-->
+<!--          alt=""-->
+<!--          class="absolute -z-10 w-full h-full object-cover deep-sea-rise"-->
+<!--          class:visible={imageVisible}/>-->
 </section>
 
 <style>

@@ -8,6 +8,7 @@ import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import H2 from "$lib/components/typography/H2.svelte"
 import { checkContribution, checkQueue } from "$lib/supabase/index.ts"
 
+
 let position = createQuery(
   reactiveQueryArgs(() => ({
     queryKey: ["queue"],
@@ -34,10 +35,11 @@ let {
   isLoading: contributionIsLoading,
   data: contributionData
 } = $derived($contributionStore)
+
 </script>
 
 
-<div class=" w-full h-full px-6 lg:px-8 py-24 overflow-y-scroll">
+<div class="resize w-full h-full px-6 lg:px-8 py-24">
 
   <Text class="uppercase">USER: <span class="text-union-accent-500">{user?.session?.user.email}</span></Text>
 
@@ -54,6 +56,7 @@ let {
   {:else}
     <Spinner class="size-6 text-union-accent-500"/>
   {/if}
+
 
 
 </div>
