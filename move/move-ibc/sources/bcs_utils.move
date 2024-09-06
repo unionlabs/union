@@ -77,6 +77,12 @@ module IBC::bcs_utils {
         from_bcs::to_bytes(vector::slice(&buf.inner, buf.cursor - (length as u64) - n_read, buf.cursor))
     }
 
+    // /// Peel a vector<u8>
+    public fun peel_fixed_bytes(buf: &mut BcsBuf, length: u32): vector<u8> {
+        buf.cursor = buf.cursor + (length as u64);
+        vector::slice(&buf.inner, buf.cursor - (length as u64), buf.cursor)
+    }
+
     /// Peel a vector of T
     public inline fun peel_vector<T>(buf: &mut BcsBuf, parse_fn: |&mut BcsBuf|T): vector<T> {
         let length = peel_length_prefix(buf);

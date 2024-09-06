@@ -81,6 +81,8 @@ module IBC::Core {
     #[event]
     struct ClientCreatedEvent has copy, drop, store {
         client_id: String,
+        client_type: String,
+        consensus_height: Height,
     }
 
     #[event]
@@ -339,8 +341,10 @@ module IBC::Core {
         let (status_code, client_state, consensus_state) = LightClient::create_client(
             &get_ibc_signer(),
             client_id, 
-            from_bcs::to_bytes(client_state), 
-            from_bcs::to_bytes(consensus_state),
+            // from_bcs::to_bytes(client_state), 
+            // from_bcs::to_bytes(consensus_state),
+            client_state, 
+            consensus_state,
         );
     
         assert!(status_code == 0, status_code);
@@ -361,7 +365,9 @@ module IBC::Core {
 
         event::emit(
             ClientCreatedEvent {
-                client_id
+                client_id,
+                client_type,
+                consensus_height: latest_height,
             },
         );
     }
@@ -1806,5 +1812,12 @@ module IBC::Core {
             *connection_end::conn_counterparty_key_prefix(connection),
             *string::bytes(&path)
         )
+    }
+
+    #[test(ibc_signer = @IBC)]
+    fun test_get_ibc_signer(ibc_signer: &signer) acquires SignerRef {
+        init_module(ibc_signer);
+
+        std::debug::print(&get_ibc_signer())
     }
 }   

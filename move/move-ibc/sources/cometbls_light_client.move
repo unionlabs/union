@@ -185,7 +185,7 @@ module IBC::LightClient {
 
         (
             bcs::to_bytes(&state.client_state),
-            vector<vector<u8>>[bcs::to_bytes(&new_consensus_state)],
+            vector<vector<u8>>[encode_consensus_state(&new_consensus_state)],
             vector<height::Height>[
                 new_height
             ],
@@ -231,7 +231,9 @@ module IBC::LightClient {
     }
 
     fun get_client_address(client_id: &string::String): address {
-        object::create_object_address(&@IBC, *string::bytes(client_id))
+        let vault_addr = object::create_object_address(&@IBC, b"IBC_VAULT_SEED");
+
+        object::create_object_address(&vault_addr, *string::bytes(client_id))
     }
 
     public fun new_client_state(
@@ -289,7 +291,7 @@ module IBC::LightClient {
     public fun get_consensus_state(client_id: String, height: Height): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(&client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
-        bcs::to_bytes(consensus_state)
+        encode_consensus_state(consensus_state)
     }
 
     fun decode_client_state(buf: vector<u8>): ClientState {
@@ -311,10 +313,20 @@ module IBC::LightClient {
         ConsensusState {
             timestamp: bcs_utils::peel_u64(&mut buf),
             app_hash: MerkleRoot {
-                hash: bcs_utils::peel_bytes(&mut buf),
+                hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
             },
-            next_validators_hash: bcs_utils::peel_bytes(&mut buf),
+            next_validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
         }
+    }
+
+    fun encode_consensus_state(cs: &ConsensusState): vector<u8> {
+        let buf = vector<u8>[];
+
+        vector::append(&mut buf, bcs::to_bytes(&cs.timestamp));
+        vector::append(&mut buf, cs.app_hash.hash);
+        vector::append(&mut buf, cs.next_validators_hash);
+
+        buf
     }
 
     fun decode_header(buf: vector<u8>): Header {
@@ -372,10 +384,35 @@ module IBC::LightClient {
     }
 
     #[test]
+    fun parse_consensus_state() {
+        let consensus_state = ConsensusState {
+            timestamp: 42,
+            app_hash: MerkleRoot {
+                hash: x"0000000000000000000000000000000000000000000000000000000000000000",
+            },
+            next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000",
+        };
+
+        let cs_bytes = encode_consensus_state(&consensus_state);
+        std::debug::print(&cs_bytes);
+
+        let cs = decode_consensus_state(cs_bytes);
+        std::debug::print(&cs);
+    }
+
+    #[test]
     fun decode_client_state_bcs() {
-        let encoded = vector[14, 117, 110, 105, 111, 110, 45, 100, 101, 118, 110, 101, 116, 45, 49, 0, 192, 91, 187, 168, 122, 5, 0, 0, 0, 123, 235, 47, 114, 6, 0, 0, 224, 146, 101, 23, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 95, 13, 0, 0, 0, 0, 0, 0];
+        let encoded = vector[ 14, 117, 110, 105, 111, 110, 45, 100, 101, 118, 110, 101, 116, 45, 49, 0, 192, 91, 187, 168, 122, 5, 0, 0, 0, 123, 235, 47, 114, 6, 0, 0, 224, 146, 101, 23, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 54, 18, 0, 0, 0, 0, 0, 0, ];
 
         let cs = decode_client_state(encoded);
+        std::debug::print(&cs);
+    }
+
+    #[test]
+    fun decode_consensus_state_bcs() {
+        let encoded = vector[ 72, 31, 173, 233, 146, 25, 184, 242, 23, 80, 19, 246, 177, 68, 34, 205, 35, 75, 81, 37, 130, 13, 198, 171, 1, 22, 45, 1, 126, 231, 48, 211, 70, 129, 133, 154, 159, 121, 139, 101, 134, 47, 73, 117, 171, 126, 117, 166, 119, 244, 62, 254, 191, 83, 224, 236, 5, 70, 13, 44, 245, 85, 6, 173, 8, 214, 176, 82, 84, 249, 106, 80, 13, ];
+
+        let cs = decode_consensus_state(encoded);
         std::debug::print(&cs);
     }
     
@@ -400,13 +437,13 @@ module IBC::LightClient {
         let consensus_state = ConsensusState {  
             timestamp: 10000,
             app_hash: MerkleRoot {
-                hash: vector<u8>[]
+                hash: x"0000000000000000000000000000000000000000000000000000000000000000"
             },
-            next_validators_hash: vector<u8>[]
+            next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
         };
 
-        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client"), bcs::to_bytes(&client_state), bcs::to_bytes(&consensus_state));
-        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == bcs::to_bytes(&consensus_state), 1);
+        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client"), bcs::to_bytes(&client_state), encode_consensus_state(&consensus_state));
+        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == encode_consensus_state(&consensus_state), 1);
 
 
         let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
@@ -421,8 +458,11 @@ module IBC::LightClient {
         client_state.trusting_period = 2;
         consensus_state.timestamp = 20000;
 
-        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client-2"), bcs::to_bytes(&client_state), bcs::to_bytes(&consensus_state));
-        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == bcs::to_bytes(&consensus_state), 1);
+        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client-2"), bcs::to_bytes(&client_state), encode_consensus_state(&consensus_state));
+        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == encode_consensus_state(&consensus_state), 1);
+
+        let lh = latest_height(string::utf8(b"this_client-2"));
+        std::debug::print(&lh);
 
         // new client don't mess with this client's storage
         let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));

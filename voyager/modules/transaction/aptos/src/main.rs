@@ -280,14 +280,28 @@ fn process_msgs(
             IbcMessage::CreateClient(MsgCreateClientData {
                 msg: data,
                 client_type,
-            }) => (
-                msg,
-                client.create_client((
+            }) => (msg, {
+                let this = &client;
+                let (_0, _1, _2) = (
                     client_type.to_string(),
                     data.client_state,
                     data.consensus_state,
-                )),
-            ),
+                );
+                ::aptos_types::transaction::EntryFunction::new(
+                    ::aptos_rest_client::aptos_api_types::MoveModuleId {
+                        address: this.module_address().into(),
+                        name: stringify!(Core).parse().unwrap(),
+                    }
+                    .into(),
+                    stringify!(create_client).parse().unwrap(),
+                    vec![],
+                    vec![
+                        bcs::to_bytes(&_0).unwrap(),
+                        bcs::to_bytes(&_1).unwrap(),
+                        bcs::to_bytes(&_2).unwrap(),
+                    ],
+                )
+            }),
             IbcMessage::UpdateClient(data) => (
                 msg,
                 client.update_client((data.client_id.to_string(), data.client_message)),
