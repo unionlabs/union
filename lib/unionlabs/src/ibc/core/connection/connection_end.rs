@@ -1,6 +1,5 @@
 use core::str::FromStr;
 
-use frame_support_procedural::DebugNoBound;
 use macros::model;
 
 #[cfg(feature = "ethabi")]
@@ -28,13 +27,18 @@ pub struct ConnectionEnd {
     pub delay_period: u64,
 }
 
-#[derive(DebugNoBound)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromConnectionEndError {
-    ClientId(<ClientId as FromStr>::Err),
-    Version(UnknownEnumVariant<String>),
-    State(UnknownEnumVariant<i32>),
-    Counterparty(TryFromConnectionCounterpartyError),
-    MissingField(MissingField),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid client_id")]
+    ClientId(#[from] <ClientId as FromStr>::Err),
+    #[error("invalid version")]
+    Version(#[from] UnknownEnumVariant<String>),
+    #[error("invalid state")]
+    State(#[from] UnknownEnumVariant<i32>),
+    #[error("invalid counterparty")]
+    Counterparty(#[from] TryFromConnectionCounterpartyError),
 }
 
 impl TryFrom<protos::ibc::core::connection::v1::ConnectionEnd> for ConnectionEnd {

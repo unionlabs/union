@@ -1,5 +1,9 @@
+#![warn(clippy::unwrap_used)]
+
 use std::{
     collections::VecDeque,
+    error::Error,
+    fmt::{Debug, Display},
     num::{NonZeroU32, NonZeroU8, ParseIntError},
     sync::Arc,
 };
@@ -7,7 +11,7 @@ use std::{
 use dashmap::DashMap;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::ErrorObject,
+    types::{ErrorObject, ErrorObjectOwned},
 };
 use queue_msg::{call, conc, data, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
@@ -21,7 +25,7 @@ use unionlabs::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         CreateClient, IbcEvent, SubmitEvidence, UpdateClient,
     },
-    hash::H256,
+    hash::{H256, H64},
     ibc::core::{
         channel::{self, channel::Channel},
         client::height::Height,
@@ -41,7 +45,7 @@ use voyager_message::{
     },
     reth_ipc::client::IpcClientBuilder,
     rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient, VoyagerRpcClientExt},
-    run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
+    run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{
@@ -146,7 +150,7 @@ impl Module {
         }
     }
 
-    async fn client_type_of_checksum(&self, checksum: H256) -> Option<WasmClientType> {
+    async fn client_type_of_checksum(&self, checksum: H256) -> RpcResult<Option<WasmClientType>> {
         if let Some(ty) = self.checksum_cache.get(&checksum) {
             debug!(
                 checksum = %checksum.to_string_unprefixed(),
@@ -154,7 +158,7 @@ impl Module {
                 "cache hit for checksum"
             );
 
-            return Some(*ty);
+            return Ok(Some(*ty));
         };
 
         info!(
@@ -166,12 +170,23 @@ impl Module {
             self.grpc_url.clone(),
         )
         .await
-        .unwrap()
+        .map_err(rpc_error(
+            "error connecting to grpc server",
+            Some(json!({
+                "grpc_url": self.grpc_url
+            })),
+        ))?
         .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
             checksum: checksum.to_string_unprefixed(),
         })
         .await
-        .unwrap()
+        .map_err(rpc_error(
+            "error querying wasm code",
+            Some(json!({
+                "checksum": checksum,
+                "grpc_url": self.grpc_url
+            })),
+        ))?
         .into_inner()
         .data;
 
@@ -185,9 +200,9 @@ impl Module {
 
                 self.checksum_cache.insert(checksum, ty);
 
-                Some(ty)
+                Ok(Some(ty))
             }
-            Ok(None) => None,
+            Ok(None) => Ok(None),
             Err(err) => {
                 error!(
                     checksum = %checksum.to_string_unprefixed(),
@@ -195,39 +210,60 @@ impl Module {
                     "unable to parse wasm client type"
                 );
 
-                None
+                Ok(None)
             }
         }
     }
 
-    async fn checksum_of_client_id(&self, client_id: ClientId) -> H256 {
+    #[instrument(skip_all, fields(%client_id))]
+    async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256> {
+        type WasmClientState = protos::ibc::lightclients::wasm::v1::ClientState;
+
         let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
             self.grpc_url.clone(),
         )
         .await
-        .unwrap()
+        .map_err(rpc_error(
+            "error connecting to grpc server",
+            Some(json!({ "client_id": client_id })),
+        ))?
         .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
             client_id: client_id.to_string(),
         })
         .await
-        .unwrap()
+        .map_err(rpc_error(
+            "error querying client state",
+            Some(json!({ "client_id": client_id })),
+        ))?
         .into_inner()
         .client_state
-        .unwrap();
+        .ok_or_else(|| {
+            // lol
+            rpc_error(
+                "error fetching client state",
+                Some(json!({ "client_id": client_id })),
+            )(&*Box::<dyn Error>::from("client state field is empty"))
+        })?;
 
         assert!(
-            client_state.type_url
-                == <protos::ibc::lightclients::wasm::v1::ClientState as prost::Name>::type_url()
+            client_state.type_url == <WasmClientState as prost::Name>::type_url(),
+            "attempted to get the wasm blob checksum of a non-wasm \
+            light client. this is a bug, please report this at \
+            `https://github.com/unionlabs/union`."
         );
 
         // NOTE: We only need the checksum, so we don't need to decode the inner state contained in .data
-        <protos::ibc::lightclients::wasm::v1::ClientState as prost::Message>::decode(
-            &*client_state.value,
-        )
-        .unwrap()
-        .checksum
-        .try_into()
-        .unwrap()
+        <WasmClientState as prost::Message>::decode(&*client_state.value)
+            .map_err(rpc_error(
+                "error decoding client state",
+                Some(json!({ "client_id": client_id })),
+            ))?
+            .checksum
+            .try_into()
+            .map_err(rpc_error(
+                "invalid checksum",
+                Some(json!({ "client_id": client_id })),
+            ))
     }
 
     // async fn fetch_connection(&self, connection_id: ConnectionId) -> (ConnectionEnd, Height) {
@@ -355,7 +391,10 @@ impl Module {
             version: counterparty_channel.version,
             connection: ConnectionMetadata {
                 client_id: self_connection.counterparty.client_id,
-                connection_id: self_connection.counterparty.connection_id.unwrap(),
+                connection_id: self_connection
+                    .counterparty
+                    .connection_id
+                    .expect("counterparty connection id should be set"),
             },
         };
 
@@ -416,7 +455,10 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         cometbft_rpc::types::Order::Desc,
                     )
                     .await
-                    .unwrap();
+                    .map_err(rpc_error(
+                        format_args!("error fetching transactions at height {height}"),
+                        Some(json!({ "height": height })),
+                    ))?;
 
                 Ok(conc(
                     response
@@ -1022,9 +1064,9 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 .tm_client
                 .commit(Some(
                     (u64::try_from(commit_response.signed_header.header.height.inner() - 1)
-                        .unwrap())
+                        .expect("should be fine"))
                     .try_into()
-                    .unwrap(),
+                    .expect("should be fine"),
                 ))
                 .await
                 .map_err(|err| {
@@ -1046,7 +1088,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             .time
             .as_unix_nanos()
             .try_into()
-            .unwrap())
+            .expect("should be fine"))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -1073,10 +1115,10 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 metadata: Default::default(),
             }),
             Some(("08-wasm", _)) => {
-                let checksum = self.checksum_of_client_id(client_id.clone()).await;
+                let checksum = self.checksum_of_client_id(client_id.clone()).await?;
 
                 Ok(ClientInfo {
-                    client_type: match self.client_type_of_checksum(checksum).await {
+                    client_type: match self.client_type_of_checksum(checksum).await? {
                         Some(ty) => match ty {
                             WasmClientType::EthereumMinimal => {
                                 ClientType::new(ClientType::ETHEREUM_MINIMAL)
@@ -1106,7 +1148,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         }
                     },
                     ibc_interface: IbcInterface::new(IbcInterface::IBC_GO_V8_08_WASM),
-                    metadata: serde_json::to_value(IbcGo08WasmClientMetadata { checksum }).unwrap(),
+                    metadata: into_value(IbcGo08WasmClientMetadata { checksum }),
                 })
             }
             _ => Err(ErrorObject::owned(
@@ -1125,6 +1167,8 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
         let path_string = path.to_string();
 
+        let error_data = || Some(json!({ "height": at, "path": path }));
+
         let query_result = self
             .tm_client
             .abci_query(
@@ -1132,64 +1176,100 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 &path_string,
                 Some(
                     i64::try_from(at.revision_height)
-                        .unwrap()
+                        .expect("should be fine")
                         .try_into()
                         .expect("invalid height"),
                 ),
                 false,
             )
             .await
-            .unwrap()
+            .map_err(rpc_error(
+                format_args!("error fetching abci query"),
+                error_data(),
+            ))?
             .response;
 
+        // NOTE: At this point, we assume that if the node has given us a response that the data contained within said response is fully reflective of the actual state on-chain, and as such it is a fatal error if we fail to decode it
         Ok(match path {
-            Path::ClientState(_) => serde_json::to_value(Hex(query_result.value)).unwrap(),
-            Path::ClientConsensusState(_) => serde_json::to_value(Hex(query_result.value)).unwrap(),
-            Path::Connection(_) => serde_json::to_value(
-                ConnectionEnd::decode_as::<Proto>(&query_result.value).unwrap(),
-            )
-            .unwrap(),
-            Path::ChannelEnd(_) => {
-                serde_json::to_value(Channel::decode_as::<Proto>(&query_result.value).unwrap())
-                    .unwrap()
-            }
-            Path::Commitment(_) => {
-                serde_json::to_value(H256::try_from(query_result.value).unwrap()).unwrap()
-            }
-            Path::Acknowledgement(_) => {
-                serde_json::to_value(H256::try_from(query_result.value).unwrap()).unwrap()
-            }
-            Path::Receipt(_) => serde_json::to_value(match query_result.value[..] {
+            Path::ClientState(_) => into_value(Hex(query_result.value)),
+            Path::ClientConsensusState(_) => into_value(Hex(query_result.value)),
+            Path::Connection(_) => into_value(
+                ConnectionEnd::decode_as::<Proto>(&query_result.value).map_err(fatal_rpc_error(
+                    "error decoding connection end",
+                    error_data(),
+                ))?,
+            ),
+            Path::ChannelEnd(_) => into_value(
+                Channel::decode_as::<Proto>(&query_result.value)
+                    .map_err(fatal_rpc_error("error decoding channel end", error_data()))?,
+            ),
+            Path::Commitment(_) => into_value(
+                H256::try_from(query_result.value)
+                    .map_err(fatal_rpc_error("error decoding commitment", error_data()))?,
+            ),
+            Path::Acknowledgement(_) => into_value(H256::try_from(query_result.value).map_err(
+                fatal_rpc_error("error decoding acknowledgement", error_data()),
+            )?),
+            Path::Receipt(_) => into_value(match query_result.value[..] {
                 [] => false,
                 [1] => true,
-                ref invalid => panic!("not a bool??? {invalid:?}"),
-            })
-            .unwrap(),
-            Path::NextSequenceSend(_) => {
-                serde_json::to_value(u64::from_be_bytes(query_result.value.try_into().unwrap()))
-                    .unwrap()
-            }
-            Path::NextSequenceRecv(_) => {
-                serde_json::to_value(u64::from_be_bytes(query_result.value.try_into().unwrap()))
-                    .unwrap()
-            }
-            Path::NextSequenceAck(_) => {
-                serde_json::to_value(u64::from_be_bytes(query_result.value.try_into().unwrap()))
-                    .unwrap()
-            }
-            Path::NextConnectionSequence(_) => {
-                serde_json::to_value(u64::from_be_bytes(query_result.value.try_into().unwrap()))
-                    .unwrap()
-            }
-            Path::NextClientSequence(_) => {
-                serde_json::to_value(u64::from_be_bytes(query_result.value.try_into().unwrap()))
-                    .unwrap()
-            }
+                ref invalid => {
+                    return Err(fatal_rpc_error("error decoding receipt", error_data())(
+                        format!(
+                            "value is neither empty nor the single byte 0x01, found {}",
+                            serde_utils::to_hex(invalid)
+                        ),
+                    ))
+                }
+            }),
+            // NOTE: For these branches, we use H64 as a mildly hacky way to have a better error message (since `<[T; N] as TryFrom<Vec<T>>>::Error = Vec<T>`)
+            Path::NextSequenceSend(_) => into_value(u64::from_be_bytes(
+                H64::try_from(query_result.value)
+                    .map_err(fatal_rpc_error(
+                        "error decoding next_sequence_send",
+                        error_data(),
+                    ))?
+                    .0,
+            )),
+            Path::NextSequenceRecv(_) => into_value(u64::from_be_bytes(
+                H64::try_from(query_result.value)
+                    .map_err(fatal_rpc_error(
+                        "error decoding next_sequence_recv",
+                        error_data(),
+                    ))?
+                    .0,
+            )),
+            Path::NextSequenceAck(_) => into_value(u64::from_be_bytes(
+                H64::try_from(query_result.value)
+                    .map_err(fatal_rpc_error(
+                        "error decoding next_sequence_ack",
+                        error_data(),
+                    ))?
+                    .0,
+            )),
+            Path::NextConnectionSequence(_) => into_value(u64::from_be_bytes(
+                H64::try_from(query_result.value)
+                    .map_err(fatal_rpc_error(
+                        "error decoding next_connection_sequence",
+                        error_data(),
+                    ))?
+                    .0,
+            )),
+            Path::NextClientSequence(_) => into_value(u64::from_be_bytes(
+                H64::try_from(query_result.value)
+                    .map_err(fatal_rpc_error(
+                        "error decoding next_client_sequence",
+                        error_data(),
+                    ))?
+                    .0,
+            )),
         })
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_proof(&self, at: Height, path: Path) -> RpcResult<Value> {
+        // TODO: This is also in the fn above, move this to somewhere more appropriate (chain-utils perhaps?)
+
         const IBC_STORE_PATH: &str = "store/ibc/key";
 
         let path_string = path.to_string();
@@ -1202,16 +1282,19 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 // a proof at height H is provable at height H + 1
                 // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
                 Some(
-                    (i64::try_from(at.revision_height).unwrap() - 1)
+                    (i64::try_from(at.revision_height).expect("should be fine") - 1)
                         .try_into()
                         .expect("invalid height"),
                 ),
                 true,
             )
             .await
-            .unwrap();
+            .map_err(rpc_error(
+                format_args!("error fetching abci query"),
+                Some(json!({ "height": at, "path": path })),
+            ))?;
 
-        Ok(serde_json::to_value(
+        Ok(into_value(
             MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
                 proofs: query_result
                     .response
@@ -1228,8 +1311,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     .collect::<Vec<_>>(),
             })
             .unwrap(),
-        )
-        .unwrap())
+        ))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -1249,7 +1331,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             )
             .await?,
         )
-        .unwrap();
+        .expect("infallible");
 
         let ClientInfo {
             client_type,
@@ -1262,5 +1344,49 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             ibc_interface,
             bytes: client_state.0.into(),
         })
+    }
+}
+
+// NOTE: For both of the below functions, `message` as a field will override any actual message put in (i.e. `error!("foo", message = "bar")` will print as "bar", not "foo" with an extra field `message = "bar"`.
+
+fn rpc_error<E: Error>(
+    message: impl Display,
+    data: Option<Value>,
+) -> impl FnOnce(E) -> ErrorObjectOwned {
+    move |e| {
+        let message = format!("{message}: {}", ErrorReporter(e));
+        error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
+        ErrorObject::owned(-1, message, data)
+    }
+}
+
+fn fatal_rpc_error<E: Into<Box<dyn Error>>>(
+    message: impl Display,
+    data: Option<Value>,
+) -> impl FnOnce(E) -> ErrorObjectOwned {
+    move |e| {
+        let e = e.into();
+        let message = format!("{message}: {}", ErrorReporter(&*e));
+        error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
+        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, message, data)
+    }
+}
+
+#[track_caller]
+fn into_value<T: Debug + Serialize>(t: T) -> Value {
+    match serde_json::to_value(t) {
+        Ok(ok) => ok,
+        Err(err) => {
+            error!(
+                error = %ErrorReporter(err),
+                "error serializing value of type {}",
+                std::any::type_name::<T>()
+            );
+
+            panic!(
+                "error serializing value of type {}",
+                std::any::type_name::<T>()
+            );
+        }
     }
 }

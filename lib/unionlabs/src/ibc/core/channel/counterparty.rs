@@ -27,7 +27,7 @@ impl From<Counterparty> for protos::ibc::core::channel::v1::Counterparty {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromChannelCounterpartyError {
     #[error("error parsing port id")]
     PortId(#[source] <PortId as FromStr>::Err),

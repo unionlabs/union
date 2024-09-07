@@ -31,11 +31,14 @@ impl From<Counterparty> for protos::ibc::core::connection::v1::Counterparty {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromConnectionCounterpartyError {
-    MissingField(MissingField),
-    ClientId(<ClientId as FromStr>::Err),
-    ConnectionId(<ConnectionId as FromStr>::Err),
+    #[error(transparent)]
+    MissingField(#[from] MissingField),
+    #[error("invalid client_id")]
+    ClientId(#[source] <ClientId as FromStr>::Err),
+    #[error("invalid connection_id")]
+    ConnectionId(#[source] <ConnectionId as FromStr>::Err),
 }
 
 impl TryFrom<protos::ibc::core::connection::v1::Counterparty> for Counterparty {

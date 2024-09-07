@@ -1,3 +1,5 @@
+// #![warn(clippy::unwrap_used)] // hooooo boy this will be a lot of work
+
 use std::{collections::VecDeque, sync::Arc};
 
 use beacon_api::client::BeaconApiClient;

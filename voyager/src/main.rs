@@ -39,7 +39,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     cli::{AppArgs, Command, UtilCmd},
     config::Config,
-    queue::{Voyager, VoyagerInitError},
+    queue::{AnyQueueConfig, Voyager, VoyagerInitError},
 };
 
 pub mod cli;
@@ -127,7 +127,7 @@ pub enum MigrationsError {
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
 async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
-    let voyager_config = read_to_string(&args.config_file_path)
+    let mut voyager_config = read_to_string(&args.config_file_path)
         .map_err(|err| VoyagerError::ConfigFileNotFound {
             path: args.config_file_path.clone(),
             source: err,
@@ -366,6 +366,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
         //     print_json(&all_msgs);
         // }
         Command::InitFetch { chain_id } => {
+            voyager_config.voyager.queue = AnyQueueConfig::InMemory;
+
             let voyager = Voyager::new(voyager_config).await?;
 
             let chain = voyager
