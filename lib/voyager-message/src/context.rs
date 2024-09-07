@@ -204,6 +204,8 @@ impl Context {
 
                 let main_rpc_server_handle = main_rpc_server.clone();
 
+                let cancellation_token = cancellation_token.clone();
+
                 Some(async move {
                     let plugin_rpc_server = RpcServer::new(
                         plugin_config.path.to_owned(),
@@ -224,13 +226,19 @@ impl Context {
                                 break client;
                             }
                             Err(err) => {
-                                if healthy.load(std::sync::atomic::Ordering::SeqCst) {
-                                    debug!(
-                                        err = %ErrorReporter(err),
-                                        "unable to connect to socket, plugin has not started yet"
-                                    );
+                                if healthy.load(std::sync::atomic::Ordering::SeqCst)
+                                {
+                                    if cancellation_token.is_cancelled() {
+                                        debug!("shutting down");
+                                        return Err::<_, BoxDynError>("shutting down".into());
+                                    } else {
+                                        debug!(
+                                            err = %ErrorReporter(err),
+                                            "unable to connect to socket, plugin has not started yet"
+                                        );
 
-                                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                    }
                                 } else {
                                     error!("plugin is unhealthy and could not start");
                                     return Err::<_, BoxDynError>("unhealthy plugin".into());
@@ -575,14 +583,7 @@ async fn run_plugin_client(
                     // tokio::time::sleep(std::time::Duration::from_nanos(100)).await;
 
                     if let Ok(Some(status)) = child.try_wait() {
-                        if status
-                            .code()
-                            .is_some_and(|c| c == INVALID_CONFIG_EXIT_CODE as i32)
-                        {
-                            error!(%id, %status, %plugin_socket, "invalid config for plugin");
-                        } else {
-                            error!(%id, %status, %plugin_socket, "child exited after startup");
-                        }
+                        error!(%id, %status, %plugin_socket, "child exited after startup");
 
                         cancellation_token.cancel();
 
@@ -632,7 +633,15 @@ async fn run_plugin_client(
             res = child.wait() => {
                 match res {
                     Ok(exit_status) => {
-                        info!(%id, %exit_status, "child exited")
+                        info!(%id, %exit_status, "child exited");
+
+                        if exit_status
+                            .code()
+                            .is_some_and(|c| dbg!(c) == INVALID_CONFIG_EXIT_CODE as i32)
+                        {
+                            error!(%id, %exit_status, %plugin_socket, "invalid config for plugin");
+                            cancellation_token.cancel();
+                        }
                     }
                     Err(err) => {
                         error!(%id, err = %ErrorReporter(err), "child exited")
