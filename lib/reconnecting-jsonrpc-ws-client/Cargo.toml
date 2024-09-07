@@ -1,0 +1,17 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "reconnecting-jsonrpc-ws-client"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+arc-swap           = "1.7.1"
+jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
+thiserror          = { workspace = true }
+tokio              = { workspace = true, features = ["rt"] }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }

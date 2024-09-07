@@ -2,12 +2,9 @@ use core::fmt;
 use std::{
     fmt::Debug,
     num::{NonZeroU32, NonZeroU64, NonZeroU8},
-    sync::Arc,
-    time::Duration,
 };
 
 use ::serde::de::DeserializeOwned;
-use arc_swap::ArcSwap;
 use jsonrpsee::{
     core::{
         async_trait,
@@ -19,12 +16,11 @@ use jsonrpsee::{
     rpc_params,
     ws_client::{PingConfig, WsClientBuilder},
 };
-use tokio::{task::JoinHandle, time::sleep};
-use tracing::{debug, debug_span, error, instrument, Instrument};
+use tracing::{debug, instrument};
 use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
     hash::H256,
-    option_unwrap, result_unwrap, ErrorReporter,
+    option_unwrap, result_unwrap,
 };
 
 use crate::types::{
@@ -48,76 +44,14 @@ impl Client {
 
         let inner = match url.split_once("://") {
             Some(("ws" | "wss", _)) => {
-                let client = Arc::new(ArcSwap::from_pointee(
+                let client = reconnecting_jsonrpc_ws_client::Client::new(move || {
                     WsClientBuilder::default()
                         .enable_ws_ping(PingConfig::new())
-                        .build(&url)
-                        .await?,
-                ));
+                        .build(url.clone())
+                })
+                .await?;
 
-                let handle = tokio::spawn({
-                    let client = client.clone();
-                    let url_clone = url.clone();
-
-                    async move {
-                        let mut total_reconnects = 0;
-
-                        loop {
-                            client.load().on_disconnect().await;
-
-                            debug!("client disconnected");
-
-                            let reason = client.load().disconnect_reason().await;
-
-                            debug!("disconnect reason: {}", ErrorReporter(reason));
-
-                            let mut retry_ms = 500;
-
-                            const MAX_RETRY_MS: u64 = 8_000;
-
-                            let mut attempt = 0;
-
-                            let new_client = loop {
-                                match WsClientBuilder::default()
-                                    .enable_ws_ping(PingConfig::new())
-                                    .build(&url_clone)
-                                    .await
-                                {
-                                    Ok(client) => break client,
-                                    Err(error) => {
-                                        attempt += 1;
-
-                                        error!(
-                                            error = %ErrorReporter(error),
-                                            %attempt,
-                                            "error while reconnecting client, \
-                                            trying again in {retry_ms} ms"
-                                        );
-
-                                        sleep(Duration::from_millis(retry_ms)).await;
-
-                                        retry_ms = std::cmp::min(retry_ms * 2, MAX_RETRY_MS);
-                                    }
-                                }
-                            };
-
-                            total_reconnects += 1;
-
-                            debug!(%total_reconnects, "client reconnected");
-
-                            client.store(Arc::new(new_client));
-                        }
-                    }
-                    .instrument(debug_span!(
-                        "ws client reconnect task",
-                        %url,
-                    ))
-                });
-
-                ClientInner::Ws {
-                    client,
-                    handle: Arc::new(handle),
-                }
+                ClientInner::Ws(client)
             }
             Some(("http" | "https", _)) => {
                 ClientInner::Http(HttpClientBuilder::default().build(url)?)
@@ -310,18 +244,7 @@ impl Client {
 #[derive(Debug, Clone)]
 enum ClientInner {
     Http(HttpClient),
-    Ws {
-        client: Arc<ArcSwap<jsonrpsee::core::client::Client>>,
-        handle: Arc<JoinHandle<()>>,
-    },
-}
-
-impl Drop for ClientInner {
-    fn drop(&mut self) {
-        if let ClientInner::Ws { handle, .. } = self {
-            handle.abort();
-        }
-    }
+    Ws(reconnecting_jsonrpc_ws_client::Client),
 }
 
 #[async_trait]
@@ -332,7 +255,7 @@ impl ClientT for ClientInner {
     {
         match self {
             ClientInner::Http(client) => client.notification(method, params).await,
-            ClientInner::Ws { client, .. } => client.load().notification(method, params).await,
+            ClientInner::Ws(client) => client.notification(method, params).await,
         }
     }
 
@@ -343,7 +266,7 @@ impl ClientT for ClientInner {
     {
         match self {
             ClientInner::Http(client) => client.request(method, params).await,
-            ClientInner::Ws { client, .. } => client.load().request(method, params).await,
+            ClientInner::Ws(client) => client.request(method, params).await,
         }
     }
 
@@ -356,7 +279,7 @@ impl ClientT for ClientInner {
     {
         match self {
             ClientInner::Http(client) => client.batch_request(batch).await,
-            ClientInner::Ws { client, .. } => client.load().batch_request(batch).await,
+            ClientInner::Ws(client) => client.batch_request(batch).await,
         }
     }
 }

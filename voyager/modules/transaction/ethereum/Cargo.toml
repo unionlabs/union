@@ -12,7 +12,7 @@ enumorph.workspace = true
 ethers             = { workspace = true, features = ["rustls", "ws"] }
 frunk.workspace    = true
 futures.workspace  = true
-jsonrpsee          = { version = "0.24.1", features = ["macros", "server", "tracing"] }
+jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros.workspace   = true
 queue-msg          = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }

@@ -66,7 +66,7 @@ impl queue_msg::Context for Context {
 #[derive(macros::Debug, Clone)]
 pub struct RpcClient {
     #[debug(skip)]
-    client: Arc<jsonrpsee::core::client::Client>,
+    client: reconnecting_jsonrpc_ws_client::Client,
     #[allow(dead_code)]
     socket: String,
     plugin_config: PluginConfig,
@@ -76,12 +76,15 @@ impl RpcClient {
     async fn new(path: String, config: Value) -> Result<Self, reth_ipc::client::IpcError> {
         let socket = Self::make_socket_path(path.clone(), config.clone());
 
-        let client = reth_ipc::client::IpcClientBuilder::default()
-            .build(&socket)
-            .await?;
+        let client = reconnecting_jsonrpc_ws_client::Client::new({
+            // NOTE: This needs to be leaked because the return type of the .build() method below captures the lifetime of the `name` parameter(?)
+            let socket: &'static str = Box::leak(socket.clone().into_boxed_str());
+            move || reth_ipc::client::IpcClientBuilder::default().build(socket)
+        })
+        .await?;
 
         Ok(Self {
-            client: Arc::new(client),
+            client,
             socket,
             plugin_config: PluginConfig {
                 config: config.clone(),
@@ -99,7 +102,7 @@ impl RpcClient {
         )
     }
 
-    pub fn client(&self) -> &jsonrpsee::core::client::Client {
+    pub fn client(&self) -> &impl jsonrpsee::core::client::ClientT {
         &self.client
     }
 
@@ -251,14 +254,14 @@ impl Context {
                         name,
                         kind,
                         interest_filter,
-                    } = PluginModuleClient::<Value, Value, Value>::info(rpc_client.client.as_ref())
+                    } = PluginModuleClient::<Value, Value, Value>::info(rpc_client.client())
                         .await?;
 
                     let kind = match kind {
                         Some(kind) => match kind {
                             PluginKind::Chain => {
                                 let chain_id = ChainModuleClient::<Value, Value, Value>::chain_id(
-                                    rpc_client.client.as_ref(),
+                                    rpc_client.client(),
                                 )
                                 .await?;
 
@@ -269,7 +272,7 @@ impl Context {
                                     client_type,
                                     ibc_interface,
                                 } = ClientModuleClient::<Value, Value, Value>::supported_interface(
-                                    rpc_client.client.as_ref(),
+                                    rpc_client.client(),
                                 )
                                 .await?;
 
@@ -280,7 +283,7 @@ impl Context {
                                     chain_id,
                                     client_type: _,
                                 } = ConsensusModuleClient::<Value, Value, Value>::consensus_info(
-                                    rpc_client.client.as_ref(),
+                                    rpc_client.client(),
                                 )
                                 .await?;
 
@@ -439,8 +442,7 @@ impl Context {
             .ok_or_else(|| PluginNotFound {
                 plugin_name: plugin_name.as_ref().into(),
             })?
-            .client
-            .as_ref())
+            .client())
     }
 
     pub fn plugin_client_raw(
@@ -518,8 +520,7 @@ impl Modules {
             .chain_modules
             .get(chain_id)
             .ok_or_else(|| ChainModuleNotFound(chain_id.clone().into_static()))?
-            .client
-            .as_ref())
+            .client())
     }
 
     pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
@@ -530,8 +531,7 @@ impl Modules {
             .consensus_modules
             .get(chain_id)
             .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_static()))?
-            .client
-            .as_ref())
+            .client())
     }
 
     pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
@@ -541,7 +541,7 @@ impl Modules {
     ) -> Result<&'a (impl ClientModuleClient<D, C, Cb> + 'a), ClientModuleNotFound> {
         match self.client_modules.get(client_type) {
             Some(ibc_interfaces) => match ibc_interfaces.get(ibc_interface) {
-                Some(client_module) => Ok(client_module.client.as_ref()),
+                Some(client_module) => Ok(client_module.client()),
                 None => Err(ClientModuleNotFound::IbcInterfaceNotFound {
                     client_type: client_type.clone().into_static(),
                     ibc_interface: ibc_interface.clone().into_static(),

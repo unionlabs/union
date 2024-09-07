@@ -4,17 +4,11 @@ name    = "voyager-plugin-packet-filter"
 version = "0.1.0"
 
 [dependencies]
-cometbft-rpc       = { workspace = true }
-dashmap            = { workspace = true }
 enumorph.workspace = true
 frunk.workspace    = true
 futures.workspace  = true
-jaq-interpret      = "1.5.0"
-jaq-syn            = "1.6.0"
-jsonrpsee          = { version = "0.24.1", features = ["macros", "server", "tracing"] }
+jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros.workspace   = true
-prost.workspace    = true
-protos.workspace   = true
 queue-msg          = { workspace = true }
 regex              = "1.10.6"
 serde              = { workspace = true, features = ["derive"] }

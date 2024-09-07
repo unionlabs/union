@@ -145,7 +145,7 @@ impl ServerInner {
             .entry_by_ref(&key)
             .or_try_insert_with(
                 async {
-                    debug!(%path, %at, "querying ibc state");
+                    debug!(%chain_id, %path, %at, "querying ibc state (not yet cached)");
 
                     let state = self
                         .modules()?
@@ -170,6 +170,7 @@ impl ServerInner {
                 key.chain_id = %chain_id,
                 key.path = %path,
                 key.height = %height,
+                raw_key = %format_args!("chain_id:{chain_id};path:{path};height:{height}"),
                 "cache hit"
             );
         }
@@ -512,7 +513,7 @@ impl Server {
         at: Height,
         path: P,
     ) -> Result<IbcState<P::Value, P>, jsonrpsee::core::client::Error> {
-        debug!(%path, %at, "querying ibc state");
+        debug!(%chain_id, %path, %at, "querying ibc state");
 
         let ibc_state = self
             .query_ibc_state(chain_id, at, path.clone().into())

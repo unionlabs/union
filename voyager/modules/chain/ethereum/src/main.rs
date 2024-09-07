@@ -888,25 +888,9 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         cb: ModuleCallback,
-        data: VecDeque<Data<ModuleData>>,
+        _data: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        Ok(match cb {
-            // ModuleCallback::CreateClient(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::UpdateClient(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::ConnectionOpenInit(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::ConnectionOpenTry(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::ConnectionOpenAck(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::ConnectionOpenConfirm(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::ChannelOpenInit(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::ChannelOpenTry(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::ChannelOpenAck(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::ChannelOpenConfirm(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::SendPacket(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::RecvPacket(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::WriteAcknowledgement(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::PacketAcknowledgement(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::PacketTimeout(aggregate) => do_callback(aggregate, data),
-        })
+        match cb {}
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]

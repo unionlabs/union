@@ -26,13 +26,14 @@ jaq-core                 = "1.5.1"
 jaq-interpret            = "1.5.0"
 jaq-std                  = "1.6.0"
 jaq-syn                  = "1.6.0"
-jsonrpsee                = { version = "0.24.2", features = ["server", "client", "async-client", "macros", "tracing"] }
+jsonrpsee                = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
 macros                   = { workspace = true }
 moka                     = { version = "0.12.8", features = ["future", "sync"] }
 num-bigint               = { workspace = true }
 prost                    = { workspace = true }
 protos                   = { workspace = true, features = ["proto_full", "client"] }
 queue-msg                = { workspace = true }
+reconnecting-jsonrpc-ws-client.workspace = true
 reth-ipc                 = { git = "https://github.com/paradigmxyz/reth", version = "1.0.3" }
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }

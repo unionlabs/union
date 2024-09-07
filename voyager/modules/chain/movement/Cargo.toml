@@ -14,7 +14,7 @@ frunk.workspace           = true
 futures.workspace         = true
 hex-literal               = "0.4.1"
 hex.workspace             = true
-jsonrpsee                 = { version = "0.24.1", features = ["macros", "server", "tracing"] }
+jsonrpsee                 = { workspace = true, features = ["macros", "server", "tracing"] }
 macros.workspace          = true
 move-bindgen              = { workspace = true }
 move-core-types.workspace = true
