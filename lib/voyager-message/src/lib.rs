@@ -8,11 +8,15 @@ use macros::apply;
 use queue_msg::{aggregation::SubsetOf, queue_msg, QueueError, QueueMessage};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{info, trace};
-use unionlabs::{never::Never, traits::Member};
+use tracing::{error, info, trace};
+use unionlabs::{never::Never, traits::Member, ErrorReporter};
 
 use crate::{
-    call::Call, callback::Callback, context::Context, data::Data, plugin::PluginModuleServer,
+    call::Call,
+    callback::Callback,
+    context::{Context, INVALID_CONFIG_EXIT_CODE, STARTUP_ERROR_EXIT_CODE},
+    data::Data,
+    plugin::PluginModuleServer,
 };
 
 pub mod call;
@@ -357,11 +361,21 @@ pub async fn run_module_server<
             voyager_socket,
             config,
         } => {
-            let config = serde_json::from_str(&config).expect("unable to parse config");
+            let config = match serde_json::from_str(&config) {
+                Ok(ok) => ok,
+                Err(err) => {
+                    error!("invalid config: {}", ErrorReporter(err));
+                    std::process::exit(INVALID_CONFIG_EXIT_CODE as i32);
+                }
+            };
 
-            let module = new_fn(config, voyager_socket)
-                .await
-                .expect("error instantiating client module");
+            let module = match new_fn(config, voyager_socket).await {
+                Ok(ok) => ok,
+                Err(err) => {
+                    error!("startup error: {err:?}");
+                    std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
+                }
+            };
 
             let server = reth_ipc::server::Builder::default().build(socket);
 
@@ -462,3 +476,5 @@ mod tests {
         }
     }
 }
+
+// pub enum PluginTermination {}

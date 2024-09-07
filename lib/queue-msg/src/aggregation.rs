@@ -151,18 +151,12 @@ impl<H, Tail: HListAsTuple> HListAsTuple for HCons<H, Tail> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::VecDeque;
+
     use frunk::HList;
     use queue_msg_macro::SubsetOf;
-    use tracing_subscriber::EnvFilter;
 
-    use super::*;
-    use crate::{
-        call,
-        optimize::{NoopPass, Pure},
-        run_to_completion,
-        test_utils::{queue_msg, DataA, DataB, DataC, FetchA, FetchB, FetchC, SimpleMessage},
-        InMemoryQueue,
-    };
+    use crate::{aggregation::HListTryFromIterator, test_utils::queue_msg};
 
     #[test]
     fn hlist_try_from_iter() {

@@ -193,7 +193,7 @@ impl Module {
         PLUGIN_NAME.to_owned()
     }
 
-    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+    pub async fn new(config: Config, _voyager_socket: String) -> Result<Self, BoxDynError> {
         // let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
 
         Ok(Self {
@@ -204,69 +204,75 @@ impl Module {
     }
 
     /// Construct the filter that will run on every event. If this returns true, then this plugin will receive the event in it's optimization queue and drop it.
+    /// To accomplish this, the filter expresses "inversed interest" - since the regex filters filter *in* what we want to keep, this filter must return false for all messages that match the regex filters, the regex filters and true for everything else.
     pub fn make_filter(&self) -> String {
         // let filter = Term::<&str>::IfThenElse(vec![], Some(Box::new(Term::Call("false", vec![]))));
 
         // Filter::from(&filter)
 
-        let packet_filter = self
-            .packet_event_filters
-            .iter()
-            .map(|x| x.to_jaq())
+        // if no filters are provided, then none all events for that specific IBC message type will be filtered out (i.e we express interest here). to do this, we return `false`, since in the context that this will be called in expresses whether or not the event matched one of the "filter in" regex filters.
+        let packet_filter = ["false".to_owned()]
+            .into_iter()
+            .chain(self.packet_event_filters.iter().map(|x| x.to_jaq()))
             .collect::<Vec<_>>()
             .join(" or ");
-        let channel_filter = self
-            .channel_event_filters
-            .iter()
-            .map(|x| x.to_jaq())
+        let channel_filter = ["false".to_owned()]
+            .into_iter()
+            .chain(self.channel_event_filters.iter().map(|x| x.to_jaq()))
             .collect::<Vec<_>>()
             .join(" or ");
-        let connection_filter = self
-            .connection_event_filters
-            .iter()
-            .map(|x| x.to_jaq())
+        let connection_filter = ["false".to_owned()]
+            .into_iter()
+            .chain(self.connection_event_filters.iter().map(|x| x.to_jaq()))
             .collect::<Vec<_>>()
             .join(" or ");
 
         format!(
             r#"
-    if ."@type" == "data" then
-        ."@value" as $data |
+if ."@type" == "data" then
+    ."@value" as $data |
 
-        if $data."@type" == "ibc_event" then
-            $data."@value".chain_id as $chain_id |
-            $data."@value".event."@type" as $event_type |
-            $data."@value".event."@value" as $event |
+    if $data."@type" == "ibc_event" then
+        $data."@value".chain_id as $chain_id |
+        $data."@value".event."@type" as $event_type |
+        $data."@value".event."@value" as $event |
 
-            (if $event_type == "send_packet" then
-                ({packet_filter})
-            elif $event_type == "recv_packet" then
-                ({packet_filter})
-            elif $event_type == "write_acknowledgement" then
-                ({packet_filter})
+        (if $event_type == "send_packet" then
+            ({packet_filter})
+        elif $event_type == "recv_packet" then
+            ({packet_filter})
+        elif $event_type == "write_acknowledgement" then
+            ({packet_filter})
 
-            elif $event_type == "channel_open_init" then
-                ({channel_filter})
-            elif $event_type == "channel_open_try" then
-                ({channel_filter})
-            elif $event_type == "channel_open_ack" then
-                ({channel_filter})
+        elif $event_type == "channel_open_init" then
+            ({channel_filter})
+        elif $event_type == "channel_open_try" then
+            ({channel_filter})
+        elif $event_type == "channel_open_ack" then
+            ({channel_filter})
 
-            elif $event_type == "connection_open_init" then
-                ({connection_filter})
-            elif $event_type == "connection_open_try" then
-                ({connection_filter})
-            elif $event_type == "connection_open_ack" then
-                ({connection_filter})
-            else
-                true
-            end) | not
+        elif $event_type == "connection_open_init" then
+            ({connection_filter})
+        elif $event_type == "connection_open_try" then
+            ({connection_filter})
+        elif $event_type == "connection_open_ack" then
+            ({connection_filter})
         else
-            false
-        end
+            true
+        end)
+        # the bool returned from the above expression denotes whether or not
+        # an IBC event matched the inclusion filters - invert the result to
+        # only express interest in messages that didn't match such that they
+        # can be dropped in our optimization pass
+        | not
     else
+        # don't filter out data messages that aren't IBC events
         false
     end
+else
+    # don't filter out non-data messages
+    false
+end
     "#
         )
     }

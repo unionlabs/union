@@ -469,10 +469,7 @@ impl<T: QueueMessage> Op<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        normalize::{flatten_seq, normalize},
-        optimize::NoopPass,
-    };
+    use crate::normalize::{flatten_seq, normalize};
 
     enum UnitMessage {}
 
@@ -503,31 +500,31 @@ mod tests {
     #[queue_msg]
     pub struct SimpleCallback {}
 
-    macro_rules! vec_deque {
-        ($($tt:tt)*) => {
-            ::std::collections::VecDeque::from(vec![$($tt)*])
-        };
-    }
+    // macro_rules! vec_deque {
+    //     ($($tt:tt)*) => {
+    //         ::std::collections::VecDeque::from(vec![$($tt)*])
+    //     };
+    // }
 
-    async fn assert_steps<'a, T: QueueMessage, Q: Queue<T>, O: PurePass<T>>(
-        engine: &Engine<'a, T, Q, O>,
-        q: &InMemoryQueue<T>,
-        steps: impl IntoIterator<Item = VecDeque<Op<T>>>,
-    ) {
-        for (i, step) in steps.into_iter().enumerate() {
-            engine.step().await.unwrap();
-            assert_eq!(
-                q.ready
-                    .lock()
-                    .unwrap()
-                    .values()
-                    .map(|item| item.msg.clone())
-                    .collect::<VecDeque<_>>(),
-                step,
-                "step {i} incorrect"
-            );
-        }
-    }
+    // async fn assert_steps<'a, T: QueueMessage, Q: Queue<T>, O: PurePass<T>>(
+    //     engine: &Engine<'a, T, Q, O>,
+    //     q: &InMemoryQueue<T>,
+    //     steps: impl IntoIterator<Item = VecDeque<Op<T>>>,
+    // ) {
+    //     for (i, step) in steps.into_iter().enumerate() {
+    //         engine.step().await.unwrap();
+    //         assert_eq!(
+    //             q.ready
+    //                 .lock()
+    //                 .unwrap()
+    //                 .values()
+    //                 .map(|item| item.msg.clone())
+    //                 .collect::<VecDeque<_>>(),
+    //             step,
+    //             "step {i} incorrect"
+    //         );
+    //     }
+    // }
 
     #[test]
     fn flatten() {

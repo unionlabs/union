@@ -109,18 +109,15 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
-aptos-rpc                  = { path = "lib/aptos-rpc", default-features = false }
 aptos-verifier             = { path = "lib/aptos-verifier", default-features = false }
 arbitrum-verifier          = { path = "lib/arbitrum-verifier", default-features = false }
 beacon-api                 = { path = "lib/beacon-api", default-features = false }
-block-message              = { path = "lib/block-message", default-features = false }
 chain-utils                = { path = "lib/chain-utils", default-features = false }
 cometbft-rpc               = { path = "lib/cometbft-rpc", default-features = false }
 cometbls-groth16-verifier  = { path = "lib/cometbls-groth16-verifier", default-features = false }
 contracts                  = { path = "generated/rust/contracts", default-features = false }
 ethereum-light-client      = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-verifier          = { path = "lib/ethereum-verifier", default-features = false }
-evm-in-cosmos-light-client = { path = "light-clients/evm-in-cosmos-light-client", default-features = false }
 gnark-key-parser           = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                 = { path = "lib/gnark-mimc", default-features = false }
 ibc-vm-rs                  = { path = "lib/ibc-vm-rs", default-features = false }
@@ -136,7 +133,6 @@ poseidon-rs                = { path = "lib/poseidon-rs", default-features = fals
 protos                     = { path = "generated/rust/protos", default-features = false }
 queue-msg                  = { path = "lib/queue-msg", default-features = false }
 queue-msg-macro            = { path = "lib/queue-msg-macro", default-features = false }
-relay-message              = { path = "lib/relay-message", default-features = false }
 scroll-api                 = { path = "lib/scroll-api", default-features = false }
 scroll-codec               = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc                 = { path = "lib/scroll-rpc", default-features = false }
@@ -164,17 +160,11 @@ ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branc
 ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
 
-near-workspaces = { git = "https://github.com/unionlabs/near-workspaces-rs-union", branch = "near-ibc", default-features = false }
-
 # https://github.com/aptos-labs/aptos-core/pull/12636
 aptos-crypto      = { git = "https://github.com/unionlabs/aptos-core" }
 aptos-rest-client = { git = "https://github.com/unionlabs/aptos-core" }
 aptos-types       = { git = "https://github.com/unionlabs/aptos-core" }
 move-core-types   = { git = "https://github.com/unionlabs/aptos-core" }
-# aptos-rest-client = { path = "/home/ben/projects/aptos-labs/aptos-core/crates/aptos-rest-client" }
-
-
-arbitrary                = { version = "1.3.0", default-features = false }
 axum                     = { version = "0.6.20", default-features = false }
 base64                   = { version = "0.21", default-features = false }
 bip32                    = { version = "0.5.0", default-features = false }

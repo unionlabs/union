@@ -27,6 +27,9 @@ use crate::{
 
 pub const PLUGIN_NAME_CACHE_FILE: &str = "/tmp/voyager-plugin-name-cache.json";
 
+pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
+pub const STARTUP_ERROR_EXIT_CODE: u8 = 14;
+
 #[derive(Debug)]
 pub struct Context {
     pub rpc_server: Server,
@@ -572,7 +575,14 @@ async fn run_plugin_client(
                     // tokio::time::sleep(std::time::Duration::from_nanos(100)).await;
 
                     if let Ok(Some(status)) = child.try_wait() {
-                        error!(%id, %status, %plugin_socket, "child exited after startup");
+                        if status
+                            .code()
+                            .is_some_and(|c| c == INVALID_CONFIG_EXIT_CODE as i32)
+                        {
+                            error!(%id, %status, %plugin_socket, "invalid config for plugin");
+                        } else {
+                            error!(%id, %status, %plugin_socket, "child exited after startup");
+                        }
 
                         cancellation_token.cancel();
 

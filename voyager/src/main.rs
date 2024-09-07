@@ -25,7 +25,7 @@ use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
 use tracing::debug;
 use tracing_subscriber::EnvFilter;
-use unionlabs::{ethereum::ibc_commitment_key, ics24, ErrorReporter, QueryHeight};
+use unionlabs::{ethereum::ibc_commitment_key, ics24, ErrorReporter};
 use voyager_message::{
     call::FetchBlock,
     context::{Context, PluginConfig, PLUGIN_NAME_CACHE_FILE},
@@ -179,18 +179,22 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
         Command::Query { on, height, path } => {
             let voyager = Voyager::new(voyager_config.clone()).await?;
 
-            let chain = voyager.context.chain_module::<Value, Value, Value>(&on)?;
+            let height = voyager.context.rpc_server.query_height(&on, height).await?;
 
-            let height = match height {
-                QueryHeight::Latest => chain.query_latest_height().await?,
-                QueryHeight::Specific(height) => height,
-            };
-
-            let state = chain.query_ibc_state(height, path.clone()).await?;
+            let state = voyager
+                .context
+                .rpc_server
+                .query_ibc_state(&on, height, path.clone())
+                .await?
+                .state;
 
             let state = match &path {
                 ics24::Path::ClientState(path) => {
-                    let client_info = chain.client_info(path.client_id.clone()).await?;
+                    let client_info = voyager
+                        .context
+                        .rpc_server
+                        .client_info(&on, path.client_id.clone())
+                        .await?;
 
                     voyager
                         .context
@@ -203,7 +207,11 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                         .await?
                 }
                 ics24::Path::ClientConsensusState(path) => {
-                    let client_info = chain.client_info(path.client_id.clone()).await?;
+                    let client_info = voyager
+                        .context
+                        .rpc_server
+                        .client_info(&on, path.client_id.clone())
+                        .await?;
 
                     voyager
                         .context

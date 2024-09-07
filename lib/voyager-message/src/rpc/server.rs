@@ -97,19 +97,13 @@ impl Server {
     pub fn modules(&self) -> RpcResult<&Modules> {
         self.inner.modules()
     }
-}
-
-impl ServerInner {
-    /// Returns the contained modules, if tey have been loaded.
-    fn modules(&self) -> RpcResult<&Modules> {
-        self.modules
-            .get()
-            .map(|x| &**x)
-            .ok_or_else(|| ErrorObject::owned(-2, "server has not started", None::<()>))
-    }
 
     #[instrument(skip_all, fields(%height, %chain_id))]
-    async fn query_height(&self, chain_id: &ChainId<'_>, height: QueryHeight) -> RpcResult<Height> {
+    pub async fn query_height(
+        &self,
+        chain_id: &ChainId<'_>,
+        height: QueryHeight,
+    ) -> RpcResult<Height> {
         match height {
             QueryHeight::Latest => {
                 let latest_height = self
@@ -126,6 +120,16 @@ impl ServerInner {
             }
             QueryHeight::Specific(height) => Ok(height),
         }
+    }
+}
+
+impl ServerInner {
+    /// Returns the contained modules, if tey have been loaded.
+    fn modules(&self) -> RpcResult<&Modules> {
+        self.modules
+            .get()
+            .map(|x| &**x)
+            .ok_or_else(|| ErrorObject::owned(-2, "server has not started", None::<()>))
     }
 
     async fn query_ibc_state_cached<'a>(
@@ -264,7 +268,7 @@ impl Server {
     ) -> RpcResult<ClientStateMeta> {
         debug!("fetching client meta");
 
-        let height = self.inner.query_height(&chain_id, at).await?;
+        let height = self.query_height(&chain_id, at).await?;
 
         let client_info = self
             .inner
@@ -401,7 +405,7 @@ impl Server {
             .consensus_module::<Value, Value, Value>(&chain_id)
             .map_err(fatal_error)?;
 
-        let height = self.inner.query_height(&chain_id, height).await?;
+        let height = self.query_height(&chain_id, height).await?;
 
         let state = chain_module
             .self_consensus_state(height)
@@ -598,7 +602,7 @@ impl VoyagerRpcServer for Server {
         height: QueryHeight,
         path: Path,
     ) -> RpcResult<IbcState> {
-        let height = self.inner.query_height(&chain_id, height).await?;
+        let height = self.query_height(&chain_id, height).await?;
 
         self.query_ibc_state(&chain_id, height, path).await
     }
@@ -609,7 +613,7 @@ impl VoyagerRpcServer for Server {
         height: QueryHeight,
         path: Path,
     ) -> RpcResult<IbcProof> {
-        let height = self.inner.query_height(&chain_id, height).await?;
+        let height = self.query_height(&chain_id, height).await?;
 
         self.query_ibc_proof(&chain_id, height, path).await
     }
@@ -619,7 +623,7 @@ impl VoyagerRpcServer for Server {
         chain_id: ChainId<'static>,
         height: QueryHeight,
     ) -> RpcResult<SelfClientState> {
-        let height = self.inner.query_height(&chain_id, height).await?;
+        let height = self.query_height(&chain_id, height).await?;
 
         self.self_client_state(chain_id, height).await
     }
