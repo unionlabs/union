@@ -60,7 +60,7 @@
             done
           '';
         };
-        voyager-dev = mkCi false voyager-dev.packages.voyager;
+        voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
       } // voyager-modules.packages;
       checks = voyager.checks // voyager-modules.checks;
     };
