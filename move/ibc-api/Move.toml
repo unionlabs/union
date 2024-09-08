@@ -1,13 +1,13 @@
 [package]
 authors = []
-name    = "ibc"
+name    = "ibc-api"
 version = "1.0.0"
 
 [addresses]
-IBC = "_" # This will be storage of our IBCStore
+ibc_api = "_"
 
 [dev-addresses]
-IBC = "0x11111"
+ibc_api = "0x9991"
 
 [dependencies.AptosFramework]
 git    = "https://github.com/aeryz/aptos-core.git"
