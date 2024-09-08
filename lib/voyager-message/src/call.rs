@@ -705,69 +705,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 })))
             }
 
-            Call::MakeMsgRecvPacket(MakeMsgRecvPacket {
-                origin_chain_id,
-                origin_chain_proof_height,
-                target_chain_id,
-                send_packet_event,
-            }) => {
-                let proof_commitment = ctx
-                    .rpc_server
-                    .query_ibc_proof(
-                        &origin_chain_id,
-                        origin_chain_proof_height,
-                        CommitmentPath {
-                            port_id: send_packet_event.packet.source_channel.port_id.clone(),
-                            channel_id: send_packet_event.packet.source_channel.channel_id.clone(),
-                            sequence: send_packet_event.packet.sequence,
-                        }
-                        .into(),
-                    )
-                    .await
-                    .map_err(error_object_to_queue_error)?
-                    .proof;
-
-                let client_info = ctx
-                    .rpc_server
-                    .client_info(
-                        &target_chain_id,
-                        send_packet_event
-                            .packet
-                            .destination_channel
-                            .connection
-                            .client_id,
-                    )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
-
-                let encoded_proof_commitment = ctx
-                    .rpc_server
-                    .encode_proof(
-                        &client_info.client_type,
-                        &client_info.ibc_interface,
-                        proof_commitment,
-                    )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
-
-                Ok(queue_msg::data(IbcMessage::from(MsgRecvPacket {
-                    packet: channel::packet::Packet {
-                        sequence: send_packet_event.packet.sequence,
-                        source_port: send_packet_event.packet.source_channel.port_id,
-                        source_channel: send_packet_event.packet.source_channel.channel_id,
-                        destination_port: send_packet_event.packet.destination_channel.port_id,
-                        destination_channel: send_packet_event
-                            .packet
-                            .destination_channel
-                            .channel_id,
-                        data: send_packet_event.packet_data,
-                        timeout_height: send_packet_event.packet.timeout_height,
-                        timeout_timestamp: send_packet_event.packet.timeout_timestamp,
-                    },
-                    proof_commitment: encoded_proof_commitment,
-                    proof_height: origin_chain_proof_height,
-                })))
-            }
+            Call::MakeMsgRecvPacket(msg) => make_msg_recv_packet(ctx, msg).await,
 
             Call::MakeMsgAcknowledgement(MakeMsgAcknowledgement {
                 origin_chain_id,
@@ -1037,6 +975,86 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 .map_err(json_rpc_error_to_queue_error)?),
         }
     }
+}
+
+#[instrument(
+    skip_all,
+    fields(
+        %origin_chain_id,
+        %origin_chain_proof_height,
+        %target_chain_id,
+        %send_packet_event.packet.sequence,
+        %send_packet_event.packet.source_channel.port_id,
+        %send_packet_event.packet.source_channel.channel_id,
+        %send_packet_event.packet.destination_channel.port_id,
+        %send_packet_event.packet.destination_channel.channel_id,
+        %send_packet_event.packet.channel_ordering,
+        %send_packet_event.packet.timeout_height,
+        %send_packet_event.packet.timeout_timestamp,
+    )
+)]
+async fn make_msg_recv_packet<D: Member, C: Member, Cb: Member>(
+    ctx: &Context,
+    MakeMsgRecvPacket {
+        origin_chain_id,
+        origin_chain_proof_height,
+        target_chain_id,
+        send_packet_event,
+    }: MakeMsgRecvPacket,
+) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
+    let proof_commitment = ctx
+        .rpc_server
+        .query_ibc_proof(
+            &origin_chain_id,
+            origin_chain_proof_height,
+            CommitmentPath {
+                port_id: send_packet_event.packet.source_channel.port_id.clone(),
+                channel_id: send_packet_event.packet.source_channel.channel_id.clone(),
+                sequence: send_packet_event.packet.sequence,
+            }
+            .into(),
+        )
+        .await
+        .map_err(error_object_to_queue_error)?
+        .proof;
+
+    let client_info = ctx
+        .rpc_server
+        .client_info(
+            &target_chain_id,
+            send_packet_event
+                .packet
+                .destination_channel
+                .connection
+                .client_id,
+        )
+        .await
+        .map_err(error_object_to_queue_error)?;
+
+    let encoded_proof_commitment = ctx
+        .rpc_server
+        .encode_proof(
+            &client_info.client_type,
+            &client_info.ibc_interface,
+            proof_commitment,
+        )
+        .await
+        .map_err(error_object_to_queue_error)?;
+
+    Ok(queue_msg::data(IbcMessage::from(MsgRecvPacket {
+        packet: channel::packet::Packet {
+            sequence: send_packet_event.packet.sequence,
+            source_port: send_packet_event.packet.source_channel.port_id,
+            source_channel: send_packet_event.packet.source_channel.channel_id,
+            destination_port: send_packet_event.packet.destination_channel.port_id,
+            destination_channel: send_packet_event.packet.destination_channel.channel_id,
+            data: send_packet_event.packet_data,
+            timeout_height: send_packet_event.packet.timeout_height,
+            timeout_timestamp: send_packet_event.packet.timeout_timestamp,
+        },
+        proof_commitment: encoded_proof_commitment,
+        proof_height: origin_chain_proof_height,
+    })))
 }
 
 #[instrument(

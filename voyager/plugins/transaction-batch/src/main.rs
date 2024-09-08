@@ -437,7 +437,9 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
                 events.sort_by_key(|e| e.1.provable_height);
                 overdue_events.sort_by_key(|e| e.1.provable_height);
 
-                if overdue_events.len() + events.len() < client_config.min_batch_size {
+                if !overdue_events.is_empty()
+                    && overdue_events.len() + events.len() < client_config.min_batch_size
+                {
                     warn!(
                         "found {} overdue events and {} non-overdue events, but the min batch \
                         size for this client ({client_id}) is {}",
