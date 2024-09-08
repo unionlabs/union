@@ -18,7 +18,7 @@ use queue_msg::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{debug, error, instrument, trace, warn};
+use tracing::{debug, debug_span, error, instrument, trace, warn, Instrument};
 use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForHeight},
@@ -53,7 +53,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub client: Arc<jsonrpsee::ws_client::WsClient>,
+    pub client: reconnecting_jsonrpc_ws_client::Client,
     pub chain_id: ChainId<'static>,
     pub client_configs: ClientConfigs,
 }
@@ -114,15 +114,25 @@ impl ClientConfigs {
     }
 }
 
+pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+
 impl Module {
     fn plugin_name(&self) -> String {
-        pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
-
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
     pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
-        let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
+        let client = reconnecting_jsonrpc_ws_client::Client::new({
+            let voyager_socket: &'static str = voyager_socket.leak();
+            // `self` doesn't exist yet, so use this is copied from `Self::plugin_name`
+            let plugin_name = format!("{PLUGIN_NAME}/{}", config.chain_id);
+            move || {
+                IpcClientBuilder::default()
+                    .build(voyager_socket)
+                    .instrument(debug_span!("voyager_ipc_client", plugin = %plugin_name))
+            }
+        })
+        .await?;
 
         // // TODO: Make this a better error
         // assert!(config.min_batch_size <= config.max_batch_size);

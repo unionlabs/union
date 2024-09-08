@@ -13751,6 +13751,7 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "queue-msg",
+ "reconnecting-jsonrpc-ws-client",
  "serde",
  "serde_json",
  "thiserror",

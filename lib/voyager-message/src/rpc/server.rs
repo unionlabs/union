@@ -124,7 +124,7 @@ impl Server {
 }
 
 impl ServerInner {
-    /// Returns the contained modules, if tey have been loaded.
+    /// Returns the contained modules, if they have been loaded.
     fn modules(&self) -> RpcResult<&Modules> {
         self.modules
             .get()

@@ -20,6 +20,8 @@ use crate::{
     FATAL_JSONRPC_ERROR_CODE,
 };
 
+pub mod server;
+
 #[rpc(
     client,
     server,
@@ -192,51 +194,6 @@ pub trait VoyagerRpcClientExt: VoyagerRpcClient {
 }
 
 impl<T> VoyagerRpcClientExt for T where T: VoyagerRpcClient {}
-
-// State(FetchState),
-// RawProof(FetchRawProof),
-
-// LatestHeight(FetchLatestHeight),
-
-// ClientInfo(FetchClientInfo),
-
-// UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState),
-
-// SelfClientState(FetchSelfClientState),
-// SelfConsensusState(FetchSelfConsensusState),
-
-// DecodeClientStateMeta(DecodeClientStateMeta),
-// DecodeConsensusStateMeta(DecodeConsensusStateMeta),
-
-// EncodeClientState(EncodeClientState),
-// EncodeConsensusState(EncodeConsensusState),
-// EncodeHeader(EncodeHeader),
-
-// EncodeProof(EncodeProof),
-
-// UpdateHeaders(FetchUpdateHeaders),
-
-// MakeMsgCreateClient(MakeMsgCreateClient),
-
-// MakeMsgConnectionOpenTry(MakeMsgConnectionOpenTry),
-// MakeMsgConnectionOpenAck(MakeMsgConnectionOpenAck),
-// MakeMsgConnectionOpenConfirm(MakeMsgConnectionOpenConfirm),
-
-// MakeMsgChannelOpenTry(MakeMsgChannelOpenTry),
-// MakeMsgChannelOpenAck(MakeMsgChannelOpenAck),
-// MakeMsgChannelOpenConfirm(MakeMsgChannelOpenConfirm),
-
-// MakeMsgAcknowledgement(MakeMsgAcknowledgement),
-// MakeMsgRecvPacket(MakeMsgRecvPacket),
-
-// Height(WaitForHeight),
-// HeightRelative(WaitForHeightRelative),
-// Timestamp(WaitForTimestamp),
-// TrustedHeight(WaitForTrustedHeight),
-
-// Plugin(PluginMessage<C>),
-
-pub mod server;
 
 pub fn json_rpc_error_to_rpc_error(value: jsonrpsee::core::client::Error) -> ErrorObjectOwned {
     match value {

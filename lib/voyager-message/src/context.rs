@@ -13,7 +13,7 @@ use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
 use tokio::task::{JoinHandle, JoinSet};
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, debug_span, error, info, instrument, trace_span, Instrument};
 use unionlabs::{ethereum::keccak256, traits::Member, ErrorReporter};
 
 use crate::{
@@ -79,7 +79,11 @@ impl RpcClient {
         let client = reconnecting_jsonrpc_ws_client::Client::new({
             // NOTE: This needs to be leaked because the return type of the .build() method below captures the lifetime of the `name` parameter(?)
             let socket: &'static str = Box::leak(socket.clone().into_boxed_str());
-            move || reth_ipc::client::IpcClientBuilder::default().build(socket)
+            move || {
+                reth_ipc::client::IpcClientBuilder::default()
+                    .build(socket)
+                    .instrument(debug_span!("plugin_ipc_client", %socket))
+            }
         })
         .await?;
 

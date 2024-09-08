@@ -16,7 +16,7 @@ use jsonrpsee::{
     rpc_params,
     ws_client::{PingConfig, WsClientBuilder},
 };
-use tracing::{debug, instrument};
+use tracing::{debug, debug_span, instrument, Instrument};
 use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
     hash::H256,
@@ -48,6 +48,7 @@ impl Client {
                     WsClientBuilder::default()
                         .enable_ws_ping(PingConfig::new())
                         .build(url.clone())
+                        .instrument(debug_span!("cometbft_rpc_client", %url))
                 })
                 .await?;
 
