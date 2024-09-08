@@ -14,8 +14,11 @@ use jsonrpsee::core::{async_trait, RpcResult};
 use queue_msg::{call, noop, optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
-use tracing::instrument;
-use unionlabs::hash::H256;
+use tracing::{instrument, warn};
+use unionlabs::{
+    hash::{H160, H256},
+    ibc::core::connection::msg_connection_open_init::MsgConnectionOpenInit,
+};
 use voyager_message::{
     call::Call,
     data::{Data, IbcMessage, MsgCreateClientData, WithChainId},
@@ -305,6 +308,86 @@ fn process_msgs(
             IbcMessage::UpdateClient(data) => (
                 msg,
                 client.update_client((data.client_id.to_string(), data.client_message)),
+            ),
+            IbcMessage::ConnectionOpenInit(data) => (
+                msg,
+                client.connection_open_init((
+                    data.client_id.to_string(),
+                    data.version.identifier,
+                    data.version
+                        .features
+                        .into_iter()
+                        .map(|f| f.to_string())
+                        .collect::<Vec<String>>(),
+                    data.counterparty.client_id.to_string(),
+                    if let Some(conn) = data.counterparty.connection_id {
+                        conn.to_string()
+                    } else {
+                        String::new()
+                    },
+                    data.counterparty.prefix.key_prefix,
+                    data.delay_period,
+                )),
+            ),
+
+            IbcMessage::ConnectionOpenTry(data) => (
+                msg,
+                client.connection_open_try((
+                    data.counterparty.client_id.to_string(),
+                    if let Some(conn) = data.counterparty.connection_id {
+                        conn.to_string()
+                    } else {
+                        String::new()
+                    },
+                    data.counterparty.prefix.key_prefix,
+                    data.delay_period,
+                    data.client_id.to_string(),
+                    data.client_state,
+                    data.counterparty_versions
+                        .iter()
+                        .map(|v| v.identifier.clone())
+                        .collect::<Vec<String>>(),
+                    data.counterparty_versions
+                        .iter()
+                        .map(|v| {
+                            v.features
+                                .iter()
+                                .map(|f| f.to_string())
+                                .collect::<Vec<String>>()
+                        })
+                        .collect::<Vec<Vec<String>>>(),
+                    data.proof_init,
+                    data.proof_client,
+                    data.proof_height.revision_number,
+                    data.proof_height.revision_height,
+                )),
+            ),
+            IbcMessage::ConnectionOpenAck(data) => (
+                msg,
+                client.connection_open_ack((
+                    data.connection_id.to_string(),
+                    data.client_state,
+                    data.version.identifier,
+                    data.version
+                        .features
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<String>>(),
+                    data.proof_try,
+                    data.proof_client,
+                    data.counterparty_connection_id.to_string(),
+                    data.proof_height.revision_number,
+                    data.proof_height.revision_height,
+                )),
+            ),
+            IbcMessage::ConnectionOpenConfirm(data) => (
+                msg,
+                client.connection_open_confirm((
+                    data.connection_id.to_string(),
+                    data.proof_ack,
+                    data.proof_height.revision_number,
+                    data.proof_height.revision_height,
+                )),
             ),
             _ => todo!(),
         })
