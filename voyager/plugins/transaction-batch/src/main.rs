@@ -1,7 +1,6 @@
 use std::{
     collections::{BTreeMap, HashMap, VecDeque},
     convert,
-    sync::Arc,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 

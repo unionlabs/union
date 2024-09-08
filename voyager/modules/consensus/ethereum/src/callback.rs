@@ -7,7 +7,7 @@ use frunk::{hlist_pat, HList};
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use queue_msg::{
     aggregation::{DoCallback, SubsetOf},
-    call, data, promise, queue_msg, seq, void, Op,
+    call, data, promise, queue_msg, seq, Op,
 };
 use tracing::debug;
 use unionlabs::{

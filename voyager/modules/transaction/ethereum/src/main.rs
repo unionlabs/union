@@ -22,7 +22,7 @@ use ethers::{
         nonce_manager::NonceManagerError, signer::SignerMiddlewareError, NonceManagerMiddleware,
         SignerMiddleware,
     },
-    providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
+    providers::{Middleware, Provider, ProviderError, Ws},
     signers::{LocalWallet, Signer},
     types::TransactionReceipt,
     utils::secret_key_to_address,
@@ -44,7 +44,6 @@ use voyager_message::{
     data::{log_msg, Data, IbcMessage, MsgCreateClientData, WithChainId},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
-    reth_ipc::client::IpcClientBuilder,
     run_module_server, ChainId, VoyagerMessage,
 };
 
@@ -106,7 +105,7 @@ impl Module {
         format!("{PLUGIN_NAME}/{}", self.chain_id)
     }
 
-    pub async fn new(config: Config, voyager_socket: String) -> Result<Self, BoxDynError> {
+    pub async fn new(config: Config, _voyager_socket: String) -> Result<Self, BoxDynError> {
         // let client = Arc::new(IpcClientBuilder::default().build(&voyager_socket).await?);
 
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);

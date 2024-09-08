@@ -1,6 +1,6 @@
 use core::{fmt::Display, num::NonZeroU64, str::FromStr};
 
-use macros::ibc_path;
+use macros::{ibc_path, model};
 use serde::{Deserialize, Serialize};
 use serde_utils::Hex;
 
@@ -20,28 +20,8 @@ pub trait IbcPath: Member + Display + TryFrom<Path, Error = Path> + Into<Path> {
     type Value: Member;
 }
 
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Serialize,
-    Deserialize,
-    Hash,
-    derive_more::Display,
-    clap::Subcommand,
-    enumorph::Enumorph,
-)]
-#[serde(
-    bound(
-        serialize = "ClientId: Serialize",
-        deserialize = "ClientId: for<'d> Deserialize<'d>",
-    ),
-    tag = "@type",
-    content = "@value",
-    rename_all = "snake_case",
-    deny_unknown_fields
-)]
+#[model]
+#[derive(Hash, derive_more::Display, clap::Subcommand, enumorph::Enumorph)]
 pub enum Path {
     #[display(fmt = "{_0}")]
     ClientState(ClientStatePath),
@@ -88,121 +68,88 @@ impl FromStr for Path {
     }
 }
 
-#[ibc_path("clients/{client_id}/clientState")]
+/// The raw client state bytes as encoded by the light client.
+#[ibc_path("clients/{client_id}/clientState", Hex<Vec<u8>>)]
 pub struct ClientStatePath {
     pub client_id: ClientId,
 }
 
-impl IbcPath for ClientStatePath {
-    type Value = Hex<Vec<u8>>;
-}
-
-#[ibc_path("clients/{client_id}/consensusStates/{height}")]
+/// The raw consensus state bytes as encoded by the light client.
+#[ibc_path("clients/{client_id}/consensusStates/{height}", Hex<Vec<u8>>)]
 pub struct ClientConsensusStatePath {
     pub client_id: ClientId,
     pub height: Height,
 }
 
-impl IbcPath for ClientConsensusStatePath {
-    type Value = Hex<Vec<u8>>;
-}
-
-#[ibc_path("connections/{connection_id}")]
+// REVIEW: Make this an `Option`?
+#[ibc_path("connections/{connection_id}", Option<ConnectionEnd>)]
 pub struct ConnectionPath {
     pub connection_id: ConnectionId,
 }
 
-impl IbcPath for ConnectionPath {
-    // TODO: This is really `Either<ClientId, EmptyString>`
-    type Value = ConnectionEnd;
-}
-
-#[ibc_path("channelEnds/ports/{port_id}/channels/{channel_id}")]
+// REVIEW: Make this an `Option`?
+#[ibc_path(
+    "channelEnds/ports/{port_id}/channels/{channel_id}",
+    Option<Channel>
+)]
 pub struct ChannelEndPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
-impl IbcPath for ChannelEndPath {
-    type Value = Channel;
-}
-
-#[ibc_path("commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+#[ibc_path(
+    "commitments/ports/{port_id}/channels/{channel_id}/sequences/{sequence}",
+    Option<H256>
+)]
 pub struct CommitmentPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
-impl IbcPath for CommitmentPath {
-    type Value = H256;
-}
-
-#[ibc_path("acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+/// SHA-256 of the packet acknowledgement.
+/// If the packet has not yet been acknowledged (either because the packet does not exist or the packet has not been acknowledged yet), then the acknowledgement commitment is unset.
+#[ibc_path("acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}", Option<H256>)]
 pub struct AcknowledgementPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
-impl IbcPath for AcknowledgementPath {
-    type Value = H256;
-}
-
-#[ibc_path("receipts/ports/{port_id}/channels/{channel_id}/sequences/{sequence}")]
+/// This defaults to `false` for packets which have not yet been received.
+#[ibc_path(
+    "receipts/ports/{port_id}/channels/{channel_id}/sequences/{sequence}",
+    bool
+)]
 pub struct ReceiptPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: NonZeroU64,
 }
 
-impl IbcPath for ReceiptPath {
-    type Value = bool;
-}
-
-#[ibc_path("nextSequenceSend/ports/{port_id}/channels/{channel_id}")]
+#[ibc_path("nextSequenceSend/ports/{port_id}/channels/{channel_id}", u64)]
 pub struct NextSequenceSendPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
-impl IbcPath for NextSequenceSendPath {
-    type Value = u64;
-}
-
-#[ibc_path("nextSequenceRecv/ports/{port_id}/channels/{channel_id}")]
+#[ibc_path("nextSequenceRecv/ports/{port_id}/channels/{channel_id}", u64)]
 pub struct NextSequenceRecvPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
-impl IbcPath for NextSequenceRecvPath {
-    type Value = u64;
-}
-
-#[ibc_path("nextSequenceAck/ports/{port_id}/channels/{channel_id}")]
+#[ibc_path("nextSequenceAck/ports/{port_id}/channels/{channel_id}", u64)]
 pub struct NextSequenceAckPath {
     pub port_id: PortId,
     pub channel_id: ChannelId,
 }
 
-impl IbcPath for NextSequenceAckPath {
-    type Value = u64;
-}
-
-#[ibc_path("nextConnectionSequence")]
+#[ibc_path("nextConnectionSequence", u64)]
 pub struct NextConnectionSequencePath {}
 
-impl IbcPath for NextConnectionSequencePath {
-    type Value = u64;
-}
-
-#[ibc_path("nextClientSequence")]
+#[ibc_path("nextClientSequence", u64)]
 pub struct NextClientSequencePath {}
-
-impl IbcPath for NextClientSequencePath {
-    type Value = u64;
-}
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum PathParseError {
@@ -230,16 +177,15 @@ mod tests {
 
     #[test]
     fn parse_ibc_paths_from_str() {
-        type PathT = Path;
         assert_eq!(
-            "clients/08-wasm-0/clientState".parse::<PathT>().unwrap(),
+            "clients/08-wasm-0/clientState".parse::<Path>().unwrap(),
             Path::ClientState(ClientStatePath {
                 client_id: "08-wasm-0".to_string().validate().unwrap()
             })
         );
         assert_eq!(
             "clients/08-wasm-0/consensusStates/0-1"
-                .parse::<PathT>()
+                .parse::<Path>()
                 .unwrap(),
             Path::ClientConsensusState(ClientConsensusStatePath {
                 client_id: "08-wasm-0".to_string().validate().unwrap(),
@@ -250,14 +196,14 @@ mod tests {
             })
         );
         assert_eq!(
-            "connections/connection-0".parse::<PathT>().unwrap(),
+            "connections/connection-0".parse::<Path>().unwrap(),
             Path::Connection(ConnectionPath {
                 connection_id: "connection-0".to_string().validate().unwrap()
             })
         );
         assert_eq!(
             "channelEnds/ports/port/channels/channel-0"
-                .parse::<PathT>()
+                .parse::<Path>()
                 .unwrap(),
             Path::ChannelEnd(ChannelEndPath {
                 port_id: "port".to_string().validate().unwrap(),
@@ -266,7 +212,7 @@ mod tests {
         );
         assert_eq!(
             "commitments/ports/port/channels/channel-0/sequences/1"
-                .parse::<PathT>()
+                .parse::<Path>()
                 .unwrap(),
             Path::Commitment(CommitmentPath {
                 port_id: "port".to_string().validate().unwrap(),
@@ -276,7 +222,7 @@ mod tests {
         );
         assert_eq!(
             "acks/ports/port/channels/channel-0/sequences/1"
-                .parse::<PathT>()
+                .parse::<Path>()
                 .unwrap(),
             Path::Acknowledgement(AcknowledgementPath {
                 port_id: "port".to_string().validate().unwrap(),

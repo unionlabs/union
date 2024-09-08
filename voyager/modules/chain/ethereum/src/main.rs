@@ -43,7 +43,7 @@ use voyager_message::{
     },
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
     reth_ipc::client::IpcClientBuilder,
-    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient, VoyagerRpcClientExt},
+    rpc::{json_rpc_error_to_rpc_error, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
@@ -798,7 +798,8 @@ impl Module {
             )
             .await
             .map_err(json_rpc_error_to_rpc_error)?
-            .state;
+            .state
+            .ok_or_else(missing_state("connection must exist", None))?;
 
         let self_connection = self
             .client
@@ -812,11 +813,15 @@ impl Module {
             .await
             .map_err(json_rpc_error_to_rpc_error)?;
 
+        let self_connection_state = self_connection
+            .state
+            .ok_or_else(missing_state("connection must exist", None))?;
+
         let client_info = self
             .client
             .client_info(
                 self.chain_id.clone(),
-                self_connection.state.client_id.clone(),
+                self_connection_state.client_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_rpc_error)?;
@@ -826,7 +831,7 @@ impl Module {
             .client_meta(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_connection.state.client_id.clone(),
+                self_connection_state.client_id.clone(),
             )
             .await
             .map_err(json_rpc_error_to_rpc_error)?;
@@ -844,22 +849,26 @@ impl Module {
             .await
             .map_err(json_rpc_error_to_rpc_error)?;
 
+        let other_channel_state = other_channel
+            .state
+            .ok_or_else(missing_state("channel must exist", None))?;
+
         let source_channel = ChannelMetadata {
             port_id: self_port_id.clone(),
             channel_id: self_channel_id.clone(),
             version: self_channel.version,
             connection: ConnectionMetadata {
-                client_id: self_connection.state.client_id,
+                client_id: self_connection_state.client_id,
                 connection_id: self_connection.path.connection_id.clone(),
             },
         };
         let destination_channel = ChannelMetadata {
             port_id: other_channel.path.port_id.clone(),
             channel_id: other_channel.path.channel_id.clone(),
-            version: other_channel.state.version,
+            version: other_channel_state.version,
             connection: ConnectionMetadata {
-                client_id: self_connection.state.counterparty.client_id,
-                connection_id: self_connection.state.counterparty.connection_id.unwrap(),
+                client_id: self_connection_state.counterparty.client_id,
+                connection_id: self_connection_state.counterparty.connection_id.unwrap(),
             },
         };
 
@@ -929,11 +938,13 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
+                            .map_err(json_rpc_error_to_rpc_error)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = self
                             .client
-                            .client_info(self.chain_id.clone(), connection.state.client_id.clone())
+                            .client_info(self.chain_id.clone(), connection.client_id.clone())
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?;
 
@@ -942,7 +953,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             .client_meta(
                                 self.chain_id.clone(),
                                 height.into(),
-                                connection.state.client_id.clone(),
+                                connection.client_id.clone(),
                             )
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?;
@@ -958,7 +969,9 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
+                            .map_err(json_rpc_error_to_rpc_error)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -973,8 +986,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                     .counterparty_port_id
                                     .parse()
                                     .unwrap(),
-                                connection: connection.state,
-                                version: channel.state.version,
+                                connection,
+                                version: channel.version,
                             }
                             .into(),
                         }))
@@ -992,11 +1005,13 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
+                            .map_err(json_rpc_error_to_rpc_error)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = self
                             .client
-                            .client_info(self.chain_id.clone(), connection.state.client_id.clone())
+                            .client_info(self.chain_id.clone(), connection.client_id.clone())
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?;
 
@@ -1005,7 +1020,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             .client_meta(
                                 self.chain_id.clone(),
                                 height.into(),
-                                connection.state.client_id.clone(),
+                                connection.client_id.clone(),
                             )
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?;
@@ -1021,7 +1036,9 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
+                            .map_err(json_rpc_error_to_rpc_error)?
+                            .state
+                            .ok_or_else(missing_state("channel must exist", None))?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -1040,8 +1057,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                     .counterparty_channel_id
                                     .parse()
                                     .unwrap(),
-                                connection: connection.state,
-                                version: channel.state.version,
+                                connection,
+                                version: channel.version,
                             }
                             .into(),
                         }))
@@ -1059,11 +1076,13 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
+                            .map_err(json_rpc_error_to_rpc_error)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = self
                             .client
-                            .client_info(self.chain_id.clone(), connection.state.client_id.clone())
+                            .client_info(self.chain_id.clone(), connection.client_id.clone())
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?;
 
@@ -1072,7 +1091,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             .client_meta(
                                 self.chain_id.clone(),
                                 height.into(),
-                                connection.state.client_id.clone(),
+                                connection.client_id.clone(),
                             )
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?;
@@ -1088,7 +1107,9 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
+                            .map_err(json_rpc_error_to_rpc_error)?
+                            .state
+                            .ok_or_else(missing_state("channel must exist", None))?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -1107,8 +1128,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                     .counterparty_channel_id
                                     .parse()
                                     .unwrap(),
-                                connection: connection.state,
-                                version: channel.state.version,
+                                connection,
+                                version: channel.version,
                             }
                             .into(),
                         }))
@@ -1126,11 +1147,13 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
+                            .map_err(json_rpc_error_to_rpc_error)?
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = self
                             .client
-                            .client_info(self.chain_id.clone(), connection.state.client_id.clone())
+                            .client_info(self.chain_id.clone(), connection.client_id.clone())
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?;
 
@@ -1139,7 +1162,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             .client_meta(
                                 self.chain_id.clone(),
                                 height.into(),
-                                connection.state.client_id.clone(),
+                                connection.client_id.clone(),
                             )
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?;
@@ -1155,7 +1178,9 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await
-                            .map_err(json_rpc_error_to_rpc_error)?;
+                            .map_err(json_rpc_error_to_rpc_error)?
+                            .state
+                            .ok_or_else(missing_state("channel must exist", None))?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -1174,8 +1199,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                     .counterparty_channel_id
                                     .parse()
                                     .unwrap(),
-                                connection: connection.state,
-                                version: channel.state.version,
+                                connection,
+                                version: channel.version,
                             }
                             .into(),
                         }))
@@ -1684,11 +1709,6 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             }
             ModuleCall::FetchGetLogs(FetchGetLogs { from_slot, to_slot }) => {
                 debug!(%from_slot, %to_slot, "fetching logs in beacon block range");
-
-                let event_height = Height {
-                    revision_number: ETHEREUM_REVISION_NUMBER,
-                    revision_height: to_slot,
-                };
 
                 let from_block = self.execution_height_of_beacon_slot(from_slot).await;
                 let to_block = self.execution_height_of_beacon_slot(to_slot).await;

@@ -593,7 +593,10 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     port_id: event.counterparty_port_id,
                     channel: Channel {
                         state: channel::state::State::Tryopen,
-                        ordering: origin_channel.state.ordering,
+                        ordering: origin_channel
+                            .state
+                            .ok_or(QueueError::Fatal("channel must exist".into()))?
+                            .ordering,
                         counterparty: channel::counterparty::Counterparty {
                             port_id: event.port_id,
                             channel_id: event.channel_id.to_string(),
@@ -707,93 +710,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
 
             Call::MakeMsgRecvPacket(msg) => make_msg_recv_packet(ctx, msg).await,
 
-            Call::MakeMsgAcknowledgement(MakeMsgAcknowledgement {
-                origin_chain_id,
-                origin_chain_proof_height,
-                target_chain_id,
-                write_acknowledgement_event,
-            }) => {
-                async {
-                    let proof_acked = ctx
-                        .rpc_server
-                        .query_ibc_proof(
-                            &origin_chain_id,
-                            origin_chain_proof_height,
-                            AcknowledgementPath {
-                                port_id: write_acknowledgement_event
-                                    .packet
-                                    .destination_channel
-                                    .port_id
-                                    .clone(),
-                                channel_id: write_acknowledgement_event
-                                    .packet
-                                    .destination_channel
-                                    .channel_id
-                                    .clone(),
-                                sequence: write_acknowledgement_event.packet.sequence,
-                            }
-                            .into(),
-                        )
-                        .await
-                        .map_err(error_object_to_queue_error)?
-                        .proof;
-
-                    let client_info = ctx
-                        .rpc_server
-                        .client_info(
-                            &target_chain_id,
-                            write_acknowledgement_event
-                                .packet
-                                .source_channel
-                                .connection
-                                .client_id,
-                        )
-                        .await
-                        .map_err(error_object_to_queue_error)?;
-
-                    let encoded_proof_acked = ctx
-                        .rpc_server
-                        .encode_proof(
-                            &client_info.client_type,
-                            &client_info.ibc_interface,
-                            proof_acked,
-                        )
-                        .await
-                        .map_err(error_object_to_queue_error)?;
-
-                    Ok(queue_msg::data(IbcMessage::from(MsgAcknowledgement {
-                        packet: channel::packet::Packet {
-                            sequence: write_acknowledgement_event.packet.sequence,
-                            source_port: write_acknowledgement_event.packet.source_channel.port_id,
-                            source_channel: write_acknowledgement_event
-                                .packet
-                                .source_channel
-                                .channel_id,
-                            destination_port: write_acknowledgement_event
-                                .packet
-                                .destination_channel
-                                .port_id,
-                            destination_channel: write_acknowledgement_event
-                                .packet
-                                .destination_channel
-                                .channel_id,
-                            data: write_acknowledgement_event.packet_data,
-                            timeout_height: write_acknowledgement_event.packet.timeout_height,
-                            timeout_timestamp: write_acknowledgement_event.packet.timeout_timestamp,
-                        },
-                        acknowledgement: write_acknowledgement_event.packet_ack,
-                        proof_acked: encoded_proof_acked,
-                        proof_height: origin_chain_proof_height,
-                    })))
-                }
-                .instrument(info_span!(
-                    "make_msg_acknowledgement",
-                    %origin_chain_id,
-                    %origin_chain_proof_height,
-                    %target_chain_id,
-                ))
-                .await
-            }
+            Call::MakeMsgAcknowledgement(msg) => make_msg_acknowledgement(ctx, msg).await,
 
             // Fetch::UpdateHeaders(FetchUpdateHeaders {
             //     chain_id,
@@ -1088,6 +1005,135 @@ async fn make_msg_recv_packet<D: Member, C: Member, Cb: Member>(
 }
 
 #[instrument(
+    skip_all,
+    fields(
+        %origin_chain_id,
+        %origin_chain_proof_height,
+        %target_chain_id,
+        %write_acknowledgement_event.packet.sequence,
+        %write_acknowledgement_event.packet.source_channel.port_id,
+        %write_acknowledgement_event.packet.source_channel.channel_id,
+        %write_acknowledgement_event.packet.destination_channel.port_id,
+        %write_acknowledgement_event.packet.destination_channel.channel_id,
+        %write_acknowledgement_event.packet.channel_ordering,
+        %write_acknowledgement_event.packet.timeout_height,
+        %write_acknowledgement_event.packet.timeout_timestamp,
+    )
+)]
+async fn make_msg_acknowledgement<D: Member, C: Member, Cb: Member>(
+    ctx: &Context,
+    MakeMsgAcknowledgement {
+        origin_chain_id,
+        origin_chain_proof_height,
+        target_chain_id,
+        write_acknowledgement_event,
+    }: MakeMsgAcknowledgement,
+) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
+    let target_chain_latest_height = ctx
+        .rpc_server
+        .query_latest_height(&target_chain_id)
+        .await
+        .map_err(error_object_to_queue_error)?;
+
+    let commitment = ctx
+        .rpc_server
+        .query_ibc_state_typed(
+            &target_chain_id,
+            target_chain_latest_height,
+            CommitmentPath {
+                port_id: write_acknowledgement_event
+                    .packet
+                    .source_channel
+                    .port_id
+                    .clone(),
+                channel_id: write_acknowledgement_event
+                    .packet
+                    .source_channel
+                    .channel_id
+                    .clone(),
+                sequence: write_acknowledgement_event.packet.sequence,
+            },
+        )
+        .await
+        .map_err(json_rpc_error_to_queue_error)?
+        .state;
+
+    if commitment.is_none() {
+        info!("packet already acknowledged on the target chain");
+        return Ok(noop());
+    }
+
+    let proof_acked = ctx
+        .rpc_server
+        .query_ibc_proof(
+            &origin_chain_id,
+            origin_chain_proof_height,
+            AcknowledgementPath {
+                port_id: write_acknowledgement_event
+                    .packet
+                    .destination_channel
+                    .port_id
+                    .clone(),
+                channel_id: write_acknowledgement_event
+                    .packet
+                    .destination_channel
+                    .channel_id
+                    .clone(),
+                sequence: write_acknowledgement_event.packet.sequence,
+            }
+            .into(),
+        )
+        .await
+        .map_err(error_object_to_queue_error)?
+        .proof;
+
+    let client_info = ctx
+        .rpc_server
+        .client_info(
+            &target_chain_id,
+            write_acknowledgement_event
+                .packet
+                .source_channel
+                .connection
+                .client_id,
+        )
+        .await
+        .map_err(error_object_to_queue_error)?;
+
+    let encoded_proof_acked = ctx
+        .rpc_server
+        .encode_proof(
+            &client_info.client_type,
+            &client_info.ibc_interface,
+            proof_acked,
+        )
+        .await
+        .map_err(error_object_to_queue_error)?;
+
+    Ok(queue_msg::data(IbcMessage::from(MsgAcknowledgement {
+        packet: channel::packet::Packet {
+            sequence: write_acknowledgement_event.packet.sequence,
+            source_port: write_acknowledgement_event.packet.source_channel.port_id,
+            source_channel: write_acknowledgement_event.packet.source_channel.channel_id,
+            destination_port: write_acknowledgement_event
+                .packet
+                .destination_channel
+                .port_id,
+            destination_channel: write_acknowledgement_event
+                .packet
+                .destination_channel
+                .channel_id,
+            data: write_acknowledgement_event.packet_data,
+            timeout_height: write_acknowledgement_event.packet.timeout_height,
+            timeout_timestamp: write_acknowledgement_event.packet.timeout_timestamp,
+        },
+        acknowledgement: write_acknowledgement_event.packet_ack,
+        proof_acked: encoded_proof_acked,
+        proof_height: origin_chain_proof_height,
+    })))
+}
+
+#[instrument(
      skip_all,
      fields(
          %counterparty_chain_id,
@@ -1266,7 +1312,12 @@ async fn mk_connection_handshake_state_and_proofs(
         )
         .await
         .map_err(json_rpc_error_to_rpc_error)?
-        .state;
+        .state
+        .ok_or(ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            "connection must exist",
+            None::<()>,
+        ))?;
     debug!(
         connection_state = %serde_json::to_string(&connection_state).unwrap(),
     );

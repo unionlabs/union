@@ -15,7 +15,7 @@ use axum::{
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures::{
     channel::mpsc::UnboundedSender, future::BoxFuture, stream::FuturesUnordered, Future, FutureExt,
-    SinkExt, StreamExt, TryStreamExt,
+    SinkExt, StreamExt,
 };
 use pg_queue::{PgQueue, PgQueueConfig};
 use prometheus::TextEncoder;

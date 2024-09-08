@@ -5,7 +5,7 @@ use frunk::hlist_pat;
 use jsonrpsee::core::RpcResult;
 use queue_msg::{
     aggregation::{HListTryFromIterator, SubsetOf},
-    call, conc, data, noop, promise, queue_msg, seq, Op,
+    call, conc, data, promise, queue_msg, seq, Op,
 };
 use tracing::warn;
 use unionlabs::{id::ClientId, QueryHeight};

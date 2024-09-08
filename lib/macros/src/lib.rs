@@ -2,7 +2,7 @@ use std::{collections::HashMap, convert};
 
 use proc_macro::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
 use proc_macro2::{Literal, Span};
-use quote::{format_ident, quote, ToTokens};
+use quote::{format_ident, quote, quote_spanned, ToTokens};
 use syn::{
     fold::Fold,
     parenthesized,
@@ -11,7 +11,7 @@ use syn::{
     punctuated::Punctuated,
     spanned::Spanned,
     Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
-    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Variant,
+    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type, Variant,
     WhereClause, WherePredicate,
 };
 
@@ -913,12 +913,11 @@ impl Parse for FromRawAttrs {
     }
 }
 
+/// NOTE: Doesn't suport generics. Generics this low in the stack is a dark path I do not wish to explore again
 #[proc_macro_attribute]
 pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
     let item_struct = parse_macro_input!(ts as ItemStruct);
-    let path = parse_macro_input!(meta as LitStr);
-
-    let (impl_generics, ty_generics, where_clause) = item_struct.generics.split_for_impl();
+    let IbcPathMeta { path, comma: _, ty } = parse_macro_input!(meta as IbcPathMeta);
 
     let segments = parse_ibc_path(path.clone());
 
@@ -981,7 +980,7 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
         .iter()
         .map(|x| match x {
             Segment::Static(_) => quote! {},
-            Segment::Variable(variable_seg) => quote! {
+            Segment::Variable(variable_seg) => quote_spanned! {fields_map[variable_seg].span()=>
                 let #variable_seg = &self.#variable_seg;
             },
         })
@@ -989,25 +988,20 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
     let field_pat = segments.iter().filter_map(|seg| match seg {
         Segment::Static(_) => None,
-        Segment::Variable(var) => Some(var),
+        // use the span of the input tokens
+        Segment::Variable(variable_seg) => Some(fields_map.get_key_value(variable_seg).unwrap().0),
     });
 
     let ident = &item_struct.ident;
 
-    let serde_ser_bound = item_struct.generics.params.to_token_stream().to_string();
-    let serde_de_bound = item_struct.generics.params.to_token_stream().to_string();
-
     quote! {
         #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, ::clap::Args)]
-        #[serde(bound(
-            serialize = #serde_ser_bound,
-            deserialize = #serde_de_bound,
-        ))]
+        #[serde(deny_unknown_fields)]
         #item_struct
 
         const _: () = {
             #[automatically_derived]
-            impl #impl_generics ::core::fmt::Display for #ident #ty_generics #where_clause {
+            impl ::core::fmt::Display for #ident {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     #display_body
 
@@ -1018,7 +1012,7 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
         const _: () = {
             #[automatically_derived]
-            impl #impl_generics ::core::str::FromStr for #ident #ty_generics #where_clause {
+            impl ::core::str::FromStr for #ident {
                 type Err = PathParseError;
 
                 fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
@@ -1034,8 +1028,31 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
                 }
             }
         };
+
+        const _: () = {
+            impl IbcPath for #ident {
+                type Value = #ty;
+            }
+        };
     }
     .into()
+}
+
+struct IbcPathMeta {
+    path: LitStr,
+    #[allow(unused)]
+    comma: Token![,],
+    ty: Type,
+}
+
+impl Parse for IbcPathMeta {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            path: input.parse()?,
+            comma: input.parse()?,
+            ty: input.parse()?,
+        })
+    }
 }
 
 enum Segment {

@@ -250,7 +250,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         cb: ModuleCallback,
-        data: VecDeque<Data<ModuleData>>,
+        _data: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match cb {}
     }

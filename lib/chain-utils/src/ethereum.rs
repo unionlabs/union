@@ -3,16 +3,17 @@ use std::{fmt::Debug, marker::PhantomData, sync::Arc};
 use beacon_api::client::BeaconApiClient;
 use contracts::{
     cometbls_client::CometblsClientErrors,
+    glue::{IbcCoreChannelV1ChannelData, IbcCoreConnectionV1ConnectionEndData},
     i_light_client::ILightClient,
     ibc_channel_handshake::{IBCChannelHandshakeErrors, IBCChannelHandshakeEvents},
-    ibc_client::{IBCClientErrors, IBCClientEvents},
+    ibc_client::{ErrClientNotFound, IBCClientErrors, IBCClientEvents},
     ibc_connection::{IBCConnectionErrors, IBCConnectionEvents},
     ibc_handler::{IBCHandler, OwnershipTransferredFilter},
     ibc_packet::{IBCPacketErrors, IBCPacketEvents},
 };
 use ethers::{
     abi::AbiDecode,
-    contract::{ContractError, EthLogDecode},
+    contract::{ContractError, EthError, EthLogDecode},
     core::k256::ecdsa,
     middleware::{NonceManagerMiddleware, SignerMiddleware},
     providers::{Middleware, Provider, Ws},
@@ -29,7 +30,7 @@ use unionlabs::{
         config::{ChainSpec, Mainnet, Minimal},
         ibc_commitment_key, IBC_HANDLER_COMMITMENTS_SLOT,
     },
-    hash::H160,
+    hash::{H160, H256},
     ibc::lightclients::ethereum::storage_proof::StorageProof,
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
@@ -40,6 +41,7 @@ use unionlabs::{
     iter,
     traits::FromStrExact,
     uint::U256,
+    ErrorReporter,
 };
 
 use crate::keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, KeyringEntry, SignerBalance};
@@ -457,20 +459,41 @@ impl EthereumStateRead for ClientStatePath {
         ibc_handler: &IBCHandler<M>,
         execution_block_number: u64,
     ) -> Self::Value {
-        let client_address = ibc_handler
-            .get_client(self.client_id.to_string())
-            .block(execution_block_number)
-            .call()
-            .await
-            .unwrap();
+        Hex(
+            match ibc_handler
+                .get_client(self.client_id.to_string())
+                .block(execution_block_number)
+                .call()
+                .await
+            {
+                Ok(client_address) => {
+                    let client_state_bytes =
+                        &ILightClient::new(client_address, ibc_handler.client())
+                            .get_client_state(self.client_id.to_string())
+                            .block(execution_block_number)
+                            .call()
+                            .await
+                            .unwrap();
 
-        Hex(ILightClient::new(client_address, ibc_handler.client())
-            .get_client_state(self.client_id.to_string())
-            .block(execution_block_number)
-            .call()
-            .await
-            .unwrap()
-            .to_vec())
+                    // TODO: Ensure this invariant is documented in the solidity IBC stack
+                    if client_state_bytes.iter().all(|b| *b == 0) {
+                        vec![]
+                    } else {
+                        client_state_bytes.to_vec()
+                    }
+                }
+                Err(err)
+                    if err
+                        .as_revert()
+                        .is_some_and(|bz| bz[..] == ErrClientNotFound::selector()) =>
+                {
+                    vec![]
+                }
+                Err(err) => {
+                    panic!("error fetching client state: {}", ErrorReporter(err))
+                }
+            },
+        )
     }
 }
 
@@ -480,20 +503,41 @@ impl EthereumStateRead for ClientConsensusStatePath {
         ibc_handler: &IBCHandler<M>,
         execution_block_number: u64,
     ) -> Self::Value {
-        let client_address = ibc_handler
-            .get_client(self.client_id.to_string())
-            .block(execution_block_number)
-            .call()
-            .await
-            .unwrap();
+        Hex(
+            match ibc_handler
+                .get_client(self.client_id.to_string())
+                .block(execution_block_number)
+                .call()
+                .await
+            {
+                Ok(client_address) => {
+                    let consensus_state_bytes =
+                        &ILightClient::new(client_address, ibc_handler.client())
+                            .get_consensus_state(self.client_id.to_string(), self.height.into())
+                            .block(execution_block_number)
+                            .call()
+                            .await
+                            .unwrap();
 
-        Hex(ILightClient::new(client_address, ibc_handler.client())
-            .get_consensus_state(self.client_id.to_string(), self.height.into())
-            .block(execution_block_number)
-            .call()
-            .await
-            .unwrap()
-            .to_vec())
+                    // TODO: Ensure this invariant is documented in the solidity IBC stack
+                    if consensus_state_bytes.iter().all(|b| *b == 0) {
+                        vec![]
+                    } else {
+                        consensus_state_bytes.to_vec()
+                    }
+                }
+                Err(err)
+                    if err
+                        .as_revert()
+                        .is_some_and(|bz| bz[..] == ErrClientNotFound::selector()) =>
+                {
+                    vec![]
+                }
+                Err(err) => {
+                    panic!("error fetching client state: {}", ErrorReporter(err))
+                }
+            },
+        )
     }
 }
 
@@ -503,14 +547,18 @@ impl EthereumStateRead for ConnectionPath {
         ibc_handler: &IBCHandler<M>,
         execution_block_number: u64,
     ) -> Self::Value {
-        ibc_handler
+        let connection: IbcCoreConnectionV1ConnectionEndData = ibc_handler
             .get_connection(self.connection_id.to_string())
             .block(execution_block_number)
             .call()
             .await
-            .unwrap()
-            .try_into()
-            .unwrap()
+            .unwrap();
+
+        if connection == IbcCoreConnectionV1ConnectionEndData::default() {
+            None
+        } else {
+            Some(connection.try_into().unwrap())
+        }
     }
 }
 
@@ -529,18 +577,18 @@ impl EthereumStateRead for ChannelEndPath {
         ibc_handler: &IBCHandler<M>,
         execution_block_number: u64,
     ) -> Self::Value {
-        debug!("fetching channel");
-
-        let raw = ibc_handler
+        let channel: IbcCoreChannelV1ChannelData = ibc_handler
             .get_channel(self.port_id.to_string(), self.channel_id.to_string())
             .block(execution_block_number)
             .call()
             .await
             .unwrap();
 
-        debug!(?raw);
-
-        raw.try_into().unwrap()
+        if channel == IbcCoreChannelV1ChannelData::default() {
+            None
+        } else {
+            Some(channel.try_into().unwrap())
+        }
     }
 }
 
@@ -550,7 +598,7 @@ impl EthereumStateRead for CommitmentPath {
         ibc_handler: &IBCHandler<M>,
         execution_block_number: u64,
     ) -> Self::Value {
-        ibc_handler
+        let commitment: H256 = ibc_handler
             .client()
             .get_storage_at(
                 ibc_handler.address(),
@@ -561,7 +609,13 @@ impl EthereumStateRead for CommitmentPath {
             )
             .await
             .unwrap()
-            .into()
+            .into();
+
+        if commitment == H256::ZERO {
+            None
+        } else {
+            Some(commitment)
+        }
     }
 }
 
@@ -571,7 +625,7 @@ impl EthereumStateRead for AcknowledgementPath {
         ibc_handler: &IBCHandler<M>,
         execution_block_number: u64,
     ) -> Self::Value {
-        ibc_handler
+        let ack_commitment: H256 = ibc_handler
             .client()
             .get_storage_at(
                 ibc_handler.address(),
@@ -582,7 +636,13 @@ impl EthereumStateRead for AcknowledgementPath {
             )
             .await
             .unwrap()
-            .into()
+            .into();
+
+        if ack_commitment == H256::ZERO {
+            None
+        } else {
+            Some(ack_commitment)
+        }
     }
 }
 

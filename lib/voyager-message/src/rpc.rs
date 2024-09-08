@@ -55,7 +55,7 @@ pub trait VoyagerRpc {
         client_id: ClientId,
     ) -> RpcResult<ClientStateMeta>;
 
-    #[method(name = "queryibcState")]
+    #[method(name = "queryIbcState")]
     async fn query_ibc_state(
         &self,
         chain_id: ChainId<'static>,
@@ -63,7 +63,7 @@ pub trait VoyagerRpc {
         path: Path,
     ) -> RpcResult<IbcState>;
 
-    #[method(name = "queryibcProof")]
+    #[method(name = "queryIbcProof")]
     async fn query_ibc_proof(
         &self,
         chain_id: ChainId<'static>,
@@ -200,4 +200,12 @@ pub fn json_rpc_error_to_rpc_error(value: jsonrpsee::core::client::Error) -> Err
         jsonrpsee::core::client::Error::Call(error) => error,
         value => ErrorObject::owned(-1, format!("error: {}", ErrorReporter(value)), None::<()>),
     }
+}
+
+/// Some required state was missing (connection/channel end, packet commitment, ..)
+pub fn missing_state(
+    message: impl Into<String>,
+    data: Option<Value>,
+) -> impl FnOnce() -> ErrorObjectOwned {
+    move || ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, message, data)
 }

@@ -13,7 +13,7 @@ use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
 use tokio::task::{JoinHandle, JoinSet};
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, debug_span, error, info, instrument, trace_span, Instrument};
+use tracing::{debug, debug_span, error, info, instrument, Instrument};
 use unionlabs::{ethereum::keccak256, traits::Member, ErrorReporter};
 
 use crate::{

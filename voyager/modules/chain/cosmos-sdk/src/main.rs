@@ -32,7 +32,12 @@ use unionlabs::{
         commitment::merkle_proof::MerkleProof,
         connection::connection_end::ConnectionEnd,
     },
-    ics24::{ChannelEndPath, ClientStatePath, ConnectionPath, Path},
+    ics24::{
+        AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
+        CommitmentPath, ConnectionPath, IbcPath, NextClientSequencePath,
+        NextConnectionSequencePath, NextSequenceAckPath, NextSequenceRecvPath,
+        NextSequenceSendPath, Path, ReceiptPath,
+    },
     id::{ChannelId, ClientId, ConnectionId, PortId},
     option_unwrap, parse_wasm_client_type, ErrorReporter, QueryHeight, WasmClientType,
 };
@@ -44,7 +49,7 @@ use voyager_message::{
         RawClientState,
     },
     reth_ipc::client::IpcClientBuilder,
-    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient, VoyagerRpcClientExt},
+    rpc::{json_rpc_error_to_rpc_error, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -330,7 +335,8 @@ impl Module {
             )
             .await
             .map_err(json_rpc_error_to_rpc_error)?
-            .state;
+            .state
+            .ok_or_else(missing_state("connection must exist", None))?;
 
         let client_info = self
             .client
@@ -360,7 +366,8 @@ impl Module {
             )
             .await
             .map_err(json_rpc_error_to_rpc_error)?
-            .state;
+            .state
+            .ok_or_else(missing_state("channel must exist", None))?;
 
         let counterparty_channel = self
             .client
@@ -374,7 +381,8 @@ impl Module {
             )
             .await
             .map_err(json_rpc_error_to_rpc_error)?
-            .state;
+            .state
+            .ok_or_else(missing_state("channel must exist", None))?;
 
         let source_channel = ChannelMetadata {
             port_id: self_port_id.clone(),
@@ -669,7 +677,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             )
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?
-                            .state;
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = self
                             .client
@@ -742,7 +751,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             )
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?
-                            .state;
+                            .state
+                            .ok_or_else(missing_state("connection must exist", None))?;
 
                         let client_info = self
                             .client
@@ -772,7 +782,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             )
                             .await
                             .map_err(json_rpc_error_to_rpc_error)?
-                            .state;
+                            .state
+                            .ok_or_else(missing_state("channel must exist", None))?;
 
                         Ok(data(ChainEvent {
                             chain_id: self.chain_id.clone(),
@@ -1190,27 +1201,55 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             .response;
 
         // NOTE: At this point, we assume that if the node has given us a response that the data contained within said response is fully reflective of the actual state on-chain, and as such it is a fatal error if we fail to decode it
+        type ValueOf<T> = <T as IbcPath>::Value;
+
         Ok(match path {
-            Path::ClientState(_) => into_value(Hex(query_result.value)),
-            Path::ClientConsensusState(_) => into_value(Hex(query_result.value)),
-            Path::Connection(_) => into_value(
-                ConnectionEnd::decode_as::<Proto>(&query_result.value).map_err(fatal_rpc_error(
-                    "error decoding connection end",
-                    error_data(),
-                ))?,
-            ),
-            Path::ChannelEnd(_) => into_value(
-                Channel::decode_as::<Proto>(&query_result.value)
-                    .map_err(fatal_rpc_error("error decoding channel end", error_data()))?,
-            ),
-            Path::Commitment(_) => into_value(
-                H256::try_from(query_result.value)
-                    .map_err(fatal_rpc_error("error decoding commitment", error_data()))?,
-            ),
-            Path::Acknowledgement(_) => into_value(H256::try_from(query_result.value).map_err(
-                fatal_rpc_error("error decoding acknowledgement", error_data()),
-            )?),
-            Path::Receipt(_) => into_value(match query_result.value[..] {
+            Path::ClientState(_) => into_value::<ValueOf<ClientStatePath>>(Hex(query_result.value)),
+            Path::ClientConsensusState(_) => {
+                into_value::<ValueOf<ClientConsensusStatePath>>(Hex(query_result.value))
+            }
+            Path::Connection(_) => {
+                into_value::<ValueOf<ConnectionPath>>(if query_result.value.is_empty() {
+                    None
+                } else {
+                    Some(
+                        ConnectionEnd::decode_as::<Proto>(&query_result.value).map_err(
+                            fatal_rpc_error("error decoding connection end", error_data()),
+                        )?,
+                    )
+                })
+            }
+            Path::ChannelEnd(_) => {
+                into_value::<ValueOf<ChannelEndPath>>(if query_result.value.is_empty() {
+                    None
+                } else {
+                    Some(
+                        Channel::decode_as::<Proto>(&query_result.value)
+                            .map_err(fatal_rpc_error("error decoding channel end", error_data()))?,
+                    )
+                })
+            }
+            Path::Commitment(_) => {
+                into_value::<ValueOf<CommitmentPath>>(if query_result.value.is_empty() {
+                    None
+                } else {
+                    Some(
+                        H256::try_from(query_result.value)
+                            .map_err(fatal_rpc_error("error decoding commitment", error_data()))?,
+                    )
+                })
+            }
+            Path::Acknowledgement(_) => {
+                into_value::<ValueOf<AcknowledgementPath>>(if query_result.value.is_empty() {
+                    None
+                } else {
+                    Some(H256::try_from(query_result.value).map_err(fatal_rpc_error(
+                        "error decoding acknowledgement commitment",
+                        error_data(),
+                    ))?)
+                })
+            }
+            Path::Receipt(_) => into_value::<ValueOf<ReceiptPath>>(match query_result.value[..] {
                 [] => false,
                 [1] => true,
                 ref invalid => {
@@ -1223,46 +1262,56 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 }
             }),
             // NOTE: For these branches, we use H64 as a mildly hacky way to have a better error message (since `<[T; N] as TryFrom<Vec<T>>>::Error = Vec<T>`)
-            Path::NextSequenceSend(_) => into_value(u64::from_be_bytes(
-                H64::try_from(query_result.value)
-                    .map_err(fatal_rpc_error(
-                        "error decoding next_sequence_send",
-                        error_data(),
-                    ))?
-                    .0,
-            )),
-            Path::NextSequenceRecv(_) => into_value(u64::from_be_bytes(
-                H64::try_from(query_result.value)
-                    .map_err(fatal_rpc_error(
-                        "error decoding next_sequence_recv",
-                        error_data(),
-                    ))?
-                    .0,
-            )),
-            Path::NextSequenceAck(_) => into_value(u64::from_be_bytes(
-                H64::try_from(query_result.value)
-                    .map_err(fatal_rpc_error(
-                        "error decoding next_sequence_ack",
-                        error_data(),
-                    ))?
-                    .0,
-            )),
-            Path::NextConnectionSequence(_) => into_value(u64::from_be_bytes(
-                H64::try_from(query_result.value)
-                    .map_err(fatal_rpc_error(
-                        "error decoding next_connection_sequence",
-                        error_data(),
-                    ))?
-                    .0,
-            )),
-            Path::NextClientSequence(_) => into_value(u64::from_be_bytes(
-                H64::try_from(query_result.value)
-                    .map_err(fatal_rpc_error(
-                        "error decoding next_client_sequence",
-                        error_data(),
-                    ))?
-                    .0,
-            )),
+            Path::NextSequenceSend(_) => {
+                into_value::<ValueOf<NextSequenceSendPath>>(u64::from_be_bytes(
+                    H64::try_from(query_result.value)
+                        .map_err(fatal_rpc_error(
+                            "error decoding next_sequence_send",
+                            error_data(),
+                        ))?
+                        .0,
+                ))
+            }
+            Path::NextSequenceRecv(_) => {
+                into_value::<ValueOf<NextSequenceRecvPath>>(u64::from_be_bytes(
+                    H64::try_from(query_result.value)
+                        .map_err(fatal_rpc_error(
+                            "error decoding next_sequence_recv",
+                            error_data(),
+                        ))?
+                        .0,
+                ))
+            }
+            Path::NextSequenceAck(_) => {
+                into_value::<ValueOf<NextSequenceAckPath>>(u64::from_be_bytes(
+                    H64::try_from(query_result.value)
+                        .map_err(fatal_rpc_error(
+                            "error decoding next_sequence_ack",
+                            error_data(),
+                        ))?
+                        .0,
+                ))
+            }
+            Path::NextConnectionSequence(_) => {
+                into_value::<ValueOf<NextConnectionSequencePath>>(u64::from_be_bytes(
+                    H64::try_from(query_result.value)
+                        .map_err(fatal_rpc_error(
+                            "error decoding next_connection_sequence",
+                            error_data(),
+                        ))?
+                        .0,
+                ))
+            }
+            Path::NextClientSequence(_) => {
+                into_value::<ValueOf<NextClientSequencePath>>(u64::from_be_bytes(
+                    H64::try_from(query_result.value)
+                        .map_err(fatal_rpc_error(
+                            "error decoding next_client_sequence",
+                            error_data(),
+                        ))?
+                        .0,
+                ))
+            }
         })
     }
 

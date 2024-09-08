@@ -85,6 +85,8 @@ macro_rules! hex_string_array_wrapper {
 
                 pub const BITS_LEN: usize = $N * 8;
 
+                pub const ZERO: Self = Self([0; $N]);
+
                 #[doc = concat!("The [`Display`](core::fmt::Display) impl for [`", stringify!($Struct), "`]")]
                 /// prefixes the output with `0x`, which may not be desirable in all contexts.
                 /// This fn serves as a convenience around [`hex::encode(&self)`](hex::encode).

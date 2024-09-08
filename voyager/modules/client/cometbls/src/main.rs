@@ -10,7 +10,7 @@ use queue_msg::{BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
-use tracing::{debug, instrument, warn};
+use tracing::{debug, instrument};
 use unionlabs::{
     self,
     encoding::{Bcs, DecodeAs, EncodeAs, EthAbi},
@@ -278,7 +278,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         client_state: Hex<Vec<u8>>,
         _client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
-        Ok(client_state.into())
+        Ok(client_state)
     }
 
     #[instrument(skip_all)]

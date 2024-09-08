@@ -9,7 +9,7 @@ use queue_msg::Op;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
-use tracing::{instrument, warn};
+use tracing::instrument;
 use unionlabs::{
     self,
     encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
@@ -137,7 +137,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         callback: ModuleCallback,
-        data: VecDeque<Data<ModuleData>>,
+        _data: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match callback {}
     }

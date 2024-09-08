@@ -14,11 +14,11 @@ use jsonrpsee::core::{async_trait, RpcResult};
 use queue_msg::{call, noop, optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
-use tracing::{instrument, warn};
-use unionlabs::hash::{H160, H256};
+use tracing::instrument;
+use unionlabs::hash::H256;
 use voyager_message::{
     call::Call,
-    data::{Data, IbcMessage, WithChainId},
+    data::{Data, WithChainId},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
     reth_ipc::client::IpcClientBuilder,
