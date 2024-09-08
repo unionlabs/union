@@ -1,4 +1,4 @@
-module IBCModuleAddr::PingPong {
+module ping_pong::ping_pong {
     use std::event;
     use std::timestamp;
     use std::object;
@@ -47,7 +47,7 @@ module IBCModuleAddr::PingPong {
     }
 
     fun init_module(deployer: &signer) {
-        assert!(signer::address_of(deployer) == @IBCModuleAddr, 1);
+        assert!(signer::address_of(deployer) == @ping_pong, 1);
         let vault_constructor_ref = &object::create_named_object(deployer, VAULT_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
         move_to(vault_signer, SignerRef {
@@ -268,7 +268,7 @@ module IBCModuleAddr::PingPong {
 
     #[view]
     public fun get_vault_addr(): address {
-        object::create_object_address(&@IBCModuleAddr, VAULT_SEED)
+        object::create_object_address(&@ping_pong, VAULT_SEED)
     }
 
     public fun get_signer(): signer acquires SignerRef {

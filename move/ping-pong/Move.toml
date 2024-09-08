@@ -1,0 +1,22 @@
+[package]
+name = "ping-pong"
+version = "1.0.0"
+authors = []
+
+[addresses]
+ping_pong = "_"
+IBC = "_"
+
+[dev-addresses]
+ping_pong = "0x1111"
+IBC = "0x2222"
+
+[dependencies.AptosFramework]
+git = "https://github.com/aeryz/aptos-core.git"
+rev = "c608cfceddab39d5b626ccd332409efb6ae78c08"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies]
+ibc = { local = "../move-ibc" }
+
+[dev-dependencies]
