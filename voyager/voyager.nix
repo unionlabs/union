@@ -91,6 +91,7 @@
             };
           });
         };
+        optimizer-delay-milliseconds = mkOption { type = types.int; default = 100; };
         workers = mkOption {
           type = types.int;
           default = 20;

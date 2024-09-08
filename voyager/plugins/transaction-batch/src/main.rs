@@ -422,7 +422,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
 
                 let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
                 let is_overdue = |first_seen_at| {
-                    Duration::from_millis(first_seen_at) + client_config.max_wait_time > now
+                    Duration::from_millis(first_seen_at) + client_config.max_wait_time < now
                 };
 
                 let (mut overdue_events, mut events): (Vec<_>, Vec<_>) =
