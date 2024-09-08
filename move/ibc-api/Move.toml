@@ -1,22 +1,17 @@
 [package]
 authors = []
-name    = "ping-pong"
+name    = "ibc-api"
 version = "1.0.0"
 
 [addresses]
-IBC       = "_"
-ping_pong = "_"
+ibc_api = "_"
 
 [dev-addresses]
-IBC       = "0x2222"
-ping_pong = "0x1111"
+ibc_api = "0x9991"
 
 [dependencies.AptosFramework]
 git    = "https://github.com/aeryz/aptos-core.git"
 rev    = "c608cfceddab39d5b626ccd332409efb6ae78c08"
 subdir = "aptos-move/framework/aptos-framework"
-
-[dependencies]
-ibc = { local = "../move-ibc" }
 
 [dev-dependencies]
