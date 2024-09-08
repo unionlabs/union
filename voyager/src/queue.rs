@@ -446,7 +446,8 @@ impl Voyager {
                             loop {
                                 trace!("optimizing");
 
-                                self.queue
+                                let res = self
+                                    .queue
                                     .optimize(&plugin_name.to_owned(), &pass)
                                     .await
                                     .map_err(|e| {
@@ -455,7 +456,14 @@ impl Voyager {
                                             |x| Box::new(x),
                                         )
                                         .into_inner()
-                                    })?;
+                                    });
+
+                                if let Err(error) = res {
+                                    error!(
+                                        error = %ErrorReporter(&*error),
+                                        "optimization pass returned with error"
+                                    );
+                                }
 
                                 tokio::time::sleep(std::time::Duration::from_millis(
                                     self.optimizer_delay_milliseconds,
