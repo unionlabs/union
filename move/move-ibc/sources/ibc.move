@@ -6,7 +6,7 @@ module IBC::Core {
     use std::event;
     use std::bcs;
     use std::object;
-    use std::string::{Self, String};
+    use std::string::{Self, String, utf8};
     use std::hash;
     use std::timestamp;
 
@@ -321,7 +321,9 @@ module IBC::Core {
 
         table::upsert(&mut store.commitments, b"nextClientSequence", bcs::to_bytes<u64>(&(next_sequence + 1)));
 
-        string_utils::format2(&b"{}-{}", client_type, next_sequence)
+        string::append_utf8(&mut client_type, b"-");
+        string::append(&mut client_type, string_utils::to_string(&next_sequence));
+        client_type
     }
 
 
@@ -1195,7 +1197,9 @@ module IBC::Core {
             bcs::to_bytes(&(next_sequence + 1))
         );
 
-        string_utils::format1(&b"connection-{}", next_sequence)
+        let connection_id = utf8(b"connection-");
+        string::append(&mut connection_id, string_utils::to_string(&next_sequence));
+        connection_id
     }
 
     public fun update_connection_commitment(store: &mut IBCStore, connection_id: String, connection: ConnectionEnd) {
