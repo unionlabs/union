@@ -925,8 +925,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         let (
                             counterparty_chain_id,
                             client_info,
-                            source_channel,
                             destination_channel,
+                            source_channel,
                             channel_ordering,
                         ) = self
                             .make_packet_metadata(
@@ -964,8 +964,8 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         let (
                             counterparty_chain_id,
                             client_info,
-                            source_channel,
                             destination_channel,
+                            source_channel,
                             channel_ordering,
                         ) = self
                             .make_packet_metadata(

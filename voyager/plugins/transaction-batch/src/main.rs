@@ -18,7 +18,7 @@ use queue_msg::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{error, instrument, trace, warn};
+use tracing::{debug, error, instrument, trace, warn};
 use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForHeight},
@@ -521,6 +521,8 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
                     .map(|e| e.provable_height)
                     .max()
                     .expect("batch has at least one event; qed;");
+
+                debug!(%client_id, "querying client meta for client");
 
                 self.client
                     .client_meta(

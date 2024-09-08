@@ -471,7 +471,7 @@ impl Voyager {
                                 .await;
                             }
                         }
-                        .instrument(info_span!("optimize", %plugin_name, %filter)),
+                        .instrument(info_span!("optimize", %plugin_name)),
                     )
                     .catch_unwind(),
                 ));
@@ -482,8 +482,11 @@ impl Voyager {
                     Ok(Ok(())) => {
                         info!("task exited gracefully");
                     }
-                    Ok(Err(err)) => {
-                        error!(%err, "task returned with an error");
+                    Ok(Err(error)) => {
+                        error!(
+                            error = %ErrorReporter(&*error),
+                            "task returned with an error"
+                        );
                         break;
                     }
                     Err(_err) => {
