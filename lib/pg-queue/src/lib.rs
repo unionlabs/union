@@ -11,7 +11,7 @@ use queue_msg::{
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, PgPool};
-use tracing::{debug, debug_span, info_span, trace, Instrument};
+use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
 
 use crate::metrics::{ITEM_PROCESSING_DURATION, OPTIMIZE_ITEM_COUNT, OPTIMIZE_PROCESSING_DURATION};
 
@@ -159,6 +159,7 @@ impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
         Ok(())
     }
 
+    #[instrument(skip_all)]
     async fn process<'a, F, Fut, R, O>(
         &'a self,
         pre_reenqueue_passes: &'a O,

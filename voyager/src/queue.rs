@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, info_span, trace, trace_span};
 use tracing_futures::Instrument;
+use unionlabs::ErrorReporter;
 use voyager_message::{
     context::Context, pass::JaqInterestFilter, plugin::OptimizationPassPluginClient,
     rpc::VoyagerRpcServer, VoyagerMessage,
@@ -334,16 +335,15 @@ impl Voyager {
                         .merge(self.context.rpc_server.clone().into_rpc())
                         .unwrap();
 
-                    // dbg!(&module);
-
                     let addr = server.local_addr()?;
                     let handle = server.start(module);
 
                     info!("rpc listening on {addr}");
 
-                    // In this example we don't care about doing shutdown so let's it run forever.
-                    // You may use the `ServerHandle` to shut it down or manage it yourself.
-                    handle.stopped().await;
+                    handle
+                        .stopped()
+                        .instrument(trace_span!("voyager_rpc_server"))
+                        .await;
 
                     Err("rpc server exited".into())
                 })
@@ -381,14 +381,23 @@ impl Voyager {
                     AssertUnwindSafe(
                         Engine::new(&self.context, &self.queue, &interest_filter)
                             .run()
-                            .try_for_each(|data| async move {
-                                info!(
-                                    data = %serde_json::to_string(&data).unwrap(),
-                                    "received data outside of an aggregation"
-                                );
-
-                                Ok(())
+                            .for_each(|res| async move {
+                                match res {
+                                    Ok(data) => {
+                                        info!(
+                                            data = %serde_json::to_string(&data).unwrap(),
+                                            "received data outside of an aggregation"
+                                        );
+                                    }
+                                    Err(error) => {
+                                        error!(
+                                            error = %ErrorReporter(&*error),
+                                            "error processing message"
+                                        )
+                                    }
+                                }
                             })
+                            .map(Ok)
                             .instrument(trace_span!("engine task", %id)),
                     )
                     .catch_unwind(),
