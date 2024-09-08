@@ -177,8 +177,8 @@ impl MakeBatchTransaction {
         datas: VecDeque<Data<ModuleData>>,
     ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
         if datas.is_empty() {
-            warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain. the contained update(s), if any, will be dropped");
-            return noop();
+            warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");
+            // return noop();
         }
 
         let msgs = datas
