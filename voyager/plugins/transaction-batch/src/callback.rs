@@ -5,8 +5,9 @@ use frunk::hlist_pat;
 use jsonrpsee::core::RpcResult;
 use queue_msg::{
     aggregation::{HListTryFromIterator, SubsetOf},
-    call, conc, data, promise, queue_msg, seq, Op,
+    call, conc, data, noop, promise, queue_msg, seq, Op,
 };
+use tracing::warn;
 use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
     call::{
@@ -175,6 +176,11 @@ impl MakeBatchTransaction {
         chain_id: ChainId<'static>,
         datas: VecDeque<Data<ModuleData>>,
     ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
+        if datas.is_empty() {
+            warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain. the contained update(s), if any, will be dropped");
+            return noop();
+        }
+
         let msgs = datas
             .into_iter()
             .map(|d| IbcMessage::try_from_super(d).unwrap());

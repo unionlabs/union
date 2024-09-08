@@ -30,7 +30,7 @@ use unionlabs::{
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, Path,
+        CommitmentPath, ConnectionPath, Path, ReceiptPath,
     },
     id::{ClientId, ConnectionId},
     traits::Member,
@@ -1002,6 +1002,36 @@ async fn make_msg_recv_packet<D: Member, C: Member, Cb: Member>(
         send_packet_event,
     }: MakeMsgRecvPacket,
 ) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
+    let target_chain_latest_height = ctx
+        .rpc_server
+        .query_latest_height(&target_chain_id)
+        .await
+        .map_err(error_object_to_queue_error)?;
+
+    let commitment = ctx
+        .rpc_server
+        .query_ibc_state_typed(
+            &target_chain_id,
+            target_chain_latest_height,
+            ReceiptPath {
+                port_id: send_packet_event.packet.destination_channel.port_id.clone(),
+                channel_id: send_packet_event
+                    .packet
+                    .destination_channel
+                    .channel_id
+                    .clone(),
+                sequence: send_packet_event.packet.sequence,
+            },
+        )
+        .await
+        .map_err(json_rpc_error_to_queue_error)?
+        .state;
+
+    if commitment {
+        info!("packet already recieved on the target chain");
+        return Ok(noop());
+    }
+
     let proof_commitment = ctx
         .rpc_server
         .query_ibc_proof(
