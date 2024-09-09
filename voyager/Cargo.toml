@@ -61,7 +61,7 @@ tokio-stream             = { workspace = true }
 tokio-util               = "0.7.9"
 tonic                    = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing                  = { workspace = true, features = ["max_level_trace"] }
-tracing-futures = { version = "0.2.5", features = ["futures-03"] }
+tracing-futures          = { version = "0.2.5", features = ["futures-03"] }
 tracing-subscriber       = { workspace = true, features = ["env-filter", "json"] }
 typenum                  = { workspace = true }
 unionlabs                = { workspace = true, features = ["ethabi"] }

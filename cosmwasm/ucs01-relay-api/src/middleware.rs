@@ -183,17 +183,6 @@ mod tests {
 
         let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
 
-<<<<<<< HEAD
-=======
-        assert
-    #[test]
-    fn serde_parses_memo_without_port_as_none() {
-        // let memo = "\"balls\": \"string\"";
-        let memo = r#"{"forward":{"port":"wasm.union1m87a5scxnnk83wfwapxlufzm58qe2v65985exff70z95a2yr86yq7hl08h","channel":"channel-201","receiver":"3C5daAa3c96AB8fe4cFC2fB6d76193fe959A9f82"}}"#;
-
-        let parsed = serde_json_wasm::from_str::<Memo>(memo).expect("works");
-
->>>>>>> 61fae93a0 (wip)
-        assert_eq!(parsed, Memo::None {})
+        assert_eq!(parsed, Memo::None {});
     }
 }

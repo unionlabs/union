@@ -20,6 +20,7 @@ num-bigint         = "0.4.6"
 prost.workspace    = true
 protos.workspace   = true
 queue-msg          = { workspace = true }
+reqwest            = { workspace = true, features = ["json"] }
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
 thiserror          = { workspace = true }
@@ -28,4 +29,3 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
 voyager-message    = { workspace = true }
-reqwest = { workspace = true, features = ["json"] }
