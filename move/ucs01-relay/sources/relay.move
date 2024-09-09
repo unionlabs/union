@@ -346,11 +346,23 @@ module UCS01::Relay {
     }
 
     public fun timeout_packet(
-        _packet: Packet
-    )  {
-        // TODO: call refund tokens
-        // refund_tokens(sequence(packet), source_channel(packet), decode(packet.data));
+
+        sequence: u64,
+        source_port: String,
+        source_channel: String,
+        destination_port: String,
+        destination_channel: String,
+        data: vector<u8>, 
+        timeout_height: height::Height,
+        timeout_timestamp: u64,
+    ) acquires RelayStore, SignerRef {
+        // Decode the packet data
+        let relay_packet = decode_packet(&data);
+
+        // Call the refund_tokens function to refund the sender
+        refund_tokens(sequence, source_channel, &relay_packet);
     }
+
 
     // TODO: No idea if this encode_packet is correct or not and how to write decode_packet
     // take a look at here later.
@@ -456,45 +468,196 @@ module UCS01::Relay {
         }
     }
 
+    /// Function to trim a prefix from the string if it starts with that prefix
+    public fun trim_prefix(s: String, prefix: String): String {
+        // Check if the string starts with the prefix
+        if (!starts_with(s, prefix)) {
+            return s; // If the prefix doesn't match, return the string as-is
+        };
+
+        // Get the lengths
+        let prefix_len = string::length(&prefix);
+        let s_len = string::length(&s);
+
+        // Get the bytes of the string and create a new trimmed vector
+        let s_bytes = string::bytes(&s);
+        let trimmed_bytes = vector::slice(s_bytes, prefix_len, s_len);
+
+        // Convert the trimmed vector back to a string
+        string::utf8(trimmed_bytes)
+    }
+
+    public fun on_recv_packet_processing(
+        ibc_packet: Packet, // representing the IBC Packet
+        source_channel: String,
+        destination_channel: String
+    ) acquires RelayStore, SignerRef {
+        // Decode the RelayPacket from the IBC packet data
+        let packet = decode_packet(IBC::packet::data(&ibc_packet));
+
+        // Create the denomination prefix based on source port and channel
+        let prefix = make_denom_prefix(*IBC::packet::source_port(&ibc_packet), *IBC::packet::source_channel(&ibc_packet));
+
+        // Get the receiver's address from the packet
+        let receiver = packet.receiver;//from_bcs::to_address(*string::bytes(packet.receiver));
+
+        let i = 0;
+        let packet_tokens_length = vector::length(&packet.tokens);
+        
+        while (i < packet_tokens_length) {
+            let token = vector::borrow(&packet.tokens, i);
+
+            if (token.amount == 0) {
+                abort E_INVALID_AMOUNT; // Abort if the amount is 0
+            };
+
+            // Create the denomination slice to check the prefix
+            let denom_slice = token.denom;
+            let denom_address = @0x0;
+
+            // Check if the denomination has the expected prefix (originated from this chain)
+            if (starts_with(denom_slice, prefix)) {
+                // Token originated from this chain, we need to unescrow the amount
+
+                // Trim the prefix from the denom to get the actual denom
+                let trimmed_denom = trim_prefix(denom_slice, prefix);
+
+                // Convert the trimmed denomination back to an address
+                let denom_address = from_bcs::to_address(*string::bytes(&trimmed_denom));
+
+                // Decrease the outstanding amount of the token
+                decrease_outstanding(source_channel, denom_address, token.amount);
+
+                // Transfer the unescrowed tokens to the receiver
+                primary_fungible_store::transfer(&get_ucs_signer(), get_metadata(denom_address), receiver, token.amount);
+
+            } else {
+                // Token originated from the counterparty chain, we need to mint the amount
+
+                // Construct the foreign denomination using the source and destination channels
+                let foreign_denom = make_foreign_denom(
+                    *IBC::packet::destination_port(&ibc_packet),
+                    *IBC::packet::destination_channel(&ibc_packet),
+                    token.denom
+                );
+
+                // Create a DenomToAddressPair for the foreign denomination
+                let pair = DenomToAddressPair {
+                    source_channel: *IBC::packet::source_channel(&ibc_packet),
+                    denom: foreign_denom,
+                };
+            
+                // Check if the denomination address exists in the store
+                let store = borrow_global_mut<RelayStore>(get_vault_addr());
+                let denom_address = *smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0);
+
+
+                if (denom_address == @0x0) {
+                    // If the address doesn't exist, mint a new token
+                    // TODO: How??
+                    // let denom_address = mint_new_token(foreign_denom);
+
+                    let pair = DenomToAddressPair {
+                        source_channel: *IBC::packet::source_channel(&ibc_packet),
+                        denom: foreign_denom,
+                    };
+                    smart_table::upsert(&mut store.denom_to_address, pair, denom_address);
+
+                    // Also update the reverse mapping (address -> denom)
+                    let pair = AddressToDenomPair {
+                        source_channel: destination_channel,
+                        denom: denom_address,
+                    };
+                    smart_table::upsert(&mut store.address_to_denom, pair, foreign_denom);
+
+                    // Emit the DenomCreated event
+                    event::emit(DenomCreated {
+                        packet_sequence: IBC::packet::sequence(&ibc_packet),
+                        channel_id: *IBC::packet::source_channel(&ibc_packet),
+                        denom: foreign_denom,
+                        token: denom_address,
+                    });
+                };
+
+                // Mint tokens to the receiver's account
+                UCS01::fa_coin::mint(&get_ucs_signer(), receiver, token.amount);
+            };
+
+            // Emit the Received event
+            event::emit(Received {
+                packet_sequence: IBC::packet::sequence(&ibc_packet),
+                channel_id: *IBC::packet::destination_channel(&ibc_packet),
+                sender: packet.sender,
+                receiver: receiver,
+                denom: token.denom,
+                token: denom_address,
+                amount: token.amount
+            });
+
+            i = i + 1;
+        };
+    }
+
+    fun refund_tokens(
+        sequence: u64,
+        channel_id: String,
+        packet: &RelayPacket
+    ) acquires RelayStore, SignerRef {
+        let receiver = packet.receiver;
+        let user_to_refund = packet.sender;
+
+        let packet_tokens_length = vector::length(&packet.tokens);
+        let i = 0;
+        while (i < packet_tokens_length) {
+            let token_from_vec = vector::borrow(&packet.tokens, i);
+            let denom_address = get_denom_address(channel_id, token_from_vec.denom);
+            let token = get_metadata(denom_address);
+
+            if (denom_address != @0x0) {
+                UCS01::fa_coin::mint(&get_ucs_signer(), user_to_refund, token_from_vec.amount);
+            } else {
+                decrease_outstanding(channel_id, denom_address, token_from_vec.amount);
+                primary_fungible_store::transfer(&get_ucs_signer(), token, @zero_account, token_from_vec.amount);
+            };
+
+            // Emit a Refunded event
+            event::emit(Refunded {
+                packet_sequence: sequence,
+                channel_id: channel_id,
+                sender: user_to_refund,
+                receiver: receiver,
+                denom: token_from_vec.denom,
+                token: denom_address,
+                amount: token_from_vec.amount
+            });
+
+            i = i + 1;
+        }
+    }
+
     
-    // fun refund_tokens(
-    //     sequence: u64,
-    //     channel_id: String,
-    //     packet: &RelayPacket
-    // ) acquires RelayStore {
-    //     let receiver = packet.receiver;
-    //     let user_to_refund = packet.sender;
+    public fun recv_packet(
+        packet: Packet,
+    ) /*acquires RelayStore, SignerRef*/ {
+        let relay_packet = decode_packet(IBC::packet::data(&packet));
+        // onRecvPacketProcessing(relay_packet, packet.source_channel, packet.destination_channel);
+    }
 
-    //     let packet_tokens_length = vector::length(&packet.tokens);
-    //     let i = 0;
-    //     while (i < packet_tokens_length) {
-    //         let token = vector::borrow(&packet.tokens, i);
-    //         let denom_address = get_denom_address(channel_id, token.denom);
+    public fun acknowledge_packet(
+        packet: packet::Packet,
+        acknowledgement: vector<u8>,
+        proof: vector<u8>,
+        proof_height: height::Height
+    ) acquires RelayStore, SignerRef {
+        if (vector::length(&acknowledgement) != ACK_LENGTH || (*vector::borrow(&acknowledgement, 0) != ACK_FAILURE && *vector::borrow(&acknowledgement, 0) != ACK_SUCCESS)) {
+            abort E_INVALID_ACKNOWLEDGEMENT;
+        };
 
-    //         if (denom_address != @0x0) {
-    //             // The token originated from the remote chain (burnt on send), so refunding means minting.
-    //             UCS01::fa_coin::mint(&get_ucs_signer(), user_to_refund, token.amount);
-    //         } else {
-    //             // The token originated from the local chain (escrowed on send), so refunding means unescrowing.
-    //             denom_address = from_bcs::to_address(string::bytes(&token.denom));
-    //             decrease_outstanding(channel_id, denom_address, token.amount);
-    //             UCS01::fa_coin::transfer_escrowed_tokens(&get_ucs_signer(), user_to_refund, denom_address, token.amount);
-    //         };
-
-    //         // Emit a Refunded event
-    //         event::emit(Refunded {
-    //             packet_sequence: sequence,
-    //             channel_id: channel_id,
-    //             sender: user_to_refund,
-    //             receiver: receiver,
-    //             denom: token.denom,
-    //             token: denom_address,
-    //             amount: token.amount
-    //         });
-
-    //         i = i + 1;
-    //     }
-    // }
+        if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
+            let relay_packet = decode_packet(IBC::packet::data(&packet));
+            refund_tokens(IBC::packet::sequence(&packet), *IBC::packet::source_channel(&packet), &relay_packet);
+        };
+    }
 
 
 
@@ -880,6 +1043,63 @@ module UCS01::Relay {
         // assert!(decoded.ping == packet.ping, 1);
         // assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
     }
+
+    // #[test(admin = @UCS01, alice = @0x1234)]
+    // public fun test_refund_tokens(admin: &signer, alice: address) acquires RelayStore, SignerRef {
+    //     initialize_store(admin);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let amount: u64 = 1000;
+
+    //     // Step 2: Mint some tokens to Alice
+    //     UCS01::fa_coin::initialize(
+    //         token_owner,
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT)
+    //     );
+
+    //     let asset_addr = UCS01::fa_coin::get_metadata_address();
+    //     let asset = get_metadata(asset_addr);
+    //     UCS01::fa_coin::mint(admin, alice, amount);
+
+    //     // Step 3: Simulate sending tokens (for refund purposes)
+    //     let token = Token {
+    //         denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+    //         amount: amount,
+    //     };
+    //     let tokens = vector::empty<Token>();
+    //     vector::push_back(&mut tokens, token);
+
+    //     let relay_packet = RelayPacket {
+    //         sender: alice,
+    //         receiver: @0x0000000000000000000000000000000000000022,
+    //         tokens: tokens,
+    //         extension: string::utf8(b"extension"),
+    //     };
+
+    //     // Insert mapping for the denom -> address
+    //     let pair = DenomToAddressPair {
+    //         source_channel,
+    //         denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+    //     };
+    //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
+    //     smart_table::upsert(&mut store.denom_to_address, pair, asset_addr);
+
+    //     // Step 4: Call the refund function
+    //     let sequence = 1;
+    //     refund_tokens(sequence, source_channel, &relay_packet);
+
+    //     // Step 5: Verify the results
+    //     let alice_balance = primary_fungible_store::balance(alice, asset);
+    //     assert!(alice_balance == amount, 100);  // Alice should have received the refund
+
+    //     // Check that the refund event is emitted (using some placeholder validation for the event)
+    //     // Since we can't directly assert on emitted events, we assume this is working as part of the logic
+    // }
+
 
     // #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
     // public fun test_send_tokens(admin: &signer, alice: &signer, bob: address) acquires RelayStore {
