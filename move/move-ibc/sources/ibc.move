@@ -19,6 +19,8 @@ module IBC::Core {
     use IBC::channel::{Self, Channel};
     use IBC::packet::{Self, Packet};
 
+    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
+
     const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
 
     const CHAN_STATE_UNINITIALIZED: u8 = 0;
@@ -691,12 +693,19 @@ module IBC::Core {
 
     public fun channel_open_init(
         ibc_app: &signer, // this is the caller which should be the `ibc_app`
-        port_id: String,
+        port_id: address,
         connection_hops: vector<String>,
         ordering: u8,
         counterparty: channel::Counterparty,
         version: String,
     ): (Channel, u64) acquires IBCStore {
+
+        if (object::create_object_address(&port_id, IBC_APP_SEED) != signer::address_of(ibc_app)) {
+            abort E_UNAUTHORIZED
+        };
+
+        let port_id = string_utils::to_string(&port_id);
+
         if (!is_lowercase(&port_id)) {
             abort E_PORT_ID_MUST_BE_LOWERCASE
         };
@@ -747,18 +756,12 @@ module IBC::Core {
         );
         update_channel_commitment(port_id, channel_id);
 
-        claim_capability(
-            port_id, 
-            channel_id,
-            signer::address_of(ibc_app),
-        );
-
         (channel, 0)
     }
 
     public fun channel_open_try(
         ibc_app: &signer,
-        port_id: String,
+        port_id: address,
         connection_hops: vector<String>,
         ordering: u8,
         counterparty: channel::Counterparty,
@@ -767,6 +770,12 @@ module IBC::Core {
         proof_init: vector<u8>,
         proof_height: height::Height
     ): (Channel, u64) acquires IBCStore {
+        if (object::create_object_address(&port_id, IBC_APP_SEED) != signer::address_of(ibc_app)) {
+            abort E_UNAUTHORIZED
+        };
+
+        let port_id = string_utils::to_string(&port_id);
+
         let (connection_id, connection) = ensure_connection_feature(connection_hops, ordering);
         
         let expected_counterparty = channel::new_counterparty(port_id, string::utf8(b""));
@@ -827,32 +836,28 @@ module IBC::Core {
 
         update_channel_commitment(port_id, channel_id);
 
-        claim_capability(
-            port_id,
-            channel_id,
-            signer::address_of(ibc_app),
-        );
-
         (channel, 0)
     }
 
     // TODO(aeryz): should we verify the caller here?
     public fun channel_open_ack(
         ibc_app: &signer, // this is the caller which should be the `ibc_app`
-        port_id: String,
+        port_id: address,
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
         proof_try: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
+        if (object::create_object_address(&port_id, IBC_APP_SEED) != signer::address_of(ibc_app)) {
+            abort E_UNAUTHORIZED
+        };
+
+        let port_id = string_utils::to_string(&port_id);
+
         // Retrieve the channel from the store
         let channel_port = ChannelPort { port_id, channel_id };
         let chan = *smart_table::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);
-
-        if (!authenticate_capability(ibc_app, port_id, channel_id)) {
-            abort E_UNAUTHORIZED
-        };
 
         if (channel::state(&chan) != CHAN_STATE_INIT) {
             abort E_INVALID_CHANNEL_STATE
@@ -900,11 +905,17 @@ module IBC::Core {
 
     public fun channel_open_confirm(
         ibc_app: &signer,
-        port_id: String,
+        port_id: address,
         channel_id: String,
         proof_ack: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
+        if (object::create_object_address(&port_id, IBC_APP_SEED) != signer::address_of(ibc_app)) {
+            abort E_UNAUTHORIZED
+        };
+
+        let port_id = string_utils::to_string(&port_id);
+
         // Retrieve the channel from the store
         let channel_port = ChannelPort { port_id, channel_id };
         let channel = *smart_table::borrow(&borrow_global<IBCStore>(get_vault_addr()).channels, channel_port);

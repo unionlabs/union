@@ -180,6 +180,7 @@ async fn main() -> Result<(), Bde> {
                             parse_quote! {
                                 async fn #ident(
                                     &self,
+                                    contract_address: ::aptos_types::account_address::AccountAddress,
                                     #params
                                     ledger_version: Option<u64>
                                 ) -> ::core::result::Result<#ret, ::aptos_rest_client::error::RestError>
@@ -191,7 +192,7 @@ async fn main() -> Result<(), Bde> {
                                                 function: ::aptos_rest_client::aptos_api_types::EntryFunctionId {
                                                     module:
                                                         ::aptos_rest_client::aptos_api_types::MoveModuleId {
-                                                            address: self.module_address().into(),
+                                                            address: contract_address.into(),
                                                             name: stringify!(#mod_name).parse().unwrap(),
                                                         },
                                                     name: stringify!(#ident).parse().unwrap(),
@@ -223,7 +224,7 @@ async fn main() -> Result<(), Bde> {
                             parse_quote! {
                                 fn #ident<
                                     #(#generic_type_params: ::serde::Serialize + ::move_bindgen::TypeTagged,)*
-                                >(&self, #params) -> ::aptos_types::transaction::EntryFunction
+                                >(&self, contract_address: ::aptos_types::account_address::AccountAddress, #params) -> ::aptos_types::transaction::EntryFunction
                                 {
                                     // let (values, type_args): (Vec<_>, Vec<_>) = vec![#({
                                     //     let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(#idents);
@@ -235,7 +236,7 @@ async fn main() -> Result<(), Bde> {
 
                                     ::aptos_types::transaction::EntryFunction::new(
                                         ::aptos_rest_client::aptos_api_types::MoveModuleId {
-                                            address: self.module_address().into(),
+                                            address: contract_address.into(),
                                             name: stringify!(#mod_name).parse().unwrap(),
                                         }.into(),
                                         stringify!(#ident).parse().unwrap(),
@@ -262,7 +263,6 @@ async fn main() -> Result<(), Bde> {
             output_ts.entry(mod_name).or_default().extend(quote! {
                 pub trait ClientExt {
                     fn client(&self) -> &::aptos_rest_client::Client;
-                    fn module_address(&self) -> ::aptos_types::account_address::AccountAddress;
 
                     #(#fns)*
                 }

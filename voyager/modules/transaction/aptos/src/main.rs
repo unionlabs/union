@@ -68,13 +68,9 @@ pub struct Config {
     pub keyring: KeyringConfig,
 }
 
-impl client::Core::ClientExt for Module {
+impl client::ibc_api::ClientExt for Module {
     fn client(&self) -> &aptos_rest_client::Client {
         &self.aptos_client
-    }
-
-    fn module_address(&self) -> AccountAddress {
-        self.ibc_handler_address.into()
     }
 }
 
@@ -179,7 +175,11 @@ end
 
                         dbg!(&account);
 
-                        let msgs = process_msgs(self, msgs.clone());
+                        let msgs = process_msgs(
+                            self.ibc_handler_address.inner().clone(),
+                            self,
+                            msgs.clone(),
+                        );
 
                         for (msg, entry_fn) in msgs {
                             dbg!(msg);
@@ -274,120 +274,207 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
 
 #[allow(clippy::type_complexity)]
 fn process_msgs(
-    client: &impl client::Core::ClientExt,
+    ibc_handler_address: AccountAddress,
+    client: &impl client::ibc_api::ClientExt,
     msgs: Vec<IbcMessage>,
 ) -> Vec<(IbcMessage, EntryFunction)> {
     msgs.clone()
         .into_iter()
         .map(|msg| match msg.clone() {
-            IbcMessage::CreateClient(MsgCreateClientData {
-                msg: data,
-                client_type,
-            }) => (msg, {
-                let this = &client;
-                let (_0, _1, _2) = (
-                    client_type.to_string(),
-                    data.client_state,
-                    data.consensus_state,
-                );
-                ::aptos_types::transaction::EntryFunction::new(
-                    ::aptos_rest_client::aptos_api_types::MoveModuleId {
-                        address: this.module_address().into(),
-                        name: stringify!(Core).parse().unwrap(),
-                    }
-                    .into(),
-                    stringify!(create_client).parse().unwrap(),
-                    vec![],
-                    vec![
-                        bcs::to_bytes(&_0).unwrap(),
-                        bcs::to_bytes(&_1).unwrap(),
-                        bcs::to_bytes(&_2).unwrap(),
-                    ],
-                )
-            }),
+            IbcMessage::CreateClient(data) => (
+                msg,
+                client.create_client(
+                    ibc_handler_address,
+                    (
+                        data.client_type.to_string(),
+                        data.msg.client_state,
+                        data.msg.consensus_state,
+                    ),
+                ),
+            ),
             IbcMessage::UpdateClient(data) => (
                 msg,
-                client.update_client((data.client_id.to_string(), data.client_message)),
+                client.update_client(
+                    ibc_handler_address,
+                    (data.client_id.to_string(), data.client_message),
+                ),
             ),
             IbcMessage::ConnectionOpenInit(data) => (
                 msg,
-                client.connection_open_init((
-                    data.client_id.to_string(),
-                    data.version.identifier,
-                    data.version
-                        .features
-                        .into_iter()
-                        .map(|f| f.to_string())
-                        .collect::<Vec<String>>(),
-                    data.counterparty.client_id.to_string(),
-                    if let Some(conn) = data.counterparty.connection_id {
-                        conn.to_string()
-                    } else {
-                        String::new()
-                    },
-                    data.counterparty.prefix.key_prefix,
-                    data.delay_period,
-                )),
+                client.connection_open_init(
+                    ibc_handler_address,
+                    (
+                        data.client_id.to_string(),
+                        data.version.identifier,
+                        data.version
+                            .features
+                            .into_iter()
+                            .map(|f| f.to_string())
+                            .collect::<Vec<String>>(),
+                        data.counterparty.client_id.to_string(),
+                        if let Some(conn) = data.counterparty.connection_id {
+                            conn.to_string()
+                        } else {
+                            String::new()
+                        },
+                        data.counterparty.prefix.key_prefix,
+                        data.delay_period,
+                    ),
+                ),
             ),
 
             IbcMessage::ConnectionOpenTry(data) => (
                 msg,
-                client.connection_open_try((
-                    data.counterparty.client_id.to_string(),
-                    if let Some(conn) = data.counterparty.connection_id {
-                        conn.to_string()
-                    } else {
-                        String::new()
-                    },
-                    data.counterparty.prefix.key_prefix,
-                    data.delay_period,
-                    data.client_id.to_string(),
-                    data.client_state,
-                    data.counterparty_versions
-                        .iter()
-                        .map(|v| v.identifier.clone())
-                        .collect::<Vec<String>>(),
-                    data.counterparty_versions
-                        .iter()
-                        .map(|v| {
-                            v.features
-                                .iter()
-                                .map(|f| f.to_string())
-                                .collect::<Vec<String>>()
-                        })
-                        .collect::<Vec<Vec<String>>>(),
-                    data.proof_init,
-                    data.proof_client,
-                    data.proof_height.revision_number,
-                    data.proof_height.revision_height,
-                )),
+                client.connection_open_try(
+                    ibc_handler_address,
+                    (
+                        data.counterparty.client_id.to_string(),
+                        if let Some(conn) = data.counterparty.connection_id {
+                            conn.to_string()
+                        } else {
+                            String::new()
+                        },
+                        data.counterparty.prefix.key_prefix,
+                        data.delay_period,
+                        data.client_id.to_string(),
+                        data.client_state,
+                        data.counterparty_versions
+                            .iter()
+                            .map(|v| v.identifier.clone())
+                            .collect::<Vec<String>>(),
+                        data.counterparty_versions
+                            .iter()
+                            .map(|v| {
+                                v.features
+                                    .iter()
+                                    .map(|f| f.to_string())
+                                    .collect::<Vec<String>>()
+                            })
+                            .collect::<Vec<Vec<String>>>(),
+                        data.proof_init,
+                        data.proof_client,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
             ),
             IbcMessage::ConnectionOpenAck(data) => (
                 msg,
-                client.connection_open_ack((
-                    data.connection_id.to_string(),
-                    data.client_state,
-                    data.version.identifier,
-                    data.version
-                        .features
-                        .iter()
-                        .map(ToString::to_string)
-                        .collect::<Vec<String>>(),
-                    data.proof_try,
-                    data.proof_client,
-                    data.counterparty_connection_id.to_string(),
-                    data.proof_height.revision_number,
-                    data.proof_height.revision_height,
-                )),
+                client.connection_open_ack(
+                    ibc_handler_address,
+                    (
+                        data.connection_id.to_string(),
+                        data.client_state,
+                        data.version.identifier,
+                        data.version
+                            .features
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<String>>(),
+                        data.proof_try,
+                        data.proof_client,
+                        data.counterparty_connection_id.to_string(),
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
             ),
             IbcMessage::ConnectionOpenConfirm(data) => (
                 msg,
-                client.connection_open_confirm((
-                    data.connection_id.to_string(),
-                    data.proof_ack,
-                    data.proof_height.revision_number,
-                    data.proof_height.revision_height,
-                )),
+                client.connection_open_confirm(
+                    ibc_handler_address,
+                    (
+                        data.connection_id.to_string(),
+                        data.proof_ack,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
+            ),
+            IbcMessage::ChannelOpenInit(data) => (
+                msg,
+                client.channel_open_init(
+                    data.port_id.to_string().parse().unwrap(),
+                    (
+                        data.channel
+                            .connection_hops
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<String>>(),
+                        data.channel.ordering as u8,
+                        data.channel.counterparty.port_id.to_string(),
+                        data.channel.counterparty.channel_id,
+                        data.channel.version,
+                    ),
+                ),
+            ),
+            IbcMessage::ChannelOpenTry(data) => (
+                msg,
+                client.channel_open_try(
+                    data.port_id.to_string().parse().unwrap(),
+                    (
+                        data.channel
+                            .connection_hops
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<String>>(),
+                        data.channel.ordering as u8,
+                        data.channel.counterparty.port_id.to_string(),
+                        data.channel.counterparty.channel_id,
+                        data.counterparty_version,
+                        data.channel.version,
+                        data.proof_init,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
+            ),
+            IbcMessage::ChannelOpenAck(data) => (
+                msg,
+                client.channel_open_ack(
+                    data.port_id.to_string().parse().unwrap(),
+                    (
+                        data.channel_id.to_string(),
+                        data.counterparty_channel_id.to_string(),
+                        data.counterparty_version,
+                        data.proof_try,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
+            ),
+            IbcMessage::ChannelOpenConfirm(data) => (
+                msg,
+                client.channel_open_confirm(
+                    data.port_id.to_string().parse().unwrap(),
+                    (
+                        data.channel_id.to_string(),
+                        data.proof_ack,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
+            ),
+            IbcMessage::RecvPacket(data) => (
+                msg,
+                client.recv_packet(
+                    data.packet.destination_port.to_string().parse().unwrap(),
+                    (
+                        data.packet.destination_channel.to_string(),
+                        data.packet.sequence.get(),
+                        data.packet.source_port.to_string(),
+                        data.packet.source_channel.to_string(),
+                        data.packet.destination_port.to_string(),
+                        data.packet.destination_channel.to_string(),
+                        data.packet.data,
+                        data.packet.timeout_height.revision_number,
+                        data.packet.timeout_height.revision_height,
+                        data.packet.timeout_timestamp,
+                        data.proof_commitment,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
             ),
             _ => todo!(),
         })

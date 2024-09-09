@@ -3,7 +3,7 @@ module ping_pong::ping_pong {
     use std::timestamp;
     use std::object;
     use std::signer;
-    use std ::string::{Self, String};
+    use std::string::{Self, String, utf8};
     use IBC::Core;
     use std::vector;
     use std::bcs;
@@ -44,6 +44,7 @@ module ping_pong::ping_pong {
 
     struct SignerRef has key {
         self_ref: object::ExtendRef,
+        self_address: address
     }
 
     fun init_module(deployer: &signer) {
@@ -51,7 +52,8 @@ module ping_pong::ping_pong {
         let vault_constructor_ref = &object::create_named_object(deployer, VAULT_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
         move_to(vault_signer, SignerRef {
-            self_ref: object::generate_extend_ref(vault_constructor_ref)
+            self_ref: object::generate_extend_ref(vault_constructor_ref),
+            self_address: signer::address_of(deployer),
         });
     }
 
@@ -103,33 +105,33 @@ module ping_pong::ping_pong {
         );
     }
 
-    public fun recv_packet(
-        msg_port_id: String,
-        msg_channel_id: String,
-        packet: Packet,
-        msg_proof: vector<u8>,
-        msg_proof_height: height::Height,
-    ) acquires PingPong, SignerRef {
-        let pp_packet = decode_packet(packet::data(&packet));
-        event::emit(RingEvent { ping: pp_packet.ping });
+    // public entry fun recv_packet(
+    //     channel_id: String,
+    //     packet: Packet,
+    //     proof: vector<u8>,
+    //     proof_height_revision_num: u64,
+    //     proof_height_revision_height: u64,
+    // ) acquires PingPong, SignerRef {
+    //     let pp_packet = decode_packet(packet::data(&packet));
+    //     event::emit(RingEvent { ping: pp_packet.ping });
 
-        let local_timeout = pp_packet.counterparty_timeout;
+    //     let local_timeout = pp_packet.counterparty_timeout;
 
-        pp_packet.ping = !pp_packet.ping;
-        pp_packet.counterparty_timeout = timestamp::now_seconds() + borrow_global<PingPong>(@0x1).timeout;
+    //     pp_packet.ping = !pp_packet.ping;
+    //     pp_packet.counterparty_timeout = timestamp::now_seconds() + borrow_global<PingPong>(@0x1).timeout;
 
-        initiate(pp_packet, local_timeout);
+    //     initiate(pp_packet, local_timeout);
 
-        Core::recv_packet(
-            &get_signer(),
-            msg_port_id,
-            msg_channel_id,
-            packet,
-            msg_proof,
-            msg_proof_height,
-            vector[1]
-        );
-    }
+    //     Core::recv_packet(
+    //         &get_signer(),
+    //         utf8(b""),
+    //         channel_id,
+    //         packet,
+    //         proof,
+    //         height::new(proof_height_revision_num, proof_height_revision_height),
+    //         vector[1]
+    //     );
+    // }
 
     public fun acknowledge_packet(
         packet: packet::Packet,
@@ -147,8 +149,7 @@ module ping_pong::ping_pong {
         event::emit(TimedOutEvent {});
     }
 
-    public entry fun chan_open_init(
-        port_id: String,
+    public entry fun channel_open_init(
         connection_hops: vector<String>,
         ordering: u8,
         counterparty_port_id: String,
@@ -158,7 +159,7 @@ module ping_pong::ping_pong {
         // TODO(aeryz): save the channel here
         Core::channel_open_init(
             &get_signer(),
-            port_id,
+            get_self_address(),
             connection_hops,
             ordering,
             channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
@@ -169,8 +170,7 @@ module ping_pong::ping_pong {
         };
     }
 
-    public entry fun chan_open_try(
-        port_id: String,
+    public entry fun channel_open_try(
         connection_hops: vector<String>,
         ordering: u8,
         counterparty_port_id: String,
@@ -184,7 +184,7 @@ module ping_pong::ping_pong {
         // TODO(aeryz): save the channel here
         Core::channel_open_try(
             &get_signer(),
-            port_id,
+            get_self_address(),
             connection_hops,
             ordering,
             channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
@@ -199,8 +199,7 @@ module ping_pong::ping_pong {
         };
     }
 
-    public entry fun chan_open_ack(
-        port_id: String,
+    public entry fun channel_open_ack(
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
@@ -211,7 +210,7 @@ module ping_pong::ping_pong {
         // Store the channel_id
         Core::channel_open_ack(
             &get_signer(),
-            port_id,
+            get_self_address(),
             channel_id,
             counterparty_channel_id,
             counterparty_version,
@@ -221,8 +220,7 @@ module ping_pong::ping_pong {
         borrow_global_mut<PingPong>(@0x1).channel_id = channel_id;
     }
 
-    public fun chan_open_confirm(
-        port_id: String,
+    public fun channel_open_confirm(
         channel_id: String,
         proof_ack: vector<u8>,
         proof_height_revision_num: u64,
@@ -230,7 +228,7 @@ module ping_pong::ping_pong {
     ) acquires PingPong, SignerRef {
         Core::channel_open_confirm(
             &get_signer(),
-            port_id,
+            get_self_address(),
             channel_id,
             proof_ack,
             height::new(proof_height_revision_num, proof_height_revision_height),
@@ -276,6 +274,11 @@ module ping_pong::ping_pong {
         object::generate_signer_for_extending(&vault.self_ref)
     }
 
+    public fun get_self_address(): address acquires SignerRef {
+        let vault = borrow_global<SignerRef>(get_vault_addr());
+        vault.self_address
+    }
+
     #[test]
     public fun test_encode() {
         let packet = PingPongPacket {
@@ -287,5 +290,12 @@ module ping_pong::ping_pong {
         
         assert!(decoded.ping == packet.ping, 1);
         assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
+    }
+
+    #[test(deployer = @ping_pong)]
+    public fun test_signer(deployer: &signer) acquires SignerRef {
+        std::debug::print(deployer);
+        init_module(deployer);
+        std::debug::print(&get_signer());
     }
 }

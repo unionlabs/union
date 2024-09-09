@@ -52,7 +52,6 @@ module ibc_api::ibc_api {
     ) {}
 
     public entry fun channel_open_init(
-        _port_id: String,
         _connection_hops: vector<String>,
         _ordering: u8,
         _counterparty_port_id: String,
@@ -61,7 +60,6 @@ module ibc_api::ibc_api {
     ) {}
 
     public entry fun channel_open_try(
-        _port_id: String,
         _connection_hops: vector<String>,
         _ordering: u8,
         _counterparty_port_id: String,
@@ -74,7 +72,6 @@ module ibc_api::ibc_api {
     ) {}
 
     public entry fun channel_open_ack(
-        _port_id: String,
         _channel_id: String,
         _counterparty_channel_id: String,
         _counterparty_version: String,
@@ -84,7 +81,6 @@ module ibc_api::ibc_api {
     ) {}
 
     public entry fun channel_open_confirm(
-        _port_id: String,
         _channel_id: String,
         _proof_ack: vector<u8>,
         _proof_height_revision_num: u64,
@@ -92,8 +88,6 @@ module ibc_api::ibc_api {
     ) {}
 
     public entry fun recv_packet(
-        _port_id: String,
-        _channel_id: String,
         _packet_sequence: u64,
         _packet_source_port: String,
         _packet_source_channel: String,
