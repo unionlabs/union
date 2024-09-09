@@ -2,7 +2,11 @@ import { err, ok, Result } from "neverthrow"
 import type { ChainId } from "./client/types.ts"
 import { offchainQuery } from "./query/offchain/hubble.ts"
 
-export const createPfmMemo = Result.fromThrowable(
+export const createPfmMemo: (_args: {
+  port: string
+  channel: string
+  receiver: string
+}) => Result<string, Error> = Result.fromThrowable(
   ({
     port,
     channel,
@@ -11,7 +15,7 @@ export const createPfmMemo = Result.fromThrowable(
     port: string
     channel: string
     receiver: string
-  }) =>
+  }): string =>
     JSON.stringify({
       forward: {
         port,
@@ -33,7 +37,6 @@ export async function getHubbleChainDetails({
     {
       port?: string
       sourceChannel: string
-      // memo?: string | undefined
       destinationChannel: string
       destinationChainId: ChainId
       relayContractAddress: string
@@ -46,10 +49,6 @@ export async function getHubbleChainDetails({
     return err(new Error("Source and destination chains cannot be the same"))
   }
 
-  const transferType = [sourceChainId, destinationChainId].includes("union-testnet-8")
-    ? "direct"
-    : "pfm"
-
   const {
     data: [data]
   } = await offchainQuery.chain({
@@ -58,10 +57,15 @@ export async function getHubbleChainDetails({
     includeEndpoints: true
   })
 
+  const transferType = [sourceChainId, destinationChainId].includes("union-testnet-8")
+    ? "direct"
+    : "pfm"
+
   if (!data) return err(new Error("Chain not found in hubble"))
 
+  const checkAgainst = sourceChainId === "union-testnet-8" ? destinationChainId : "union-testnet-8"
   const ucsConfiguration = data.ucs1_configurations
-    ?.filter(config => config.destination_chain.chain_id === "union-testnet-8")
+    ?.filter(config => config.destination_chain.chain_id === checkAgainst)
     .at(0)
 
   if (!ucsConfiguration) return err(new Error("UCS configuration not found"))

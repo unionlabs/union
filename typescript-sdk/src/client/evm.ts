@@ -1,10 +1,12 @@
 import {
   erc20Abi,
+  type Hex,
   getAddress,
   type Account,
   publicActions,
   type HttpTransport,
   createWalletClient,
+  type CustomTransport,
   type FallbackTransport
 } from "viem"
 import {
@@ -18,20 +20,24 @@ import { bech32AddressToHex } from "../convert.ts"
 import type { TransferAssetsParameters } from "./types.ts"
 import { createPfmMemo, getHubbleChainDetails } from "../pfm.ts"
 import { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio } from "viem/chains"
+export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
-export const evmChainId = [
+export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
+export const evmChainId: ReadonlyArray<`${(typeof evmChains)[number]["id"]}`> = [
   `${sepolia.id}`,
   `${scrollSepolia.id}`,
   `${arbitrumSepolia.id}`,
   `${berachainTestnetbArtio.id}`
 ] as const
+
+export const evmChainFromChainId = (chainId: string) => evmChains.find(c => `${c.id}` === chainId)
+
 export type EvmChainId = `${(typeof evmChainId)[number]}`
-export const evmChains = [sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio] as const
 
 export interface EvmClientParameters {
   chainId: EvmChainId
-  transport: FallbackTransport | HttpTransport
   account?: `0x${string}` | Account | undefined
+  transport: FallbackTransport | HttpTransport | CustomTransport
 }
 
 export const chainIdToChain = (chainId: EvmChainId) =>
@@ -40,7 +46,10 @@ export const chainIdToChain = (chainId: EvmChainId) =>
   )
 
 export const createEvmClient = (parameters: EvmClientParameters) => {
-  return createWalletClient({ ...parameters, chain: chainIdToChain(parameters.chainId) })
+  return createWalletClient({
+    ...parameters,
+    chain: chainIdToChain(parameters.chainId)
+  })
     .extend(publicActions)
     .extend(client => ({
       transferAsset: async ({
@@ -51,7 +60,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         simulate = true,
         destinationChainId,
         autoApprove = false
-      }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
+      }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
 
         const pfmDetails = await getHubbleChainDetails({
@@ -90,7 +99,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         denomAddress,
         simulate = true,
         destinationChainId
-      }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
+      }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         const ucsDetails = await getHubbleChainDetails({
           destinationChainId,
           sourceChainId: parameters.chainId

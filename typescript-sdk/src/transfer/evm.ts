@@ -1,5 +1,6 @@
 import {
   erc20Abi,
+  type Hex,
   getAddress,
   type Address,
   type Account,
@@ -27,7 +28,20 @@ export type TransferAssetFromEvmParams = {
 }
 
 /**
- * TODO: add JSDoc with examples
+ * transfer an asset from evm
+ * @example
+ * ```ts
+ * const transfer = await transferAssetFromEvm(client, {
+ *   memo: "test",
+ *   amount: 1n,
+ *   account: evmAccount,
+ *   sourceChannel: "channel-1",
+ *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+ *   relayContractAddress: "0x2222222222222222222222222222222222222222",
+ *   destinationChainId: "stride-internal-1",
+ * })
+ * ```
  */
 export async function transferAssetFromEvm(
   client: WalletClient & PublicActions,
@@ -38,11 +52,11 @@ export async function transferAssetFromEvm(
     recipient,
     denomAddress,
     sourceChannel,
-    autoApprove = false,
     simulate = true,
+    autoApprove = false,
     relayContractAddress
   }: TransferAssetFromEvmParams
-): Promise<Result<string, Error>> {
+): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
 
@@ -109,7 +123,20 @@ export type ApproveTransferAssetFromEvmParams = Pick<
 >
 
 /**
- * TODO: add JSDoc with examples
+ * approve a transfer asset from evm
+ * @example
+ * ```ts
+ * const transfer = await approveTransferAssetFromEvm(client, {
+ *   memo: "test",
+ *   amount: 1n,
+ *   account: evmAccount,
+ *   sourceChannel: "channel-1",
+ *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+ *   relayContractAddress: "0x2222222222222222222222222222222222222222",
+ *   destinationChainId: "stride-internal-1",
+ * })
+ * ```
  */
 export async function approveTransferAssetFromEvm(
   client: WalletClient & PublicActions,
@@ -120,7 +147,7 @@ export async function approveTransferAssetFromEvm(
     simulate = true,
     relayContractAddress
   }: ApproveTransferAssetFromEvmParams
-): Promise<Result<string, Error>> {
+): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
 
@@ -154,7 +181,20 @@ export async function approveTransferAssetFromEvm(
 }
 
 /**
- * TODO: add JSDoc with examples
+ * simulate a transfer asset from evm
+ * @example
+ * ```ts
+ * const transfer = await transferAssetFromEvmSimulate(client, {
+ *   memo: "test",
+ *   amount: 1n,
+ *   account: evmAccount,
+ *   sourceChannel: "channel-1",
+ *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+ *   relayContractAddress: "0x2222222222222222222222222222222222222222",
+ *   destinationChainId: "stride-internal-1",
+ * })
+ * ```
  */
 export async function transferAssetFromEvmSimulate(
   client: WalletClient & PublicActions,

@@ -19,6 +19,17 @@ const hubbleRestFetch = ofetch.create({
 })
 
 export const offchainQuery = {
+  /**
+   * get all chains details from hubble
+   * @example
+   * ```ts
+   * const chains = await offchainQuery.chains({
+   *   includeAssets: true,
+   *   includeEndpoints: true,
+   *   includeContracts: true,
+   * })
+   * ```
+   */
   chains: async ({
     includeEndpoints = false,
     includeContracts = false,
@@ -27,10 +38,12 @@ export const offchainQuery = {
     includeEndpoints?: boolean
     includeContracts?: boolean
     includeAssets?: boolean
-  } = {}) => {
+  } = {}): Promise<
+    OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
+  > => {
     return await hubbleRestFetch<
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
-    >(`/chains`, {
+    >("/chains", {
       query: {
         include_rpcs: includeEndpoints,
         include_contracts: includeContracts,
@@ -38,6 +51,18 @@ export const offchainQuery = {
       }
     })
   },
+  /**
+   * get chain details from hubble
+   * @example
+   * ```ts
+   * const chain = await offchainQuery.chain({
+   *   includeAssets: true,
+   *   includeEndpoints: true,
+   *   includeContracts: true,
+   *   chainId: "stride-internal-1",
+   * })
+   * ```
+   */
   chain: async ({
     chainId,
     includeEndpoints = false,
@@ -48,7 +73,9 @@ export const offchainQuery = {
     includeEndpoints?: boolean
     includeContracts?: boolean
     includeAssets?: boolean
-  }) => {
+  }): Promise<
+    OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
+  > => {
     return await hubbleRestFetch<
       OffchainQueryBaseResponse<Chain<typeof includeEndpoints, typeof includeContracts>>
     >(`/chains/${chainId}`, {

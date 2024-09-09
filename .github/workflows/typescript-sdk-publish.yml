@@ -1,4 +1,4 @@
-name: Publish TypeScript SDK
+name: 'Publish TypeScript SDK'
 
 on:
   push:
@@ -19,116 +19,22 @@ defaults:
     shell: bash
 
 env:
-  NIX_VERSION: nix-2.13.2
-  NIXPKGS_CHANNEL: nixos-22.11
   NODE_OPTIONS: '--no-warnings'
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
-  publish-npm:
-    # manually temporarily disabled
-    if: false
-    name: 'Publish NPM Registry'
-    permissions:
-      id-token: write
-      contents: write
+  publish-jsr:
+    name: 'Publish JSR'
     runs-on: ['ubuntu-latest']
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v4
-
-      # This is needed to do npm authentication
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: 'Install Nix'
-        uses: cachix/install-nix-action@v25
-        with:
-          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
-          github_access_token: ${{ github.token }}
-      - run: |
-          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
-          nix-channel --update
-
-      - name: 'Build SDK'
-        working-directory: './typescript-sdk'
-        run: |
-          nix build .#typescript-sdk -o dist
-
-      - name: 'Publish to NPM'
-        working-directory: './typescript-sdk'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # https://docs.npmjs.com/generating-provenance-statements
-          NPM_CONFIG_PROVENANCE: true
-        run: |
-          npm publish --access='public' --no-git-checks
-
-  publish-github:
-    name: 'Publish GitHub Package Registry'
-    # manually temporarily disabled
-    if: false
     permissions:
       contents: read
+      # The OIDC ID token is used for authentication with JSR. 
       id-token: write
-      packages: write
-    runs-on: ['ubuntu-latest']
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
 
-      # This is needed to do npm authentication
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          registry-url: 'https://npm.pkg.github.com'
-
-      - name: 'Install Nix'
-        uses: cachix/install-nix-action@v25
-        with:
-          github_access_token: ${{ github.token }}
-          nix_path: nixpkgs=channel:${{ env.NIXPKGS_CHANNEL }}
-      - run: |
-          nix-channel --add https://nixos.org/channels/${{ env.NIXPKGS_CHANNEL }} nixpkgs
-          nix-channel --update
-
-      - name: 'Update ~/.npmrc'
+      - name: 'Publish to JSR'
         working-directory: './typescript-sdk'
         run: |
-          echo "//npm.pkg.github.com:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-
-      - name: 'Build SDK'
-        working-directory: './typescript-sdk'
-        run: |
-          nix build .#typescript-sdk -o dist
-
-      - name: 'Publish to GitHub Package Registry'
-        working-directory: './typescript-sdk'
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # https://docs.npmjs.com/generating-provenance-statements
-          NPM_CONFIG_PROVENANCE: true
-        run: |
-          yarn publish --access='public' --registry='https://npm.pkg.github.com' --no-git-checks
-
-  changelog:
-    # manually temporarily disabled
-    if: false
-    name: 'Generate Changelog'
-    runs-on: ['ubuntu-latest']
-    needs: ['publish-npm']
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 'Generate Changelog'
-        run: npm_config_yes=true npx changelogithub
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_yes=true npx jsr publish --allow-slow-types

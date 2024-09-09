@@ -1,8 +1,6 @@
 <script lang="ts">
 import type { Writable } from "svelte/store"
 import { cn } from "$lib/utilities/shadcn.ts"
-import { sepoliaStore } from "$lib/wallet/evm"
-import { cosmosStore } from "$lib/wallet/cosmos"
 import LockLockedIcon from "virtual:icons/lucide/lock"
 import LockOpenIcon from "virtual:icons/lucide/lock-open"
 import { Input } from "$lib/components/ui/input/index.ts"
@@ -11,12 +9,6 @@ import Button from "$lib/components/ui/button/button.svelte"
 export let recipient: Writable<string>
 
 let recipientInputState: "locked" | "unlocked" | "invalid" = "unlocked"
-
-const recipientAddressByChainId = (chainId?: string | null) => {
-  if (!chainId) return ""
-  if (chainId === "11155111") return $sepoliaStore.address
-  return $cosmosStore.rawAddress
-}
 
 const onUnlockClick = (_event: MouseEvent) => {
   if (recipientInputState === "locked") {

@@ -1,5 +1,3 @@
-export const zkgm = "o______o"
-
 import "./patch.ts"
 export type * from "./types.ts"
 export {
@@ -11,19 +9,17 @@ export {
   hexStringToUint8Array,
   uint8ArrayToHexString
 } from "./convert.ts"
-export {
-  truncateAddress,
-  isValidEvmTxHash,
-  isValidEvmAddress,
-  isValidCosmosTxHash,
-  isValidBech32Address
-} from "./utilities/address.ts"
 import {
   evmChains,
   evmChainId,
   createEvmClient,
   type EvmChainId,
-  type EvmClientParameters
+  evmChainFromChainId,
+  type EvmClientParameters,
+  sepolia,
+  scrollSepolia,
+  arbitrumSepolia,
+  berachainTestnetbArtio
 } from "./client/evm.ts"
 import {
   cosmosChainId,
@@ -31,6 +27,14 @@ import {
   createCosmosClient,
   type CosmosClientParameters
 } from "./client/cosmos.ts"
+export {
+  truncateAddress,
+  isValidEvmTxHash,
+  isValidEvmAddress,
+  isValidCosmosTxHash,
+  isValidBech32Address,
+  extractBech32AddressPrefix
+} from "./utilities/address.ts"
 export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
 import type { ChainId, TransferAssetsParameters } from "./client/types.ts"
@@ -168,7 +172,12 @@ export {
   cosmosChainId,
   type EvmChainId,
   type CosmosChainId,
+  evmChainFromChainId,
   type EvmClientParameters,
   type CosmosClientParameters,
-  type TransferAssetsParameters
+  type TransferAssetsParameters,
+  sepolia,
+  scrollSepolia,
+  arbitrumSepolia,
+  berachainTestnetbArtio
 }

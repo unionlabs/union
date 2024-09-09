@@ -15,17 +15,17 @@ import {
   switchChain as _switchChain,
   createStorage as createWagmiStorage
 } from "@wagmi/core"
+import type { Address } from "viem"
 import { sleep } from "$lib/utilities"
-import { derived, writable, type Readable } from "svelte/store"
 import { KEY } from "$lib/constants/keys.ts"
+import type { UserAddressEvm } from "$lib/types"
 import { APP_INFO } from "$lib/constants/app.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
-import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "@wagmi/core/chains"
+import { derived, writable, type Readable } from "svelte/store"
 import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
-import type { UserAddressEvm } from "$lib/types"
-import type { Address } from "viem"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "@wagmi/core/chains"
 
-const chains = [sepolia] as const
+const chains = [sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
 
 export type Wallet = GetAccountReturnType
@@ -34,7 +34,7 @@ export type ConnectedWallet = Wallet & { status: "connected" }
 export type ConnectorType = "injected" | "walletConnect"
 
 export const config = createConfig({
-  chains: [sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia],
+  chains,
   cacheTime: 4_000,
   pollingInterval: 4_000,
   syncConnectedChain: true,
