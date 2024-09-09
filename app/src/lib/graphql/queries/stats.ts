@@ -25,3 +25,13 @@ export const packetsPerDayQueryDocument = graphql(/* GraphQL */ `
         }
     }
 `)
+
+export const transferAddressesCountQueryDocument = graphql(/* GraphQL */ `
+    query TransferAddressesCountQuery($addresses: [String!]!) {
+        v1_transfers_aggregate(where: {normalized_sender: {_in: $addresses}}) {
+            aggregate {
+                count
+            }
+        }
+    }
+`)

@@ -1,6 +1,5 @@
 import { createQuery } from "@tanstack/svelte-query"
-import { statsQueryDocument, transfersPerDayQueryDocument } from "$lib/graphql/queries/stats.ts"
-
+import { statsQueryDocument, transfersPerDayQueryDocument, transferAddressesCountQueryDocument } from "$lib/graphql/queries/stats.ts"
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
 
@@ -22,3 +21,15 @@ export const transfersPerDayQuery = (limit: number) =>
     refetchInterval: 6_000,
     refetchOnWindowFocus: false
   })
+
+export const transfersAddressQuery = (addresses: Array<string>) =>
+  createQuery({
+    queryKey: ["transfer-addresses"],
+    queryFn: async () =>
+      (await request(URLS.GRAPHQL, transferAddressesCountQueryDocument, { addresses })).v1_transfers_aggregate,
+    enabled: true,
+    refetchInterval: 6_000,
+    refetchOnWindowFocus: false,
+  })
+
+
