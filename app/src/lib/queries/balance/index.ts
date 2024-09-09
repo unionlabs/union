@@ -11,11 +11,11 @@ import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 export function userBalancesQuery({
   userAddr,
   chains,
-  connected
+  connected = true
 }: {
   userAddr: UserAddresses
   chains: Array<Chain>
-  connected: boolean
+  connected?: boolean
 }) {
   return createQueries({
     queries: chains.map(chain => ({

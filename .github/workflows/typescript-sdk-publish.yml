@@ -24,6 +24,8 @@ env:
 
 jobs:
   publish-jsr:
+    # manually temporarily disabled
+    if: false
     name: 'Publish JSR'
     runs-on: ['ubuntu-latest']
     permissions:
@@ -33,7 +35,7 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
-        
+
       - name: 'Setup bun'
         uses: oven-sh/setup-bun@v2
         with:

@@ -27,11 +27,9 @@ import ChainDialog from "./chain-dialog.svelte"
 import ChainButton from "./chain-button.svelte"
 import { toIsoString } from "$lib/utilities/date"
 import AssetsDialog from "./assets-dialog.svelte"
-import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { truncate } from "$lib/utilities/format.ts"
 import Stepper from "$lib/components/stepper.svelte"
 import { raise, sleep } from "$lib/utilities/index.ts"
-import type { OfflineSigner } from "@leapwallet/types"
 import { userBalancesQuery } from "$lib/queries/balance"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
@@ -45,6 +43,7 @@ import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import { parseUnits, formatUnits, type HttpTransport } from "viem"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
+import { userAddrCosmos, getCosmosOfflineSigner } from "$lib/wallet/cosmos"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 
@@ -58,7 +57,9 @@ let userAddress: Readable<UserAddresses> = derived(
 )
 
 $: userBalances = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })
-
+$: {
+  // console.info($userBalances)
+}
 // CURRENT FORM STATE
 let fromChainId = writable("")
 let toChainId = writable("")
@@ -123,7 +124,7 @@ $: asset = derived(
   }
 )
 
-let recipient = derived([toChain, userAddress], ([$toChain, $userAddress]) => {
+let receiver = derived([toChain, userAddress], ([$toChain, $userAddress]) => {
   switch ($toChain?.rpc_type) {
     case "evm": {
       const evmAddr = $userAddress.evm
@@ -143,10 +144,14 @@ let recipient = derived([toChain, userAddress], ([$toChain, $userAddress]) => {
   }
 })
 
+$: {
+  console.info($receiver)
+}
+
 let ucs01Configuration = derived(
-  [fromChain, toChainId, recipient],
-  ([$fromChain, $toChainId, $recipient]) => {
-    if ($fromChain === null || $toChainId === null || $recipient === null) return null
+  [fromChain, toChainId, receiver],
+  ([$fromChain, $toChainId, $receiver]) => {
+    if ($fromChain === null || $toChainId === null || $receiver === null) return null
 
     let ucs1_configuration =
       $toChainId in $fromChain.ucs1_configurations
@@ -171,13 +176,13 @@ let ucs01Configuration = derived(
         hopChainId = foundHopChainId
         ucs1_configuration = $fromChain.ucs1_configurations[hopChainId]
         let forwardConfig = ucs1_configuration.forwards[$toChainId]
-        if (!$recipient) return
+        if (!$receiver) return
 
         const _pfmMemo = createPfmMemo({
           channel: forwardConfig.channel_id,
           port: forwardConfig.port_id,
           // // @ts-expect-error
-          receiver: $toChain?.rpc_type === "evm" ? $recipient.slice(2) : $recipient
+          receiver: $toChain?.rpc_type === "evm" ? $receiver.slice(2) : $receiver
         })
         if (_pfmMemo.isErr()) throw _pfmMemo.error
         pfmMemo = _pfmMemo.value
@@ -212,17 +217,12 @@ const transfer = async () => {
     return toast.error("No evm wallet connected")
   if ($fromChain.rpc_type === "cosmos" && !$userAddress.cosmos)
     return toast.error("No cosmos wallet connected")
-  if (!$recipient) return toast.error("Invalid recipient")
-  // if (!$ucs01Configuration)
-  //   return toast.error(
-  //     `No UCS01 configuration for ${$fromChain.display_name} -> ${$toChain.display_name}`
-  //   )
+  if (!$receiver) return toast.error("Invalid receiver")
 
   let supported = getSupportedAsset($fromChain, $asset.address)
   let decimals = supported?.decimals ?? 0
   let parsedAmount = parseUnits(amount, decimals)
 
-  // let { ucs1_configuration, pfmMemo, hopChainId } = $ucs01Configuration
   if ($fromChain.rpc_type === "cosmos") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
@@ -285,17 +285,7 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
-        const cosmosOfflineSigner = (
-          $cosmosStore.connectedWallet === "keplr"
-            ? window?.keplr?.getOfflineSigner($fromChainId, {
-                disableBalanceCheck: false
-              })
-            : window.leap
-              ? window.leap.getOfflineSigner($fromChainId, {
-                  disableBalanceCheck: false
-                })
-              : undefined
-        ) as OfflineSigner
+        const cosmosOfflineSigner = getCosmosOfflineSigner($fromChainId)
 
         const unionClient = createUnionClient({
           account: cosmosOfflineSigner,
@@ -307,7 +297,7 @@ const transfer = async () => {
         const transfer = await unionClient.transferAsset({
           autoApprove: true,
           amount: parsedAmount,
-          recipient: $recipient,
+          receiver: $receiver,
           denomAddress: $assetAddress,
           destinationChainId: $toChain.chain_id
         })
@@ -337,15 +327,6 @@ const transfer = async () => {
     }
 
     if ($userAddrEvm === null) return toast.error("No Cosmos user address found")
-    // if (pfmMemo === null && $userAddrCosmos === null)
-    //   return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
-    // if (connectorClient?.chain?.id !== selectedChain.id) {
-    // await windowEthereumAddChain(selectedChain)
-    // await windowEthereumSwitchChain(selectedChain.id)
-    //   await sleep(1_500)
-    // }
-
-    // const ucs01address = ucs1_configuration.contract_address as Address
 
     if (window.ethereum === undefined) raise("no ethereum browser extension")
 
@@ -378,7 +359,7 @@ const transfer = async () => {
       try {
         const approve = await unionClient.approveTransaction({
           amount: parsedAmount,
-          recipient: $recipient,
+          receiver: $receiver,
           denomAddress: $assetAddress,
           destinationChainId: $toChain.chain_id
         })
@@ -413,9 +394,6 @@ const transfer = async () => {
     if ($transferState.kind === "SIMULATING_TRANSFER") {
       console.log("simulating transfer step")
 
-      // if (pfmMemo === null && $userAddrCosmos === null)
-      //   return toast.error("Destination is a Cosmos chain, but no Cosmos user address found")
-
       if ($transferState.warning) {
         transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
         transfer()
@@ -427,8 +405,6 @@ const transfer = async () => {
       console.log("confirming transfers test")
 
       try {
-        // console.log("contract request", contractRequest)
-        // const simulationResult = await simulateContract(config, contractRequest)
         transferState.set({ kind: "CONFIRMING_TRANSFER", contractRequest: null })
       } catch (error) {
         if (error instanceof Error) {
@@ -443,7 +419,7 @@ const transfer = async () => {
         const transfer = await unionClient.transferAsset({
           autoApprove: false,
           amount: parsedAmount,
-          recipient: $recipient,
+          receiver: $receiver,
           denomAddress: $assetAddress,
           destinationChainId: $toChain.chain_id
         })
@@ -495,7 +471,7 @@ const transfer = async () => {
             ? $userAddrCosmos?.normalized
             : $userAddrEvm?.normalized,
         transfer_day: toIsoString(new Date(Date.now())).split("T")[0],
-        receiver: $recipient,
+        receiver: $receiver,
         assets: {
           [$assetSymbol]: {
             info: $fromChain?.assets?.find(d => d.denom === $assetSymbol) ?? null,
@@ -794,10 +770,10 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
 let inputState: "locked" | "unlocked" = "locked"
 
 let userInput = false
-$: address = $recipient ?? ""
+$: address = $receiver ?? ""
 
-$: if (!userInput && $recipient !== address) {
-  address = $recipient ?? ""
+$: if (!userInput && $receiver !== address) {
+  address = $receiver ?? ""
 }
 
 const handleInput = (event: Event) => {
@@ -807,7 +783,7 @@ const handleInput = (event: Event) => {
 
 const resetInput = () => {
   userInput = false
-  address = $recipient ?? ""
+  address = $receiver ?? ""
 }
 </script>
 
@@ -832,7 +808,7 @@ const resetInput = () => {
       <Card.Content class={cn('flex flex-col gap-4')}>
         <section>
           <CardSectionHeading>From</CardSectionHeading>
-          <ChainButton bind:dialogOpen={dialogOpenFromChain} bind:selectedChainId={$fromChainId}>
+          <ChainButton bind:dialogOpen={dialogOpenFromChain}>
             {$fromChain?.display_name ?? 'Select chain'}
           </ChainButton>
           <div class="flex flex-col items-center pt-4 -mb-6">
@@ -841,7 +817,10 @@ const resetInput = () => {
             </Button>
           </div>
           <CardSectionHeading>To</CardSectionHeading>
-          <ChainButton bind:dialogOpen={dialogOpenToChain} bind:selectedChainId={$toChainId}>
+          <ChainButton
+            bind:dialogOpen={dialogOpenToChain}
+            disabled={!($sendableBalances && $fromChain)}
+          >
             {$toChain?.display_name ?? 'Select chain'}
           </ChainButton>
         </section>
@@ -849,7 +828,7 @@ const resetInput = () => {
           <CardSectionHeading>Asset</CardSectionHeading>
           {#if $sendableBalances !== undefined && $fromChainId}
             {#if $sendableBalances === null}
-              Failed to load sendable balances for <b>{$fromChain?.display_name}</b>.
+              Could not load sendable balances for <b>{$fromChain?.display_name}</b>.
             {:else if $sendableBalances && $sendableBalances.length === 0}
               You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some
               from <a class="underline font-bold" href="/faucet">the faucet</a>
@@ -908,7 +887,7 @@ const resetInput = () => {
           />
         </section>
         <section>
-          <CardSectionHeading>Recipient</CardSectionHeading>
+          <CardSectionHeading>Receiver</CardSectionHeading>
           <div class="flex items-start gap-2">
             <div class="w-full">
               <div class="relative w-full mb-2">
@@ -947,7 +926,7 @@ const resetInput = () => {
           disabled={!amount ||
             !$asset ||
             !$toChainId ||
-            !$recipient ||
+            !$receiver ||
             !$assetSymbol ||
             !$fromChainId ||
             !amountLargerThanZero ||
@@ -1001,16 +980,18 @@ const resetInput = () => {
   userAddress={$userAddress}
 />
 
-<ChainDialog
-  bind:dialogOpen={dialogOpenToChain}
-  chains={chains.filter(c => c.enabled_staging)}
-  kind="to"
-  onChainSelect={newSelectedChain => {
-    toChainId.set(newSelectedChain)
-  }}
-  selectedChain={$toChainId}
-  userAddress={$userAddress}
-/>
+{#if $sendableBalances && $fromChain}
+  <ChainDialog
+    bind:dialogOpen={dialogOpenToChain}
+    chains={chains.filter(c => c.enabled_staging)}
+    kind="to"
+    onChainSelect={newSelectedChain => {
+      toChainId.set(newSelectedChain)
+    }}
+    selectedChain={$toChainId}
+    userAddress={$userAddress}
+  />
+{/if}
 
 {#if $sendableBalances && $fromChain}
   <AssetsDialog

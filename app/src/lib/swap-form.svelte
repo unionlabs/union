@@ -148,7 +148,7 @@ const BERACHAIN_CONTRACTS = {
       fromChainId.set(newSelectedChain)
     }}
     selectedChain={$fromChainId}
-    userAddr={$userAddr}
+    userAddress={$userAddr}
   />
 
   <ChainDialog
@@ -159,7 +159,7 @@ const BERACHAIN_CONTRACTS = {
       toChainId.set(newSelectedChain)
     }}
     selectedChain={$toChainId}
-    userAddr={$userAddr}
+    userAddress={$userAddr}
   />
   
 </ChainsGate>
