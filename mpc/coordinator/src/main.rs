@@ -1,8 +1,6 @@
 use clap::{Parser, Subcommand};
 use mpc_shared::{phase2_verify, supabase::SupabaseMPCApi};
 
-const SUPABASE_PROJECT: &str = "https://wwqpylbrcpriyaqugzsi.supabase.co";
-
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -14,9 +12,9 @@ struct Args {
 enum Command {
     Start {
         #[arg(short, long)]
-        jwt: String,
+        url: String,
         #[arg(short, long)]
-        api_key: String,
+        jwt: String,
     },
 }
 
@@ -34,8 +32,8 @@ enum Error {
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args = Args::parse();
     match args.command {
-        Command::Start { jwt, api_key } => {
-            let client = SupabaseMPCApi::new(SUPABASE_PROJECT.into(), api_key, jwt);
+        Command::Start { url, jwt } => {
+            let client = SupabaseMPCApi::new(url, jwt.clone(), jwt);
             let progress = |percent| async move { println!("downloaded: {:.2}%", percent) };
             loop {
                 println!("downloading current payload...");
