@@ -27,6 +27,22 @@ CREATE POLICY view_all
       true
     );
 
+
+CREATE OR REPLACE VIEW current_queue AS
+  (
+    SELECT *, (SELECT COUNT(*) FROM queue qq
+                WHERE
+                NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = qq.id)
+                AND qq.score > q.score
+    ) + 1 AS position FROM queue q
+    WHERE
+    -- Contribution round not started
+    NOT EXISTS (SELECT cs.id FROM contribution_status cs WHERE cs.id = q.id)
+    ORDER BY q.score DESC
+  );
+
+ALTER VIEW current_queue SET (security_invoker = on);
+
 CREATE OR REPLACE FUNCTION min_score() RETURNS INTEGER AS $$
 BEGIN
   RETURN (SELECT COALESCE(MIN(score) - 1, 1000000) FROM queue);
@@ -80,6 +96,9 @@ ALTER TABLE contribution_submitted ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contribution_submitted ADD FOREIGN KEY (id) REFERENCES contribution_status(id);
 ALTER TABLE contribution_submitted ADD FOREIGN KEY (object_id) REFERENCES storage.objects(id);
 
+CREATE INDEX idx_contribution_submitted_object ON contribution_submitted(object_id);
+CREATE INDEX idx_contribution_submitted_id_created_at ON contribution_submitted(id, created_at);
+
 CREATE POLICY view_all
   ON contribution_submitted
   FOR SELECT
@@ -95,11 +114,11 @@ CREATE TABLE contribution(
   id uuid PRIMARY KEY,
   seq smallserial NOT NULL,
   created_at timestamptz NOT NULL DEFAULT(now()),
-  success boolean
+  success boolean NOT NULL
 );
 
 ALTER TABLE contribution ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contribution ADD FOREIGN KEY (id) REFERENCES contribution_status(id);
+ALTER TABLE contribution ADD FOREIGN KEY (id) REFERENCES contribution_submitted(id);
 CREATE UNIQUE INDEX idx_contribution_seq ON contribution(seq);
 CREATE UNIQUE INDEX idx_contribution_seq_success ON contribution(success, seq);
 
@@ -221,6 +240,14 @@ CREATE POLICY allow_authenticated_contributor_upload_insert
       can_upload(name)
     );
 
+CREATE POLICY allow_service_insert
+  ON storage.objects
+  FOR INSERT
+    TO service_role
+    WITH CHECK (
+      true
+    );
+
 CREATE OR REPLACE FUNCTION can_download(name varchar) RETURNS BOOLEAN AS $$
 BEGIN
   RETURN (
@@ -296,5 +323,19 @@ EXECUTE FUNCTION set_contribution_submitted_trigger();
 
 -- Will rotate the current contributor if the slot expired without any contribution submitted
 SELECT cron.schedule('update-contributor', '10 seconds', 'CALL set_next_contributor()');
+
+-- Automatically join the queue
+CREATE OR REPLACE FUNCTION user_join_queue() RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.queue(id) VALUES(NEW.id);
+  RETURN NEW;
+END
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+CREATE TRIGGER user_join_queue
+  AFTER INSERT
+  ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION user_join_queue();
 
 COMMIT;
