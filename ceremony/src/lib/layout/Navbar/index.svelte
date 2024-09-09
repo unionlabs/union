@@ -42,9 +42,8 @@ async function logout() {
       <div class="hidden md:block">
         {#if user.session}
           <div class="flex items-center gap-4">
-            <NavLink href="/app">Dashboard</NavLink>
-            <NavLink href="/app/client">Client</NavLink>
-            <NavLink href="/app/install">Install</NavLink>
+
+            <NavLink href="/app">Contribute</NavLink>
             <Button onclick={logout}>{"Log out"}</Button>
           </div>
         {:else}

@@ -3,7 +3,7 @@ import type { ContributeBody, Status } from "$lib/client/types.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { getQueuePayloadId } from "$lib/supabase/queries.ts"
 
-export const contribute = async (): Promise<Status | undefined> => {
+export const start = async (): Promise<Status | undefined> => {
   const userId = user?.session?.user.id
 
   if (!userId) {

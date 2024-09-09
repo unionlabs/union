@@ -12,7 +12,7 @@ let loading = false
 
 async function register() {
   loading = true
-  await auth(`${$page.url.origin}/app/install`)
+  await auth(`${$page.url.origin}/app`)
 }
 </script>
 

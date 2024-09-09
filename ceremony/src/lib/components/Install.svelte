@@ -1,13 +1,13 @@
 <script lang="ts">
-import { toast } from "svelte-sonner"
-import H1 from "$lib/components/typography/H1.svelte"
-import Button from "$lib/components/Button.svelte"
+  import { toast } from "svelte-sonner"
+  import H1 from "$lib/components/typography/H1.svelte"
+  import Button from "$lib/components/Button.svelte"
 
-let command = "docker run -p 4919:4919 -it haitlahcen/union-mpc-cli:latest"
-const copy = () => {
-  navigator.clipboard.writeText(command)
-  toast.success("Copied to clipboard", { position: "bottom-right" })
-}
+  let command = "docker run -p 4919:4919 -it haitlahcen/union-mpc-cli:latest"
+  const copy = () => {
+    navigator.clipboard.writeText(command)
+    toast.success("Copied to clipboard", { position: "bottom-right" })
+  }
 </script>
 
 <div class="p-8  bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center flex-col">
