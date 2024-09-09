@@ -65,10 +65,16 @@ EXECUTE FUNCTION set_initial_score_trigger();
 -------------------------
 -- Contribution Status --
 -------------------------
+CREATE OR REPLACE FUNCTION expiration_delay() RETURNS INTERVAL AS $$
+BEGIN
+  RETURN INTERVAL '30 minutes';
+END
+$$ LANGUAGE plpgsql SET search_path = '';
+
 CREATE TABLE contribution_status(
   id uuid PRIMARY KEY,
   started timestamptz NOT NULL DEFAULT(now()),
-  expire timestamptz NOT NULL DEFAULT(now() + INTERVAL '30 minutes')
+  expire timestamptz NOT NULL DEFAULT(now() + expiration_delay())
 );
 
 ALTER TABLE contribution_status ENABLE ROW LEVEL SECURITY;
@@ -330,7 +336,7 @@ BEGIN
   INSERT INTO public.queue(id) VALUES(NEW.id);
   RETURN NEW;
 END
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+$$ LANGUAGE plpgsql SET search_path = '';
 
 CREATE TRIGGER user_join_queue
   AFTER INSERT
