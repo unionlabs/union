@@ -44,7 +44,7 @@ try {
     amount: 1n,
     denomAddress: "muno",
     // or `client.evm.account.address` if you want to send to yourself
-    recipient: evmAccount.address,
+    receiver: evmAccount.address,
     destinationChainId: `${arbitrumSepolia.id}`
   } satisfies TransferAssetsParameters<"union-testnet-8">
 

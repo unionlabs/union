@@ -33,8 +33,14 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
+        
+      - name: 'Setup bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
 
       - name: 'Publish to JSR'
         working-directory: './typescript-sdk'
         run: |
-          npm_config_yes=true npx jsr publish --allow-slow-types
+          bun install
+          bun scripts/publish.ts --period patch

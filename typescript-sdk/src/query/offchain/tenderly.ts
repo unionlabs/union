@@ -22,14 +22,14 @@ export async function simulateTransaction({
   memo,
   amount,
   account,
-  recipient,
+  receiver,
   denomAddress,
   sourceChannel,
   relayContractAddress
 }: {
   memo?: string
   amount: bigint
-  recipient: string
+  receiver: string
   account?: Address
   denomAddress: Address
   sourceChannel: string
@@ -61,9 +61,7 @@ export async function simulateTransaction({
     functionName: "send",
     args: [
       sourceChannel,
-      recipient.startsWith("0x")
-        ? getAddress(recipient)
-        : bech32AddressToHex({ address: recipient }),
+      receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
       [{ denom: denomAddress, amount }],
       memo ?? "",
       { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },

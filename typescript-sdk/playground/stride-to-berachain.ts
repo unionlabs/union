@@ -46,7 +46,7 @@ try {
     autoApprove: true,
     denomAddress: "ustrd",
     // or `client.evm.account.address` if you want to send to yourself
-    recipient: berachainAccount.address,
+    receiver: berachainAccount.address,
     destinationChainId: `${berachainTestnetbArtio.id}`
   } satisfies TransferAssetsParameters<"stride-internal-1">
 

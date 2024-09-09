@@ -353,13 +353,13 @@ export async function cosmwasmTransferSimulate({
 export async function cosmosSameChainTransfer({
   asset,
   gasPrice,
-  recipient,
+  receiver,
   account,
   rpcUrl
 }: {
   asset: Coin
-  recipient: string
   rpcUrl: string
+  receiver: string
   account: CosmosOfflineSigner
   gasPrice: { amount: string; denom: string }
 }): Promise<Result<string, Error>> {
@@ -386,13 +386,13 @@ export async function cosmosSameChainTransfer({
         typeUrl: "/cosmos.bank.v1beta1.MsgSend",
         value: {
           fromAddress: _account.address,
-          toAddress: recipient,
+          toAddress: receiver,
           amount: [asset]
         }
       }
     ],
     "auto",
-    `${timestamp()} Sending ${asset.amount} ${asset.denom} to ${recipient}`
+    `${timestamp()} Sending ${asset.amount} ${asset.denom} to ${receiver}`
   )
   assertIsDeliverTxSuccess(response)
   _signingClient.disconnect()
@@ -406,7 +406,7 @@ export async function cosmosSameChainTransfer({
  * const transfer = await cosmosSameChainTransferSimulate(client, {
  *   asset: { denom: "muno", amount: "1" },
  *   gasPrice: { amount: "0.0025", denom: "muno" },
- *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   account: cosmosAccount,
  *   rpcUrl: "https://rpc.testnet-8.union.build",
  * })
@@ -415,12 +415,12 @@ export async function cosmosSameChainTransfer({
 export async function cosmosSameChainTransferSimulate({
   asset,
   gasPrice,
-  recipient,
+  receiver,
   account,
   rpcUrl
 }: {
   asset: Coin
-  recipient: string
+  receiver: string
   rpcUrl: string
   account: CosmosOfflineSigner
   gasPrice: { amount: string; denom: string }
@@ -448,7 +448,7 @@ export async function cosmosSameChainTransferSimulate({
         typeUrl: "/cosmos.bank.v1beta1.MsgSend",
         value: {
           amount: [asset],
-          toAddress: recipient,
+          toAddress: receiver,
           fromAddress: _account.address
         }
       }

@@ -43,7 +43,7 @@ try {
     amount: 1n,
     denomAddress: "muno",
     destinationChainId: `${sepolia.id}`,
-    recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
+    receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
   }
 
   const gasEstimationResponse = await client.simulateTransaction(transferPayload)

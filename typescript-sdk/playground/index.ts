@@ -22,7 +22,7 @@ const payload = {
   autoApprove: false,
   destinationChainId: "stride-internal-1",
   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
-  recipient: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
+  receiver: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
 } satisfies TransferAssetsParameters<"11155111">
 
 const gasResponse = await clients["11155111"].simulateTransaction(payload)

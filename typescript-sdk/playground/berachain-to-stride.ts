@@ -44,7 +44,7 @@ try {
     denomAddress: HONEY_CONTRACT_ADDRESS,
     destinationChainId: "stride-internal-1",
     // or `client.cosmos.account.address` if you want to send to yourself
-    recipient: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
+    receiver: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
   } satisfies TransferAssetsParameters<"80084">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)

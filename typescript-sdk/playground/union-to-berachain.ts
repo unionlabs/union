@@ -45,7 +45,7 @@ try {
     amount: 1n,
     denomAddress: "muno",
     // or `client.evm.account.address` if you want to send to yourself
-    recipient: berachainAccount.address,
+    receiver: berachainAccount.address,
     destinationChainId: `${berachainTestnetbArtio.id}`
   } satisfies TransferAssetsParameters<"union-testnet-8">
 
