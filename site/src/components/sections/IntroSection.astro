@@ -1,0 +1,24 @@
+---
+import { Image } from 'astro:assets';
+import wave from "../../assets/images/spline-holders/wave-collateral.png"
+import LightedTitle from "../typography/LightedTitle.astro";
+
+
+const { title } = Astro.props
+---
+
+<section class="relative flex w-full h-full justify-center pb-12 md:pb-34">
+  <div class="absolute w-full max-w-[1440px] px-6 z-10 py-14 md:py-28 h-full">
+    <div class="z-20 flex flex-col justify-between w-full h-full">
+      <div class="flex flex-col text-left items-start">
+        <LightedTitle {title}/>
+      </div>
+      <slot />
+    </div>
+  </div>
+  <Image src={wave} alt="Wave Collateral" class="w-full h-screen object-cover object-center"></Image>
+</section>
+
+
+
+

@@ -1,0 +1,19 @@
+---
+import H1 from "./h1.astro";
+
+interface Props {
+  title: string
+}
+
+const {title} = Astro.props
+
+const words = title.split(' ');
+const lastWord = words.pop();
+const restOfTitle = words.join(' ');
+---
+
+<H1>
+  {restOfTitle}
+  {restOfTitle && ' '}
+  <span class="text-accent-500">{lastWord}</span>
+</H1>

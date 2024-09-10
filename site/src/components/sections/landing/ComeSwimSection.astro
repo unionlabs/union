@@ -2,11 +2,15 @@
 import { Image } from "astro:assets"
 import H1 from "../../typography/h1.astro";
 import swim from "#/assets/images/spline-holders/come-swim.png"
+import ContainedSection from "../../ContainedSection.astro";
 ---
 
-<div class="flex flex-col w-full items-center text-center px-6">
+<ContainedSection>
+  <div class="text-center">
     <H1>COME SWIM <br class="sm:hidden">WITH <span class="text-accent-500">US.<br>0_______0</span></H1>
     <div class="max-w-[1440px] px-6">
       <Image src={swim} alt="come swim with us" class="object-contain h-auto"></Image>
     </div>
-</div>
+  </div>
+</ContainedSection>
+

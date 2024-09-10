@@ -1,45 +1,40 @@
 ---
-import H1 from "../../typography/h1.astro";
-
 import '../../../styles/marquee.css'
+import ContainedSection from "../../ContainedSection.astro";
+import LightedTitle from "../../typography/LightedTitle.astro";
 
-const { title, data, reverse } = Astro.props
+interface Props {
+  title: string
+}
 
-const words = title.split(' ');
-const lastWord = words.pop();
-const restOfTitle = words.join(' ');
+const {title, data, reverse} = Astro.props
 ---
 
-<div class="flex flex-col w-full items-center">
-  <div class="w-full max-w-[1440px] px-6 overflow-hidden">
-      <div class="text-center">
-          <H1>
-              {restOfTitle}
-              {restOfTitle && ' '}
-              <span class="text-accent-500">{lastWord}</span>
-          </H1>
-      </div>
-      <article class="wrapper pb-12 md:pb-24 lg:pb-48">
-          <div class:list={[
-              'marquee',
-              { 'marquee--reverse': reverse }
-          ]}>
-              <div class="marquee__group">
-                {
-                  data.map(item => (
-                          <img src={item.logo.src} alt={item.name}></img>
-                  ))
-                }
-              </div>
-
-              <div aria-hidden="true" class="marquee__group">
-                {
-                  data.map(item => (
-                          <img src={item.logo.src} alt={item.name}></img>
-                  ))
-                }
-              </div>
-          </div>
-      </article>
+<ContainedSection>
+  <div class="text-center">
+    <LightedTitle {title} />
   </div>
-</div
+  <article class="wrapper pb-12 md:pb-24 lg:pb-48">
+    <div class:list={[
+      'marquee',
+      {'marquee--reverse': reverse}
+    ]}>
+      <div class="marquee__group">
+        {
+          data.map(item => (
+                  <img src={item.logo.src} alt={item.name}></img>
+          ))
+        }
+      </div>
+
+      <div aria-hidden="true" class="marquee__group">
+        {
+          data.map(item => (
+                  <img src={item.logo.src} alt={item.name}></img>
+          ))
+        }
+      </div>
+    </div>
+  </article>
+</ContainedSection>
+

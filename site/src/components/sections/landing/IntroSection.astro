@@ -1,31 +1,32 @@
 ---
-import { Image } from 'astro:assets';
+import {Image} from 'astro:assets';
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
 import wave from "#/assets/images/spline-holders/wave-collateral.png"
+
 ---
 
 <section class="relative flex w-full justify-center mb-24 lg:mb-48 -mt-[56px] md:-mt-[80px]">
-    <div class="absolute w-full max-w-[1440px] px-6 z-10 h-full">
-        <div class="flex flex-col justify-between h-full gap-16 pt-24 md:pt-36 pb-8">
-            <div class="flex flex-col text-left items-start">
-                <H1>The <br> Modular <br> <span class="text-accent-500">Ecosystem</span></H1>
-            </div>
-            <div class="flex flex-col items-end">
-                <div class="text-right flex flex-col gap-4 md:gap-6">
-                    <H1>The <br> interoperability <br> <span class="text-accent-500"><span
-                            class="text-2xl">0_____________0</span> revolution</span></H1>
-                    <div class="max-w-[557px] text-left flex flex-col gap-4 md:gap-6">
-                        <QuoteSubTitle>
-                            Connecting every blockchain, without compromising on security, efficiency,
-                            decentralization, or speed.
-                        </QuoteSubTitle>
-                        <ButtonA href="https://app.union.build">DIVE IN >>></ButtonA>
-                    </div>
-                </div>
-            </div>
+  <div class="absolute w-full max-w-[1440px] px-6 z-10 h-full">
+    <div class="flex flex-col justify-between h-full gap-16 pt-24 md:pt-36 pb-8">
+      <div class="flex flex-col text-left items-start">
+        <H1>The <br> Modular <br> <span class="text-accent-500">Ecosystem</span></H1>
+      </div>
+      <div class="flex flex-col items-end">
+        <div class="text-right flex flex-col gap-4 md:gap-6">
+          <H1>The <br> interoperability <br> <span class="text-accent-500"><span
+                  class="text-2xl">0_______0</span> revolution</span></H1>
+          <div class="max-w-[557px] text-left flex flex-col gap-4 md:gap-6">
+            <QuoteSubTitle>
+              Connecting every blockchain, without compromising on security, efficiency,
+              decentralization, or speed.
+            </QuoteSubTitle>
+            <ButtonA href="https://app.union.build">DIVE IN >>></ButtonA>
+          </div>
         </div>
+      </div>
     </div>
-        <Image src={wave} alt="Wave Collateral" class="object-cover h-screen"></Image>
+  </div>
+  <Image src={wave} alt="Wave Collateral" class="object-cover h-screen"></Image>
 </section>
