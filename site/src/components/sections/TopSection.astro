@@ -2,6 +2,8 @@
 import { Image } from 'astro:assets';
 import wave from "../../assets/images/spline-holders/wave-collateral.png"
 import LightedTitle from "../typography/LightedTitle.astro";
+import Spline from "#/components/Spline.astro";
+import newWave from "#/spline/new-wave.splinecode"
 
 
 const { title } = Astro.props
@@ -16,7 +18,9 @@ const { title } = Astro.props
       <slot />
     </div>
   </div>
-  <Image src={wave} alt="Wave Collateral" class="w-full h-screen object-cover object-center"></Image>
+  <div class="h-screen w-full object-cover object-center">
+    <Spline model={newWave} className="h-screen"/>
+  </div>
 </section>
 
 

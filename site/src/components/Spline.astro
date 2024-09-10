@@ -15,13 +15,14 @@ export interface Props {
   loading?: SplineViewerProps.LoadingType
   eventsTarget?: SplineViewerProps.EventsTargetType
   loadingAnimType?: SplineViewerProps.PreloaderAnimType
+  className?: string
 }
-const { model, loading = "auto", eventsTarget = "global", ...restProps } = Astro.props
+const { model, loading = "auto", eventsTarget = "global", className, ...restProps } = Astro.props
 ---
 
 <script src="@splinetool/viewer"></script>
 
-<div class="w-full aspect-h-1 aspect-w-1 max-w-full overflow-hidden rounded-t">
+<div class=`w-full aspect-h-1 aspect-w-1 max-w-full overflow-hidden rounded-t ${className}`>
   <spline-viewer
     url={model}
     eventsTarget={eventsTarget}
