@@ -1,5 +1,5 @@
 ---
-import type * as SplineViewerProps from "@splinetool/viewer"
+import type SplineViewerProps from "@splinetool/viewer"
 /**
  * Props descriptions can be found here:
  * {@link https://unpkg.com/browse/@splinetool/viewer/build/spline-viewer.d.ts}
@@ -23,6 +23,6 @@ const { model, loading = "auto", eventsTarget = "global", className, ...restProp
 <script src="@splinetool/viewer"></script>
 
 <spline-viewer
-  url={model}
+  url="https://prod.spline.design/RjV8ibI6mbX0jkNV/scene.splinecode"
   eventsTarget={eventsTarget}
-></spline-viewer>
+  class="opacity-50"></spline-viewer>

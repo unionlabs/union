@@ -1,10 +1,8 @@
 ---
-import { Image } from "astro:assets"
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
-import Spline from "#/components/Spline.astro"
-import newWave from "#/spline/new-wave.splinecode"
+import SplineCover from "../../SplineCover.astro";
 ---
 
 <section class="relative flex w-full justify-center mb-24 lg:mb-48 -mt-[56px] md:-mt-[80px]">
@@ -29,6 +27,7 @@ import newWave from "#/spline/new-wave.splinecode"
     </div>
   </div>
   <div class="h-svh w-full">
-    <Spline model={"https://prod.spline.design/TSndwzCw08yb6lKb/scene.splinecode"} className="max-size-full"/>
+    <SplineCover className="max-size-full"/>
   </div>
 </section>
+

@@ -4,12 +4,13 @@ import wave from "../../assets/images/spline-holders/wave-collateral.png"
 import LightedTitle from "../typography/LightedTitle.astro"
 import Spline from "#/components/Spline.astro"
 import newWave from "#/spline/new-wave.splinecode"
+import SplineCover from "../SplineCover.astro";
 
 const { title } = Astro.props
 ---
 
-<section class="relative flex w-full h-full justify-center pb-12 md:pb-34">
-  <div class="absolute w-full max-w-[1440px] px-6 z-10 py-14 md:py-28 h-full">
+<section class="relative flex w-full h-full justify-center pb-12 md:pb-34 -mt-[56px] md:-mt-[80px]">
+  <div class="absolute w-full max-w-[1440px] px-6 pt-24 md:pt-36 h-full z-10">
     <div class="z-20 flex flex-col justify-between w-full h-full">
       <div class="flex flex-col text-left items-start">
         <LightedTitle {title}/>
@@ -17,8 +18,8 @@ const { title } = Astro.props
       <slot />
     </div>
   </div>
-  <div class="h-screen w-full object-cover object-center">
-    <Spline model={newWave} className="h-screen"/>
+  <div class="h-svh w-full z-0">
+    <SplineCover className="max-size-full"/>
   </div>
 </section>
 
