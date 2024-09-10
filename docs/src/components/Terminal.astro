@@ -16,19 +16,17 @@ interface Props {}
 >
   loading...
 </textarea>
-<article
-  id="terminal"
-  data-terminal=""
-  class="terminal-container"
-  class="size-full bg-[rgb(22_24_29)]"
+<div
+  class="terminal-container px-3 bg-[rgb(22_24_29)] border border-solid border-[#221e2b] rounded-md"
 >
-</article>
-<iframe class="hidden"></iframe>
+  <article id="terminal" data-terminal="" class="" class="size-full bg-[rgb(22_24_29)]"></article>
+</div>
+<iframe class="hidden" allow="cross-origin-isolated"></iframe>
 
 <script>
   import dedent from 'ts-dedent'
   // import { highlightCode } from '#/lib/highlight-code.ts'
-  import { initiateTerminal, type Terminal } from '#/lib/xterm.ts'
+  import { initiateTerminal, type Terminal } from '#/lib/xterm/terminal'
   import { WebContainer, type FileSystemTree, type WebContainerProcess } from '@webcontainer/api'
 
   const files = {
@@ -103,7 +101,7 @@ interface Props {}
     path: FileName
     content: string
   }) => {
-    await webcontainerInstance.fs.writeFile(path, content, { encoding: 'utf-8' })
+    await webcontainerInstance.fs.writeFile(path, content)
   }
 
   async function installDependencies() {
@@ -140,7 +138,9 @@ interface Props {}
     )
 
     const input = shellProcess.input.getWriter()
-    terminal.onData(data => input.write(data))
+    terminal.onData(data => {
+      input.write(data)
+    })
 
     return shellProcess
   }
@@ -193,6 +193,19 @@ interface Props {}
 </script>
 
 <style>
+  .xterm {
+    --at-apply: h-full;
+    /* --at-apply: p-3; */
+  }
+
+  .xterm .xterm-viewport {
+    --at-apply: transition-theme;
+  }
+
+  canvas {
+    margin: auto !important;
+  }
+
   .xterm,
   canvas,
   .composition-view,
@@ -205,7 +218,7 @@ interface Props {}
     width: 100%;
     height: 100%;
     /* background-color: #17181c !important; */
-    border: var(--ec-brdWd) solid var(--ec-brdCol);
+    /* border: var(--ec-brdWd) solid var(--ec-brdCol); */
     border-radius: calc(var(--ec-brdRad) + var(--ec-brdWd));
   }
 
@@ -251,5 +264,277 @@ interface Props {}
     font-weight: 800;
     color: #69f5ff;
     text-decoration: underline;
+  }
+
+  /* xterm demo */
+
+  #terminal-container {
+    height: 60%;
+    margin: 0 auto;
+    /* padding: 2px; */
+  }
+
+  p {
+    font-size: 0.9em;
+    font-style: italic;
+  }
+
+  #option-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  .option-group {
+    display: inline-block;
+    padding-left: 20px;
+    vertical-align: top;
+  }
+
+  pre {
+    display: block;
+    padding: 9.5px;
+    font-size: 13px;
+    color: #c7254e;
+    background-color: #f9f2f4;
+    word-break: break-all;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+
+  #container {
+    display: flex;
+  }
+  .grid {
+    flex: 1;
+    /* max-height: 80vh;
+    overflow-y: auto; */
+    width: 100%;
+    min-width: 100px;
+  }
+  div:first-of-type.grid {
+    flex: 2;
+    height: 60vh;
+  }
+  .tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+  }
+
+  /* Style the buttons inside the tab */
+  .tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+  }
+
+  /* Change background color of buttons on hover */
+  .tab button:hover {
+    background-color: #ddd;
+  }
+
+  /* Create an active/current tablink class */
+  .tab button.active {
+    background-color: #ccc;
+  }
+
+  /* Style the tab content */
+  .tabContent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+  }
+
+  #texture-atlas-zoom:checked + label + #texture-atlas canvas {
+    /* Zoom atlas to the width of the container*/
+    width: 100% !important;
+    height: auto !important;
+  }
+  #texture-atlas {
+    width: 100%;
+  }
+  #texture-atlas canvas {
+    image-rendering: pixelated;
+    border: 1px solid #ccc;
+  }
+
+  .vt-button * {
+    margin-right: 1em;
+  }
+  input#opt-cols_rows {
+    width: 6em;
+  }
+  /** CM */
+  :root {
+    --cm-backgroundColor: var(
+      --tk-elements-editor-backgroundColor,
+      var(--tk-elements-app-backgroundColor)
+    );
+    --cm-textColor: var(--tk-elements-editor-textColor, var(--tk-text-primary));
+
+    /* Gutter */
+    --cm-gutter-backgroundColor: var(
+      --tk-elements-editor-gutter-backgroundColor,
+      var(--cm-backgroundColor)
+    );
+    --cm-gutter-textColor: var(--tk-elements-editor-gutter-textColor, var(--tk-text-secondary));
+    --cm-gutter-activeLineTextColor: var(
+      --tk-elements-editor-gutter-activeLineTextColor,
+      var(--cm-gutter-textColor)
+    );
+
+    /* Fold Gutter */
+    --cm-foldGutter-textColor: var(
+      --tk-elements-editor-foldGutter-textColor,
+      var(--cm-gutter-textColor)
+    );
+    --cm-foldGutter-textColorHover: var(
+      --tk-elements-editor-foldGutter-textColorHover,
+      var(--cm-gutter-textColor)
+    );
+
+    /* Active Line */
+    --cm-activeLineBackgroundColor: var(
+      --tk-elements-editor-activeLineBackgroundColor,
+      rgb(224 231 235 / 30%)
+    );
+
+    /* Cursor */
+    --cm-cursor-width: 2px;
+    --cm-cursor-backgroundColor: var(--tk-elements-editor-cursorColor, var(--tk-text-primary));
+
+    /* Matching Brackets */
+    --cm-matching-bracket: var(
+      --tk-elements-editor-matchingBracketBackgroundColor,
+      rgb(50 140 130 / 0.3)
+    );
+
+    /* Selection */
+    --cm-selection-backgroundColorFocused: var(
+      --tk-elements-editor-selection-backgroundColor,
+      #42b4ff
+    );
+    --cm-selection-backgroundOpacityFocused: var(
+      --tk-elements-editor-selection-backgroundOpacity,
+      0.3
+    );
+    --cm-selection-backgroundColorBlured: var(
+      --tk-elements-editor-selection-inactiveBackgroundColor,
+      #c9e9ff
+    );
+    --cm-selection-backgroundOpacityBlured: var(
+      --tk-elements-editor-selection-inactiveBackgroundOpacity,
+      0.3
+    );
+
+    /* Panels */
+    --cm-panels-borderColor: var(
+      --tk-elements-editor-panels-borderColor,
+      var(--tk-elements-app-borderColor)
+    );
+
+    /* Search */
+    --cm-search-backgroundColor: var(
+      --tk-elements-editor-search-backgroundColor,
+      var(--cm-backgroundColor)
+    );
+    --cm-search-textColor: var(
+      --tk-elements-editor-search-textColor,
+      var(--tk-elements-app-textColor)
+    );
+    --cm-search-closeButton-backgroundColor: var(
+      --tk-elements-editor-search-closeButton-backgroundColor,
+      transparent
+    );
+    --cm-search-closeButton-backgroundColorHover: var(
+      --tk-elements-editor-search-closeButton-backgroundColorHover,
+      var(--tk-background-secondary)
+    );
+    --cm-search-closeButton-textColor: var(
+      --tk-elements-editor-search-closeButton-textColor,
+      var(--tk-text-secondary)
+    );
+    --cm-search-closeButton-textColorHover: var(
+      --tk-elements-editor-search-closeButton-textColorHover,
+      var(--tk-text-primary)
+    );
+    --cm-search-button-backgroundColor: var(
+      --tk-elements-editor-search-button-backgroundColor,
+      var(--tk-background-secondary)
+    );
+    --cm-search-button-backgroundColorHover: var(
+      --tk-elements-editor-search-button-backgroundColorHover,
+      var(--tk-background-active)
+    );
+    --cm-search-button-textColor: var(
+      --tk-elements-editor-search-button-textColor,
+      var(--tk-text-secondary)
+    );
+    --cm-search-button-textColorHover: var(
+      --tk-elements-editor-search-button-textColorHover,
+      var(--tk-text-primary)
+    );
+    --cm-search-button-borderColor: var(
+      --tk-elements-editor-search-button-borderColor,
+      transparent
+    );
+    --cm-search-button-borderColorHover: var(
+      --tk-elements-editor-search-button-borderColorHover,
+      var(--cm-search-button-borderColor)
+    );
+    --cm-search-button-borderColorFocused: var(
+      --tk-elements-editor-search-button-borderColorFocused,
+      var(--tk-border-accent)
+    );
+    --cm-search-input-backgroundColor: var(
+      --tk-elements-editor-search-input-backgroundColor,
+      var(--tk-background-primary)
+    );
+    --cm-search-input-borderColor: var(
+      --tk-elements-editor-search-input-borderColor,
+      var(--tk-elements-app-borderColor)
+    );
+    --cm-search-input-borderColorFocused: var(
+      --tk-elements-editor-search-input-borderColorFocused,
+      var(--tk-border-accent)
+    );
+
+    /* Tooltip */
+    --cm-tooltip-backgroundColor: var(
+      --tk-elements-editor-tooltip-backgroundColor,
+      var(--tk-elements-app-backgroundColor)
+    );
+    --cm-tooltip-textColor: var(--tk-elements-editor-tooltip-textColor, var(--tk-text-primary));
+    --cm-tooltip-backgroundColorSelected: var(
+      --tk-elements-editor-tooltip-backgroundColorSelected,
+      var(--tk-background-accent)
+    );
+    --cm-tooltip-textColorSelected: var(
+      --tk-elements-editor-tooltip-textColorSelected,
+      var(--tk-text-primary)
+    );
+    --cm-tooltip-borderColor: var(
+      --tk-elements-editor-tooltip-borderColor,
+      var(--tk-elements-app-borderColor)
+    );
+  }
+
+  html[data-theme='light'] {
+    --tk-elements-editor-gutter-textColor: #237893;
+    --tk-elements-editor-gutter-activeLineTextColor: var(--tk-text-primary);
+    --tk-elements-editor-foldGutter-textColorHover: var(--tk-text-primary);
+  }
+
+  html[data-theme='dark'] {
+    --tk-elements-editor-gutter-activeLineTextColor: var(--tk-text-primary);
+    --tk-elements-editor-selection-backgroundOpacityBlured: 0.1;
+    --tk-elements-editor-activeLineBackgroundColor: rgb(50 53 63 / 50%);
+    --tk-elements-editor-foldGutter-textColorHover: var(--tk-text-primary);
   }
 </style>

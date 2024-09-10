@@ -17,6 +17,7 @@ Beriker
 Bitfield
 Bitvector
 Bkpvid
+Blured
 Boiron
 Boneh
 Borsh
@@ -1125,6 +1126,7 @@ symlinker
 syncedstore
 syncmode
 tabler
+tablink
 tablist
 tada
 tailwindcss

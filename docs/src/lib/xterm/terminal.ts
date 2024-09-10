@@ -1,5 +1,6 @@
 import { Terminal } from "@xterm/xterm"
 import { FitAddon } from "@xterm/addon-fit"
+import { xTermTheme } from "#/lib/xterm/theme"
 import { ImageAddon } from "@xterm/addon-image"
 import { WebglAddon } from "@xterm/addon-webgl"
 import { WebLinksAddon } from "@xterm/addon-web-links"
@@ -16,14 +17,25 @@ export type XTermAddon = {
 }
 export type { Terminal }
 
-export async function initiateTerminal(terminalElement: HTMLElement): Promise<{
+export async function initiateTerminal(
+  terminalElement: HTMLElement,
+  options: {
+    readonly?: boolean
+  } = { readonly: false }
+): Promise<{
   terminal: Terminal
   addons: XTermAddon
 }> {
   const terminal = new Terminal({
     fontSize: 15,
     convertEol: true,
+    cursorBlink: true,
+    theme: xTermTheme,
+    cursorStyle: "bar",
     allowProposedApi: true,
+    cursorInactiveStyle: "bar",
+    disableStdin: options.readonly,
+    drawBoldTextInBrightColors: true,
     fontFamily: "JetBrains Mono, monospace"
   })
   const fitAddon = new FitAddon()
