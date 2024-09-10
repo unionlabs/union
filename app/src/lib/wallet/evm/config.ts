@@ -63,12 +63,12 @@ export const config = createConfig({
       http(berachainTestnetbArtio.rpcUrls.default.http.at(0), { name: "default Berachain RPC" })
     ]),
     [arbitrumSepolia.id]: fallback([
-      // unstable_connector(injected, {
-      //   retryCount: 3,
-      //   retryDelay: 100,
-      //   key: "unstable_connector-injected-berachain",
-      //   name: "unstable_connector-injected-berachain"
-      // }),
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-berachain",
+        name: "unstable_connector-injected-berachain"
+      }),
       http(arbitrumSepolia.rpcUrls.default.http.at(0), { name: "default Arbitrum Sepolia RPC" })
     ]),
     [scrollSepolia.id]: fallback([
@@ -146,14 +146,18 @@ export function createSepoliaStore(
     update,
     subscribe,
     connect: async (walletId: EvmWalletId) => {
-      console.log("[evm] connect --", { walletId })
       await evmConnect(walletId, sepolia.id)
     },
     disconnect: async () => {
-      console.log("[evm] disconnect")
       await Promise.all([
-        await evmDisconnect(),
-        ...config.connectors.map(connector => connector.disconnect())
+        await evmDisconnect().catch(error => {
+          console.error(error)
+        }),
+        ...config.connectors.map(connector =>
+          connector.disconnect().catch(error => {
+            console.error(error)
+          })
+        )
       ])
       await sleep(1_000)
     }
