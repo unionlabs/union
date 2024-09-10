@@ -1,5 +1,5 @@
 import type { EntryFieldTypes } from "contentful"
-import { type ImageMetadata } from 'astro';
+import { type ImageMetadata } from "astro"
 
 export type MaybePromise<T> = T | Promise<T>
 
@@ -8,8 +8,8 @@ export type DeepPartial<T> = {
 }
 
 export type NamedImage = {
-  name: string, 
-  url: string, 
+  name: string
+  url: string
   logo: ImageMetadata
 }
 
