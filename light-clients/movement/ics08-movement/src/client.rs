@@ -240,10 +240,13 @@ impl IbcClient for MovementLightClient {
     }
 
     fn timestamp_at_height(
-        _deps: Deps<Self::CustomQuery>,
-        _height: Height,
+        deps: Deps<Self::CustomQuery>,
+        height: Height,
     ) -> Result<u64, IbcClientError<Self>> {
-        todo!()
+        Ok(read_consensus_state::<Self>(deps, &height)?
+            .ok_or(Error::ConsensusStateNotFound(height))?
+            .data
+            .timestamp)
     }
 }
 

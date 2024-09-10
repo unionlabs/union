@@ -305,7 +305,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 SupportedIbcInterfaces::IbcSolidity => Ok(header.encode_as::<EthAbi>()),
                 SupportedIbcInterfaces::IbcMoveAptos => {
                     header.zero_knowledge_proof =
-                        reencode_zkp_for_move(&mut header.zero_knowledge_proof).map_err(|e| {
+                        reencode_zkp_for_move(&header.zero_knowledge_proof).map_err(|e| {
                             ErrorObject::owned(
                                 FATAL_JSONRPC_ERROR_CODE,
                                 format!("unable to decode zkp: {}", e),
@@ -398,15 +398,15 @@ fn reencode_zkp_for_move(zkp: &[u8]) -> Result<Vec<u8>, SerializationError> {
 
     let mut cursor = 0;
     // zkp.proof.a
-    serialize_g1(&mut cursor, &mut buf, &zkp)?;
+    serialize_g1(&mut cursor, &mut buf, zkp)?;
     // zkp.proof.b
-    serialize_g2(&mut cursor, &mut buf, &zkp)?;
+    serialize_g2(&mut cursor, &mut buf, zkp)?;
     // zkp.proof.c
-    serialize_g1(&mut cursor, &mut buf, &zkp)?;
+    serialize_g1(&mut cursor, &mut buf, zkp)?;
     // zkp.poc
-    serialize_g1(&mut cursor, &mut buf, &zkp)?;
+    serialize_g1(&mut cursor, &mut buf, zkp)?;
     // zkp.pok
-    serialize_g1(&mut cursor, &mut buf, &zkp)?;
+    serialize_g1(&mut cursor, &mut buf, zkp)?;
 
     Ok(buf)
 }

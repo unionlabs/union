@@ -1,8 +1,16 @@
+---
 profiles:
   default:
-    network: Devnet
-    private_key: "0xa1ecef98fc76367afc1376df13edf89d137050b3a8c9ca62984e1354c112b801"
-    public_key: "0xe2d73a1d2a3451d935cf9ca241bc2915937aa0f54de72baf0839c147b7e0fbc5"
-    account: b0c040f990447c163a29a234fdfc4a315cb341375af9f67cda519b971fab8f53
-    rest_url: "https://aptos.devnet.inola.movementlabs.xyz/v1"
-    faucet_url: "https://faucet.devnet.inola.movementlabs.xyz"
+    network: Custom
+    private_key: "0x1350ce32e80d2f9f7bfb0893bca6349dc99e6104eb5fd673639ed57a1f41d317"
+    public_key: "0x9ae40674c0fe2637bd2521fe5c26f19109740fc4ea63d4c587c7a45295b0e867"
+    account: d416253c8a668aec0389189b21e71c6e65d8ecafce33d0a09b4c2de802203611
+    rest_url: "http://localhost:30731/"
+    faucet_url: "http://localhost:30732/"
+  relayer:
+    network: Custom
+    private_key: "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+    public_key: "0xe9f9bc8eb60f1c970d7a8ad402b1bb5cb8e794e69fa8898f272874fcadd82657"
+    account: 870955604107eb3392950362e675ce51687729914738de47ac7845991ce6f158
+    rest_url: "http://localhost:30731/"
+    faucet_url: "http://localhost:30732/"

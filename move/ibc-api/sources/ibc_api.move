@@ -1,4 +1,4 @@
-module ibc_api::ibc_api {
+module ibc_api::ibc {
     use std::string::String;
 
     public entry fun create_client(

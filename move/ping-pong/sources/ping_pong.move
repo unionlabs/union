@@ -18,7 +18,7 @@ module ping_pong::ibc {
     const ERR_NO_CHANNEL: u64 = 2003;
     const ERR_INFINITE_GAME: u64 = 2004;
 
-    const VAULT_SEED: vector<u8> = b"Vault Seed Example";
+    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
 
     #[event]
     struct RingEvent has copy, drop, store {
@@ -49,8 +49,16 @@ module ping_pong::ibc {
 
     fun init_module(deployer: &signer) {
         assert!(signer::address_of(deployer) == @ping_pong, 1);
-        let vault_constructor_ref = &object::create_named_object(deployer, VAULT_SEED);
+        let vault_constructor_ref = &object::create_named_object(deployer, IBC_APP_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
+
+        let pp = PingPong {
+            channel_id: string::utf8(b""),
+            revision_number: 0,
+            timeout: 100000000, 
+        };
+        move_to(vault_signer, pp);
+
         move_to(vault_signer, SignerRef {
             self_ref: object::generate_extend_ref(vault_constructor_ref),
             self_address: signer::address_of(deployer),
@@ -91,7 +99,7 @@ module ping_pong::ibc {
         packet: PingPongPacket,
         local_timeout: u64
     ) acquires PingPong, SignerRef {
-        let pp = borrow_global<PingPong>(@0x1); // assuming @0x1 is the address of the PingPong instance
+        let pp = borrow_global<PingPong>(get_vault_addr());
         if (string::length(&pp.channel_id) == 0) {
             abort ERR_NO_CHANNEL
         };
@@ -118,7 +126,7 @@ module ping_pong::ibc {
     //     let local_timeout = pp_packet.counterparty_timeout;
 
     //     pp_packet.ping = !pp_packet.ping;
-    //     pp_packet.counterparty_timeout = timestamp::now_seconds() + borrow_global<PingPong>(@0x1).timeout;
+    //     pp_packet.counterparty_timeout = timestamp::now_seconds() + borrow_global<PingPong>(get_vault_addr()).timeout;
 
     //     initiate(pp_packet, local_timeout);
 
@@ -194,7 +202,7 @@ module ping_pong::ibc {
             channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
             version,
         );
-        if (string::length(&borrow_global<PingPong>(@0x1).channel_id) != 0) {
+        if (string::length(&borrow_global<PingPong>(get_vault_addr()).channel_id) != 0) {
             abort ERR_ONLY_ONE_CHANNEL
         };
     }
@@ -223,7 +231,7 @@ module ping_pong::ibc {
             height::new(proof_height_revision_num, proof_height_revision_height),
         );
 
-        if (string::length(&borrow_global<PingPong>(@0x1).channel_id) != 0) {
+        if (string::length(&borrow_global<PingPong>(get_vault_addr()).channel_id) != 0) {
             abort ERR_ONLY_ONE_CHANNEL
         };
     }
@@ -246,10 +254,10 @@ module ping_pong::ibc {
             proof_try,
             height::new(proof_height_revision_num, proof_height_revision_height),
         );
-        borrow_global_mut<PingPong>(@0x1).channel_id = channel_id;
+        borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
     }
 
-    public fun channel_open_confirm(
+    public entry fun channel_open_confirm(
         channel_id: String,
         proof_ack: vector<u8>,
         proof_height_revision_num: u64,
@@ -263,39 +271,26 @@ module ping_pong::ibc {
             height::new(proof_height_revision_num, proof_height_revision_height),
         );
 
-        borrow_global_mut<PingPong>(@0x1).channel_id = channel_id;
+        borrow_global_mut<PingPong>(get_vault_addr()).channel_id = channel_id;
     }
 
-    public entry fun chan_close_init(
+    public entry fun channel_close_init(
         _port_id: String,
         _channel_id: String
     ) {
         abort ERR_INFINITE_GAME
     }
 
-    public entry fun chan_close_confirm(
+    public entry fun channel_close_confirm(
         _port_id: String,
         _channel_id: String
     ) {
         abort ERR_INFINITE_GAME
-    }
-
-    public fun initialize(
-        account: &signer,
-        revision_number: u64,
-        timeout: u64
-    ) {
-        let pp = PingPong {
-            channel_id: string::utf8(b""),
-            revision_number,
-            timeout
-        };
-        move_to(account, pp);
     }
 
     #[view]
     public fun get_vault_addr(): address {
-        object::create_object_address(&@ping_pong, VAULT_SEED)
+        object::create_object_address(&@ping_pong, IBC_APP_SEED)
     }
 
     public fun get_signer(): signer acquires SignerRef {

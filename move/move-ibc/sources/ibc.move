@@ -708,8 +708,8 @@ module IBC::ibc {
             abort E_UNAUTHORIZED
         };
 
-        let port_id = string_utils::to_string(&port_id);
-
+        // TOOD: This can be removed? in open_try as well
+        let port_id = address_to_string(port_id);
         if (!is_lowercase(&port_id)) {
             abort E_PORT_ID_MUST_BE_LOWERCASE
         };
@@ -778,7 +778,7 @@ module IBC::ibc {
             abort E_UNAUTHORIZED
         };
 
-        let port_id = string_utils::to_string(&port_id);
+        let port_id = address_to_string(port_id);
 
         let (connection_id, connection) = ensure_connection_feature(connection_hops, ordering);
         
@@ -857,7 +857,7 @@ module IBC::ibc {
             abort E_UNAUTHORIZED
         };
 
-        let port_id = string_utils::to_string(&port_id);
+        let port_id = address_to_string(port_id);
 
         // Retrieve the channel from the store
         let channel_port = ChannelPort { port_id, channel_id };
@@ -918,7 +918,7 @@ module IBC::ibc {
             abort E_UNAUTHORIZED
         };
 
-        let port_id = string_utils::to_string(&port_id);
+        let port_id = address_to_string(port_id);
 
         // Retrieve the channel from the store
         let channel_port = ChannelPort { port_id, channel_id };
@@ -1277,6 +1277,20 @@ module IBC::ibc {
         }
     }
 
+    // #[view]
+    // public fun get_receipt(port_id: String, channel_id: String, sequence: u64): bool acquires IBCStore {
+    //     let store = borrow_global<IBCStore>(get_vault_addr());
+
+    //     if (!smart_table::contains(
+    //         &store.channels,
+    //         ChannelPort { port_id, channel_id }
+    //     )) {
+    //         option::none<Channel>()
+    //     } else {
+    //         option::some<Channel>(*smart_table::borrow(&store.channels, ChannelPort { port_id, channel_id }))
+    //     }
+    // }
+
     #[view]
     public fun get_next_sequence_recv(port_id: String, channel_id: String): u64 acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
@@ -1571,14 +1585,10 @@ module IBC::ibc {
         if (object::create_object_address(&port_id, IBC_APP_SEED) != signer::address_of(ibc_app)) {
             abort E_UNAUTHORIZED
         };
-        let port_id = string_utils::to_string(&port_id);
-
-        if (port_id != *packet::destination_port(&packet)) {
-            abort E_UNAUTHORIZED
-        };
 
         let channel = ensure_channel_state(*packet::destination_port(&packet), *packet::destination_channel(&packet));
-        let port_id = string_utils::to_string(&port_id);
+
+        let port_id = address_to_string(port_id);
         if (port_id != *packet::destination_port(&packet)) {
             abort E_UNAUTHORIZED
         };
@@ -1715,7 +1725,7 @@ module IBC::ibc {
             abort E_UNAUTHORIZED
         };
 
-        let port_id = string_utils::to_string(&port_id);
+        let port_id = address_to_string(port_id);
         if (port_id != *packet::destination_port(&packet)) {
             abort E_UNAUTHORIZED
         };
@@ -1897,10 +1907,25 @@ module IBC::ibc {
         )
     }
 
+    public fun address_to_string(addr: address): String {
+        string_utils::to_string(&bcs::to_bytes(&addr))
+    }
+
     #[test(ibc_signer = @IBC)]
     fun test_get_ibc_signer(ibc_signer: &signer) acquires SignerRef {
         init_module(ibc_signer);
 
         std::debug::print(&get_ibc_signer())
+    }
+
+    #[test]
+    public fun test_address_to_string() {
+        let addr =      @0x0000000e8cb0f6fe55f8b91c16e970a1863552af09b60e6fe1d99808254b0be9;
+        let str = utf8(b"0x0000000e8cb0f6fe55f8b91c16e970a1863552af09b60e6fe1d99808254b0be9");
+
+        assert!(
+            address_to_string(addr) == str,
+            1
+        );
     }
 }   

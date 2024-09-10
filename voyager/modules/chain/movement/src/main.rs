@@ -19,7 +19,7 @@ use unionlabs::{
     aptos::sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
     hash::H256,
     ibc::core::{
-        channel::order::Order,
+        channel::{self, channel::Channel, order::Order},
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
         connection::{self, connection_end::ConnectionEnd},
@@ -31,7 +31,8 @@ use unionlabs::{
 use voyager_message::{
     call::Call,
     data::{
-        ChainEvent, ClientInfo, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ChainEvent, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+        ClientInfo, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
         ConnectionOpenTry, CreateClient, Data, FullIbcEvent, UpdateClient,
     },
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
@@ -515,10 +516,155 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         .into(),
                         e.client_id.parse().unwrap(),
                     ),
-                    events::IbcEvent::ChannelOpenInit(_) => todo!(),
-                    events::IbcEvent::ChannelOpenTry(_) => todo!(),
-                    events::IbcEvent::ChannelOpenAck(_) => todo!(),
-                    events::IbcEvent::ChannelOpenConfirm(_) => todo!(),
+                    events::IbcEvent::ChannelOpenInit(e) => {
+                        let ledger_version = self.ledger_version_of_height(height).await;
+
+                        let connection = self
+                            .get_connection(
+                                self.ibc_handler_address.into(),
+                                (e.connection_id,),
+                                Some(ledger_version),
+                            )
+                            .await
+                            .unwrap()
+                            .into_option()
+                            .unwrap();
+
+                        let connection = convert_connection(connection);
+
+                        let client_id = connection.client_id.clone();
+
+                        (
+                            ChannelOpenInit {
+                                port_id: e.port_id.parse().unwrap(),
+                                channel_id: e.channel_id.parse().unwrap(),
+                                counterparty_port_id: e.counterparty_port_id.parse().unwrap(),
+                                connection,
+                                version: e.version,
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
+                    events::IbcEvent::ChannelOpenTry(e) => {
+                        let ledger_version = self.ledger_version_of_height(height).await;
+
+                        let connection = self
+                            .get_connection(
+                                self.ibc_handler_address.into(),
+                                (e.connection_id,),
+                                Some(ledger_version),
+                            )
+                            .await
+                            .unwrap()
+                            .into_option()
+                            .unwrap();
+
+                        let connection = convert_connection(connection);
+
+                        let client_id = connection.client_id.clone();
+
+                        (
+                            ChannelOpenTry {
+                                port_id: e.port_id.parse().unwrap(),
+                                channel_id: e.channel_id.parse().unwrap(),
+                                counterparty_port_id: e.counterparty_port_id.parse().unwrap(),
+                                counterparty_channel_id: e.counterparty_port_id.parse().unwrap(),
+                                connection,
+                                version: e.version,
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
+                    events::IbcEvent::ChannelOpenAck(e) => {
+                        let ledger_version = self.ledger_version_of_height(height).await;
+
+                        let connection = self
+                            .get_connection(
+                                self.ibc_handler_address.into(),
+                                (e.connection_id,),
+                                Some(ledger_version),
+                            )
+                            .await
+                            .unwrap()
+                            .into_option()
+                            .unwrap();
+
+                        let channel = self
+                            .get_channel(
+                                self.ibc_handler_address.into(),
+                                (e.port_id.clone(), e.channel_id.clone()),
+                                Some(ledger_version),
+                            )
+                            .await
+                            .unwrap()
+                            .into_option()
+                            .unwrap();
+
+                        let connection = convert_connection(connection);
+
+                        let channel = convert_channel(channel);
+
+                        let client_id = connection.client_id.clone();
+
+                        (
+                            ChannelOpenAck {
+                                port_id: e.port_id.parse().unwrap(),
+                                channel_id: e.channel_id.parse().unwrap(),
+                                counterparty_port_id: e.counterparty_port_id.parse().unwrap(),
+                                counterparty_channel_id: e.counterparty_channel_id.parse().unwrap(),
+                                connection,
+                                version: channel.version,
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
+                    events::IbcEvent::ChannelOpenConfirm(e) => {
+                        let ledger_version = self.ledger_version_of_height(height).await;
+
+                        let connection = self
+                            .get_connection(
+                                self.ibc_handler_address.into(),
+                                (e.connection_id,),
+                                Some(ledger_version),
+                            )
+                            .await
+                            .unwrap()
+                            .into_option()
+                            .unwrap();
+
+                        let channel = self
+                            .get_channel(
+                                self.ibc_handler_address.into(),
+                                (e.port_id.clone(), e.channel_id.clone()),
+                                Some(ledger_version),
+                            )
+                            .await
+                            .unwrap()
+                            .into_option()
+                            .unwrap();
+
+                        let connection = convert_connection(connection);
+
+                        let channel = convert_channel(channel);
+
+                        let client_id = connection.client_id.clone();
+
+                        (
+                            ChannelOpenConfirm {
+                                port_id: e.port_id.parse().unwrap(),
+                                channel_id: e.channel_id.parse().unwrap(),
+                                counterparty_port_id: e.counterparty_port_id.parse().unwrap(),
+                                counterparty_channel_id: e.counterparty_channel_id.parse().unwrap(),
+                                connection,
+                                version: channel.version,
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
                     events::IbcEvent::WriteAcknowledgement(_) => todo!(),
                     events::IbcEvent::RecvPacket(_) => todo!(),
                     events::IbcEvent::SendPacket(_) => todo!(),
@@ -681,56 +827,40 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 into_value(consensus_state_bytes)
             }
             Path::Connection(path) => into_value(
-                match self
-                    .get_connection(
-                        self.ibc_handler_address.into(),
-                        (path.connection_id.to_string(),),
-                        Some(ledger_version),
-                    )
-                    .await
-                    .map_err(rest_error_to_rpc_error)?
-                    .into_option()
-                {
-                    Some(connection) => Some(ConnectionEnd {
-                        client_id: connection.client_id.parse().unwrap(),
-                        versions: connection
-                            .versions
-                            .into_iter()
-                            .map(|version| connection::version::Version {
-                                identifier: version.identifier,
-                                features: version
-                                    .features
-                                    .into_iter()
-                                    .map(|feature| {
-                                        Order::from_proto_str(&feature).expect("unknown feature")
-                                    })
-                                    .collect(),
-                            })
-                            .collect(),
-                        state: connection::state::State::try_from(
-                            u8::try_from(connection.state.0).unwrap(),
-                        )
-                        .unwrap(),
-                        counterparty: connection::counterparty::Counterparty {
-                            client_id: connection.counterparty.client_id.parse().unwrap(),
-                            connection_id: if connection.counterparty.connection_id.is_empty() {
-                                None
-                            } else {
-                                Some(connection.counterparty.connection_id.parse().unwrap())
-                            },
-                            prefix: MerklePrefix {
-                                key_prefix: connection.counterparty.prefix.key_prefix.into(),
-                            },
-                        },
-                        delay_period: connection.delay_period.0,
-                    }),
-                    None => None,
-                },
+                self.get_connection(
+                    self.ibc_handler_address.into(),
+                    (path.connection_id.to_string(),),
+                    Some(ledger_version),
+                )
+                .await
+                .map_err(rest_error_to_rpc_error)?
+                .into_option()
+                .map(convert_connection),
             ),
-            Path::ChannelEnd(_) => todo!(),
+            Path::ChannelEnd(path) => into_value(
+                self.get_channel(
+                    self.ibc_handler_address.into(),
+                    (path.port_id.to_string(), path.channel_id.to_string()),
+                    Some(ledger_version),
+                )
+                .await
+                .map_err(rest_error_to_rpc_error)?
+                .into_option()
+                .map(convert_channel),
+            ),
             Path::Commitment(_) => todo!(),
             Path::Acknowledgement(_) => todo!(),
-            Path::Receipt(_) => todo!(),
+            Path::Receipt(path) => into_value(
+                self.get_channel(
+                    self.ibc_handler_address.into(),
+                    (path.port_id.to_string(), path.channel_id.to_string()),
+                    Some(ledger_version),
+                )
+                .await
+                .map_err(rest_error_to_rpc_error)?
+                .into_option()
+                .map(convert_channel),
+            ),
             Path::NextSequenceSend(_) => todo!(),
             Path::NextSequenceRecv(_) => todo!(),
             Path::NextSequenceAck(_) => todo!(),
@@ -917,6 +1047,57 @@ fn into_value<T: Debug + Serialize>(t: T) -> Value {
                 std::any::type_name::<T>()
             );
         }
+    }
+}
+
+pub fn convert_connection(
+    connection: aptos_move_ibc::connection_end::ConnectionEnd,
+) -> ConnectionEnd {
+    ConnectionEnd {
+        client_id: connection.client_id.parse().unwrap(),
+        versions: connection
+            .versions
+            .into_iter()
+            .map(|version| connection::version::Version {
+                identifier: version.identifier,
+                features: version
+                    .features
+                    .into_iter()
+                    .map(|feature| Order::from_proto_str(&feature).expect("unknown feature"))
+                    .collect(),
+            })
+            .collect(),
+        state: connection::state::State::try_from(u8::try_from(connection.state.0).unwrap())
+            .unwrap(),
+        counterparty: connection::counterparty::Counterparty {
+            client_id: connection.counterparty.client_id.parse().unwrap(),
+            connection_id: if connection.counterparty.connection_id.is_empty() {
+                None
+            } else {
+                Some(connection.counterparty.connection_id.parse().unwrap())
+            },
+            prefix: MerklePrefix {
+                key_prefix: connection.counterparty.prefix.key_prefix.into(),
+            },
+        },
+        delay_period: connection.delay_period.0,
+    }
+}
+
+pub fn convert_channel(channel: aptos_move_ibc::channel::Channel) -> Channel {
+    Channel {
+        state: channel.state.try_into().unwrap(),
+        ordering: channel.ordering.try_into().unwrap(),
+        counterparty: channel::counterparty::Counterparty {
+            port_id: channel.counterparty.port_id.parse().unwrap(),
+            channel_id: channel.counterparty.channel_id.parse().unwrap(),
+        },
+        connection_hops: channel
+            .connection_hops
+            .into_iter()
+            .map(|hop| hop.parse().unwrap())
+            .collect(),
+        version: channel.version,
     }
 }
 

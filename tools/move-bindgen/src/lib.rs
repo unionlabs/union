@@ -19,6 +19,14 @@ pub trait TypeTagged {
     fn type_tag(ctx: Self::Ctx) -> TypeTag;
 }
 
+impl TypeTagged for bool {
+    type Ctx = ();
+
+    fn type_tag(_ctx: Self::Ctx) -> TypeTag {
+        TypeTag::Bool
+    }
+}
+
 impl TypeTagged for u8 {
     type Ctx = ();
 
@@ -134,8 +142,8 @@ impl<T: TypeTagged<Ctx = ()>> IntoTypeTagged<T> for T {
     }
 }
 
-impl IntoTypeTagged<aptos_rest_client::aptos_api_types::HexEncodedBytes> for Vec<u8> {
-    fn into_type_tagged(self) -> (aptos_rest_client::aptos_api_types::HexEncodedBytes, ()) {
+impl IntoTypeTagged<Vec<u8>> for aptos_rest_client::aptos_api_types::HexEncodedBytes {
+    fn into_type_tagged(self) -> (Vec<u8>, ()) {
         (self.into(), ())
     }
 }

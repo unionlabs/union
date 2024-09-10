@@ -463,9 +463,7 @@ fn move_type_to_rust_type(this_module: Address, typ: &MoveType) -> Result<(Type,
                     parse_quote!(
                         ::move_bindgen::aptos_rest_client::aptos_api_types::HexEncodedBytes
                     ),
-                    parse_quote!(
-                        ::move_bindgen::aptos_rest_client::aptos_api_types::HexEncodedBytes
-                    ),
+                    parse_quote!(Vec<u8>),
                 )
             } else {
                 let (param, field) = move_type_to_rust_type(this_module, items)?;

@@ -277,9 +277,9 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
 }
 
 #[allow(clippy::type_complexity)]
-fn process_msgs(
+fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
     ibc_handler_address: AccountAddress,
-    client: &impl aptos_move_ibc::ibc::ClientExt,
+    client: &T,
     msgs: Vec<IbcMessage>,
 ) -> Vec<(IbcMessage, EntryFunction)> {
     msgs.clone()
@@ -395,70 +395,70 @@ fn process_msgs(
                     ),
                 ),
             ),
-            // IbcMessage::ChannelOpenInit(data) => (
-            //     msg,
-            //     client.channel_open_init(
-            //         data.port_id.to_string().parse().unwrap(),
-            //         (
-            //             data.channel
-            //                 .connection_hops
-            //                 .iter()
-            //                 .map(ToString::to_string)
-            //                 .collect::<Vec<String>>(),
-            //             data.channel.ordering as u8,
-            //             data.channel.counterparty.port_id.to_string(),
-            //             data.channel.counterparty.channel_id,
-            //             data.channel.version,
-            //         ),
-            //     ),
-            // ),
-            // IbcMessage::ChannelOpenTry(data) => (
-            //     msg,
-            //     client.channel_open_try(
-            //         data.port_id.to_string().parse().unwrap(),
-            //         (
-            //             data.channel
-            //                 .connection_hops
-            //                 .iter()
-            //                 .map(ToString::to_string)
-            //                 .collect::<Vec<String>>(),
-            //             data.channel.ordering as u8,
-            //             data.channel.counterparty.port_id.to_string(),
-            //             data.channel.counterparty.channel_id,
-            //             data.counterparty_version,
-            //             data.channel.version,
-            //             data.proof_init,
-            //             data.proof_height.revision_number,
-            //             data.proof_height.revision_height,
-            //         ),
-            //     ),
-            // ),
-            // IbcMessage::ChannelOpenAck(data) => (
-            //     msg,
-            //     client.channel_open_ack(
-            //         data.port_id.to_string().parse().unwrap(),
-            //         (
-            //             data.channel_id.to_string(),
-            //             data.counterparty_channel_id.to_string(),
-            //             data.counterparty_version,
-            //             data.proof_try,
-            //             data.proof_height.revision_number,
-            //             data.proof_height.revision_height,
-            //         ),
-            //     ),
-            // ),
-            // IbcMessage::ChannelOpenConfirm(data) => (
-            //     msg,
-            //     client.channel_open_confirm(
-            //         data.port_id.to_string().parse().unwrap(),
-            //         (
-            //             data.channel_id.to_string(),
-            //             data.proof_ack,
-            //             data.proof_height.revision_number,
-            //             data.proof_height.revision_height,
-            //         ),
-            //     ),
-            // ),
+            IbcMessage::ChannelOpenInit(data) => (
+                msg,
+                client.channel_open_init(
+                    data.port_id.to_string().parse().unwrap(),
+                    (
+                        data.channel
+                            .connection_hops
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<String>>(),
+                        data.channel.ordering as u8,
+                        data.channel.counterparty.port_id.to_string(),
+                        data.channel.counterparty.channel_id,
+                        data.channel.version,
+                    ),
+                ),
+            ),
+            IbcMessage::ChannelOpenTry(data) => (
+                msg,
+                client.channel_open_try(
+                    data.port_id.to_string().parse().unwrap(),
+                    (
+                        data.channel
+                            .connection_hops
+                            .iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<String>>(),
+                        data.channel.ordering as u8,
+                        data.channel.counterparty.port_id.to_string(),
+                        data.channel.counterparty.channel_id,
+                        data.counterparty_version,
+                        data.channel.version,
+                        data.proof_init,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
+            ),
+            IbcMessage::ChannelOpenAck(data) => (
+                msg,
+                client.channel_open_ack(
+                    data.port_id.to_string().parse().unwrap(),
+                    (
+                        data.channel_id.to_string(),
+                        data.counterparty_channel_id.to_string(),
+                        data.counterparty_version,
+                        data.proof_try,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
+            ),
+            IbcMessage::ChannelOpenConfirm(data) => (
+                msg,
+                client.channel_open_confirm(
+                    data.port_id.to_string().parse().unwrap(),
+                    (
+                        data.channel_id.to_string(),
+                        data.proof_ack,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
+            ),
             // IbcMessage::RecvPacket(data) => (
             //     msg,
             //     client.recv_packet(
