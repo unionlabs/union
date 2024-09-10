@@ -1,0 +1,310 @@
+---
+import "@xterm/xterm/css/xterm.css"
+
+interface Props {}
+---
+
+<textarea
+  required={true}
+  readonly={false}
+  id="dydx-address"
+  autocorrect="off"
+  autocomplete="off"
+  spellcheck="false"
+  autocapitalize="none"
+>
+  loading...
+</textarea>
+<article
+  id="terminal"
+  data-terminal=""
+  class="terminal-container"
+  class="size-full bg-[rgb(22_24_29)]"
+>
+</article>
+<iframe class="hidden"></iframe>
+
+<script>
+  import dedent from 'ts-dedent'
+  import { Terminal } from '@xterm/xterm'
+  import { FitAddon } from '@xterm/addon-fit'
+  import { ImageAddon } from '@xterm/addon-image'
+  import { WebglAddon } from '@xterm/addon-webgl'
+  import { WebLinksAddon } from '@xterm/addon-web-links'
+  import { ClipboardAddon } from '@xterm/addon-clipboard'
+  import { LigaturesAddon } from '@xterm/addon-ligatures'
+  import { SerializeAddon } from '@xterm/addon-serialize'
+  import { WebContainer, type FileSystemTree, type WebContainerProcess } from '@webcontainer/api'
+
+  async function initiateTerminal(terminalElement: HTMLElement): Promise<{
+    terminal: Terminal
+    addons: {
+      fitAddon: FitAddon
+      webglAddon: WebglAddon
+      imageAddon: ImageAddon
+      webLinksAddon: WebLinksAddon
+      clipboardAddon: ClipboardAddon
+      serializeAddon: SerializeAddon
+    }
+  }> {
+    const terminal = new Terminal({
+      fontSize: 15,
+      convertEol: true,
+      allowProposedApi: true,
+      fontFamily: 'JetBrains Mono, monospace',
+    })
+    const fitAddon = new FitAddon()
+    terminal.loadAddon(fitAddon)
+
+    const webglAddon = new WebglAddon()
+    webglAddon.onContextLoss(_event => webglAddon.dispose())
+    terminal.loadAddon(webglAddon)
+
+    const serializeAddon = new SerializeAddon()
+    terminal.loadAddon(serializeAddon)
+
+    const webLinksAddon = new WebLinksAddon()
+    terminal.loadAddon(webLinksAddon)
+
+    const clipboardAddon = new ClipboardAddon()
+    terminal.loadAddon(clipboardAddon)
+
+    const imageAddon = new ImageAddon()
+    terminal.loadAddon(imageAddon)
+    terminal.open(terminalElement)
+    fitAddon.fit()
+
+    return {
+      terminal,
+      addons: {
+        fitAddon,
+        webglAddon,
+        imageAddon,
+        webLinksAddon,
+        clipboardAddon,
+        serializeAddon,
+      },
+    }
+  }
+
+  const files = {
+    'mod.ts': {
+      file: {
+        contents: dedent(/* ts */ `
+          import { http } from 'viem'
+          import { arbitrumSepolia } from 'viem/chains'
+          import { privateKeyToAccount } from 'viem/accounts'
+          import { createUnionClient } from '@unionlabs/client'
+
+          const account = privateKeyToAccount(\`0x$\{process.env.PRIVATE_KEY}\`)
+
+          const client = createUnionClient({
+            account,
+            chainId: '421614',
+            transport: http('https://sepolia-rollup.arbitrum.io/rpc'),
+          })
+
+          const gasResponse = await client.simulateTransaction({
+            amount: 1n,
+            autoApprove: true,
+            destinationChainId: 'stride-internal-1',
+            denomAddress: '0xb1d4538b4571d411f07960ef2838ce337fe1e80e', // LINK
+            receiver: 'stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3'
+          })
+
+          if (gasResponse.isErr()) {
+            console.error(gasResponse.error)
+            process.exit(1)
+          }
+
+          console.info(\`gas: \${gasResponse.value\}\`)
+`).trim(),
+      },
+    },
+    '.npmrc': {
+      file: {
+        contents: dedent(`
+          engine-strict=true
+          npm_config_yes=true
+          auto-install-peers=true
+          enable-pre-post-scripts=true
+          strict-peer-dependencies=false
+          node-options="--no-warnings"
+        `).trim(),
+      },
+    },
+    'package.json': {
+      file: {
+        contents: dedent(/* json */ `
+          {
+            "name": "demo",
+            "type": "module",
+            "dependencies": {
+              "tsx": "latest",
+              "viem": "latest",
+              "@unionlabs/client": "latest"
+            }
+          }
+        `).trim(),
+      },
+    },
+  } satisfies FileSystemTree
+
+  type FileName = keyof typeof files
+
+  const writeToWebContainerFile = async ({
+    path,
+    content,
+  }: {
+    path: FileName
+    content: string
+  }) => {
+    await webcontainerInstance.fs.writeFile(path, content, { encoding: 'utf-8' })
+  }
+
+  async function installDependencies() {
+    // Install dependencies
+    const promises = [
+      webcontainerInstance.spawn('npm', ['install', '--global', 'bun']).catch(() => {}),
+      webcontainerInstance.spawn('npm', ['install']).catch(() => {}),
+    ] as Array<Promise<WebContainerProcess>>
+    const installProcesses = await Promise.all(promises)
+    return installProcesses.map(installProcess => {
+      installProcess.output.pipeTo(
+        new WritableStream({
+          write: data => {
+            console.log(data)
+          },
+        }),
+      )
+      // Wait for install command to exit
+      return installProcess.exit
+    })
+  }
+
+  async function startShell(terminal: Terminal) {
+    const shellProcess = await webcontainerInstance.spawn('jsh', {
+      env: {},
+      terminal: { cols: terminal.cols, rows: terminal.rows },
+    })
+    shellProcess.output.pipeTo(
+      new WritableStream({
+        write: data => {
+          terminal.write(data)
+        },
+      }),
+    )
+
+    const input = shellProcess.input.getWriter()
+    terminal.onData(data => input.write(data))
+
+    return shellProcess
+  }
+
+  let webcontainerInstance: WebContainer
+
+  window.addEventListener('load', async () => {
+    if (!textareaElement || !terminalElement || !iframeElement) return
+
+    textareaElement.value = files['mod.ts'].file.contents
+    textareaElement.addEventListener('input', event => {
+      if (!event.target?.value) return
+      writeToWebContainerFile({ path: 'mod.ts', content: event.target.value })
+    })
+
+    const {
+      terminal,
+      addons: { fitAddon },
+    } = await initiateTerminal(terminalElement)
+
+    webcontainerInstance = await WebContainer.boot({
+      workdirName: 'union',
+      forwardPreviewErrors: true,
+    })
+
+    await webcontainerInstance.mount(files)
+
+    // webcontainerInstance.on('server-ready', (port, url) => {
+    //   iframeElement.src = url
+    // })
+
+    const shellProcess = await startShell(terminal)
+    await installDependencies()
+    window.addEventListener('resize', () => {
+      fitAddon.fit()
+      shellProcess.resize({ cols: terminal.cols, rows: terminal.rows })
+    })
+
+    const xtermViewport = document.querySelector('div.xterm-viewport')
+    if (!xtermViewport) return
+  })
+
+  const iframeElement = document.querySelector('iframe')
+  const textareaElement = document.querySelector('textarea')
+  const terminalElement = document.querySelector('article#terminal')
+</script>
+
+<style>
+  .xterm,
+  canvas,
+  .composition-view,
+  .xterm-helpers,
+  .xterm-helper-textarea,
+  textarea,
+  .terminal,
+  .terminal-wrapper,
+  .xterm-viewport {
+    width: 100%;
+    height: 100%;
+    /* background-color: #17181c !important; */
+    border: var(--ec-brdWd) solid var(--ec-brdCol);
+    border-radius: calc(var(--ec-brdRad) + var(--ec-brdWd));
+  }
+
+  iframe,
+  textarea {
+    border-radius: 3px;
+  }
+
+  iframe {
+    height: 20rem;
+    width: 100%;
+    border: solid 2px #ccc;
+  }
+
+  textarea {
+    width: 100%;
+    resize: none;
+    height: 35rem;
+    color: white;
+    padding: 0.5rem 1rem;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+    font-family:
+      Menlo,
+      Cascadia Code,
+      Consolas,
+      Liberation Mono,
+      monospace;
+  }
+
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    height: 100%;
+    width: 100%;
+  }
+
+  .wc {
+    -webkit-text-fill-color: #0000;
+    background-clip: text;
+    -webkit-background-clip: text;
+    background-image: linear-gradient(to right, #761fac 0, #8a19a9 20%, #d900a5 70%, #d917a3 100%);
+    filter: drop-shadow(0 1px 0 #fff);
+    font-weight: 800;
+    color: #69f5ff;
+    text-decoration: underline;
+  }
+</style>

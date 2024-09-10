@@ -1,4 +1,5 @@
 import { loadEnv } from "vite"
+import vue from "@astrojs/vue"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
 import tailwind from "@astrojs/tailwind"
@@ -27,7 +28,17 @@ export default defineConfig({
   },
   trailingSlash: "ignore",
   markdown: markdownConfiguration,
-  server: _ => ({ port: Number(PORT) }),
+  server: _ => ({
+    port: Number(PORT),
+    /**
+     * required for webcointainer
+     * @see https://webcontainers.io/guides/quickstart
+     */
+    headers: {
+      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Opener-Policy": "same-origin"
+    }
+  }),
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   redirects: { "/logo": "/union-logo.zip" },
@@ -115,7 +126,7 @@ export default defineConfig({
             },
             {
               label: "API",
-              collapsed: true,
+              collapsed: false,
               autogenerate: {
                 directory: "/integrations/api"
               }
@@ -139,17 +150,19 @@ export default defineConfig({
       ],
       plugins: [starlightLinksValidator(), starlightHeadingBadges()],
       customCss: [
+        "./src/styles/index.css",
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
         "./src/styles/starlight.css",
         "./node_modules/katex/dist/katex.min.css"
       ]
     }),
+    sitemap(),
     tailwind({
       applyBaseStyles: false,
       configFile: "tailwind.config.ts"
     }),
     svelte(),
-    sitemap()
+    vue({ jsx: true, devtools: true })
   ]
 })

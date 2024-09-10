@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import "#patch.ts"
 import { parseArgs } from "node:util"
 import { fallback, http } from "viem"
 import { consola } from "scripts/logger"

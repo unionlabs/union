@@ -1,9 +1,3 @@
-pre,
-figure,
-.expressive-code {
-  border-radius: 0.4rem;
-}
-
 g {
   margin-top: 12px !important;
   padding-top: 20px !important;
@@ -39,36 +33,22 @@ html {
   color-scheme: dark;
 }
 
+pre button.rehype-pretty-copy {
+  top: 5px;
+  background-color: transparent;
+}
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-h3 code {
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  @media (min-width: 768px) {
-    font-size: 1.25rem !important;
-    line-height: 1.75rem !important;
-  }
 }
 
 pre {
   margin-top: 0;
   padding-left: 0;
   padding-right: 0;
-  overflow-x: scroll;
-  border-radius: 0.5rem;
+  overflow-x: auto;
   -webkit-font-smoothing: antialiased;
-}
-
-code {
-  line-height: 1.6;
-  font-size: 0.875rem;
-  @media (min-width: 768px) {
-    font-size: 1rem !important;
-    line-height: 1.5rem !important;
-  }
 }
 
 pre > code {

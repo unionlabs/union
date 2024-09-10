@@ -1,4 +1,3 @@
-import "./patch.ts"
 export type * from "./types.ts"
 export {
   bytesToHex,

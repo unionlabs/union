@@ -4,6 +4,37 @@ import { bech32AddressToHex } from "../../convert.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 
 /**
+ * get tenderly credentials
+ * @example
+ * ```ts
+ * const { url, key } = getTenderlyCreds({
+ *   account: "my-tenderly-account",
+ *   project: "my-tenderly-project",
+ * })
+ * ```
+ * @note WIP
+ */
+function getTenderlyCreds(slug: {
+  account: string
+  project: string
+}): {
+  url: string
+  key: string
+} {
+  let url = "https://api.tenderly.co/api/v1/account"
+  if (process["env"] === undefined || process["env"]?.["TENDERLY_URL"] === undefined) {
+    return {
+      key: "",
+      url: `${url}/${slug.account}/project/${slug.project}`
+    }
+  }
+  return {
+    url: process["env"]?.["TENDERLY_URL"],
+    key: ""
+  }
+}
+
+/**
  * simulate a transaction on evm using Tenderly API
  * @example
  * ```ts
@@ -35,17 +66,19 @@ export async function simulateTransaction({
   sourceChannel: string
   relayContractAddress: Address
 }) {
-  const TENDERLY_URL =
-    (import.meta.env.TENDERLY_URL
-      ? import.meta.env.TENDERLY_URL
-      : process.env?.TENDERLY_URL ??
-        "https://api.tenderly.co/api/v1/account/amor-fati/project/project") || ""
+  let { url: TENDERLY_URL, key: TENDERLY_KEY } = getTenderlyCreds({
+    project: "project",
+    account: "amor-fati"
+  })
+
+  // @note throwaway key
+  TENDERLY_KEY ||= "zQs9t0eoXQybyVbGfV4dSihLElP0Uyl1"
 
   const queryHeaders = new Headers({
     Accept: "application/json",
     "User-Agent": "typescript-sdk",
     "Content-Type": "application/json",
-    "X-Access-Key": "zQs9t0eoXQybyVbGfV4dSihLElP0Uyl1"
+    "X-Access-Key": TENDERLY_KEY
   })
 
   const tenderlyRequest = ofetch.create({
