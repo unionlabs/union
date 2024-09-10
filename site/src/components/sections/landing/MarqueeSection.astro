@@ -2,9 +2,12 @@
 import "../../../styles/marquee.css"
 import ContainedSection from "../../ContainedSection.astro"
 import LightedTitle from "../../typography/LightedTitle.astro"
+import { type NamedImage  } from "#/lib/types"
 
 interface Props {
-  title: string
+  title: string,
+  data: Array<NamedImage>,
+  reverse: boolean
 }
 
 const { title, data, reverse } = Astro.props
@@ -22,7 +25,7 @@ const { title, data, reverse } = Astro.props
       <div class="marquee__group">
         {
           data.map(item => (
-                  <img src={item.logo.src} alt={item.name}></img>
+            <img src={item.logo.src} alt={item.name}></img>
           ))
         }
       </div>
