@@ -9,35 +9,6 @@ Acknowledgemets
 Acks
 Agglayer
 Axelar
-twoslash
-Twoslash
-Creds
-fati
-shikijs
-ljegnwps
-mmxyqu
-Consolas
-xsmfxu
-ttpfu
-Embedder
-
-webcontainer
-webgl
-autocorrect
-autocapitalize
-
-
-Webgl
-
-webcontainer
-webgl
-
-workdir
-
-iframe
-Menlo
-Cascadia
-
 BAYC
 BLOCKSCOUT
 Bera
@@ -54,6 +25,7 @@ CCTP
 CFLAGS
 CHAINSTACK
 CMOV
+Cascadia
 Celestia
 Celestine
 Certus
@@ -64,10 +36,12 @@ Coeff
 Cofactor
 Configurator
 Connor
+Consolas
 Cosmoverse
 Counterparties
 Counterparty
 Cpath
+Creds
 Cryptopunkssvg
 Cypherpunk
 DATADIR
@@ -82,6 +56,7 @@ Djuric
 ECTO
 Edgi
 EigenLayer
+Embedder
 F1bonacc1
 FLUSHCOMPLETE
 Fatalf
@@ -136,6 +111,7 @@ Livenesses
 MARKETCAP
 Mathjax
 Maxblocks
+Menlo
 Merkle
 Merkleize
 Merkleizes
@@ -217,6 +193,7 @@ TestnetbArtio
 Timestamptz
 Tioga
 Tjpl
+Twoslash
 UDHC
 UNBONDED
 UNBONDING
@@ -236,6 +213,7 @@ Verkle
 Viridis
 Vitarana
 Wagmi
+Webgl
 Wrapf
 XMSB
 YMSB
@@ -258,6 +236,7 @@ adce
 addresscodec
 adipiscing
 aeryz
+afterend
 aggr
 agoric
 aitlahcen
@@ -299,8 +278,10 @@ authtypes
 authvesting
 authzkeeper
 authzmodule
+autocapitalize
 autocli
 autocliv
+autocorrect
 autotests
 awkroot
 axelar
@@ -532,6 +513,7 @@ extldflags
 extralight
 fastfetch
 fastnode
+fati
 feegrant
 feegrantkeeper
 feegrantmodule
@@ -671,6 +653,7 @@ identifing
 idents
 idxs
 iflag
+iframe
 ilike
 ilog
 imap
@@ -754,6 +737,7 @@ lightheader
 linea
 linkmode
 livenesses
+ljegnwps
 lmfao
 lnav
 lnxk
@@ -793,6 +777,7 @@ miri
 misbehaviour
 misbehiavor
 mktemp
+mmxyqu
 mollitia
 monitonically
 monniker
@@ -1049,6 +1034,7 @@ shazow
 shentu
 shiki
 shikiji
+shikijs
 sidechains
 sifchain
 sigint
@@ -1198,6 +1184,8 @@ tsdb
 tsdbadmin
 tsqd
 tsup
+ttpfu
+twoslash
 txes
 txfees
 txmodule
@@ -1314,6 +1302,8 @@ wasmtypes
 wasmvm
 wasmvmstatic
 wasmvmtypes
+webcontainer
+webgl
 webkit
 webp
 webpki
@@ -1321,6 +1311,7 @@ wght
 whistleblower
 withdrawability
 woestijne
+workdir
 wormchain
 xbonlulu
 xion
@@ -1331,6 +1322,7 @@ xnever
 xpla
 xprv
 xqxp
+xsmfxu
 yamlfmt
 ypyp
 yqyp

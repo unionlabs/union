@@ -51,8 +51,16 @@
             runtimeInputs = combinedDeps;
             text = ''
               ${ensureAtRepositoryRoot}
+              biome check docs --error-on-warnings --write --unsafe
+              
+              nix fmt
+
               cd docs/
+
               npm_config_yes=true npx astro check
+              npm_config_yes=true npx astro build
+
+              nix build .\#checks.${pkgs.system}.spellcheck --print-build-logs
             '';
           };
         };
