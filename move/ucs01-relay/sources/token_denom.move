@@ -18,6 +18,7 @@ module UCS01::fa_coin {
     const EPAUSED: u64 = 2;
 
     const ASSET_SYMBOL: vector<u8> = b"FA";
+    const VAULT_SEED: vector<u8> = b"Relay Store Vault";
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     /// Hold refs to control the minting, transfer and burning of fungible assets.
@@ -122,15 +123,21 @@ module UCS01::fa_coin {
     #[view]
     /// Return the address of the managed fungible asset that's created when this module is deployed.
     public fun get_metadata(): Object<Metadata> {
-        let asset_address = object::create_object_address(&@UCS01, ASSET_SYMBOL);
+        let asset_address = object::create_object_address(&get_owner_addr(), ASSET_SYMBOL);
         object::address_to_object<Metadata>(asset_address)
     }
 
     #[view]
     /// Return the address of the managed fungible asset that's created when this module is deployed.
     public fun get_metadata_address(): address {
-        object::create_object_address(&@UCS01, ASSET_SYMBOL)
+        object::create_object_address(&get_owner_addr(), ASSET_SYMBOL)
         // object::address_to_object<Metadata>(asset_address)
+    }
+
+
+    #[view]
+    public fun get_owner_addr(): address {
+        object::create_object_address(&@UCS01, VAULT_SEED)
     }
 
     #[view]
@@ -224,7 +231,7 @@ module UCS01::fa_coin {
     public entry fun set_pause(pauser: &signer, paused: bool) acquires State {
         let asset = get_metadata();
         assert!(object::is_owner(asset, signer::address_of(pauser)), error::permission_denied(ENOT_OWNER));
-        let state = borrow_global_mut<State>(object::create_object_address(&@UCS01, ASSET_SYMBOL));
+        let state = borrow_global_mut<State>(object::create_object_address(&get_owner_addr(), ASSET_SYMBOL));
         if (state.paused == paused) { return };
         state.paused = paused;
     }
@@ -232,7 +239,7 @@ module UCS01::fa_coin {
     /// Assert that the FA coin is not paused.
     /// OPTIONAL
     fun assert_not_paused() acquires State {
-        let state = borrow_global<State>(object::create_object_address(&@UCS01, ASSET_SYMBOL));
+        let state = borrow_global<State>(object::create_object_address(&get_owner_addr(), ASSET_SYMBOL));
         assert!(!state.paused, EPAUSED);
     }
 
@@ -255,7 +262,7 @@ module UCS01::fa_coin {
 
 
 
-    #[test(creator = @UCS01)]
+    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3)]
     public fun test_initialize(creator: &signer) {
         initialize(
             creator,
@@ -318,7 +325,7 @@ module UCS01::fa_coin {
     // }
     
 
-    #[test(creator = @UCS01)]
+    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3)]
     public fun test_mint_with_authorized_user(creator: &signer) acquires ManagedFungibleAsset {
         initialize(
             creator,
@@ -341,7 +348,7 @@ module UCS01::fa_coin {
         assert!(recipient_balance == 1000, 201);
     }
 
-    #[test(creator = @UCS01, aaron = @0xface)]
+    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3, aaron = @0xface)]
     #[expected_failure(abort_code = 0x50001, location = Self)]
     fun test_mint_with_unauthorized_user(
         creator: &signer,
@@ -362,7 +369,7 @@ module UCS01::fa_coin {
         mint(aaron, recipient, 1000);
     }
 
-    #[test(creator = @UCS01)]
+    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3)]
     public fun test_burn_with_authorized_user(creator: &signer) acquires ManagedFungibleAsset {
         initialize(
             creator,
@@ -388,7 +395,7 @@ module UCS01::fa_coin {
         assert!(recipient_balance == 500, 301);
     }
 
-    #[test(creator = @UCS01, aaron = @0xface)]
+    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3, aaron = @0xface)]
     #[expected_failure(abort_code = 0x50001, location = Self)]
     public fun test_burn_with_unauthorized_user(
         creator: &signer,
@@ -412,7 +419,7 @@ module UCS01::fa_coin {
         burn(aaron, recipient, 500);
     }
 
-    #[test(creator = @UCS01)]
+    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3)]
     public fun test_transfer_with_authorized_user(creator: &signer) acquires ManagedFungibleAsset, State {
         initialize(
             creator,
@@ -441,7 +448,7 @@ module UCS01::fa_coin {
         assert!(recipient_balance == 500, 402);
     }
 
-    #[test(creator = @UCS01, aaron = @0xface)]
+    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3, aaron = @0xface)]
     #[expected_failure(abort_code = 0x50001, location = Self)]
     public fun test_transfer_with_unauthorized_user(
         creator: &signer,
@@ -467,8 +474,9 @@ module UCS01::fa_coin {
     }
 
 
-    #[test(creator = @UCS01, alice=@0x1234, bob=@0x5678)]
+    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3, alice=@0x1234, bob=@0x5678)]
     public fun test_to_relay(creator: &signer, alice: &signer, bob: address) acquires ManagedFungibleAsset {
+        
         initialize(
             creator,
             string::utf8(TEST_NAME),

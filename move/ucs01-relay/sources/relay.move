@@ -905,7 +905,7 @@ module UCS01::Relay {
 
 
     #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
-    public fun test_send_token_valid_address(admin: &signer, bob: &signer, alice: address) acquires RelayStore {
+    public fun test_send_token_valid_address(admin: &signer, bob: &signer, alice: address) acquires RelayStore, SignerRef {
         // Initialize the store
         initialize_store(admin);
 
@@ -923,6 +923,7 @@ module UCS01::Relay {
         let denom_str = string_utils::to_string_with_canonical_addresses(&denom);
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
+        let admin = &get_ucs_signer();
 
         UCS01::fa_coin::initialize(
             admin,
@@ -953,7 +954,7 @@ module UCS01::Relay {
     }
 
     #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
-    public fun test_send_token_burn(admin: &signer, bob: &signer, alice: address) acquires RelayStore {
+    public fun test_send_token_burn(admin: &signer, bob: &signer, alice: address) acquires RelayStore, SignerRef {
         // Initialize the store
         initialize_store(admin);
 
@@ -966,7 +967,7 @@ module UCS01::Relay {
             source_channel,
             denom,
         };
-
+        let admin = &get_ucs_signer();
         UCS01::fa_coin::initialize(
             admin,
             string::utf8(TEST_NAME),
@@ -998,13 +999,13 @@ module UCS01::Relay {
 
     #[test(admin = @UCS01, alice = @0x1234)]
     #[expected_failure(abort_code = E_INVALID_AMOUNT)]
-    public fun test_send_zero_amount(admin: &signer, alice: address) acquires RelayStore {
+    public fun test_send_zero_amount(admin: &signer, alice: address) acquires RelayStore, SignerRef {
         // Initialize the store
         initialize_store(admin);
 
         let source_channel = string::utf8(b"channel-1");
         let denom = @0x111111;
-
+        let admin = &get_ucs_signer();
         UCS01::fa_coin::initialize(
             admin,
             string::utf8(TEST_NAME),
@@ -1044,61 +1045,62 @@ module UCS01::Relay {
         // assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
     }
 
-    // #[test(admin = @UCS01, alice = @0x1234)]
-    // public fun test_refund_tokens(admin: &signer, alice: address) acquires RelayStore, SignerRef {
-    //     initialize_store(admin);
+    #[test(admin = @UCS01, alice = @0x1234)]
+    public fun test_refund_tokens(admin: &signer, alice: address) acquires RelayStore, SignerRef {
+        initialize_store(admin);
 
-    //     let source_channel = string::utf8(b"channel-1");
-    //     let amount: u64 = 1000;
+        let source_channel = string::utf8(b"channel-1");
+        let amount: u64 = 1000;
 
-    //     // Step 2: Mint some tokens to Alice
-    //     UCS01::fa_coin::initialize(
-    //         token_owner,
-    //         string::utf8(TEST_NAME),
-    //         string::utf8(TEST_SYMBOL),
-    //         TEST_DECIMALS,
-    //         string::utf8(TEST_ICON),
-    //         string::utf8(TEST_PROJECT)
-    //     );
+        let token_owner = &get_ucs_signer();
 
-    //     let asset_addr = UCS01::fa_coin::get_metadata_address();
-    //     let asset = get_metadata(asset_addr);
-    //     UCS01::fa_coin::mint(admin, alice, amount);
+        std::debug::print(token_owner);
+        // Step 2: Mint some tokens to Alice
+        UCS01::fa_coin::initialize(
+            token_owner,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT)
+        );
 
-    //     // Step 3: Simulate sending tokens (for refund purposes)
-    //     let token = Token {
-    //         denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
-    //         amount: amount,
-    //     };
-    //     let tokens = vector::empty<Token>();
-    //     vector::push_back(&mut tokens, token);
+        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        let asset = get_metadata(asset_addr);
 
-    //     let relay_packet = RelayPacket {
-    //         sender: alice,
-    //         receiver: @0x0000000000000000000000000000000000000022,
-    //         tokens: tokens,
-    //         extension: string::utf8(b"extension"),
-    //     };
+        // Step 3: Simulate sending tokens (for refund purposes)
+        let token = Token {
+            denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+            amount: amount,
+        };
+        let tokens = vector::empty<Token>();
+        vector::push_back(&mut tokens, token);
 
-    //     // Insert mapping for the denom -> address
-    //     let pair = DenomToAddressPair {
-    //         source_channel,
-    //         denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
-    //     };
-    //     let store = borrow_global_mut<RelayStore>(get_vault_addr());
-    //     smart_table::upsert(&mut store.denom_to_address, pair, asset_addr);
+        let relay_packet = RelayPacket {
+            sender: alice,
+            receiver: @0x0000000000000000000000000000000000000022,
+            tokens: tokens,
+            extension: string::utf8(b"extension"),
+        };
 
-    //     // Step 4: Call the refund function
-    //     let sequence = 1;
-    //     refund_tokens(sequence, source_channel, &relay_packet);
+        // Insert mapping for the denom -> address
+        let pair = DenomToAddressPair {
+            source_channel,
+            denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+        };
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        smart_table::upsert(&mut store.denom_to_address, pair, asset_addr);
 
-    //     // Step 5: Verify the results
-    //     let alice_balance = primary_fungible_store::balance(alice, asset);
-    //     assert!(alice_balance == amount, 100);  // Alice should have received the refund
+        // Step 4: Call the refund function
+        let sequence = 1;
+        refund_tokens(sequence, source_channel, &relay_packet);
 
-    //     // Check that the refund event is emitted (using some placeholder validation for the event)
-    //     // Since we can't directly assert on emitted events, we assume this is working as part of the logic
-    // }
+        // Step 5: Verify the results
+        let alice_balance = primary_fungible_store::balance(alice, asset);
+        std::debug::print(&alice_balance);
+        assert!(alice_balance == amount, 100);  // Alice should have received the refund
+
+    }
 
 
     // #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
