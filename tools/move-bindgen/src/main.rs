@@ -75,8 +75,16 @@ async fn main() -> Result<(), Bde> {
 
                 (
                     parse_quote! {
-                        #[macros::model]
-                        #[derive(::move_bindgen::TypeTagged)]
+                        #[derive(
+                            Debug,
+                            Clone,
+                            PartialEq,
+                            Eq,
+                            ::move_bindgen::serde::Serialize,
+                            ::move_bindgen::serde::Deserialize,
+                            ::move_bindgen::TypeTagged
+                        )]
+                        #[serde(crate = "::move_bindgen::serde")]
                         #[type_tag(module = #mod_name)]
                         pub struct #ident<#(#generics)*> {
                             #(#fs)*
@@ -159,7 +167,8 @@ async fn main() -> Result<(), Bde> {
                         #[allow(clippy::type_complexity)] // all hail our lord and saviour `unzip`
                         let (mts, (idents, ((param_tys, field_tys), rs))): (Vec<_>, (Vec<_>, ((Vec<_>, Vec<_>), Vec<_>))) = ps.into_iter().unzip();
 
-                        let mts_ts = mts.iter().map(|typ| move_type_to_type_literal(typ));
+                        // TODO: Support generics on view functions
+                        // let mts_ts = mts.iter().map(|typ| move_type_to_type_literal(typ));
 
                         let raw_ret = quote!((#(#ret,)*));
 
@@ -176,36 +185,57 @@ async fn main() -> Result<(), Bde> {
                             quote!((#(#idents,)*): (#(#param_tys,)*),)
                         };
 
+                        let tracing_instrument_fields = if param_tys.is_empty() {
+                            quote!()
+                        } else {
+                            quote!(#(%#idents,)*)
+                        };
+
                         let ts = if f.is_view {
                             parse_quote! {
+                                #[::move_bindgen::tracing::instrument(
+                                    skip_all,
+                                    fields(
+                                        %contract_address,
+                                        ?ledger_version,
+                                        #tracing_instrument_fields,
+                                    )
+                                )]
                                 async fn #ident(
                                     &self,
-                                    contract_address: ::aptos_types::account_address::AccountAddress,
+                                    contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
                                     #params
                                     ledger_version: Option<u64>
-                                ) -> ::core::result::Result<#ret, ::aptos_rest_client::error::RestError>
+                                ) -> ::core::result::Result<#ret, ::move_bindgen::aptos_rest_client::error::RestError>
                                 {
                                     let response = self
                                         .client()
                                         .view(
-                                            &::aptos_rest_client::aptos_api_types::ViewRequest {
-                                                function: ::aptos_rest_client::aptos_api_types::EntryFunctionId {
+                                            &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                                                function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                                                     module:
-                                                        ::aptos_rest_client::aptos_api_types::MoveModuleId {
+                                                        ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                                             address: contract_address.into(),
                                                             name: stringify!(#mod_name).parse().unwrap(),
                                                         },
                                                     name: stringify!(#ident).parse().unwrap(),
                                                 },
-                                                type_arguments: vec![#(#mts_ts,)*],
-                                                arguments: vec![#(serde_json::to_value(#field_tys::from(#idents)).unwrap(),)*],
+                                                type_arguments: vec![
+                                                    // TODO: Support generics on view functions
+                                                    // #(#mts_ts,)*
+                                                ],
+                                                arguments: vec![#(::move_bindgen::serde_json::to_value(#field_tys::from(#idents)).unwrap(),)*],
                                             },
                                             ledger_version,
                                         )
                                         .await?
                                         .into_inner();
 
-                                    let ret = ::serde_json::from_value::<#raw_ret>(::serde_json::Value::from(response))?;
+                                    let value = ::move_bindgen::serde_json::Value::from(response);
+
+                                    ::move_bindgen::tracing::debug!(%value, "fetched response");
+
+                                    let ret = ::move_bindgen::serde_json::from_value::<#raw_ret>(value)?;
 
                                     Ok(#ret_expr)
                                 }
@@ -224,7 +254,7 @@ async fn main() -> Result<(), Bde> {
                             parse_quote! {
                                 fn #ident<
                                     #(#generic_type_params: ::serde::Serialize + ::move_bindgen::TypeTagged,)*
-                                >(&self, contract_address: ::aptos_types::account_address::AccountAddress, #params) -> ::aptos_types::transaction::EntryFunction
+                                >(&self, contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress, #params) -> ::move_bindgen::aptos_types::transaction::EntryFunction
                                 {
                                     // let (values, type_args): (Vec<_>, Vec<_>) = vec![#({
                                     //     let (t, ctx) = ::move_bindgen::IntoTypeTagged::into_type_tagged(#idents);
@@ -234,15 +264,15 @@ async fn main() -> Result<(), Bde> {
                                     //     )
                                     // },)*].into_iter().unzip();
 
-                                    ::aptos_types::transaction::EntryFunction::new(
-                                        ::aptos_rest_client::aptos_api_types::MoveModuleId {
+                                    ::move_bindgen::aptos_types::transaction::EntryFunction::new(
+                                        ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                             address: contract_address.into(),
                                             name: stringify!(#mod_name).parse().unwrap(),
                                         }.into(),
                                         stringify!(#ident).parse().unwrap(),
                                         // TODO: We don't use this currently but this should be fixed somehow(?)
                                         vec![],
-                                        vec![#(bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(#idents).0).unwrap(),)*],
+                                        vec![#(::move_bindgen::bcs::to_bytes(&::move_bindgen::IntoTypeTagged::into_type_tagged(#idents).0).unwrap(),)*],
                                     )
                                 }
                             }
@@ -262,7 +292,7 @@ async fn main() -> Result<(), Bde> {
         if !fns.is_empty() {
             output_ts.entry(mod_name).or_default().extend(quote! {
                 pub trait ClientExt {
-                    fn client(&self) -> &::aptos_rest_client::Client;
+                    fn client(&self) -> &::move_bindgen::aptos_rest_client::Client;
 
                     #(#fns)*
                 }
@@ -403,37 +433,52 @@ fn move_type_to_rust_type(this_module: Address, typ: &MoveType) -> Result<(Type,
         MoveType::U8 => (parse_quote!(u8), parse_quote!(u8)),
         MoveType::U16 => (
             parse_quote!(u16),
-            parse_quote!(::aptos_rest_client::aptos_api_types::U16),
+            parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::U16),
         ),
         MoveType::U32 => (
             parse_quote!(u32),
-            parse_quote!(::aptos_rest_client::aptos_api_types::U32),
+            parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::U32),
         ),
         MoveType::U64 => (
             parse_quote!(u64),
-            parse_quote!(::aptos_rest_client::aptos_api_types::U64),
+            parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::U64),
         ),
         MoveType::U128 => (
             parse_quote!(u128),
-            parse_quote!(::aptos_rest_client::aptos_api_types::U128),
+            parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::U128),
         ),
         MoveType::U256 => (
             parse_quote!(U256),
-            parse_quote!(::aptos_rest_client::aptos_api_types::U256),
+            parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::U256),
         ),
         MoveType::Address => (
-            parse_quote!(::aptos_rest_client::aptos_api_types::Address),
-            parse_quote!(::aptos_rest_client::aptos_api_types::Address),
+            parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::Address),
+            parse_quote!(::move_bindgen::aptos_rest_client::aptos_api_types::Address),
         ),
         MoveType::Signer => (parse_quote!(Signer), parse_quote!(Signer)),
         MoveType::Vector { items } => {
-            let (param, field) = move_type_to_rust_type(this_module, items)?;
-            (parse_quote!(Vec<#param>), parse_quote!(Vec<#field>))
+            if **items == MoveType::U8 {
+                let (_param, field) = move_type_to_rust_type(this_module, items)?;
+                (
+                    parse_quote!(
+                        ::move_bindgen::aptos_rest_client::aptos_api_types::HexEncodedBytes
+                    ),
+                    parse_quote!(
+                        ::move_bindgen::aptos_rest_client::aptos_api_types::HexEncodedBytes
+                    ),
+                )
+            } else {
+                let (param, field) = move_type_to_rust_type(this_module, items)?;
+                (parse_quote!(Vec<#param>), parse_quote!(Vec<#field>))
+            }
         }
         MoveType::Struct(s) if is_string(s) => (parse_quote!(String), parse_quote!(String)),
         MoveType::Struct(s) if is_option(s) => {
             let (param, field) = move_type_to_rust_type(this_module, &s.generic_type_params[0])?;
-            (parse_quote!(Option<#param>), parse_quote!(Option<#field>))
+            (
+                parse_quote!(::move_bindgen::MoveOption<#param>),
+                parse_quote!(Option<#field>),
+            )
         }
         // MoveType::Struct(s) if is_smart_table(&s) => {
         //     let t0 = move_type_to_rust_type(this_module, &s.generic_type_params[0])?;
@@ -483,19 +528,29 @@ fn move_type_to_rust_type(this_module: Address, typ: &MoveType) -> Result<(Type,
 
 fn move_type_to_type_literal(typ: &MoveType) -> proc_macro2::TokenStream {
     match typ {
-        MoveType::Bool => quote!(::aptos_rest_client::aptos_api_types::MoveType::Bool),
-        MoveType::U8 => quote!(::aptos_rest_client::aptos_api_types::MoveType::U8),
-        MoveType::U16 => quote!(::aptos_rest_client::aptos_api_types::MoveType::U16),
-        MoveType::U32 => quote!(::aptos_rest_client::aptos_api_types::MoveType::U32),
-        MoveType::U64 => quote!(::aptos_rest_client::aptos_api_types::MoveType::U64),
-        MoveType::U128 => quote!(::aptos_rest_client::aptos_api_types::MoveType::U128),
-        MoveType::U256 => quote!(::aptos_rest_client::aptos_api_types::MoveType::U256),
-        MoveType::Address => quote!(::aptos_rest_client::aptos_api_types::MoveType::Address),
-        MoveType::Signer => quote!(::aptos_rest_client::aptos_api_types::MoveType::Signer),
+        MoveType::Bool => {
+            quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::Bool)
+        }
+        MoveType::U8 => quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::U8),
+        MoveType::U16 => quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::U16),
+        MoveType::U32 => quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::U32),
+        MoveType::U64 => quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::U64),
+        MoveType::U128 => {
+            quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::U128)
+        }
+        MoveType::U256 => {
+            quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::U256)
+        }
+        MoveType::Address => {
+            quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::Address)
+        }
+        MoveType::Signer => {
+            quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::Signer)
+        }
         MoveType::Vector { items } => {
             let items = move_type_to_type_literal(items);
 
-            quote!(::aptos_rest_client::aptos_api_types::MoveType::Vector { items: #items })
+            quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::Vector { items: #items })
         }
         MoveType::Struct(MoveStructTag {
             address,
@@ -508,7 +563,7 @@ fn move_type_to_type_literal(typ: &MoveType) -> proc_macro2::TokenStream {
             let name = name.to_string();
             let generic_type_params = generic_type_params.iter().map(move_type_to_type_literal);
 
-            quote!(::aptos_rest_client::aptos_api_types::MoveType::Struct(::aptos_rest_client::aptos_api_types::MoveStructTag {
+            quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::Struct(::move_bindgen::aptos_rest_client::aptos_api_types::MoveStructTag {
                 address: #address.parse().unwrap(),
                 module: #module.parse().unwrap(),
                 name: #name.parse().unwrap(),
@@ -516,7 +571,7 @@ fn move_type_to_type_literal(typ: &MoveType) -> proc_macro2::TokenStream {
             }))
         }
         MoveType::GenericTypeParam { index } => {
-            quote!(::aptos_rest_client::aptos_api_types::MoveType::GenericTypeParam { index: #index })
+            quote!(::move_bindgen::aptos_rest_client::aptos_api_types::MoveType::GenericTypeParam { index: #index })
         }
         MoveType::Reference { mutable: _, to: _ } => todo!(),
         MoveType::Unparsable(_) => todo!(),

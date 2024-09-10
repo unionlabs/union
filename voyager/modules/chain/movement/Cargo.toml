@@ -31,3 +31,5 @@ tracing                   = { workspace = true }
 tracing-subscriber        = { workspace = true }
 unionlabs                 = { workspace = true }
 voyager-message           = { workspace = true }
+aptos-move-ibc.workspace = true
+reqwest = { workspace = true, features = ["json"] }

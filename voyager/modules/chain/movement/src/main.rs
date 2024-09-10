@@ -1,5 +1,6 @@
 use std::{cmp, collections::VecDeque, fmt::Debug, sync::Arc};
 
+use aptos_move_ibc::ibc::{self, ClientExt as _};
 use aptos_rest_client::{
     aptos_api_types::{Address, MoveType},
     error::RestError,
@@ -15,6 +16,7 @@ use serde_json::{json, Value};
 use serde_utils::Hex;
 use tracing::{debug, error, instrument, warn};
 use unionlabs::{
+    aptos::sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
     hash::H256,
     ibc::core::{
         channel::order::Order,
@@ -41,7 +43,6 @@ use voyager_message::{
 use crate::{
     call::{FetchBlock, FetchBlocks, MakeEvent, ModuleCall},
     callback::ModuleCallback,
-    client::ibc::ClientExt,
     data::ModuleData,
 };
 
@@ -49,7 +50,6 @@ pub mod call;
 pub mod callback;
 pub mod data;
 
-pub mod client;
 pub mod events;
 
 #[tokio::main(flavor = "multi_thread")]
@@ -78,6 +78,7 @@ pub struct Module {
     pub chain_id: ChainId<'static>,
 
     pub aptos_client: aptos_rest_client::Client,
+    pub movement_rpc_url: String,
 
     pub ibc_handler_address: Address,
 }
@@ -86,10 +87,11 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
+    pub movement_rpc_url: String,
     pub ibc_handler_address: Address,
 }
 
-impl client::ibc::ClientExt for Module {
+impl aptos_move_ibc::ibc::ClientExt for Module {
     fn client(&self) -> &aptos_rest_client::Client {
         &self.aptos_client
     }
@@ -225,6 +227,7 @@ impl Module {
             client,
             chain_id: ChainId::new(chain_id.to_string()),
             aptos_client,
+            movement_rpc_url: config.movement_rpc_url,
             ibc_handler_address: config.ibc_handler_address,
         })
     }
@@ -236,6 +239,22 @@ impl Module {
             revision_number: 0,
             revision_height: height,
         }
+    }
+
+    pub async fn ledger_version_of_height(&self, height: u64) -> u64 {
+        let ledger_version = self
+            .aptos_client
+            .get_block_by_height(height, false)
+            .await
+            // .map_err(rest_error_to_rpc_error)?
+            .unwrap()
+            .into_inner()
+            .last_version
+            .0;
+
+        debug!("height {height} is ledger version {ledger_version}");
+
+        ledger_version
     }
 }
 
@@ -291,15 +310,30 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             .then_some((s, e.data, hash)),
                         _ => None,
                     })
-                    .map(|(_typ, data, hash)| {
+                    .map(|(typ, data, hash)| {
+                        let event = match typ.name.0.as_str() {
+    "ClientCreatedEvent" => serde_json::from_value::<ibc::ClientCreatedEvent>(data).unwrap().into(),
+    "ClientUpdated" => serde_json::from_value::<ibc::ClientUpdated>(data).unwrap().into(),
+    "ConnectionOpenInit" => serde_json::from_value::<ibc::ConnectionOpenInit>(data).unwrap().into(),
+    "ConnectionOpenTry" => serde_json::from_value::<ibc::ConnectionOpenTry>(data).unwrap().into(),
+    "ConnectionOpenAck" => serde_json::from_value::<ibc::ConnectionOpenAck>(data).unwrap().into(),
+    "ConnectionOpenConfirm" => serde_json::from_value::<ibc::ConnectionOpenConfirm>(data).unwrap().into(),
+    "ChannelOpenInit" => serde_json::from_value::<ibc::ChannelOpenInit>(data).unwrap().into(),
+    "ChannelOpenTry" => serde_json::from_value::<ibc::ChannelOpenTry>(data).unwrap().into(),
+    "ChannelOpenAck" => serde_json::from_value::<ibc::ChannelOpenAck>(data).unwrap().into(),
+    "ChannelOpenConfirm" => serde_json::from_value::<ibc::ChannelOpenConfirm>(data).unwrap().into(),
+    "WriteAcknowledgement" => serde_json::from_value::<ibc::WriteAcknowledgement>(data).unwrap().into(),
+    "RecvPacket" => serde_json::from_value::<ibc::RecvPacket>(data).unwrap().into(),
+    "SendPacket" => serde_json::from_value::<ibc::SendPacket>(data).unwrap().into(),
+    "AcknowledgePacket" => serde_json::from_value::<ibc::AcknowledgePacket>(data).unwrap().into(),
+    "TimeoutPacket" => serde_json::from_value::<ibc::TimeoutPacket>(data).unwrap().into(),
+    unknown => panic!("unknown event `{unknown}`")
+                        };
                         // TODO: Check the type before deserializing
                         call(Call::plugin(
                             self.plugin_name(),
                             MakeEvent {
-                                event: serde_json::from_value::<crate::events::IbcEvent>(dbg!(
-                                    data
-                                ))
-                                .unwrap(),
+                                event,
                                 tx_hash: H256(*hash.0),
                                 height,
                             },
@@ -407,7 +441,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 tx_hash,
                 height,
             }) => {
-                fn ibc_height(h: crate::client::height::Height) -> Height {
+                fn ibc_height(h: aptos_move_ibc::height::Height) -> Height {
                     Height {
                         revision_number: h.revision_number.0,
                         revision_height: h.revision_height.0,
@@ -615,16 +649,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %at, %path))]
     async fn query_ibc_state(&self, at: Height, path: Path) -> RpcResult<Value> {
-        let ledger_version = self
-            .aptos_client
-            .get_block_by_height(at.revision_height, false)
-            .await
-            .map_err(rest_error_to_rpc_error)?
-            .into_inner()
-            .last_version
-            .0;
-
-        debug!("height {at} is ledger version {ledger_version}");
+        let ledger_version = self.ledger_version_of_height(at.revision_height).await;
 
         Ok(match path {
             Path::ClientState(path) => {
@@ -637,7 +662,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     .await
                     .map_err(rest_error_to_rpc_error)?;
 
-                into_value(Hex(client_state_bytes))
+                into_value(client_state_bytes)
             }
             Path::ClientConsensusState(path) => {
                 let consensus_state_bytes = self
@@ -653,7 +678,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     .await
                     .map_err(rest_error_to_rpc_error)?;
 
-                into_value(Hex(consensus_state_bytes))
+                into_value(consensus_state_bytes)
             }
             Path::Connection(path) => into_value(
                 match self
@@ -664,6 +689,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     )
                     .await
                     .map_err(rest_error_to_rpc_error)?
+                    .into_option()
                 {
                     Some(connection) => Some(ConnectionEnd {
                         client_id: connection.client_id.parse().unwrap(),
@@ -693,7 +719,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 Some(connection.counterparty.connection_id.parse().unwrap())
                             },
                             prefix: MerklePrefix {
-                                key_prefix: connection.counterparty.prefix.key_prefix,
+                                key_prefix: connection.counterparty.prefix.key_prefix.into(),
                             },
                         },
                         delay_period: connection.delay_period.0,
@@ -783,50 +809,58 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_proof(&self, at: Height, path: Path) -> RpcResult<Value> {
-        let _ = (at, path);
+        let client = reqwest::Client::new();
 
-        // const IBC_STORE_PATH: &str = "store/ibc/key";
+        let ledger_version = self.ledger_version_of_height(at.revision_height).await;
 
-        // let path_string = path.to_string();
+        let vault_addr = self
+            .get_vault_addr(self.ibc_handler_address.into(), Some(ledger_version))
+            .await
+            .unwrap();
 
-        // let query_result = self
-        //     .tm_client
-        //     .abci_query(
-        //         IBC_STORE_PATH,
-        //         &path_string,
-        //         // a proof at height H is provable at height H + 1
-        //         // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
-        //         Some(
-        //             (i64::try_from(at.revision_height).unwrap() - 1)
-        //                 .try_into()
-        //                 .expect("invalid height"),
-        //         ),
-        //         true,
-        //     )
-        //     .await
-        //     .unwrap();
+        let address = serde_json::from_value::<H256>(
+            self.aptos_client
+                .get_account_resource(
+                    vault_addr.into(),
+                    &format!("{}::ibc::IBCStore", self.ibc_handler_address),
+                )
+                .await
+                .unwrap()
+                .into_inner()
+                .unwrap()
+                .data["commitments"]["handle"]
+                .clone(),
+        )
+        .unwrap();
 
-        // Ok(serde_json::to_value(
-        //     MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
-        //         proofs: query_result
-        //             .response
-        //             .proof_ops
-        //             .unwrap()
-        //             .ops
-        //             .into_iter()
-        //             .map(|op| {
-        //                 <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(
-        //                     op.data.as_slice(),
-        //                 )
-        //                 .unwrap()
-        //             })
-        //             .collect::<Vec<_>>(),
-        //     })
-        //     .unwrap(),
-        // )
-        // .unwrap())
+        let proof: aptos_types::proof::SparseMerkleProof = client
+            .get(format!(
+                "{base_url}/movement/v1/resource-proof/{key}/{address}/{height}",
+                base_url = self.movement_rpc_url,
+                key = hex::encode(path.to_string()),
+                address = address,
+                height = at.revision_height,
+            ))
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
 
-        todo!()
+        Ok(into_value(SparseMerkleProof {
+            leaf: proof.leaf().map(|leaf| SparseMerkleLeafNode {
+                key: leaf.key().as_ref().into(),
+                value_hash: leaf.value_hash().as_ref().into(),
+            }),
+            siblings: proof
+                .siblings()
+                .iter()
+                .map(AsRef::as_ref)
+                .copied()
+                .map(Into::into)
+                .collect(),
+        }))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -883,5 +917,38 @@ fn into_value<T: Debug + Serialize>(t: T) -> Value {
                 std::any::type_name::<T>()
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn connection_end_serde() {
+        let ret =
+            serde_json::from_value::<(Option<aptos_move_ibc::connection_end::ConnectionEnd>,)>(
+                json!([{
+                    "vec": [{
+                        "client_id": "cometbls-0",
+                        "counterparty": {
+                            "client_id": "08-wasm-5",
+                            "connection_id": "connection-11",
+                            "prefix": {
+                                "key_prefix": "0x696263"
+                            }
+                        },
+                        "delay_period": "0",
+                        "state": "2",
+                        "versions": [
+                            {
+                                "features": ["ORDER_UNORDERED"],
+                                "identifier": "1"
+                            }
+                        ]
+                    }]
+                }]),
+            )
+            .unwrap();
     }
 }

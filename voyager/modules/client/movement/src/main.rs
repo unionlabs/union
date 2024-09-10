@@ -12,7 +12,7 @@ use tracing::instrument;
 use unionlabs::{
     self,
     aptos::sparse_merkle_proof::SparseMerkleProof,
-    encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
+    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi, Proto},
     ethereum::config::PresetBaseKind,
     google::protobuf::any::Any,
     ibc::{
@@ -236,23 +236,22 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         client_state: Hex<Vec<u8>>,
         client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
-        // match client_type.as_str() {
-        //     ClientType::COMETBLS => Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
-        //         EthAbi,
-        //     >(&client_state.0)
-        //     .map_err(|err| {
-        //         ErrorObject::owned(
-        //             FATAL_JSONRPC_ERROR_CODE,
-        //             format!("unable to decode client state: {}", ErrorReporter(err)),
-        //             Some(json!({
-        //                 "client_type": client_type,
-        //             })),
-        //         )
-        //     })?)
-        //     .encode_as::<Proto>())),
-        //     _ => Ok(client_state),
-        // }
-        Ok(client_state)
+        match client_type.as_str() {
+            ClientType::COMETBLS => Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
+                Bcs,
+            >(&client_state.0)
+            .map_err(|err| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("unable to decode client state: {}", ErrorReporter(err)),
+                    Some(json!({
+                        "client_type": client_type,
+                    })),
+                )
+            })?)
+            .encode_as::<Proto>())),
+            _ => Ok(client_state),
+        }
     }
 
     #[instrument(skip_all)]

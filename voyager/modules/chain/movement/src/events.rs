@@ -1,23 +1,23 @@
+use aptos_move_ibc::ibc;
+use enumorph::Enumorph;
 use macros::model;
-use serde::{Deserialize, Serialize};
 
-#[model(no_serde)]
-#[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields, untagged)]
+#[model]
+#[derive(Enumorph)]
 pub enum IbcEvent {
-    CreateClient(crate::client::ibc::ClientCreatedEvent),
-    UpdateClient(crate::client::ibc::ClientUpdated),
-    ConnectionOpenInit(crate::client::ibc::ConnectionOpenInit),
-    ConnectionOpenTry(crate::client::ibc::ConnectionOpenTry),
-    ConnectionOpenAck(crate::client::ibc::ConnectionOpenAck),
-    ConnectionOpenConfirm(crate::client::ibc::ConnectionOpenConfirm),
-    ChannelOpenInit(crate::client::ibc::ChannelOpenInit),
-    ChannelOpenTry(crate::client::ibc::ChannelOpenTry),
-    ChannelOpenAck(crate::client::ibc::ChannelOpenAck),
-    ChannelOpenConfirm(crate::client::ibc::ChannelOpenConfirm),
-    WriteAcknowledgement(crate::client::ibc::WriteAcknowledgement),
-    RecvPacket(crate::client::ibc::RecvPacket),
-    SendPacket(crate::client::ibc::SendPacket),
-    AcknowledgePacket(crate::client::ibc::AcknowledgePacket),
-    TimeoutPacket(crate::client::ibc::TimeoutPacket),
+    CreateClient(ibc::ClientCreatedEvent),
+    UpdateClient(ibc::ClientUpdated),
+    ConnectionOpenInit(ibc::ConnectionOpenInit),
+    ConnectionOpenTry(ibc::ConnectionOpenTry),
+    ConnectionOpenAck(ibc::ConnectionOpenAck),
+    ConnectionOpenConfirm(ibc::ConnectionOpenConfirm),
+    ChannelOpenInit(ibc::ChannelOpenInit),
+    ChannelOpenTry(ibc::ChannelOpenTry),
+    ChannelOpenAck(ibc::ChannelOpenAck),
+    ChannelOpenConfirm(ibc::ChannelOpenConfirm),
+    WriteAcknowledgement(ibc::WriteAcknowledgement),
+    RecvPacket(ibc::RecvPacket),
+    SendPacket(ibc::SendPacket),
+    AcknowledgePacket(ibc::AcknowledgePacket),
+    TimeoutPacket(ibc::TimeoutPacket),
 }

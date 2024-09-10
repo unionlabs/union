@@ -1053,6 +1053,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-move-ibc"
+version = "0.1.0"
+dependencies = [
+ "move-bindgen",
+ "tracing",
+]
+
+[[package]]
 name = "aptos-move-stdlib"
 version = "0.1.1"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
@@ -7651,14 +7659,18 @@ dependencies = [
  "aptos-crypto",
  "aptos-rest-client",
  "aptos-types",
+ "bcs 0.1.6",
  "futures",
  "move-bindgen-derive",
  "move-core-types",
  "prettyplease",
  "proc-macro2",
  "quote",
+ "serde",
+ "serde_json",
  "syn 2.0.77",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -13535,6 +13547,7 @@ name = "voyager-chain-module-movement"
 version = "0.1.0"
 dependencies = [
  "aptos-crypto",
+ "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
  "bcs 0.1.6",
@@ -13551,6 +13564,7 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "queue-msg",
+ "reqwest 0.11.27",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13824,6 +13838,7 @@ name = "voyager-transaction-module-aptos"
 version = "0.1.0"
 dependencies = [
  "aptos-crypto",
+ "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
  "bcs 0.1.6",

@@ -198,6 +198,12 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            impl From<&'_ [u8; $N]> for $Struct {
+                fn from(value: &'_ [u8; $N]) -> Self {
+                    Self(value.clone())
+                }
+            }
+
             impl ::core::fmt::Debug for $Struct {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                     write!(f, "{}({self})", stringify!($Struct))

@@ -34,8 +34,6 @@ pub mod call;
 pub mod callback;
 pub mod data;
 
-mod client;
-
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     run_module_server(
@@ -68,7 +66,7 @@ pub struct Config {
     pub keyring: KeyringConfig,
 }
 
-impl client::ibc::ClientExt for Module {
+impl aptos_move_ibc::ibc::ClientExt for Module {
     fn client(&self) -> &aptos_rest_client::Client {
         &self.aptos_client
     }
@@ -281,7 +279,7 @@ impl OptimizationPassPluginServer<ModuleData, ModuleCall, ModuleCallback> for Mo
 #[allow(clippy::type_complexity)]
 fn process_msgs(
     ibc_handler_address: AccountAddress,
-    client: &impl client::ibc::ClientExt,
+    client: &impl aptos_move_ibc::ibc::ClientExt,
     msgs: Vec<IbcMessage>,
 ) -> Vec<(IbcMessage, EntryFunction)> {
     msgs.clone()

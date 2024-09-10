@@ -10,14 +10,18 @@ version      = "0.0.0"
 aptos-crypto              = { workspace = true }
 aptos-rest-client         = { workspace = true }
 aptos-types               = { workspace = true }
+bcs                       = { workspace = true }
 futures.workspace         = true
 move-bindgen-derive       = { workspace = true }
 move-core-types.workspace = true
 prettyplease              = "0.2.22"
 proc-macro2               = "*"
 quote                     = "1.0.35"
+serde                     = { workspace = true, features = ["derive"] }
+serde_json                = { workspace = true }
 syn                       = { version = "2.0.52", default-features = false, features = ["clone-impls", "parsing", "printing", "proc-macro", "derive", "extra-traits"] }
 tokio                     = { workspace = true, features = ["full"] }
+tracing                   = { workspace = true }
 
 [lints]
 workspace = true

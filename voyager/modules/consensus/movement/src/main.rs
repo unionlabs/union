@@ -161,7 +161,9 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             },
                         },
                         serde_json::to_value(movement::header::Header {
-                            l1_height: Height::default(),
+                            // dummy value for now, until movement settles on a public L1
+                            // 0-1, otherwise it's omitted in the proto encoding(?)
+                            l1_height: Height::default().increment(),
                             trusted_height: Height {
                                 revision_number: 0,
                                 revision_height: from,

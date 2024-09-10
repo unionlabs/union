@@ -22,6 +22,7 @@
       "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-movement",
       "config": {
         "rpc_url": "http://localhost:30731",
+        "movement_rpc_url": "http://localhost:30832",
         "ibc_handler_address": "0x9a69bd6722969759bd03aaf5db77f8b41ed0eb9414a1a1fb2b65c4c6873bb280"
       }
     },
