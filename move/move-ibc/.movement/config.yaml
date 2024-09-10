@@ -1,0 +1,15 @@
+profiles:
+  default:
+    network: Custom
+    private_key: "0x1350ce32e80d2f9f7bfb0893bca6349dc99e6104eb5fd673639ed57a1f41d317"
+    public_key: "0x9ae40674c0fe2637bd2521fe5c26f19109740fc4ea63d4c587c7a45295b0e867"
+    account: d416253c8a668aec0389189b21e71c6e65d8ecafce33d0a09b4c2de802203611
+    rest_url: "http://localhost:30731/"
+    faucet_url: "http://localhost:30732/"
+  relayer:
+    network: Custom
+    private_key: "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+    public_key: "0x663b327307b6fbac27c22a81e4f3ce2c5bb8ce1d423b345d04a7b6ff1695ce2b"
+    account: 55e8b4c6b9dd384c08b49af2a7f3059f0ac1c8a96a38acfae00ebfa2c2ea8487
+    rest_url: "http://localhost:30731/"
+    faucet_url: "http://localhost:30732/"

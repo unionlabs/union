@@ -332,19 +332,30 @@ module IBC::LightClient {
     fun decode_header(buf: vector<u8>): Header {
         let buf = bcs_utils::new(buf);
 
+        let height = bcs_utils::peel_u64(&mut buf);
+
+        let time = Timestamp {
+            seconds: bcs_utils::peel_u64(&mut buf),
+            nanos: bcs_utils::peel_u32(&mut buf),
+        };
+
+        let signed_header = LightHeader {
+            height,
+            time,
+            validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
+            next_validators_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
+            app_hash: bcs_utils::peel_fixed_bytes(&mut buf, 32),
+        };
+
+        let trusted_height = height::decode_bcs(&mut buf);
+
+        let proof_bz = bcs_utils::peel_bytes(&mut buf);
+        let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
+
         Header {
-            signed_header: LightHeader {
-                height: bcs_utils::peel_u64(&mut buf),
-                time: Timestamp {
-                    seconds: bcs_utils::peel_u64(&mut buf),
-                    nanos: bcs_utils::peel_u32(&mut buf),
-                },
-                validators_hash: bcs_utils::peel_bytes(&mut buf),
-                next_validators_hash: bcs_utils::peel_bytes(&mut buf),
-                app_hash: bcs_utils::peel_bytes(&mut buf),
-            },
-            trusted_height: height::decode_bcs(&mut buf),
-            zero_knowledge_proof: groth16_verifier::parse_zkp(bcs_utils::peel_bytes(&mut buf)),
+            signed_header,
+            trusted_height,
+            zero_knowledge_proof,
         }
     }
 
@@ -413,6 +424,14 @@ module IBC::LightClient {
         let encoded = vector[ 72, 31, 173, 233, 146, 25, 184, 242, 23, 80, 19, 246, 177, 68, 34, 205, 35, 75, 81, 37, 130, 13, 198, 171, 1, 22, 45, 1, 126, 231, 48, 211, 70, 129, 133, 154, 159, 121, 139, 101, 134, 47, 73, 117, 171, 126, 117, 166, 119, 244, 62, 254, 191, 83, 224, 236, 5, 70, 13, 44, 245, 85, 6, 173, 8, 214, 176, 82, 84, 249, 106, 80, 13, ];
 
         let cs = decode_consensus_state(encoded);
+        std::debug::print(&cs);
+    }
+
+    #[test]
+    fun decode_header_bcs() {
+        let encoded = x"630e0000000000002239df6600000000406dcb0b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500dfc45a4f41582fbfc1e3b7f79b0fd39d5f738133e68fdd47468fb037b0a44c9da01000000000000001d0900000000000080031c9bc15a0c4541aff1d12780d6cf4ae2bdc6e3afafceae9d4fa36209fa323b68002e9c77c223d830e5df6a80cdd683f0986353933ee3179970fccc5d893219d30726f3b8c0dbe630b815b01b5557228a0dfeb0e0435bb0d15d1ccff7f6133fc110937d9fceee2f9052468c198fafeca89d524142a0efa9dc4df445853ce617302059018fef03dc34456ad201d2a5420a7d1c8fac57cb48cbe6709ac4da27d1eb250f73eab007d26cbff41ceb4564ab1cdfa83e9ee88be4f816dc841bbf2e90c80186ad9437fce7655c71b54addae1ccea429da3edba3232d073cb7e89ff2d27218556f1af0c446962ace932f637279dd0ad3ef1501fb6da39d5f68282f54bcf6094999672f3d8cbbf0409aef1048175ffff50b03a5154016d307a2ef425ffee509cd447b22ce6331c7a3473b2c6da1f9d550e8c3ab19bde65e699e07f4f2886c03ec4ff2faa0e342de7ac5daf32025acd6070c19ed8b007c121db0d955472c7d2e38d5a943d15bc902613029e4baa8c26034ff280e3a4d5468fcd6745afe53b5";
+
+        let cs = decode_header(encoded);
         std::debug::print(&cs);
     }
     

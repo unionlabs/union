@@ -17,6 +17,10 @@ module IBC::bcs_utils {
         }
     }
 
+    public fun remaining(buf: &BcsBuf): vector<u8> {
+        vector::slice(&buf.inner, buf.cursor, vector::length(&buf.inner) - 1)
+    }
+
     /// Parses the length prefix of a variable length type such as vector and string
     ///
     /// Returns the parsed length and the number of bytes read
@@ -53,7 +57,7 @@ module IBC::bcs_utils {
 
     /// Peel a u32
     public fun peel_u32(buf: &mut BcsBuf): u32 {
-        buf.cursor = buf.cursor + 8;
+        buf.cursor = buf.cursor + 4;
         from_bcs::to_u32(vector::slice(&buf.inner, buf.cursor - 4, buf.cursor))
     }
 

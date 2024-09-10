@@ -391,6 +391,13 @@ fn move_type_to_rust_type(this_module: Address, typ: &MoveType) -> Result<(Type,
             && mt.generic_type_params.is_empty()
     };
 
+    let is_option = |mt: &MoveStructTag| {
+        mt.address == "0x1".parse().unwrap()
+            && mt.module == "option".parse().unwrap()
+            && mt.name == "Option".parse().unwrap()
+            && mt.generic_type_params.len() == 1
+    };
+
     Ok(match typ {
         MoveType::Bool => (parse_quote!(bool), parse_quote!(bool)),
         MoveType::U8 => (parse_quote!(u8), parse_quote!(u8)),
@@ -424,6 +431,10 @@ fn move_type_to_rust_type(this_module: Address, typ: &MoveType) -> Result<(Type,
             (parse_quote!(Vec<#param>), parse_quote!(Vec<#field>))
         }
         MoveType::Struct(s) if is_string(s) => (parse_quote!(String), parse_quote!(String)),
+        MoveType::Struct(s) if is_option(s) => {
+            let (param, field) = move_type_to_rust_type(this_module, &s.generic_type_params[0])?;
+            (parse_quote!(Option<#param>), parse_quote!(Option<#field>))
+        }
         // MoveType::Struct(s) if is_smart_table(&s) => {
         //     let t0 = move_type_to_rust_type(this_module, &s.generic_type_params[0])?;
         //     let t1 = move_type_to_rust_type(this_module, &s.generic_type_params[1])?;

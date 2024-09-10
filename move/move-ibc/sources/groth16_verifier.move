@@ -21,8 +21,8 @@ module IBC::groth16_verifier {
     const HMAC_O: vector<u8> = x"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
     const HMAC_I: vector<u8> = x"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
     const PRIME_R_MINUS_ONE: vector<u8> = x"000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430";
-    const COMPR_G1_SIZE: u64 = 32;
-    const COMPR_G2_SIZE: u64 = 64;
+    const COMPR_G1_SIZE: u64 = 32 / 8;
+    const COMPR_G2_SIZE: u64 = 64 / 8;
 
     struct Proof has drop {
         a: Element<G1>,
@@ -105,28 +105,42 @@ module IBC::groth16_verifier {
     }
 
     public fun parse_zkp(buf: vector<u8>): ZKP {
-        let cursor = 0;
+        // std::debug::print(&buf);
+        // std::debug::print(&vector::length(&buf));
 
-        let a = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
-        cursor = cursor + COMPR_G1_SIZE;
+        // let cursor = 0;
 
-        let b = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G2_SIZE)));
-        cursor = cursor + COMPR_G2_SIZE;
+        // let a = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
+        // cursor = cursor + COMPR_G1_SIZE;
+        // std::debug::print(&a);
 
-        let c = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
-        cursor = cursor + COMPR_G1_SIZE;
+        // let b = std::option::extract(&mut deserialize<G2, FormatG2Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G2_SIZE)));
+        // cursor = cursor + COMPR_G2_SIZE;
 
-        let proof_commitment = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
-        cursor = cursor + COMPR_G1_SIZE;
+        // let c = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
+        // cursor = cursor + COMPR_G1_SIZE;
 
-        let proof_commitment_pok = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
+        // let proof_commitment = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
+        // cursor = cursor + COMPR_G1_SIZE;
+
+        // let proof_commitment_pok = std::option::extract(&mut deserialize<G1, FormatG1Compr>(&vector::slice(&buf, cursor, cursor + COMPR_G1_SIZE)));
+
+        // ZKP {
+        //     proof: Proof {
+        //         a, b, c
+        //     },
+        //     proof_commitment,
+        //     proof_commitment_pok,
+        // }
 
         ZKP {
             proof: Proof {
-                a, b, c
+                a: zero<G1>(),
+                b: zero<G2>(),
+                c: zero<G1>(),
             },
-            proof_commitment,
-            proof_commitment_pok,
+            proof_commitment: zero<G1>(),
+            proof_commitment_pok: zero<G1>(),
         }
     }
 

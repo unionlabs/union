@@ -253,7 +253,7 @@ pub mod fixed_size_array {
 }
 
 pub mod hex_string {
-    use alloc::{string::String, vec::Vec};
+    use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
 
     use serde::{de, Deserialize, Deserializer, Serializer};
@@ -264,7 +264,11 @@ pub mod hex_string {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&to_hex(data))
+        if serializer.is_human_readable() {
+            serializer.serialize_str(&to_hex(data))
+        } else {
+            serializer.collect_seq(data.as_ref())
+        }
     }
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
@@ -272,7 +276,15 @@ pub mod hex_string {
         D: Deserializer<'de>,
         T: TryFrom<Vec<u8>, Error: Debug + 'static>,
     {
-        String::deserialize(deserializer).and_then(|x| parse_hex::<T>(x).map_err(de::Error::custom))
+        if deserializer.is_human_readable() {
+            String::deserialize(deserializer)
+                .and_then(|x| parse_hex::<T>(x).map_err(de::Error::custom))
+        } else {
+            <Vec<u8>>::deserialize(deserializer).and_then(|t| {
+                t.try_into()
+                    .map_err(|e| de::Error::custom(format!("{e:?}")))
+            })
+        }
     }
 }
 
@@ -429,27 +441,35 @@ pub mod string {
     use alloc::string::String;
     use core::{fmt::Display, str::FromStr};
 
-    use serde::{de::Deserialize, Deserializer, Serializer};
+    use serde::{de::Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S, T>(data: T, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
-        T: Display,
+        T: Display + Serialize,
     {
-        serializer.collect_str(&data)
+        if serializer.is_human_readable() {
+            serializer.collect_str(&data)
+        } else {
+            data.serialize(serializer)
+        }
     }
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
     where
         D: Deserializer<'de>,
-        T: FromStr,
+        T: FromStr + Deserialize<'de>,
     {
-        String::deserialize(deserializer).and_then(|s| {
-            s.parse()
-                // TODO fix error situation
-                // FromStr::Err has no bounds
-                .map_err(|_| serde::de::Error::custom("failure to parse string data"))
-        })
+        if deserializer.is_human_readable() {
+            String::deserialize(deserializer).and_then(|s| {
+                s.parse()
+                    // TODO fix error situation
+                    // FromStr::Err has no bounds
+                    .map_err(|_| serde::de::Error::custom("failure to parse string data"))
+            })
+        } else {
+            T::deserialize(deserializer)
+        }
     }
 }
 
@@ -751,12 +771,18 @@ pub mod fmt {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
 #[serde(bound(
     serialize = "T: AsRef<[u8]>",
     deserialize = "T: TryFrom<Vec<u8>, Error: Debug + 'static>",
 ))]
 pub struct Hex<T>(#[serde(with = "crate::hex_string")] pub T);
+
+impl<T: AsRef<[u8]>> Debug for Hex<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Hex({self})")
+    }
+}
 
 impl<T: AsRef<[u8]>> core::fmt::Display for Hex<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

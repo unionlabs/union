@@ -90,6 +90,8 @@ module IBC::height {
     }
 
     public fun decode_bcs(buf: &mut BcsBuf): Height {
+        // let length = bcs_utils::peel_length_prefix(buf);
+        // assert!(length == 2, 1); // TODO: Better error code here
         Height {
             revision_number: bcs_utils::peel_u64(buf),
             revision_height: bcs_utils::peel_u64(buf),

@@ -1,7 +1,7 @@
 module IBCModuleAddr::IBCModule {
     use std::vector;
     use aptos_std::string::{String};
-    // use IBC::Core;
+    // use IBC::ibc;
     use IBC::packet::{Packet};
 
 

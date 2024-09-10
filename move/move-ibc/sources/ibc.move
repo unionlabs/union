@@ -1,4 +1,4 @@
-module IBC::Core {
+module IBC::ibc {
     use std::signer;
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
@@ -9,6 +9,7 @@ module IBC::Core {
     use std::string::{Self, String, utf8};
     use std::hash;
     use std::timestamp;
+    use std::option::{Self, Option};
 
     use std::string_utils;
     use std::from_bcs;
@@ -90,6 +91,7 @@ module IBC::Core {
     #[event]
     struct ClientUpdated has copy, drop, store {
         client_id: String,
+        client_type: String,
         height: Height,
     }
 
@@ -684,6 +686,8 @@ module IBC::Core {
 
             event::emit(ClientUpdated {
                 client_id,
+                // NOTE: This is currently enforced, if/when we refactor to be more general across clients then this will need to be modified accordingly
+                client_type: string::utf8(CLIENT_TYPE_COMETBLS),
                 height,
             });
 
@@ -1224,26 +1228,79 @@ module IBC::Core {
         vector<connection_end::Version>[default_ibc_version()]
     }
 
-    // Returns connection by `connection_id`. Aborts if the connection does not exist.
+  // Returns connection by `connection_id`. Aborts if the connection does not exist.
     #[view]
-    public fun get_connection(connection_id: String): ConnectionEnd acquires IBCStore {
+    public fun get_connection(connection_id: String): Option<ConnectionEnd> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
 
-        *smart_table::borrow(
+        if (!smart_table::contains(
             &store.connections,
             connection_id,
-        )
+        )) {
+            option::none<ConnectionEnd>()
+        } else {
+            option::some<ConnectionEnd>(*smart_table::borrow(
+                &store.connections,
+                connection_id,
+            ))
+        }
     }
 
     // Getter function to retrieve a connection commitment by its ID
     #[view]
-    public fun get_connection_commitment(connection_id: String): vector<u8> acquires IBCStore {
+    public fun get_connection_commitment(connection_id: String): Option<vector<u8>> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let key = IBCCommitment::connection_commitment_key(connection_id);
-        *table::borrow(
+
+        
+        if (!table::contains(
             &store.commitments,
             key,
-        )
+        )) {
+            option::none<vector<u8>>()
+        } else {
+            option::some<vector<u8>>(*table::borrow(&store.commitments, key))
+        }
+    }
+
+    #[view]
+    public fun get_channel(port_id: String, channel_id: String): Option<Channel> acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+
+        if (!smart_table::contains(
+            &store.channels,
+            ChannelPort { port_id, channel_id }
+        )) {
+            option::none<Channel>()
+        } else {
+            option::some<Channel>(*smart_table::borrow(&store.channels, ChannelPort { port_id, channel_id }))
+        }
+    }
+
+    #[view]
+    public fun get_next_sequence_recv(port_id: String, channel_id: String): u64 acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+
+        let seq = table::borrow_with_default(
+            &store.commitments,
+            IBCCommitment::next_sequence_recv_commitment_key(port_id, channel_id),
+            &bcs::to_bytes<u64>(&0),
+        );
+
+        from_bcs::to_u64(*seq)
+    }
+
+    #[view]
+    public fun get_next_sequence_send(port_id: String, channel_id: String): u64 acquires IBCStore {
+        let store = borrow_global<IBCStore>(get_vault_addr());
+
+        let seq = table::borrow_with_default(
+            &store.commitments,
+            IBCCommitment::next_sequence_send_commitment_key(port_id, channel_id),
+            &bcs::to_bytes<u64>(&0),
+        );
+
+        from_bcs::to_u64(*seq)
     }
 
     public fun verify_supported_feature(version: &connection_end::Version, feature: String): bool {

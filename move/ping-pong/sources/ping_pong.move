@@ -1,10 +1,10 @@
-module ping_pong::ping_pong {
+module ping_pong::ibc {
     use std::event;
     use std::timestamp;
     use std::object;
     use std::signer;
     use std::string::{Self, String, utf8};
-    use IBC::Core;
+    use IBC::ibc;
     use std::vector;
     use std::bcs;
     use std::from_bcs;
@@ -96,7 +96,7 @@ module ping_pong::ping_pong {
             abort ERR_NO_CHANNEL
         };
 
-        Core::send_packet(  
+        ibc::send_packet(  
             &get_signer(),
             pp.channel_id,
             height::default(), // no height timeout
@@ -122,7 +122,7 @@ module ping_pong::ping_pong {
 
     //     initiate(pp_packet, local_timeout);
 
-    //     Core::recv_packet(
+    //     ibc::recv_packet(
     //         &get_signer(),
     //         utf8(b""),
     //         channel_id,
@@ -139,7 +139,7 @@ module ping_pong::ping_pong {
         proof: vector<u8>,
         proof_height: height::Height
     ) acquires SignerRef {
-        Core::acknowledge_packet(&get_signer(), packet, acknowledgement, proof, proof_height);
+        ibc::acknowledge_packet(&get_signer(), packet, acknowledgement, proof, proof_height);
         event::emit(AcknowledgedEvent {});
     }
 
@@ -157,7 +157,7 @@ module ping_pong::ping_pong {
         version: String,
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
-        Core::channel_open_init(
+        ibc::channel_open_init(
             &get_signer(),
             get_self_address(),
             connection_hops,
@@ -182,7 +182,7 @@ module ping_pong::ping_pong {
         proof_height_revision_height: u64,
     ) acquires PingPong, SignerRef {
         // TODO(aeryz): save the channel here
-        Core::channel_open_try(
+        ibc::channel_open_try(
             &get_signer(),
             get_self_address(),
             connection_hops,
@@ -208,7 +208,7 @@ module ping_pong::ping_pong {
         proof_height_revision_height: u64,
     ) acquires PingPong, SignerRef {
         // Store the channel_id
-        Core::channel_open_ack(
+        ibc::channel_open_ack(
             &get_signer(),
             get_self_address(),
             channel_id,
@@ -226,7 +226,7 @@ module ping_pong::ping_pong {
         proof_height_revision_num: u64,
         proof_height_revision_height: u64,
     ) acquires PingPong, SignerRef {
-        Core::channel_open_confirm(
+        ibc::channel_open_confirm(
             &get_signer(),
             get_self_address(),
             channel_id,

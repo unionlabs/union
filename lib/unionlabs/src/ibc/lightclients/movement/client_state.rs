@@ -25,6 +25,7 @@ pub struct ClientState {
 impl From<ClientState> for protos::union::ibc::lightclients::movement::v1::ClientState {
     fn from(value: ClientState) -> Self {
         Self {
+            chain_id: value.chain_id,
             l1_client_id: value.l1_client_id.to_string(),
             l1_contract_address: value.l1_contract_address.into(),
             l2_contract_address: value.l2_contract_address.0 .0.to_vec(),
@@ -76,7 +77,7 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::ClientState> for Cl
             ),
             frozen_height: value.frozen_height.unwrap_or_default().into(),
             latest_block_num: value.latest_block_num,
-            chain_id: String::new(), // TODO(aeryz): add this
+            chain_id: value.chain_id,
         })
     }
 }

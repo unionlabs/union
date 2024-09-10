@@ -348,6 +348,12 @@ macro_rules! wrapper_enum {
             )+
         }
 
+        impl $Enum {
+            pub fn from_proto_str(s: &str) -> Option<Self> {
+                <$Proto>::from_str_name(s).map(Into::into)
+            }
+        }
+
         impl core::str::FromStr for $Enum {
             type Err = crate::errors::UnknownEnumVariant<String>;
 

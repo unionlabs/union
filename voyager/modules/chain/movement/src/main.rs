@@ -1,41 +1,44 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::{cmp, collections::VecDeque, fmt::Debug, sync::Arc};
 
-use aptos_crypto::PrivateKey;
 use aptos_rest_client::{
     aptos_api_types::{Address, MoveType},
+    error::RestError,
     Transaction,
 };
-use aptos_types::transaction::RawTransaction;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::ErrorObject,
+    types::{ErrorObject, ErrorObjectOwned},
 };
-use queue_msg::{call, noop, BoxDynError, Op};
+use queue_msg::{call, conc, data, noop, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
-use sha3::Digest;
-use tracing::{debug, instrument, warn};
+use tracing::{debug, error, instrument, warn};
 use unionlabs::{
-    events::{CreateClient, IbcEvent, UpdateClient},
     hash::H256,
-    ibc::core::client::height::Height,
+    ibc::core::{
+        channel::order::Order,
+        client::height::Height,
+        commitment::merkle_prefix::MerklePrefix,
+        connection::{self, connection_end::ConnectionEnd},
+    },
     ics24::{ClientStatePath, Path},
     id::ClientId,
     ErrorReporter,
 };
 use voyager_message::{
     call::Call,
-    data::{ClientInfo, Data},
+    data::{ChainEvent, ClientInfo, CreateClient, Data, FullIbcEvent, UpdateClient},
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
     reth_ipc::client::IpcClientBuilder,
+    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
 use crate::{
-    call::{FetchBlock, FetchBlocks, ModuleCall},
+    call::{FetchBlock, FetchBlocks, MakeEvent, ModuleCall},
     callback::ModuleCallback,
-    client::Core::ClientExt,
+    client::ibc::ClientExt,
     data::ModuleData,
 };
 
@@ -83,13 +86,9 @@ pub struct Config {
     pub ibc_handler_address: Address,
 }
 
-impl client::Core::ClientExt for Module {
+impl client::ibc::ClientExt for Module {
     fn client(&self) -> &aptos_rest_client::Client {
         &self.aptos_client
-    }
-
-    fn module_address(&self) -> aptos_types::account_address::AccountAddress {
-        self.ibc_handler_address.into()
     }
 }
 
@@ -99,7 +98,9 @@ impl Module {
             Cmd::ChainId => println!("{}", self.chain_id),
             Cmd::LatestHeight => println!("{}", self.query_latest_height().await?),
             Cmd::VaultAddress => {
-                let addr = self.get_vault_addr(None).await?;
+                let addr = self
+                    .get_vault_addr(self.ibc_handler_address.into(), None)
+                    .await?;
 
                 println!("{addr}");
             }
@@ -281,16 +282,25 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         Transaction::UserTransaction(tx) => Some(tx),
                         _ => None,
                     })
-                    .flat_map(|tx| tx.events)
-                    .filter_map(|e| match e.typ {
-                        MoveType::Struct(s) => {
-                            (s.address == self.ibc_handler_address).then_some((s, e.data))
-                        }
+                    .flat_map(|tx| tx.events.into_iter().map(move |events| (events, tx.info.hash)))
+                    .filter_map(|(e, hash)| match e.typ {
+                        MoveType::Struct(s) => (dbg!(&s).address == self.ibc_handler_address)
+                            .then_some((s, e.data, hash)),
                         _ => None,
                     })
-                    .map(|(_typ, data)| {
+                    .map(|(_typ, data, hash)| {
                         // TODO: Check the type before deserializing
-                        serde_json::from_value::<crate::events::IbcEvent>(data).unwrap()
+                        call(Call::plugin(
+                            self.plugin_name(),
+                            MakeEvent {
+                                event: serde_json::from_value::<crate::events::IbcEvent>(dbg!(
+                                    data
+                                ))
+                                .unwrap(),
+                                tx_hash: H256(*hash.0),
+                                height,
+                            },
+                        ))
                     })
                     // .map(|e| ChainEvent {
                     //     chain_id: todo!(),
@@ -324,38 +334,143 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     //         .into(),
                     //     },
                     // });
-                    .map(|e| match e {
-                        events::IbcEvent::CreateClient {
-                            client_id,
-                            client_type,
-                            consensus_height,
-                        } => CreateClient {
-                            client_id,
-                            client_type,
-                            consensus_height: consensus_height.into(),
-                        }
-                        .into(),
-                        events::IbcEvent::UpdateClient {
-                            client_id,
-                            client_type,
-                            consensus_heights,
-                        } => UpdateClient {
-                            client_id,
-                            client_type,
-                            consensus_heights: consensus_heights
-                                .into_iter()
-                                .map(Into::into)
-                                .collect(),
-                        }
-                        .into(),
-                    })
-                    .collect::<Vec<IbcEvent>>();
+                    // .map(|e| match e {
+                    //     events::IbcEvent::CreateClient(client::ibc::ClientCreatedEvent {
+                    //         client_id,
+                    //         client_type,
+                    //         consensus_height,
+                    //     }) => CreateClient {
+                    //         client_id,
+                    //         client_type,
+                    //         consensus_height: consensus_height.into(),
+                    //     }
+                    //     .into(),
+                    //     events::IbcEvent::UpdateClient {
+                    //         client_id,
+                    //         client_type,
+                    //         consensus_heights,
+                    //     } => UpdateClient {
+                    //         client_id,
+                    //         client_type,
+                    //         consensus_heights: consensus_heights
+                    //             .into_iter()
+                    //             .map(Into::into)
+                    //             .collect(),
+                    //     }
+                    //     .into(),
+                    // })
+                    ;
 
-                dbg!(events);
+                // dbg!(events);
 
-                Ok(noop())
+                Ok(conc(events))
             }
-            ModuleCall::FetchBlocks(_) => todo!(),
+            ModuleCall::FetchBlocks(FetchBlocks {
+                from_height,
+                to_height,
+            }) => Ok(match (from_height + 1).cmp(&to_height) {
+                // still blocks left to fetch between from_height and to_height
+                cmp::Ordering::Less => conc([
+                    call(Call::plugin(
+                        self.plugin_name(),
+                        FetchBlock {
+                            height: from_height,
+                        },
+                    )),
+                    call(Call::plugin(
+                        self.plugin_name(),
+                        FetchBlocks {
+                            from_height: from_height + 1,
+                            to_height,
+                        },
+                    )),
+                ]),
+                // from_height + 1 == to_height, range is finished
+                cmp::Ordering::Equal => call(Call::plugin(
+                    self.plugin_name(),
+                    FetchBlock {
+                        height: from_height,
+                    },
+                )),
+                // inverted range, this is either a bug or a bad input
+                cmp::Ordering::Greater => {
+                    error!("attempted to fetch blocks in range {from_height} to {to_height}");
+                    // REVIEW: Should this return an error instead?
+                    noop()
+                }
+            }),
+            ModuleCall::MakeEvent(MakeEvent {
+                event,
+                tx_hash,
+                height,
+            }) => {
+                fn ibc_height(h: crate::client::height::Height) -> Height {
+                    Height {
+                        revision_number: h.revision_number.0,
+                        revision_height: h.revision_height.0,
+                    }
+                }
+
+                let (full_event, client_id): (FullIbcEvent, ClientId) = match event {
+                    events::IbcEvent::CreateClient(e) => (
+                        CreateClient {
+                            client_id: e.client_id.parse().unwrap(),
+                            client_type: ClientType::new(e.client_type),
+                            consensus_height: ibc_height(e.consensus_height),
+                        }
+                        .into(),
+                        e.client_id.parse().unwrap(),
+                    ),
+                    events::IbcEvent::UpdateClient(e) => (
+                        UpdateClient {
+                            client_id: e.client_id.parse().unwrap(),
+                            client_type: ClientType::new("client type lol"),
+                            consensus_heights: vec![ibc_height(e.height)],
+                        }
+                        .into(),
+                        e.client_id.parse().unwrap(),
+                    ),
+                    events::IbcEvent::ConnectionOpenInit(_) => todo!(),
+                    events::IbcEvent::ConnectionOpenTrt(_) => todo!(),
+                    events::IbcEvent::ConnectionOpenAct(_) => todo!(),
+                    events::IbcEvent::ConnectionOpenConfirt(_) => todo!(),
+                    events::IbcEvent::ChannelOpenInit(_) => todo!(),
+                    events::IbcEvent::ChannelOpenTrt(_) => todo!(),
+                    events::IbcEvent::ChannelOpenAct(_) => todo!(),
+                    events::IbcEvent::ChannelOpenConfirt(_) => todo!(),
+                    events::IbcEvent::WriteAcknowledgement(_) => todo!(),
+                    events::IbcEvent::RecvPacket(_) => todo!(),
+                    events::IbcEvent::SendPacket(_) => todo!(),
+                    events::IbcEvent::AcknowledgePacket(_) => todo!(),
+                    events::IbcEvent::TimeoutPacket(_) => todo!(),
+                };
+
+                let client_info = self
+                    .client
+                    .client_info(self.chain_id.clone(), client_id.clone())
+                    .await
+                    .map_err(json_rpc_error_to_rpc_error)?;
+
+                let client_meta = self
+                    .client
+                    .client_meta(
+                        self.chain_id.clone(),
+                        self.make_height(height).into(),
+                        client_id.clone(),
+                    )
+                    .await
+                    .map_err(json_rpc_error_to_rpc_error)?;
+
+                Ok(data(ChainEvent {
+                    chain_id: self.chain_id.clone(),
+                    client_info,
+                    counterparty_chain_id: client_meta.chain_id,
+                    tx_hash,
+                    // TODO: Review this, does it need to be +1?
+                    provable_height: self.make_height(height),
+                    event: full_event,
+                }))
+            }
         }
     }
 }
@@ -453,7 +568,104 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_state(&self, at: Height, path: Path) -> RpcResult<Value> {
-        let _ = (at, path);
+        let ledger_version = self
+            .aptos_client
+            .get_block_by_height(at.revision_height, false)
+            .await
+            .map_err(rest_error_to_rpc_error)?
+            .into_inner()
+            .last_version
+            .0;
+
+        debug!("height {at} is ledger version {ledger_version}");
+
+        Ok(match path {
+            Path::ClientState(path) => {
+                let client_state_bytes = self
+                    .client_state(
+                        self.ibc_handler_address.into(),
+                        (path.client_id.to_string(),),
+                        Some(ledger_version),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?;
+
+                into_value(Hex(client_state_bytes))
+            }
+            Path::ClientConsensusState(path) => {
+                let consensus_state_bytes = self
+                    .consensus_state(
+                        self.ibc_handler_address.into(),
+                        (
+                            path.client_id.to_string(),
+                            path.height.revision_number,
+                            path.height.revision_height,
+                        ),
+                        Some(ledger_version),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?;
+
+                into_value(Hex(consensus_state_bytes))
+            }
+            Path::Connection(path) => into_value(
+                match self
+                    .get_connection(
+                        self.ibc_handler_address.into(),
+                        (path.connection_id.to_string(),),
+                        Some(ledger_version),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?
+                {
+                    Some(connection) => Some(ConnectionEnd {
+                        client_id: connection.client_id.parse().unwrap(),
+                        versions: connection
+                            .versions
+                            .into_iter()
+                            .map(|version| connection::version::Version {
+                                identifier: version.identifier,
+                                features: version
+                                    .features
+                                    .into_iter()
+                                    .map(|feature| {
+                                        Order::from_proto_str(&feature).expect("unknown feature")
+                                    })
+                                    .collect(),
+                            })
+                            .collect(),
+                        state: connection::state::State::try_from(
+                            u8::try_from(connection.state.0).unwrap(),
+                        )
+                        .unwrap(),
+                        counterparty: connection::counterparty::Counterparty {
+                            client_id: connection.counterparty.client_id.parse().unwrap(),
+                            connection_id: if connection.counterparty.connection_id.is_empty() {
+                                None
+                            } else {
+                                Some(connection.counterparty.connection_id.parse().unwrap())
+                            },
+                            prefix: MerklePrefix {
+                                key_prefix: connection.counterparty.prefix.key_prefix,
+                            },
+                        },
+                        delay_period: connection.delay_period.0,
+                    }),
+                    None => None,
+                },
+            ),
+            Path::ChannelEnd(_) => todo!(),
+            Path::Commitment(_) => todo!(),
+            Path::Acknowledgement(_) => todo!(),
+            Path::Receipt(_) => todo!(),
+            Path::NextSequenceSend(_) => todo!(),
+            Path::NextSequenceRecv(_) => todo!(),
+            Path::NextSequenceAck(_) => todo!(),
+            Path::NextConnectionSequence(_) => todo!(),
+            Path::NextClientSequence(_) => todo!(),
+        })
+
+        // self.get_connection(, , )
 
         // const IBC_STORE_PATH: &str = "store/ibc/key";
 
@@ -520,8 +732,6 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         //             .unwrap()
         //     }
         // })
-
-        todo!()
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -602,5 +812,29 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             ibc_interface,
             bytes: client_state.0.into(),
         })
+    }
+}
+
+pub fn rest_error_to_rpc_error(e: RestError) -> ErrorObjectOwned {
+    ErrorObject::owned(-1, format!("rest error: {}", ErrorReporter(e)), None::<()>)
+}
+
+// TODO: Deduplicate this (it's also in the cosmos-sdk chain module), probably put it in voyager-message
+#[track_caller]
+fn into_value<T: Debug + Serialize>(t: T) -> Value {
+    match serde_json::to_value(t) {
+        Ok(ok) => ok,
+        Err(err) => {
+            error!(
+                error = %ErrorReporter(err),
+                "error serializing value of type {}",
+                std::any::type_name::<T>()
+            );
+
+            panic!(
+                "error serializing value of type {}",
+                std::any::type_name::<T>()
+            );
+        }
     }
 }

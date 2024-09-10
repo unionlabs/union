@@ -4,6 +4,7 @@ use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
 use macros::model;
 use serde::{
     de::{self, Unexpected},
+    ser::SerializeStruct,
     Deserialize, Serialize,
 };
 
@@ -67,17 +68,11 @@ impl PartialOrd for Timestamp {
     }
 }
 
-impl<'de> Deserialize<'de> for Timestamp {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        String::deserialize(deserializer).and_then(|str| {
-            str.parse().map_err(|_| {
-                de::Error::invalid_value(Unexpected::Str(&str), &"a valid RFC 3339 string")
-            })
-        })
-    }
+#[derive(Serialize, Deserialize)]
+#[serde(rename = "Timestamp")]
+struct TimestampSerde {
+    pub seconds: BoundedI64<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>,
+    pub nanos: BoundedI32<0, NANOS_MAX>,
 }
 
 impl Serialize for Timestamp {
@@ -85,7 +80,33 @@ impl Serialize for Timestamp {
     where
         S: serde::Serializer,
     {
-        serializer.collect_str(self)
+        if serializer.is_human_readable() {
+            serializer.collect_str(self)
+        } else {
+            TimestampSerde {
+                seconds: self.seconds,
+                nanos: self.nanos,
+            }
+            .serialize(serializer)
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Timestamp {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            String::deserialize(deserializer).and_then(|str| {
+                str.parse().map_err(|_| {
+                    de::Error::invalid_value(Unexpected::Str(&str), &"a valid RFC 3339 string")
+                })
+            })
+        } else {
+            let TimestampSerde { seconds, nanos } = TimestampSerde::deserialize(deserializer)?;
+            Ok(Self { seconds, nanos })
+        }
     }
 }
 

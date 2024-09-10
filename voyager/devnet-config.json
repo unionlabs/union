@@ -1,7 +1,7 @@
 {
   "plugins": [
     {
-      "enabled": false,
+      "enabled": true,
       "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-cosmos-sdk",
       "config": {
         "ws_url": "http://localhost:26757",
@@ -18,29 +18,34 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-movement",
       "config": {
         "rpc_url": "http://localhost:30731",
-        "ibc_handler_address": "0x9e1ceeb126ea73b3c29a6cfd1151e06a948cbc4ce06c81fc38119edc0edb5408"
+        "ibc_handler_address": "0x01f481195db674da1f7deeed3316eac0a6e2cb389e54320749255732737c3173"
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-cometbls",
       "config": {
         "ibc_interface": "ibc-solidity"
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-cometbls",
       "config": {
         "ibc_interface": "ibc-move/aptos"
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
+      "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-movement",
+      "config": {}
+    },
+    {
+      "enabled": true,
       "path": "/home/ben/projects/union/union/target/debug/voyager-consensus-module-cometbls",
       "config": {
         "ws_url": "http://localhost:26757",
@@ -58,6 +63,17 @@
       }
     },
     {
+      "enabled": true,
+      "path": "/home/ben/projects/union/union/target/debug/voyager-consensus-module-movement",
+      "config": {
+        "ibc_handler_address": "0x01f481195db674da1f7deeed3316eac0a6e2cb389e54320749255732737c3173",
+        "l1_settlement_address": "0x0000000000000000000000000000000000000000",
+        "l1_client_id": "cometbls-0",
+        "aptos_rest_api": "http://localhost:30731",
+        "movement_rest_url": "http://localhost:30832"
+      }
+    },
+    {
       "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-ethereum",
       "config": {
@@ -65,7 +81,7 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "path": "/home/ben/projects/union/union/target/debug/voyager-transaction-module-cosmos-sdk",
       "config": {
         "keyring": {
@@ -128,6 +144,24 @@
       }
     },
     {
+      "enabled": true,
+      "path": "/home/ben/projects/union/union/target/debug/voyager-transaction-module-aptos",
+      "config": {
+        "rpc_url": "http://localhost:30731",
+        "ibc_handler_address": "0x01f481195db674da1f7deeed3316eac0a6e2cb389e54320749255732737c3173",
+        "keyring": {
+          "name": "ethereum-devnet",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "dev-key0",
+              "key": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+            }
+          ]
+        }
+      }
+    },
+    {
       "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-packet-filter",
       "config": {
         "connection_event_filters": [{}],
@@ -139,6 +173,19 @@
       "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "union-devnet-1",
+        "client_configs": {
+          "*": {
+            "min_batch_size": 1,
+            "max_batch_size": 3,
+            "max_wait_time": { "secs": 10, "nanos": 0 }
+          }
+        }
+      }
+    },
+    {
+      "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
+      "config": {
+        "chain_id": "27",
         "client_configs": {
           "*": {
             "min_batch_size": 1,

@@ -3,17 +3,19 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
     #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
     pub l1_client_id: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "2")]
-    pub l1_contract_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "3")]
-    pub l2_contract_address: ::prost::alloc::vec::Vec<u8>,
+    pub l1_contract_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "4")]
+    pub l2_contract_address: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "5")]
     pub table_handle: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "6")]
     pub frozen_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(uint64, tag = "6")]
+    #[prost(uint64, tag = "7")]
     pub latest_block_num: u64,
 }
 impl ::prost::Name for ClientState {
