@@ -42,6 +42,19 @@
   let {data: contribute, isLoading: contributeLoading, error: contributeError} = $derived($contributionQuery)
   let {data: client, isLoading: clientLoading, error: clientError} = $derived($clientQuery)
 
+  //TODO SAVE IN LOCAL STORAGE AND ADD INFO TEXT ABOUT HAVING THE BROWSER OPEN
+  let auto = $state(false)
+
+  $effect(() => {
+    if(auto) {
+      if(contribute?.canContribute && contribute?.shouldContribute) {
+        if (client) {
+          start()
+        }
+      }
+    }
+  })
+
 </script>
 
 
@@ -71,11 +84,11 @@
       <Spinner class="size-4 text-red-500"/>
     {:else if client}
       <Text>{client.status}</Text>
-      <H2>You can contribute</H2>
       <Button onclick={start}>Contribute</Button>
     {:else}
       <Text>Waiting for client...</Text>
     {/if}
+    <Text>Auto contribute<Button onclick={() => auto = true}>{auto}</Button></Text>
 
   {:else if contribute?.isVerifying}
 
