@@ -598,6 +598,40 @@ module UCS01::Relay {
         };
     }
 
+    public fun hex_to_bytes(hex_str: String): vector<u8> {
+        let hex_str_bytes = string::bytes(&hex_str);
+        let byte_vector = vector::empty<u8>();
+
+        let i = 0;
+        while (i < vector::length(hex_str_bytes)) {
+            let high_nibble = char_to_nibble(*vector::borrow(hex_str_bytes, i));
+            let low_nibble = char_to_nibble(*vector::borrow(hex_str_bytes, i + 1));
+
+            let byte = (high_nibble << 4) | low_nibble; 
+            vector::push_back(&mut byte_vector, byte);
+
+            i = i + 2; 
+        };
+
+        byte_vector
+    }
+
+    public fun char_to_nibble(char_byte: u8): u8 {
+        if (char_byte >= 0x30 && char_byte <= 0x39) {
+            // '0' to '9'
+            char_byte - 0x30
+        } else if (char_byte >= 0x41 && char_byte <= 0x46) {
+            // 'A' to 'F'
+            char_byte - 0x41 + 10
+        } else if (char_byte >= 0x61 && char_byte <= 0x66) {
+            // 'a' to 'f'
+            char_byte - 0x61 + 10
+        } else {
+            abort 1;
+            0x00
+        }
+    }
+
     fun refund_tokens(
         sequence: u64,
         channel_id: String,
@@ -611,11 +645,20 @@ module UCS01::Relay {
         while (i < packet_tokens_length) {
             let token_from_vec = vector::borrow(&packet.tokens, i);
             let denom_address = get_denom_address(channel_id, token_from_vec.denom);
-            let token = get_metadata(denom_address);
+            
 
             if (denom_address != @0x0) {
                 UCS01::fa_coin::mint(&get_ucs_signer(), user_to_refund, token_from_vec.amount);
             } else {
+                std::debug::print(&token_from_vec.denom);
+                let str_bytes = *string::bytes(&token_from_vec.denom);
+                let token_denom = token_from_vec.denom;
+
+                if(starts_with(token_from_vec.denom, string::utf8(b"@"))) {
+                    token_denom = string::sub_string(&token_denom, 1, 65);
+                };
+                let denom_address = from_bcs::to_address(hex_to_bytes(token_denom));
+                let token = get_metadata(denom_address);
                 decrease_outstanding(channel_id, denom_address, token_from_vec.amount);
                 primary_fungible_store::transfer(&get_ucs_signer(), token, @zero_account, token_from_vec.amount);
             };
@@ -1054,7 +1097,6 @@ module UCS01::Relay {
 
         let token_owner = &get_ucs_signer();
 
-        std::debug::print(token_owner);
         // Step 2: Mint some tokens to Alice
         UCS01::fa_coin::initialize(
             token_owner,
@@ -1097,9 +1139,62 @@ module UCS01::Relay {
 
         // Step 5: Verify the results
         let alice_balance = primary_fungible_store::balance(alice, asset);
-        std::debug::print(&alice_balance);
         assert!(alice_balance == amount, 100);  // Alice should have received the refund
 
+    }
+
+    
+    #[test(admin = @UCS01, alice = @0x1234)]
+    public fun test_refund_tokens_zero_address(admin: &signer, alice: address) acquires RelayStore, SignerRef {
+        initialize_store(admin);
+
+        let source_channel = string::utf8(b"channel-1");
+        let amount: u64 = 1000;
+
+        let token_owner = &get_ucs_signer();
+
+        UCS01::fa_coin::initialize(
+            token_owner,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT)
+        );
+
+        UCS01::fa_coin::mint(token_owner, signer::address_of(token_owner), 1000);
+
+        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        std::debug::print(&asset_addr);
+        let asset = get_metadata(asset_addr);
+
+        // Step 3: Simulate sending tokens (for refund purposes)
+        let token = Token {
+            denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+            amount: amount,
+        };
+        let tokens = vector::empty<Token>();
+        vector::push_back(&mut tokens, token);
+
+        let relay_packet = RelayPacket {
+            sender: alice,
+            receiver: @0x0000000000000000000000000000000000000022,
+            tokens: tokens,
+            extension: string::utf8(b"extension"),
+        };
+        increase_outstanding(source_channel, asset_addr, amount);
+
+        let outstanding_balance = get_outstanding(source_channel, asset_addr);
+        assert!(outstanding_balance == 1000, 200);  // The outstanding balance should be reduced to 0.
+
+        let sequence = 1;
+        refund_tokens(sequence, source_channel, &relay_packet);
+
+        let outstanding_balance = get_outstanding(source_channel, asset_addr);
+        assert!(outstanding_balance == 0, 200);  // The outstanding balance should be reduced to 0.
+
+        let alice_balance = primary_fungible_store::balance(alice, asset);
+        assert!(alice_balance == 0, 201);  // Alice should not receive any tokens in this case.
     }
 
 
