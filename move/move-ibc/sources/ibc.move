@@ -256,6 +256,7 @@ module IBC::ibc {
     }
 
     // Getter for Commitments
+    #[veiw]
     public fun get_commitment(key: vector<u8>): vector<u8> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let commitment = table::borrow_with_default(&store.commitments, key, &vector::empty<u8>());
