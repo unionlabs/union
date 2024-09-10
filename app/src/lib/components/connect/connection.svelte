@@ -42,8 +42,7 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 let sanitizeWalletInformation =
   chainWalletsInformation.filter(
     (predicate, index, array) =>
-      array.findIndex(t => t.name.toLowerCase().startsWith(predicate.name.toLowerCase())) ===
-      index,
+      array.findIndex(t => t.name.toLowerCase().startsWith(predicate.name.toLowerCase())) === index
   ) ?? chainWalletsInformation
 
 $: walletListToRender =

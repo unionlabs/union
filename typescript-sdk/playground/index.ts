@@ -1,45 +1,47 @@
 import { http } from "viem"
-import { consola } from "scripts/logger.ts"
+import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { createMultiUnionClient } from "../dist/index.mjs"
-import type { TransferAssetsParameters } from "../dist/index.d.ts"
+import { createUnionClient, type TransferAssetsParameters } from "@unionlabs/client"
 
 const account = privateKeyToAccount(`0x${process.env["PRIVATE_KEY"]}`)
 
-const clients = createMultiUnionClient([
-  {
-    chainId: "stride-internal-1",
-    transport: http("stride.testnet-1.stridenet.co")
-  },
-  {
-    account,
-    chainId: "421614",
-    transport: http("https://sepolia-rollup.arbitrum.io/rpc")
-  }
-])
+const client = createUnionClient({
+  account,
+  chainId: `${arbitrumSepolia.id}`,
+  transport: http("https://sepolia-rollup.arbitrum.io/rpc")
+})
 
 const payload = {
   amount: 1n,
-  autoApprove: true,
+  autoApprove: false,
   destinationChainId: "stride-internal-1",
-  denomAddress: "0xb1d4538b4571d411f07960ef2838ce337fe1e80e", // LINK
-  receiver: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
-} satisfies TransferAssetsParameters<"421614">
+  receiver: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3",
+  denomAddress: "0xb1d4538b4571d411f07960ef2838ce337fe1e80e" // LINK
+} satisfies TransferAssetsParameters<`${typeof arbitrumSepolia.id}`>
 
-const gasResponse = await clients["421614"].simulateTransaction(payload)
+const gasResponse = await client.simulateTransaction(payload)
 
 if (gasResponse.isErr()) {
-  consola.error(gasResponse.error)
+  console.error(`Gas estimation error: ${gasResponse.error}`)
   process.exit(1)
 }
 
-consola.success(`gas: ${gasResponse.value}`)
+console.info(`Gas estimation: ${gasResponse.value}`)
 
-// const sepoliaTransfer = await clients['421614'].transferAsset(payload)
+const approval = await client.approveTransaction(payload)
 
-// if (sepoliaTransfer.isErr()) {
-//   console.error(sepoliaTransfer.error)
-//   process.exit(1)
-// }
+if (approval.isErr()) {
+  console.error(`Approval error: ${approval.error}`)
+  process.exit(1)
+}
 
-// consola.success(`Transfer success: ${sepoliaTransfer.value}`)
+console.info(`Approval hash: ${approval.value}`)
+
+const transfer = await client.transferAsset(payload)
+
+if (transfer.isErr()) {
+  console.error(`Transfer error: ${transfer.error}`)
+  process.exit(1)
+}
+
+console.info(`Transfer hash: ${transfer.value}`)

@@ -21,7 +21,7 @@
     "@astrojs/vue": "^4.5.0",
     "@expressive-code/plugin-collapsible-sections": "^0.36.1",
     "@expressive-code/plugin-line-numbers": "^0.36.1",
-    "@unionlabs/client": "^0.0.17",
+    "@unionlabs/client": "^0.0.18",
     "@webcontainer/api": "^1.3.0-internal.7",
     "@xterm/addon-clipboard": "^0.1.0",
     "@xterm/addon-fit": "^0.10.0",

@@ -50,9 +50,10 @@ const client = createUnionClient({
 
 const transfer = await client.transferAsset({
   amount: 1n,
+  autoApprove: true,
   denomAddress: "strd",
   destinationChainId: "11155111",
-  recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+  receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
 })
 
 if (transfer.isErr()) {

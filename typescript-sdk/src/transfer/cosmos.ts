@@ -344,7 +344,7 @@ export async function cosmwasmTransferSimulate({
  * const transfer = await cosmosSameChainTransfer(client, {
  *   asset: { denom: "muno", amount: "1" },
  *   gasPrice: { amount: "0.0025", denom: "muno" },
- *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   account: cosmosAccount,
  *   rpcUrl: "https://rpc.testnet-8.union.build",
  * })

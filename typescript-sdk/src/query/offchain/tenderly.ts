@@ -43,7 +43,7 @@ function getTenderlyCreds(slug: {
  *   amount: 1n,
  *   account: evmAccount,
  *   sourceChannel: "channel-1",
- *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
  *   relayContractAddress: "0x2222222222222222222222222222222222222222",
  * })

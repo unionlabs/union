@@ -7,20 +7,21 @@ sidebar:
     variant: default
 ---
 import Code from '#/components/Code.astro'
+import { demoFiles } from './_data/demo-files.ts'
 import Terminal from '#/components/Terminal.astro'
 import { PackageManagers } from 'starlight-package-managers'
 import { Tabs, TabItem } from '@astrojs/starlight/components'
 
 <PackageManagers
+  type="add"
   frame="none"
   pkg="@unionlabs/client"
-  pkgManagers={['npm', 'bun', 'pnpm', 'yarn']}
+  pkgManagers={['pnpm','npm', 'bun', 'yarn']}
 />
 
-<Terminal />
+## Quickstart
 
-{/* 
-```ts
+{/* ```ts title="transfer.ts"
 import { http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient } from "@unionlabs/client"
@@ -32,13 +33,14 @@ const client = createUnionClient({
   // ^ private key if running from cli,
   // else pass `connectorClient.account` from `wagmi` config
 })
-```
+``` */}
 
+<Terminal
+  webcontainerFiles={JSON.stringify(demoFiles)}
+/>
 
-## Quickstart
-
-In this example, we'll transfer 1 `HONEY` from _**Berachain bArtio**_ (`80084`) to _**Stride Testnet**_ (`stride-internal-1`).
-
+{/* In this example, we'll transfer 1 `HONEY` from _**Berachain bArtio**_ (`80084`) to _**Stride Testnet**_ (`stride-internal-1`). */}
+{/* 
 ##### Initialize the client
 
 <Code

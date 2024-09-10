@@ -1,6 +1,8 @@
 :root {
   --sl-text-h1: 3.5rem;
   --dark-blue: #00262f;
+  /* --sl-sidebar-width: 15rem; */
+  /* --sl-content-width: 80%; */
 }
 
 :root[data-theme="light"] {
