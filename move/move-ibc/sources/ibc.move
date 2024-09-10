@@ -1574,6 +1574,10 @@ module IBC::ibc {
         };
 
         let channel = ensure_channel_state(msg_port_id, msg_channel_id);
+        let port_id = string_utils::to_string(&port_id);
+        if (port_id != *packet::destination_port(&packet)) {
+            abort E_UNAUTHORIZED
+        };
 
         if (packet::source_port(&msg_packet) != channel::chan_counterparty_port_id(&channel)) {
             abort E_SOURCE_AND_COUNTERPARTY_PORT_MISMATCH
@@ -1660,9 +1664,6 @@ module IBC::ibc {
         packet: packet::Packet,
         acknowledgement: vector<u8>
     ) acquires IBCStore {
-        if (!authenticate_capability(caller, *packet::destination_port(&packet), *packet::destination_channel(&packet))) {
-            abort E_UNAUTHORIZED
-        };
         write_ack_impl(packet, acknowledgement);
     }
 
@@ -1699,19 +1700,25 @@ module IBC::ibc {
     }
 
     public fun acknowledge_packet(
-        caller: &signer,
+        ibc_app: &signer,
+        port_id: address,
         packet: packet::Packet,
         acknowledgement: vector<u8>,
         proof: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
-        let port_id = *packet::source_port(&packet);
-        let channel_id = *packet::source_channel(&packet);
-        
-        if (!authenticate_capability(caller, port_id, channel_id)) {
+        if (object::create_object_address(&port_id, IBC_APP_SEED) != signer::address_of(ibc_app)) {
             abort E_UNAUTHORIZED
         };
 
+        let port_id = string_utils::to_string(&port_id);
+        if (port_id != *packet::destination_port(&packet)) {
+            abort E_UNAUTHORIZED
+        };
+
+        let port_id = *packet::source_port(&packet);
+        let channel_id = *packet::source_channel(&packet);
+        
         let channel = ensure_channel_state(port_id, channel_id);
 
         if (port_id != *channel::chan_counterparty_port_id(&channel)) {
