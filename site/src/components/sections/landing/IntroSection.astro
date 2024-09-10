@@ -3,7 +3,9 @@ import {Image} from 'astro:assets';
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro";
-import wave from "#/assets/images/spline-holders/wave-collateral.png"
+import Spline from "../../Spline.astro";
+import newWave from "#/spline/new-wave.splinecode"
+
 
 ---
 
@@ -28,5 +30,7 @@ import wave from "#/assets/images/spline-holders/wave-collateral.png"
       </div>
     </div>
   </div>
-  <Image src={wave} alt="Wave Collateral" class="object-cover h-screen"></Image>
+  <div class=" h-screen w-full">
+    <Spline model={newWave}/>
+  </div>
 </section>
