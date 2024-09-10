@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+use ark_serialize::{CanonicalSerialize, SerializationError, Valid};
 use clap::Subcommand;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -300,10 +301,20 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     None::<()>,
                 )
             })
-            .map(|header| match self.ibc_interface {
-                SupportedIbcInterfaces::IbcSolidity => header.encode_as::<EthAbi>(),
-                SupportedIbcInterfaces::IbcMoveAptos => header.encode_as::<Bcs>(),
-            })
+            .map(|mut header| match self.ibc_interface {
+                SupportedIbcInterfaces::IbcSolidity => Ok(header.encode_as::<EthAbi>()),
+                SupportedIbcInterfaces::IbcMoveAptos => {
+                    header.zero_knowledge_proof =
+                        reencode_zkp_for_move(&mut header.zero_knowledge_proof).map_err(|e| {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                format!("unable to decode zkp: {}", e),
+                                None::<()>,
+                            )
+                        })?;
+                    Ok(header.encode_as::<Bcs>())
+                }
+            })?
             .map(Hex)
     }
 
@@ -338,4 +349,64 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             })
             .map(Hex)
     }
+}
+
+fn reencode_zkp_for_move(zkp: &[u8]) -> Result<Vec<u8>, SerializationError> {
+    let mut buf = Vec::new();
+
+    let serialize_g1 =
+        |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
+            let proof = ark_bn254::G1Affine::new_unchecked(
+                ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                    &zkp[*cursor..*cursor + 32],
+                )),
+                ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                    &zkp[*cursor + 32..*cursor + 64],
+                )),
+            );
+            proof.check()?;
+            *cursor += 64;
+            proof.serialize_compressed(buf)?;
+            Ok(())
+        };
+
+    let serialize_g2 =
+        |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
+            let proof = ark_bn254::G2Affine::new_unchecked(
+                ark_bn254::Fq2::new(
+                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                        &zkp[*cursor + 32..*cursor + 64],
+                    )),
+                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                        &zkp[*cursor..*cursor + 32],
+                    )),
+                ),
+                ark_bn254::Fq2::new(
+                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                        &zkp[*cursor + 96..*cursor + 128],
+                    )),
+                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                        &zkp[*cursor + 64..*cursor + 96],
+                    )),
+                ),
+            );
+            proof.check()?;
+            *cursor += 128;
+            proof.serialize_compressed(buf)?;
+            Ok(())
+        };
+
+    let mut cursor = 0;
+    // zkp.proof.a
+    serialize_g1(&mut cursor, &mut buf, &zkp)?;
+    // zkp.proof.b
+    serialize_g2(&mut cursor, &mut buf, &zkp)?;
+    // zkp.proof.c
+    serialize_g1(&mut cursor, &mut buf, &zkp)?;
+    // zkp.poc
+    serialize_g1(&mut cursor, &mut buf, &zkp)?;
+    // zkp.pok
+    serialize_g1(&mut cursor, &mut buf, &zkp)?;
+
+    Ok(buf)
 }

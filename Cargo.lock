@@ -13567,6 +13567,8 @@ dependencies = [
 name = "voyager-client-module-cometbls"
 version = "0.1.0"
 dependencies = [
+ "ark-bn254",
+ "ark-serialize 0.4.2",
  "clap 4.5.4",
  "cometbft-rpc",
  "dashmap",
@@ -13575,6 +13577,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
+ "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
  "queue-msg",
