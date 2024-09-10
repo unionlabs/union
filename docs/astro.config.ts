@@ -31,7 +31,7 @@ export default defineConfig({
   server: _ => ({
     port: Number(PORT),
     /**
-     * required for webcointainer
+     * required for webcontainer
      * @see https://webcontainers.io/guides/quickstart
      */
     headers: {
