@@ -30,6 +30,9 @@ import vc_founderheads from "#/assets/images/investors/founderheads.svg"
 import team_spearbit from "#/assets/images/partners/spearbit.svg"
 import team_groomlake from "#/assets/images/partners/groomlake.png"
 import team_horizons from "#/assets/images/partners/horizons.svg"
+import DeepDiveSection from "../components/sections/DeepDiveSection.astro";
+import TopSection from "../components/sections/TopSection.astro";
+import ContainedSection from "../components/ContainedSection.astro";
 
 const profiles = [
   {
@@ -160,33 +163,42 @@ const teams = [
   }
 ]
 ---
-<SectionsLayout title="Union Team">
-  <LanderSection>
-  <div class="pt-12 pb-16 flex flex-col text-center gap-2">
-    <H1><span class="text-accent-500">Meet </span>Union labs</H1>
-    <Subtitle>We're a collective of engineers and researchers building the final state of interoperability.  </Subtitle> 
-  </div>
+
+<SectionsLayout gapless title="Union Team">
+  <TopSection title="Union team">
+    <div class="flex flex-col text-center gap-8">
+      <p class="md:text-4xl font-mono uppercase">Our team is a <span class="text-accent-500">global</span> network of professionals, working to build
+        the <span class="text-accent-500">interoperability future.</span></p>
+    </div>
+    <div></div>
+  </TopSection>
+  <ContainedSection>
+    <div class="pt-12 pb-16 flex flex-col text-center gap-2">
+      <H1><span class="text-accent-500">Meet </span>Union labs</H1>
+      <Subtitle>We're a collective of engineers and researchers building the final state of interoperability.  </Subtitle>
+    </div>
     <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       {
         profiles.map(person => (
-          <Card class="border-none">
-            <a 
-            href={`https://x.com/${person.x_name}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="w-full gap-4 items-center flex-1 flex flex-row  hover:bg-[#152325] transition-colors"
-            >
-                <img class="w-24 h-24" src={person.profile_pic.src}/>
-                <div class="leading-tight uppercase font-mono">
-                  <h3 class="text-2xl font-supermolot uppercase">{person.name}</h3>
-                  <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
-                  <div class="text-accent text-lg -mt-1 block">@{person.x_name}</div>
-                </div>
-            </a>
-          </Card>
+                <Card class="border-none">
+                  <a
+                          href={`https://x.com/${person.x_name}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="w-full gap-4 items-center flex-1 flex flex-row  hover:bg-[#152325] transition-colors"
+                  >
+                    <img class="w-24 h-24" src={person.profile_pic.src}/>
+                    <div class="leading-tight uppercase font-mono">
+                      <h3 class="text-2xl font-supermolot uppercase">{person.name}</h3>
+                      <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
+                      <div class="text-accent text-lg -mt-1 block">@{person.x_name}</div>
+                    </div>
+                  </a>
+                </Card>
         ))
       }
     </div>
-  </LanderSection>
-  <MarqueeSection title="Supporting teams" data={teams} reversed={false}/>
+  </ContainedSection>
+  <!--<MarqueeSection title="Supporting teams" data={teams} reversed={false}/>-->
 </SectionsLayout>
+

@@ -1,5 +1,5 @@
 ---
-import IntroSection from "../components/sections/IntroSection.astro";
+import TopSection from "../components/sections/TopSection.astro";
 import SectionsLayout from "../layouts/SectionsLayout.astro";
 import DeepDiveSection from "../components/sections/DeepDiveSection.astro";
 
@@ -7,7 +7,7 @@ import DeepDiveSection from "../components/sections/DeepDiveSection.astro";
 ---
 
 <SectionsLayout gapless>
-  <IntroSection title="Learn union">
+  <TopSection title="Learn union">
     <div class="flex flex-col text-center gap-8">
       <p class="md:text-5xl font-mono uppercase">take a dive into the world of <span
               class="text-accent-500"><br> modular interoperability.</span>
@@ -15,6 +15,6 @@ import DeepDiveSection from "../components/sections/DeepDiveSection.astro";
       <p class="rotate-90 text-5xl">{'>>>'}</p>
     </div>
     <div></div>
-  </IntroSection>
+  </TopSection>
   <DeepDiveSection/>
 </SectionsLayout>
