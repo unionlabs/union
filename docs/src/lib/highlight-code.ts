@@ -1,24 +1,8 @@
-import {
-  transformerNotationDiff,
-  transformerMetaHighlight,
-  transformerNotationFocus,
-  transformerRenderWhitespace,
-  transformerNotationHighlight,
-  transformerMetaWordHighlight,
-  transformerNotationErrorLevel,
-  transformerCompactLineOptions,
-  transformerRemoveNotationEscape,
-  transformerNotationWordHighlight
-} from "@shikijs/transformers"
 import { unified } from "unified"
 import remarkParse from "remark-parse"
 import remarkRehype from "remark-rehype"
-// import { createHighlighter } from "shiki"
-import rehypeShiki from "@shikijs/rehype"
 import rehypeStringify from "rehype-stringify"
-import { defaultCompilerOptions } from "twoslash"
 import { rehypePrettyCode } from "rehype-pretty-code"
-import { transformerTwoslash, rendererRich } from "@shikijs/twoslash"
 
 // let highlighter: Awaited<ReturnType<typeof createHighlighter>> | undefined
 
@@ -33,36 +17,36 @@ export async function highlightCode({ code, lang = "typescript" }: HighlightArgs
   const file = await unified()
     .use(remarkParse)
     .use(remarkRehype)
-    .use(rehypeShiki, {
-      theme: "houston",
-      transformers: [
-        transformerTwoslash({
-          renderer: rendererRich({ jsdoc: true }),
-          twoslashOptions: {
-            compilerOptions: {
-              ...defaultCompilerOptions,
-              noErrorTruncation: true,
-              exactOptionalPropertyTypes: true
-            }
-          }
-        }),
-        transformerNotationDiff(),
-        transformerMetaHighlight(),
-        transformerNotationFocus(),
-        transformerRenderWhitespace(),
-        transformerNotationHighlight(),
-        transformerMetaWordHighlight(),
-        transformerNotationErrorLevel(),
-        transformerCompactLineOptions(),
-        transformerRemoveNotationEscape(),
-        transformerNotationWordHighlight()
-      ]
-    })
+    // .use(rehypeShiki, {
+    //   theme: "houston",
+    //   // transformers: [
+    //   //   transformerTwoslash({
+    //   //     renderer: rendererRich({ jsdoc: true }),
+    //   //     twoslashOptions: {
+    //   //       compilerOptions: {
+    //   //         ...defaultCompilerOptions,
+    //   //         noErrorTruncation: true,
+    //   //         exactOptionalPropertyTypes: true
+    //   //       }
+    //   //     }
+    //   //   }),
+    //   //   transformerNotationDiff(),
+    //   //   transformerMetaHighlight(),
+    //   //   transformerNotationFocus(),
+    //   //   transformerRenderWhitespace(),
+    //   //   transformerNotationHighlight(),
+    //   //   transformerMetaWordHighlight(),
+    //   //   transformerNotationErrorLevel(),
+    //   //   transformerCompactLineOptions(),
+    //   //   transformerRemoveNotationEscape(),
+    //   //   transformerNotationWordHighlight()
+    //   // ]
+    // })
     .use(rehypePrettyCode, {
       theme: "houston",
       grid: true,
-      keepBackground: true,
-      transformers: [transformerTwoslash({ renderer: rendererRich() })]
+      keepBackground: true
+      // transformers: [transformerTwoslash({ renderer: rendererRich() })]
     })
     .use(rehypeStringify)
     .process(`\`\`\`${lang}\n${code}\n\`\`\``)

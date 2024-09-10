@@ -1,5 +1,5 @@
 ---
-import '@xterm/xterm/css/xterm.css'
+import "@xterm/xterm/css/xterm.css"
 
 interface Props {}
 ---
@@ -7,11 +7,12 @@ interface Props {}
 <textarea
   required={true}
   readonly={false}
-  id="dydx-address"
   autocorrect="off"
   autocomplete="off"
   spellcheck="false"
+  id="terminal-input"
   autocapitalize="none"
+  class="focus:ring-0 focus-visible:ring-0 outline-none"
 >
   loading...
 </textarea>
@@ -26,66 +27,9 @@ interface Props {}
 
 <script>
   import dedent from 'ts-dedent'
-  import { Terminal } from '@xterm/xterm'
-  import { FitAddon } from '@xterm/addon-fit'
-  import { ImageAddon } from '@xterm/addon-image'
-  import { WebglAddon } from '@xterm/addon-webgl'
-  import { WebLinksAddon } from '@xterm/addon-web-links'
-  import { ClipboardAddon } from '@xterm/addon-clipboard'
-  import { LigaturesAddon } from '@xterm/addon-ligatures'
-  import { SerializeAddon } from '@xterm/addon-serialize'
+  // import { highlightCode } from '#/lib/highlight-code.ts'
+  import { initiateTerminal, type Terminal } from '#/lib/xterm.ts'
   import { WebContainer, type FileSystemTree, type WebContainerProcess } from '@webcontainer/api'
-
-  async function initiateTerminal(terminalElement: HTMLElement): Promise<{
-    terminal: Terminal
-    addons: {
-      fitAddon: FitAddon
-      webglAddon: WebglAddon
-      imageAddon: ImageAddon
-      webLinksAddon: WebLinksAddon
-      clipboardAddon: ClipboardAddon
-      serializeAddon: SerializeAddon
-    }
-  }> {
-    const terminal = new Terminal({
-      fontSize: 15,
-      convertEol: true,
-      allowProposedApi: true,
-      fontFamily: 'JetBrains Mono, monospace',
-    })
-    const fitAddon = new FitAddon()
-    terminal.loadAddon(fitAddon)
-
-    const webglAddon = new WebglAddon()
-    webglAddon.onContextLoss(_event => webglAddon.dispose())
-    terminal.loadAddon(webglAddon)
-
-    const serializeAddon = new SerializeAddon()
-    terminal.loadAddon(serializeAddon)
-
-    const webLinksAddon = new WebLinksAddon()
-    terminal.loadAddon(webLinksAddon)
-
-    const clipboardAddon = new ClipboardAddon()
-    terminal.loadAddon(clipboardAddon)
-
-    const imageAddon = new ImageAddon()
-    terminal.loadAddon(imageAddon)
-    terminal.open(terminalElement)
-    fitAddon.fit()
-
-    return {
-      terminal,
-      addons: {
-        fitAddon,
-        webglAddon,
-        imageAddon,
-        webLinksAddon,
-        clipboardAddon,
-        serializeAddon,
-      },
-    }
-  }
 
   const files = {
     'mod.ts': {
@@ -234,6 +178,10 @@ interface Props {}
       fitAddon.fit()
       shellProcess.resize({ cols: terminal.cols, rows: terminal.rows })
     })
+
+    // const code = textareaElement.value
+    // const highlightedCode = await highlightCode({ code })
+    // textareaElement.insertAdjacentHTML("afterend", highlightedCode)
 
     const xtermViewport = document.querySelector('div.xterm-viewport')
     if (!xtermViewport) return
