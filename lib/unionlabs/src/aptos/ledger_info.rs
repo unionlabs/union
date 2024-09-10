@@ -1,4 +1,5 @@
 use macros::model;
+use serde::{Deserialize, Serialize};
 
 use super::{
     block_info::{BlockInfo, TryFromBlockInfoError},
@@ -10,11 +11,15 @@ use crate::{
 };
 
 /// Wrapper to support future upgrades, this is the data being persisted.
-#[model(proto(
-    raw(protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures),
-    into,
-    from
-))]
+#[model(
+    proto(
+        raw(protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures),
+        into,
+        from
+    ),
+    no_serde
+)]
+#[derive(Serialize, Deserialize)]
 pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
 }
@@ -42,6 +47,7 @@ pub struct LedgerInfo {
 
     /// Hash of consensus specific data that is opaque to all parts of the system other than
     /// consensus.
+    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub consensus_data_hash: H256,
 }
 

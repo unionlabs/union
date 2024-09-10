@@ -26,6 +26,7 @@ pub struct ValidatorVerifier {
     from
 ))]
 pub struct ValidatorConsensusInfo {
+    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub address: AccountAddress,
     pub public_key: PublicKey,
     pub voting_power: u64,

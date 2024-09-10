@@ -28,7 +28,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
-    data::{ChainEvent, ClientInfo, CreateClient, Data, FullIbcEvent, UpdateClient},
+    data::{
+        ChainEvent, ClientInfo, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, Data, FullIbcEvent, UpdateClient,
+    },
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
     reth_ipc::client::IpcClientBuilder,
     rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
@@ -424,20 +427,64 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     events::IbcEvent::UpdateClient(e) => (
                         UpdateClient {
                             client_id: e.client_id.parse().unwrap(),
-                            client_type: ClientType::new("client type lol"),
+                            client_type: ClientType::new(e.client_type),
                             consensus_heights: vec![ibc_height(e.height)],
                         }
                         .into(),
                         e.client_id.parse().unwrap(),
                     ),
-                    events::IbcEvent::ConnectionOpenInit(_) => todo!(),
-                    events::IbcEvent::ConnectionOpenTrt(_) => todo!(),
-                    events::IbcEvent::ConnectionOpenAct(_) => todo!(),
-                    events::IbcEvent::ConnectionOpenConfirt(_) => todo!(),
+                    events::IbcEvent::ConnectionOpenInit(e) => (
+                        ConnectionOpenInit {
+                            client_id: e.client_id.parse().unwrap(),
+                            connection_id: e.connection_id.parse().unwrap(),
+                            counterparty_client_id: e.counterparty_client_id.parse().unwrap(),
+                        }
+                        .into(),
+                        e.client_id.parse().unwrap(),
+                    ),
+                    events::IbcEvent::ConnectionOpenTry(e) => (
+                        ConnectionOpenTry {
+                            client_id: e.client_id.parse().unwrap(),
+                            connection_id: e.connection_id.parse().unwrap(),
+                            counterparty_client_id: e.counterparty_client_id.parse().unwrap(),
+                            counterparty_connection_id: e
+                                .counterparty_connection_id
+                                .parse()
+                                .unwrap(),
+                        }
+                        .into(),
+                        e.client_id.parse().unwrap(),
+                    ),
+                    events::IbcEvent::ConnectionOpenAck(e) => (
+                        ConnectionOpenAck {
+                            client_id: e.client_id.parse().unwrap(),
+                            connection_id: e.connection_id.parse().unwrap(),
+                            counterparty_client_id: e.counterparty_client_id.parse().unwrap(),
+                            counterparty_connection_id: e
+                                .counterparty_connection_id
+                                .parse()
+                                .unwrap(),
+                        }
+                        .into(),
+                        e.client_id.parse().unwrap(),
+                    ),
+                    events::IbcEvent::ConnectionOpenConfirm(e) => (
+                        ConnectionOpenConfirm {
+                            client_id: e.client_id.parse().unwrap(),
+                            connection_id: e.connection_id.parse().unwrap(),
+                            counterparty_client_id: e.counterparty_client_id.parse().unwrap(),
+                            counterparty_connection_id: e
+                                .counterparty_connection_id
+                                .parse()
+                                .unwrap(),
+                        }
+                        .into(),
+                        e.client_id.parse().unwrap(),
+                    ),
                     events::IbcEvent::ChannelOpenInit(_) => todo!(),
-                    events::IbcEvent::ChannelOpenTrt(_) => todo!(),
-                    events::IbcEvent::ChannelOpenAct(_) => todo!(),
-                    events::IbcEvent::ChannelOpenConfirt(_) => todo!(),
+                    events::IbcEvent::ChannelOpenTry(_) => todo!(),
+                    events::IbcEvent::ChannelOpenAck(_) => todo!(),
+                    events::IbcEvent::ChannelOpenConfirm(_) => todo!(),
                     events::IbcEvent::WriteAcknowledgement(_) => todo!(),
                     events::IbcEvent::RecvPacket(_) => todo!(),
                     events::IbcEvent::SendPacket(_) => todo!(),
@@ -566,7 +613,7 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %at, %path))]
     async fn query_ibc_state(&self, at: Height, path: Path) -> RpcResult<Value> {
         let ledger_version = self
             .aptos_client

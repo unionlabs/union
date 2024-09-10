@@ -1,3 +1,4 @@
+---
 profiles:
   default:
     network: Custom
@@ -8,8 +9,8 @@ profiles:
     faucet_url: "http://localhost:30732/"
   relayer:
     network: Custom
-    private_key: "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-    public_key: "0x663b327307b6fbac27c22a81e4f3ce2c5bb8ce1d423b345d04a7b6ff1695ce2b"
-    account: 55e8b4c6b9dd384c08b49af2a7f3059f0ac1c8a96a38acfae00ebfa2c2ea8487
+    private_key: "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
+    public_key: "0xe9f9bc8eb60f1c970d7a8ad402b1bb5cb8e794e69fa8898f272874fcadd82657"
+    account: 870955604107eb3392950362e675ce51687729914738de47ac7845991ce6f158
     rest_url: "http://localhost:30731/"
     faucet_url: "http://localhost:30732/"

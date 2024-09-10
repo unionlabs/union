@@ -4,7 +4,6 @@ use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
 use macros::model;
 use serde::{
     de::{self, Unexpected},
-    ser::SerializeStruct,
     Deserialize, Serialize,
 };
 

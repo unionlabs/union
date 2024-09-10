@@ -370,6 +370,78 @@ pub mod hex_allow_unprefixed {
     }
 }
 
+pub mod hex_allow_unprefixed_list {
+    use alloc::{format, string::String, vec::Vec};
+    use core::fmt::Debug;
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S, T, C>(list: &C, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>,
+        for<'a> &'a C: IntoIterator<Item = &'a T>,
+    {
+        crate::hex_string_list::serialize(list, serializer)
+    }
+
+    pub fn deserialize<'de, D, T, C>(deserializer: D) -> Result<C, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
+        C: TryFrom<Vec<T>, Error: Debug>,
+    {
+        Vec::<String>::deserialize(deserializer)?
+            .into_iter()
+            .map(|s| {
+                let s = s.strip_prefix("0x").unwrap_or(&s);
+
+                hex::decode(s).map_err(de::Error::custom).and_then(|t| {
+                    t.try_into()
+                        .map_err(|e| de::Error::custom(format!("{e:?}")))
+                })
+            })
+            .collect::<Result<Vec<_>, D::Error>>()?
+            .try_into()
+            .map_err(|y: <C as TryFrom<Vec<T>>>::Error| de::Error::custom(format!("{y:?}")))
+    }
+}
+
+pub mod hex_allow_unprefixed_option {
+    use alloc::{format, string::String, vec::Vec};
+    use core::fmt::Debug;
+
+    use serde::{de, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S, T>(option: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>,
+    {
+        match option.as_ref() {
+            Some(t) => crate::hex_string::serialize(t, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: TryFrom<Vec<u8>, Error: Debug + 'static>,
+    {
+        Option::<String>::deserialize(deserializer)?
+            .map(|s| {
+                let s = s.strip_prefix("0x").unwrap_or(&s);
+
+                hex::decode(s).map_err(de::Error::custom).and_then(|t| {
+                    t.try_into()
+                        .map_err(|e| de::Error::custom(format!("{e:?}")))
+                })
+            })
+            .transpose()
+    }
+}
+
 pub mod hex_allow_unprefixed_maybe_empty {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;

@@ -21,7 +21,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
-    data::{Data, IbcMessage, MsgCreateClientData, WithChainId},
+    data::{log_msg, Data, IbcMessage, MsgCreateClientData, WithChainId},
     default_subcommand_handler,
     plugin::{OptimizationPassPluginServer, PluginInfo, PluginModuleServer},
     reth_ipc::client::IpcClientBuilder,
@@ -178,27 +178,36 @@ end
                         let msgs =
                             process_msgs(self.ibc_handler_address.into(), self, msgs.clone());
 
-                        for (msg, entry_fn) in msgs {
-                            dbg!(msg);
+                        let mut txs = vec![];
+
+                        for (i, (msg, entry_fn)) in msgs.into_iter().enumerate() {
+                            log_msg(&self.chain_id.to_string(), &msg);
+                            // dbg!(msg);
 
                             let raw = RawTransaction::new_entry_function(
                                 sender,
-                                account.sequence_number,
+                                account.sequence_number + i as u64,
                                 entry_fn,
                                 400000,
                                 100,
-                                queue_msg::now() + 10,
+                                queue_msg::now() + 100,
                                 self.chain_id.as_str().parse().unwrap(),
                             );
 
-                            let sig = raw.sign(pk, pk.public_key()).unwrap();
+                            let signed_tx = raw.sign(pk, pk.public_key()).unwrap();
 
-                            dbg!(&sig);
+                            dbg!(&signed_tx);
 
-                            let res = self.aptos_client.submit_and_wait(&sig).await.unwrap();
-
-                            dbg!(&res);
+                            txs.push(signed_tx.into_inner());
                         }
+
+                        dbg!(&txs);
+
+                        let res = self.aptos_client.submit_batch(&txs).await.unwrap();
+
+                        dbg!(&res);
+
+                        // res.into_inner().transaction_failures
 
                         Ok(noop())
                     }

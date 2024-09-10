@@ -22,7 +22,7 @@
       "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-movement",
       "config": {
         "rpc_url": "http://localhost:30731",
-        "ibc_handler_address": "0x01f481195db674da1f7deeed3316eac0a6e2cb389e54320749255732737c3173"
+        "ibc_handler_address": "0x9a69bd6722969759bd03aaf5db77f8b41ed0eb9414a1a1fb2b65c4c6873bb280"
       }
     },
     {
@@ -66,7 +66,7 @@
       "enabled": true,
       "path": "/home/ben/projects/union/union/target/debug/voyager-consensus-module-movement",
       "config": {
-        "ibc_handler_address": "0x01f481195db674da1f7deeed3316eac0a6e2cb389e54320749255732737c3173",
+        "ibc_handler_address": "0x9a69bd6722969759bd03aaf5db77f8b41ed0eb9414a1a1fb2b65c4c6873bb280",
         "l1_settlement_address": "0x0000000000000000000000000000000000000000",
         "l1_client_id": "cometbls-0",
         "aptos_rest_api": "http://localhost:30731",
@@ -148,14 +148,14 @@
       "path": "/home/ben/projects/union/union/target/debug/voyager-transaction-module-aptos",
       "config": {
         "rpc_url": "http://localhost:30731",
-        "ibc_handler_address": "0x01f481195db674da1f7deeed3316eac0a6e2cb389e54320749255732737c3173",
+        "ibc_handler_address": "0x9a69bd6722969759bd03aaf5db77f8b41ed0eb9414a1a1fb2b65c4c6873bb280",
         "keyring": {
           "name": "ethereum-devnet",
           "keys": [
             {
               "type": "raw",
               "name": "dev-key0",
-              "key": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
+              "key": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
             }
           ]
         }

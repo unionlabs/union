@@ -5,7 +5,7 @@ use core::{fmt, str::FromStr};
 
 use serde::{de::Error as _, Deserialize, Serialize};
 
-use crate::hash::H256;
+use crate::{errors::InvalidLength, hash::H256};
 
 #[derive(macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[debug("AccountAddress({})", self)]
@@ -30,6 +30,20 @@ impl AccountAddress {
 
 const fn is_special_byte(b: u8) -> bool {
     b < 0b10000
+}
+
+impl AsRef<[u8]> for AccountAddress {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl TryFrom<Vec<u8>> for AccountAddress {
+    type Error = InvalidLength;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        value.try_into().map(Self)
+    }
 }
 
 #[derive(thiserror::Error, Debug)]
