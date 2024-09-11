@@ -1,8 +1,6 @@
 ---
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import Card from "#/components/Card.astro"
-import H1 from "#/components/typography/h1.astro"
-import Subtitle from "#/components//typography/subtitle.astro"
 import TopSection from "../components/sections/TopSection.astro"
 
 import headshot_karel from "#/assets/images/headshots/karel.jpg"
@@ -28,6 +26,7 @@ import vc_founderheads from "#/assets/images/investors/founderheads.svg"
 import team_spearbit from "#/assets/images/partners/spearbit.svg"
 import team_groomlake from "#/assets/images/partners/groomlake.png"
 import team_horizons from "#/assets/images/partners/horizons.svg"
+import ContainedSection from "../components/ContainedSection.astro";
 
 const profiles = [
   {
@@ -160,6 +159,7 @@ const teams = [
 ---
 
 <SectionsLayout gapless title="Union Team">
+
   <TopSection title="Union team">
     <div class="flex flex-col text-center gap-8">
       <p class="md:text-4xl font-mono uppercase">Our team is a <span class="text-accent-500">global</span> network of
@@ -168,18 +168,22 @@ const teams = [
     </div>
     <div></div>
   </TopSection>
-  <div class="w-full flex items-center flex-col py-16">
-    <div class="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-fi">
+
+  <ContainedSection>
+    <div class="grid gap-12 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 py-16">
       {
         profiles.map(person => (
-                <Card class="border-none">
+                <Card class="border-none group">
                   <a
                           href={`https://x.com/${person.x_name}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           class="gap-4 flex flex-col"
                   >
-                    <img class="w-48 h-48" src={person.profile_pic.src}/>
+                    <div class="object-cover overflow-hidden">
+                      <img class="w-full h-auto group-hover:scale-110 transition" src={person.profile_pic.src}
+                           alt="union worker"/>
+                    </div>
                     <div class="leading-tight uppercase font-mono">
                       <h1 class="text-2xl font-bold font-supermolot uppercase">{person.name}</h1>
                       <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
@@ -190,6 +194,8 @@ const teams = [
         ))
       }
     </div>
-  </div>
+  </ContainedSection>
+
+
 </SectionsLayout>
 
