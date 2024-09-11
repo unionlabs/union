@@ -8,9 +8,6 @@ on:
       - created
       - deleted
 
-permissions:
-  contents: write
-
 defaults:
   run:
     shell: bash
@@ -23,6 +20,9 @@ jobs:
   cleanup:
     runs-on: ['ubuntu-latest']
     name: 'Cleanup PR comments'
+    permissions:
+      issues: write
+      contents: write
     if: |
       contains(github.event.comment.body, 'Deploy Preview for *unionlabs* ready!') ||
       github.event.comment.user.name == 'netlify[bot]'
