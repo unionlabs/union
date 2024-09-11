@@ -1,5 +1,10 @@
 import type { Reroute } from "@sveltejs/kit"
 
+/**
+ * `hooks.{js|ts}` is a special SvelteKit file called "Universal Hooks"
+ * @see https://kit.svelte.dev/docs/hooks#universal-hooks
+ */
+
 const redirects: Array<[path: RegExp, to: string]> = [
   [/^\/explorer\/?$/, "/"],
   [/^\/explorer\/transfers\/?$/, "/"],
@@ -12,7 +17,6 @@ const redirects: Array<[path: RegExp, to: string]> = [
 export const reroute = (event => {
   const url = new URL(event.url)
   const pathname = url.pathname
-  console.info(`current pathname ${url.pathname}`)
 
   for (const [path, to] of redirects) {
     const match = path.exec(pathname)
