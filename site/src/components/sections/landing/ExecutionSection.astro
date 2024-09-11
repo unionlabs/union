@@ -5,6 +5,7 @@ import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 import executionImage from "#/assets/images/spline-holders/modular.png"
 import ContainedSection from "../../ContainedSection.astro"
+import Spline from "../../Spline.astro";
 ---
 
 <ContainedSection>
@@ -18,8 +19,6 @@ import ContainedSection from "../../ContainedSection.astro"
       </div>
       <ButtonA href="/ecosystem">Our ecosystem >>></ButtonA>
     </div>
-    <div class="flex justify-end">
-      <Image src={executionImage} alt="Wave Collateral" class="object-contain h-auto"></Image>
-    </div>
+    <Spline model="https://prod.spline.design/ekGIwYVP-nKgYf8O/scene.splinecode" />
   </div>
 </ContainedSection>
