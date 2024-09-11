@@ -245,106 +245,106 @@ const categories: Array<Category> = [
 ---
 
 <LanderSection>
-    <!-- Search Bar -->
-    <div class="flex flex-col gap-4 mb-4 w-fit">
-        <div class="max-w-[400px] flex flex-col gap-4">
-            <H1>Union <span class="text-accent-500">reef</span></H1>
-            <QuoteSubTitle>The Union reef is an ocean of possibilities. Check out who is already swimming with us to
-                build the modular zk future.
-            </QuoteSubTitle>
-        </div>
-        <label for="searchInput"></label><input
-            type="text"
-            id="searchInput"
-            placeholder="Search by name..."
-            class="px-4 py-2 border-2 bg-transparent text-white placeholder-white font-mono"
-    />
+  <!-- Search Bar -->
+  <div class="flex flex-col gap-4 mb-4 w-fit">
+    <div class="max-w-[400px] flex flex-col gap-4">
+      <H1>Union <span class="text-accent-500">reef</span></H1>
+      <QuoteSubTitle>The Union reef is an ocean of possibilities. Check out who is already swimming with us to
+        build the modular zk future.
+      </QuoteSubTitle>
     </div>
+    <label for="searchInput"></label><input
+          type="text"
+          id="searchInput"
+          placeholder="Search by name..."
+          class="px-4 py-2 border-2 bg-transparent text-white placeholder-white font-mono"
+  />
+  </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 w-full">
-        <!-- Filter Checkboxes -->
-        <div class="col-span-1">
-            <button
-                    id="filterToggle"
-                    class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center lg:hidden"
-            >
-                Filter
-                <svg
-                        class="w-5 h-5 transform transition-transform duration-200"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 9l-7 7-7-7"
-                    ></path>
-                </svg>
-            </button>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 w-full">
+    <!-- Filter Checkboxes -->
+    <div class="col-span-1">
+      <button
+              id="filterToggle"
+              class="px-0 w-fit bg-transparent text-white text-xl font-bold uppercase mb-4 flex items-center lg:hidden"
+      >
+        Filter
+        <svg
+                class="w-5 h-5 transform transition-transform duration-200"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+          ></path>
+        </svg>
+      </button>
 
-            <div id="filterContent" class="hidden lg:block">
-              {categories.map(category => (
-                      <div class="mb-2">
-                          <label class="inline-flex items-center cursor-pointer font-mono uppercase">
-                              <input
-                                      type="checkbox"
-                                      name="category"
-                                      value={category}
-                                      class="sr-only peer"
-                              />
-                              <div
-                                      class="w-5 h-5 flex items-center justify-center border-2 border-gray-400
+      <div id="filterContent" class="hidden lg:block">
+        {categories.map(category => (
+                <div class="mb-2">
+                  <label class="inline-flex items-center cursor-pointer font-mono uppercase">
+                    <input
+                            type="checkbox"
+                            name="category"
+                            value={category}
+                            class="sr-only peer"
+                    />
+                    <div
+                            class="w-5 h-5 flex items-center justify-center border-2 border-gray-400
                    peer-checked:bg-accent-500 peer-checked:border-accent-500
                    bg-transparent transition-colors duration-200 ease-in-out mr-2"
-                              >
-                                  <svg
-                                          class="w-3 h-3 text-white hidden peer-checked:block"
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                      <path
-                                              stroke-linecap="round"
-                                              stroke-linejoin="round"
-                                              stroke-width="2"
-                                              d="M5 13l4 4L19 7"
-                                      ></path>
-                                  </svg>
-                              </div>
-                            {category}
-                          </label>
-                      </div>
-              ))}
-            </div>
-        </div>
-
-        <!-- Cards Grid -->
-        <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
-          {data.map(item => (
-                  <div class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96 w-[300px]">
-                      <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0"></div>
-                      <img src={item.cover.src} alt={item.name}
-                           class="absolute w-full h-full object-fill object-center"/>
-                      <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
-                          <div class="flex w-full justify-between items-center">
-                              <div class="flex flex-col gap-1">
-                                {item.category.map(cat => (
-                                        <p class="text-sm w-fit bg-white text-black uppercase text-center font-mono font-bold px-2">{cat}</p>
-                                ))}
-                              </div>
-                              <img src={item.logo.src} alt={`${item.name} logo`} class="w-24 h-24 mb-2"/>
-                          </div>
-                          <H3 class="text-lg font-semibold">{item.name}</H3>
-                      </div>
-                  </div>
-          ))}
-        </div>
-
+                    >
+                      <svg
+                              class="w-3 h-3 text-white hidden peer-checked:block"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M5 13l4 4L19 7"
+                        ></path>
+                      </svg>
+                    </div>
+                    {category}
+                  </label>
+                </div>
+        ))}
+      </div>
     </div>
+
+    <!-- Cards Grid -->
+    <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+      {data.map(item => (
+              <div class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96 w-[300px]">
+                <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0"></div>
+                <img src={item.cover.src} alt={item.name}
+                     class="absolute w-full h-full object-fill object-center"/>
+                <div class="p-4 z-10 flex flex-col justify-end w-full h-full">
+                  <div class="flex w-full justify-between items-center">
+                    <div class="flex flex-col gap-1">
+                      {item.category.map(cat => (
+                              <p class="text-sm w-fit bg-white text-black uppercase text-center font-mono font-bold px-2">{cat}</p>
+                      ))}
+                    </div>
+                    <img src={item.logo.src} alt={`${item.name} logo`} class="w-24 h-24 mb-2"/>
+                  </div>
+                  <H3 class="text-lg font-semibold">{item.name}</H3>
+                </div>
+              </div>
+      ))}
+    </div>
+
+  </div>
 </LanderSection>
 
 

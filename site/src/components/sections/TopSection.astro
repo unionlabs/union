@@ -1,25 +1,21 @@
 ---
-import { Image } from "astro:assets"
-import wave from "../../assets/images/spline-holders/wave-collateral.png"
 import LightedTitle from "../typography/LightedTitle.astro"
-import Spline from "#/components/Spline.astro"
-import newWave from "#/spline/new-wave.splinecode"
 import SplineCover from "../SplineCover.astro"
 
 const { title } = Astro.props
 ---
 
 <section class="relative flex w-full h-full justify-center pb-12 md:pb-34 -mt-[56px] md:-mt-[80px]">
-  <div class="absolute w-full max-w-[1440px] px-6 pt-24 md:pt-36 h-full z-10">
-    <div class="z-20 flex flex-col justify-between w-full h-full">
+  <div class="absolute w-full max-w-[1440px] px-6 pt-24 md:pt-36 h-svh z-10">
+    <div class="pointer-events-none z-20 flex flex-col justify-between w-full h-full">
       <div class="flex flex-col text-left items-start">
         <LightedTitle {title}/>
       </div>
       <slot />
     </div>
   </div>
-  <div class="h-svh w-full z-0">
-    <SplineCover className="max-size-full"/>
+  <div class="h-svh w-full">
+    <SplineCover />
   </div>
 </section>
 

@@ -1,8 +1,8 @@
 ---
-import "../../../styles/marquee.css"
-import ContainedSection from "../../ContainedSection.astro"
-import LightedTitle from "../../typography/LightedTitle.astro"
-import { type NamedImage } from "#/lib/types"
+import "../../styles/marquee.css"
+import ContainedSection from "../ContainedSection.astro"
+import LightedTitle from "../typography/LightedTitle.astro"
+import type { NamedImage } from "../../lib/types.ts"
 
 interface Props {
   title: string
@@ -14,10 +14,10 @@ const { title, data, reverse } = Astro.props
 ---
 
 <ContainedSection>
-  <div class="text-center">
+  <div class="text-center pb-4 sm:pb-8">
     <LightedTitle {title} />
   </div>
-  <article class="wrapper pb-12 md:pb-24 lg:pb-48">
+  <article class="pb-12 sm:pb-16 md:pb-24">
     <div class:list={[
       'marquee',
       {'marquee--reverse': reverse}
