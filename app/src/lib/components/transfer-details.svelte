@@ -383,15 +383,11 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
   <div class="flex flex-col w-full items-center gap-6">
     {#each $processedTransfers as transfer, transferIndex}
       {@const sourceExplorer = chains
-        .find((c) => c.chain_id === transfer.source_chain_id)
+        .find(c => c.chain_id === transfer.source_chain_id)
         ?.explorers?.at(0)}
       {@const destinationExplorer = chains
-        .find((c) => c.chain_id === transfer.destination_chain_id)
+        .find(c => c.chain_id === transfer.destination_chain_id)
         ?.explorers?.at(0)}
-
-      <!--
-    <pre>{JSON.stringify($transfers.data, null, 2)}</pre>
-    !-->
 
       <Card.Root
         class="flex flex-col w-full lg:w-auto max-w-full overflow-y-hidden overflow-x-auto justify-self-center dark:bg-muted"
@@ -399,10 +395,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
         <Card.Header
           class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"
         >
-          TRANSFER <Truncate
-            value={transfer.source_transaction_hash}
-            type="hash"
-          />
+          TRANSFER <Truncate value={transfer.source_transaction_hash} type="hash" />
         </Card.Header>
         <Card.Content class="flex flex-col gap-8">
           <section class="mt-6">
@@ -417,10 +410,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                         value={formatUnits(token.amount, token.asset.decimals)}
                         type="full"
                       />
-                      <Truncate
-                        value={token.asset.display_symbol}
-                        type="address"
-                      />
+                      <Truncate value={token.asset.display_symbol} type="address" />
                     </li>
                   {:else}
                     <li>
@@ -436,11 +426,9 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           </section>
 
           <section>
-            <PacketPath packet={transfer} {chains}/>
+            <PacketPath packet={transfer} {chains} />
             {#if transfer.hop_chain_id}
-              <div
-                class="flex-1 text-center flex-col text-sm text-muted-foreground items-center"
-              >
+              <div class="flex-1 text-center flex-col text-sm text-muted-foreground items-center">
                 forwarded through
                 <h2
                   class="font-supermolot uppercase md:font-expanded text-xl font-extrabold text-foreground whitespace-nowrap"
@@ -449,62 +437,58 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 </h2>
                 <p
                   class={cn(
-                    "text-sm",
+                    'text-sm',
                     transfer.hop_chain_destination_connection_id &&
                       transfer.hop_chain_source_connection_id
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent"
+                      ? 'text-black dark:text-muted-foreground'
+                      : 'text-transparent',
                   )}
                 >
-                  {transfer?.hop_chain_destination_connection_id ?? "unknown"} {'->'}
-                  {transfer?.hop_chain_source_connection_id ?? "unknown"}
+                  {transfer?.hop_chain_destination_connection_id ?? 'unknown'}
+                  {'->'}
+                  {transfer?.hop_chain_source_connection_id ?? 'unknown'}
                 </p>
                 <p
                   class={cn(
-                    "text-sm",
+                    'text-sm',
                     transfer.hop_chain_destination_channel_id &&
                       transfer.hop_chain_source_channel_id
-                      ? "text-black dark:text-muted-foreground"
-                      : "text-transparent"
+                      ? 'text-black dark:text-muted-foreground'
+                      : 'text-transparent',
                   )}
                 >
-                  {transfer?.hop_chain_destination_channel_id ?? "unknown"} {'->'} {transfer.hop_chain_source_channel_id ??
-                    "unknown"}
+                  {transfer?.hop_chain_destination_channel_id ?? 'unknown'}
+                  {'->'}
+                  {transfer.hop_chain_source_channel_id ?? 'unknown'}
                 </p>
               </div>
             {/if}
           </section>
           <section class="flex flex-col lg:flex-row gap-8">
             <div class=" lex-col text-muted-foreground">
-              <DetailsHeading>
-                Sender
-              </DetailsHeading>
+              <DetailsHeading>Sender</DetailsHeading>
               {#if sourceExplorer !== undefined}
-                <a
-                  href={`/explorer/address/${transfer.sender}`}
-                  class="block text-sm underline break-words"
+                <a href={`/address/${transfer.sender}`} class="block text-sm underline break-words"
                   >{transfer.sender}
                 </a>{:else}<p class="text-sm break-words">
                   {transfer.sender}
                 </p>{/if}
               <p
                 class={cn(
-                  "text-[10px] break-words",
+                  'text-[10px] break-words',
                   transfer.normalized_sender
-                    ? "text-black dark:text-muted-foreground"
-                    : "text-transparent"
+                    ? 'text-black dark:text-muted-foreground'
+                    : 'text-transparent',
                 )}
               >
                 raw: {transfer.normalized_sender}
               </p>
             </div>
             <div class="flex-1 lg:text-right flex-col text-muted-foreground">
-              <DetailsHeading>
-                Receiver
-              </DetailsHeading>
+              <DetailsHeading>Receiver</DetailsHeading>
               {#if destinationExplorer !== undefined}
                 <a
-                  href={`/explorer/address/${transfer.receiver}`}
+                  href={`/address/${transfer.receiver}`}
                   class="block text-sm underline break-words"
                   >{transfer.receiver}
                 </a>{:else}<p class="text-sm break-words">
@@ -512,10 +496,10 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
                 </p>{/if}
               <p
                 class={cn(
-                  "text-[10px] break-words",
+                  'text-[10px] break-words',
                   transfer.normalized_receiver
-                    ? "text-black dark:text-muted-foreground"
-                    : "text-transparent"
+                    ? 'text-black dark:text-muted-foreground'
+                    : 'text-transparent',
                 )}
               >
                 raw: {transfer.normalized_receiver}
@@ -527,10 +511,7 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
           <div class="mt-6 font-bold text-md">{transfer.transfer_day}</div>
           <!-- bit of a hack, pTrace is used to check if there is a trace, and if there is, we show the steps !-->
           {@const pTrace = $processedTraces?.at(transferIndex) ?? null}
-          {@const ts = derived(
-            tracesSteps,
-            ($tracesSteps) => $tracesSteps?.at(transferIndex) ?? []
-          )}
+          {@const ts = derived(tracesSteps, $tracesSteps => $tracesSteps?.at(transferIndex) ?? [])}
           {#if pTrace}
             <Stepper steps={ts} />
           {:else}

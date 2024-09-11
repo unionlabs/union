@@ -23,41 +23,35 @@ export let packet: {
     >
       {toDisplayName(packet.source_chain_id, chains)}
     </h2>
-    <a 
-      href={`/explorer/packets/${packet.source_chain_id}`}
-      class="block text-sm underline text-muted-foreground">
-    
+    <a
+      href={`/packets/${packet.source_chain_id}`}
+      class="block text-sm underline text-muted-foreground"
+    >
       {packet.source_chain_id}
     </a>
     <a
-      href={`/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}`}
+      href={`/packets/${packet.source_chain_id}/${packet.source_connection_id}`}
       class={cn(
-        "black text-sm underline",
-        packet.source_connection_id
-          ? "text-muted-foreground"
-          : "text-transparent"
+        'black text-sm underline',
+        packet.source_connection_id ? 'text-muted-foreground' : 'text-transparent',
       )}
     >
       {packet.source_connection_id}
     </a>
     <a
-      href={`/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}`}
+      href={`/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}`}
       class={cn(
-        "text-sm block underline",
-        packet.source_channel_id
-          ? "text-muted-foreground"
-          : "text-transparent"
+        'text-sm block underline',
+        packet.source_channel_id ? 'text-muted-foreground' : 'text-transparent',
       )}
     >
       {packet.source_channel_id}
     </a>
     <a
-      href={`/explorer/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}/${packet.source_sequence}`}
+      href={`/packets/${packet.source_chain_id}/${packet.source_connection_id}/${packet.source_channel_id}/${packet.source_sequence}`}
       class={cn(
-        "text-sm block underline",
-        packet.source_sequence
-          ? "text-muted-foreground"
-          : "text-transparent"
+        'text-sm block underline',
+        packet.source_sequence ? 'text-muted-foreground' : 'text-transparent',
       )}
     >
       {packet.source_sequence}
@@ -72,30 +66,26 @@ export let packet: {
     >
       {toDisplayName(packet.destination_chain_id, chains)}
     </h2>
-    <a 
-      href={`/explorer/packets/${packet.destination_chain_id}`}
-      class="block text-sm underline text-muted-foreground">
-    
+    <a
+      href={`/packets/${packet.destination_chain_id}`}
+      class="block text-sm underline text-muted-foreground"
+    >
       {packet.destination_chain_id}
     </a>
     <a
-      href={`/explorer/packets/${packet.destination_chain_id}/${packet.destination_connection_id}`}
+      href={`/packets/${packet.destination_chain_id}/${packet.destination_connection_id}`}
       class={cn(
-        "text-sm block underline",
-        packet.destination_connection_id
-          ? "text-muted-foreground"
-          : "text-transparent"
+        'text-sm block underline',
+        packet.destination_connection_id ? 'text-muted-foreground' : 'text-transparent',
       )}
     >
       {packet.destination_connection_id}
     </a>
     <a
-      href={`/explorer/packets/${packet.destination_chain_id}/${packet.destination_connection_id}/${packet.destination_channel_id}`}
+      href={`/packets/${packet.destination_chain_id}/${packet.destination_connection_id}/${packet.destination_channel_id}`}
       class={cn(
-        "text-sm block underline",
-        packet.destination_channel_id
-          ? "text-muted-foreground"
-          : "text-transparent"
+        'text-sm block underline',
+        packet.destination_channel_id ? 'text-muted-foreground' : 'text-transparent',
       )}
     >
       {packet.destination_channel_id}

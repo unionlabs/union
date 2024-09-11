@@ -104,13 +104,13 @@ function onEnterPress(event: KeyboardEvent) {
   if (event.key !== "Enter") return
 
   if ($computedSearchInputResult.type === "tx") {
-    goto(`/explorer/transfers/${$searchInput}`)
+    goto(`/${$searchInput}`)
     commandDialogOpen = false
     $searchInput = ""
   }
 
   if ($computedSearchInputResult.type === "address") {
-    goto(`/explorer/address/${$searchInput}`)
+    goto(`/address/${$searchInput}`)
     commandDialogOpen = false
     $searchInput = ""
   }
@@ -141,9 +141,7 @@ const DISABLE_TAB_INDEX = -1
     loop={true}
     shouldFilter={true}
     filter={(value, search) => (value.includes(search) ? 1 : 0)}
-
- class={cn('text-foreground bg-background')}
-
+    class={cn('text-foreground bg-background')}
   >
     <Command.Input
       type="text"
@@ -191,9 +189,7 @@ const DISABLE_TAB_INDEX = -1
         </Command.Empty>
       {/if}
 
-
-<Command.Group heading="Interact with the testnet" class={cn('text-black bg-background')}>
-
+      <Command.Group heading="Interact with the testnet" class={cn('text-black bg-background')}>
         <Command.Item
           let:attrs
           tabindex={DISABLE_TAB_INDEX}
@@ -206,8 +202,7 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-
-          <FaucetIcon class="mr-2 size-5"/>
+          <FaucetIcon class="mr-2 size-5" />
           <span>Get tokens from faucet</span>
           {#if $page.route.id?.startsWith('/faucet')}
             <Badge
@@ -234,7 +229,7 @@ const DISABLE_TAB_INDEX = -1
             commandDialogOpen = false
           }}
         >
-          <TransfersIcon class="mr-2 size-5"/>
+          <TransfersIcon class="mr-2 size-5" />
           <span>Transfer assets across chains</span>
           {#if $page.route.id?.startsWith('/transfer')}
             <Badge
@@ -248,7 +243,6 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-
       </Command.Group>
       <Command.Separator />
 
@@ -263,13 +257,13 @@ const DISABLE_TAB_INDEX = -1
             'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
           )}
           onSelect={_value => {
-            goto(`/explorer/address/${userAddresses.join('-')}`)
+            goto(`/address/${userAddresses.join('-')}`)
             commandDialogOpen = false
           }}
         >
-          <UserTransfersIcon class="mr-2 size-5"/>
+          <UserTransfersIcon class="mr-2 size-5" />
           <span>Your transfers</span>
-          {#if $page.route.id?.startsWith('/explorer/address')}
+          {#if $page.route.id?.startsWith('/address')}
             <Badge
               variant="outline"
               class={cn(
@@ -289,13 +283,13 @@ const DISABLE_TAB_INDEX = -1
             'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
           )}
           onSelect={() => {
-            goto(`/explorer/transfers`)
+            goto(`/transfers`)
             commandDialogOpen = false
           }}
         >
-          <ChannelIcon class="mr-2 size-5"/>
+          <ChannelIcon class="mr-2 size-5" />
           <span>All transfers</span>
-          {#if $page.route.id?.startsWith('/explorer/transfers')}
+          {#if $page.route.id?.startsWith('/transfers')}
             <Badge
               variant="outline"
               class={cn(
@@ -315,13 +309,13 @@ const DISABLE_TAB_INDEX = -1
             'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
           )}
           onSelect={() => {
-            goto(`/explorer/connections`)
+            goto(`/connections`)
             commandDialogOpen = false
           }}
         >
-          <IbcConnectionsIcon class="mr-2 size-5"/>
+          <IbcConnectionsIcon class="mr-2 size-5" />
           <span>IBC connections</span>
-          {#if $page.route.id?.startsWith('/explorer/connections')}
+          {#if $page.route.id?.startsWith('/connections')}
             <Badge
               variant="outline"
               class={cn(
@@ -342,13 +336,13 @@ const DISABLE_TAB_INDEX = -1
             'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
           )}
           onSelect={() => {
-            goto(`/explorer/channels`)
+            goto(`/channels`)
             commandDialogOpen = false
           }}
         >
           <IbcChannelsIcon class="mr-2 size-5" />
           <span>IBC channels</span>
-          {#if $page.route.id?.startsWith('/explorer/channels')}
+          {#if $page.route.id?.startsWith('/channels')}
             <Badge
               variant="outline"
               class={cn(
@@ -369,13 +363,13 @@ const DISABLE_TAB_INDEX = -1
             'focus:ring-1 focus:ring-union-accent-300 focus:ring-opacity-75 focus:rounded-none my-1',
           )}
           onSelect={() => {
-            goto(`/explorer/index-status`)
+            goto(`/index-status`)
             commandDialogOpen = false
           }}
         >
           <HubbleStatusIcon class="mr-2 size-5" />
           <span>Hubble index status</span>
-          {#if $page.route.id?.startsWith('/explorer/index-status')}
+          {#if $page.route.id?.startsWith('/index-status')}
             <Badge
               variant="outline"
               class={cn(
@@ -387,11 +381,7 @@ const DISABLE_TAB_INDEX = -1
             </Badge>
           {/if}
         </Command.Item>
-
       </Command.Group>
-
-
-
     </Command.List>
   </Command.Root>
 </Command.Dialog>

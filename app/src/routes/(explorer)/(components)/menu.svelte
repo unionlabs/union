@@ -12,25 +12,21 @@ const selectedTable = derived(page, $page => $page.route.id?.split("/").at(2))
 let alwaysCollapsedWidth = 580
 </script>
 
-<nav
-  class="rounded-none flex flex-col items-start h-full dark:bg-background"
->
+<nav class="rounded-none flex flex-col items-start h-full dark:bg-background">
   {#each tableRoutes as { route, icon }}
     <Button
       id={route}
       title={route}
       variant="link"
-      href={`/explorer/${route}`}
+      href={`/${route}`}
       class={cn(
-        "mb-2 w-full flex justify-start gap-x-1",
-        $selectedTable === route
-          ? "bg-foreground text-primary-foreground"
-          : "bg-transparent"
+        'mb-2 w-full flex justify-start gap-x-1',
+        $selectedTable === route ? 'bg-foreground text-primary-foreground' : 'bg-transparent',
       )}
     >
       <span>[</span>
-      <svelte:component this={icon} class={"size-3.5"} />
-      <div>{route.replaceAll("-", " ")}</div>
+      <svelte:component this={icon} class={'size-3.5'} />
+      <div>{route.replaceAll('-', ' ')}</div>
       <span>]</span>
     </Button>
   {/each}

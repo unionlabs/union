@@ -506,7 +506,7 @@ const transfer = async () => {
       }
       return ts
     })
-    goto(`/explorer/transfers/${$transferState.transferHash}`)
+    goto(`/${$transferState.transferHash}`)
   }
 }
 onMount(() => {
