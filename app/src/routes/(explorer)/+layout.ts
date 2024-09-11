@@ -1,4 +1,3 @@
-
 import type { LayoutLoad } from "./$types.ts"
 import IndexIcon from "$lib/components/union-icons/color/icon-index-color.svelte"
 import PacketIcon from "$lib/components/union-icons/color/icon-packet-color.svelte"
