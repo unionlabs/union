@@ -379,11 +379,6 @@ let tracesSteps: Readable<Array<Array<Step>> | null> = derived(
 )
 </script>
 
-<!--
-<h1 class="font-bold text-md">Transfer for <span class="font-mono">{source}</span></h1>
-<a href="/explorer/transfers">Back to all transfers </a>
-!-->
-
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
   <div class="flex flex-col w-full items-center gap-6">
     {#each $processedTransfers as transfer, transferIndex}

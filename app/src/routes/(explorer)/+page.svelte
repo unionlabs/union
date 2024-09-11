@@ -10,7 +10,7 @@ $: shouldRedirect = innerWidth >= 640
 onMount(() => {
   if (!shouldRedirect) return
 
-  goto("/explorer/transfers", {
+  goto("/transfers", {
     keepFocus: true,
     replaceState: true,
     state: { from: $page.route.id }

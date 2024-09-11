@@ -4,7 +4,7 @@ import LoadingLogo from "./loading-logo.svelte"
 import ExplorerPagination from "./explorer-pagination.svelte"
 import type { Readable } from "svelte/store"
 import type { ColumnDef } from "@tanstack/svelte-table"
-import Table from "../../routes/explorer/(components)/table.svelte"
+import Table from "../../routes/(explorer)/(components)/table.svelte"
 
 type DataRow = $$Generic
 
