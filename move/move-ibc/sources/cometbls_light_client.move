@@ -7,7 +7,7 @@ module IBC::LightClient {
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
-    // use IBC::ics23;
+    use IBC::ics23;
     use IBC::bcs_utils;
     use IBC::groth16_verifier::{Self, ZKP};
 
@@ -97,50 +97,50 @@ module IBC::LightClient {
     }
 
     public fun verify_header(
-        _header: &Header,
-        _state: &State,
-        _consensus_state: &ConsensusState
+        header: &Header,
+        state: &State,
+        consensus_state: &ConsensusState
     ): u64 {
-        // if (consensus_state.timestamp == 0) {
-        //     return 1
-        // };
+        if (consensus_state.timestamp == 0) {
+            return 1
+        };
 
-        // let untrusted_height_number = header.signed_header.height;
-        // let trusted_height_number = height::get_revision_height(&header.trusted_height);
+        let untrusted_height_number = header.signed_header.height;
+        let trusted_height_number = height::get_revision_height(&header.trusted_height);
 
-        // if (untrusted_height_number <= trusted_height_number) {
-        //     return 1
-        // };
+        if (untrusted_height_number <= trusted_height_number) {
+            return 1
+        };
 
-        // let trusted_timestamp = consensus_state.timestamp;
-        // let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
-        // if (untrusted_timestamp <= trusted_timestamp) {
-        //     return 1  
-        // };
+        let trusted_timestamp = consensus_state.timestamp;
+        let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
+        if (untrusted_timestamp <= trusted_timestamp) {
+            return 1  
+        };
 
-        // let current_time = timestamp::now_seconds() * 1_000_000_000;
-        // if (untrusted_timestamp> (current_time + state.client_state.trusting_period)) {
-        //     return 1  
-        // };
+        let current_time = timestamp::now_seconds() * 1_000_000_000;
+        if (untrusted_timestamp> (current_time + state.client_state.trusting_period)) {
+            return 1  
+        };
 
-        // if (untrusted_timestamp >= current_time + state.client_state.max_clock_drift) {
-        //     return 1  
-        // };
+        if (untrusted_timestamp >= current_time + state.client_state.max_clock_drift) {
+            return 1  
+        };
 
-        // if (untrusted_height_number == trusted_height_number + 1) {
-        //     if (header.signed_header.validators_hash != consensus_state.next_validators_hash) {
-        //         return 1
-        //     };
-        // };
+        if (untrusted_height_number == trusted_height_number + 1) {
+            if (header.signed_header.validators_hash != consensus_state.next_validators_hash) {
+                return 1
+            };
+        };
 
-        // if (groth16_verifier::verify_zkp(
-        //     &state.client_state.chain_id,
-        //     &consensus_state.next_validators_hash,
-        //     light_header_as_input_hash(&header.signed_header),
-        //     &header.zero_knowledge_proof,
-        // )) {
-        //     return 1
-        // };
+        if (!groth16_verifier::verify_zkp(
+            &state.client_state.chain_id,
+            &consensus_state.next_validators_hash,
+            light_header_as_input_hash(&header.signed_header),
+            &header.zero_knowledge_proof,
+        )) {
+            return 1
+        };
 
         0
     }
@@ -194,23 +194,22 @@ module IBC::LightClient {
     }
 
     public fun verify_membership(
-        _client_id: String,
-        _height: height::Height,
-        _proof: vector<u8>,
-        _prefix: vector<u8>,
-        _path: vector<u8>,
-        _value: vector<u8>, 
-    ): u64 /* acquires State */ {
-        // let consensus_state = smart_table::borrow(&borrow_global<State>(get_client_address(&client_id)).consensus_states, height);
+        client_id: String,
+        height: height::Height,
+        proof: vector<u8>,
+        prefix: vector<u8>,
+        path: vector<u8>,
+        value: vector<u8>, 
+    ): u64 acquires State {
+        let consensus_state = smart_table::borrow(&borrow_global<State>(get_client_address(&client_id)).consensus_states, height);
 
-        // ics23::verify_membership(
-        //     from_bcs::from_bytes<ics23::MembershipProof>(proof),
-        //     consensus_state.app_hash.hash,
-        //     prefix,
-        //     path,
-        //     value
-        // )
-        0
+        ics23::verify_membership(
+            ics23::decode_membership_proof(proof),
+            consensus_state.app_hash.hash,
+            prefix,
+            path,
+            value
+        )
     }
 
     public fun verify_non_membership(
@@ -501,5 +500,12 @@ module IBC::LightClient {
         assert!(
             smart_table::borrow<height::Height, ConsensusState>(&saved_state.consensus_states, client_state.latest_height) == &consensus_state, 0
         );
+    }
+
+    #[test]
+    fun update_client_test() {
+        let update = x"7403000000000000d10be26600000000e989dd2e2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d94cffa3cf9b8a1df639216a30ff4634a3d956a52c31b380e93bafd72ac82458f01000000000000006503000000000000c0011c07eda947c3eafa3ff0cce379a1dd0c70b003a169cbf24d0fb6de1476be7c9573b86f87d074258f556ff4d164d1d37b4b681883356b64e87a747d104d979d1a29cc1879d591ca7ac1ed2aeec9c5e17e3d57bce1214755f3e286e94f78149089dbb1d51d447aa5260583ca09af1adcd9aa304504b3819c0e0dbad9a18016b303600b63f82ec18c9e9917eae498ca13728b9f0cfdcd1184f9118b19a0c300ac2e1cb618f8317deb8e5c6c7ea2336dbe2e88904a590bd193893028eb16b011a329";
+
+        let header = decode_header(update);
     }
 }
