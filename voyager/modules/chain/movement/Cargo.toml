@@ -33,3 +33,4 @@ unionlabs                 = { workspace = true }
 voyager-message           = { workspace = true }
 aptos-move-ibc.workspace = true
 reqwest = { workspace = true, features = ["json"] }
+sha2.workspace            = true

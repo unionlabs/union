@@ -3,6 +3,7 @@ module IBC::ibc {
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
     use aptos_std::table::{Self, Table};
+    use std::block;
     use std::event;
     use std::bcs;
     use std::object;
@@ -1472,24 +1473,25 @@ module IBC::ibc {
 
     // Sends a packet
     public fun send_packet(
-        caller: &signer,
+        ibc_app: &signer,
+        source_port: address,
         source_channel: String,
         timeout_height: height::Height,
         timeout_timestamp: u64,
         data: vector<u8>
     ): u64 acquires IBCStore {
-        let caller_addr = signer::address_of(caller);
-        let source_port = string_utils::to_string(&caller_addr);
-        // let source_port = &signer::address_of(borrow_global<SignerRef>(get_vault_addr()).signer_ref));
-
-        // Authenticate capability
-        if (!authenticate_capability(caller, source_port, source_channel)) {
+        if (object::create_object_address(&source_port, IBC_APP_SEED) != signer::address_of(ibc_app)) {
             abort E_UNAUTHORIZED
         };
 
+        let source_port = address_to_string(source_port);
+
         let channel = ensure_channel_state(source_port, source_channel);
 
-        let client_id = *vector::borrow(channel::connection_hops(&channel), 0);
+        let connection_id = *vector::borrow(channel::connection_hops(&channel), 0);
+
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let client_id = *connection_end::client_id(smart_table::borrow(&store.connections, connection_id));
 
         let latest_height = LightClient::latest_height(client_id);
     
@@ -1507,8 +1509,6 @@ module IBC::ibc {
         if (timeout_timestamp != 0 && latest_timestamp >= timeout_timestamp) {
             abort E_INVALID_TIMEOUT_TIMESTAMP
         };
-
-        let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let packet_sequence = from_bcs::to_u64(
             *table::borrow_with_default(
@@ -1584,12 +1584,13 @@ module IBC::ibc {
             abort E_INVALID_CONNECTION_STATE
         };
 
-        if (height::get_revision_height(&packet::timeout_height(&packet)) != 0 && (timestamp::now_seconds() * 1000000000 >= height::get_revision_height(&packet::timeout_height(&packet)))) {
+        if (height::get_revision_height(&packet::timeout_height(&packet)) != 0 
+            && (block::get_current_block_height() >= height::get_revision_height(&packet::timeout_height(&packet)))) {
             abort E_HEIGHT_TIMEOUT
         };
 
-        let current_timestamp = timestamp::now_seconds() * 1000000000; // 1e9
-        if (packet::timeout_timestamp (&packet)!= 0 && (current_timestamp >= packet::timeout_timestamp(&packet))) {
+        let current_timestamp = timestamp::now_seconds() * 1_000_000_000; // 1e9
+        if (packet::timeout_timestamp(&packet) != 0 && (current_timestamp >= packet::timeout_timestamp(&packet))) {
             abort E_TIMESTAMP_TIMEOUT
         };
 
@@ -1697,7 +1698,7 @@ module IBC::ibc {
         };
 
         let port_id = address_to_string(port_id);
-        if (port_id != *packet::destination_port(&packet)) {
+        if (port_id != *packet::source_port(&packet)) {
             abort E_UNAUTHORIZED
         };
 

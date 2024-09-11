@@ -33,13 +33,12 @@ module ping_pong::ibc {
 
     struct PingPongPacket has copy, store, drop {
         ping: bool,
-        counterparty_timeout: u64,
+        // counterparty_timeout: u64,
     }
 
     struct PingPong has key {
         channel_id: String,
-        revision_number: u64,
-        timeout: u64,
+        seconds_before_timeout: u64,
     }
 
     struct SignerRef has key {
@@ -54,8 +53,7 @@ module ping_pong::ibc {
 
         let pp = PingPong {
             channel_id: string::utf8(b""),
-            revision_number: 0,
-            timeout: 100000000, 
+            seconds_before_timeout: 100000, 
         };
         move_to(vault_signer, pp);
 
@@ -68,36 +66,46 @@ module ping_pong::ibc {
     public fun encode_packet(packet: &PingPongPacket): vector<u8> {
         let buf = vector::empty<u8>();
 
-        // Convert `ping` to u8 (1 if true, 0 if false) and append to buffer
-        let ping: u8 = if (packet.ping) { 1 } else { 0 };
-        vector::push_back(&mut buf, ping);
+        // 31 bytes of left padding
+        vector::append(&mut buf, x"00000000000000000000000000000000000000000000000000000000000000");
+        if (packet.ping) {
+            vector::push_back(&mut buf, 1);
+        } else {
+            vector::push_back(&mut buf, 0);
+        };
 
-        // Convert `counterparty_timeout` to bytes and append to buffer
-        let counterparty_timeout_bytes = bcs::to_bytes(&packet.counterparty_timeout);
-        vector::append(&mut buf, counterparty_timeout_bytes);
+        // // 24 bytes of left padding (u256 - u64)
+        // vector::append(&mut buf, x"000000000000000000000000000000000000000000000000");
+        // let counterparty_timeout_bytes = bcs::to_bytes(&packet.counterparty_timeout);
+        // // we want big-endian
+        // vector::reverse(&mut counterparty_timeout_bytes);
+        // vector::append(&mut buf, counterparty_timeout_bytes);
 
         buf
     }
 
 
     public fun decode_packet(data: &vector<u8>): PingPongPacket {
-        // Extract the `ping` value
-        let ping = *vector::borrow(data, 0) == 1;
+        // bool is left padded [0u8; 32], so we check the last element
+        let ping = *vector::borrow(data, 31) == 1;
 
-        // Extract the `counterparty_timeout` bytes and convert them back to `u64`
-        let counterparty_timeout_bytes = vector::slice(data, 1, 9);
-        let counterparty_timeout = from_bcs::to_u64(counterparty_timeout_bytes);
+        // // u64 is left padded [0u8; 32], rightmost 8 bytes are used to define u64
+        // let counterparty_timeout_bytes = vector::slice(data, 56, 64);
+        // // we parse it as little endian
+        // vector::reverse(&mut counterparty_timeout_bytes);
+        // let counterparty_timeout = from_bcs::to_u64(counterparty_timeout_bytes);
 
         PingPongPacket {
             ping,
-            counterparty_timeout,
+            // counterparty_timeout,
         }
     }
 
 
-    public fun initiate(
-        packet: PingPongPacket,
-        local_timeout: u64
+    public entry fun initiate(
+        ping: bool,
+        // counterparty_timeout: u64,
+        // local_timeout: u64
     ) acquires PingPong, SignerRef {
         let pp = borrow_global<PingPong>(get_vault_addr());
         if (string::length(&pp.channel_id) == 0) {
@@ -106,10 +114,14 @@ module ping_pong::ibc {
 
         ibc::send_packet(  
             &get_signer(),
+            get_self_address(),
             pp.channel_id,
             height::default(), // no height timeout
-            local_timeout,
-            encode_packet(&packet)
+            (std::timestamp::now_seconds() + pp.seconds_before_timeout) * 1_000_000_000,
+            encode_packet(&PingPongPacket {
+                ping,
+                // counterparty_timeout,
+            })
         );
     }
 
@@ -123,21 +135,19 @@ module ping_pong::ibc {
         packet_timeout_revision_num: u64,
         packet_timeout_revision_height: u64,
         packet_timeout_timestamp: u64,
-
         proof: vector<u8>,
-
         proof_height_revision_num: u64,
         proof_height_revision_height: u64,
     ) acquires PingPong, SignerRef {
         let pp_packet = decode_packet(&packet_data);
         event::emit(RingEvent { ping: pp_packet.ping });
 
-        let local_timeout = pp_packet.counterparty_timeout;
+        // let local_timeout = pp_packet.counterparty_timeout;
 
         pp_packet.ping = !pp_packet.ping;
-        pp_packet.counterparty_timeout = timestamp::now_seconds() + borrow_global<PingPong>(get_vault_addr()).timeout;
+        // pp_packet.counterparty_timeout = timestamp::now_seconds() * 1_000_000_000 + borrow_global<PingPong>(get_vault_addr()).timeout;
 
-        initiate(pp_packet, local_timeout);
+        initiate(pp_packet.ping);
 
         ibc::recv_packet(
             &get_signer(),
@@ -341,5 +351,13 @@ module ping_pong::ibc {
         std::debug::print(deployer);
         init_module(deployer);
         std::debug::print(&get_signer());
+    }
+
+    #[test(framework = @0x1)]
+    public fun test_decode(framework: &signer) {
+        std::timestamp::set_time_has_started_for_testing(framework);   
+        let encoded = x"000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000003e8";
+
+        let decoded = decode_packet(&encoded);
     }
 }

@@ -479,6 +479,27 @@ fn process_msgs<T: aptos_move_ibc::ibc::ClientExt>(
                     ),
                 ),
             ),
+            IbcMessage::AcknowledgePacket(data) => (
+                msg,
+                client.acknowledge_packet(
+                    data.packet.source_port.to_string().parse().unwrap(),
+                    (
+                        data.packet.sequence.get(),
+                        data.packet.source_port.to_string(),
+                        data.packet.source_channel.to_string(),
+                        data.packet.destination_port.to_string(),
+                        data.packet.destination_channel.to_string(),
+                        data.packet.data,
+                        data.packet.timeout_height.revision_number,
+                        data.packet.timeout_height.revision_height,
+                        data.packet.timeout_timestamp,
+                        data.acknowledgement,
+                        data.proof_acked,
+                        data.proof_height.revision_number,
+                        data.proof_height.revision_height,
+                    ),
+                ),
+            ),
             _ => todo!(),
         })
         .collect()

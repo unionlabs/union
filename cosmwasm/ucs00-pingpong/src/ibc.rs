@@ -98,7 +98,7 @@ fn do_ibc_packet_receive(
     packet: UCS00PingPong,
 ) -> Result<IbcReceiveResponse, ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    let ibc_packet = packet.reverse(&config, env.block.height, dest_channel_id);
+    let ibc_packet = packet.reverse(&config, env.block.time.nanos(), dest_channel_id);
     let res = IbcReceiveResponse::new()
         .set_ack(ack_success())
         .add_message(ibc_packet)

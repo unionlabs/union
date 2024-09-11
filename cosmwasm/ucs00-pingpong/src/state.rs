@@ -3,8 +3,7 @@ use cw_storage_plus::Item;
 
 #[cw_serde]
 pub struct Config {
-    pub number_of_block_before_pong_timeout: u64,
-    pub revision_number: u64,
+    pub seconds_before_timeout: u64,
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");

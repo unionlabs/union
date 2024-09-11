@@ -29,7 +29,7 @@ pub fn execute(
     match msg {
         ExecuteMsg::Initiate { channel_id, packet } => {
             let config = CONFIG.load(deps.storage)?;
-            let ibc_packet = packet.reverse(&config, env.block.height, channel_id);
+            let ibc_packet = packet.reverse(&config, env.block.time.nanos(), channel_id);
             Ok(Response::default().add_message(ibc_packet))
         }
     }

@@ -14,6 +14,7 @@ use queue_msg::{call, conc, data, noop, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
+use sha2::{Digest as _, Sha256};
 use tracing::{debug, error, instrument, warn};
 use unionlabs::{
     aptos::sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
@@ -24,21 +25,23 @@ use unionlabs::{
         commitment::merkle_prefix::MerklePrefix,
         connection::{self, connection_end::ConnectionEnd},
     },
-    ics24::{ClientStatePath, Path},
-    id::ClientId,
+    ics24::{ChannelEndPath, ClientStatePath, ConnectionPath, Path},
+    id::{ChannelId, ClientId, PortId},
     uint::U256,
-    ErrorReporter,
+    validated::ValidateT,
+    ErrorReporter, QueryHeight,
 };
 use voyager_message::{
     call::Call,
     data::{
-        ChainEvent, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
-        ClientInfo, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, Data, FullIbcEvent, UpdateClient,
+        AcknowledgePacket, ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm,
+        ChannelOpenInit, ChannelOpenTry, ClientInfo, ConnectionMetadata, ConnectionOpenAck,
+        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, Data,
+        FullIbcEvent, PacketMetadata, RecvPacket, SendPacket, UpdateClient, WriteAcknowledgement,
     },
     plugin::{ChainModuleServer, PluginInfo, PluginKind, PluginModuleServer, RawClientState},
     reth_ipc::client::IpcClientBuilder,
-    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
+    rpc::{json_rpc_error_to_rpc_error, missing_state, VoyagerRpcClient, VoyagerRpcClientExt as _},
     run_module_server, ChainId, ClientType, IbcInterface, VoyagerMessage,
 };
 
@@ -257,6 +260,113 @@ impl Module {
         debug!("height {height} is ledger version {ledger_version}");
 
         ledger_version
+    }
+
+    async fn make_packet_metadata(
+        &self,
+        event_height: Height,
+        self_port_id: PortId,
+        self_channel_id: ChannelId,
+    ) -> RpcResult<(
+        ChainId<'static>,
+        ClientInfo,
+        ChannelMetadata,
+        ChannelMetadata,
+        channel::order::Order,
+    )> {
+        let self_channel = self
+            .client
+            .query_ibc_state_typed(
+                self.chain_id.clone(),
+                event_height.into(),
+                ChannelEndPath {
+                    port_id: self_port_id.clone(),
+                    channel_id: self_channel_id.clone(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?
+            .state
+            .ok_or_else(missing_state("connection must exist", None))?;
+
+        let self_connection = self
+            .client
+            .query_ibc_state_typed(
+                self.chain_id.clone(),
+                event_height.into(),
+                ConnectionPath {
+                    connection_id: self_channel.connection_hops[0].clone(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let self_connection_state = self_connection
+            .state
+            .ok_or_else(missing_state("connection must exist", None))?;
+
+        let client_info = self
+            .client
+            .client_info(
+                self.chain_id.clone(),
+                self_connection_state.client_id.clone(),
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let client_meta = self
+            .client
+            .client_meta(
+                self.chain_id.clone(),
+                event_height.into(),
+                self_connection_state.client_id.clone(),
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let other_channel = self
+            .client
+            .query_ibc_state_typed(
+                client_meta.chain_id.clone(),
+                QueryHeight::Latest,
+                ChannelEndPath {
+                    port_id: self_channel.counterparty.port_id.clone(),
+                    channel_id: self_channel.counterparty.channel_id.parse().unwrap(),
+                },
+            )
+            .await
+            .map_err(json_rpc_error_to_rpc_error)?;
+
+        let other_channel_state = other_channel
+            .state
+            .ok_or_else(missing_state("channel must exist", None))?;
+
+        let source_channel = ChannelMetadata {
+            port_id: self_port_id.clone(),
+            channel_id: self_channel_id.clone(),
+            version: self_channel.version,
+            connection: ConnectionMetadata {
+                client_id: self_connection_state.client_id,
+                connection_id: self_connection.path.connection_id.clone(),
+            },
+        };
+        let destination_channel = ChannelMetadata {
+            port_id: other_channel.path.port_id.clone(),
+            channel_id: other_channel.path.channel_id.clone(),
+            version: other_channel_state.version,
+            connection: ConnectionMetadata {
+                client_id: self_connection_state.counterparty.client_id,
+                connection_id: self_connection_state.counterparty.connection_id.unwrap(),
+            },
+        };
+
+        Ok((
+            client_meta.chain_id,
+            client_info,
+            source_channel,
+            destination_channel,
+            self_channel.ordering,
+        ))
     }
 }
 
@@ -666,10 +776,138 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             client_id,
                         )
                     }
-                    events::IbcEvent::WriteAcknowledgement(_) => todo!(),
-                    events::IbcEvent::RecvPacket(_) => todo!(),
-                    events::IbcEvent::SendPacket(_) => todo!(),
-                    events::IbcEvent::AcknowledgePacket(_) => todo!(),
+                    events::IbcEvent::WriteAcknowledgement(e) => {
+                        let (
+                            _counterparty_chain_id,
+                            _client_info,
+                            destination_channel,
+                            source_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                self.make_height(height),
+                                e.packet.destination_port.parse().unwrap(),
+                                e.packet.destination_channel.parse().unwrap(),
+                            )
+                            .await?;
+
+                        let client_id = destination_channel.connection.client_id.clone();
+
+                        (
+                            WriteAcknowledgement {
+                                packet_data: e.packet.data.into(),
+                                packet_ack: e.acknowledgement.into(),
+                                packet: PacketMetadata {
+                                    sequence: (*e.packet.sequence.inner()).try_into().unwrap(),
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: ibc_height(e.packet.timeout_height),
+                                    timeout_timestamp: *e.packet.timeout_timestamp.inner(),
+                                },
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
+                    events::IbcEvent::RecvPacket(e) => {
+                        let (
+                            _counterparty_chain_id,
+                            _client_info,
+                            destination_channel,
+                            source_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                self.make_height(height),
+                                e.packet.destination_port.parse().unwrap(),
+                                e.packet.destination_channel.parse().unwrap(),
+                            )
+                            .await?;
+
+                        let client_id = destination_channel.connection.client_id.clone();
+
+                        (
+                            RecvPacket {
+                                packet_data: e.packet.data.into(),
+                                packet: PacketMetadata {
+                                    sequence: (*e.packet.sequence.inner()).try_into().unwrap(),
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: ibc_height(e.packet.timeout_height),
+                                    timeout_timestamp: *e.packet.timeout_timestamp.inner(),
+                                },
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
+                    events::IbcEvent::SendPacket(e) => {
+                        let (
+                            _counterparty_chain_id,
+                            _client_info,
+                            source_channel,
+                            destination_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                self.make_height(height),
+                                e.source_port.parse().unwrap(),
+                                e.source_channel.parse().unwrap(),
+                            )
+                            .await?;
+
+                        let client_id = source_channel.connection.client_id.clone();
+
+                        (
+                            SendPacket {
+                                packet_data: e.data.into(),
+                                packet: PacketMetadata {
+                                    sequence: (*e.sequence.inner()).try_into().unwrap(),
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: ibc_height(e.timeout_height),
+                                    timeout_timestamp: *e.timeout_timestamp.inner(),
+                                },
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
+                    events::IbcEvent::AcknowledgePacket(e) => {
+                        let (
+                            _counterparty_chain_id,
+                            _client_info,
+                            source_channel,
+                            destination_channel,
+                            channel_ordering,
+                        ) = self
+                            .make_packet_metadata(
+                                self.make_height(height),
+                                e.packet.source_port.parse().unwrap(),
+                                e.packet.source_channel.parse().unwrap(),
+                            )
+                            .await?;
+
+                        let client_id = source_channel.connection.client_id.clone();
+
+                        (
+                            AcknowledgePacket {
+                                packet: PacketMetadata {
+                                    sequence: (*e.packet.sequence.inner()).try_into().unwrap(),
+                                    source_channel,
+                                    destination_channel,
+                                    channel_ordering,
+                                    timeout_height: ibc_height(e.packet.timeout_height),
+                                    timeout_timestamp: *e.packet.timeout_timestamp.inner(),
+                                },
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
                     events::IbcEvent::TimeoutPacket(_) => todo!(),
                 };
 
@@ -849,13 +1087,32 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 .into_option()
                 .map(convert_channel),
             ),
-            Path::Commitment(_) => todo!(),
+            Path::Commitment(path) => {
+                let commitment = self
+                    .get_commitment(
+                        self.ibc_handler_address.into(),
+                        (Sha256::new()
+                            .chain_update(path.to_string().into_bytes())
+                            .finalize()
+                            .to_vec()
+                            .into(),),
+                        Some(ledger_version),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?;
+
+                into_value(H256::try_from(Into::<Vec<_>>::into(commitment)).unwrap())
+            }
             Path::Acknowledgement(_) => todo!(),
             Path::Receipt(path) => {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),
-                        (path.to_string().into_bytes().into(),),
+                        (Sha256::new()
+                            .chain_update(path.to_string().into_bytes())
+                            .finalize()
+                            .to_vec()
+                            .into(),),
                         Some(ledger_version),
                     )
                     .await
