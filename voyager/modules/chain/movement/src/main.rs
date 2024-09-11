@@ -26,6 +26,7 @@ use unionlabs::{
     },
     ics24::{ClientStatePath, Path},
     id::ClientId,
+    uint::U256,
     ErrorReporter,
 };
 use voyager_message::{
@@ -850,17 +851,22 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             ),
             Path::Commitment(_) => todo!(),
             Path::Acknowledgement(_) => todo!(),
-            Path::Receipt(path) => into_value(
-                self.get_channel(
-                    self.ibc_handler_address.into(),
-                    (path.port_id.to_string(), path.channel_id.to_string()),
-                    Some(ledger_version),
-                )
-                .await
-                .map_err(rest_error_to_rpc_error)?
-                .into_option()
-                .map(convert_channel),
-            ),
+            Path::Receipt(path) => {
+                let commitment = self
+                    .get_commitment(
+                        self.ibc_handler_address.into(),
+                        (path.to_string().into_bytes().into(),),
+                        Some(ledger_version),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?;
+
+                into_value(match &commitment.0[..] {
+                    [] => false,
+                    [1] => true,
+                    _ => panic!("not a bool??? {commitment}"),
+                })
+            }
             Path::NextSequenceSend(_) => todo!(),
             Path::NextSequenceRecv(_) => todo!(),
             Path::NextSequenceAck(_) => todo!(),
@@ -948,20 +954,23 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
             .await
             .unwrap();
 
-        let address = serde_json::from_value::<H256>(
-            self.aptos_client
-                .get_account_resource(
-                    vault_addr.into(),
-                    &format!("{}::ibc::IBCStore", self.ibc_handler_address),
-                )
-                .await
-                .unwrap()
-                .into_inner()
-                .unwrap()
-                .data["commitments"]["handle"]
-                .clone(),
-        )
-        .unwrap();
+        let address_str = self
+            .aptos_client
+            .get_account_resource(
+                vault_addr.into(),
+                &format!("{}::ibc::IBCStore", self.ibc_handler_address),
+            )
+            .await
+            .unwrap()
+            .into_inner()
+            .unwrap()
+            .data["commitments"]["handle"]
+            .clone()
+            .as_str()
+            .unwrap()
+            .to_owned();
+
+        let address = H256(U256::from_be_hex(address_str).unwrap().to_be_bytes());
 
         let proof: aptos_types::proof::SparseMerkleProof = client
             .get(format!(

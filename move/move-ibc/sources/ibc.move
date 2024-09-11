@@ -256,7 +256,7 @@ module IBC::ibc {
     }
 
     // Getter for Commitments
-    #[veiw]
+    #[view]
     public fun get_commitment(key: vector<u8>): vector<u8> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let commitment = table::borrow_with_default(&store.commitments, key, &vector::empty<u8>());
@@ -288,6 +288,7 @@ module IBC::ibc {
     }
 
     // Getter for nextChannelSequence in Commitments
+    #[view]
     public fun get_next_channel_sequence(): u64 acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
         let next_sequence_bytes = table::borrow_with_default(&store.commitments, b"nextChannelSequence", &bcs::to_bytes<u64>(&0));
@@ -1247,23 +1248,6 @@ module IBC::ibc {
         }
     }
 
-    // Getter function to retrieve a connection commitment by its ID
-    #[view]
-    public fun get_connection_commitment(connection_id: String): Option<vector<u8>> acquires IBCStore {
-        let store = borrow_global<IBCStore>(get_vault_addr());
-        let key = IBCCommitment::connection_commitment_key(connection_id);
-
-        
-        if (!table::contains(
-            &store.commitments,
-            key,
-        )) {
-            option::none<vector<u8>>()
-        } else {
-            option::some<vector<u8>>(*table::borrow(&store.commitments, key))
-        }
-    }
-
     #[view]
     public fun get_channel(port_id: String, channel_id: String): Option<Channel> acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
@@ -1277,20 +1261,6 @@ module IBC::ibc {
             option::some<Channel>(*smart_table::borrow(&store.channels, ChannelPort { port_id, channel_id }))
         }
     }
-
-    // #[view]
-    // public fun get_receipt(port_id: String, channel_id: String, sequence: u64): bool acquires IBCStore {
-    //     let store = borrow_global<IBCStore>(get_vault_addr());
-
-    //     if (!smart_table::contains(
-    //         &store.channels,
-    //         ChannelPort { port_id, channel_id }
-    //     )) {
-    //         option::none<Channel>()
-    //     } else {
-    //         option::some<Channel>(*smart_table::borrow(&store.channels, ChannelPort { port_id, channel_id }))
-    //     }
-    // }
 
     #[view]
     public fun get_next_sequence_recv(port_id: String, channel_id: String): u64 acquires IBCStore {

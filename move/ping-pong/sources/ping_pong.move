@@ -113,33 +113,53 @@ module ping_pong::ibc {
         );
     }
 
-    // public entry fun recv_packet(
-    //     channel_id: String,
-    //     packet: Packet,
-    //     proof: vector<u8>,
-    //     proof_height_revision_num: u64,
-    //     proof_height_revision_height: u64,
-    // ) acquires PingPong, SignerRef {
-    //     let pp_packet = decode_packet(packet::data(&packet));
-    //     event::emit(RingEvent { ping: pp_packet.ping });
+    public entry fun recv_packet(
+        packet_sequence: u64,
+        packet_source_port: String,
+        packet_source_channel: String,
+        packet_destination_port: String,
+        packet_destination_channel: String,
+        packet_data: vector<u8>,
+        packet_timeout_revision_num: u64,
+        packet_timeout_revision_height: u64,
+        packet_timeout_timestamp: u64,
 
-    //     let local_timeout = pp_packet.counterparty_timeout;
+        proof: vector<u8>,
 
-    //     pp_packet.ping = !pp_packet.ping;
-    //     pp_packet.counterparty_timeout = timestamp::now_seconds() + borrow_global<PingPong>(get_vault_addr()).timeout;
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
+    ) acquires PingPong, SignerRef {
+        let pp_packet = decode_packet(&packet_data);
+        event::emit(RingEvent { ping: pp_packet.ping });
 
-    //     initiate(pp_packet, local_timeout);
+        let local_timeout = pp_packet.counterparty_timeout;
 
-    //     ibc::recv_packet(
-    //         &get_signer(),
-    //         utf8(b""),
-    //         channel_id,
-    //         packet,
-    //         proof,
-    //         height::new(proof_height_revision_num, proof_height_revision_height),
-    //         vector[1]
-    //     );
-    // }
+        pp_packet.ping = !pp_packet.ping;
+        pp_packet.counterparty_timeout = timestamp::now_seconds() + borrow_global<PingPong>(get_vault_addr()).timeout;
+
+        initiate(pp_packet, local_timeout);
+
+        ibc::recv_packet(
+            &get_signer(),
+            get_self_address(),
+            packet::new(
+                packet_sequence,
+                packet_source_port,
+                packet_source_channel,
+                packet_destination_port,
+                packet_destination_channel,
+                packet_data,
+                height::new(
+                    packet_timeout_revision_num,
+                    packet_timeout_revision_height,
+                ),
+                packet_timeout_timestamp,
+            ),
+            proof,
+            height::new(proof_height_revision_num, proof_height_revision_height),
+            vector[1]
+        );
+    }
 
 
     public entry fun acknowledge_packet(

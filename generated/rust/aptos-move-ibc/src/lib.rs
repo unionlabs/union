@@ -529,6 +529,47 @@ pub mod ibc {
             skip_all,
             fields(%contract_address, ?ledger_version, %_0, )
         )]
+        async fn get_commitment(
+            &self,
+            contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
+            (_0,): (::move_bindgen::aptos_rest_client::aptos_api_types::HexEncodedBytes,),
+            ledger_version: Option<u64>,
+        ) -> ::core::result::Result<
+            ::move_bindgen::aptos_rest_client::aptos_api_types::HexEncodedBytes,
+            ::move_bindgen::aptos_rest_client::error::RestError,
+        > {
+            let response = self
+                .client()
+                .view(
+                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                        function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
+                            module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                                address: contract_address.into(),
+                                name: stringify!(ibc).parse().unwrap(),
+                            },
+                            name: stringify!(get_commitment).parse().unwrap(),
+                        },
+                        type_arguments: vec![],
+                        arguments: vec![
+                            ::move_bindgen::serde_json::to_value(_0)
+                            .unwrap(),
+                        ],
+                    },
+                    ledger_version,
+                )
+                .await?
+                .into_inner();
+            let value = ::move_bindgen::serde_json::Value::from(response);
+            ::move_bindgen::tracing::debug!(% value, "fetched response");
+            let ret = ::move_bindgen::serde_json::from_value::<(
+                ::move_bindgen::aptos_rest_client::aptos_api_types::HexEncodedBytes,
+            )>(value)?;
+            Ok(ret.0)
+        }
+        #[::move_bindgen::tracing::instrument(
+            skip_all,
+            fields(%contract_address, ?ledger_version, %_0, )
+        )]
         async fn get_connection(
             &self,
             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
@@ -832,6 +873,84 @@ pub mod ibc {
                     .unwrap(),
                     ::move_bindgen::bcs::to_bytes(
                         &::move_bindgen::IntoTypeTagged::into_type_tagged(_12).0,
+                    )
+                    .unwrap(),
+                ],
+            )
+        }
+        fn recv_packet(
+            &self,
+            contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
+            (_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11): (
+                impl ::move_bindgen::IntoTypeTagged<u64>,
+                impl ::move_bindgen::IntoTypeTagged<String>,
+                impl ::move_bindgen::IntoTypeTagged<String>,
+                impl ::move_bindgen::IntoTypeTagged<String>,
+                impl ::move_bindgen::IntoTypeTagged<String>,
+                impl ::move_bindgen::IntoTypeTagged<Vec<u8>>,
+                impl ::move_bindgen::IntoTypeTagged<u64>,
+                impl ::move_bindgen::IntoTypeTagged<u64>,
+                impl ::move_bindgen::IntoTypeTagged<u64>,
+                impl ::move_bindgen::IntoTypeTagged<Vec<u8>>,
+                impl ::move_bindgen::IntoTypeTagged<u64>,
+                impl ::move_bindgen::IntoTypeTagged<u64>,
+            ),
+        ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
+            ::move_bindgen::aptos_types::transaction::EntryFunction::new(
+                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                    address: contract_address.into(),
+                    name: stringify!(ibc).parse().unwrap(),
+                }
+                .into(),
+                stringify!(recv_packet).parse().unwrap(),
+                vec![],
+                vec![
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_0).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_1).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_2).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_3).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_4).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_5).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_6).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_7).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_8).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_9).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_10).0,
+                    )
+                    .unwrap(),
+                    ::move_bindgen::bcs::to_bytes(
+                        &::move_bindgen::IntoTypeTagged::into_type_tagged(_11).0,
                     )
                     .unwrap(),
                 ],
