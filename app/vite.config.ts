@@ -27,10 +27,11 @@ export default defineConfig(config => {
   if (INSPECT === "true") plugins.push(Inspect())
   if (VISUALIZE === "true") plugins.push(visualizer({ filename: `stats/${Date.now()}_stats.html` }))
 
+  const dropLogStatements = config.mode === "build" || NODE_ENV === "production"
   return {
     plugins,
     esbuild: {
-      drop: ["console", "debugger"]
+      drop: dropLogStatements ? ["console", "debugger"] : []
     },
     optimizeDeps: {
       exclude: ["@tanstack/svelte-query-devtools"]
