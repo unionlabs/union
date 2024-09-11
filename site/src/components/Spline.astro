@@ -15,9 +15,8 @@ export interface Props {
   loading?: SplineViewerProps.LoadingType
   eventsTarget?: SplineViewerProps.EventsTargetType
   loadingAnimType?: SplineViewerProps.PreloaderAnimType
-  className?: string
 }
-const { model, loading = "auto", eventsTarget = "global", className, ...restProps } = Astro.props
+const {model, loading = "auto", eventsTarget = "global", ...restProps} = Astro.props
 ---
 
 <script src="@splinetool/viewer"></script>
@@ -27,5 +26,6 @@ const { model, loading = "auto", eventsTarget = "global", className, ...restProp
           url={model}
           eventsTarget={eventsTarget}
           {...restProps}
-          class=`size-auto ${className}`></spline-viewer>
+          class="size-auto"></spline-viewer>
 </div>
+
