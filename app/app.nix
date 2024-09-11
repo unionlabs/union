@@ -12,7 +12,7 @@
           npmDepsHash = "sha256-5wMINt346EVAAPt32eRsFvF7m6rH6taeE55Z9tEme1A=";
           src = ./.;
           sourceRoot = "app";
-          npmFlags = [ "--legacy-peer-deps" ];
+          npmFlags = [ "--legacy-peer-deps" "--ignore-scripts" ];
           pname = packageJSON.name;
           version = packageJSON.version;
           nativeBuildInputs = combinedDeps;
