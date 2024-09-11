@@ -17,6 +17,7 @@ module UCS01::Relay {
     use std::vector;
     use aptos_framework::coin;
     use UCS01::fa_coin;
+    use UCS01::EthABI;
 
     const ASSET_SYMBOL: vector<u8> = b"FA";
     // Constants
@@ -357,7 +358,7 @@ module UCS01::Relay {
         timeout_timestamp: u64,
     ) acquires RelayStore, SignerRef {
         // Decode the packet data
-        let relay_packet = decode_packet(&data);
+        let relay_packet = decode_packet(data);
 
         // Call the refund_tokens function to refund the sender
         refund_tokens(sequence, source_channel, &relay_packet);
@@ -369,104 +370,155 @@ module UCS01::Relay {
     public fun encode_packet(packet: &RelayPacket): vector<u8> {
         let buf = vector::empty<u8>();
 
+        let unknown_data = bcs::to_bytes(&(32 as u256));
+        vector::reverse(&mut unknown_data);
+        vector::append(&mut buf, unknown_data);
+
         let sender_bytes = bcs::to_bytes(&packet.sender);
         vector::append(&mut buf, sender_bytes);
 
         let receiver_bytes = bcs::to_bytes(&packet.receiver);
         vector::append(&mut buf, receiver_bytes);
 
-        let num_tokens = vector::length(&packet.tokens);
-        let num_tokens_bytes = bcs::to_bytes(&(num_tokens as u256));
-        vector::reverse(&mut num_tokens_bytes);
-        std::debug::print(&num_tokens);
-        std::debug::print(&num_tokens_bytes);
-        vector::append(&mut buf, num_tokens_bytes);
+        let unknown_data = bcs::to_bytes(&(128 as u256));
+        vector::reverse(&mut unknown_data);
+        vector::append(&mut buf, unknown_data);
 
-        std::debug::print(&buf);
+        let num_tokens = vector::length(&packet.tokens);
+
+        let before_length = bcs::to_bytes(&((num_tokens * 160 + 160) as u256));
+        vector::reverse(&mut before_length);
+        vector::append(&mut buf, before_length);
+        let length_data = bcs::to_bytes(&(num_tokens as u256));
+        vector::reverse(&mut length_data);
+        vector::append(&mut buf, length_data);
+
+        if (num_tokens > 0 ){
+            let after_length = bcs::to_bytes(&((num_tokens * 32) as u256));
+            vector::reverse(&mut after_length);
+            vector::append(&mut buf, after_length);
+
+            if (num_tokens > 1) {
+                let starting_point = 192 + (num_tokens - 2) * 32;
+                let starting_point_bytes = bcs::to_bytes(&(starting_point as u256));
+                vector::reverse(&mut starting_point_bytes);
+                vector::append(&mut buf, starting_point_bytes);
+                let idx = 2;
+                while (num_tokens > idx) {
+                    starting_point = starting_point + 128;
+                    let starting_point_bytes = bcs::to_bytes(&(starting_point as u256));
+                    vector::reverse(&mut starting_point_bytes);
+                    vector::append(&mut buf, starting_point_bytes);
+                    idx = idx + 1;
+                };
+            };
+        };
 
         let i = 0;
         while (i < num_tokens) {
             let token = vector::borrow(&packet.tokens, i);
             
-            let denom_bytes = bcs::to_bytes(&token.denom);
-            let denom_len_bytes = bcs::to_bytes(&vector::length(&denom_bytes));
-            vector::append(&mut buf, denom_len_bytes);
-            vector::append(&mut buf, denom_bytes);
 
-            let amount_bytes = bcs::to_bytes(&token.amount);
+            let unknown_data = bcs::to_bytes(&(64 as u256));
+            vector::reverse(&mut unknown_data);
+            vector::append(&mut buf, unknown_data);
+
+            let amount_bytes = bcs::to_bytes(&(token.amount as u256));
+            vector::reverse(&mut amount_bytes);
             vector::append(&mut buf, amount_bytes);
+
+
+            EthABI::encode_string(&mut buf, token.denom);
+            // let denom_bytes = bcs::to_bytes(&token.denom);
+            // let denom_len_bytes = bcs::to_bytes(&(vector::length(&denom_bytes) as u256));
+            // vector::reverse(&mut denom_len_bytes);
+            // vector::append(&mut buf, denom_len_bytes);
+            // std::debug::print(&denom_len_bytes);
+            // std::debug::print(&denom_bytes);
+            // std::debug::print(&vector::length(&denom_bytes));
+            // vector::append(&mut buf, denom_bytes);
+
 
             i = i + 1;
         };
 
-        let extension_bytes = bcs::to_bytes(&packet.extension);
-        let extension_len_bytes = bcs::to_bytes(&vector::length(&extension_bytes));
-        vector::append(&mut buf, extension_len_bytes);
-        vector::append(&mut buf, extension_bytes);
+        EthABI::encode_string(&mut buf, packet.extension);
+        // let extension_bytes = bcs::to_bytes(&packet.extension);
+        // let extension_len_bytes = bcs::to_bytes(&(vector::length(&extension_bytes) as u256));
+        // vector::reverse(&mut extension_len_bytes);
+        // vector::append(&mut buf, extension_len_bytes);
+        // vector::append(&mut buf, extension_bytes);
 
         buf
     }
 
-    public fun decode_packet(data: &vector<u8>): RelayPacket {
-        let offset = 0;
+    public fun decode_packet(buf: vector<u8>): RelayPacket {
+        let index = 0;
 
-        // Decode sender address (address size is 32 bytes)
-        let sender_bytes = vector::slice(data, offset, 32);
-        let sender: address = from_bcs::to_address(sender_bytes);
-        offset = offset + 32;
+        let unknown_data_32 = EthABI::decode_uint(buf, &mut index);
 
-        // Decode receiver address (address size is 32 bytes)
-        let receiver_bytes = vector::slice(data, offset, 32);
-        let receiver: address = from_bcs::to_address(receiver_bytes);
-        offset = offset + 32;
+        // Decoding sender address
+        let sender = EthABI::decode_address(buf, &mut index);
 
-        // Decode the number of tokens (u32 for simplicity)
-        let num_tokens_bytes = vector::slice(data, offset, 4);
-        let num_tokens: u32 = from_bcs::to_u32(num_tokens_bytes);
-        offset = offset + 4;
+        // Decoding receiver address
+        let receiver = EthABI::decode_address(buf, &mut index);
 
-        // Decode tokens
-        let tokens: vector<Token> = vector::empty<Token>();
+        // Decoding unknown data (128 as u256)
+        let unknown_data_128 = EthABI::decode_uint(buf, &mut index);
+
+        // Decoding the length of tokens (before length)
+        let before_length = EthABI::decode_uint(buf, &mut index);
+
+        // Decoding the number of tokens
+        let num_tokens = (EthABI::decode_uint(buf, &mut index) as u64);
+
+        // Decoding the token starting point and sequence
+        if (num_tokens > 0) {
+            let after_length = EthABI::decode_uint(buf, &mut index);
+            if (num_tokens > 1) {
+                let starting_point = EthABI::decode_uint(buf, &mut index);
+                let idx = 2;
+                while (num_tokens > idx) {
+                    let next_starting_point = EthABI::decode_uint(buf, &mut index);
+                    idx = idx + 1;
+                };
+            };
+        };
+
+        // Decoding the tokens
+        let tokens = vector::empty<Token>();
         let i = 0;
         while (i < num_tokens) {
-            // Decode token denom length (u32 for simplicity)
-            let denom_len_bytes = vector::slice(data, offset, 4);
-            let denom_len: u64 = from_bcs::to_u64(denom_len_bytes);
-            offset = offset + 4;
+            // Decoding unknown data (64 as u256)
+            let unknown_data_64 = EthABI::decode_uint(buf, &mut index);
 
-            // Decode token denom (String)
-            let denom_bytes = vector::slice(data, offset, denom_len);
-            let denom: String = from_bcs::to_string(denom_bytes);
-            offset = offset + denom_len;
+            // Decoding the amount of token
+            let amount = EthABI::decode_uint(buf, &mut index);
 
-            // Decode token amount (u64)
-            let amount_bytes = vector::slice(data, offset, 8);
-            let amount: u64 = from_bcs::to_u64(amount_bytes);
-            offset = offset + 8;
+            // Decoding the token denomination string
+            let denom = EthABI::decode_string(buf, &mut index);
 
-            // Push the decoded Token into the tokens vector
-            let token = Token { denom, amount };
+            let token = Token {
+                amount: (amount as u64),
+                denom: denom,
+            };
             vector::push_back(&mut tokens, token);
+
             i = i + 1;
         };
 
-        // Decode extension length (u32 for simplicity)
-        let extension_len_bytes = vector::slice(data, offset, 4);
-        let extension_len: u64 = from_bcs::to_u64(extension_len_bytes);
-        offset = offset + 4;
+        // Decoding the extension string
+        let extension = EthABI::decode_string(buf, &mut index);
 
-        // Decode extension (String)
-        let extension_bytes = vector::slice(data, offset, extension_len);
-        let extension: String = from_bcs::to_string(extension_bytes);
-
-        // Return the decoded RelayPacket
+        // Returning the decoded RelayPacket
         RelayPacket {
-            sender,
-            receiver,
-            tokens,
-            extension,
+            sender: sender,
+            receiver: receiver,
+            tokens: tokens,
+            extension: extension,
         }
     }
+
 
     /// Function to trim a prefix from the string if it starts with that prefix
     public fun trim_prefix(s: String, prefix: String): String {
@@ -493,7 +545,8 @@ module UCS01::Relay {
         destination_channel: String
     ) acquires RelayStore, SignerRef {
         // Decode the RelayPacket from the IBC packet data
-        let packet = decode_packet(IBC::packet::data(&ibc_packet));
+        let packet = decode_packet(*IBC::packet::data(&ibc_packet));
+
 
         // Create the denomination prefix based on source port and channel
         let prefix = make_denom_prefix(*IBC::packet::source_port(&ibc_packet), *IBC::packet::source_channel(&ibc_packet));
@@ -522,8 +575,10 @@ module UCS01::Relay {
                 // Trim the prefix from the denom to get the actual denom
                 let trimmed_denom = trim_prefix(denom_slice, prefix);
 
-                // Convert the trimmed denomination back to an address
-                let denom_address = from_bcs::to_address(*string::bytes(&trimmed_denom));
+                if(starts_with(trimmed_denom, string::utf8(b"@"))) {
+                    trimmed_denom = string::sub_string(&trimmed_denom, 1, 65);
+                };
+                let denom_address = from_bcs::to_address(hex_to_bytes(trimmed_denom));
 
                 // Decrease the outstanding amount of the token
                 decrease_outstanding(source_channel, denom_address, token.amount);
@@ -532,10 +587,11 @@ module UCS01::Relay {
                 primary_fungible_store::transfer(&get_ucs_signer(), get_metadata(denom_address), receiver, token.amount);
 
             } else {
+
                 // Token originated from the counterparty chain, we need to mint the amount
 
                 // Construct the foreign denomination using the source and destination channels
-                let foreign_denom = make_foreign_denom(
+                let denom = make_foreign_denom(
                     *IBC::packet::destination_port(&ibc_packet),
                     *IBC::packet::destination_channel(&ibc_packet),
                     token.denom
@@ -544,22 +600,36 @@ module UCS01::Relay {
                 // Create a DenomToAddressPair for the foreign denomination
                 let pair = DenomToAddressPair {
                     source_channel: *IBC::packet::source_channel(&ibc_packet),
-                    denom: foreign_denom,
+                    denom: denom,
                 };
-            
+                                
                 // Check if the denomination address exists in the store
                 let store = borrow_global_mut<RelayStore>(get_vault_addr());
                 let denom_address = *smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0);
 
 
                 if (denom_address == @0x0) {
+                                        
+                    // TODO CHANGE THOSE
+                    UCS01::fa_coin::initialize(
+                        &get_ucs_signer(),
+                        string::utf8(b"TODO"),
+                        string::utf8(b"TODO"),
+                        18,
+                        string::utf8(b"TODO"),
+                        string::utf8(b"TODO"),
+                        *string::bytes(&denom),
+                    );
+
+                    denom_address = UCS01::fa_coin::get_metadata_address(*string::bytes(&denom));
+
                     // If the address doesn't exist, mint a new token
                     // TODO: How??
                     // let denom_address = mint_new_token(foreign_denom);
 
                     let pair = DenomToAddressPair {
                         source_channel: *IBC::packet::source_channel(&ibc_packet),
-                        denom: foreign_denom,
+                        denom: denom,
                     };
                     smart_table::upsert(&mut store.denom_to_address, pair, denom_address);
 
@@ -568,19 +638,20 @@ module UCS01::Relay {
                         source_channel: destination_channel,
                         denom: denom_address,
                     };
-                    smart_table::upsert(&mut store.address_to_denom, pair, foreign_denom);
+                    smart_table::upsert(&mut store.address_to_denom, pair, denom);
 
                     // Emit the DenomCreated event
                     event::emit(DenomCreated {
                         packet_sequence: IBC::packet::sequence(&ibc_packet),
                         channel_id: *IBC::packet::source_channel(&ibc_packet),
-                        denom: foreign_denom,
+                        denom: denom,
                         token: denom_address,
                     });
                 };
 
                 // Mint tokens to the receiver's account
-                UCS01::fa_coin::mint(&get_ucs_signer(), receiver, token.amount);
+                let asset = get_metadata(denom_address);
+                UCS01::fa_coin::mint_with_metadata(&get_ucs_signer(), receiver, token.amount, asset);
             };
 
             // Emit the Received event
@@ -648,9 +719,9 @@ module UCS01::Relay {
             
 
             if (denom_address != @0x0) {
-                UCS01::fa_coin::mint(&get_ucs_signer(), user_to_refund, token_from_vec.amount);
+                let token = get_metadata(denom_address);
+                UCS01::fa_coin::mint_with_metadata(&get_ucs_signer(), user_to_refund, token_from_vec.amount, token);
             } else {
-                std::debug::print(&token_from_vec.denom);
                 let str_bytes = *string::bytes(&token_from_vec.denom);
                 let token_denom = token_from_vec.denom;
 
@@ -682,7 +753,7 @@ module UCS01::Relay {
     public fun recv_packet(
         packet: Packet,
     ) /*acquires RelayStore, SignerRef*/ {
-        let relay_packet = decode_packet(IBC::packet::data(&packet));
+        let relay_packet = decode_packet(*IBC::packet::data(&packet));
         // onRecvPacketProcessing(relay_packet, packet.source_channel, packet.destination_channel);
     }
 
@@ -697,7 +768,7 @@ module UCS01::Relay {
         };
 
         if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
-            let relay_packet = decode_packet(IBC::packet::data(&packet));
+            let relay_packet = decode_packet(*IBC::packet::data(&packet));
             refund_tokens(IBC::packet::sequence(&packet), *IBC::packet::source_channel(&packet), &relay_packet);
         };
     }
@@ -953,7 +1024,7 @@ module UCS01::Relay {
         initialize_store(admin);
 
         let source_channel = string::utf8(b"channel-1");
-        let denom = UCS01::fa_coin::get_metadata_address();
+        let denom = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
         let amount: u64 = 1000;
 
         // Upsert denom to address pair
@@ -974,13 +1045,14 @@ module UCS01::Relay {
             string::utf8(TEST_SYMBOL),
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT)
+            string::utf8(TEST_PROJECT),
+            TEST_SYMBOL
         );
 
-        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
         let asset = get_metadata(asset_addr);
         let bob_addr = signer::address_of(bob);
-        UCS01::fa_coin::mint(admin, bob_addr, amount);
+        UCS01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
 
         // Send tokens
         let result_address = send_token(bob, source_channel, asset_addr, amount);
@@ -1017,14 +1089,15 @@ module UCS01::Relay {
             string::utf8(TEST_SYMBOL),
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT)
+            string::utf8(TEST_PROJECT),
+            TEST_SYMBOL
         );
 
         
-        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
         let asset = get_metadata(asset_addr);
         let bob_addr = signer::address_of(bob);
-        UCS01::fa_coin::mint(admin, bob_addr, amount);
+        UCS01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
 
         // Send tokens
         let result_address = send_token(bob, source_channel, asset_addr, amount);
@@ -1055,11 +1128,12 @@ module UCS01::Relay {
             string::utf8(TEST_SYMBOL),
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT)
+            string::utf8(TEST_PROJECT),
+            TEST_SYMBOL
         );
 
         
-        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
         let asset = get_metadata(asset_addr);
 
         // Attempt to send zero amount
@@ -1072,21 +1146,46 @@ module UCS01::Relay {
             denom: string::utf8(b"denom"),
             amount: 1000,
         };
+        let token2 = Token {
+            denom: string::utf8(b"hebelelelele"),
+            amount: 3000,
+        };
+        let token3 = Token {
+            denom: string::utf8(b"weweweweewew"),
+            amount: 3,
+        };
         let tokens = vector::empty<Token>();
         vector::push_back(&mut tokens, token);
+        vector::push_back(&mut tokens, token2);
+        vector::push_back(&mut tokens, token3);
+
+        let sender = @0x1111111111111111111111111111111111111111;
+        let receiver = @0x0000000000000000000000000000000000000033;
+        let extension = string::utf8(b"extension");
         let packet = RelayPacket {
-            sender: @0x1111111111111111111111111111111111111111,
-            receiver: @0x0000000000000000000000000000000000000033,
+            sender: sender,
+            receiver: receiver,
             tokens: tokens,
-            extension: string::utf8(b"extension"),
+            extension: extension,
         };
         let encoded = encode_packet(&packet);
-        // let decoded = decode_packet(&encoded);
-        
-        // std::debug::print(&encoded);
-        // assert!(decoded.ping == packet.ping, 1);
-        // assert!(decoded.counterparty_timeout == packet.counterparty_timeout, 2);
+        let decoded = decode_packet(encoded);
+
+        assert!(decoded.sender == sender, 100);
+        assert!(decoded.receiver == receiver, 101);
+        assert!(decoded.extension == extension, 102);
+        let token = vector::borrow(&decoded.tokens, 0);
+        assert!(token.denom == string::utf8(b"denom"), 103);
+        assert!(token.amount == 1000, 104);
+        let token2 = vector::borrow(&decoded.tokens, 1);
+        assert!(token2.denom == string::utf8(b"hebelelelele"), 105);
+        assert!(token2.amount == 3000, 106);
+        let token3 = vector::borrow(&decoded.tokens, 2);
+        assert!(token3.denom == string::utf8(b"weweweweewew"), 107);
+        assert!(token3.amount == 3, 108);
     }
+
+
 
     #[test(admin = @UCS01, alice = @0x1234)]
     public fun test_refund_tokens(admin: &signer, alice: address) acquires RelayStore, SignerRef {
@@ -1104,10 +1203,11 @@ module UCS01::Relay {
             string::utf8(TEST_SYMBOL),
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT)
+            string::utf8(TEST_PROJECT),
+            TEST_SYMBOL
         );
 
-        let asset_addr = UCS01::fa_coin::get_metadata_address();
+        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
         let asset = get_metadata(asset_addr);
 
         // Step 3: Simulate sending tokens (for refund purposes)
@@ -1159,14 +1259,16 @@ module UCS01::Relay {
             string::utf8(TEST_SYMBOL),
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
-            string::utf8(TEST_PROJECT)
+            string::utf8(TEST_PROJECT),
+            TEST_SYMBOL
         );
+        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
 
-        UCS01::fa_coin::mint(token_owner, signer::address_of(token_owner), 1000);
-
-        let asset_addr = UCS01::fa_coin::get_metadata_address();
-        std::debug::print(&asset_addr);
         let asset = get_metadata(asset_addr);
+
+        UCS01::fa_coin::mint_with_metadata(token_owner, signer::address_of(token_owner), 1000, asset);
+
+        
 
         // Step 3: Simulate sending tokens (for refund purposes)
         let token = Token {
@@ -1198,52 +1300,278 @@ module UCS01::Relay {
     }
 
 
-    // #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
-    // public fun test_send_tokens(admin: &signer, alice: &signer, bob: address) acquires RelayStore {
-    //     initialize_store(admin);
+    #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
+    public fun test_on_recv_packet_processing_local_token(admin: &signer, alice: address, bob: address) acquires RelayStore, SignerRef {
+        // Step 1: Initialize the store
+        initialize_store(admin);
+        
+        // Step 2: Setup the initial mappings for local tokens
+        let source_channel = string::utf8(b"channel-1");
+        let destination_channel = string::utf8(b"dest-channel");
+        let port_id = string::utf8(b"port-1");
+        let local_token_address = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        
+        let token_owner = &get_ucs_signer();
 
-    //     let source_channel = string::utf8(b"channel-1");
-    //     let denom_list = vector::empty<address>();
-    //     let amount_list = vector::empty<u64>();
+        // Mint some tokens to simulate the token creation on this chain
+        UCS01::fa_coin::initialize(
+            token_owner,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT),
+            TEST_SYMBOL
+        );
 
-    //     UCS01::fa_coin::initialize(
-    //         admin,
-    //         string::utf8(TEST_NAME),
-    //         string::utf8(TEST_SYMBOL),
-    //         TEST_DECIMALS,
-    //         string::utf8(TEST_ICON),
-    //         string::utf8(TEST_PROJECT)
-    //     );
-    //     let asset_addr = UCS01::fa_coin::get_metadata_address();
-    //     UCS01::fa_coin::mint(admin, signer::address_of(alice), 1000);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
 
-    //     vector::push_back(&mut denom_list, asset_addr);
-    //     vector::push_back(&mut amount_list, 500);  // Send half of the minted amount
+        let asset = get_metadata(asset_addr);
+        // Step 3: Mint tokens to the relay module's account (escrow)
+        UCS01::fa_coin::mint_with_metadata(token_owner, signer::address_of(token_owner), 1000, asset);
+        increase_outstanding(source_channel, local_token_address, 1000);
 
-    //     let extension = string::utf8(b"optional-extension");
-    //     let timeout_height_number = 1;
-    //     let timeout_height_height = 100;
-    //     let timeout_timestamp = 100000;
+        // Step 4: Create the RelayPacket with a local token
+        let new_denom = make_denom_prefix(port_id, source_channel);
+        string::append(&mut new_denom, string_utils::to_string_with_canonical_addresses(&local_token_address));
+        let token = Token {
+            denom: new_denom,
+            amount: 500,
+        };
+        let tokens = vector::empty<Token>();
+        vector::push_back(&mut tokens, token);
 
-    //     send(
-    //         alice,
-    //         source_channel,
-    //         bob,
-    //         denom_list,
-    //         amount_list,
-    //         extension,
-    //         timeout_height_number,
-    //         timeout_height_height,
-    //         timeout_timestamp
-    //     );
+        let relay_packet = RelayPacket {
+            sender: alice,
+            receiver: bob,
+            tokens: tokens,
+            extension: string::utf8(b""),
+        };
 
-    //     let outstanding_balance = get_outstanding(source_channel, asset_addr);
-    //     assert!(outstanding_balance == 500, 100);  // Only 500 tokens were sent
+        // Step 5: Create the IBC packet
+        let ibc_packet = IBC::packet::new(
+            1,  // sequence
+            port_id,
+            source_channel,
+            port_id,
+            destination_channel,
+            encode_packet(&relay_packet),
+            height::new(1, 100),
+            1000000
+        );
 
-    //     let ucs01_balance = primary_fungible_store::balance(@UCS01, get_metadata(asset_addr));
-    //     assert!(ucs01_balance == 500, 101);  // 500 tokens should be transferred to UCS01
+        // Step 6: Process the IBC packet
+        on_recv_packet_processing(ibc_packet, source_channel, destination_channel);
 
-    //     let alice_balance = primary_fungible_store::balance(signer::address_of(alice), get_metadata(asset_addr));
-    //     assert!(alice_balance == 500, 102);  // Alice should have 500 tokens left after sending
+        // Step 7: Verify the token was transferred to Bob
+        let bob_balance = primary_fungible_store::balance(bob, get_metadata(local_token_address));
+        assert!(bob_balance == 500, 100); // Bob should have received the token
 
+        // Step 8: Verify the outstanding amount was decreased
+        let outstanding_balance = get_outstanding(source_channel, local_token_address);
+        assert!(outstanding_balance == 500, 101); // Outstanding should be reduced by 500
+    }
+    #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
+    public fun test_on_recv_packet_processing_foreign_token_denom_address_zero(admin: &signer, alice: address, bob: address) acquires RelayStore, SignerRef {
+        // Step 1: Initialize the store
+        initialize_store(admin);
+
+        // Step 2: Set up mappings and mint tokens on the counterparty chain
+        let source_channel = string::utf8(b"channel-1");
+        let destination_channel = string::utf8(b"dest-channel");
+        let port_id = string::utf8(b"port-1");
+
+        // Step 3: Create a RelayPacket with a foreign token denomination
+        let foreign_denom = string::utf8(b"foreign-token-denom");
+        let token = Token {
+            denom: foreign_denom,
+            amount: 500,
+        };
+        let tokens = vector::empty<Token>();
+        vector::push_back(&mut tokens, token);
+
+        let relay_packet = RelayPacket {
+            sender: alice,
+            receiver: bob,
+            tokens: tokens,
+            extension: string::utf8(b""),
+        };
+
+        // Step 4: Create the IBC packet
+        let ibc_packet = IBC::packet::new(
+            1,  // sequence
+            port_id,
+            source_channel,
+            port_id,
+            destination_channel,
+            encode_packet(&relay_packet),
+            height::new(1, 100),
+            1000000
+        );
+
+        // Step 5: Process the IBC packet (will enter the 'else' block since it's a foreign token)
+        on_recv_packet_processing(ibc_packet, source_channel, destination_channel);
+
+        // Step 6: Verify that a new denomination was created and minting occurred
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        // Construct the foreign denomination using the source and destination channels
+        let our_denom = make_foreign_denom(
+            port_id,
+            destination_channel,
+            foreign_denom
+        );
+        let denom_address = get_denom_address(source_channel, our_denom);
+        assert!(denom_address != @0x0, 100); // The new token address should have been created
+
+        // Step 7: Verify the token was minted to Bob's account
+        let bob_balance = primary_fungible_store::balance(bob, get_metadata(denom_address));
+        assert!(bob_balance == 500, 101); // Bob should have received the minted foreign token
+    }
+
+    #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
+    public fun test_on_recv_packet_processing_foreign_token_existing_denom_address(admin: &signer, alice: address, bob: address) acquires RelayStore, SignerRef {
+        // Step 1: Initialize the store
+        initialize_store(admin);
+
+        // Step 2: Set up mappings and mint tokens on the counterparty chain
+        let source_channel = string::utf8(b"channel-1");
+        let destination_channel = string::utf8(b"dest-channel");
+        let port_id = string::utf8(b"port-1");
+        let foreign_denom = string::utf8(b"foreign-token-denom");
+        let token_owner = &get_ucs_signer();
+
+        UCS01::fa_coin::initialize(
+            token_owner,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT),
+            TEST_SYMBOL
+        );
+        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset = get_metadata(asset_addr);
+
+        let new_denom = make_denom_prefix(port_id, destination_channel);
+        string::append(&mut new_denom, string_utils::to_string_with_canonical_addresses(&asset_addr));
+        // Step 3: Insert an existing foreign token address into the store
+        let existing_denom_address: address = @0x1;
+        let pair = DenomToAddressPair {
+            source_channel: source_channel,
+            denom: new_denom,
+        };
+            
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        smart_table::upsert(&mut store.denom_to_address, pair, asset_addr);
+
+        // Step 4: Create a RelayPacket with the foreign token denomination
+        let token = Token {
+            denom: string_utils::to_string_with_canonical_addresses(&asset_addr),
+            amount: 500,
+        };
+        let tokens = vector::empty<Token>();
+        vector::push_back(&mut tokens, token);
+
+        let relay_packet = RelayPacket {
+            sender: alice,
+            receiver: bob,
+            tokens: tokens,
+            extension: string::utf8(b""),
+        };
+
+        // Step 5: Create the IBC packet
+        let ibc_packet = IBC::packet::new(
+            1,  // sequence
+            port_id,
+            source_channel,
+            port_id,
+            destination_channel,
+            encode_packet(&relay_packet),
+            height::new(1, 100),
+            1000000
+        );
+
+        // Step 6: Process the IBC packet (will use the existing token address in the 'else' block)
+        on_recv_packet_processing(ibc_packet, source_channel, destination_channel);
+
+        // Step 7: Verify that the existing token address was used
+
+        let denom_address = get_denom_address(source_channel, new_denom);
+        assert!(denom_address == asset_addr, 100); // It should be the same as the existing address
+
+        // Step 8: Verify the token was minted to Bob's account
+        let bob_balance = primary_fungible_store::balance(bob, get_metadata(asset_addr));
+        assert!(bob_balance == 500, 101); // Bob should have received the minted foreign token
+    }
+
+
+    #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
+    #[expected_failure(abort_code = E_INVALID_AMOUNT)]
+    public fun test_on_recv_packet_processing_local_token_revert_amount_zero(admin: &signer, alice: address, bob: address) acquires RelayStore, SignerRef {
+        // Step 1: Initialize the store
+        initialize_store(admin);
+        
+        // Step 2: Setup the initial mappings for local tokens
+        let source_channel = string::utf8(b"channel-1");
+        let destination_channel = string::utf8(b"dest-channel");
+        let port_id = string::utf8(b"port-1");
+        let local_token_address = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        
+        // Mint some tokens to simulate the token creation on this chain
+        UCS01::fa_coin::initialize(
+            &get_ucs_signer(),
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT),
+            TEST_SYMBOL
+        );
+
+        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset = get_metadata(asset_addr);
+        // Step 3: Mint tokens to the relay module's account (escrow)
+        UCS01::fa_coin::mint_with_metadata(&get_ucs_signer(), @UCS01, 1000, asset);
+        increase_outstanding(source_channel, local_token_address, 1000);
+
+        // Step 4: Create the RelayPacket with a local token
+        let new_denom = make_denom_prefix(port_id, source_channel);
+        string::append(&mut new_denom, string_utils::to_string_with_canonical_addresses(&local_token_address));
+        let token = Token {
+            denom: new_denom,
+            amount: 0,
+        };
+        let tokens = vector::empty<Token>();
+        vector::push_back(&mut tokens, token);
+
+        let relay_packet = RelayPacket {
+            sender: alice,
+            receiver: bob,
+            tokens: tokens,
+            extension: string::utf8(b""),
+        };
+
+        // Step 5: Create the IBC packet
+        let ibc_packet = IBC::packet::new(
+            1,  // sequence
+            port_id,
+            source_channel,
+            port_id,
+            destination_channel,
+            encode_packet(&relay_packet),
+            height::new(1, 100),
+            1000000
+        );
+
+        // Step 6: Process the IBC packet
+        on_recv_packet_processing(ibc_packet, source_channel, destination_channel);
+
+        // Step 7: Verify the token was transferred to Bob
+        let bob_balance = primary_fungible_store::balance(bob, get_metadata(local_token_address));
+        assert!(bob_balance == 500, 100); // Bob should have received the token
+
+        // Step 8: Verify the outstanding amount was decreased
+        let outstanding_balance = get_outstanding(source_channel, local_token_address);
+        assert!(outstanding_balance == 500, 101); // Outstanding should be reduced by 500
+    }
 }
