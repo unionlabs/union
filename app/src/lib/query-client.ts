@@ -1,15 +1,17 @@
 import { toast } from "svelte-sonner"
 import { browser } from "$app/environment"
-import { PersistQueryClientProvider } from "@tanstack/svelte-query-persist-client"
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/svelte-query"
+
+const SECOND = 1_000
+const MINUTE = 60 * SECOND
+const HOUR = 60 * MINUTE
 
 export function createQueryClient() {
   const queryClient: QueryClient = new QueryClient({
     defaultOptions: {
       queries: {
         enabled: browser,
-        gcTime: 1000 * 60 * 60 * 24,
+        gcTime: HOUR * 1, // 1 hour
         refetchOnReconnect: () => !queryClient.isMutating()
       }
     },
@@ -34,15 +36,8 @@ export function createQueryClient() {
     })
   })
 
-  const localStoragePersister = createSyncStoragePersister({
-    key: "SVELTE_QUERY",
-    storage: typeof window !== "undefined" ? window.localStorage : undefined // Use local storage if in browser
-  })
-
   return {
     queryClient,
-    QueryClientProvider,
-    localStoragePersister,
-    PersistQueryClientProvider
+    QueryClientProvider
   }
 }
