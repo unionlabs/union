@@ -1,100 +1,85 @@
 <script lang="ts">
-  import { navigating } from '$app/stores'
-  import Connection from './connection.svelte'
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import * as Sheet from '$lib/components/ui/sheet'
-  import { Button } from '$lib/components/ui/button'
-  import * as Avatar from '$lib/components/ui/avatar'
-  import WalletIcon from 'virtual:icons/lucide/wallet'
-  import { sepoliaStore, evmWalletsInformation } from '$lib/wallet/evm/index.ts'
-  import { cosmosStore, cosmosWalletsInformation } from '$lib/wallet/cosmos/index.ts'
-  import { Switch } from '$lib/components/ui/switch'
-  import { Label } from '$lib/components/ui/label'
-  import { showUnsupported } from '$lib/stores/user.ts'
-  import Sun from 'virtual:icons/lucide/sun'
-  import Moon from 'virtual:icons/lucide/moon'
-  import { setMode } from 'mode-watcher'
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
-  import { crtEffectEnabled } from '$lib/stores/user'
-  // import {
-  //   ConnectButton,
-  //   useConnectModal,
-  // } from '@rainbow-me/rainbowkit'
-  import { hooks } from 'svelte-preprocess-react'
+import { navigating } from "$app/stores"
+import Connection from "./connection.svelte"
+import { cn } from "$lib/utilities/shadcn.ts"
+import * as Sheet from "$lib/components/ui/sheet"
+import { Button } from "$lib/components/ui/button"
+import * as Avatar from "$lib/components/ui/avatar"
+import WalletIcon from "virtual:icons/lucide/wallet"
+import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
+import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
+import { Switch } from "$lib/components/ui/switch"
+import { Label } from "$lib/components/ui/label"
+import { showUnsupported } from "$lib/stores/user.ts"
+import Sun from "virtual:icons/lucide/sun"
+import Moon from "virtual:icons/lucide/moon"
+import { setMode } from "mode-watcher"
+import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
+import { crtEffectEnabled } from "$lib/stores/user"
 
-  let buttonText: string
-  let connectedWallets = 0
+let buttonText: string
+let connectedWallets = 0
 
-  $: if (
-    $sepoliaStore.connectionStatus === 'connected' &&
-    $cosmosStore.connectionStatus === 'connected'
-  ) {
-    buttonText = 'Connected'
-    connectedWallets = 2
-  } else if (
-    $sepoliaStore.connectionStatus === 'connected' ||
-    $cosmosStore.connectionStatus === 'connected'
-  ) {
-    buttonText = 'Connected'
-    connectedWallets = 1
-  } else {
-    buttonText = 'Connect Wallet'
-    connectedWallets = 0
-  }
+$: if (
+  $sepoliaStore.connectionStatus === "connected" &&
+  $cosmosStore.connectionStatus === "connected"
+) {
+  buttonText = "Connected"
+  connectedWallets = 2
+} else if (
+  $sepoliaStore.connectionStatus === "connected" ||
+  $cosmosStore.connectionStatus === "connected"
+) {
+  buttonText = "Connected"
+  connectedWallets = 1
+} else {
+  buttonText = "Connect Wallet"
+  connectedWallets = 0
+}
 
-  let sheetOpen = false
-  $: if ($navigating) sheetOpen = false
-
-  // const connectModal = hooks(() => useConnectModal())
+let sheetOpen = false
+$: if ($navigating) sheetOpen = false
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
-  <!-- <div hidden>
-    <react:ConnectButton />
-  </div> -->
   <Sheet.Trigger asChild class="w-full" let:builder>
     <Button
       builders={[builder]}
       class={cn(
-        connectedWallets === 1 ? 'w-[75px]' : 'w-[50px]',
-        'space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto',
-        'hover:bg-cyan-300/90',
-        $sepoliaStore.connectionStatus === 'connected' &&
-          $cosmosStore.connectionStatus === 'connected',
+        connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
+        "space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto",
+        "hover:bg-cyan-300/90",
+        $sepoliaStore.connectionStatus === "connected" &&
+          $cosmosStore.connectionStatus === "connected",
       )}
-      on:click={() => {
-        (sheetOpen = !sheetOpen)
-        // if ($connectModal && $connectModal?.openConnectModal) {
-        //   $connectModal.openConnectModal()
-        // }
-      }}
+      on:click={() => (sheetOpen = !sheetOpen)}
       size="sm"
     >
       <WalletIcon class="size-6 text-black" />
       <span class="font-supermolot font-bold uppercase lg:block hidden">
         {buttonText}
       </span>
-      <span class={cn(connectedWallets === 1 ? 'font-supermolot font-bold uppercase' : 'hidden')}>
-        {connectedWallets === 1 ? '1/2' : ''}
+      <span class={cn(connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
+        {connectedWallets === 1 ? "1/2" : ""}
       </span>
     </Button>
   </Sheet.Trigger>
   <Sheet.Content
     class={cn(
-      'h-full border-solid border-left flex flex-col justify-start',
-      'min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px]',
-      'overflow-y-auto',
+      "h-full border-solid border-left flex flex-col justify-start",
+      "min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px]",
+      "overflow-y-auto",
     )}
   >
     <Sheet.Header>
       <Sheet.Title class="flex gap-4 items-center">
         <!-- Connect Wallet -->
         <Avatar.Root
-          class={cn('size-10', $sepoliaStore.connectionStatus !== 'connected' && 'hidden')}
+          class={cn("size-10", $sepoliaStore.connectionStatus !== "connected" && "hidden")}
         >
           <Avatar.Image
             alt="ethereum avatar"
-            src={`https://effigy.im/a/${$sepoliaStore.address || '0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd'}.png`}
+            src={`https://effigy.im/a/${$sepoliaStore.address || "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"}.png`}
           />
           <Avatar.Fallback>UN</Avatar.Fallback>
         </Avatar.Root>
@@ -103,11 +88,8 @@
         </h2>
       </Sheet.Title>
     </Sheet.Header>
-  <react:ConnectButton
-    label="Connect Wallet"
-    
-  />
-    <!-- <Connection
+    <react:ConnectButton label="Connect Wallet" />
+    <Connection
       address={$sepoliaStore.address}
       chain="evm"
       chainWalletsInformation={evmWalletsInformation}
@@ -116,7 +98,7 @@
       hoverState={$sepoliaStore.hoverState}
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
-    /> -->
+    />
     <Connection
       address={$cosmosStore.address}
       chain="cosmos"
@@ -155,15 +137,15 @@
         </DropdownMenu.Trigger>
         <DropdownMenu.Content class="w-fit rounded-none bg-secondary">
           <DropdownMenu.Group>
-            <DropdownMenu.Item on:click={() => setMode('system')} class="cursor-pointer"
-              >System</DropdownMenu.Item
-            >
-            <DropdownMenu.Item on:click={() => setMode('dark')} class="cursor-pointer"
-              >Dark</DropdownMenu.Item
-            >
-            <DropdownMenu.Item on:click={() => setMode('light')} class="cursor-pointer"
-              >Light</DropdownMenu.Item
-            >
+            <DropdownMenu.Item on:click={() => setMode("system")} class="cursor-pointer">
+              System
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => setMode("dark")} class="cursor-pointer">
+              Dark
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => setMode("light")} class="cursor-pointer">
+              Light
+            </DropdownMenu.Item>
           </DropdownMenu.Group>
         </DropdownMenu.Content>
       </DropdownMenu.Root>

@@ -9,11 +9,6 @@ import { copyTextAction } from "$lib/actions/copy.ts"
 import LoaderCircleIcon from "virtual:icons/lucide/loader-circle"
 import MetamaskMobileAlert from "$lib/components/connect/metamask-mobile-alert.svelte"
 import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
-  import {
-    ConnectButton,
-    useConnectModal,
-  } from '@rainbow-me/rainbowkit'
-  import { hooks } from 'svelte-preprocess-react'
 
 const OFFENDING_WALLET_ID = "io.metamask.mobile"
 

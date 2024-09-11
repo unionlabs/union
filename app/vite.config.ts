@@ -40,11 +40,7 @@ export default defineConfig(config => {
       drop: dropLogStatements ? ["console", "debugger"] : []
     },
     optimizeDeps: {
-      exclude: [
-        "@tanstack/svelte-query-devtools",
-        // "vite-plugin-node-polyfills/shims/global",
-        // "vite-plugin-node-polyfills/shims/process"
-      ]
+      exclude: ["@tanstack/svelte-query-devtools"]
     },
     server: {
       port: Number(PORT)

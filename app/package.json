@@ -30,7 +30,6 @@
     "@wagmi/core": "^2.13.4",
     "bits-ui": "^0.21.13",
     "cmdk-sv": "^0.0.18",
-    "connectkit": "^1.8.2",
     "gql.tada": "^1.8.7",
     "graphql-request": "7.1.0",
     "mode-watcher": "^0.4.1",

@@ -2,7 +2,7 @@ import path from "node:path"
 import { sveltePreprocess } from "svelte-preprocess"
 import adapterStatic from "@sveltejs/adapter-static"
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte"
-import svelteReactPreprocessor from "svelte-preprocess-react/preprocessReact"
+import svelteReactPreprocess from "svelte-preprocess-react/preprocessReact"
 
 /** @type {import('@sveltejs/kit').Config} */
 export default {
@@ -14,7 +14,7 @@ export default {
         configFilePath: "./postcss.config.cjs"
       }
     }),
-    svelteReactPreprocessor()
+    svelteReactPreprocess()
   ],
   vitePlugin: {
     experimental: {},

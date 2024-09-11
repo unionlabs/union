@@ -1,19 +1,18 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { cn } from '$lib/utilities/shadcn.ts'
-  import { ConnectKitButton } from 'connectkit'
-  import CmdK from '$lib/components/search/cmdk.svelte'
-  import { Badge } from '$lib/components/ui/badge/index.ts'
-  import Connect from '$lib/components/connect/connect.svelte'
-  import Button from '$lib/components/ui/button/button.svelte'
-  import { routes } from '$lib/components/navigation/index.ts'
+import { page } from "$app/stores"
+import { cn } from "$lib/utilities/shadcn.ts"
+import CmdK from "$lib/components/search/cmdk.svelte"
+import { Badge } from "$lib/components/ui/badge/index.ts"
+import Connect from "$lib/components/connect/connect.svelte"
+import Button from "$lib/components/ui/button/button.svelte"
+import { routes } from "$lib/components/navigation/index.ts"
 </script>
 
 <header
   class={cn(
-    'antialiased',
-    'bg-card flex justify-center border-b border-solid',
-    'dark:bg-muted p-2.5 min-w-full w-screen flex-row items-center z-10 pr-3.5',
+    "antialiased",
+    "bg-card flex justify-center border-b border-solid",
+    "dark:bg-muted p-2.5 min-w-full w-screen flex-row items-center z-10 pr-3.5",
   )}
 >
   <Button
@@ -28,24 +27,24 @@
     />
     <Badge class="mb-0.5 ml-1">Testnet</Badge>
   </Button>
-  <div class={cn('sm:max-w-sm max-w-[30rem] w-full self-center mx-auto pl-3.25')}>
+  <div class={cn("sm:max-w-sm max-w-[30rem] w-full self-center mx-auto pl-3.25")}>
     <CmdK />
   </div>
   <nav class="hidden md:flex items-center justify-end space-x-0 sm:gap-x-1 mx-1 pr-1">
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
-      {@const currentRoute = $page.route.id?.split('/')[1] === path.split('/').at(1)}
+      {@const currentRoute = $page.route.id?.split("/")[1] === path.split("/").at(1)}
       <Button
         size="sm"
         href={path}
         variant="link"
         class={cn(
           draft
-            ? 'hidden'
+            ? "hidden"
             : [
-                'h-10',
+                "h-10",
                 currentRoute
-                  ? 'bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground'
-                  : '',
+                  ? "bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground"
+                  : "",
               ],
         )}
       >
@@ -54,11 +53,6 @@
     {/each}
   </nav>
   <div class="hidden md:flex lg:w-full lg:max-w-min max-w-[10.5rem]">
-    <react:ConnectKitButton
-      debugMode={true}
-      showAvatar={true}
-      showBalance={false}
-      label="CONNECT WALLET"
-    />
+    <Connect />
   </div>
 </header>
