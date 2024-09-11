@@ -111,6 +111,7 @@ Kaylei
 Keplr
 Keybase
 Kubat
+LEQUAL
 LIBCLANG
 LIBVIPS
 Lahcen
@@ -785,6 +786,7 @@ logformat
 logline
 logtostderr
 longhash
+lowp
 lspec
 lucide
 mapstructure
@@ -797,6 +799,7 @@ maxpeers
 mdast
 mdformat
 mdsvex
+mediump
 merkle
 merkleize
 merklize
@@ -825,6 +828,7 @@ monniker
 monomorphized
 moreutils
 mosmo
+mousemove
 msgservice
 msvc
 muldefs

@@ -1,0 +1,324 @@
+---
+// WaveCubes.astro
+---
+
+<canvas id="waveCanvas" width="800" height="600"></canvas>
+
+<script>
+  import * as glMatrix from 'gl-matrix';
+
+  let canvas;
+  let mouseX = 0;
+  let mouseY = 0;
+
+  function initWebGL() {
+    canvas = document.getElementById('waveCanvas');
+    const gl = canvas.getContext('webgl');
+    if (!gl) {
+      console.error('WebGL not supported');
+      return;
+    }
+
+    // Vertex shader
+    const vsSource = `
+      attribute vec4 aVertexPosition;
+      attribute vec4 aVertexColor;
+      uniform mat4 uModelViewMatrix;
+      uniform mat4 uProjectionMatrix;
+      varying lowp vec4 vColor;
+      void main(void) {
+        gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+        vColor = aVertexColor;
+      }
+    `;
+
+    // Fragment shader
+    const fsSource = `
+      precision mediump float;
+      varying lowp vec4 vColor;
+      void main(void) {
+        gl_FragColor = vColor;
+      }
+    `;
+
+    // Initialize shaders
+    function initShaderProgram(gl, vsSource, fsSource) {
+      const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+      const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+      if (!vertexShader || !fragmentShader) {
+        return null;
+      }
+
+      const shaderProgram = gl.createProgram();
+      gl.attachShader(shaderProgram, vertexShader);
+      gl.attachShader(shaderProgram, fragmentShader);
+      gl.linkProgram(shaderProgram);
+
+      if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+        return null;
+      }
+
+      return shaderProgram;
+    }
+
+    function loadShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+
+      return shader;
+    }
+
+    const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+    if (!shaderProgram) {
+      console.error('Failed to initialize shader program');
+      return;
+    }
+
+    const programInfo = {
+      program: shaderProgram,
+      attribLocations: {
+        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+        vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
+      },
+      uniformLocations: {
+        projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+        modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      },
+    };
+
+    // Create cube geometry
+    function initBuffers(gl) {
+      const positions = [
+        // Front face
+        -0.5, -0.5,  0.5,
+        0.5, -0.5,  0.5,
+        0.5,  0.5,  0.5,
+        -0.5,  0.5,  0.5,
+        // Back face
+        -0.5, -0.5, -0.5,
+        -0.5,  0.5, -0.5,
+        0.5,  0.5, -0.5,
+        0.5, -0.5, -0.5,
+        // Top face
+        -0.5,  0.5, -0.5,
+        -0.5,  0.5,  0.5,
+        0.5,  0.5,  0.5,
+        0.5,  0.5, -0.5,
+        // Bottom face
+        -0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, -0.5,  0.5,
+        -0.5, -0.5,  0.5,
+        // Right face
+        0.5, -0.5, -0.5,
+        0.5,  0.5, -0.5,
+        0.5,  0.5,  0.5,
+        0.5, -0.5,  0.5,
+        // Left face
+        -0.5, -0.5, -0.5,
+        -0.5, -0.5,  0.5,
+        -0.5,  0.5,  0.5,
+        -0.5,  0.5, -0.5,
+      ];
+
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+      const faceColors = [
+        [0.71, 0.94, 0.99, 1.0],    // Front face
+        [0.0, 1.0, 0.0, 1.0],    // Back face
+        [0.37, 0.87, 0.99, 1.0], // Top face
+        [1.0, 1.0, 0.0, 1.0],    // Bottom face
+        [0.71, 0.94, 0.99, 1.0], // Right face
+        [0.86, 0.97, 1.0, 1.0],  // Left face
+      ];
+
+      let colors = [];
+
+      for (let j = 0; j < faceColors.length; ++j) {
+        const c = faceColors[j];
+        colors = colors.concat(c, c, c, c);
+      }
+
+      const colorBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+      const indices = [
+        0,  1,  2,      0,  2,  3,    // front
+        4,  5,  6,      4,  6,  7,    // back
+        8,  9,  10,     8,  10, 11,   // top
+        12, 13, 14,     12, 14, 15,   // bottom
+        16, 17, 18,     16, 18, 19,   // right
+        20, 21, 22,     20, 22, 23,   // left
+      ];
+
+      const indexBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+      return {
+        position: positionBuffer,
+        color: colorBuffer,
+        indices: indexBuffer,
+      };
+    }
+
+    const buffers = initBuffers(gl);
+
+    // Draw scene
+    function drawScene(gl, programInfo, buffers, cubePositions, deltaTime) {
+      gl.clearColor(0.0, 0.0, 0.0, 1.0);
+      gl.clearDepth(1.0);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+      const fieldOfView = 30 * Math.PI / 180;  // Changed from 45 to 30 degrees
+      const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+      const zNear = 0.1;
+      const zFar = 100.0;
+      const projectionMatrix = glMatrix.mat4.create();
+
+      glMatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+
+      const modelViewMatrix = glMatrix.mat4.create();
+
+      // Adjust camera position to zoom in
+      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 1, -15]);  // Changed from [0, -5, -30]
+      glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.1, [1, 0, 0]);
+      glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4 + mouseX * 0.1, [0, 1, 0]);
+
+      // Set up attribute buffers
+      {
+        const numComponents = 3;
+        const type = gl.FLOAT;
+        const normalize = false;
+        const stride = 0;
+        const offset = 0;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+        gl.vertexAttribPointer(
+          programInfo.attribLocations.vertexPosition,
+          numComponents,
+          type,
+          normalize,
+          stride,
+          offset
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+      }
+
+      {
+        const numComponents = 4;
+        const type = gl.FLOAT;
+        const normalize = false;
+        const stride = 0;
+        const offset = 0;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+        gl.vertexAttribPointer(
+          programInfo.attribLocations.vertexColor,
+          numComponents,
+          type,
+          normalize,
+          stride,
+          offset
+        );
+        gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
+      }
+
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+
+      gl.useProgram(programInfo.program);
+
+      gl.uniformMatrix4fv(
+        programInfo.uniformLocations.projectionMatrix,
+        false,
+        projectionMatrix
+      );
+
+      // Draw cubes
+      for (let i = 0; i < cubePositions.length; i++) {
+        const cubeMatrix = glMatrix.mat4.create();
+        glMatrix.mat4.translate(cubeMatrix, modelViewMatrix, cubePositions[i]);
+
+        // Apply wave motion
+        const waveOffset = Math.sin(cubePositions[i][0] * 0.5 + cubePositions[i][2] * 0.5 + deltaTime * 2) * 0.5;
+        glMatrix.mat4.translate(cubeMatrix, cubeMatrix, [0, waveOffset, 0]);
+
+        // Scale down the cubes
+        glMatrix.mat4.scale(cubeMatrix, cubeMatrix, [0.4, 0.4, 0.4]);
+
+        gl.uniformMatrix4fv(
+          programInfo.uniformLocations.modelViewMatrix,
+          false,
+          cubeMatrix
+        );
+
+        {
+          const vertexCount = 36;
+          const type = gl.UNSIGNED_SHORT;
+          const offset = 0;
+          gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+        }
+      }
+    }
+
+    // Initialize cube positions
+    const cubePositions = [];
+    for (let x = -10; x < 10; x++) {  // Changed to create 14 columns
+      for (let z = -10; z < 10; z++) {  // Changed to create 14 rows
+        cubePositions.push([x * 1.2, 0, z * 1.2]);
+      }
+    }
+
+    // Animation loop
+    let then = 0;
+
+    function render(now) {
+      now *= 0.001;  // convert to seconds
+      const deltaTime = now - then;
+      then = now;
+
+      drawScene(gl, programInfo, buffers, cubePositions, now);
+
+      requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+
+    // Update mouse position
+    function updateMousePosition(event) {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = (event.clientX - rect.left) / canvas.width * 2 - 1;
+      mouseY = -((event.clientY - rect.top) / canvas.height * 2 - 1);
+    }
+
+    canvas.addEventListener('mousemove', updateMousePosition);
+
+    // Cleanup function
+    return () => {
+      canvas.removeEventListener('mousemove', updateMousePosition);
+    };
+  }
+
+  // Initialize WebGL when the component mounts
+  document.addEventListener('DOMContentLoaded', initWebGL);
+</script>
+
+<style>
+    canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+</style>
