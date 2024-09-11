@@ -127,7 +127,7 @@ config.subscribe(
     return state.chainId
   },
   chainId => {
-    console.info("[config] chainId", chainId)
+    //
   }
 )
 
@@ -140,7 +140,6 @@ export function createSepoliaStore(
     connectedWallet: getAccount(config).connector?.id || "injected"
   }
 ) {
-  console.log("[sepoliaStore] previousState", previousState)
   const { subscribe, set, update } = writable(previousState)
   return {
     set,
