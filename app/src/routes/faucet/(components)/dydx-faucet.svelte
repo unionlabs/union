@@ -14,7 +14,7 @@ import { derived, writable, type Writable } from "svelte/store"
 import { dydxFaucetMutation } from "$lib/graphql/queries/faucet"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
 import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
-import { bech32ToBech32Address, isValidBech32Address } from "@union/client"
+import { bech32ToBech32Address, isValidBech32Address } from "@unionlabs/client"
 import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
 
 type DydxFaucetState = DiscriminatedUnion<
@@ -133,7 +133,7 @@ let dydxBalance = createQuery(
   class={cn(
     "w-full max-w-lg rounded-lg font-sans",
     "bg-[url('https://dydx.exchange/dots.svg')]",
-    "bg-[#181825] text-[#FFFFFF] dark:bg-[#2D2D44]/50 dark:text-[#FFFFFF]"
+    "bg-[#181825] text-[#FFFFFF] dark:bg-[#2D2D44]/50 dark:text-[#FFFFFF]",
   )}
 >
   <Card.Header>
@@ -149,12 +149,7 @@ let dydxBalance = createQuery(
         </a>
         Faucet
       </p>
-      <a
-        target="_blank"
-        class="mt-[4.5px]"
-        rel="noopener noreferrer"
-        href="https://dydx.exchange"
-      >
+      <a target="_blank" class="mt-[4.5px]" rel="noopener noreferrer" href="https://dydx.exchange">
         <img alt="" src="https://dydx.exchange/icon.svg" class="w-6" />
       </a>
     </Card.Title>
@@ -167,20 +162,14 @@ let dydxBalance = createQuery(
           rel="noopener noreferrer"
           href={`https://www.mintscan.io/dydx-testnet/tx/${$dydxFaucetState.message}`}
         >
-          <Truncate
-            class="underline"
-            value={$dydxFaucetState.message}
-            type="hash"
-          />
+          <Truncate class="underline" value={$dydxFaucetState.message} type="hash" />
         </a>
       </p>
     {:else if $dydxFaucetState.kind === "RESULT_ERR"}
       <p class="mb-4">
         {$dydxFaucetState.error}
       </p>
-      <Button on:click={() => dydxFaucetState.set({ kind: "IDLE" })}>
-        Retry
-      </Button>
+      <Button on:click={() => dydxFaucetState.set({ kind: "IDLE" })}>Retry</Button>
     {:else}
       <form
         action="?"
@@ -212,10 +201,9 @@ let dydxBalance = createQuery(
                   name="dydx-wallet-address"
                   class={cn(
                     "bg-[#2D2D44] text-[#ffffff] dark:bg-[#181825] dark:text-[#ffffff]",
-                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0"
+                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
                   )}
-                  pattern={createCosmosSdkAddressRegex({ prefix: "dydx" })
-                    .source}
+                  pattern={createCosmosSdkAddressRegex({ prefix: "dydx" }).source}
                 />
               </div>
               <div class="flex justify-between px-1 text-white">
@@ -237,7 +225,7 @@ let dydxBalance = createQuery(
         <div class="flex flex-row items-center gap-4">
           <Button
             type="submit"
-            on:click={(event) => {
+            on:click={event => {
               event.preventDefault()
               requestDydxFromFaucet()
             }}
@@ -245,7 +233,7 @@ let dydxBalance = createQuery(
               isValidBech32Address($dydxAddress) === false}
             class={cn(
               "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
-              "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]"
+              "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]",
             )}
           >
             Submit

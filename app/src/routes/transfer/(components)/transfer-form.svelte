@@ -1,12 +1,13 @@
 <script lang="ts">
 import {
+  type ChainId,
   createPfmMemo,
   type EvmChainId,
   createUnionClient,
   type CosmosChainId,
   evmChainFromChainId,
   bech32ToBech32Address
-} from "@union/client"
+} from "@unionlabs/client"
 import {
   http,
   custom,
@@ -40,7 +41,7 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { parseUnits, formatUnits, type HttpTransport } from "viem"
+import { parseUnits, formatUnits, type HttpTransport, getAddress } from "viem"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { userAddrCosmos, getCosmosOfflineSigner } from "$lib/wallet/cosmos"
@@ -297,7 +298,8 @@ const transfer = async () => {
           amount: parsedAmount,
           receiver: $receiver,
           denomAddress: $assetAddress,
-          destinationChainId: $toChain.chain_id
+          // TODO: verify chain id is correct
+          destinationChainId: $toChain.chain_id as ChainId
         })
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
@@ -358,8 +360,9 @@ const transfer = async () => {
         const approve = await unionClient.approveTransaction({
           amount: parsedAmount,
           receiver: $receiver,
-          denomAddress: $assetAddress,
-          destinationChainId: $toChain.chain_id
+          denomAddress: getAddress($assetAddress),
+          // TODO: verify chain id is correct
+          destinationChainId: $toChain.chain_id as ChainId
         })
 
         if (approve.isErr()) throw approve.error
@@ -418,8 +421,9 @@ const transfer = async () => {
           autoApprove: false,
           amount: parsedAmount,
           receiver: $receiver,
-          denomAddress: $assetAddress,
-          destinationChainId: $toChain.chain_id
+          denomAddress: getAddress($assetAddress),
+          // TODO: verify chain id is correct
+          destinationChainId: $toChain.chain_id as ChainId
         })
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash: transfer.value })
@@ -576,7 +580,7 @@ const stateToStatus = <K extends TransferState["kind"]>(
           : progressFormatter(state as Extract<TransferState, { kind: K }>)
 
 let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferState]) => {
-  if ($transferState.kind === "PRE_TRANSFER") return [] // don't generate steps before transfer is ready
+  if ($transferState.kind === "PRE_TRANSFER") return [] // don"t generate steps before transfer is ready
   if ($fromChain?.rpc_type === "evm") {
     // TODO: Refactor this by implementing Ord for transferState
     return [
@@ -599,7 +603,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         () => ({
           status: "IN_PROGRESS",
           title: `Switching to ${$fromChain.display_name}`,
-          description: `Click 'Approve' in wallet.`
+          description: `Click "Approve" in wallet.`
         })
       ),
       stateToStatus(
@@ -672,7 +676,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         () => ({
           status: "IN_PROGRESS",
           title: "Confirming your transfer",
-          description: `Click 'Confirm' in your wallet`
+          description: `Click "Confirm" in your wallet`
         })
       ),
       stateToStatus(
@@ -727,7 +731,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         () => ({
           status: "IN_PROGRESS",
           title: `Switching to ${$fromChain.display_name}`,
-          description: `Click 'Approve' in wallet.`
+          description: `Click "Approve" in wallet.`
         })
       ),
       stateToStatus(
@@ -744,7 +748,7 @@ let stepperSteps = derived([fromChain, transferState], ([$fromChain, $transferSt
         () => ({
           status: "IN_PROGRESS",
           title: "Confirming your transfer",
-          description: `Click 'Approve' in your wallet`
+          description: `Click "Approve" in your wallet`
         })
       ),
       stateToStatus(
@@ -787,27 +791,27 @@ const resetInput = () => {
 
 <div
   class={cn(
-    'size-full duration-1000 transition-colors dark:bg-muted',
-    $transferState.kind !== 'PRE_TRANSFER' ? 'bg-black/60' : '',
+    "size-full duration-1000 transition-colors dark:bg-muted",
+    $transferState.kind !== "PRE_TRANSFER" ? "bg-black/60" : "",
   )}
 ></div>
 
 <div class="cube-scene" id="scene">
   <div
-    class={cn('cube ', $transferState.kind !== 'PRE_TRANSFER' ? 'cube--flipped' : 'no-transition')}
+    class={cn("cube ", $transferState.kind !== "PRE_TRANSFER" ? "cube--flipped" : "no-transition")}
   >
     <div class="cube-right font-bold flex items-center justify-center text-xl font-supermolot">
       UNION TESTNET
     </div>
-    <Card.Root class={cn($transferState.kind === 'PRE_TRANSFER' ? 'no-transition' : 'cube-front')}>
+    <Card.Root class={cn($transferState.kind === "PRE_TRANSFER" ? "no-transition" : "cube-front")}>
       <Card.Header>
         <Card.Title>Transfer</Card.Title>
       </Card.Header>
-      <Card.Content class={cn('flex flex-col gap-4')}>
+      <Card.Content class={cn("flex flex-col gap-4")}>
         <section>
           <CardSectionHeading>From</CardSectionHeading>
           <ChainButton bind:dialogOpen={dialogOpenFromChain}>
-            {$fromChain?.display_name ?? 'Select chain'}
+            {$fromChain?.display_name ?? "Select chain"}
           </ChainButton>
           <div class="flex flex-col items-center pt-4 -mb-6">
             <Button on:click={swapChainsClick} size="icon" variant="outline">
@@ -819,7 +823,7 @@ const resetInput = () => {
             bind:dialogOpen={dialogOpenToChain}
             disabled={!($sendableBalances && $fromChain)}
           >
-            {$toChain?.display_name ?? 'Select chain'}
+            {$toChain?.display_name ?? "Select chain"}
           </ChainButton>
         </section>
         <section>
@@ -828,7 +832,7 @@ const resetInput = () => {
             {#if $sendableBalances === null}
               Could not load sendable balances for <b>{$fromChain?.display_name}</b>.
             {:else if $sendableBalances && $sendableBalances.length === 0}
-              You don't have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some
+              You don"t have sendable assets on <b>{$fromChain?.display_name}</b>. You can get some
               from <a class="underline font-bold" href="/faucet">the faucet</a>
             {:else}
               <Button
@@ -842,7 +846,7 @@ const resetInput = () => {
                       ? supportedAsset.display_symbol
                       : $assetSymbol
                         ? $assetSymbol
-                        : 'Select Asset',
+                        : "Select Asset",
                     12,
                   )}
                 </div>
@@ -853,7 +857,7 @@ const resetInput = () => {
           {:else}
             Select a chain to send from.
           {/if}
-          {#if $assetSymbol !== '' && $sendableBalances !== null && $asset?.address}
+          {#if $assetSymbol !== "" && $sendableBalances !== null && $asset?.address}
             <div class="mt-4 text-xs text-muted-foreground">
               <b>{truncate(supportedAsset ? supportedAsset?.display_symbol : $assetSymbol, 12)}</b>
               balance on
@@ -873,8 +877,8 @@ const resetInput = () => {
             inputmode="decimal"
             bind:value={amount}
             class={cn(
-              !balanceCoversAmount && amount ? 'border-red-500' : '',
-              'focus:ring-0 focus-visible:ring-0 disabled:bg-black/30',
+              !balanceCoversAmount && amount ? "border-red-500" : "",
+              "focus:ring-0 focus-visible:ring-0 disabled:bg-black/30",
             )}
             disabled={!$asset}
             maxlength={64}
@@ -895,7 +899,7 @@ const resetInput = () => {
                   autocorrect="off"
                   bind:value={address}
                   class="disabled:bg-black/30"
-                  disabled={inputState === 'locked'}
+                  disabled={inputState === "locked"}
                   id="address"
                   on:input={handleInput}
                   placeholder="Select chain"
@@ -932,7 +936,7 @@ const resetInput = () => {
             !balanceCoversAmount}
           on:click={async event => {
             event.preventDefault()
-            transferState.set({ kind: 'FLIPPING' })
+            transferState.set({ kind: "FLIPPING" })
             await sleep(1200)
             transfer()
           }}
@@ -943,12 +947,12 @@ const resetInput = () => {
       </Card.Footer>
     </Card.Root>
 
-    {#if $transferState.kind !== 'PRE_TRANSFER'}
-      <Card.Root class={cn('cube-back p-6')}>
+    {#if $transferState.kind !== "PRE_TRANSFER"}
+      <Card.Root class={cn("cube-back p-6")}>
         {#if $fromChain}
           <Stepper
             steps={stepperSteps}
-            on:cancel={() => transferState.set({ kind: 'PRE_TRANSFER' })}
+            on:cancel={() => transferState.set({ kind: "PRE_TRANSFER" })}
             onRetry={() => {
               transferState.update(ts => {
                 // @ts-ignore

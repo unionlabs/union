@@ -3,7 +3,7 @@ import { page } from "$app/stores"
 import { setContext } from "svelte"
 import { derived } from "svelte/store"
 import ChainsGate from "$lib/components/chains-gate.svelte"
-import { isValidEvmAddress, bech32AddressToHex, isValidBech32Address } from "@union/client"
+import { isValidEvmAddress, bech32AddressToHex, isValidBech32Address } from "@unionlabs/client"
 
 /**
  * TODO: instead of displaying data here, go to error page and display a proper error message
@@ -33,9 +33,9 @@ let addresses = derived(page, $page => {
 setContext<typeof addresses>("addresses", addresses)
 </script>
 
-<div class='pt-3'>
+<div class="pt-3">
   <ChainsGate let:chains>
-    {#if $addresses.find( address => chains.find( chain => address.address.startsWith(chain.addr_prefix) ) )}
+    {#if $addresses.find( address => chains.find( chain => address.address.startsWith(chain.addr_prefix), ), )}
       <slot />
     {:else}
       <p>Invalid address(es)</p>

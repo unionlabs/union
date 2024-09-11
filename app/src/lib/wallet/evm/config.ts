@@ -33,6 +33,8 @@ export type ConnectedWallet = Wallet & { status: "connected" }
 
 export type ConnectorType = "injected" | "walletConnect"
 
+const WALLETCONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"
+
 export const config = createConfig({
   chains,
   cacheTime: 4_000,

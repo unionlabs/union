@@ -1,4 +1,4 @@
-import { isValidBech32Address, isValidEvmAddress } from "@union/client"
+import { isValidBech32Address, isValidEvmAddress } from "@unionlabs/client"
 
 /**
  * what is this?

@@ -1,21 +1,21 @@
 <script lang="ts">
+import { setMode } from "mode-watcher"
 import { navigating } from "$app/stores"
+import Sun from "virtual:icons/lucide/sun"
+import Moon from "virtual:icons/lucide/moon"
 import Connection from "./connection.svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { Label } from "$lib/components/ui/label"
 import * as Sheet from "$lib/components/ui/sheet"
+import { Switch } from "$lib/components/ui/switch"
 import { Button } from "$lib/components/ui/button"
 import * as Avatar from "$lib/components/ui/avatar"
 import WalletIcon from "virtual:icons/lucide/wallet"
+import { showUnsupported } from "$lib/stores/user.ts"
+import { crtEffectEnabled } from "$lib/stores/user.ts"
+import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
-import { Switch } from "$lib/components/ui/switch"
-import { Label } from "$lib/components/ui/label"
-import { showUnsupported } from "$lib/stores/user.ts"
-import Sun from "virtual:icons/lucide/sun"
-import Moon from "virtual:icons/lucide/moon"
-import { setMode } from "mode-watcher"
-import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
-import { crtEffectEnabled } from "$lib/stores/user"
 
 let buttonText: string
 let connectedWallets = 0
@@ -88,7 +88,6 @@ $: if ($navigating) sheetOpen = false
         </h2>
       </Sheet.Title>
     </Sheet.Header>
-    <react:ConnectButton label="Connect Wallet" />
     <Connection
       address={$sepoliaStore.address}
       chain="evm"
