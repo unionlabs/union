@@ -43,7 +43,6 @@ let transfers = createQuery({
   }
 })
 
-$: console.log("transfers", $transfers)
 //@ts-ignore
 let processedTransfers = derived(
   [transfers, submittedTransfers],

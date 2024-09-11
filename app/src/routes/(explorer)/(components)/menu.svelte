@@ -1,9 +1,9 @@
 <script lang="ts">
 import { page } from "$app/stores"
+import { derived } from "svelte/store"
 import { cn } from "$lib/utilities/shadcn.ts"
 import type { LayoutData } from "../$types.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
-import { derived } from "svelte/store"
 
 export let tableRoutes: LayoutData["tables"]
 
@@ -13,7 +13,7 @@ let alwaysCollapsedWidth = 580
 </script>
 
 <nav class="rounded-none flex flex-col items-start h-full dark:bg-background">
-  {#each tableRoutes as { route, icon }}
+  {#each tableRoutes as { name, route, icon }}
     <Button
       id={route}
       title={route}
@@ -26,7 +26,7 @@ let alwaysCollapsedWidth = 580
     >
       <span>[</span>
       <svelte:component this={icon} class={'size-3.5'} />
-      <div>{route.replaceAll('-', ' ')}</div>
+      <div>{name}</div>
       <span>]</span>
     </Button>
   {/each}
