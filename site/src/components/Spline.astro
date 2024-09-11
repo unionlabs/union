@@ -22,7 +22,10 @@ const { model, loading = "auto", eventsTarget = "global", className, ...restProp
 
 <script src="@splinetool/viewer"></script>
 
-<spline-viewer
-  url={model}
-  eventsTarget={eventsTarget}
-></spline-viewer>
+<div class="w-full aspect-h-1 aspect-w-1 max-w-full overflow-hidden rounded-t">
+  <spline-viewer
+          url={model}
+          eventsTarget={eventsTarget}
+          {...restProps}
+          class=`size-auto ${className}`></spline-viewer>
+</div>

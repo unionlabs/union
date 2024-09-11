@@ -3,8 +3,8 @@ import { Image } from "astro:assets"
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
-import trails from "#/assets/images/spline-holders/union-trails.png"
 import ContainedSection from "../../ContainedSection.astro"
+import Spline from "../../Spline.astro";
 ---
 
 <ContainedSection>
@@ -16,6 +16,7 @@ import ContainedSection from "../../ContainedSection.astro"
       </div>
       <ButtonA>LEARN MORE >>></ButtonA>
     </div>
-    <Image src={trails} alt="Wave Collateral" class="h-auto object-contain"></Image>
+    <Spline model="https://prod.spline.design/4sixqZIrgH3JFR5H/scene.splinecode"/>
+
   </div>
 </ContainedSection>
