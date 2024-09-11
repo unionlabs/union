@@ -1,47 +1,57 @@
 <script lang="ts">
-import { navigating } from "$app/stores"
-import Connection from "./connection.svelte"
-import { cn } from "$lib/utilities/shadcn.ts"
-import * as Sheet from "$lib/components/ui/sheet"
-import { Button } from "$lib/components/ui/button"
-import * as Avatar from "$lib/components/ui/avatar"
-import WalletIcon from "virtual:icons/lucide/wallet"
-import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
-import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
-import { Switch } from "$lib/components/ui/switch"
-import { Label } from "$lib/components/ui/label"
-import { showUnsupported } from "$lib/stores/user.ts"
-import Sun from "virtual:icons/lucide/sun"
-import Moon from "virtual:icons/lucide/moon"
-import { setMode } from "mode-watcher"
-import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
-import { crtEffectEnabled } from "$lib/stores/user"
+  import { navigating } from '$app/stores'
+  import Connection from './connection.svelte'
+  import { cn } from '$lib/utilities/shadcn.ts'
+  import * as Sheet from '$lib/components/ui/sheet'
+  import { Button } from '$lib/components/ui/button'
+  import * as Avatar from '$lib/components/ui/avatar'
+  import WalletIcon from 'virtual:icons/lucide/wallet'
+  import { sepoliaStore, evmWalletsInformation } from '$lib/wallet/evm/index.ts'
+  import { cosmosStore, cosmosWalletsInformation } from '$lib/wallet/cosmos/index.ts'
+  import { Switch } from '$lib/components/ui/switch'
+  import { Label } from '$lib/components/ui/label'
+  import { showUnsupported } from '$lib/stores/user.ts'
+  import Sun from 'virtual:icons/lucide/sun'
+  import Moon from 'virtual:icons/lucide/moon'
+  import { setMode } from 'mode-watcher'
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
+  import { crtEffectEnabled } from '$lib/stores/user'
+  // import {
+  //   ConnectButton,
+  //   useConnectModal,
+  // } from '@rainbow-me/rainbowkit'
+  import { hooks } from 'svelte-preprocess-react'
 
-let buttonText: string
-let connectedWallets = 0
+  let buttonText: string
+  let connectedWallets = 0
 
-$: if (
-  $sepoliaStore.connectionStatus === "connected" &&
-  $cosmosStore.connectionStatus === "connected"
-) {
-  buttonText = "Connected"
-  connectedWallets = 2
-} else if (
-  $sepoliaStore.connectionStatus === "connected" ||
-  $cosmosStore.connectionStatus === "connected"
-) {
-  buttonText = "Connected"
-  connectedWallets = 1
-} else {
-  buttonText = "Connect Wallet"
-  connectedWallets = 0
-}
+  $: if (
+    $sepoliaStore.connectionStatus === 'connected' &&
+    $cosmosStore.connectionStatus === 'connected'
+  ) {
+    buttonText = 'Connected'
+    connectedWallets = 2
+  } else if (
+    $sepoliaStore.connectionStatus === 'connected' ||
+    $cosmosStore.connectionStatus === 'connected'
+  ) {
+    buttonText = 'Connected'
+    connectedWallets = 1
+  } else {
+    buttonText = 'Connect Wallet'
+    connectedWallets = 0
+  }
 
-let sheetOpen = false
-$: if ($navigating) sheetOpen = false
+  let sheetOpen = false
+  $: if ($navigating) sheetOpen = false
+
+  // const connectModal = hooks(() => useConnectModal())
 </script>
 
 <Sheet.Root bind:open={sheetOpen}>
+  <!-- <div hidden>
+    <react:ConnectButton />
+  </div> -->
   <Sheet.Trigger asChild class="w-full" let:builder>
     <Button
       builders={[builder]}
@@ -52,7 +62,12 @@ $: if ($navigating) sheetOpen = false
         $sepoliaStore.connectionStatus === 'connected' &&
           $cosmosStore.connectionStatus === 'connected',
       )}
-      on:click={() => (sheetOpen = !sheetOpen)}
+      on:click={() => {
+        (sheetOpen = !sheetOpen)
+        // if ($connectModal && $connectModal?.openConnectModal) {
+        //   $connectModal.openConnectModal()
+        // }
+      }}
       size="sm"
     >
       <WalletIcon class="size-6 text-black" />
@@ -88,7 +103,11 @@ $: if ($navigating) sheetOpen = false
         </h2>
       </Sheet.Title>
     </Sheet.Header>
-    <Connection
+  <react:ConnectButton
+    label="Connect Wallet"
+    
+  />
+    <!-- <Connection
       address={$sepoliaStore.address}
       chain="evm"
       chainWalletsInformation={evmWalletsInformation}
@@ -97,7 +116,7 @@ $: if ($navigating) sheetOpen = false
       hoverState={$sepoliaStore.hoverState}
       onConnectClick={sepoliaStore.connect}
       onDisconnectClick={sepoliaStore.disconnect}
-    />
+    /> -->
     <Connection
       address={$cosmosStore.address}
       chain="cosmos"

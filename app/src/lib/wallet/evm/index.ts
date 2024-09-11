@@ -1,4 +1,5 @@
 export {
+  chains,
   evmConnect,
   userAddrEvm,
   sepoliaStore,

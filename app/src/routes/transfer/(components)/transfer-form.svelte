@@ -57,9 +57,7 @@ let userAddress: Readable<UserAddresses> = derived(
 )
 
 $: userBalances = userBalancesQuery({ chains, userAddr: $userAddress, connected: true })
-$: {
-  // console.info($userBalances)
-}
+
 // CURRENT FORM STATE
 let fromChainId = writable("")
 let toChainId = writable("")
