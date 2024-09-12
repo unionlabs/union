@@ -1,15 +1,9 @@
-> [!NOTE] Work in progress
-
 <h1 align="center" style="font-size: 2.75rem; font-weight: 900; color: white;">Union Labs TypeScript SDK</h1>
-
-[![JSR](https://jsr.io/badges/@union/client)](https://jsr.io/@union/client)
 
 Union Labs TypeScript SDK providing utilities for cross-chain transfers and more.
 
 ```sh
 npm install @unionlabs/client
-# or using jsr
-npx jsr add @union/client
 ```
 
 ## Usage
@@ -17,13 +11,13 @@ npx jsr add @union/client
 ### Initiate a client
 
 ```ts
-import { createUnionClient } from "@unionlabs/client"
 import { privateKeyToAccount } from "viem/accounts"
+import { createUnionClient, http } from "@unionlabs/client"
 
 const client = createUnionClient({
-  chainId: "11155111",
-  transport: http("https://rpc.sepolia.org"),
-  account: privateKeyToAccount(`0x${PRIVATE_KEY}`) // or from wagmi configuration
+  chainId: "80084",
+  transport: http("https://bartio.rpc.berachain.com"),
+  account: privateKeyToAccount(`0x${process.env.PRIVATE_KEY}`),
 })
 ```
 
@@ -35,7 +29,8 @@ Transfer `strd` from Stride Testnet on Cosmos (`stride-internal-1`) chain to Sep
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createUnionClient, hexStringToUint8Array, http } from "@unionlabs/client"
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY
+const PRIVATE_KEY = process.env["PRIVATE_KEY"]
+if (!PRIVATE_KEY) throw new Error("Private key not found")
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
@@ -45,7 +40,7 @@ const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
 const client = createUnionClient({
   account: cosmosAccount,
   chainId: "stride-internal-1",
-  transport: http("stride.testnet-1.stridenet.co"),
+  transport: http("stride.testnet-1.stridenet.co")
 })
 
 const transfer = await client.transferAsset({
@@ -53,12 +48,13 @@ const transfer = await client.transferAsset({
   autoApprove: true,
   denomAddress: "strd",
   destinationChainId: "11155111",
-  receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+  receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
 })
 
 if (transfer.isErr()) {
-  return console.error("Transfer failed", transfer.error)
+  console.error(transfer.error)
+  process.exit(1)
 }
 
-return console.info("Transfer successful", transfer.value)
+console.info(transfer.value)
 ```
