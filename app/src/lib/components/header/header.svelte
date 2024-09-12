@@ -41,7 +41,7 @@ import { routes } from "$lib/components/navigation/index.ts"
           draft
             ? "hidden"
             : [
-                "h-10",
+                "h-9",
                 currentRoute
                   ? "bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground"
                   : "",
