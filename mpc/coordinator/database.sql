@@ -3,14 +3,35 @@ BEGIN;
 -- Default bucket for contributions upload
 INSERT INTO storage.buckets(id, name, public) VALUES('contributions', 'contributions', false);
 
+CREATE TABLE waitlist(
+  id UUID PRIMARY KEY
+);
+
+ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
+ALTER TABLE waitlist ADD FOREIGN KEY (id) REFERENCES auth.users(id);
+
+CREATE POLICY allow_insert_self
+  ON waitlist
+  FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      (SELECT auth.uid()) = id
+    );
+
 -----------
 -- Queue --
 -----------
+CREATE OR REPLACE FUNCTION open_to_public() RETURNS boolean AS $$
+BEGIN
+  RETURN false;
+END
+$$ LANGUAGE plpgsql SET search_path = '';
+
 CREATE TABLE queue (
   id uuid PRIMARY KEY,
   payload_id uuid NOT NULL DEFAULT(gen_random_uuid()),
   joined timestamptz NOT NULL DEFAULT (now()),
-  score integer NOT NULL
+  score INTEGER NOT NULL
 );
 
 ALTER TABLE queue ENABLE ROW LEVEL SECURITY;
@@ -27,6 +48,13 @@ CREATE POLICY view_all
       true
     );
 
+CREATE POLICY allow_insert_self_if_open
+  ON queue
+  FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      (SELECT auth.uid()) = id AND open_to_public()
+    );
 
 CREATE OR REPLACE VIEW current_queue AS
   (
@@ -61,6 +89,33 @@ BEFORE INSERT
 ON queue
 FOR EACH ROW
 EXECUTE FUNCTION set_initial_score_trigger();
+
+-----------
+--  Code --
+-----------
+CREATE TABLE code (
+  id text PRIMARY KEY,
+  user_id uuid DEFAULT NULL
+);
+
+ALTER TABLE code ENABLE ROW LEVEL SECURITY;
+ALTER TABLE code ADD FOREIGN KEY (user_id) REFERENCES auth.users(id);
+CREATE UNIQUE INDEX idx_code_user_id ON code(user_id);
+
+CREATE OR REPLACE FUNCTION redeem(code_id text) RETURNS void AS $$
+  DECLARE
+  redeemed_code public.code%ROWTYPE := NULL;
+BEGIN
+  UPDATE public.code c
+   SET id = (SELECT auth.uid())
+   WHERE c.id = code_id
+   RETURNING * INTO redeemed_code;
+  IF (redeemed_code IS NULL) THEN
+    RAISE EXCEPTION 'redeem_code_invalid';
+  END IF;
+  INSERT INTO public.queue(id) VALUES ((SELECT auth.uid()));
+END
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -------------------------
 -- Contribution Status --
@@ -348,19 +403,5 @@ EXECUTE FUNCTION set_contribution_submitted_trigger();
 
 -- Will rotate the current contributor if the slot expired without any contribution submitted
 SELECT cron.schedule('update-contributor', '10 seconds', 'CALL set_next_contributor()');
-
--- Automatically join the queue
-CREATE OR REPLACE FUNCTION user_join_queue() RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.queue(id) VALUES(NEW.id);
-  RETURN NEW;
-END
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
-
-CREATE TRIGGER user_join_queue
-  AFTER INSERT
-  ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION user_join_queue();
 
 COMMIT;
