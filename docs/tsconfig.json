@@ -1,8 +1,14 @@
 {
-  "extends": ["astro/tsconfigs/strict"],
+  "extends": [
+    "astro/tsconfigs/strict"
+  ],
   "compilerOptions": {
     "verbatimModuleSyntax": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -19,18 +25,32 @@
     "checkJs": true,
     "baseUrl": ".",
     "paths": {
-      "#/*": ["./src/*"],
-      "~root/*": ["../*"],
-      "tailwind.config": ["./tailwind.config.ts"]
+      "#/*": [
+        "./src/*"
+      ],
+      "~root/*": [
+        "../*"
+      ],
+      "tailwind.config": [
+        "./tailwind.config.ts"
+      ]
     },
     "plugins": [
       {
         "name": "@astrojs/ts-plugin"
       }
     ],
-    "types": ["node", "bun", "typed-query-selector/strict"]
+    "types": [
+      "node",
+      "bun",
+      "typed-query-selector/strict"
+    ]
   },
-  "include": ["src", "public", "scripts"],
+  "include": [
+    "src",
+    "public",
+    "scripts"
+  ],
   "files": [
     "reset.d.ts",
     "ec.config.mjs",
@@ -38,7 +58,12 @@
     "svelte.config.js",
     "tailwind.config.ts",
     "postcss.config.cjs",
-    "markdown.config.ts"
+    "markdown.config.ts",
+    "starlight.config.ts",
   ],
-  "exclude": ["_", "dist", "node_modules"]
+  "exclude": [
+    "_",
+    "dist",
+    "node_modules"
+  ]
 }
