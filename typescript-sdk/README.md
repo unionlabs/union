@@ -33,7 +33,7 @@ Transfer `strd` from Stride Testnet on Cosmos (`stride-internal-1`) chain to Sep
 
 ```ts
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, hexStringToUint8Array } from "@unionlabs/client"
+import { createUnionClient, hexStringToUint8Array, http } from "@unionlabs/client"
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 

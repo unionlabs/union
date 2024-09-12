@@ -14,6 +14,6 @@ export default {
   },
   useStarlightUiThemeColors: true,
   useStarlightDarkModeSwitch: true,
-  themes: ["houston", "starlight-light"],
+  themes: ["starlight-dark", "starlight-light"],
   plugins: [pluginCollapsibleSections(), pluginLineNumbers()],
 };

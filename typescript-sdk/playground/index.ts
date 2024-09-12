@@ -3,6 +3,14 @@ import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient, type TransferAssetsParameters } from "@unionlabs/client"
 
+const PRIVATE_KEY = process.env["PRIVATE_KEY"]?.startsWith("0x")
+  ? process.env["PRIVATE_KEY"]
+  : `0x${process.env["PRIVATE_KEY"]}`
+
+// createMultiUnionClient([{
+//   chainId: `${arbitrumSepolia.id}`,
+// }])
+
 const account = privateKeyToAccount(`0x${process.env["PRIVATE_KEY"]}`)
 
 const client = createUnionClient({

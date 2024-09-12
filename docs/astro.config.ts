@@ -118,6 +118,16 @@ export default defineConfig({
           ]
         },
         {
+          label: "SDKs",
+          items: [
+            {
+              label: "TypeScript",
+              link: "/sdks/typescript",
+              badge: { variant: "note", text: "new" }
+            }
+          ]
+        },
+        {
           label: "Integrations",
           items: [
             {
