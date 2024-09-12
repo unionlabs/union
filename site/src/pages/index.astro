@@ -28,6 +28,7 @@ import partner_polygon from "#/assets/images/marquee/partners/polygon.png"
 import partner_movement from "#/assets/images/marquee/partners/movement.png"
 import partner_bera from "#/assets/images/marquee/partners/bera.png"
 import partner_arbitrum from "#/assets/images/marquee/partners/arbitrum.png"
+import BorderIntro from "../components/sections/landing/BorderIntro.astro"
 
 export const prerender = false
 
@@ -68,11 +69,12 @@ const partners = [
 ---
 
 <SectionsLayout>
-    <IntroSection/>
-    <ConsensusSection/>
-    <ZkSection/>
-    <ExecutionSection/>
-    <MarqueeSection title={"Our pod."} reverse={false} data={pods} />
-    <MarqueeSection title={"Our partners."} reverse={true} data={partners}/>
-    <ComeSwimSection/>
+  <BorderIntro/>
+  <!--<IntroSection/>-->
+  <ConsensusSection/>
+  <ZkSection/>
+  <ExecutionSection/>
+  <MarqueeSection title={"Our pod."} reverse={false} data={pods}/>
+  <MarqueeSection title={"Our partners."} reverse={true} data={partners}/>
+  <ComeSwimSection/>
 </SectionsLayout>
