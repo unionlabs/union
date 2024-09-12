@@ -47,7 +47,6 @@ $effect(() => {
 
 let canvas: HTMLCanvasElement
 let app: Application
-let model
 let loading = $state(true)
 
 onMount(() => {
@@ -66,7 +65,6 @@ onMount(() => {
   app
     .load("https://draft.spline.design/r6WgY2-52aHVU2TZ/scene.splinecode")
     .then(splineScene => {
-      model = splineScene
       loading = false
     })
     .catch(error => {

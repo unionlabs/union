@@ -92,6 +92,7 @@ IIBC
 INLINES
 IOSVG
 IPFS
+Iiwicm
 Infima
 Infof
 Interchain
@@ -125,14 +126,18 @@ Monaspace
 Movementlabs
 Multichain
 NIXBUILDNET
+NJPFFHKJX
 NSCYRR
 Neue
 Ngtt
+Nmimt
+Nmint
 Nonexist
 Noto
 Npcwo
 Nullam
 Offchain
+PGRST
 PINGPONG
 PRECOMMIT
 PREVOTE
@@ -208,6 +213,7 @@ Undelegate
 Unintersect
 Unjail
 Unmarshal
+VITE
 VUQN
 VYPER
 Vals
@@ -216,8 +222,11 @@ Viridis
 Vitarana
 Wagmi
 Webgl
+Wdua
 Wrapf
+XB
 XMSB
+XVCJ
 YMSB
 Yair
 ZFTB
@@ -800,6 +809,7 @@ muslc
 nanos
 nanosec
 nasm
+nbhbp
 nearcore
 neard
 neighbouring

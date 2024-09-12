@@ -1,60 +1,63 @@
 <script lang="ts">
-  import { user } from "$lib/stores/user.svelte.ts"
-  import Text from "$lib/components/typography/Text.svelte"
-  import { createQuery } from "@tanstack/svelte-query"
-  import Spinner from "$lib/components/Spinner.svelte"
-  import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
-  import H2 from "$lib/components/typography/H2.svelte"
-  import { checkContributionStatus, getUserQueueInfo } from "$lib/supabase"
-  import Button from "$lib/components/Button.svelte"
-  import { checkStatus, start } from "$lib/client";
-  import Install from "$lib/components/Install.svelte";
+import { user } from "$lib/stores/user.svelte.ts"
+import Text from "$lib/components/typography/Text.svelte"
+import { createQuery } from "@tanstack/svelte-query"
+import Spinner from "$lib/components/Spinner.svelte"
+import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
+import H2 from "$lib/components/typography/H2.svelte"
+import { checkContributionStatus, getUserQueueInfo } from "$lib/supabase"
+import Button from "$lib/components/Button.svelte"
+import { checkStatus, start } from "$lib/client"
+import Install from "$lib/components/Install.svelte"
 
-  let clientQuery = createQuery(
-    reactiveQueryArgs(() => ({
-      queryKey: ["client"],
-      queryFn: () => checkStatus(),
-      refetchInterval: 5_000,
-      retry: false
-    }))
-  )
+let clientQuery = createQuery(
+  reactiveQueryArgs(() => ({
+    queryKey: ["client"],
+    queryFn: () => checkStatus(),
+    refetchInterval: 5_000,
+    retry: false
+  }))
+)
 
-  let contributionQuery = createQuery(
-    reactiveQueryArgs(() => ({
-      queryKey: ["contribution"],
-      queryFn: () => checkContributionStatus(),
-      refetchInterval: 5_000,
-      retry: false
-    }))
-  )
+let contributionQuery = createQuery(
+  reactiveQueryArgs(() => ({
+    queryKey: ["contribution"],
+    queryFn: () => checkContributionStatus(),
+    refetchInterval: 5_000,
+    retry: false
+  }))
+)
 
-  let queueQuery = createQuery(
-    reactiveQueryArgs(() => ({
-      queryKey: ["userPosition"],
-      queryFn: () => getUserQueueInfo(),
-      refetchInterval: 5_000,
-      retry: 2,
-      retryDelay: 1000
-    }))
-  )
+let queueQuery = createQuery(
+  reactiveQueryArgs(() => ({
+    queryKey: ["userPosition"],
+    queryFn: () => getUserQueueInfo(),
+    refetchInterval: 5_000,
+    retry: 2,
+    retryDelay: 1000
+  }))
+)
 
-  let {data: queue, isLoading: queueLoading, error: queueError} = $derived($queueQuery)
-  let {data: contribute, isLoading: contributeLoading, error: contributeError} = $derived($contributionQuery)
-  let {data: client, isLoading: clientLoading, error: clientError} = $derived($clientQuery)
+let { data: queue, isLoading: queueLoading, error: queueError } = $derived($queueQuery)
+let {
+  data: contribute,
+  isLoading: contributeLoading,
+  error: contributeError
+} = $derived($contributionQuery)
+let { data: client, isLoading: clientLoading, error: clientError } = $derived($clientQuery)
 
-  //TODO SAVE IN LOCAL STORAGE AND ADD INFO TEXT ABOUT HAVING THE BROWSER OPEN
-  let auto = $state(false)
+//TODO SAVE IN LOCAL STORAGE AND ADD INFO TEXT ABOUT HAVING THE BROWSER OPEN
+let auto = $state(false)
 
-  $effect(() => {
-    if(auto) {
-      if(contribute?.canContribute && contribute?.shouldContribute) {
-        if (client) {
-          start()
-        }
+$effect(() => {
+  if (auto) {
+    if (contribute?.canContribute && contribute?.shouldContribute) {
+      if (client) {
+        start()
       }
     }
-  })
-
+  }
+})
 </script>
 
 
