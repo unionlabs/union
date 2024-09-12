@@ -365,50 +365,42 @@ module UCS01::Relay {
     }
 
 
-    // TODO: No idea if this encode_packet is correct or not and how to write decode_packet
-    // take a look at here later.
+    // TODO: It works but there are couple unknown datas.
+    // tbh i don't know if it will work for every possible relaypacket struct
     public fun encode_packet(packet: &RelayPacket): vector<u8> {
         let buf = vector::empty<u8>();
 
-        let unknown_data = bcs::to_bytes(&(32 as u256));
-        vector::reverse(&mut unknown_data);
-        vector::append(&mut buf, unknown_data);
+        // unknown data ??
+        EthABI::encode_uint<u64>(&mut buf, 32);
 
-        let sender_bytes = bcs::to_bytes(&packet.sender);
-        vector::append(&mut buf, sender_bytes);
+        EthABI::encode_address(&mut buf, packet.sender);
 
-        let receiver_bytes = bcs::to_bytes(&packet.receiver);
-        vector::append(&mut buf, receiver_bytes);
-
-        let unknown_data = bcs::to_bytes(&(128 as u256));
-        vector::reverse(&mut unknown_data);
-        vector::append(&mut buf, unknown_data);
+        EthABI::encode_address(&mut buf, packet.receiver);
+        
+        // unknown data ??
+        EthABI::encode_uint<u64>(&mut buf, 128);
 
         let num_tokens = vector::length(&packet.tokens);
 
-        let before_length = bcs::to_bytes(&((num_tokens * 160 + 160) as u256));
-        vector::reverse(&mut before_length);
-        vector::append(&mut buf, before_length);
-        let length_data = bcs::to_bytes(&(num_tokens as u256));
-        vector::reverse(&mut length_data);
-        vector::append(&mut buf, length_data);
+        // unknown data ??
+        EthABI::encode_uint<u64>(&mut buf, (num_tokens * 160 + 160));
+        
+        EthABI::encode_uint<u64>(&mut buf, num_tokens);
 
         if (num_tokens > 0 ){
-            let after_length = bcs::to_bytes(&((num_tokens * 32) as u256));
-            vector::reverse(&mut after_length);
-            vector::append(&mut buf, after_length);
+        // unknown data ??
+            EthABI::encode_uint<u64>(&mut buf, (num_tokens * 32));
 
             if (num_tokens > 1) {
                 let starting_point = 192 + (num_tokens - 2) * 32;
-                let starting_point_bytes = bcs::to_bytes(&(starting_point as u256));
-                vector::reverse(&mut starting_point_bytes);
-                vector::append(&mut buf, starting_point_bytes);
+                // unknown data ??
+                EthABI::encode_uint<u64>(&mut buf, starting_point);
+                
                 let idx = 2;
                 while (num_tokens > idx) {
                     starting_point = starting_point + 128;
-                    let starting_point_bytes = bcs::to_bytes(&(starting_point as u256));
-                    vector::reverse(&mut starting_point_bytes);
-                    vector::append(&mut buf, starting_point_bytes);
+                    // unknown data ??
+                    EthABI::encode_uint<u64>(&mut buf, starting_point);
                     idx = idx + 1;
                 };
             };
@@ -418,36 +410,17 @@ module UCS01::Relay {
         while (i < num_tokens) {
             let token = vector::borrow(&packet.tokens, i);
             
+            // unknown data ??
+            EthABI::encode_uint<u64>(&mut buf, 64);
 
-            let unknown_data = bcs::to_bytes(&(64 as u256));
-            vector::reverse(&mut unknown_data);
-            vector::append(&mut buf, unknown_data);
-
-            let amount_bytes = bcs::to_bytes(&(token.amount as u256));
-            vector::reverse(&mut amount_bytes);
-            vector::append(&mut buf, amount_bytes);
-
+            EthABI::encode_uint<u64>(&mut buf, token.amount);
 
             EthABI::encode_string(&mut buf, token.denom);
-            // let denom_bytes = bcs::to_bytes(&token.denom);
-            // let denom_len_bytes = bcs::to_bytes(&(vector::length(&denom_bytes) as u256));
-            // vector::reverse(&mut denom_len_bytes);
-            // vector::append(&mut buf, denom_len_bytes);
-            // std::debug::print(&denom_len_bytes);
-            // std::debug::print(&denom_bytes);
-            // std::debug::print(&vector::length(&denom_bytes));
-            // vector::append(&mut buf, denom_bytes);
-
 
             i = i + 1;
         };
 
         EthABI::encode_string(&mut buf, packet.extension);
-        // let extension_bytes = bcs::to_bytes(&packet.extension);
-        // let extension_len_bytes = bcs::to_bytes(&(vector::length(&extension_bytes) as u256));
-        // vector::reverse(&mut extension_len_bytes);
-        // vector::append(&mut buf, extension_len_bytes);
-        // vector::append(&mut buf, extension_bytes);
 
         buf
     }
@@ -610,7 +583,7 @@ module UCS01::Relay {
 
                 if (denom_address == @0x0) {
                                         
-                    // TODO CHANGE THOSE
+                    // TODO CHANGE THOSE, in here we are creating(?) a new token
                     UCS01::fa_coin::initialize(
                         &get_ucs_signer(),
                         string::utf8(b"TODO"),
@@ -622,10 +595,6 @@ module UCS01::Relay {
                     );
 
                     denom_address = UCS01::fa_coin::get_metadata_address(*string::bytes(&denom));
-
-                    // If the address doesn't exist, mint a new token
-                    // TODO: How??
-                    // let denom_address = mint_new_token(foreign_denom);
 
                     let pair = DenomToAddressPair {
                         source_channel: *IBC::packet::source_channel(&ibc_packet),
