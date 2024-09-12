@@ -180,6 +180,7 @@ Segoe
 Shacham
 Snapshotter
 Solana
+Stackblitz
 Storyblok
 Subdemom
 Sublist
