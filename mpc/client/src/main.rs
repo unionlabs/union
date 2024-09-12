@@ -444,8 +444,7 @@ async fn main() -> Result<(), DynError> {
                     );
                     let fut = graceful.watch(conn);
                     tokio::task::spawn(async move {
-                        if let Err(err) = fut.await {
-                        }
+                        let _ = fut.await;
                     });
                 }
                 _ = token_clone.cancelled() => {
