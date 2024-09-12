@@ -40,11 +40,10 @@ const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 
 // filter items with duplicate names
 let sanitizeWalletInformation =
-  chainWalletsInformation
-    .toReversed()
-    .filter(
-      (v, i, a) => a.findIndex(t => t.name.toLowerCase().startsWith(v.name.toLowerCase())) === i
-    ) ?? chainWalletsInformation
+  chainWalletsInformation.filter(
+    (predicate, index, array) =>
+      array.findIndex(t => t.name.toLowerCase().startsWith(predicate.name.toLowerCase())) === index
+  ) ?? chainWalletsInformation
 
 $: walletListToRender =
   connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
@@ -107,18 +106,17 @@ let metamaskAlertDialogOpen = false
             (connectStatus === "disconnected" || connectStatus == undefined) &&
               "opacity-75 hover:opacity-100 dark:hover:text-black",
             hoverState === "hover" &&
+              connectStatus === "connected" &&
               connectedWalletId === id &&
               "hover:text-destructive border-destructive hover:bg-transparent dark:hover:text-white",
           )}
           on:click={async () => {
-            if (connectStatus === "connected") onDisconnectClick()
-            else {
-              await onConnectClick(walletIdentifier)
-
-              if (walletIdentifier === OFFENDING_WALLET_ID) {
-                metamaskAlertDialogOpen = true
-              }
+            if (walletIdentifier === OFFENDING_WALLET_ID) {
+              metamaskAlertDialogOpen = true
             }
+
+            if (connectStatus === "disconnected") return onConnectClick(walletIdentifier)
+            return onDisconnectClick()
           }}
         >
           <img src={icon} alt={name} class="size-7 mr-3 dark:text-white" />

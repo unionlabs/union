@@ -3,6 +3,7 @@ import Inspect from "vite-plugin-inspect"
 import { sveltekit } from "@sveltejs/kit/vite"
 import { visualizer } from "rollup-plugin-visualizer"
 import { purgeCss } from "vite-plugin-tailwind-purgecss"
+import { nodePolyfills } from "vite-plugin-node-polyfills"
 import { partytownVite } from "@builder.io/partytown/utils"
 import { defineConfig, loadEnv, type PluginOption } from "vite"
 
@@ -16,6 +17,10 @@ export default defineConfig(config => {
 
   const plugins = [
     purgeCss(),
+    nodePolyfills({
+      include: ["stream"],
+      globals: { process: true, Buffer: true, global: true }
+    }),
     sveltekit(),
     partytownVite({
       debug: NODE_ENV === "development",
@@ -30,6 +35,7 @@ export default defineConfig(config => {
   const dropLogStatements = config.mode === "build" || NODE_ENV === "production"
   return {
     plugins,
+    build: { target: "es2020" },
     esbuild: {
       drop: dropLogStatements ? ["console", "debugger"] : []
     },
@@ -38,19 +44,6 @@ export default defineConfig(config => {
     },
     server: {
       port: Number(PORT)
-    },
-    define: {
-      // Node polyfills
-      "process.env": {}
-    },
-    // Node polyfills
-    resolve: {
-      alias: {
-        "node:buffer": "buffer",
-        "node:events": "events",
-        "node:process": "process",
-        stream: "rollup-plugin-node-polyfills/polyfills/stream"
-      }
     },
     test: { include: ["src/**/*.{test,spec}.{js,ts}"] }
   }

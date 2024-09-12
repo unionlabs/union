@@ -1,44 +1,58 @@
 {
-  "name": "@union/client",
-  "version": "0.0.13",
+  "name": "@unionlabs/client",
+  "version": "0.0.18",
   "homepage": "https://jsr.io/@union/client",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
-  "exports": "./src/mod.ts",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "LICENSE", "README.md", "package.json"],
   "scripts": {
-    "build": "echo 'No need… jsr.io requires no build step'",
+    "build": "tsup --config='tsup.config.ts'",
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "publish": "bun ./scripts/publish.ts",
-    "publish-dry-run": "DRY_RUN=1 bun ./scripts/publish.ts",
+    "publish-jsr": "bun ./scripts/publish.ts",
+    "publish-jsr-dry-run": "DRY_RUN=1 bun ./scripts/publish.ts",
     "faucet": "bun ./playground/faucet.ts",
     "balance": "bun ./playground/balance.ts",
     "transfer": "bun ./playground/transfer.ts",
     "test": "vitest --run",
     "test:typecheck": "vitest --typecheck.only",
     "clean": "rm -rf dist node_modules",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "prepublish": "bun run build"
   },
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/stargate": "0.32.4",
     "@scure/base": "1.1.8",
-    "neverthrow": "^7.1.0",
+    "neverthrow": "^8.0.0",
     "ofetch": "^1.3.4",
-    "viem": "^2.21.2"
+    "viem": "^2.21.4"
   },
   "devDependencies": {
-    "@cosmjs/tendermint-rpc": "^0.32.4",
-    "@cosmjs/proto-signing": "^0.32.4",
-    "@arethetypeswrong/cli": "^0.15.4",
+    "@arethetypeswrong/cli": "^0.16.2",
     "@cosmjs/amino": "0.32.4",
+    "@cosmjs/proto-signing": "^0.32.4",
+    "@cosmjs/tendermint-rpc": "^0.32.4",
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/bun": "^1.1.8",
+    "@types/bun": "^1.1.9",
     "@types/node": "^22.5.4",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.1",
     "patch-package": "^8.0.0",
-    "typescript": "^5.5.4",
+    "tsup": "^8.2.4",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.2",
     "vite-tsconfig-paths": "^5.0.1",
     "vitest": "^2.0.5"
   },
@@ -49,5 +63,8 @@
   },
   "license": "MIT",
   "engineStrict": true,
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
 }

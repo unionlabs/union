@@ -55,7 +55,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
       transferAsset: async ({
         amount,
         account,
-        recipient,
+        receiver,
         denomAddress,
         simulate = true,
         destinationChainId,
@@ -74,8 +74,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           channel: pfmDetails.value.destinationChannel,
           port: `${pfmDetails.value.port}`,
           receiver: cosmosChainId.includes(destinationChainId)
-            ? bech32AddressToHex({ address: `${recipient}` })
-            : `${recipient}`
+            ? bech32AddressToHex({ address: `${receiver}` })
+            : `${receiver}`
         })
 
         if (pfmMemo.isErr()) return err(pfmMemo.error)
@@ -85,7 +85,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           account,
           autoApprove,
           simulate,
-          recipient,
+          receiver,
           denomAddress,
           destinationChainId,
           memo: pfmMemo.value,
@@ -117,7 +117,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
       simulateTransaction: async ({
         memo,
         amount,
-        recipient,
+        receiver,
         denomAddress,
         destinationChainId
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
@@ -129,7 +129,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             account: client.account,
             functionName: "transfer",
             address: getAddress(denomAddress),
-            args: [getAddress(recipient), amount]
+            args: [getAddress(receiver), amount]
           })
           return ok(gas.toString())
         }
@@ -144,8 +144,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           channel: pfmDetails.value.destinationChannel,
           port: `${pfmDetails.value.port}`,
           receiver: cosmosChainId.includes(destinationChainId)
-            ? bech32AddressToHex({ address: `${recipient}` })
-            : `${recipient}`
+            ? bech32AddressToHex({ address: `${receiver}` })
+            : `${receiver}`
         })
 
         if (pfmMemo.isErr()) return err(pfmMemo.error)
@@ -158,7 +158,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         return await transferAssetFromEvmSimulate(client, {
           memo,
           amount,
-          recipient,
+          receiver,
           sourceChannel,
           denomAddress: getAddress(denomAddress),
           relayContractAddress: getAddress(relayContractAddress),

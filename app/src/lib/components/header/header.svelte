@@ -12,7 +12,7 @@ import { routes } from "$lib/components/navigation/index.ts"
   class={cn(
     "antialiased",
     "bg-card flex justify-center border-b border-solid",
-    "dark:bg-muted p-2.5 min-w-full w-screen flex-row items-center z-10 pr-3.5"
+    "dark:bg-muted p-2.5 min-w-full w-screen flex-row items-center z-10 pr-3.5",
   )}
 >
   <Button
@@ -30,12 +30,9 @@ import { routes } from "$lib/components/navigation/index.ts"
   <div class={cn("sm:max-w-sm max-w-[30rem] w-full self-center mx-auto pl-3.25")}>
     <CmdK />
   </div>
-  <nav
-    class="hidden md:flex items-center justify-end space-x-0 sm:gap-x-1 mx-1 pr-1"
-  >
+  <nav class="hidden md:flex items-center justify-end space-x-0 sm:gap-x-1 mx-1 pr-1">
     {#each Object.entries(routes) as [name, { draft, path }], index (name)}
-      {@const currentRoute =
-        $page.route.id?.split("/")[1] === path.split("/").at(1)}
+      {@const currentRoute = $page.route.id?.split("/")[1] === path.split("/").at(1)}
       <Button
         size="sm"
         href={path}
@@ -44,11 +41,11 @@ import { routes } from "$lib/components/navigation/index.ts"
           draft
             ? "hidden"
             : [
-                "",
+                "h-10",
                 currentRoute
                   ? "bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground"
-                  : ""
-              ]
+                  : "",
+              ],
         )}
       >
         {name}

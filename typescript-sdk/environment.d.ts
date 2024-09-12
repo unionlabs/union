@@ -4,6 +4,7 @@ interface EnvironmentVariables {
   readonly HUBBLE_URL: string
   readonly INFURA_URL: string
   readonly TENDERLY_URL: string
+  readonly TENDERLY_KEY: string
 }
 
 declare module "bun" {

@@ -14,7 +14,7 @@ import { derived, writable, type Writable } from "svelte/store"
 import { strideFaucetMutation } from "$lib/graphql/queries/faucet"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
 import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
-import { bech32ToBech32Address, isValidBech32Address } from "@union/client"
+import { bech32ToBech32Address, isValidBech32Address } from "@unionlabs/client"
 import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
 
 type DydxFaucetState = DiscriminatedUnion<
@@ -133,17 +133,13 @@ let strideBalance = createQuery(
   class={cn(
     "w-full max-w-lg rounded-lg font-sans border-[#ffffff] bg-cover",
     "bg-[url('/images/backgrounds/stride-background.png')]",
-    "bg-[#181825] text-[rgb(60,0,29)] dark:bg-[#2D2D44]/50 dark:text-[rgb(60,0,29)]"
+    "bg-[#181825] text-[rgb(60,0,29)] dark:bg-[#2D2D44]/50 dark:text-[rgb(60,0,29)]",
   )}
 >
   <Card.Header>
     <Card.Title class="flex justify-between select-none">
       <p class="flex gap-x-3">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://www.stride.zone/"
-        >
+        <a target="_blank" rel="noopener noreferrer" href="https://www.stride.zone/">
           <img src="/images/logo/stride/stride-logo.svg" alt="" class="w-18" />
         </a>
         Faucet
@@ -158,11 +154,7 @@ let strideBalance = createQuery(
           rel="noopener noreferrer"
           href={`https://testnet.ping.pub/stride/tx/${$strideFaucetState.message}`}
         >
-          <Truncate
-            class="underline"
-            value={$strideFaucetState.message}
-            type="hash"
-          />
+          <Truncate class="underline" value={$strideFaucetState.message} type="hash" />
         </a>
       </p>
     {:else if $strideFaucetState.kind === "RESULT_ERR"}
@@ -170,12 +162,12 @@ let strideBalance = createQuery(
         {$strideFaucetState.error}
       </p>
       <Button
-
-      class={cn(
-                    "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
-                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0"
-                  )}
-        on:click={() => strideFaucetState.set({ kind: "IDLE" })}>
+        class={cn(
+          "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
+          "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
+        )}
+        on:click={() => strideFaucetState.set({ kind: "IDLE" })}
+      >
         Retry
       </Button>
     {:else}
@@ -209,10 +201,9 @@ let strideBalance = createQuery(
                   name="dydx-wallet-address"
                   class={cn(
                     "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
-                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0"
+                    "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
                   )}
-                  pattern={createCosmosSdkAddressRegex({ prefix: "dydx" })
-                    .source}
+                  pattern={createCosmosSdkAddressRegex({ prefix: "dydx" }).source}
                 />
               </div>
               <div class="flex justify-between px-1">
@@ -234,7 +225,7 @@ let strideBalance = createQuery(
         <div class="flex flex-row items-center gap-4">
           <Button
             type="submit"
-            on:click={(event) => {
+            on:click={event => {
               event.preventDefault()
               requestStrdFromFaucet()
             }}
@@ -242,7 +233,7 @@ let strideBalance = createQuery(
               isValidBech32Address($strideAddress) === false}
             class={cn(
               "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
-              "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]"
+              "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]",
             )}
           >
             Submit

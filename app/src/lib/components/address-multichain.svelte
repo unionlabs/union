@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Chain } from "$lib/types"
-import { hexAddressToBech32 } from "@union/client"
+import { hexAddressToBech32 } from "@unionlabs/client"
 import { Badge } from "$lib/components/ui/badge/index.ts"
 
 export let address: { address: string; normalizedAddress: string }

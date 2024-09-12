@@ -38,7 +38,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
   createClient({ transport: fallback([]) }).extend(_ => ({
     transferAsset: async ({
       amount,
-      recipient,
+      receiver,
       denomAddress,
       destinationChainId,
       memo = timestamp(),
@@ -58,7 +58,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
           rpcUrl,
           account,
           gasPrice,
-          recipient,
+          receiver,
           asset: { denom: denomAddress, amount: amount.toString() }
         })
         return transfer
@@ -76,8 +76,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         port: `${ucsDetails.value.port}`,
         channel: ucsDetails.value.destinationChannel,
         receiver: cosmosChainId.includes(destinationChainId)
-          ? bech32AddressToHex({ address: `${recipient}` })
-          : `${recipient}`
+          ? bech32AddressToHex({ address: `${receiver}` })
+          : `${receiver}`
       })
 
       if (pfmMemo.isErr()) return err(pfmMemo.error)
@@ -100,9 +100,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
               msg: {
                 transfer: {
                   channel: sourceChannel,
-                  receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
-                  memo:
-                    pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`
+                  receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
+                  memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
                 }
               },
               funds: [{ amount: amount.toString(), denom: denomAddress }]
@@ -128,8 +127,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
               sender: account_?.address,
               token: { denom: denomAddress, amount: amount.toString() },
               timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
-              receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
-              memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`
+              receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
+              memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
             }
           ]
         })
@@ -141,7 +140,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
     simulateTransaction: async ({
       memo,
       amount,
-      recipient,
+      receiver,
       denomAddress,
       destinationChainId,
       relayContractAddress,
@@ -158,7 +157,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       // Union to Union
       if (sourceChainId === "union-testnet-8" && destinationChainId === "union-testnet-8") {
         return await cosmosSameChainTransferSimulate({
-          recipient,
+          receiver,
           account,
           rpcUrl,
           asset: { denom: denomAddress, amount: amount.toString() },
@@ -177,8 +176,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         port: `${ucsDetails.value.port}`,
         channel: ucsDetails.value.destinationChannel,
         receiver: cosmosChainId.includes(destinationChainId)
-          ? bech32AddressToHex({ address: `${recipient}` })
-          : `${recipient}`
+          ? bech32AddressToHex({ address: `${receiver}` })
+          : `${receiver}`
       })
 
       if (pfmMemo.isErr()) return err(pfmMemo.error)
@@ -201,9 +200,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
               msg: {
                 transfer: {
                   channel: sourceChannel,
-                  receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
-                  memo:
-                    pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`
+                  receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
+                  memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
                 }
               },
               funds: [{ amount: amount.toString(), denom: denomAddress }]
@@ -229,8 +227,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
               sender: account_?.address,
               token: { denom: denomAddress, amount: amount.toString() },
               timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
-              receiver: recipient.startsWith("0x") ? recipient.slice(2) : recipient,
-              memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${recipient}`
+              receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
+              memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
             }
           ]
         })

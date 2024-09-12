@@ -1,0 +1,201 @@
+---
+import "@xterm/xterm/css/xterm.css"
+
+interface Props {
+  webcontainerFiles?: string
+}
+
+const { webcontainerFiles } = Astro.props
+---
+
+<pre
+  style="display: none;"
+  id="webcontainer-files"
+  data-webcontainer-files="">
+  {webcontainerFiles}
+</pre>
+
+<textarea
+  required={true}
+  readonly={false}
+  autocorrect="off"
+  autocomplete="off"
+  spellcheck="false"
+  id="terminal-input"
+  autocapitalize="none"
+  class="focus:ring-0 focus-visible:ring-0 outline-none"
+>
+  loading...
+</textarea>
+<div
+  class="terminal-container px-3 bg-[rgb(22_24_29)] border border-solid border-[#221e2b] rounded-md my-0"
+>
+  <article id="terminal" data-terminal="" class="" class="size-full bg-[rgb(22_24_29)]"></article>
+</div>
+<iframe class="hidden" allow="cross-origin-isolated"></iframe>
+
+<script>
+  import {
+    WebContainer,
+    type FileNode,
+    type FileSystemTree,
+    type WebContainerProcess,
+  } from '@webcontainer/api'
+  import { initiateTerminal, type Terminal } from '#/lib/xterm/terminal'
+
+  const writeToWebContainerFile = async ({ path, content }: { path: string; content: string }) => {
+    await webcontainerInstance.fs.writeFile(path, content)
+  }
+
+  async function installDependencies() {
+    // Install dependencies
+    const promises = [
+      webcontainerInstance.spawn('npm', ['install']).catch(error => {
+        console.error('npm install failed', error)
+      }),
+    ] as Array<Promise<WebContainerProcess>>
+    const installProcesses = await Promise.all(promises)
+    return installProcesses.map(installProcess => {
+      installProcess.output.pipeTo(
+        new WritableStream({
+          write: (chunk, _controller) => console.info(chunk),
+        }),
+      )
+      // Wait for install command to exit
+      return installProcess.exit
+    })
+  }
+
+  async function startShell(terminal: Terminal) {
+    const shellProcess = await webcontainerInstance.spawn('jsh', {
+      env: {},
+      terminal: { cols: terminal.cols, rows: terminal.rows },
+    })
+    shellProcess.output.pipeTo(
+      new WritableStream({
+        write: (chunk, _controller) => terminal.write(chunk),
+      }),
+    )
+
+    const input = shellProcess.input.getWriter()
+    terminal.onData(data => input.write(data))
+
+    return shellProcess
+  }
+
+  let webcontainerInstance: WebContainer
+
+  window.addEventListener('load', async () => {
+    if (!textareaElement || !terminalElement || !iframeElement) return
+
+    let files: FileSystemTree = {}
+    if (webcontainerFilesElement && webcontainerFilesElement.textContent) {
+      files = JSON.parse(webcontainerFilesElement.textContent) as FileSystemTree
+    }
+
+    textareaElement.value = (files['mod.ts'] as FileNode).file.contents.toString()
+    textareaElement.addEventListener('input', event => {
+      if (!event.target?.value) return
+      writeToWebContainerFile({ path: 'mod.ts', content: event.target.value })
+    })
+
+    const {
+      terminal,
+      addons: { fitAddon },
+    } = await initiateTerminal(terminalElement)
+
+    webcontainerInstance = await WebContainer.boot({
+      workdirName: 'union',
+      forwardPreviewErrors: true,
+    })
+
+    await webcontainerInstance.mount(files)
+
+    const shellProcess = await startShell(terminal)
+    await installDependencies()
+    window.addEventListener('resize', () => {
+      fitAddon.fit()
+      shellProcess.resize({ cols: terminal.cols, rows: terminal.rows })
+    })
+
+    const xtermViewport = document.querySelector('div.xterm-viewport')
+    if (!xtermViewport) return
+  })
+
+  const iframeElement = document.querySelector('iframe')
+  const textareaElement = document.querySelector('textarea')
+  const terminalElement = document.querySelector('article#terminal')
+  const webcontainerFilesElement = document.querySelector('pre#webcontainer-files')
+</script>
+
+<style is:inline>
+  .sl-markdown-content {
+    margin-top: 0.3rem;
+  }
+
+  .xterm {
+    --at-apply: h-full;
+    --at-apply: p-3;
+  }
+  .xterm .xterm-viewport {
+    --at-apply: transition-theme;
+  }
+  canvas,
+  .xterm-decoration-container {
+    margin-top: 0 !important;
+  }
+  .xterm,
+  canvas,
+  .composition-view,
+  .xterm-helpers,
+  .xterm-helper-textarea,
+  textarea,
+  .terminal,
+  .terminal-wrapper,
+  .xterm-viewport {
+    width: 100%;
+    height: 100%;
+    /* background-color: #17181c !important; */
+    /* border: var(--ec-brdWd) solid var(--ec-brdCol); */
+    border-radius: calc(var(--ec-brdRad) + var(--ec-brdWd));
+  }
+  iframe,
+  textarea {
+    border-radius: 3px;
+  }
+  iframe {
+    height: 20rem;
+    width: 100%;
+    border: solid 2px #ccc;
+  }
+  textarea {
+    width: 100%;
+    resize: none;
+    height: 48rem;
+    color: white;
+    padding: 0.5rem 1rem;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+    font-family:
+      JetBrains Mono,
+      monospace;
+  }
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    height: 100%;
+    width: 100%;
+  }
+  .wc {
+    -webkit-text-fill-color: #0000;
+    background-clip: text;
+    -webkit-background-clip: text;
+    background-image: linear-gradient(to right, #761fac 0, #8a19a9 20%, #d900a5 70%, #d917a3 100%);
+    filter: drop-shadow(0 1px 0 #fff);
+    font-weight: 800;
+    color: #69f5ff;
+    text-decoration: underline;
+  }
+</style>

@@ -25,13 +25,15 @@ import { derived, writable, type Readable } from "svelte/store"
 import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
 import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "@wagmi/core/chains"
 
-const chains = [sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia] as const
+export const chains = [sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]
 
 export type Wallet = GetAccountReturnType
 export type ConnectedWallet = Wallet & { status: "connected" }
 
 export type ConnectorType = "injected" | "walletConnect"
+
+const WALLETCONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"
 
 export const config = createConfig({
   chains,
@@ -63,12 +65,12 @@ export const config = createConfig({
       http(berachainTestnetbArtio.rpcUrls.default.http.at(0), { name: "default Berachain RPC" })
     ]),
     [arbitrumSepolia.id]: fallback([
-      // unstable_connector(injected, {
-      //   retryCount: 3,
-      //   retryDelay: 100,
-      //   key: "unstable_connector-injected-berachain",
-      //   name: "unstable_connector-injected-berachain"
-      // }),
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-berachain",
+        name: "unstable_connector-injected-berachain"
+      }),
       http(arbitrumSepolia.rpcUrls.default.http.at(0), { name: "default Arbitrum Sepolia RPC" })
     ]),
     [scrollSepolia.id]: fallback([
@@ -146,14 +148,18 @@ export function createSepoliaStore(
     update,
     subscribe,
     connect: async (walletId: EvmWalletId) => {
-      console.log("[evm] connect --", { walletId })
       await evmConnect(walletId, sepolia.id)
     },
     disconnect: async () => {
-      console.log("[evm] disconnect")
       await Promise.all([
-        await evmDisconnect(),
-        ...config.connectors.map(connector => connector.disconnect())
+        await evmDisconnect().catch(error => {
+          console.error(error)
+        }),
+        ...config.connectors.map(connector =>
+          connector.disconnect().catch(error => {
+            console.error(error)
+          })
+        )
       ])
       await sleep(1_000)
     }

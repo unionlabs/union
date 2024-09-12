@@ -43,7 +43,7 @@ try {
     amount: 1n,
     denomAddress: "strd",
     destinationChainId: "union-testnet-8",
-    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
+    receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
   } satisfies TransferAssetsParameters<"stride-internal-1">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)

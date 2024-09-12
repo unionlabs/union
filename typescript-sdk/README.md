@@ -7,6 +7,8 @@
 Union Labs TypeScript SDK providing utilities for cross-chain transfers and more.
 
 ```sh
+npm install @unionlabs/client
+# or using jsr
 npx jsr add @union/client
 ```
 
@@ -15,7 +17,7 @@ npx jsr add @union/client
 ### Initiate a client
 
 ```ts
-import { createUnionClient } from "@union/client"
+import { createUnionClient } from "@unionlabs/client"
 import { privateKeyToAccount } from "viem/accounts"
 
 const client = createUnionClient({
@@ -31,7 +33,7 @@ Transfer `strd` from Stride Testnet on Cosmos (`stride-internal-1`) chain to Sep
 
 ```ts
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, hexStringToUint8Array } from "@union/client"
+import { createUnionClient, hexStringToUint8Array, http } from "@unionlabs/client"
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 
@@ -48,9 +50,10 @@ const client = createUnionClient({
 
 const transfer = await client.transferAsset({
   amount: 1n,
+  autoApprove: true,
   denomAddress: "strd",
   destinationChainId: "11155111",
-  recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+  receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
 })
 
 if (transfer.isErr()) {

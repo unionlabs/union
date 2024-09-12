@@ -46,7 +46,7 @@ try {
     denomAddress: DAI_CONTRACT_ADDRESS,
     destinationChainId: "union-testnet-8",
     // or `client.cosmos.account.address` if you want to send to yourself
-    recipient: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
+    receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
   } satisfies TransferAssetsParameters<"80084">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)

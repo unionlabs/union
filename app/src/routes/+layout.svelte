@@ -6,9 +6,9 @@ import { page } from "$app/stores"
 import { ModeWatcher } from "mode-watcher"
 import { browser } from "$app/environment"
 import { shortcut } from "@svelte-put/shortcut"
-import { cosmosStore } from "$lib/wallet/cosmos"
 import Footer from "$lib/components/footer.svelte"
 import { Toaster } from "$lib/components/ui/sonner"
+import { crtEffectEnabled } from "$lib/stores/user.ts"
 import { notifyManager } from "@tanstack/svelte-query"
 import DevTools from "$lib/components/dev-tools.svelte"
 import { createQueryClient } from "$lib/query-client.ts"
@@ -18,7 +18,6 @@ import { updateTheme } from "$lib/utilities/update-theme.ts"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
-import { crtEffectEnabled } from "$lib/stores/user"
 
 const { queryClient, localStoragePersister, PersistQueryClientProvider } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
@@ -46,14 +45,12 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
         modifier: ["ctrl"],
         callback: () => {
           console.info("Hiding tanstack devtools")
-          const tanstackDevtoolsElement = document.querySelector(
-            "div.tsqd-transitions-container"
-          )
+          const tanstackDevtoolsElement = document.querySelector("div.tsqd-transitions-container")
           if (!tanstackDevtoolsElement) return
           tanstackDevtoolsElement.classList.toggle("hidden")
-        }
-      }
-    ]
+        },
+      },
+    ],
   }}
 />
 
@@ -71,6 +68,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
     <slot />
   </div>
   <Footer />
+
   <SvelteQueryDevtools
     position="bottom"
     client={queryClient}
@@ -82,7 +80,10 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
   <!-- <OnlineStatus /> !-->
 </PersistQueryClientProvider>
 
-<div class:crt={$crtEffectEnabled} class="absolute top-0 w-dvw h-dvh z-50 pointer-events-none"></div>
+<div
+  class:crt={$crtEffectEnabled}
+  class="absolute top-0 w-dvw h-dvh z-50 pointer-events-none"
+></div>
 
 <style>
   :global([data-close-button]) {

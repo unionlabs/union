@@ -1,5 +1,5 @@
 import type { Address } from "viem"
-import { bytesToHex } from "@union/client"
+import { bytesToHex } from "@unionlabs/client"
 import { sleep } from "$lib/utilities/index.ts"
 import { persisted } from "svelte-persisted-store"
 import type { UserAddressCosmos } from "$lib/types"

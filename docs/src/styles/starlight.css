@@ -50,16 +50,14 @@ h2 > a:hover::after,
 h3 > a:hover::after,
 h4 > a:hover::after,
 h5 > a:hover::after {
-  content: "";
-  width: 0.75em;
-  height: 0.75em;
-  margin-left: 5px;
-  background-repeat: no-repeat;
-  background-size: contain;
+  content: "#";
+  width: 0.5em;
+  height: 0.5em;
+  color: #f9f9f9;
+  margin-left: 0.25rem;
   display: inline-block;
-  background-image: url("../assets/images/link.svg");
-  transform: rotate(135deg);
-  filter: var(--anchor-icon-filter);
+  background-size: contain;
+  background-repeat: no-repeat;
 }
 
 li a[aria-current="page"] {

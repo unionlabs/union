@@ -18,7 +18,7 @@ export type TransferAssetFromEvmParams = {
   memo?: string
   amount: bigint
   account?: Account
-  recipient: string
+  receiver: string
   autoApprove?: boolean
   simulate?: boolean
   denomAddress: Address
@@ -36,7 +36,7 @@ export type TransferAssetFromEvmParams = {
  *   amount: 1n,
  *   account: evmAccount,
  *   sourceChannel: "channel-1",
- *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
  *   relayContractAddress: "0x2222222222222222222222222222222222222222",
  *   destinationChainId: "stride-internal-1",
@@ -49,7 +49,7 @@ export async function transferAssetFromEvm(
     memo,
     amount,
     account,
-    recipient,
+    receiver,
     denomAddress,
     sourceChannel,
     simulate = true,
@@ -97,9 +97,7 @@ export async function transferAssetFromEvm(
      */
     args: [
       sourceChannel,
-      recipient.startsWith("0x")
-        ? getAddress(recipient)
-        : bech32AddressToHex({ address: recipient }),
+      receiver.startsWith("0x") ? getAddress(receiver) : bech32AddressToHex({ address: receiver }),
       [{ denom: denomAddress, amount }],
       memo,
       { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
@@ -131,7 +129,7 @@ export type ApproveTransferAssetFromEvmParams = Pick<
  *   amount: 1n,
  *   account: evmAccount,
  *   sourceChannel: "channel-1",
- *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
  *   relayContractAddress: "0x2222222222222222222222222222222222222222",
  *   destinationChainId: "stride-internal-1",
@@ -189,7 +187,7 @@ export async function approveTransferAssetFromEvm(
  *   amount: 1n,
  *   account: evmAccount,
  *   sourceChannel: "channel-1",
- *   recipient: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
+ *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
  *   relayContractAddress: "0x2222222222222222222222222222222222222222",
  *   destinationChainId: "stride-internal-1",
@@ -202,14 +200,14 @@ export async function transferAssetFromEvmSimulate(
     memo,
     amount,
     account,
-    recipient,
+    receiver,
     denomAddress,
     sourceChannel,
     relayContractAddress
   }: {
     memo?: string
     amount: bigint
-    recipient: string
+    receiver: string
     account?: Address
     denomAddress: Address
     sourceChannel: string
@@ -227,7 +225,7 @@ export async function transferAssetFromEvmSimulate(
   const gasEstimation = await simulateTransaction({
     memo,
     amount,
-    recipient,
+    receiver,
     denomAddress,
     sourceChannel,
     account: account,

@@ -1,4 +1,3 @@
-import "./patch.ts"
 export type * from "./types.ts"
 export {
   bytesToHex,
@@ -38,7 +37,7 @@ export {
 export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
 import type { ChainId, TransferAssetsParameters } from "./client/types.ts"
-
+export { http, fallback } from "viem"
 /**
  * @module
  *

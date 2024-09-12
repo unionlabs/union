@@ -1,9 +1,9 @@
 import { isAddress, type Address } from "viem"
 import { raise } from "$lib/utilities/index.ts"
-import { bytesToBech32Address } from "@union/client"
 import { getCosmosChainBalances } from "./cosmos.ts"
 import { createQueries } from "@tanstack/svelte-query"
 import { erc20ReadMulticall } from "./evm/multicall.ts"
+import { bytesToBech32Address } from "@unionlabs/client"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
 import { getBalancesFromRoutescan } from "./evm/routescan.ts"
@@ -11,11 +11,11 @@ import { getBalancesFromRoutescan } from "./evm/routescan.ts"
 export function userBalancesQuery({
   userAddr,
   chains,
-  connected
+  connected = true
 }: {
   userAddr: UserAddresses
   chains: Array<Chain>
-  connected: boolean
+  connected?: boolean
 }) {
   return createQueries({
     queries: chains.map(chain => ({

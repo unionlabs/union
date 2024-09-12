@@ -1,22 +1,21 @@
 <script lang="ts">
+import { setMode } from "mode-watcher"
 import { navigating } from "$app/stores"
+import Sun from "virtual:icons/lucide/sun"
+import Moon from "virtual:icons/lucide/moon"
 import Connection from "./connection.svelte"
 import { cn } from "$lib/utilities/shadcn.ts"
+import { Label } from "$lib/components/ui/label"
 import * as Sheet from "$lib/components/ui/sheet"
+import { Switch } from "$lib/components/ui/switch"
 import { Button } from "$lib/components/ui/button"
 import * as Avatar from "$lib/components/ui/avatar"
 import WalletIcon from "virtual:icons/lucide/wallet"
-import { Separator } from "$lib/components/ui/separator"
+import { showUnsupported } from "$lib/stores/user.ts"
+import { crtEffectEnabled } from "$lib/stores/user.ts"
+import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
-import { Switch } from "$lib/components/ui/switch"
-import { Label } from "$lib/components/ui/label"
-import { showUnsupported } from "$lib/stores/user.ts"
-import Sun from "virtual:icons/lucide/sun"
-import Moon from "virtual:icons/lucide/moon"
-import { setMode } from "mode-watcher"
-import * as DropdownMenu from "$lib/components/ui/dropdown-menu"
-import { crtEffectEnabled } from "$lib/stores/user"
 
 let buttonText: string
 let connectedWallets = 0
@@ -48,9 +47,10 @@ $: if ($navigating) sheetOpen = false
       builders={[builder]}
       class={cn(
         connectedWallets === 1 ? "w-[75px]" : "w-[50px]",
-        "space-x-1.5 lg:w-[180px] text-md bg-accent text-black hover:bg-cyan-300/90 ml-auto",
+        "space-x-1.5 lg:w-[180px] text-md bg-accent text-black ml-auto",
+        "hover:bg-cyan-300/90",
         $sepoliaStore.connectionStatus === "connected" &&
-          $cosmosStore.connectionStatus === "connected"
+          $cosmosStore.connectionStatus === "connected",
       )}
       on:click={() => (sheetOpen = !sheetOpen)}
       size="sm"
@@ -59,13 +59,7 @@ $: if ($navigating) sheetOpen = false
       <span class="font-supermolot font-bold uppercase lg:block hidden">
         {buttonText}
       </span>
-      <span
-        class={cn(
-          connectedWallets === 1
-            ? "font-supermolot font-bold uppercase"
-            : "hidden"
-        )}
-      >
+      <span class={cn(connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>
         {connectedWallets === 1 ? "1/2" : ""}
       </span>
     </Button>
@@ -74,17 +68,14 @@ $: if ($navigating) sheetOpen = false
     class={cn(
       "h-full border-solid border-left flex flex-col justify-start",
       "min-w-[95%] max-w-[90%] sm:min-w-min sm:max-w-[500px]",
-      "overflow-y-auto"
+      "overflow-y-auto",
     )}
   >
     <Sheet.Header>
       <Sheet.Title class="flex gap-4 items-center">
         <!-- Connect Wallet -->
         <Avatar.Root
-          class={cn(
-            "size-10",
-            $sepoliaStore.connectionStatus !== "connected" && "hidden"
-          )}
+          class={cn("size-10", $sepoliaStore.connectionStatus !== "connected" && "hidden")}
         >
           <Avatar.Image
             alt="ethereum avatar"
@@ -92,9 +83,7 @@ $: if ($navigating) sheetOpen = false
           />
           <Avatar.Fallback>UN</Avatar.Fallback>
         </Avatar.Root>
-        <h2
-          class=" text-start w-full text-2xl font-bold uppercase font-supermolot"
-        >
+        <h2 class=" text-start w-full text-2xl font-bold uppercase font-supermolot">
           Connect Wallets
         </h2>
       </Sheet.Title>
@@ -147,18 +136,15 @@ $: if ($navigating) sheetOpen = false
         </DropdownMenu.Trigger>
         <DropdownMenu.Content class="w-fit rounded-none bg-secondary">
           <DropdownMenu.Group>
-            <DropdownMenu.Item
-              on:click={() => setMode("system")}
-              class="cursor-pointer">System</DropdownMenu.Item
-            >
-            <DropdownMenu.Item
-              on:click={() => setMode("dark")}
-              class="cursor-pointer">Dark</DropdownMenu.Item
-            >
-            <DropdownMenu.Item
-              on:click={() => setMode("light")}
-              class="cursor-pointer">Light</DropdownMenu.Item
-            >
+            <DropdownMenu.Item on:click={() => setMode("system")} class="cursor-pointer">
+              System
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => setMode("dark")} class="cursor-pointer">
+              Dark
+            </DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => setMode("light")} class="cursor-pointer">
+              Light
+            </DropdownMenu.Item>
           </DropdownMenu.Group>
         </DropdownMenu.Content>
       </DropdownMenu.Root>

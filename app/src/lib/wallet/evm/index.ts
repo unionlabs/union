@@ -1,7 +1,8 @@
 export {
+  chains,
   evmConnect,
-  sepoliaStore,
   userAddrEvm,
+  sepoliaStore,
   type EvmWalletId,
   evmWalletsInformation
 } from "./config.ts"

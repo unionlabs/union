@@ -10,9 +10,9 @@ export type ChainId = (typeof evmChainId)[number] | (typeof cosmosChainId)[numbe
 export type TransferAssetsParameters<CHAIN_ID extends EvmChainId | CosmosChainId> = {
   memo?: string
   amount: bigint
-  recipient: string
+  receiver: string
   autoApprove?: boolean
-  destinationChainId: ChainId | (string & {})
+  destinationChainId: ChainId
 } & (CHAIN_ID extends CosmosChainId
   ? {
       denomAddress: string

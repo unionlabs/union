@@ -1,53 +1,55 @@
 import { http } from "viem"
-import { consola } from "scripts/logger.ts"
+import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { createMultiUnionClient, type TransferAssetsParameters } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParameters } from "@unionlabs/client"
+
+const PRIVATE_KEY = process.env["PRIVATE_KEY"]?.startsWith("0x")
+  ? process.env["PRIVATE_KEY"]
+  : `0x${process.env["PRIVATE_KEY"]}`
+
+// createMultiUnionClient([{
+//   chainId: `${arbitrumSepolia.id}`,
+// }])
 
 const account = privateKeyToAccount(`0x${process.env["PRIVATE_KEY"]}`)
 
-const clients = createMultiUnionClient([
-  {
-    chainId: "stride-internal-1",
-    transport: http("stride.testnet-1.stridenet.co")
-  },
-  {
-    account,
-    chainId: "11155111",
-    transport: http("https://rpc.sepolia.org")
-  }
-])
+const client = createUnionClient({
+  account,
+  chainId: `${arbitrumSepolia.id}`,
+  transport: http("https://sepolia-rollup.arbitrum.io/rpc")
+})
 
 const payload = {
   amount: 1n,
   autoApprove: false,
   destinationChainId: "stride-internal-1",
-  denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789", // LINK
-  recipient: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
-} satisfies TransferAssetsParameters<"11155111">
+  receiver: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3",
+  denomAddress: "0xb1d4538b4571d411f07960ef2838ce337fe1e80e" // LINK
+} satisfies TransferAssetsParameters<`${typeof arbitrumSepolia.id}`>
 
-const gasResponse = await clients["11155111"].simulateTransaction(payload)
+const gasResponse = await client.simulateTransaction(payload)
 
 if (gasResponse.isErr()) {
-  consola.error(gasResponse.error)
+  console.error(`Gas estimation error: ${gasResponse.error}`)
   process.exit(1)
 }
 
-consola.success(`gas: ${gasResponse.value}`)
+console.info(`Gas estimation: ${gasResponse.value}`)
 
-const approvalResponse = await clients["11155111"].approveTransaction(payload)
+const approval = await client.approveTransaction(payload)
 
-if (approvalResponse.isErr()) {
-  consola.error(approvalResponse.error)
+if (approval.isErr()) {
+  console.error(`Approval error: ${approval.error}`)
   process.exit(1)
 }
 
-consola.box(`Approval success: ${approvalResponse.value}`)
+console.info(`Approval hash: ${approval.value}`)
 
-const sepoliaTransfer = await clients["11155111"].transferAsset(payload)
+const transfer = await client.transferAsset(payload)
 
-if (sepoliaTransfer.isErr()) {
-  console.error(sepoliaTransfer.error)
+if (transfer.isErr()) {
+  console.error(`Transfer error: ${transfer.error}`)
   process.exit(1)
 }
 
-consola.success(`Transfer success: ${sepoliaTransfer.value}`)
+console.info(`Transfer hash: ${transfer.value}`)

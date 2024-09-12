@@ -9,7 +9,7 @@
     {
       packages = {
         docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-qpW7fsNOEi/dnb9QdXgIrhZguy4xgFGScLgp4cPJQls=";
+          npmDepsHash = "sha256-nnugNuwQybGENX7QAna0oZgtenUGsHaxKkIMxl/HrF8=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "docs";
@@ -51,8 +51,16 @@
             runtimeInputs = combinedDeps;
             text = ''
               ${ensureAtRepositoryRoot}
+              biome check docs --error-on-warnings --write --unsafe
+              
+              nix fmt
+
               cd docs/
+
               npm_config_yes=true npx astro check
+              npm_config_yes=true npx astro build
+
+              nix build .\#checks.${pkgs.system}.spellcheck --print-build-logs
             '';
           };
         };

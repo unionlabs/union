@@ -175,3 +175,4 @@ dist
 .DS_Store
 .env
 .editorconfig
+.tsup

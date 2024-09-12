@@ -7,7 +7,6 @@ import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 
 import * as Card from "$lib/components/ui/card/index.ts"
-// import { UnionClient } from "@union/client"
 import { Button } from "$lib/components/ui/button"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 
@@ -148,7 +147,7 @@ const BERACHAIN_CONTRACTS = {
       fromChainId.set(newSelectedChain)
     }}
     selectedChain={$fromChainId}
-    userAddr={$userAddr}
+    userAddress={$userAddr}
   />
 
   <ChainDialog
@@ -159,7 +158,7 @@ const BERACHAIN_CONTRACTS = {
       toChainId.set(newSelectedChain)
     }}
     selectedChain={$toChainId}
-    userAddr={$userAddr}
+    userAddress={$userAddr}
   />
   
 </ChainsGate>

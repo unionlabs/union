@@ -38,7 +38,7 @@ try {
     denomAddress: "muno",
     destinationChainId: "union-testnet-8",
     gasPrice: { amount: "0.0025", denom: "muno" },
-    recipient: "union1qp0wtsfltjk9rnvyu3fkdv0s0skp4y5y3py96f"
+    receiver: "union1qp0wtsfltjk9rnvyu3fkdv0s0skp4y5y3py96f"
   })
 
   consola.info(transfer)
