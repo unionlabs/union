@@ -118,16 +118,6 @@ export default defineConfig({
           ]
         },
         {
-          label: "SDKs",
-          items: [
-            {
-              label: "TypeScript",
-              link: "/sdks/typescript",
-              badge: { variant: "note", text: "new" }
-            }
-          ]
-        },
-        {
           label: "Integrations",
           items: [
             {
@@ -135,8 +125,13 @@ export default defineConfig({
               link: "/integrations/getting-started"
             },
             {
+              label: "TypeScript SDK",
+              link: "/integrations/typescript",
+              badge: { variant: "note", text: "new" }
+            },
+            {
               label: "API",
-              collapsed: false,
+              collapsed: true,
               autogenerate: {
                 directory: "/integrations/api"
               }
