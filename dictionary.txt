@@ -156,6 +156,7 @@ Paramspace
 Partset
 Patchelf
 Pedersen
+Perlin
 Phasellus
 PoisonPhang
 Polkadot
@@ -755,6 +756,7 @@ leapwallet
 legendapp
 legendres
 legos
+lerp
 libblst
 libc
 libclang
@@ -1105,6 +1107,7 @@ slashingkeeper
 slashingtypes
 slurpfile
 smallvec
+smoothstep
 snapshotter
 snapshottypes
 soketto
