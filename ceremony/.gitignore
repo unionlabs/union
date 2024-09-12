@@ -1,0 +1,35 @@
+# Node modules
+node_modules
+
+# Build directories
+/build
+/.svelte-kit
+/output
+.vercel
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite config files
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Sentry Config File
+.sentryclirc
+
+# ESLint and Prettier cache files
+.eslintcache
+.prettiercache
+
+# Partytown
+~partytown
+
+# Stats directory
+stats
