@@ -9,7 +9,7 @@
     {
       packages = {
         ceremony = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-/vwKKNOjLFo6tlOHXeaE8sDOvjm2B2APNw+5g1AdTZk=";
+          npmDepsHash = "sha256-iL4+qO73/tXPDPI7d6B8UywQN9vhchPzy91WiRLYXUI=";
           src = ./.;
           sourceRoot = "ceremony";
           npmFlags = [ "--legacy-peer-deps" ];
