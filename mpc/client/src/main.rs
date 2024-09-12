@@ -13,7 +13,7 @@ use std::{
     time::{Duration, Instant, UNIX_EPOCH},
 };
 
-use async_sqlite::{JournalMode, PoolBuilder};
+use async_sqlite::{rusqlite::OpenFlags, JournalMode, PoolBuilder};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use crossterm::event;
 use http_body_util::{BodyExt, Full};
@@ -136,6 +136,12 @@ async fn contribute(
     };
     let pool = PoolBuilder::new()
         .path("db.sqlite3")
+        .flags(
+            OpenFlags::SQLITE_OPEN_READ_WRITE
+                | OpenFlags::SQLITE_OPEN_CREATE
+                | OpenFlags::SQLITE_OPEN_FULL_MUTEX
+                | OpenFlags::SQLITE_OPEN_URI,
+        )
         .journal_mode(JournalMode::Wal)
         .open()
         .await?;
@@ -153,7 +159,7 @@ async fn contribute(
     .await?;
     let mut upload_location = pool
         .conn(move |conn| {
-            let mut stmt = conn.prepare_cached(
+            let mut stmt = conn.prepare(
                 "SELECT location FROM resumable_upload WHERE expire > unixepoch() LIMIT 1",
             )?;
             let mut rows = stmt.query(())?;
@@ -213,7 +219,7 @@ async fn contribute(
             let expire_timestamp = expire.duration_since(UNIX_EPOCH)?.as_secs();
             let location_clone = location.clone();
             pool.conn(move |conn| {
-                let mut stmt = conn.prepare_cached(
+                let mut stmt = conn.prepare(
                     "INSERT INTO resumable_upload (location, expire) VALUES (?, ?)",
                 )?;
                 let r = stmt.execute((location_clone, expire_timestamp))?;
@@ -439,7 +445,6 @@ async fn main() -> Result<(), DynError> {
                     let fut = graceful.watch(conn);
                     tokio::task::spawn(async move {
                         if let Err(err) = fut.await {
-                            eprintln!("error serving connection: {:?}", err);
                         }
                     });
                 }
