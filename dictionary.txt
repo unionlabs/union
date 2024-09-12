@@ -221,8 +221,8 @@ Verkle
 Viridis
 Vitarana
 Wagmi
-Webgl
 Wdua
+Webgl
 Wrapf
 XB
 XMSB
