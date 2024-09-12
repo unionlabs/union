@@ -9,13 +9,13 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
 <PackageManagers
   type="add"
   frame="none"
-  pkg="@unionlabs/client"
+  pkg="@unionlabs/client@latest"
   pkgManagers={['npm', 'pnpm', 'bun', 'yarn']}
 />
 
-The Union client is TypeScript-first and framework agnostic.
+The Union Client is TypeScript-first and framework agnostic.
 At [app.union.build](https://app.union.build) we use [Svelte](https://svelte.dev) but you can use any framework or no frameworks at all.
-If you're a [React](https://reactjs.org) user, [checkout this demo on Stackblitz](https://stackblitz.com/edit/github-nav3yr-xbanxq?file=src%2Fapp.tsx).
+If you're a [React](https://reactjs.org) developer, [checkout this demo on Stackblitz](https://stackblitz.com/edit/github-nav3yr-xbanxq?file=src%2Fapp.tsx).
 
 :::note
 
@@ -140,10 +140,14 @@ console.info(`Transfer hash: ${transfer.value}`)
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient, http } from "@unionlabs/client"
 
+let PRIVATE_KEY = process.env["PRIVATE_KEY"]
+if (!PRIVATE_KEY) throw new Error("PRIVATE_KEY is not set")
+PRIVATE_KEY = PRIVATE_KEY.startsWith("0x") ? PRIVATE_KEY : `0x${PRIVATE_KEY}`
+
 export const unionClient = createUnionClient({
   chainId: "80084",
-  transport: http("https://bartio.rpc.berachain.com"),
-  account: privateKeyToAccount(`0x${process.env.PRIVATE_KEY}`),
+  account: privateKeyToAccount(PRIVATE_KEY),
+  transport: http("https://bartio.rpc.berachain.com")
 })
 ```
   </TabItem>
@@ -152,5 +156,5 @@ export const unionClient = createUnionClient({
 Run the above example
 
 ```bash frame="none"
-PRIVATE_KEY= npm_config_yes=true npx tsx main.ts
+PRIVATE_KEY="" npm_config_yes=true npx tsx main.ts
 ```
