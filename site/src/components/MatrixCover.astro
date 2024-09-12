@@ -291,7 +291,7 @@
       mouseX += (targetMouseX - mouseX) * 0.1;
       mouseY += (targetMouseY - mouseY) * 0.1;
 
-      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 1, -15]);
+      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 1, -30]);
       glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.05, [1, 0, 0]);
       glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4 + mouseX * 0.05, [0, 1, 0]);
 
@@ -375,8 +375,8 @@
 
     // Initialize cube positions
     const cubePositions = [];
-    for (let x = -10; x < 10; x++) {
-      for (let z = -10; z < 10; z++) {
+    for (let x = -20; x < 20; x++) {
+      for (let z = -20; z < 20; z++) {
         cubePositions.push([x * 1.2, 0, z * 1.2]);
       }
     }
