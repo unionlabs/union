@@ -109,27 +109,27 @@ module IBC::LightClient {
         let trusted_height_number = height::get_revision_height(&header.trusted_height);
 
         if (untrusted_height_number <= trusted_height_number) {
-            return 1
+            return 2
         };
 
         let trusted_timestamp = consensus_state.timestamp;
         let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
         if (untrusted_timestamp <= trusted_timestamp) {
-            return 1  
+            return 3  
         };
 
         let current_time = timestamp::now_seconds() * 1_000_000_000;
         if (untrusted_timestamp> (current_time + state.client_state.trusting_period)) {
-            return 1  
+            return 4  
         };
 
         if (untrusted_timestamp >= current_time + state.client_state.max_clock_drift) {
-            return 1  
+            return 5  
         };
 
         if (untrusted_height_number == trusted_height_number + 1) {
             if (header.signed_header.validators_hash != consensus_state.next_validators_hash) {
-                return 1
+                return 6
             };
         };
 
@@ -139,7 +139,7 @@ module IBC::LightClient {
             light_header_as_input_hash(&header.signed_header),
             &header.zero_knowledge_proof,
         )) {
-            return 1
+            return 7
         };
 
         0
@@ -154,7 +154,7 @@ module IBC::LightClient {
         let state = borrow_global_mut<State>(get_client_address(&client_id));
 
         if (!height::is_zero(&state.client_state.frozen_height)) {
-            return (vector::empty(), vector::empty(), vector::empty(), 1)
+            return (vector::empty(), vector::empty(), vector::empty(), 8)
         };
 
         let consensus_state = smart_table::borrow<height::Height, ConsensusState>(&state.consensus_states, header.trusted_height);
@@ -504,8 +504,33 @@ module IBC::LightClient {
 
     #[test]
     fun update_client_test() {
-        let update = x"7403000000000000d10be26600000000e989dd2e2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d94cffa3cf9b8a1df639216a30ff4634a3d956a52c31b380e93bafd72ac82458f01000000000000006503000000000000c0011c07eda947c3eafa3ff0cce379a1dd0c70b003a169cbf24d0fb6de1476be7c9573b86f87d074258f556ff4d164d1d37b4b681883356b64e87a747d104d979d1a29cc1879d591ca7ac1ed2aeec9c5e17e3d57bce1214755f3e286e94f78149089dbb1d51d447aa5260583ca09af1adcd9aa304504b3819c0e0dbad9a18016b303600b63f82ec18c9e9917eae498ca13728b9f0cfdcd1184f9118b19a0c300ac2e1cb618f8317deb8e5c6c7ea2336dbe2e88904a590bd193893028eb16b011a329";
+        let update = x"1705000000000000cfc8e2660000000078205b1f2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2bb490808b70783385f7773eee98bc942db441fa4cd2abb54f3877c6572fabe80100000000000000ff04000000000000c0016a5b345f936d30d5b2b5f981fa73e832477e4d9cbfd85a3efd513d605e12050782f65ab2e337071edb3c421c1fa17351c70f316fd9affcf057b1054098d8071fe21cedf25cb125663a97982aa13a019e4575d5e2a22c4f273cb4f05231b84aaf604a92564aee7f5a98f06f6e9096b3fdd7235e9cb141dd63ac8058a1f76cbf0c8df091911f002984cc97202e635de899a0d61306f02218ffe8ae67d737f0fe97ceb1848c6812eed77fc56f8b536b20692eeac01ac030c21d136a1072f59bfa99";
 
         let header = decode_header(update);
+
+        std::debug::print(&header);
+    }
+
+    #[test]
+    fun decode_cons_state() {
+        let client = x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000007beb2f72060000e09265170100000000000000000000000000000000000001000000000000008605000000000000";
+        let cons = x"88430614737af41719ef8a27d69c8953d2f36f7f3380a5e516752b36b66f15a1238594f019a7174e2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d";
+        let client = decode_client_state(client);
+        let cons = decode_consensus_state(cons);
+        let header = x"9905000000000000a1cbe26600000000b660372b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500dccd06a9736f4d00a1a981044332539d1affe3052dad73c836ecb178e2c0d14e501000000000000006d05000000000000c001f8aaffd288fa229cc96858d4c9675df9bdd3955e5324b2a57f1576e0099cf280f98f08e96afd770e4716b2b3425d993c9b9c60df37458aa3d7ca06de68a8e7188790db59291ef1ff610b10279f3500ff03c23b2ea6df49ca47099596ca61e91c401dbf641159608e23d272cd20f61dbb75ecdf206bd7138fb613eb1c473b60a3bcaaa29dc7bad1373277f391147481941bf9a65a4dede35fae022ba469ec6d93eda92784efb6c158cc76e32b8e5a801e189d111fac85d934d4fa7d614755a092";
+        let header = decode_header(header);
+
+        std::debug::print(&cons);
+        std::debug::print(&client);
+        std::debug::print(&header);
+
+        let res = groth16_verifier::verify_zkp(
+            &string::utf8(b"union-devnet-1"),
+            &cons.next_validators_hash,
+            light_header_as_input_hash(&header.signed_header),
+            &header.zero_knowledge_proof
+        );
+
+        std::debug::print(&res);
     }
 }

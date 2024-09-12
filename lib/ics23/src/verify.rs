@@ -408,11 +408,17 @@ mod tests {
     use hex_literal::hex;
     use unionlabs::{
         cosmos::ics23::commitment_proof::CommitmentProof,
-        encoding::{DecodeAs, Proto},
+        encoding::{DecodeAs, EncodeAs as _, Proto},
+        ibc::core::{
+            channel::order::Order,
+            commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
+            connection::{connection_end::ConnectionEnd, version::Version},
+        },
+        validated::ValidateT,
     };
 
     use super::*;
-    use crate::proof_specs::TENDERMINT_PROOF_SPEC;
+    use crate::{ibc_api::SDK_SPECS, proof_specs::TENDERMINT_PROOF_SPEC};
 
     fn ensure_existent(
         proof: &[u8],
@@ -501,5 +507,39 @@ mod tests {
         let key = hex!("ffffffff");
 
         assert_eq!(ensure_non_existent(&proof, &root, &key), Ok(()));
+    }
+
+    #[test]
+    fn verify_chained_test() {
+        let proof = MerkleProof::decode_as::<Proto>(&hex!("0aa5020aa2020a18636f6e6e656374696f6e732f636f6e6e656374696f6e2d3012460a0930382d7761736d2d3012140a0131120f4f524445525f554e4f524445524544180222210a0a636f6d6574626c732d30120c636f6e6e656374696f6e2d301a050a036962631a0c0801180120012a040002ca01222a080112260204ca012067b76c7b82d60ebee7f41dd11a02534c1a16efa70c217310356230dfd5ad0c2020222a080112260406aa0220fe0560ee5685e1c214bcb958f761a467858478ed4a2ddcf77cc0f27258248f9c20222c08011205060eaa02201a2120140ee5ef0cddcc422e389954ff959f52c905a7211e62e3a14f67199ad81e0322222a08011226081aaa02203d62d598ecb60b8721fb2ace147909fb3c61c54dc7b54e04d028cc21e10d505a200afc010af9010a036962631220552a1b22544e343a046985a0ae8cc625adc18a18b7669a64ae9e4c9ba6754f461a090801180120012a0100222708011201011a202cd8b50700950546180ad979135a8708c2ea2098fff6ade31b7e40eb5dcf7c05222508011221012cf3feea58fcdb48b73c2cdd1b018c90c4078f924385675a0e9457168cd47ff1222508011221016bd19d4e1e3d1d96827c449152c4bedc0d5d306e9696d3ca78983d6866891f3122250801122101a9788106a88704540fe0ead349d99096acaae60826863dd426a530b82570b757222708011201011a20a2fac4bcd28e2655f7985c9aad923140076c1764bd862ebfa999f8ed2bacfbf7")).unwrap();
+        let root = hex!("88be092a61a8033111d4625bdbdc48c814b7258a2ec560e731b9fd17780e45ed");
+        let key = b"connections/connection-0";
+
+        crate::ibc_api::verify_membership(
+            &proof,
+            &SDK_SPECS,
+            &MerkleRoot {
+                hash: unionlabs::hash::H256(root),
+            },
+            &[b"ibc".to_vec(), key.to_vec()],
+            ConnectionEnd {
+                client_id: String::from("08-wasm-0").validate().unwrap(),
+                versions: vec![Version {
+                    identifier: "1".to_string(),
+                    features: vec![Order::Unordered],
+                }],
+                state: unionlabs::ibc::core::connection::state::State::Tryopen,
+                counterparty: unionlabs::ibc::core::connection::counterparty::Counterparty {
+                    client_id: "cometbls-0".to_string().validate().unwrap(),
+                    connection_id: Some("connection-0".to_string().validate().unwrap()),
+                    prefix: unionlabs::ibc::core::commitment::merkle_prefix::MerklePrefix {
+                        key_prefix: b"ibc".to_vec(),
+                    },
+                },
+                delay_period: 0,
+            }
+            .encode_as::<Proto>(),
+        )
+        .unwrap();
     }
 }

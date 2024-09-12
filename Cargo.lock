@@ -13584,6 +13584,7 @@ version = "0.1.0"
 dependencies = [
  "ark-bn254",
  "ark-serialize 0.4.2",
+ "bcs 0.1.4",
  "clap 4.5.4",
  "cometbft-rpc",
  "dashmap",

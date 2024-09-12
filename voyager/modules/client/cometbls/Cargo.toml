@@ -27,3 +27,4 @@ tracing               = { workspace = true }
 tracing-subscriber    = { workspace = true }
 unionlabs             = { workspace = true }
 voyager-message       = { workspace = true }
+bcs                   = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }

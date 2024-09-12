@@ -23,7 +23,7 @@
       "config": {
         "rpc_url": "http://localhost:30731",
         "movement_rpc_url": "http://localhost:30832",
-        "ibc_handler_address": "0x4d3b332835fdad9c20505ebedffba3bb20ff2d4ba35946f5e46bf67ec759e34f"
+        "ibc_handler_address": "0x70351d47ec62c056fd14ff23750feb76e256f892dbb0f9b70ce01607cf7b9d74"
       }
     },
     {
@@ -67,7 +67,7 @@
       "enabled": true,
       "path": "/home/aeryz/dev/union/union/target/debug/voyager-consensus-module-movement",
       "config": {
-        "ibc_handler_address": "0x4d3b332835fdad9c20505ebedffba3bb20ff2d4ba35946f5e46bf67ec759e34f",
+        "ibc_handler_address": "0x70351d47ec62c056fd14ff23750feb76e256f892dbb0f9b70ce01607cf7b9d74",
         "l1_settlement_address": "0x0000000000000000000000000000000000000000",
         "l1_client_id": "cometbls-0",
         "aptos_rest_api": "http://localhost:30731",
@@ -149,7 +149,7 @@
       "path": "/home/aeryz/dev/union/union/target/debug/voyager-transaction-module-aptos",
       "config": {
         "rpc_url": "http://localhost:30731",
-        "ibc_handler_address": "0x4d3b332835fdad9c20505ebedffba3bb20ff2d4ba35946f5e46bf67ec759e34f",
+        "ibc_handler_address": "0x70351d47ec62c056fd14ff23750feb76e256f892dbb0f9b70ce01607cf7b9d74",
         "keyring": {
           "name": "ethereum-devnet",
           "keys": [

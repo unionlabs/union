@@ -18,6 +18,7 @@ use unionlabs::{
     ibc::lightclients::cometbls::{
         client_state::ClientState, consensus_state::ConsensusState, header::Header,
     },
+    union::ics23,
     ErrorReporter,
 };
 use voyager_message::{
@@ -331,21 +332,17 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterfaces::IbcSolidity => {
-                    unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
+                SupportedIbcInterfaces::IbcSolidity => ics23::merkle_proof::MerkleProof::try_from(
+                    protos::ibc::core::commitment::v1::MerkleProof::from(cs),
+                )
+                .unwrap()
+                .encode_as::<EthAbi>(),
+                SupportedIbcInterfaces::IbcMoveAptos => encode_merkle_proof_for_move(
+                    ics23::merkle_proof::MerkleProof::try_from(
                         protos::ibc::core::commitment::v1::MerkleProof::from(cs),
                     )
-                    .unwrap()
-                    .encode_as::<EthAbi>()
-                }
-                SupportedIbcInterfaces::IbcMoveAptos => {
-                    // TODO: Currently disabled, test this later
-                    unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
-                        protos::ibc::core::commitment::v1::MerkleProof::from(cs),
-                    )
-                    .unwrap()
-                    .encode_as::<Bcs>()
-                }
+                    .unwrap(),
+                ),
             })
             .map(Hex)
     }
@@ -409,4 +406,23 @@ fn reencode_zkp_for_move(zkp: &[u8]) -> Result<Vec<u8>, SerializationError> {
     serialize_g1(&mut cursor, &mut buf, zkp)?;
 
     Ok(buf)
+}
+
+#[model]
+struct MoveMembershipProof {
+    sub_proof: ics23::existence_proof::ExistenceProof,
+    top_level_proof: ics23::existence_proof::ExistenceProof,
+}
+
+fn encode_merkle_proof_for_move(proof: ics23::merkle_proof::MerkleProof) -> Vec<u8> {
+    match proof {
+        ics23::merkle_proof::MerkleProof::Membership(sub_proof, top_level_proof) => {
+            MoveMembershipProof {
+                sub_proof,
+                top_level_proof,
+            }
+        }
+        ics23::merkle_proof::MerkleProof::NonMembership(_, _) => todo!(),
+    }
+    .encode_as::<Bcs>()
 }

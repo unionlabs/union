@@ -1,5 +1,5 @@
 module IBC::groth16_verifier {
-    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr,FormatG1Compr, G2, Gt, FormatG2Compr};
+    use std::bn254_algebra::{Fr, FormatFrMsb, FormatFrLsb, G1, FormatG1Uncompr,FormatG1Compr, FormatG2Uncompr, G2, Gt, FormatG2Compr};
     use std::crypto_algebra::{deserialize, serialize, zero, add, scalar_mul, multi_pairing, Element, eq};
     use std::option;
     use std::vector;
@@ -70,14 +70,8 @@ module IBC::groth16_verifier {
         let gamma_abc_2 = option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 1)));
         let gamma_abc_3 = option::extract(&mut deserialize<G1, FormatG1Uncompr>(vector::borrow(&mut GAMMA_ABC_G1, 2)));
 
-        // TODO(aeryz): why is this unused?
-        let _res = serialize<Fr, FormatFrLsb>(&commitment_hash);
-
         let msm_inner = add(&add<G1>(&gamma_abc_1, &zkp.proof_commitment), &scalar_mul<G1, Fr>(&gamma_abc_2, &inputs_hash));
         let public_inputs_msm = add<G1>(&msm_inner, &scalar_mul<G1, Fr>(&gamma_abc_3, &commitment_hash));
-        let res = serialize<G1, FormatG1Uncompr>(&public_inputs_msm);
-        vector::reverse_slice(&mut res, 0, 32);
-        vector::reverse_slice(&mut res, 32, 64);
 
         let res = multi_pairing<G1, G2, Gt>(
             &vector<Element<G1>>[
@@ -141,6 +135,9 @@ module IBC::groth16_verifier {
 
     fun hash_commitment(proof_commitment: &Element<G1>): u256 {
         let buffer = serialize<G1, FormatG1Uncompr>(proof_commitment);
+        let mask = vector::borrow_mut(&mut buffer, 63);
+        *mask = *mask & 0x3f; // erase the mask (0x3f = 0b00111111)
+        
         vector::reverse_slice(&mut buffer, 0, 32);
         vector::reverse_slice(&mut buffer, 32, 64);
         let hmac = hmac_keccak(&buffer);

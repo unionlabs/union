@@ -315,13 +315,6 @@ module IBC::connection_end {
                 connection_end.state = num;
                 advance
             } else if (tag == 4) {
-                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
-                if (err != 0) {
-                    return option::none()
-                };
-                connection_end.delay_period = num;
-                advance
-            } else if (tag == 5) {
                 let (len, advance, err) = proto_utils::decode_nested_len(wire_type, &buf, cursor);
                 if (err != 0) {
                     return option::none()
@@ -332,6 +325,13 @@ module IBC::connection_end {
                     return option::none()
                 };
                 len
+            } else if (tag == 5) {
+                let (num, advance, err) = proto_utils::decode_varint(wire_type, &buf, cursor);
+                if (err != 0) {
+                    return option::none()
+                };
+                connection_end.delay_period = num;
+                advance
             } else {
                 return option::none()
             };
@@ -363,15 +363,15 @@ module IBC::connection_end {
             vector::append(&mut buf, proto_utils::encode_u64(3, end.state));
         };
 
-        if (end.delay_period != 0) {
-            vector::append(&mut buf, proto_utils::encode_u64(4, end.delay_period));
-        };
-
         let counterparty = encode_proto_counterparty(end.counterparty);
         if (!vector::is_empty(&counterparty)) {
-            vector::append(&mut buf, proto_utils::encode_prefix(5, 2));
+            vector::append(&mut buf, proto_utils::encode_prefix(4, 2));
             vector::append(&mut buf, proto_utils::encode_varint(vector::length(&counterparty)));
             vector::append(&mut buf, counterparty);
+        };
+
+        if (end.delay_period != 0) {
+            vector::append(&mut buf, proto_utils::encode_u64(5, end.delay_period));
         };
         
         buf

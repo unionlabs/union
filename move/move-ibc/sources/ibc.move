@@ -492,7 +492,7 @@ module IBC::ibc {
         let err = verify_client_state(
             connection,
             proof_height,
-            IBCCommitment::client_state_commitment_key(*counterparty_client_id),
+            *string::bytes(&IBCCommitment::client_state_path(*counterparty_client_id)),
             proof_client,
             client_state_bytes
         );
@@ -563,18 +563,18 @@ module IBC::ibc {
             counterparty_connection_id,
             expected_connection
         );
-        assert!(err == 0, E_INVALID_PROOF);
+        assert!(err == 0, err);
 
         let counterparty_client_id = *connection_end::conn_counterparty_client_id(connection);
 
         let err = verify_client_state(
             connection,
             proof_height,
-            IBCCommitment::client_state_commitment_key(counterparty_client_id),
+            *string::bytes(&IBCCommitment::client_state_path(counterparty_client_id)),
             proof_client,
             client_state_bytes
         );
-        assert!(err == 0, E_INVALID_PROOF);
+        assert!(err == 0, err);
 
         connection_end::set_state(connection, CONN_STATE_OPEN);
 
@@ -1179,7 +1179,7 @@ module IBC::ibc {
             height,
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
-            bcs::to_bytes(&IBCCommitment::connection_path(connection_id)),
+            *string::bytes(&IBCCommitment::connection_path(connection_id)),
             connection_end::encode_proto(counterparty_connection)
         )
     }
