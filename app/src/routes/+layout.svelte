@@ -19,7 +19,7 @@ import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
 import { checkWebGLSupport, deviceWidth } from "$lib/utilities/device.ts"
 import { disablePinchToZoom } from "$lib/utilities/disable-pinch-to-zoom.ts"
 
-const { queryClient, localStoragePersister, PersistQueryClientProvider } = createQueryClient()
+const { queryClient, QueryClientProvider } = createQueryClient()
 if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 
 onMount(() => {
@@ -56,10 +56,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
 
 <LoadingBar />
 
-<PersistQueryClientProvider
-  client={queryClient}
-  persistOptions={{ persister: localStoragePersister }}
->
+<QueryClientProvider client={queryClient}>
   <ModeWatcher defaultMode="system" />
   <Toaster position="bottom-right" expand />
 
@@ -76,9 +73,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
     buttonPosition="bottom-right"
   />
   <DevTools />
-  <!-- will be enabled once powered by index status !-->
-  <!-- <OnlineStatus /> !-->
-</PersistQueryClientProvider>
+</QueryClientProvider>
 
 <div
   class:crt={$crtEffectEnabled}
