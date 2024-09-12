@@ -80,6 +80,7 @@ module UCS01::Relay {
 
     struct SignerRef has key {
         self_ref: object::ExtendRef,
+        self_address: address
     }
 
     // Events
@@ -193,9 +194,14 @@ module UCS01::Relay {
         object::create_object_address(&@UCS01, VAULT_SEED)
     }
 
-    public fun get_ucs_signer(): signer acquires SignerRef {
+    public fun get_signer(): signer acquires SignerRef {
         let vault = borrow_global<SignerRef>(get_vault_addr());
         object::generate_signer_for_extending(&vault.self_ref)
+    }
+
+    public fun get_self_address(): address acquires SignerRef {
+        let vault = borrow_global<SignerRef>(get_vault_addr());
+        vault.self_address
     }
 
     public fun increase_outstanding(source_channel: String, token: address, amount: u64) acquires RelayStore {
@@ -230,19 +236,23 @@ module UCS01::Relay {
         move_to(vault_signer, store);
 
         move_to(vault_signer, SignerRef {
-            self_ref: object::generate_extend_ref(vault_constructor_ref)
+            self_ref: object::generate_extend_ref(vault_constructor_ref),
+            self_address: signer::address_of(account),
         });
     }
 
-    public fun chan_open_init(
-        port_id: String,
+    public entry fun channel_open_init(
         connection_hops: vector<String>,
         ordering: u8,
-        counterparty: channel::Counterparty,
+        port_id: String,
+        counterparty_port_id: String,
+        counterparty_channel_id: String,
         version: String,
     ) acquires SignerRef {
+        let counterparty = channel::new_counterparty(counterparty_port_id, counterparty_channel_id);
         Core::channel_open_init(
-            &get_ucs_signer(),
+            &get_signer(),
+            // get_self_address(),
             port_id,
             connection_hops,
             ordering,
@@ -260,26 +270,29 @@ module UCS01::Relay {
     }
 
 
-    public fun chan_open_try(
+    public entry fun chan_open_try(
         port_id: String,
         connection_hops: vector<String>,
         ordering: u8,
-        counterparty: channel::Counterparty,
+        counterparty_port_id: String,
+        counterparty_channel_id: String,
         counterparty_version: String,
         version: String,
         proof_init: vector<u8>,
-        proof_height: height::Height,
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
     ) acquires SignerRef {
         Core::channel_open_try(
-            &get_ucs_signer(),
+            &get_signer(),
+            // get_self_address(),
             port_id,
             connection_hops,
             ordering,
-            counterparty,
+            channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
             counterparty_version,
             version,
             proof_init,
-            proof_height,
+            height::new(proof_height_revision_num, proof_height_revision_height),
         );
 
         if (!is_valid_version(version)) {
@@ -295,51 +308,55 @@ module UCS01::Relay {
         };
     }
 
-    public fun chan_open_ack(
+    public entry fun channel_open_ack(
         port_id: String,
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
         proof_try: vector<u8>,
-        proof_height: height::Height
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
     ) acquires SignerRef {
         // Store the channel_id
         Core::channel_open_ack(
-            &get_ucs_signer(),
+            &get_signer(),
+            // get_self_address(),
             port_id,
             channel_id,
             counterparty_channel_id,
             counterparty_version,
             proof_try,
-            proof_height
+            height::new(proof_height_revision_num, proof_height_revision_height),
         );
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_COUNTERPARTY_PROTOCOL_VERSION
         };
     }
 
-    public fun chan_open_confirm(
+    public entry fun channel_open_confirm(
         port_id: String,
         channel_id: String,
         proof_ack: vector<u8>,
-        proof_height: height::Height
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
     ) acquires SignerRef {
         Core::channel_open_confirm(
-            &get_ucs_signer(),
+            &get_signer(),
+            // get_self_address(),
             port_id,
             channel_id,
             proof_ack,
-            proof_height
+            height::new(proof_height_revision_num, proof_height_revision_height),
         );
     }
-    public fun chan_close_init(
+    public entry fun channel_close_init(
         _port_id: String,
         _channel_id: String
     ) {
         abort E_UNSTOPPABLE
     }
 
-    public fun chan_close_confirm(
+    public entry fun channel_close_confirm(
         _port_id: String,
         _channel_id: String
     ) {
@@ -347,7 +364,6 @@ module UCS01::Relay {
     }
 
     public fun timeout_packet(
-
         sequence: u64,
         source_port: String,
         source_channel: String,
@@ -513,16 +529,16 @@ module UCS01::Relay {
     }
 
     public fun on_recv_packet_processing(
-        ibc_packet: Packet, // representing the IBC Packet
-        source_channel: String,
-        destination_channel: String
+        ibc_packet: Packet // representing the IBC Packet
     ) acquires RelayStore, SignerRef {
         // Decode the RelayPacket from the IBC packet data
         let packet = decode_packet(*IBC::packet::data(&ibc_packet));
+        let source_channel = *IBC::packet::source_channel(&ibc_packet);
+        let destination_channel = *IBC::packet::destination_channel(&ibc_packet);
 
 
         // Create the denomination prefix based on source port and channel
-        let prefix = make_denom_prefix(*IBC::packet::source_port(&ibc_packet), *IBC::packet::source_channel(&ibc_packet));
+        let prefix = make_denom_prefix(*IBC::packet::source_port(&ibc_packet), source_channel);
 
         // Get the receiver's address from the packet
         let receiver = packet.receiver;//from_bcs::to_address(*string::bytes(packet.receiver));
@@ -557,7 +573,7 @@ module UCS01::Relay {
                 decrease_outstanding(source_channel, denom_address, token.amount);
 
                 // Transfer the unescrowed tokens to the receiver
-                primary_fungible_store::transfer(&get_ucs_signer(), get_metadata(denom_address), receiver, token.amount);
+                primary_fungible_store::transfer(&get_signer(), get_metadata(denom_address), receiver, token.amount);
 
             } else {
 
@@ -566,13 +582,13 @@ module UCS01::Relay {
                 // Construct the foreign denomination using the source and destination channels
                 let denom = make_foreign_denom(
                     *IBC::packet::destination_port(&ibc_packet),
-                    *IBC::packet::destination_channel(&ibc_packet),
+                    destination_channel,
                     token.denom
                 );
 
                 // Create a DenomToAddressPair for the foreign denomination
                 let pair = DenomToAddressPair {
-                    source_channel: *IBC::packet::source_channel(&ibc_packet),
+                    source_channel: source_channel,
                     denom: denom,
                 };
                                 
@@ -585,7 +601,7 @@ module UCS01::Relay {
                                         
                     // TODO CHANGE THOSE, in here we are creating(?) a new token
                     UCS01::fa_coin::initialize(
-                        &get_ucs_signer(),
+                        &get_signer(),
                         string::utf8(b"TODO"),
                         string::utf8(b"TODO"),
                         18,
@@ -597,7 +613,7 @@ module UCS01::Relay {
                     denom_address = UCS01::fa_coin::get_metadata_address(*string::bytes(&denom));
 
                     let pair = DenomToAddressPair {
-                        source_channel: *IBC::packet::source_channel(&ibc_packet),
+                        source_channel: source_channel,
                         denom: denom,
                     };
                     smart_table::upsert(&mut store.denom_to_address, pair, denom_address);
@@ -612,7 +628,7 @@ module UCS01::Relay {
                     // Emit the DenomCreated event
                     event::emit(DenomCreated {
                         packet_sequence: IBC::packet::sequence(&ibc_packet),
-                        channel_id: *IBC::packet::source_channel(&ibc_packet),
+                        channel_id: source_channel,
                         denom: denom,
                         token: denom_address,
                     });
@@ -620,13 +636,13 @@ module UCS01::Relay {
 
                 // Mint tokens to the receiver's account
                 let asset = get_metadata(denom_address);
-                UCS01::fa_coin::mint_with_metadata(&get_ucs_signer(), receiver, token.amount, asset);
+                UCS01::fa_coin::mint_with_metadata(&get_signer(), receiver, token.amount, asset);
             };
 
             // Emit the Received event
             event::emit(Received {
                 packet_sequence: IBC::packet::sequence(&ibc_packet),
-                channel_id: *IBC::packet::destination_channel(&ibc_packet),
+                channel_id: destination_channel,
                 sender: packet.sender,
                 receiver: receiver,
                 denom: token.denom,
@@ -689,7 +705,7 @@ module UCS01::Relay {
 
             if (denom_address != @0x0) {
                 let token = get_metadata(denom_address);
-                UCS01::fa_coin::mint_with_metadata(&get_ucs_signer(), user_to_refund, token_from_vec.amount, token);
+                UCS01::fa_coin::mint_with_metadata(&get_signer(), user_to_refund, token_from_vec.amount, token);
             } else {
                 let str_bytes = *string::bytes(&token_from_vec.denom);
                 let token_denom = token_from_vec.denom;
@@ -700,7 +716,7 @@ module UCS01::Relay {
                 let denom_address = from_bcs::to_address(hex_to_bytes(token_denom));
                 let token = get_metadata(denom_address);
                 decrease_outstanding(channel_id, denom_address, token_from_vec.amount);
-                primary_fungible_store::transfer(&get_ucs_signer(), token, @zero_account, token_from_vec.amount);
+                primary_fungible_store::transfer(&get_signer(), token, @zero_account, token_from_vec.amount);
             };
 
             // Emit a Refunded event
@@ -719,19 +735,59 @@ module UCS01::Relay {
     }
 
     
-    public fun recv_packet(
-        packet: Packet,
-    ) /*acquires RelayStore, SignerRef*/ {
-        let relay_packet = decode_packet(*IBC::packet::data(&packet));
-        // onRecvPacketProcessing(relay_packet, packet.source_channel, packet.destination_channel);
+    public entry fun recv_packet(
+        sequence: u64,
+        source_port: String,
+        source_channel: String,
+        destination_port: String,
+        destination_channel: String,
+        data: vector<u8>,
+        revision_number: u64,
+        revision_height: u64,
+        timeout_timestamp: u64,
+    ) acquires RelayStore, SignerRef {
+        let timeout_height = height::new(revision_number, revision_height);
+        let packet = IBC::packet::new(
+            sequence,
+            source_port,
+            source_channel,
+            destination_port,
+            destination_channel,
+            data,
+            timeout_height,
+            timeout_timestamp,
+        );
+        on_recv_packet_processing(packet);
     }
 
-    public fun acknowledge_packet(
-        packet: packet::Packet,
+    public entry fun acknowledge_packet(
+        sequence: u64,
+        source_port: String,
+        source_channel: String,
+        destination_port: String,
+        destination_channel: String,
+        data: vector<u8>,
+        revision_number: u64,
+        revision_height: u64,
+        timeout_timestamp: u64,
         acknowledgement: vector<u8>,
         proof: vector<u8>,
-        proof_height: height::Height
+        proof_revision_number: u64,
+        proof_revision_height: u64,
     ) acquires RelayStore, SignerRef {
+        let timeout_height = height::new(revision_number, revision_height);
+        let proof_height = height::new(proof_revision_number, proof_revision_height);
+        let packet = IBC::packet::new(
+            sequence,
+            source_port,
+            source_channel,
+            destination_port,
+            destination_channel,
+            data,
+            timeout_height,
+            timeout_timestamp,
+        );
+
         if (vector::length(&acknowledgement) != ACK_LENGTH || (*vector::borrow(&acknowledgement, 0) != ACK_FAILURE && *vector::borrow(&acknowledgement, 0) != ACK_SUCCESS)) {
             abort E_INVALID_ACKNOWLEDGEMENT;
         };
@@ -1006,7 +1062,7 @@ module UCS01::Relay {
         let denom_str = string_utils::to_string_with_canonical_addresses(&denom);
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
         smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
-        let admin = &get_ucs_signer();
+        let admin = &get_signer();
 
         UCS01::fa_coin::initialize(
             admin,
@@ -1051,7 +1107,7 @@ module UCS01::Relay {
             source_channel,
             denom,
         };
-        let admin = &get_ucs_signer();
+        let admin = &get_signer();
         UCS01::fa_coin::initialize(
             admin,
             string::utf8(TEST_NAME),
@@ -1090,7 +1146,7 @@ module UCS01::Relay {
 
         let source_channel = string::utf8(b"channel-1");
         let denom = @0x111111;
-        let admin = &get_ucs_signer();
+        let admin = &get_signer();
         UCS01::fa_coin::initialize(
             admin,
             string::utf8(TEST_NAME),
@@ -1163,7 +1219,7 @@ module UCS01::Relay {
         let source_channel = string::utf8(b"channel-1");
         let amount: u64 = 1000;
 
-        let token_owner = &get_ucs_signer();
+        let token_owner = &get_signer();
 
         // Step 2: Mint some tokens to Alice
         UCS01::fa_coin::initialize(
@@ -1220,7 +1276,7 @@ module UCS01::Relay {
         let source_channel = string::utf8(b"channel-1");
         let amount: u64 = 1000;
 
-        let token_owner = &get_ucs_signer();
+        let token_owner = &get_signer();
 
         UCS01::fa_coin::initialize(
             token_owner,
@@ -1280,7 +1336,7 @@ module UCS01::Relay {
         let port_id = string::utf8(b"port-1");
         let local_token_address = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
         
-        let token_owner = &get_ucs_signer();
+        let token_owner = &get_signer();
 
         // Mint some tokens to simulate the token creation on this chain
         UCS01::fa_coin::initialize(
@@ -1330,7 +1386,7 @@ module UCS01::Relay {
         );
 
         // Step 6: Process the IBC packet
-        on_recv_packet_processing(ibc_packet, source_channel, destination_channel);
+        on_recv_packet_processing(ibc_packet);
 
         // Step 7: Verify the token was transferred to Bob
         let bob_balance = primary_fungible_store::balance(bob, get_metadata(local_token_address));
@@ -1379,7 +1435,7 @@ module UCS01::Relay {
         );
 
         // Step 5: Process the IBC packet (will enter the 'else' block since it's a foreign token)
-        on_recv_packet_processing(ibc_packet, source_channel, destination_channel);
+        on_recv_packet_processing(ibc_packet);
 
         // Step 6: Verify that a new denomination was created and minting occurred
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
@@ -1407,7 +1463,7 @@ module UCS01::Relay {
         let destination_channel = string::utf8(b"dest-channel");
         let port_id = string::utf8(b"port-1");
         let foreign_denom = string::utf8(b"foreign-token-denom");
-        let token_owner = &get_ucs_signer();
+        let token_owner = &get_signer();
 
         UCS01::fa_coin::initialize(
             token_owner,
@@ -1461,7 +1517,7 @@ module UCS01::Relay {
         );
 
         // Step 6: Process the IBC packet (will use the existing token address in the 'else' block)
-        on_recv_packet_processing(ibc_packet, source_channel, destination_channel);
+        on_recv_packet_processing(ibc_packet);
 
         // Step 7: Verify that the existing token address was used
 
@@ -1488,7 +1544,7 @@ module UCS01::Relay {
         
         // Mint some tokens to simulate the token creation on this chain
         UCS01::fa_coin::initialize(
-            &get_ucs_signer(),
+            &get_signer(),
             string::utf8(TEST_NAME),
             string::utf8(TEST_SYMBOL),
             TEST_DECIMALS,
@@ -1500,7 +1556,7 @@ module UCS01::Relay {
         let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
         let asset = get_metadata(asset_addr);
         // Step 3: Mint tokens to the relay module's account (escrow)
-        UCS01::fa_coin::mint_with_metadata(&get_ucs_signer(), @UCS01, 1000, asset);
+        UCS01::fa_coin::mint_with_metadata(&get_signer(), @UCS01, 1000, asset);
         increase_outstanding(source_channel, local_token_address, 1000);
 
         // Step 4: Create the RelayPacket with a local token
@@ -1533,7 +1589,7 @@ module UCS01::Relay {
         );
 
         // Step 6: Process the IBC packet
-        on_recv_packet_processing(ibc_packet, source_channel, destination_channel);
+        on_recv_packet_processing(ibc_packet);
 
         // Step 7: Verify the token was transferred to Bob
         let bob_balance = primary_fungible_store::balance(bob, get_metadata(local_token_address));
