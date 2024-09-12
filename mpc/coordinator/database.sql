@@ -48,14 +48,6 @@ CREATE POLICY view_all
       true
     );
 
-CREATE POLICY allow_insert_self_if_open
-  ON queue
-  FOR INSERT
-    TO authenticated
-    WITH CHECK (
-      (SELECT auth.uid()) = id AND open_to_public()
-    );
-
 CREATE OR REPLACE VIEW current_queue AS
   (
     SELECT *, (SELECT COUNT(*) FROM queue qq
@@ -107,13 +99,28 @@ CREATE OR REPLACE FUNCTION redeem(code_id text) RETURNS void AS $$
   redeemed_code public.code%ROWTYPE := NULL;
 BEGIN
   UPDATE public.code c
-   SET id = (SELECT auth.uid())
-   WHERE c.id = code_id
+   SET user_id = (SELECT auth.uid())
+   WHERE c.id = encode(sha256(code_id::bytea), 'hex')
+   AND c.user_id IS NULL
    RETURNING * INTO redeemed_code;
   IF (redeemed_code IS NULL) THEN
     RAISE EXCEPTION 'redeem_code_invalid';
   END IF;
   INSERT INTO public.queue(id) VALUES ((SELECT auth.uid()));
+END
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+CREATE OR REPLACE FUNCTION join_queue(code_id text) RETURNS void AS $$
+BEGIN
+  IF (code_id IS NULL) THEN
+    IF (public.open_to_public()) THEN
+      INSERT INTO public.queue(id) VALUES ((SELECT auth.uid()));
+    ELSE
+      RAISE EXCEPTION 'not_open_yet';
+    END IF;
+  ELSE
+    PERFORM public.redeem(code_id);
+  END IF;
 END
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
