@@ -1,10 +1,13 @@
 ---
 import MatrixCover from "../../MatrixCover.astro"
 import ContainedSection from "../../ContainedSection.astro"
+import H1 from "../../typography/h1.astro"
+import ButtonA from "../../ButtonA.astro"
+import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 ---
 
 <ContainedSection>
-  <div class="relative">
+  <div class="relative full-height-minus-navbar">
 
     <!--SCREW -->
     <div class="screw bg-white rounded-full w-6 h-6 absolute top-0 right-0 z-20 flex items-center justify-center">
@@ -14,8 +17,18 @@ import ContainedSection from "../../ContainedSection.astro"
     <!--CLIPPED CONTAINER-->
     <div class="clipped-container flex overflow-hidden relative h-full" id="glowContainer">
       <div class="glow -z-10"></div>
-      <div class="content bg-black h-full">
+      <div class="content bg-black">
         <MatrixCover/>
+      </div>
+      <div class="flex absolute flex-col text-left items-start h-full md:justify-center max-w-[800px] gap-4 z-10 p-10 md:p-12">
+        <div>
+          <H1>The Modular ZK<br> <span class="text-accent-500">Interop Layer</span></H1>
+          <QuoteSubTitle>
+            Connecting every blockchain, without compromising on security, efficiency,
+            decentralization, or speed.
+          </QuoteSubTitle>
+        </div>
+        <ButtonA href="https://app.union.build">DIVE IN >>></ButtonA>
       </div>
     </div>
 
@@ -24,12 +37,19 @@ import ContainedSection from "../../ContainedSection.astro"
          class="screw bg-white rounded-full w-6 h-6 absolute bottom-0 left-0 z-20 flex items-center justify-center transition-colors duration-200">
       <div class="absolute w-7 h-1 bg-black rotate-45"></div>
     </div>
-
-
+    
   </div>
 </ContainedSection>
 
 <style>
+    :root {
+        --navbar-height: 90px;
+    }
+
+    .full-height-minus-navbar {
+        height: calc(100vh - var(--navbar-height));
+    }
+
     .clipped-container {
         position: relative;
         width: 100%;
