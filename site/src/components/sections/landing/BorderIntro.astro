@@ -7,10 +7,10 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 ---
 
 <ContainedSection>
-  <div class="relative full-height-minus-navbar">
+  <div class="relative full-height-minus-navbar pb-4">
 
     <!--SCREW -->
-    <div class="screw bg-white rounded-full w-6 h-6 absolute top-0 right-0 z-20 flex items-center justify-center">
+    <div class="screw bg-neutral-800 rounded-full w-6 h-6 absolute top-0 right-0 z-20 flex items-center justify-center">
       <div class="absolute w-7 h-1 bg-black rotate-45"></div>
     </div>
 
@@ -20,41 +20,41 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
       <div class="content bg-black">
         <MatrixCover/>
       </div>
-      <div class="flex absolute flex-col text-left items-start h-full md:justify-center max-w-[800px] gap-4 z-10 p-10 md:p-12">
-        <div>
+      <div class="flex absolute flex-col text-left items-start h-full md:justify-center max-w-[800px] gap-r z-10 p-10 md:p-12">
+        <div class="backdrop-blur-xl p-8 flex flex-col gap-4">
           <H1>The Modular ZK<br> <span class="text-accent-500">Interop Layer</span></H1>
           <QuoteSubTitle>
             Connecting every blockchain, without compromising on security, efficiency,
             decentralization, or speed.
-          </QuoteSubTitle>
-        </div>
-        <ButtonA href="https://app.union.build">DIVE IN >>></ButtonA>
+         </QuoteSubTitle>
+          <ButtonA href="https://app.union.build">DIVE IN </ButtonA>
+       </div>
       </div>
     </div>
 
     <!--SCREW -->
     <div id="screw"
-         class="screw bg-white rounded-full w-6 h-6 absolute bottom-0 left-0 z-20 flex items-center justify-center transition-colors duration-200">
+         class="screw bg-neutral-800 mb-4 rounded-full w-6 h-6 absolute bottom-0 left-0 z-20 flex items-center justify-center transition-colors duration-200">
       <div class="absolute w-7 h-1 bg-black rotate-45"></div>
     </div>
     
   </div>
 </ContainedSection>
 
-<style>
+<style lang="postcss">
     :root {
-        --navbar-height: 90px;
+        --navbar-height: 80px;
     }
 
     .full-height-minus-navbar {
-        height: calc(100vh - var(--navbar-height));
+        height: calc(100svh - var(--navbar-height));
     }
 
     .clipped-container {
         position: relative;
         width: 100%;
         padding: 2px;
-        background-color: #fff;
+        background-color: theme(colors.neutral.800);
         clip-path: polygon(
                 0 0,
                 calc(100% - 75px) 0,
@@ -70,12 +70,12 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
         width: 100%;
         background-color: transparent;
         clip-path: polygon(
-                2px 2px,
-                calc(100% - 75px) 2px,
-                calc(100% - 2px) 75px,
-                calc(100% - 2px) calc(100% - 2px),
-                75px calc(100% - 2px),
-                2px calc(100% - 75px)
+                1px 1px,
+                calc(100% - 75px) 1px,
+                calc(100% - 1px) 75px,
+                calc(100% - 1px) calc(100% - 1px),
+                75px calc(100% - 1px),
+                1px calc(100% - 75px)
         );
         position: relative;
         z-index: 1;
@@ -83,9 +83,9 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 
     .glow {
         position: absolute;
-        width: 1000px;
-        height: 1000px;
-        background: radial-gradient(circle, rgb(95, 223, 252) 0%, rgba(255, 255, 255, 0) 70%);
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgb(255, 255, 255) 0%, rgba(255, 255, 255, 0) 70%);
         border-radius: 50%;
         pointer-events: none;
         opacity: 0;
@@ -111,8 +111,8 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 
   function updateGlowPosition(e) {
     const rect = container.getBoundingClientRect();
-    const x = e.clientX - rect.left - 500; // 75 is half the width of the glow
-    const y = e.clientY - rect.top - 500; // 75 is half the height of the glow
+    const x = e.clientX - rect.left - 250; // 75 is half the width of the glow
+    const y = e.clientY - rect.top - 250; // 75 is half the height of the glow
 
     glow.style.left = `${x}px`;
     glow.style.top = `${y}px`;
