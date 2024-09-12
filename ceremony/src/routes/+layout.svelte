@@ -63,7 +63,7 @@ onMount(() => {
   }
 
   app
-    .load("https://draft.spline.design/r6WgY2-52aHVU2TZ/scene.splinecode")
+    .load("https://prod.spline.design/6An57q5Kr37gF2k0/scene.splinecode")
     .then(splineScene => {
       loading = false
     })
@@ -93,7 +93,7 @@ const queryClient = new QueryClient()
   <Navbar/>
   <canvas
           id="canvas3d"
-          class="pointer-events-none w-full h-auto inset-0 absolute -z-10 canvas-fade"
+          class=" w-full h-auto inset-0 absolute -z-10 canvas-fade"
           class:loaded={!loading}
   ></canvas>
 

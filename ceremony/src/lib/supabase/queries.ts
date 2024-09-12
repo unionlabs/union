@@ -34,11 +34,7 @@ export const getContribution = async (userId: string) => {
 }
 
 export const getUserQueuePosition = async (userId: string) => {
-  const { data, error, count } = await supabase
-    .from("current_queue")
-    .select("*", { count: "exact" })
-    .eq("id", userId)
-    .single()
+  const { data, error } = await supabase.from("current_queue").select("*").eq("id", userId).single()
 
   if (error) {
     if (error.code === "PGRST116") {
@@ -48,7 +44,7 @@ export const getUserQueuePosition = async (userId: string) => {
     return { data: undefined, error }
   }
 
-  return { data, count, error: undefined }
+  return { data, error: undefined }
 }
 
 export const getQueueCount = async () => {

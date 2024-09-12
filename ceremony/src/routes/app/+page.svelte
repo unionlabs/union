@@ -6,7 +6,6 @@ import Spinner from "$lib/components/Spinner.svelte"
 import { reactiveQueryArgs } from "$lib/utils/utils.svelte.ts"
 import H2 from "$lib/components/typography/H2.svelte"
 import { checkContributionStatus, getUserQueueInfo } from "$lib/supabase"
-import Button from "$lib/components/Button.svelte"
 import { checkStatus, start } from "$lib/client"
 import Install from "$lib/components/Install.svelte"
 
@@ -46,17 +45,18 @@ let {
 } = $derived($contributionQuery)
 let { data: client, isLoading: clientLoading, error: clientError } = $derived($clientQuery)
 
-//TODO SAVE IN LOCAL STORAGE AND ADD INFO TEXT ABOUT HAVING THE BROWSER OPEN
-let auto = $state(false)
-
+// this calls contribute every query now, we can add a check so if downloading, uploading or contributing we stop it.
+// but the client will return 503 if you try after it started.
+// handle empty contribution and after expire
 $effect(() => {
-  if (auto) {
-    if (contribute?.canContribute && contribute?.shouldContribute) {
-      if (client) {
-        start()
-      }
-    }
+  if (contribute?.canContribute && contribute?.shouldContribute && client) {
+    start()
   }
+})
+
+window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
+  e.preventDefault()
+  e.returnValue = ""
 })
 </script>
 
@@ -65,33 +65,25 @@ $effect(() => {
 
   <Text class="uppercase">USER: <span class="text-union-accent-500">{user?.session?.user.email}</span></Text>
 
-<!--  First we check if the user is in the queue, if so we show the queue position.
-
-  If not they might be the current contributor or already contributed or we are verifying their contribution.
-
-  If they are able to contribute they need to have the client installed.-->
-
   {#if queueLoading}
     <Spinner class="size-4 text-union-accent-500"/>
-  {:else if queue.inQueue}
+  {:else if queue?.inQueue}
 
     <H2>You are in queue</H2>
-    <Text>Position: {queue.position}/{queue.count + 1}</Text>
+    <Text>Position: {queue?.position}/{queue?.count}</Text>
 
-  {:else if contribute?.canContribute && contribute?.shouldContribute}
+  {:else if !contribute?.canContribute && !contribute?.shouldContribute}
 
     {#if clientError}
       <Text>Client connected?</Text>
-      <Install />
+      <Install/>
     {:else if clientLoading}
       <Spinner class="size-4 text-red-500"/>
     {:else if client}
       <Text>{client.status}</Text>
-      <Button onclick={start}>Contribute</Button>
     {:else}
       <Text>Waiting for client...</Text>
     {/if}
-    <Text>Auto contribute<Button onclick={() => auto = true}>{auto}</Button></Text>
 
   {:else if contribute?.isVerifying}
 

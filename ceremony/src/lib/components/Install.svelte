@@ -12,9 +12,9 @@ const copy = () => {
 
 <div class="p-8  bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center flex-col">
   <H1 class="text-center mb-4" >Install client</H1>
-  <code class="text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-white text-black p-4 pl-6 font-mono">
+  <code class="text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-black text-white p-4 pl-6 font-mono">
     <span class="flex gap-4">
-        <span class="shrink-0">
+        <span class="shrink-0 text-union-accent-500">
             $
         </span>
 
