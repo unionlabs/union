@@ -33,7 +33,6 @@
     "mode-watcher": "^0.4.1",
     "paneforge": "^0.0.5",
     "svelte-persisted-store": "^0.11.0",
-    "svelte-preprocess-react": "^0.17.1",
     "svelte-radix": "^1.1.1",
     "svelte-sonner": "^0.3.27",
     "svelte-ux": "^0.74.7",
@@ -68,15 +67,12 @@
     "@types/postcss-import": "^14.0.3",
     "@types/three": "^0.168.0",
     "autoprefixer": "^10.4.20",
-    "buffer": "^6.0.3",
     "clsx": "^2.1.1",
     "fluid-tailwind": "^1.0.3",
     "graphql": "^16.9.0",
-    "jsr": "^0.13.1",
     "patch-package": "^8.0.0",
     "postcss": "^8.4.45",
     "postcss-import": "^16.1.0",
-    "process": "^0.11.10",
     "rollup-plugin-visualizer": "^5.12.0",
     "svelte": "^4.2.19",
     "svelte-check": "^4.0.1",
@@ -106,6 +102,8 @@
     "isarray": "npm:@nolyfill/isarray@^1",
     "json-stable-stringify": "npm:@nolyfill/json-stable-stringify@^1",
     "which-typed-array": "npm:@nolyfill/which-typed-array@^1",
-    "is-core-module": "npm:@nolyfill/is-core-module@^1"
+    "is-core-module": "npm:@nolyfill/is-core-module@^1",
+    "assert": "npm:@nolyfill/assert@^1",
+    "side-channel": "npm:@nolyfill/side-channel@^1"
   }
 }

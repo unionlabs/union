@@ -12,7 +12,7 @@ export const cosmosWalletsInformation = [
   {
     id: "leap",
     name: "leap",
-    icon: "https://assets.leapwallet.io/logos/leap-cosmos-logo.svg",
+    icon: "/images/icons/leap.svg",
     /**
      * reference links:
      * - leap deep link generator: https://developers.leapwallet.io/deeplink-generator
@@ -29,7 +29,7 @@ export const cosmosWalletsInformation = [
   {
     id: "keplr",
     name: "keplr",
-    icon: "https://assets-global.website-files.com/63eb7ddf41cf5b1c8fdfbc74/63fc1eaf76d6a3bd547b017c_Keplr_icon_ver.1.3_2.svg",
+    icon: "/images/icons/keplr.svg",
     deepLink:
       "https://deeplink.keplr.app?url=app.union.build#Intent;package=com.chainapsis.keplr;scheme=keplrwallet;end;",
     download: "https://keplr.app/download"
