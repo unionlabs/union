@@ -10,7 +10,7 @@
     contributor: ContributorState;
   };
 
-  let {contributor}: Props = $props();
+  let { contributor }: Props = $props();
 
   $effect(() => {
     if (contributor?.state === 'contribute') {
@@ -23,9 +23,9 @@
 <div class="p-8 bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center justify-center flex-col h-48">
 
   {#if contributor.state === 'inQueue'}
-    <H1>Your position: {contributor.queueState.position}</H1>
-    <H2>Queue length: {contributor.queueState.count}</H2>
-    <H3>{contributor.queueState.estimatedTime} minutes left (est.).</H3>
+    <H1>Your position: <span class="text-union-accent-500">{contributor.queueState.position}</span></H1>
+    <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
+    <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).</H3>
 
   {:else if contributor.state === 'contribute'}
     <H1>Starting client...</H1>

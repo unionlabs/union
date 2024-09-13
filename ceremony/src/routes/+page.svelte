@@ -17,6 +17,7 @@
 
 </script>
 
+
 {#if contributor}
   {#if contributor.loggedIn}
     <Ceremony {contributor}/>
@@ -26,8 +27,9 @@
   {/if}
 {/if}
 
+
 <div class="absolute bottom-10 left-10">
-  <H4>Client: {contributor.clientState}</H4>
+  <H4>Client: <span class="text-union-accent-500">{contributor.clientState}</span></H4>
 </div>
 
 
