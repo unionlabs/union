@@ -9,7 +9,7 @@
     {
       packages = {
         ceremony = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-iL4+qO73/tXPDPI7d6B8UywQN9vhchPzy91WiRLYXUI=";
+          npmDepsHash = "sha256-CEZJ8lBuOrOf65oInkexsrXOaU+rJeUpQ2SGmlTgYbI=";
           src = ./.;
           sourceRoot = "ceremony";
           npmFlags = [ "--legacy-peer-deps" ];
@@ -38,6 +38,11 @@
             text = ''
               ${ensureAtRepositoryRoot}
               cd ceremony/
+
+              export NODE_OPTIONS="--no-warnings"
+              export VITE_BUCKET_ID="contributions"
+              export VITE_SUPABASE_URL="https://otfaamdxmgnkjqsosxye.supabase.co/"
+              export VITE_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90ZmFhbWR4bWdua2pxc29zeHllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjEzMjA5NDMsImV4cCI6MjAzNjg5Njk0M30.q91NJPFFHKJXnbhbpUYwsB0NmimtD7pGPx6PkbB_A3w"
 
               npm install
               npm run dev
