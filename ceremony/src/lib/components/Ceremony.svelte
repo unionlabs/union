@@ -6,6 +6,7 @@ import H2 from "$lib/components/typography/H2.svelte"
 import Install from "$lib/components/Install.svelte"
 import { start } from "$lib/client"
 import H4 from "$lib/components/typography/H4.svelte"
+import { AddressForm, type ValidState } from "$lib/components/address"
 
 type Props = {
   contributor: ContributorState
@@ -14,7 +15,7 @@ type Props = {
 let { contributor }: Props = $props()
 
 $effect(() => {
-  console.log(contributor.state)
+  console.info(`ADDRESS VALIDITY STATE: ${addressValidState}`)
   if (contributor?.state === "contribute") {
     start()
   }
@@ -24,17 +25,20 @@ window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
   e.preventDefault()
   e.returnValue = ""
 })
+
+let addressValidState: ValidState = $state("PENDING")
 </script>
 
-<div class="p-8 bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center justify-center flex-col h-48">
+<div class="p-8 bg-gradient-to-t from-transparent via-black/50 to-transparent backdrop-blur w-full flex items-center justify-center flex-col min-h-48">
 
   {#if contributor.state === 'inQueue'}
     <H1>Your position: <span class="text-union-accent-500">{contributor.queueState.position}</span></H1>
     <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
-    <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).</H3>
+    <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).
+    </H3>
 
     {#if contributor.clientState === 'offline'}
-      <Install />
+      <Install/>
     {/if}
 
   {:else if contributor.state === 'contribute'}
@@ -47,16 +51,21 @@ window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
     <H1>Verifying your contribution...</H1>
 
   {:else if contributor.state === 'contributed'}
-    <H1>Thank you! Your contribution is completed.</H1>
+
+    <div class="flex flex-col justify-center items-center gap-4">
+      <H1>Thank you! Your contribution is completed.</H1>
+      <H2>Get your nft</H2>
+      <AddressForm class="" onValidation={result => (addressValidState = result)}/>
+    </div>
 
   {:else if contributor.state === 'noClient'}
     <H1>No client. Cannot start contribution.</H1>
-    <Install />
+    <Install/>
 
   {:else}
     <H1>Loading...</H1>
   {/if}
-  
+
 </div>
 
 
