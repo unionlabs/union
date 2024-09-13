@@ -5,7 +5,7 @@ import H3 from "$lib/components/typography/H3.svelte"
 import H2 from "$lib/components/typography/H2.svelte"
 import Install from "$lib/components/Install.svelte"
 import { start } from "$lib/client"
-import H4 from "$lib/components/typography/H4.svelte";
+import H4 from "$lib/components/typography/H4.svelte"
 
 type Props = {
   contributor: ContributorState
