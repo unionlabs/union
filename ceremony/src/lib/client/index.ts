@@ -1,7 +1,7 @@
 import {get, post} from "$lib/client/http.ts"
-import type {ClientState, ContributeBody} from "$lib/client/types.ts"
 import {user} from "$lib/stores/user.svelte.ts"
 import {getQueuePayloadId} from "$lib/supabase/queries.ts"
+import type {ClientState, ContributeBody} from "$lib/client/types.ts";
 
 export const start = async (): Promise<ClientState | undefined> => {
   const userId = user?.session?.user.id
@@ -31,6 +31,7 @@ export const start = async (): Promise<ClientState | undefined> => {
     supabaseProject: import.meta.env.VITE_SUPABASE_URL,
     apiKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
     bucket: import.meta.env.VITE_BUCKET_ID,
+    userEmail: email,
   }
 
   return post<ClientState>("contribute", {}, contributeBody)
@@ -39,7 +40,10 @@ export const start = async (): Promise<ClientState | undefined> => {
 
 export const checkState = async (): Promise<ClientState> => {
   try {
-    return await get<ClientState>("contribute", {});
+    const response = await get<ClientState>("contribute", {});
+
+    console.log('resssss',response)
+    return response ?? 'offline';
   } catch (error) {
     console.log('Error fetching status:', error);
     return 'offline';

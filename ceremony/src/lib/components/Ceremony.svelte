@@ -13,6 +13,7 @@
   let { contributor }: Props = $props();
 
   $effect(() => {
+    console.log(contributor.state)
     if (contributor?.state === 'contribute') {
       start()
     }
@@ -33,6 +34,12 @@
   {:else if contributor.state === 'contributing'}
     <H1>Contributing now...</H1>
 
+  {:else if contributor.state === 'downloading'}
+    <H1>Downloading data...</H1>
+
+  {:else if contributor.state === 'uploading'}
+    <H1>Uploading contribution...</H1>
+
   {:else if contributor.state === 'verifying'}
     <H1>Verifying your contribution...</H1>
 
@@ -49,5 +56,6 @@
   {#if contributor.clientState === 'offline'}
     <Install />
   {/if}
+
   
 </div>

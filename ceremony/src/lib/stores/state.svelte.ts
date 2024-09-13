@@ -1,7 +1,6 @@
 import {onDestroy} from "svelte";
 import {checkState} from "$lib/client";
 import {checkContributionState, getUserQueueInfo} from "$lib/supabase";
-import type {ClientState} from "$lib/client/types.ts";
 
 type IntervalID = NodeJS.Timeout | number;
 
@@ -15,12 +14,29 @@ type UserState =
   | 'error'
   | 'offline'
   | 'noClient'
+  | 'downloading'
+  | 'uploading'
 
 export type ContributionState =
   'contribute'
   | 'contributed'
   | 'verifying'
   | 'notContributed'
+
+export type ClientState =
+  | "idle"
+  | "initializing"
+  | "downloadStarted"
+  | "downloading"
+  | "downloadEnded"
+  | "contributionStarted"
+  | "contributionEnded"
+  | "uploadStarted"
+  | "uploadEnded"
+  | "failed"
+  | "successful"
+  | "offline"
+  | undefined
 
 
 interface UserContext {
@@ -47,9 +63,7 @@ export class ContributorState {
   userId = $state<string | undefined>(undefined);
   loggedIn = $state<boolean>(false);
   pollingState = $state<'stopped' | 'polling'>('stopped');
-
   state = $state<UserState>('loading');
-
   clientState = $state<ClientState>('offline')
   contributionState = $state<ContributionState>('notContributed')
   queueState = $state<UserContext>({
@@ -213,25 +227,82 @@ export class ContributorState {
   }
 
   private updateState() {
-    if (this.contributionState === 'contributed') {
-      this.state = 'contributed';
-    } else if (this.contributionState === 'verifying') {
-      this.state = 'verifying';
-    } else if (this.contributionState === 'contribute') {
-      if (this.clientState === 'idle') {
-        this.state = 'contribute';
-      } else if (this.clientState === 'contributionStarted') {
-        this.state = 'contributing'
+    console.log('Updating state. Current clientState:', this.clientState);
+    console.log('Current contributionState:', this.contributionState);
+
+    // Check if contribution is ongoing
+    if (this.contributionState === 'contribute') {
+      // Handle all client state variations inside the contribute block
+      switch (this.clientState) {
+        case 'idle':
+          console.log('Client is idle.');
+          this.state = 'contribute';
+          break;
+        case 'initializing':
+          console.log('Client is initializing.');
+          this.state = 'initializing';
+          break;
+        case 'downloadStarted':
+          console.log('Download started.');
+          this.state = 'downloading';
+          break;
+        case 'downloading':
+          console.log('Downloading data...');
+          this.state = 'downloading';
+          break;
+        case 'downloadEnded':
+          console.log('Download ended.');
+          this.state = 'downloadEnded';
+          break;
+        case 'contributionStarted':
+          console.log('Contribution started.');
+          this.state = 'contributing';
+          break;
+        case 'contributionEnded':
+          console.log('Contribution ended.');
+          this.state = 'contributionEnded';
+          break;
+        case 'uploadStarted':
+          console.log('Upload started.');
+          this.state = 'uploading';
+          break;
+        case 'uploadEnded':
+          console.log('Upload ended.');
+          this.state = 'uploadEnded';
+          break;
+        case 'failed':
+          console.log('Client failed during process.');
+          this.state = 'error';
+          break;
+        case 'successful':
+          console.log('Client was successful.');
+          this.state = 'successful';
+          break;
+        case 'offline':
+          console.log('Client is offline.');
+          this.state = 'noClient';
+          break;
+        default:
+          console.log('Defaulting to contribute state.');
+          this.state = 'contribute';
       }
-    } else if (this.queueState.position !== null) {
+    }
+    else if (this.queueState.position !== null) {
       this.state = 'inQueue';
-    } else if (this.clientState === 'contributionStarted') {
-      this.state = 'contributing';
-    } else if (this.clientState === 'offline') {
+    }
+    else if (this.contributionState === 'contributed') {
+      this.state = 'contributed';
+    }
+    else if (this.contributionState === 'verifying') {
+      this.state = 'verifying';
+    }
+    else if (this.clientState === 'offline') {
       this.state = 'offline';
     } else {
       this.state = 'loading';
     }
-  }
 
+    console.log('New contributor state:', this.state);
+  }
+  
 }
