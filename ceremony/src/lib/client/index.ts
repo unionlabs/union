@@ -5,6 +5,7 @@ import { getQueuePayloadId } from "$lib/supabase/queries.ts"
 
 export const start = async (): Promise<Status | undefined> => {
   const userId = user?.session?.user.id
+  const email = user?.session?.user?.email
 
   if (!userId) {
     console.error("User not logged in")
@@ -29,7 +30,8 @@ export const start = async (): Promise<Status | undefined> => {
     jwt: user?.session?.access_token,
     supabaseProject: import.meta.env.VITE_SUPABASE_URL,
     apiKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-    bucket: import.meta.env.VITE_BUCKET_ID
+    bucket: import.meta.env.VITE_BUCKET_ID,
+    userEmail: email
   }
 
   return post<Status>("contribute", {}, contributeBody)

@@ -18,6 +18,7 @@ export interface ContributeBody {
   apiKey: string
   contributorId: string
   payloadId: string
+  userEmail: string
 }
 
 export interface QueueData {
