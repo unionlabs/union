@@ -2,6 +2,7 @@ import { get, post } from "$lib/client/http.ts"
 import type { ContributeBody, ClientStatus } from "$lib/client/types.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { getQueuePayloadId } from "$lib/supabase/queries.ts"
+import type {ClientState} from "$lib/stores/state.svelte.ts";
 
 export const start = async (): Promise<ClientStatus | undefined> => {
   const userId = user?.session?.user.id
@@ -38,7 +39,7 @@ export const start = async (): Promise<ClientStatus | undefined> => {
 }
 
 
-export const checkState = async (): Promise<string> => {
+export const checkState = async (): Promise<ClientState> => {
   try {
     const response = await get<any>("contribute", {});
     console.log(response);

@@ -5,9 +5,7 @@ import {checkContributionState, getUserQueueInfo} from "$lib/supabase";
 type IntervalID = NodeJS.Timeout | number;
 
 type UserState =
-  | 'idle'
   | 'loading'
-  | 'waitingList'
   | 'inQueue'
   | 'contribute'
   | 'contributing'
@@ -16,7 +14,13 @@ type UserState =
   | 'error'
   | 'offline'
 
-export type ContributionState = 'contribute' | 'contributed' | 'verifying' | 'notContributed' | null;
+export type ContributionState =
+  'contribute'
+  | 'contributed'
+  | 'verifying'
+  | 'notContributed'
+  | null;
+
 export type ClientState =
   "idle"
   | "initializing"

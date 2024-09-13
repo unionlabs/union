@@ -7,6 +7,7 @@ import {
   getUserQueuePosition
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
+import type {ClientState, ContributionState} from "$lib/stores/state.svelte.ts";
 
 export const callJoinQueue = async (codeId: string) => {
   const userId = user.session?.user.id
@@ -57,7 +58,7 @@ export const getUserQueueInfo = async () => {
   }
 }
 
-export const checkContributionState = async ()=> {
+export const checkContributionState = async (): Promise<ContributionState> => {
   const userId = user.session?.user.id;
   if (!userId) {
     throw new Error("User ID is required");
@@ -74,7 +75,7 @@ export const checkContributionState = async ()=> {
     const hasSubmitted = !!submittedContribution?.data;
     const hasVerified = !!verifiedContribution?.data;
 
-    let status: string
+    let status: ContributionState
 
     if (isContributor && !hasSubmitted && !hasVerified) {
       status = 'contribute';
@@ -86,7 +87,7 @@ export const checkContributionState = async ()=> {
       status = 'notContributed';
     }
 
-    return { status };
+    return status;
   } catch (error) {
     console.log("Error checking contribution status:", error);
     throw new Error("Failed to check contribution status");
