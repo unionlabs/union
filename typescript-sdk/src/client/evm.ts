@@ -3,6 +3,7 @@ import {
   type Hex,
   getAddress,
   type Account,
+  type Address,
   publicActions,
   type HttpTransport,
   createWalletClient,
@@ -10,8 +11,9 @@ import {
   type FallbackTransport
 } from "viem"
 import {
+  evmSameChainTransfer,
   transferAssetFromEvm,
-  approveTransferAssetFromEvm,
+  evmApproveTransferAsset,
   transferAssetFromEvmSimulate
 } from "../transfer/evm.ts"
 import { cosmosChainId } from "./cosmos.ts"
@@ -65,6 +67,19 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
 
+        // first check if chain ids are the same, if yes then we can skip the hubble check and do a simple erc20 transfer
+        if (parameters.chainId === destinationChainId) {
+          const transfer = await evmSameChainTransfer(client, {
+            amount,
+            account,
+            simulate,
+            receiver,
+            denomAddress
+          })
+          if (transfer.isErr()) return err(transfer.error)
+          return ok(transfer.value)
+        }
+
         const chainDetails = await getHubbleChainDetails({
           destinationChainId,
           sourceChainId: parameters.chainId
@@ -106,22 +121,30 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
       approveTransaction: async ({
         amount,
         account,
+        receiver,
         denomAddress,
         simulate = true,
         destinationChainId
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
-        const ucsDetails = await getHubbleChainDetails({
-          destinationChainId,
-          sourceChainId: parameters.chainId
-        })
-        if (ucsDetails.isErr()) return err(ucsDetails.error)
+        let _receiver: Address
 
-        return await approveTransferAssetFromEvm(client, {
+        // check if chain ids are the same, if yes then `receiver` is `receiver`,
+        // otherwise, it's the relayer contract address from ucs coinfig
+        if (parameters.chainId !== destinationChainId) {
+          const ucsDetails = await getHubbleChainDetails({
+            destinationChainId,
+            sourceChainId: parameters.chainId
+          })
+          if (ucsDetails.isErr()) return err(ucsDetails.error)
+          _receiver = getAddress(ucsDetails.value.relayContractAddress)
+        } else _receiver = getAddress(receiver)
+
+        return await evmApproveTransferAsset(client, {
           amount,
           account,
           simulate,
           denomAddress,
-          relayContractAddress: getAddress(ucsDetails.value.relayContractAddress)
+          receiver: _receiver
         })
       },
       simulateTransaction: async ({

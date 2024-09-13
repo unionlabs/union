@@ -3,12 +3,12 @@ import "#patch.ts"
 import { http } from "viem"
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
-import { createUnionClient } from "#mod.ts"
 import { raise } from "#utilities/index.ts"
 import { consola } from "../scripts/logger.ts"
 import { hexStringToUint8Array } from "#convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
+import { createUnionClient, type TransferAssetsParameters } from "#mod.ts"
 
 /* `bun playground/union-to-sepolia.ts --private-key "..."` --estimate-gas */
 
@@ -44,7 +44,7 @@ try {
     denomAddress: "muno",
     destinationChainId: `${sepolia.id}`,
     receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
-  }
+  } satisfies TransferAssetsParameters<"union-testnet-8">
 
   const gasEstimationResponse = await client.simulateTransaction(transferPayload)
 
