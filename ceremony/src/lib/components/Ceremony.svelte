@@ -28,17 +28,15 @@
     <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
     <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).</H3>
 
+    {#if contributor.clientState === 'offline'}
+      <Install />
+    {/if}
+
   {:else if contributor.state === 'contribute'}
-    <H1>Starting client...</H1>
+    <H1>Starting contribution...</H1>
 
   {:else if contributor.state === 'contributing'}
-    <H1>Contributing now...</H1>
-
-  {:else if contributor.state === 'downloading'}
-    <H1>Downloading data...</H1>
-
-  {:else if contributor.state === 'uploading'}
-    <H1>Uploading contribution...</H1>
+    <H1>Contributing...</H1>
 
   {:else if contributor.state === 'verifying'}
     <H1>Verifying your contribution...</H1>
@@ -48,14 +46,12 @@
 
   {:else if contributor.state === 'noClient'}
     <H1>No client. Cannot start contribution.</H1>
+    <Install />
 
   {:else}
     <H1>Loading...</H1>
   {/if}
 
-  {#if contributor.clientState === 'offline'}
-    <Install />
-  {/if}
 
   
 </div>

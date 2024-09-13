@@ -14,8 +14,6 @@ type UserState =
   | 'error'
   | 'offline'
   | 'noClient'
-  | 'downloading'
-  | 'uploading'
 
 export type ContributionState =
   'contribute'
@@ -230,61 +228,36 @@ export class ContributorState {
     console.log('Updating state. Current clientState:', this.clientState);
     console.log('Current contributionState:', this.contributionState);
 
-    // Check if contribution is ongoing
     if (this.contributionState === 'contribute') {
-      // Handle all client state variations inside the contribute block
       switch (this.clientState) {
         case 'idle':
-          console.log('Client is idle.');
-          this.state = 'contribute';
-          break;
         case 'initializing':
-          console.log('Client is initializing.');
-          this.state = 'initializing';
-          break;
         case 'downloadStarted':
-          console.log('Download started.');
-          this.state = 'downloading';
-          break;
         case 'downloading':
-          console.log('Downloading data...');
-          this.state = 'downloading';
-          break;
         case 'downloadEnded':
-          console.log('Download ended.');
-          this.state = 'downloadEnded';
-          break;
         case 'contributionStarted':
-          console.log('Contribution started.');
+        case 'contributionEnded':
+        case 'uploadStarted':
+        case 'uploadEnded':
+        case 'successful':
+          console.log(`Client is in state: ${this.clientState}.`);
           this.state = 'contributing';
           break;
-        case 'contributionEnded':
-          console.log('Contribution ended.');
-          this.state = 'contributionEnded';
-          break;
-        case 'uploadStarted':
-          console.log('Upload started.');
-          this.state = 'uploading';
-          break;
-        case 'uploadEnded':
-          console.log('Upload ended.');
-          this.state = 'uploadEnded';
-          break;
+
         case 'failed':
           console.log('Client failed during process.');
           this.state = 'error';
           break;
-        case 'successful':
-          console.log('Client was successful.');
-          this.state = 'successful';
-          break;
+
         case 'offline':
           console.log('Client is offline.');
           this.state = 'noClient';
           break;
+
         default:
           console.log('Defaulting to contribute state.');
           this.state = 'contribute';
+          break;
       }
     }
     else if (this.queueState.position !== null) {
@@ -304,5 +277,5 @@ export class ContributorState {
 
     console.log('New contributor state:', this.state);
   }
-  
+
 }
