@@ -9,7 +9,7 @@ import {
 import { supabase } from "$lib/supabase/client.ts"
 import type { ContributionState } from "$lib/stores/state.svelte.ts"
 
-export const callJoinQueue = async (codeId: string) => {
+export const callJoinQueue = async (codeId: string): Promise<boolean> => {
   const userId = user.session?.user.id
   if (!userId) {
     throw new Error("User is not logged in")
@@ -20,12 +20,19 @@ export const callJoinQueue = async (codeId: string) => {
 
     if (error) {
       console.error("Error calling join_queue:", error)
-      return
+      return false
+    }
+
+    if (!data) {
+      console.error("No data returned from join_queue")
+      return false
     }
 
     console.log("Successfully joined queue:", data)
-  } catch (error) {
-    console.error("Unexpected error:", error)
+    return true
+  } catch (err) {
+    console.error("Unexpected error:", err)
+    return false // Ensure false is returned on error
   }
 }
 

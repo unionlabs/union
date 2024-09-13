@@ -34,6 +34,8 @@ let addressValidState: ValidState = $state("PENDING")
   {#if contributor.state === 'inQueue'}
     <H1>Your position: <span class="text-union-accent-500">{contributor.queueState.position}</span></H1>
     <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
+
+    <!--Todo format time correctly-->
     <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).
     </H3>
 

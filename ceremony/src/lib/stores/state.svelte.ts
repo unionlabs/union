@@ -56,7 +56,7 @@ export class ContributorState {
   userId = $state<string | undefined>(undefined)
   loggedIn = $state<boolean>(false)
 
-  inQueue = $state<boolean>(false)
+  invited = $state<boolean>(false)
   onWaitlist = $state<boolean>(false)
 
   pollingState = $state<"stopped" | "polling">("stopped")
