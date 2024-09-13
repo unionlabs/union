@@ -26,7 +26,6 @@
   {/if}
 {/if}
 
-
 <div class="absolute bottom-10 left-10">
   <H4>Client: <span class="text-union-accent-500">{contributor.clientState}</span></H4>
 </div>

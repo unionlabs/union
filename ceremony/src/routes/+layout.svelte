@@ -68,11 +68,6 @@ $effect(() => {
     subscription.unsubscribe()
   }
 })
-
-window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
-  e.preventDefault()
-  e.returnValue = ""
-})
 </script>
 
 <style>
