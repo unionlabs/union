@@ -3,12 +3,44 @@ BEGIN;
 -- Default bucket for contributions upload
 INSERT INTO storage.buckets(id, name, public) VALUES('contributions', 'contributions', false);
 
+CREATE TABLE wallet_address(
+  id UUID PRIMARY KEY,
+  wallet TEXT NOT NULL
+);
+
+ALTER TABLE wallet_address ENABLE ROW LEVEL SECURITY;
+ALTER TABLE wallet_address ADD FOREIGN KEY (id) REFERENCES auth.users(id);
+
+CREATE POLICY view_self
+  ON wallet_address
+  FOR SELECT
+    TO authenticated
+    USING (
+      (SELECT auth.uid()) = id
+    );
+
+CREATE POLICY allow_insert_self
+  ON wallet_address
+  FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      (SELECT auth.uid()) = id
+    );
+
 CREATE TABLE waitlist(
   id UUID PRIMARY KEY
 );
 
 ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
 ALTER TABLE waitlist ADD FOREIGN KEY (id) REFERENCES auth.users(id);
+
+CREATE POLICY view_self
+  ON waitlist
+  FOR SELECT
+    TO authenticated
+    USING (
+      (SELECT auth.uid()) = id
+    );
 
 CREATE POLICY allow_insert_self
   ON waitlist
@@ -235,19 +267,17 @@ ALTER VIEW current_contribution_average SET (security_invoker = on);
 -- Current contributor is the highest score in the queue with the contribution
 -- not done yet and it's status expired without payload submitted.
 CREATE OR REPLACE VIEW current_contributor_id AS
-  SELECT q.id
-  FROM queue q
-  WHERE q.score = (
-    SELECT MAX(qq.score)
-    FROM queue qq
-    WHERE NOT EXISTS (
-      SELECT c.id FROM contribution c WHERE c.id = qq.id
-    ) AND (
-      EXISTS (SELECT cs.expire FROM contribution_status cs WHERE cs.id = qq.id AND cs.expire > now())
-      OR
-      EXISTS (SELECT cs.id FROM contribution_submitted cs WHERE cs.id = qq.id)
-    )
- );
+  SELECT qq.id
+  FROM queue qq
+  WHERE NOT EXISTS (
+    SELECT c.id FROM contribution c WHERE c.id = qq.id
+  ) AND (
+    EXISTS (SELECT cs.expire FROM contribution_status cs WHERE cs.id = qq.id AND cs.expire > now())
+    OR
+    EXISTS (SELECT cs.id FROM contribution_submitted cs WHERE cs.id = qq.id)
+  )
+  ORDER BY qq.score DESC
+  LIMIT 1;
 
 ALTER VIEW current_contributor_id SET (security_invoker = on);
 
@@ -289,15 +319,9 @@ ALTER VIEW current_payload_id SET (security_invoker = on);
 CREATE OR REPLACE PROCEDURE set_next_contributor() AS $$
 BEGIN
   IF (SELECT COUNT(*) FROM public.current_contributor_id) = 0 THEN
-    INSERT INTO public.contribution_status(id) SELECT q.id FROM public.queue q WHERE q.score = (
-      SELECT MAX(qq.score)
-      FROM public.queue qq
-      WHERE NOT EXISTS (
-        SELECT c.id FROM public.contribution c WHERE c.id = qq.id
-      ) AND NOT EXISTS (
-        SELECT cs.expire FROM public.contribution_status cs WHERE cs.id = qq.id AND cs.expire < now()
-      )
-    );
+    INSERT INTO public.contribution_status(id)
+    SELECT cq.id
+    FROM public.current_queue cq LIMIT 1;
   END IF;
 END
 $$ LANGUAGE plpgsql SET search_path = '';
@@ -407,6 +431,47 @@ AFTER INSERT OR UPDATE
 ON storage.objects
 FOR EACH ROW
 EXECUTE FUNCTION set_contribution_submitted_trigger();
+
+-----------------
+-- Attestation --
+-----------------
+CREATE TABLE contribution_signature(
+  id uuid PRIMARY KEY,
+  public_key text NOT NULL,
+  signature text NOT NULL
+);
+
+ALTER TABLE contribution_signature ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contribution_signature ADD FOREIGN KEY (id) REFERENCES contribution_status(id);
+
+CREATE POLICY view_self
+  ON contribution_signature
+  FOR SELECT
+    TO authenticated
+    USING (
+      (SELECT auth.uid()) = id
+    );
+
+CREATE POLICY allow_insert_self
+  ON contribution_signature
+  FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      (SELECT auth.uid()) = id
+    );
+
+
+
+CREATE OR REPLACE VIEW current_user_state AS (
+  SELECT (EXISTS (SELECT * FROM waitlist WHERE id = (SELECT auth.id)) AS in_waitlist
+);
+
+ALTER VIEW current_user_state SET (security_invoker = off);
+
+
+----------
+-- CRON --
+----------
 
 -- Will rotate the current contributor if the slot expired without any contribution submitted
 SELECT cron.schedule('update-contributor', '10 seconds', 'CALL set_next_contributor()');

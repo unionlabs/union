@@ -15,7 +15,7 @@ use std::{
 
 use async_sqlite::{rusqlite::OpenFlags, JournalMode, PoolBuilder};
 use base64::{prelude::BASE64_STANDARD, Engine};
-use crossterm::event;
+use crossterm::{cursor::Show, event, execute};
 use http_body_util::{BodyExt, Full};
 use httpdate::parse_http_date;
 use hyper::{
@@ -24,7 +24,13 @@ use hyper::{
     Method,
 };
 use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown};
-use mpc_shared::{phase2_contribute, supabase::SupabaseMPCApi, CONTRIBUTION_SIZE};
+use mpc_shared::{phase2_contribute, signed_message, supabase::SupabaseMPCApi, CONTRIBUTION_SIZE};
+use pgp::{
+    cleartext::CleartextSignedMessage,
+    crypto::{hash::HashAlgorithm, sym::SymmetricKeyAlgorithm},
+    types::SecretKeyTrait,
+    ArmorOptions, Deserializable, KeyType, SecretKeyParamsBuilder, SignedSecretKey,
+};
 use ratatui::{backend::CrosstermBackend, Terminal, Viewport};
 use reqwest::header::LOCATION;
 use serde::Deserialize;
@@ -40,6 +46,8 @@ use types::Status;
 
 const ENDPOINT: &str = "/contribute";
 
+const CONTRIB_SK_PATH: &str = "contrib_key.sk.asc";
+
 #[derive(PartialEq, Eq, Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Contribute {
@@ -49,6 +57,7 @@ struct Contribute {
     api_key: String,
     contributor_id: String,
     payload_id: String,
+    user_email: Option<String>,
 }
 
 #[derive(thiserror::Error, Debug, Clone)]
@@ -71,6 +80,25 @@ type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 
 type DynError = Box<dyn std::error::Error + Send + Sync>;
 
+fn generate_pgp_key(email: String) -> SignedSecretKey {
+    let mut key_params = SecretKeyParamsBuilder::default();
+    key_params
+        .key_type(KeyType::EdDSA)
+        .can_certify(false)
+        .can_sign(true)
+        .can_encrypt(false)
+        .primary_user_id(email)
+        .preferred_symmetric_algorithms(
+            [SymmetricKeyAlgorithm::AES256].to_vec().try_into().unwrap(),
+        )
+        .preferred_hash_algorithms([HashAlgorithm::None].to_vec().try_into().unwrap());
+    let secret_key_params = key_params.build().expect("impossible");
+    let secret_key = secret_key_params.generate().expect("impossible");
+    let passwd_fn = || String::new();
+    let signed_secret_key = secret_key.sign(passwd_fn).expect("impossible");
+    signed_secret_key
+}
+
 async fn contribute(
     tx_status: Sender<Status>,
     Contribute {
@@ -80,8 +108,26 @@ async fn contribute(
         api_key,
         contributor_id,
         payload_id,
+        user_email,
     }: Contribute,
 ) -> Result<(), DynError> {
+    let mut secret_key = if let Ok(_) = tokio::fs::metadata(CONTRIB_SK_PATH).await {
+        SignedSecretKey::from_armor_single::<&[u8]>(
+            tokio::fs::read(CONTRIB_SK_PATH).await?.as_ref(),
+        )
+        .expect("impossible")
+        .0
+    } else {
+        let secret_key = generate_pgp_key(user_email.unwrap_or("placeholder@test.com".into()));
+        tokio::fs::write(
+            CONTRIB_SK_PATH,
+            secret_key
+                .to_armored_bytes(ArmorOptions::default())
+                .expect("impossible"),
+        )
+        .await?;
+        secret_key
+    };
     let client = SupabaseMPCApi::new(supabase_project.clone(), api_key, jwt);
     let current_contributor = client
         .current_contributor()
@@ -134,6 +180,32 @@ async fn contribute(
         tokio::fs::write(&payload_id, &phase2_contribution).await?;
         phase2_contribution
     };
+
+    // ------------------------
+    // Sign and submits the sig
+    // Gnark phase2 contribution appends the sha256 hash at the end
+    let phase2_contribution_hash = &phase2_contribution[phase2_contribution.len() - 32..];
+    let signature = CleartextSignedMessage::sign(
+        &signed_message(&payload_id, &hex::encode(phase2_contribution_hash)),
+        &mut secret_key,
+        || String::new(),
+    )
+    .expect("impossible");
+    let public_key = secret_key
+        .public_key()
+        .sign(&secret_key, || String::new())
+        .expect("impossible")
+        .to_armored_bytes(ArmorOptions::default())
+        .expect("impossible");
+    client
+        .insert_contribution_signature(
+            current_contributor.id,
+            public_key,
+            signature
+                .to_armored_bytes(ArmorOptions::default())
+                .expect("impossible"),
+        )
+        .await?;
     let pool = PoolBuilder::new()
         .path("db.sqlite3")
         .flags(
@@ -219,9 +291,8 @@ async fn contribute(
             let expire_timestamp = expire.duration_since(UNIX_EPOCH)?.as_secs();
             let location_clone = location.clone();
             pool.conn(move |conn| {
-                let mut stmt = conn.prepare(
-                    "INSERT INTO resumable_upload (location, expire) VALUES (?, ?)",
-                )?;
+                let mut stmt =
+                    conn.prepare("INSERT INTO resumable_upload (location, expire) VALUES (?, ?)")?;
                 let r = stmt.execute((location_clone, expire_timestamp))?;
                 assert!(r == 1);
                 Ok(())
@@ -467,8 +538,9 @@ async fn main() -> Result<(), DynError> {
     )?;
     input_and_status_handling(status, rx_status, tx_ui).await;
     ui::run_ui(&mut terminal, rx_ui).await?;
-    crossterm::terminal::disable_raw_mode()?;
     terminal.clear()?;
+    crossterm::terminal::disable_raw_mode()?;
+    let _ = execute!(io::stdout(), Show);
     token.cancel();
     handle.await.expect("impossible");
     std::process::exit(0);

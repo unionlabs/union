@@ -1,5 +1,5 @@
-pub mod types;
 pub mod supabase;
+pub mod types;
 
 use std::ffi::{c_char, c_int};
 
@@ -82,4 +82,8 @@ pub fn phase2_verify(
             Err(Phase2VerificationError::Phase2VerificationFailed)
         }
     }
+}
+
+pub fn signed_message(payload_id: &str, payload_hash: &str) -> String {
+    format!("0______0 - {} - {}", payload_id, payload_hash)
 }

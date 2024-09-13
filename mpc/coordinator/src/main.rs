@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
-use mpc_shared::{phase2_verify, supabase::SupabaseMPCApi};
+use mpc_shared::{phase2_verify, signed_message, supabase::SupabaseMPCApi};
+use pgp::{cleartext::CleartextSignedMessage, Deserializable, SignedPublicKey};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -26,6 +27,8 @@ enum Error {
     CurrentPayloadNotFound,
     #[error("next payload not found.")]
     NextPayloadNotFound,
+    #[error("contributor signature not found")]
+    ContributorSignatureNotFound,
 }
 
 #[tokio::main]
@@ -71,11 +74,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     .contributor_payload(&current_contributor.id)
                     .await?
                     .ok_or(Error::NextPayloadNotFound)?;
-                let payload_next = client
+                let next_payload = client
                     .download_payload(&next_payload.id, &next_payload.id, progress)
                     .await?;
+                println!("verifying signature...");
+                let contribution_signature = client
+                    .contributor_signature(&current_contributor.id)
+                    .await?
+                    .ok_or(Error::ContributorSignatureNotFound)?;
+                let signed_public_key = SignedPublicKey::from_armor_single::<&[u8]>(
+                    hex::decode(contribution_signature.public_key)
+                        .expect("impossible")
+                        .as_ref(),
+                )
+                .expect("impossible")
+                .0;
+
+                // Last bytes are the sh256 of the whole contrib
+                let next_payload_hash = &next_payload[&next_payload.len() - 32..];
+
+                let public_key_is_valid = signed_public_key.verify().is_ok();
+                if !public_key_is_valid {
+                    println!("public key is invalid");
+                }
+
+                let raw_signature =
+                    hex::decode(&contribution_signature.signature).expect("impossible");
+                let signature = CleartextSignedMessage::from_armor::<&[u8]>(raw_signature.as_ref())
+                    .expect("impossible")
+                    .0;
+
+                let signature_matches = signature.signed_text()
+                    == signed_message(&current_payload.id, &hex::encode(next_payload_hash));
+                if !signature_matches {
+                    println!("signature signed text mismatch");
+                }
+
+                let signature_is_valid = signature.verify(&signed_public_key).is_ok();
+                if !signature_is_valid {
+                    println!("contribution signature is invalid");
+                }
+
                 println!("verifying payload...");
-                if phase2_verify(&payload_current, &payload_next).is_ok() {
+                let contribution_is_valid = phase2_verify(&payload_current, &next_payload).is_ok();
+                if !contribution_is_valid {
+                    println!("contribution is invalid");
+                }
+
+                if public_key_is_valid
+                    && signature_matches
+                    && signature_is_valid
+                    && contribution_is_valid
+                {
                     println!("verification succeeded.");
                     client
                         .insert_contribution(current_contributor.id.clone(), true)

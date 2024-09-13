@@ -4,22 +4,24 @@ name    = "mpc-client"
 version = "0.1.0"
 
 [dependencies]
-async-sqlite   = "0.2.2"
-base64         = { workspace = true }
-clap           = { version = "4.5", features = ["derive"] }
-crossterm      = "0.27.0"
-http-body-util = "0.1"
-httpdate       = "1.0"
-hyper          = { version = "1", features = ["full"] }
-hyper-util     = { version = "0.1", features = ["full"] }
-mpc-shared     = { workspace = true }
-postgrest      = "1.0"
-rand           = "0.8.5"
-ratatui        = "0.27.0"
+async-sqlite         = "0.2.2"
+base64               = { workspace = true }
+clap                 = { version = "4.5", features = ["derive"] }
+crossterm            = "0.27.0"
+hex                  = { workspace = true }
+http-body-util       = "0.1"
+httpdate             = "1.0"
+hyper                = { version = "1", features = ["full"] }
+hyper-util           = { version = "0.1", features = ["full"] }
+mpc-shared           = { workspace = true }
+pgp                  = "0.13"
+postgrest            = "1.0"
+rand                 = "0.8.5"
+ratatui              = "0.27.0"
+reqwest              = { workspace = true, features = ["json"] }
+serde                = { workspace = true, features = ["derive"] }
+serde_json           = { workspace = true }
+thiserror            = { workspace = true }
 throbber-widgets-tui = "0.6"
-reqwest        = { workspace = true, features = ["json"] }
-serde          = { workspace = true, features = ["derive"] }
-serde_json     = { workspace = true }
-thiserror      = { workspace = true }
-tokio          = { workspace = true, features = ["full"] }
-tokio-util                = "0.7"
+tokio                = { workspace = true, features = ["full"] }
+tokio-util           = "0.7"

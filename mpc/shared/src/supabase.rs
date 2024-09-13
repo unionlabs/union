@@ -3,12 +3,12 @@ use std::{future::Future, io::SeekFrom, str::FromStr};
 use postgrest::Postgrest;
 use reqwest::{
     header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_LENGTH, RANGE},
-    ClientBuilder,
+    ClientBuilder, StatusCode,
 };
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 
 use crate::{
-    types::{Contribution, ContributorId, PayloadId},
+    types::{Contribution, ContributionSignature, ContributorId, PayloadId},
     CONTRIBUTION_SIZE,
 };
 
@@ -131,6 +131,52 @@ impl SupabaseMPCApi {
             .await?
             .error_for_status()?;
         Ok(())
+    }
+
+    pub async fn insert_contribution_signature(
+        &self,
+        contributor_id: String,
+        public_key: Vec<u8>,
+        signature: Vec<u8>,
+    ) -> Result<(), DynError> {
+        if let Err(e) = self
+            .client
+            .from("contribution_signature")
+            .insert(serde_json::to_string(&ContributionSignature {
+                id: contributor_id,
+                public_key: hex::encode(&public_key),
+                signature: hex::encode(&signature),
+            })?)
+            .execute()
+            .await?
+            .error_for_status()
+        {
+            // Conflict means we already have an entry.
+            // If network drops or something we must allow this to happen.
+            if e.status() == Some(StatusCode::CONFLICT) {
+                return Ok(());
+            } else {
+                return Err(e.into());
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn contributor_signature(
+        &self,
+        contributor_id: &str,
+    ) -> Result<Option<ContributionSignature>, DynError> {
+        Ok(self
+            .client
+            .from("contribution_signature")
+            .eq("id", &contributor_id)
+            .select("*")
+            .execute()
+            .await?
+            .json::<Vec<ContributionSignature>>()
+            .await?
+            .first()
+            .cloned())
     }
 
     pub async fn download_payload<F>(
