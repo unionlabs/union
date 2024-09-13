@@ -41,7 +41,6 @@ export const checkState = async (): Promise<ClientState> => {
   try {
     const response = await get<ClientState>("contribute", {})
 
-    console.log("resssss", response)
     return response ?? "offline"
   } catch (error) {
     console.log("Error fetching status:", error)

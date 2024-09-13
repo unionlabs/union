@@ -12,14 +12,18 @@ $effect(() => {
 })
 </script>
 
-{#if contributor}
-  {#if contributor.loggedIn}
 
-    <!--HANDLE INVITE CODE -->
-    <!--HANDLE WAITLIST -->
+{#if contributor.loggedIn}
+
+  {#if contributor.inQueue}
     <Ceremony {contributor}/>
-
+  {:else if contributor.onWaitlist}
+    <H1>Your on the list</H1>
   {:else}
-    <H1>Welcome to union ceremony</H1>
+    <!--ENTER CODE -->
+    <!--OR WAITLIST -->
   {/if}
+
+{:else}
+  <H1>Welcome to union ceremony</H1>
 {/if}

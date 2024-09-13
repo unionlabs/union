@@ -55,6 +55,10 @@ type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 export class ContributorState {
   userId = $state<string | undefined>(undefined)
   loggedIn = $state<boolean>(false)
+
+  inQueue = $state<boolean>(false)
+  onWaitlist = $state<boolean>(false)
+
   pollingState = $state<"stopped" | "polling">("stopped")
   state = $state<UserState>("loading")
   clientState = $state<ClientState>("offline")
@@ -238,22 +242,15 @@ export class ContributorState {
         case "uploadStarted":
         case "uploadEnded":
         case "successful":
-          console.log(`Client is in state: ${this.clientState}.`)
           this.state = "contributing"
           break
-
         case "failed":
-          console.log("Client failed during process.")
           this.state = "error"
           break
-
         case "offline":
-          console.log("Client is offline.")
           this.state = "noClient"
           break
-
         default:
-          console.log("Defaulting to contribute state.")
           this.state = "contribute"
           break
       }

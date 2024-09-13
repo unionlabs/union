@@ -7,7 +7,7 @@ import {
   getUserQueuePosition
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
-import type { ClientState, ContributionState } from "$lib/stores/state.svelte.ts"
+import type { ContributionState } from "$lib/stores/state.svelte.ts"
 
 export const callJoinQueue = async (codeId: string) => {
   const userId = user.session?.user.id

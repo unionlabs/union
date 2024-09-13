@@ -220,6 +220,7 @@ Vals
 Verkle
 Viridis
 Vitarana
+WAITLIST
 Wagmi
 Wdua
 Webgl
