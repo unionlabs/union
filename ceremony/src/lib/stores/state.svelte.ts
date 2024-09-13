@@ -1,6 +1,7 @@
 import {onDestroy} from "svelte";
 import {checkState} from "$lib/client";
 import {checkContributionState, getUserQueueInfo} from "$lib/supabase";
+import type {ClientState} from "$lib/client/types.ts";
 
 type IntervalID = NodeJS.Timeout | number;
 
@@ -21,13 +22,6 @@ export type ContributionState =
   | 'verifying'
   | 'notContributed'
 
-export type ClientState =
-  "idle"
-  | "initializing"
-  | "contributionStarted"
-  | "contributionEnded"
-  | "successful"
-  | "offline"
 
 interface UserContext {
   position: number | null;
@@ -226,8 +220,8 @@ export class ContributorState {
     } else if (this.contributionState === 'contribute') {
       if (this.clientState === 'idle') {
         this.state = 'contribute';
-      } else {
-        this.state = 'noClient'
+      } else if (this.clientState === 'contributionStarted') {
+        this.state = 'contributing'
       }
     } else if (this.queueState.position !== null) {
       this.state = 'inQueue';

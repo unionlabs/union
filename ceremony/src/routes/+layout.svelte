@@ -69,6 +69,12 @@
     }
   })
 
+  window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
+    e.preventDefault()
+    e.returnValue = ""
+  })
+
+
 
 </script>
 
