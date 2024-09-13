@@ -1,6 +1,5 @@
 module IBC::LightClient {
     use std::vector;
-    use std::from_bcs;
     use std::bcs;
     use std::string::{Self, String};
     use IBC::height::{Self, Height};
