@@ -28,7 +28,7 @@
     <H3>{contributor.queueState.estimatedTime} minutes left (est.).</H3>
 
   {:else if contributor.state === 'contribute'}
-    <H1>Ready to start contribution...</H1>
+    <H1>Starting client...</H1>
 
   {:else if contributor.state === 'contributing'}
     <H1>Contributing now...</H1>
