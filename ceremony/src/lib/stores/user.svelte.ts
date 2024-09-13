@@ -1,3 +1,7 @@
 import type { Session } from "@supabase/supabase-js"
 
-export const user: { session: Session | null } = $state({ session: null })
+type UserState = {
+  session: Session | null;
+};
+
+export const user = $state<UserState>({ session: null });

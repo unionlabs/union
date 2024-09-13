@@ -1,5 +1,5 @@
-export interface Status {
-  status: "idle" | "initializing" | "contributionStarted" | "contributionEnded" | "successful"
+export interface ClientStatus {
+  status: "idle" | "initializing" | "contributionStarted" | "contributionEnded" | "successful" | "offline"
   downloadStarted?: string
   downloading?: {
     file: string
@@ -18,9 +18,5 @@ export interface ContributeBody {
   apiKey: string
   contributorId: string
   payloadId: string
-}
-
-export interface QueueData {
-  id: string
-  joined: string
+  userEmail: string
 }

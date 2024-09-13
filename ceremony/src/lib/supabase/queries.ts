@@ -6,8 +6,6 @@ export const getContributor = async (userId: string) => {
     .select("id")
     .eq("id", userId)
     .single()
-
-  if (error) console.error("Error in getContributor:", error)
   return { data, error }
 }
 
@@ -17,8 +15,6 @@ export const getSubmittedContribution = async (userId: string) => {
     .select("id")
     .eq("id", userId)
     .maybeSingle()
-
-  if (error) console.error("Error in getSubmittedContribution:", error)
   return { data, error }
 }
 
@@ -28,8 +24,6 @@ export const getContribution = async (userId: string) => {
     .select("id")
     .eq("id", userId)
     .maybeSingle()
-
-  if (error) console.error("Error in getContribution:", error)
   return { data, error }
 }
 
@@ -40,7 +34,7 @@ export const getUserQueuePosition = async (userId: string) => {
     if (error.code === "PGRST116") {
       return { data: undefined, error: undefined }
     }
-    console.error("Error getting user data:", error)
+    console.log("Error getting user data:", error)
     return { data: undefined, error }
   }
 

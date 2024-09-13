@@ -11,7 +11,7 @@ let loading = false
 
 async function login() {
   loading = true
-  await auth(`${$page.url.origin}/app`)
+  await auth(`${$page.url.origin}/`)
 }
 </script>
 

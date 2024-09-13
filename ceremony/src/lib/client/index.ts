@@ -1,20 +1,21 @@
 import { get, post } from "$lib/client/http.ts"
-import type { ContributeBody, Status } from "$lib/client/types.ts"
+import type { ContributeBody, ClientStatus } from "$lib/client/types.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { getQueuePayloadId } from "$lib/supabase/queries.ts"
 
-export const start = async (): Promise<Status | undefined> => {
+export const start = async (): Promise<ClientStatus | undefined> => {
   const userId = user?.session?.user.id
+  const email = user?.session?.user?.email
 
   if (!userId) {
-    console.error("User not logged in")
+    console.log("User not logged in")
     return
   }
 
   const { data, error } = await getQueuePayloadId(userId)
 
   if (error) {
-    console.error("Error fetching payload_id:", error)
+    console.log("Error fetching payload_id:", error)
     return
   }
 
@@ -29,21 +30,35 @@ export const start = async (): Promise<Status | undefined> => {
     jwt: user?.session?.access_token,
     supabaseProject: import.meta.env.VITE_SUPABASE_URL,
     apiKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-    bucket: import.meta.env.VITE_BUCKET_ID
+    bucket: import.meta.env.VITE_BUCKET_ID,
+    userEmail: email
   }
 
-  return post<Status>("contribute", {}, contributeBody)
+  return post<ClientStatus>("contribute", {}, contributeBody)
 }
 
-export const checkStatus = async (): Promise<{ status: Status }> => {
+
+export const checkState = async (): Promise<string> => {
   try {
-    const status = await get<Status>("contribute", {})
-    if (status === undefined) {
-      throw new Error("Status is undefined. Is the client up?")
+    const response = await get<any>("contribute", {});
+    console.log(response);
+
+    if (typeof response === 'string') {
+      return response;
     }
-    return { status }
+
+    if (response && typeof response.status === 'string') {
+      return response.status;
+    }
+
+    if (Array.isArray(response) && typeof response[0] === 'string') {
+      return response[0];
+    }
+
+    throw new Error("Invalid response format. Status is undefined.");
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    throw new Error(`Error fetching status: ${errorMessage}`)
+    console.log('Error fetching status:', error);
+    return 'offline';
   }
-}
+};
+

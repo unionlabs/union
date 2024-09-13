@@ -6,7 +6,6 @@ import {
   getSubmittedContribution,
   getUserQueuePosition
 } from "$lib/supabase/queries.ts"
-import type { ContributionStatus } from "$lib/supabase/types.ts"
 import { supabase } from "$lib/supabase/client.ts"
 
 export const callJoinQueue = async (codeId: string) => {
@@ -38,6 +37,7 @@ export const getUserQueueInfo = async () => {
   const { data, error } = await getUserQueuePosition(userId)
   const { count, error: countError } = await getQueueCount()
 
+
   if (error) {
     console.error("Error getting user queue position:", error)
     return { error }
@@ -57,10 +57,10 @@ export const getUserQueueInfo = async () => {
   }
 }
 
-export const checkContributionStatus = async (): Promise<ContributionStatus> => {
-  const userId = user.session?.user.id
+export const checkContributionState = async ()=> {
+  const userId = user.session?.user.id;
   if (!userId) {
-    throw new Error("User ID is required")
+    throw new Error("User ID is required");
   }
 
   try {
@@ -68,19 +68,27 @@ export const checkContributionStatus = async (): Promise<ContributionStatus> => 
       getContributor(userId),
       getSubmittedContribution(userId),
       getContribution(userId)
-    ])
+    ]);
 
-    const isContributor = !!contributor?.data
-    const hasSubmitted = !!submittedContribution?.data
-    const hasVerified = !!verifiedContribution?.data
+    const isContributor = !!contributor?.data;
+    const hasSubmitted = !!submittedContribution?.data;
+    const hasVerified = !!verifiedContribution?.data;
 
-    return {
-      canContribute: isContributor && !hasSubmitted && !hasVerified,
-      shouldContribute: isContributor && !hasSubmitted && !hasVerified,
-      isVerifying: hasSubmitted && !hasVerified
+    let status: string
+
+    if (isContributor && !hasSubmitted && !hasVerified) {
+      status = 'contribute';
+    } else if (isContributor && hasSubmitted && !hasVerified) {
+      status = 'verifying';
+    } else if (hasVerified) {
+      status = 'contributed';
+    } else {
+      status = 'notContributed';
     }
+
+    return { status };
   } catch (error) {
-    console.error("Error checking contribution status:", error)
-    throw new Error("Failed to check contribution status")
+    console.log("Error checking contribution status:", error);
+    throw new Error("Failed to check contribution status");
   }
 }

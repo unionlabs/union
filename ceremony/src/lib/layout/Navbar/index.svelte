@@ -42,8 +42,6 @@ async function logout() {
       <div class="hidden md:block">
         {#if user.session}
           <div class="flex items-center gap-4">
-
-            <NavLink href="/app">Contribute</NavLink>
             <Button onclick={logout}>{"Log out"}</Button>
           </div>
         {:else}
@@ -65,9 +63,6 @@ async function logout() {
       <div class="md:hidden mt-4 w-full bg-black">
         <div class="flex flex-col divide-y divide-white/50">
           {#if user.session}
-            <NavLink class="py-2" href="/app">Dashboard</NavLink>
-            <NavLink class="py-2" href="/app/client">Client</NavLink>
-            <NavLink class="py-2" href="/app/install">Install</NavLink>
             <Button class="py-2" onclick={logout}>{"Log out"}</Button>
           {:else}
             <NavLink class="p-2" href="/auth/login">Log in</NavLink>
