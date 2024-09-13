@@ -11,9 +11,11 @@ let contributor: ContributorState = new ContributorState()
 
 $effect(() => {
   console.info(`ADDRESS VALIDITY STATE: ${addressValidState}`)
+
   const userId = user.session?.user.id
   if (userId) contributor.setUserId(userId)
 })
+
 </script>
 
 
@@ -29,46 +31,3 @@ $effect(() => {
 <div class="absolute bottom-10 left-10">
   <H4>Client: <span class="text-union-accent-500">{contributor.clientState}</span></H4>
 </div>
-
-
-<style>
-    .deep-sea-rise {
-        opacity: 0;
-        transform: scale(0.5) translateY(140px);
-        filter: brightness(0.1);
-        animation: riseFromDepth 2.5s ease-out forwards;
-    }
-
-    .deep-sea-rise.visible {
-        opacity: 1;
-    }
-
-    @keyframes riseFromDepth {
-        0% {
-            opacity: 0;
-            transform: scale(0.5) translateY(140px);
-            filter: brightness(0.1);
-        }
-
-        100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-            filter: brightness(1);
-        }
-    }
-
-    .fade-in-text {
-        opacity: 0;
-        animation: fadeInText 1.5s ease-out forwards;
-        animation-delay: 2s;
-    }
-
-    @keyframes fadeInText {
-        0% {
-            opacity: 0;
-        }
-        100% {
-            opacity: 1;
-        }
-    }
-</style>
