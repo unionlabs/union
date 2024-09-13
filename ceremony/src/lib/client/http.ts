@@ -40,7 +40,7 @@ export const post = async <T>(
     const res = await _fetch(url, {
       method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(body)
     })

@@ -14,7 +14,6 @@
     const userId = user.session?.user.id
     if (userId) contributor.setUserId(userId)
   })
-
 </script>
 
 

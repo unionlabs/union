@@ -2,7 +2,6 @@ import { checkAuth, type SessionError } from "$lib/utils/auth.ts"
 import type { LayoutLoad } from "./$types.ts"
 import { redirect } from "@sveltejs/kit"
 
-
 export const ssr = false
 export const prerender = true
 export const trailingSlash = "ignore"
