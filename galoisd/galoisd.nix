@@ -60,7 +60,6 @@
         tags = [ "binary" ];
         doCheck = true;
       } // (if pkgs.stdenv.isLinux then {
-        nativeBuildInputs = [ pkgs.musl ];
         CGO_ENABLED = 0;
         ldflags = [
           "-extldflags '-static -L${pkgs.musl}/lib -s -w'"

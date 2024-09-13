@@ -852,7 +852,7 @@ func convertPtauToPhase1(ptau Ptau) (phase1 mpc.Phase1, err error) {
 		}
 	}
 
-	phase1 = mpc.InitPhase1(int(ptau.Header.Power));
+	phase1 = mpc.InitPhase1(int(ptau.Header.Power))
 
 	phase1.Parameters.G1.Tau = tauG1
 	phase1.Parameters.G1.AlphaTau = alphaTauG1
