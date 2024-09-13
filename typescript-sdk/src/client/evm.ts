@@ -129,7 +129,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         let _receiver: Address
 
         // check if chain ids are the same, if yes then `receiver` is `receiver`,
-        // otherwise, it's the relayer contract address from ucs coinfig
+        // otherwise, it's the relayer contract address from ucs config
         if (parameters.chainId !== destinationChainId) {
           const ucsDetails = await getHubbleChainDetails({
             destinationChainId,

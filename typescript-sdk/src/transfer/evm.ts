@@ -122,8 +122,8 @@ export type ApproveTransferAssetFromEvmParams = Pick<
 
 /**
  * approve a transfer asset from evm
- * if transfering to a different chain, `receiver` is the relayer contract address
- * if transfering to the same chain, `receiver` is the recipient address
+ * if transferring to a different chain, `receiver` is the relayer contract address
+ * if transferring to the same chain, `receiver` is the recipient address
  *
  * @example
  * ```ts
