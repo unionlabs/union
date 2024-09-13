@@ -13,13 +13,13 @@ type UserState =
   | 'contributed'
   | 'error'
   | 'offline'
+  | 'noClient'
 
 export type ContributionState =
   'contribute'
   | 'contributed'
   | 'verifying'
   | 'notContributed'
-  | null;
 
 export type ClientState =
   "idle"
@@ -30,8 +30,8 @@ export type ClientState =
   | "offline"
 
 interface UserContext {
-  queuePosition: number | null;
-  queueCount: number | null;
+  position: number | null;
+  count: number | null;
   estimatedTime: number | null;
   error: string | null;
 }
@@ -51,14 +51,16 @@ type QueueInfoResult = QueueInfoSuccess | QueueInfoError;
 
 export class ContributorState {
   userId = $state<string | undefined>(undefined);
-  state = $state<UserState>('offline');
-  clientState = $state<ClientState>('offline')
-  contributionState= $state<ContributionState>()
-  pollingState = $state<'stopped' | 'polling'>('stopped');
   loggedIn = $state<boolean>(false);
-  ctx = $state<UserContext>({
-    queuePosition: null,
-    queueCount: null,
+  pollingState = $state<'stopped' | 'polling'>('stopped');
+
+  state = $state<UserState>('loading');
+
+  clientState = $state<ClientState>('offline')
+  contributionState = $state<ContributionState>('notContributed')
+  queueState = $state<UserContext>({
+    position: null,
+    count: null,
     estimatedTime: null,
     error: null,
   });
@@ -189,17 +191,17 @@ export class ContributorState {
 
   private updateQueueInfo(queueInfo: QueueInfoResult) {
     if (queueInfo.inQueue) {
-      this.ctx = {
-        ...this.ctx,
-        queuePosition: queueInfo.position,
-        queueCount: queueInfo.count,
+      this.queueState = {
+        ...this.queueState,
+        position: queueInfo.position,
+        count: queueInfo.count,
         estimatedTime: queueInfo.position * 30,
       };
     } else {
-      this.ctx = {
-        ...this.ctx,
-        queuePosition: null,
-        queueCount: null,
+      this.queueState = {
+        ...this.queueState,
+        position: null,
+        count: null,
         estimatedTime: null,
       };
     }
@@ -212,21 +214,27 @@ export class ContributorState {
   }
 
   private setError(message: string) {
-    this.ctx = {...this.ctx, error: message};
+    this.queueState = {...this.queueState, error: message};
     this.state = 'error';
   }
 
   private updateState() {
-    if (this.contributionState === 'contribute') {
-      this.state = 'contribute';
-    } else if (this.ctx.queuePosition !== null) {
+    if (this.contributionState === 'contributed') {
+      this.state = 'contributed';
+    } else if (this.contributionState === 'verifying') {
+      this.state = 'verifying';
+    } else if (this.contributionState === 'contribute') {
+      if (this.clientState === 'idle') {
+        this.state = 'contribute';
+      } else {
+        this.state = 'noClient'
+      }
+    } else if (this.queueState.position !== null) {
       this.state = 'inQueue';
     } else if (this.clientState === 'contributionStarted') {
       this.state = 'contributing';
-    } else if (this.contributionState === 'verifying') {
-      this.state = 'verifying';
-    } else if (this.clientState === 'successful') {
-      this.state = 'contributed';
+    } else if (this.clientState === 'offline') {
+      this.state = 'offline';
     } else {
       this.state = 'loading';
     }
