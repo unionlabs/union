@@ -1,10 +1,10 @@
-import { onDestroy } from "svelte"
-import { checkState } from "$lib/client"
-import { checkContributionState, getUserQueueInfo } from "$lib/supabase"
+import {onDestroy} from "svelte"
+import {checkState} from "$lib/client"
+import {checkAllowanceState, checkContributionState, getUserQueueInfo} from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
 
-type UserState =
+type State =
   | "loading"
   | "inQueue"
   | "contribute"
@@ -15,7 +15,16 @@ type UserState =
   | "offline"
   | "noClient"
 
-export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
+export type AllowanceState =
+  "invited"
+| "waitingList"
+| undefined
+
+export type ContributionState =
+  "contribute"
+  | "contributed"
+  | "verifying"
+  | "notContributed"
 
 export type ClientState =
   | "idle"
@@ -52,15 +61,19 @@ interface QueueInfoError {
 
 type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 
+const second = 1000
+const CLIENT_POLING_INTERVAL = second
+const QUEUE_POLLING_INTERVAL = second * 10
+const CONTRIBUTION_POLLING_INTERVAL = second * 5
+const ALLOWANCE_POLLING_INTERVAL = second * 5
+
 export class ContributorState {
   userId = $state<string | undefined>(undefined)
   loggedIn = $state<boolean>(false)
-
-  invited = $state<boolean>(false)
-  onWaitlist = $state<boolean>(false)
+  allowanceState = $state<AllowanceState>(undefined)
 
   pollingState = $state<"stopped" | "polling">("stopped")
-  state = $state<UserState>("loading")
+  state = $state<State>("loading")
   clientState = $state<ClientState>("offline")
   contributionState = $state<ContributionState>("notContributed")
   queueState = $state<UserContext>({
@@ -74,10 +87,12 @@ export class ContributorState {
     client: IntervalID | null
     queue: IntervalID | null
     contribution: IntervalID | null
+    allowance: IntervalID | null
   } = {
     client: null,
     queue: null,
-    contribution: null
+    contribution: null,
+    allowance: null
   }
 
   constructor(userId?: string) {
@@ -111,6 +126,7 @@ export class ContributorState {
     }
 
     this.pollingState = "polling"
+    this.startAllowanceStatePolling()
     this.startClientStatePolling()
     this.startQueueInfoPolling()
     this.startContributionStatePolling()
@@ -126,11 +142,32 @@ export class ContributorState {
     this.stopClientStatePolling()
     this.stopQueueInfoPolling()
     this.stopContributionStatePolling()
+    this.stopAllowanceStatePolling()
+  }
+
+  private startAllowanceStatePolling() {
+    this.pollAllowanceState()
+    this.pollIntervals.allowance = setInterval(
+      () => this.pollAllowanceState(),
+      ALLOWANCE_POLLING_INTERVAL
+    ) as IntervalID
+  }
+
+  private stopAllowanceStatePolling() {
+    if (this.pollIntervals.allowance) {
+      clearInterval(this.pollIntervals.allowance)
+      this.pollIntervals.allowance = null
+    }
+  }
+
+  private async pollAllowanceState() {
+    const state = await checkAllowanceState()
+    this.updateAllowanceState(state)
   }
 
   private startClientStatePolling() {
     this.pollClientState()
-    this.pollIntervals.client = setInterval(() => this.pollClientState(), 5000) as IntervalID
+    this.pollIntervals.client = setInterval(() => this.pollClientState(), CLIENT_POLING_INTERVAL) as IntervalID
   }
 
   private stopClientStatePolling() {
@@ -147,7 +184,10 @@ export class ContributorState {
 
   private startQueueInfoPolling() {
     this.pollQueueInfo()
-    this.pollIntervals.queue = setInterval(() => this.pollQueueInfo(), 5000) as IntervalID
+    this.pollIntervals.queue = setInterval(
+      () => this.pollQueueInfo(),
+      QUEUE_POLLING_INTERVAL
+    ) as IntervalID
   }
 
   private stopQueueInfoPolling() {
@@ -171,7 +211,7 @@ export class ContributorState {
     this.pollContributionState()
     this.pollIntervals.contribution = setInterval(
       () => this.pollContributionState(),
-      5000
+      CONTRIBUTION_POLLING_INTERVAL
     ) as IntervalID
   }
 
@@ -190,6 +230,10 @@ export class ContributorState {
       console.log("Error polling contribution state:", error)
       this.setError(error instanceof Error ? error.message : "Unknown error occurred")
     }
+  }
+
+  private updateAllowanceState(state: AllowanceState) {
+    this.allowanceState = state
   }
 
   private updateClientState(state: ClientState) {
@@ -222,13 +266,13 @@ export class ContributorState {
   }
 
   private setError(message: string) {
-    this.queueState = { ...this.queueState, error: message }
+    this.queueState = {...this.queueState, error: message}
     this.state = "error"
   }
 
   private updateState() {
-    console.log("Updating state. Current clientState:", this.clientState)
-    console.log("Current contributionState:", this.contributionState)
+    console.log("ClientState:", this.clientState)
+    console.log("ContributionState:", this.contributionState)
 
     if (this.contributionState === "contribute") {
 
@@ -268,6 +312,6 @@ export class ContributorState {
       this.state = "loading"
     }
 
-    console.log("New contributor state:", this.state)
+    console.log("State:", this.state)
   }
 }
