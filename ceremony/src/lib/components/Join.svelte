@@ -1,41 +1,40 @@
 <script lang="ts">
-import H1 from "$lib/components/typography/H1.svelte"
-import Button from "$lib/components/Button.svelte"
-import Text from "$lib/components/typography/Text.svelte"
-import { callJoinQueue } from "$lib/supabase"
-import Spinner from "$lib/components/Spinner.svelte";
-import type {ContributorState} from "$lib/stores/state.svelte.ts";
-import {user} from "$lib/stores/user.svelte.ts";
+  import H1 from "$lib/components/typography/H1.svelte"
+  import Button from "$lib/components/Button.svelte"
+  import Text from "$lib/components/typography/Text.svelte"
+  import {callJoinQueue} from "$lib/supabase"
+  import type {ContributorState} from "$lib/stores/state.svelte.ts";
+  import {user} from "$lib/stores/user.svelte.ts";
+  import {toast} from "svelte-sonner";
 
-type Props = {
-  contributor: ContributorState
-}
-
-let { contributor }: Props = $props()
-
-let code = $state("")
-let loading = $state(false)
-
-async function handleCode() {
-  loading = true
-  const codeValid = await callJoinQueue(code)
-  if (codeValid) {
-    await contributor.checkAllowanceState(user.session?.user.id)
-  } else {
-    console.log('not valid')
+  type Props = {
+    contributor: ContributorState
   }
-}
 
-async function joinWaitlist() {
-  loading = true
+  let {contributor}: Props = $props()
 
-}
+  let code = $state("")
+  let codeLoading = $state(false)
+  let waitlistLoading = $state(false)
 
-async function handleWaitlist() {}
+  async function handleCode() {
+    codeLoading = true
+    const codeValid = await callJoinQueue(code)
+    if (codeValid) {
+      await contributor.checkAllowanceState(user.session?.user.id)
+      codeLoading = false
+    } else {
+      toast.error('The code is not valid')
+      codeLoading = false
+      code = ''
+    }
+  }
+
+  async function joinWaitlist() {
+    waitlistLoading = true
+
+  }
 </script>
-
-<!--Todo handle invite code and update contributor-->
-<!--if no code, add to waitlist and update contributor-->
 
 <div>
   <H1>Join the ceremony</H1>
@@ -52,6 +51,7 @@ async function handleWaitlist() {}
             class="text-md font-supermolot h-9 px-2 outline-none border-2"
     />
     <Button
+            loading={codeLoading}
             type="button"
             onclick={handleCode}
             disabled={code.length === 0}
@@ -64,4 +64,4 @@ async function handleWaitlist() {}
 
 <Text>Or</Text>
 
-<Button>Join the waitlist <Spinner /></Button>
+<Button loading={waitlistLoading}>Join the waitlist</Button>
