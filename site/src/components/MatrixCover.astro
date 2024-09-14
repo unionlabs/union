@@ -215,13 +215,16 @@
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
+      const CYAN = [0.71, 0.94, 0.99, 1.0];
+      const MID_CYAN = [0.51, 0.94, 0.99, 1.0];
+      const DARK_CYAN = [0.37, 0.87, 0.99, 1.0];
       const faceColors = [
-        [0.71, 0.94, 0.99, 1.0],    // Front face
-        [0.0, 1.0, 0.0, 1.0],    // Back face
-        [0.37, 0.87, 0.99, 1.0], // Top face
-        [1.0, 1.0, 0.0, 1.0],    // Bottom face
-        [0.71, 0.94, 0.99, 1.0], // Right face
-        [0.86, 0.97, 1.0, 1.0],  // Left face
+        CYAN,    // Front face
+        CYAN,    // Back face
+        DARK_CYAN, // Top face
+        DARK_CYAN,    // Bottom face
+        MID_CYAN, // Right face
+        MID_CYAN,  // Left face
       ];
 
       let colors = [];
@@ -304,7 +307,6 @@
       glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 10, -30]);
       // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
       // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
-      console.log({targetMouseX, targetMouseY})
       glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.05, [1, 0, 0]);
       glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4 + mouseX * 0.05, [0, 1, 0]);
 
