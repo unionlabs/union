@@ -4,10 +4,11 @@ import {
   getContributor,
   getQueueCount,
   getSubmittedContribution,
-  getUserQueuePosition, queryAllowance
+  getUserQueuePosition,
+  queryAllowance
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
-import type {AllowanceState, ContributionState} from "$lib/stores/state.svelte.ts"
+import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
 
 export const callJoinQueue = async (codeId: string): Promise<boolean> => {
   const userId = user.session?.user.id
@@ -101,15 +102,16 @@ export const getContributionState = async (): Promise<ContributionState> => {
 }
 
 export const getAllowanceState = async (userId: string | undefined): Promise<AllowanceState> => {
-  if (!userId && !user.session?.user.id) {
-    console.log("User ID is required")
+  if (!userId) {
+    console.log("Need to be logged in to get allowance state")
+    return
   }
 
-  const { data, error } = await queryAllowance(userId);
-  if (error || !data) return undefined;
+  const { data, error } = await queryAllowance()
+  if (error || !data) return undefined
 
-  if (data.in_waitlist) return 'waitingList';
-  if (data.has_redeemed) return 'invited';
+  if (data.in_waitlist) return "waitingList"
+  if (data.has_redeemed) return "invited"
 
-  return undefined;
+  return undefined
 }

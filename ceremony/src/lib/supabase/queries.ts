@@ -58,7 +58,7 @@ export const getQueuePayloadId = async (userId: string) => {
   return { data, error }
 }
 
-export const queryAllowance = async (userId: string) => {
+export const queryAllowance = async () => {
   const { data, error } = await supabase
     .from("current_user_state")
     .select("in_waitlist, has_redeemed")
@@ -66,4 +66,3 @@ export const queryAllowance = async (userId: string) => {
 
   return { data, error }
 }
-

@@ -1,12 +1,7 @@
 <script lang="ts">
-  import Spinner from "$lib/components/Spinner.svelte";
+import Spinner from "$lib/components/Spinner.svelte"
 
-  let {
-    children,
-    class: className = "",
-    loading = false,
-    ...props
-  } = $props()
+let { children, class: className = "", loading = false, ...props } = $props()
 </script>
 
 <button

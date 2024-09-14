@@ -1,17 +1,21 @@
 <script lang="ts">
-  import {user} from "$lib/stores/user.svelte.ts"
-  import H1 from "$lib/components/typography/H1.svelte"
-  import {ContributorState} from "$lib/stores/state.svelte.ts"
-  import Ceremony from "$lib/components/Ceremony.svelte"
-  import Join from "$lib/components/Join.svelte"
+import { user } from "$lib/stores/user.svelte.ts"
+import H1 from "$lib/components/typography/H1.svelte"
+import { ContributorState } from "$lib/stores/state.svelte.ts"
+import Ceremony from "$lib/components/Ceremony.svelte"
+import Join from "$lib/components/Join.svelte"
 
-  //This could be set with context API if we expand the app a lot.
-  let contributor: ContributorState = new ContributorState()
+//Improvements
+//Only start polling depending on allowance, no need to poll if not allowed.
+//
 
-  $effect(() => {
-    const userId = user.session?.user.id
-    if (userId) contributor.setUserId(userId)
-  })
+//This could be set with context API if we expand the app a lot.
+let contributor: ContributorState = new ContributorState()
+
+$effect(() => {
+  const userId = user.session?.user.id
+  if (userId) contributor.setUserId(userId)
+})
 </script>
 
 <!--Maybe add loading state to handle text jump-->

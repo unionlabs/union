@@ -1,6 +1,6 @@
-import {onDestroy} from "svelte"
-import {checkState} from "$lib/client"
-import {getAllowanceState, getUserQueueInfo, getContributionState} from "$lib/supabase"
+import { onDestroy } from "svelte"
+import { checkState } from "$lib/client"
+import { getAllowanceState, getUserQueueInfo, getContributionState } from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
 
@@ -15,16 +15,9 @@ type State =
   | "offline"
   | "noClient"
 
-export type AllowanceState =
-  "invited"
-| "waitingList"
-| undefined
+export type AllowanceState = "invited" | "waitingList" | undefined
 
-export type ContributionState =
-  "contribute"
-  | "contributed"
-  | "verifying"
-  | "notContributed"
+export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
 
 export type ClientState =
   | "idle"
@@ -115,8 +108,8 @@ export class ContributorState {
   }
 
   async checkAllowanceState(userId: string | undefined): Promise<AllowanceState> {
-    this.allowanceState = await getAllowanceState(userId);
-    return this.allowanceState;
+    this.allowanceState = await getAllowanceState(userId)
+    return this.allowanceState
   }
 
   startPolling() {
@@ -150,7 +143,10 @@ export class ContributorState {
 
   private startClientStatePolling() {
     this.pollClientState()
-    this.pollIntervals.client = setInterval(() => this.pollClientState(), CLIENT_POLING_INTERVAL) as IntervalID
+    this.pollIntervals.client = setInterval(
+      () => this.pollClientState(),
+      CLIENT_POLING_INTERVAL
+    ) as IntervalID
   }
 
   private stopClientStatePolling() {
@@ -245,7 +241,7 @@ export class ContributorState {
   }
 
   private setError(message: string) {
-    this.queueState = {...this.queueState, error: message}
+    this.queueState = { ...this.queueState, error: message }
     this.state = "error"
   }
 
@@ -254,7 +250,6 @@ export class ContributorState {
     console.log("ContributionState:", this.contributionState)
 
     if (this.contributionState === "contribute") {
-
       switch (this.clientState) {
         case "idle":
         case "initializing":
@@ -278,7 +273,6 @@ export class ContributorState {
           this.state = "contribute"
           break
       }
-
     } else if (this.queueState.position !== null) {
       this.state = "inQueue"
     } else if (this.contributionState === "contributed") {

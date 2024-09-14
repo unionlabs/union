@@ -1,39 +1,38 @@
 <script lang="ts">
-  import H1 from "$lib/components/typography/H1.svelte"
-  import Button from "$lib/components/Button.svelte"
-  import Text from "$lib/components/typography/Text.svelte"
-  import {callJoinQueue} from "$lib/supabase"
-  import type {ContributorState} from "$lib/stores/state.svelte.ts";
-  import {user} from "$lib/stores/user.svelte.ts";
-  import {toast} from "svelte-sonner";
+import H1 from "$lib/components/typography/H1.svelte"
+import Button from "$lib/components/Button.svelte"
+import Text from "$lib/components/typography/Text.svelte"
+import { callJoinQueue } from "$lib/supabase"
+import type { ContributorState } from "$lib/stores/state.svelte.ts"
+import { user } from "$lib/stores/user.svelte.ts"
+import { toast } from "svelte-sonner"
 
-  type Props = {
-    contributor: ContributorState
+type Props = {
+  contributor: ContributorState
+}
+
+let { contributor }: Props = $props()
+
+let code = $state("")
+let codeLoading = $state(false)
+let waitlistLoading = $state(false)
+
+async function handleCode() {
+  codeLoading = true
+  const codeValid = await callJoinQueue(code)
+  if (codeValid) {
+    await contributor.checkAllowanceState(user.session?.user.id)
+    codeLoading = false
+  } else {
+    toast.error("The code is not valid")
+    codeLoading = false
+    code = ""
   }
+}
 
-  let {contributor}: Props = $props()
-
-  let code = $state("")
-  let codeLoading = $state(false)
-  let waitlistLoading = $state(false)
-
-  async function handleCode() {
-    codeLoading = true
-    const codeValid = await callJoinQueue(code)
-    if (codeValid) {
-      await contributor.checkAllowanceState(user.session?.user.id)
-      codeLoading = false
-    } else {
-      toast.error('The code is not valid')
-      codeLoading = false
-      code = ''
-    }
-  }
-
-  async function joinWaitlist() {
-    waitlistLoading = true
-
-  }
+function joinWaitlist() {
+  waitlistLoading = true
+}
 </script>
 
 <div>
