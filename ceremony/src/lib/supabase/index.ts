@@ -104,7 +104,7 @@ export const getContributionState = async (): Promise<ContributionState> => {
 export const getAllowanceState = async (userId: string | undefined): Promise<AllowanceState> => {
   if (!userId) {
     console.log("Need to be logged in to get allowance state")
-    return
+    return undefined
   }
 
   const { data, error } = await queryAllowance()
@@ -113,5 +113,5 @@ export const getAllowanceState = async (userId: string | undefined): Promise<All
   if (data.in_waitlist) return "waitingList"
   if (data.has_redeemed) return "invited"
 
-  return undefined
+  return "join"
 }

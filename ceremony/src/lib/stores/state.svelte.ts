@@ -15,7 +15,7 @@ type State =
   | "offline"
   | "noClient"
 
-export type AllowanceState = "invited" | "waitingList" | undefined
+export type AllowanceState = "invited" | "waitingList" | "join" | undefined
 
 export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
 
