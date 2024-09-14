@@ -283,7 +283,7 @@
 
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-      const fieldOfView = 60 * Math.PI / 180;
+      const fieldOfView = 50 * Math.PI / 180;
       const aspect = gl.canvas.clientWidth/gl.canvas.clientHeight;
       const zNear = 0.1;
       const zFar = 100.0;
@@ -304,7 +304,7 @@
       // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-10, 0, 0])
 
       // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, 0]);
-      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 10, -30]);
+      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -18]);
       // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
       // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
       glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.05, [1, 0, 0]);
@@ -428,8 +428,8 @@
 
     // Initialize cube positions
     const cubePositions = [];
-    for (let x = -20; x < 20; x++) {
-      for (let z = -20; z < 20; z++) {
+    for (let x = -28; x < 10; x++) {
+      for (let z = -28; z < 10; z++) {
         cubePositions.push([x * 1.2 + 0.6, 0, z * 1.2 + 0.6]);
       }
     }
