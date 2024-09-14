@@ -4,7 +4,7 @@ import {
   getContributor,
   getQueueCount,
   getSubmittedContribution,
-  getUserQueuePosition
+  getUserQueuePosition, queryAllowance
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import type {AllowanceState, ContributionState} from "$lib/stores/state.svelte.ts"
@@ -64,7 +64,7 @@ export const getUserQueueInfo = async () => {
   }
 }
 
-export const checkContributionState = async (): Promise<ContributionState> => {
+export const getContributionState = async (): Promise<ContributionState> => {
   const userId = user.session?.user.id
   if (!userId) {
     throw new Error("User ID is required")
@@ -100,6 +100,16 @@ export const checkContributionState = async (): Promise<ContributionState> => {
   }
 }
 
-export const checkAllowanceState = async (): Promise<AllowanceState> => {
-  return 'invited'
+export const getAllowanceState = async (userId: string | undefined): Promise<AllowanceState> => {
+  if (!userId && !user.session?.user.id) {
+    console.log("User ID is required")
+  }
+
+  const { data, error } = await queryAllowance(userId);
+  if (error || !data) return undefined;
+
+  if (data.in_waitlist) return 'waitingList';
+  if (data.has_redeemed) return 'invited';
+
+  return undefined;
 }

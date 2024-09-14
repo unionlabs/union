@@ -4,16 +4,25 @@ import Button from "$lib/components/Button.svelte"
 import Text from "$lib/components/typography/Text.svelte"
 import { callJoinQueue } from "$lib/supabase"
 import Spinner from "$lib/components/Spinner.svelte";
+import type {ContributorState} from "$lib/stores/state.svelte.ts";
+import {user} from "$lib/stores/user.svelte.ts";
+
+type Props = {
+  contributor: ContributorState
+}
+
+let { contributor }: Props = $props()
 
 let code = $state("")
 let loading = $state(false)
 
 async function handleCode() {
   loading = true
-  //Maybe check format etc
   const codeValid = await callJoinQueue(code)
   if (codeValid) {
-    console.log("valid")
+    await contributor.checkAllowanceState(user.session?.user.id)
+  } else {
+    console.log('not valid')
   }
 }
 

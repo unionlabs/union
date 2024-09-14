@@ -5,6 +5,7 @@
   import Ceremony from "$lib/components/Ceremony.svelte"
   import Join from "$lib/components/Join.svelte"
 
+  //This could be set with context API if we expand the app a lot.
   let contributor: ContributorState = new ContributorState()
 
   $effect(() => {
@@ -13,13 +14,14 @@
   })
 </script>
 
+<!--Maybe add loading state to handle text jump-->
 {#if contributor.loggedIn}
   {#if contributor.allowanceState === "invited"}
     <Ceremony {contributor}/>
   {:else if contributor.allowanceState === "waitingList"}
     <H1>Your on the list</H1>
   {:else}
-    <Join/>
+    <Join {contributor}/>
   {/if}
 {:else}
   <H1>Welcome to union ceremony</H1>

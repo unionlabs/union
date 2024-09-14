@@ -1,6 +1,6 @@
 import {onDestroy} from "svelte"
 import {checkState} from "$lib/client"
-import {checkAllowanceState, checkContributionState, getUserQueueInfo} from "$lib/supabase"
+import {getAllowanceState, getUserQueueInfo, getContributionState} from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
 
@@ -63,15 +63,13 @@ type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 
 const second = 1000
 const CLIENT_POLING_INTERVAL = second
+const CONTRIBUTION_POLLING_INTERVAL = second * 10
 const QUEUE_POLLING_INTERVAL = second * 10
-const CONTRIBUTION_POLLING_INTERVAL = second * 5
-const ALLOWANCE_POLLING_INTERVAL = second * 5
 
 export class ContributorState {
   userId = $state<string | undefined>(undefined)
   loggedIn = $state<boolean>(false)
   allowanceState = $state<AllowanceState>(undefined)
-
   pollingState = $state<"stopped" | "polling">("stopped")
   state = $state<State>("loading")
   clientState = $state<ClientState>("offline")
@@ -99,6 +97,7 @@ export class ContributorState {
     if (userId) {
       this.userId = userId
       this.loggedIn = true
+      this.checkAllowanceState(userId)
       this.startPolling()
     }
     onDestroy(() => {
@@ -110,8 +109,14 @@ export class ContributorState {
     if (this.userId === undefined && userId) {
       this.userId = userId
       this.loggedIn = true
+      this.checkAllowanceState(userId)
       this.startPolling()
     }
+  }
+
+  async checkAllowanceState(userId: string | undefined): Promise<AllowanceState> {
+    this.allowanceState = await getAllowanceState(userId);
+    return this.allowanceState;
   }
 
   startPolling() {
@@ -126,7 +131,6 @@ export class ContributorState {
     }
 
     this.pollingState = "polling"
-    this.startAllowanceStatePolling()
     this.startClientStatePolling()
     this.startQueueInfoPolling()
     this.startContributionStatePolling()
@@ -142,27 +146,6 @@ export class ContributorState {
     this.stopClientStatePolling()
     this.stopQueueInfoPolling()
     this.stopContributionStatePolling()
-    this.stopAllowanceStatePolling()
-  }
-
-  private startAllowanceStatePolling() {
-    this.pollAllowanceState()
-    this.pollIntervals.allowance = setInterval(
-      () => this.pollAllowanceState(),
-      ALLOWANCE_POLLING_INTERVAL
-    ) as IntervalID
-  }
-
-  private stopAllowanceStatePolling() {
-    if (this.pollIntervals.allowance) {
-      clearInterval(this.pollIntervals.allowance)
-      this.pollIntervals.allowance = null
-    }
-  }
-
-  private async pollAllowanceState() {
-    const state = await checkAllowanceState()
-    this.updateAllowanceState(state)
   }
 
   private startClientStatePolling() {
@@ -224,16 +207,12 @@ export class ContributorState {
 
   private async pollContributionState() {
     try {
-      const state = await checkContributionState()
+      const state = await getContributionState()
       this.updateContributionState(state)
     } catch (error) {
       console.log("Error polling contribution state:", error)
       this.setError(error instanceof Error ? error.message : "Unknown error occurred")
     }
-  }
-
-  private updateAllowanceState(state: AllowanceState) {
-    this.allowanceState = state
   }
 
   private updateClientState(state: ClientState) {

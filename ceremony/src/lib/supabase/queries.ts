@@ -46,12 +46,7 @@ export const getQueueCount = async () => {
     .from("current_queue")
     .select("*", { count: "exact", head: true })
 
-  if (error) {
-    console.error("Error getting total count:", error)
-    return { count: undefined, error }
-  }
-
-  return { count, error: undefined }
+  return { count, error }
 }
 
 export const getQueuePayloadId = async (userId: string) => {
@@ -60,7 +55,15 @@ export const getQueuePayloadId = async (userId: string) => {
     .select("payload_id")
     .eq("id", userId)
     .single()
-
-  if (error) console.error("Error in getQueuePayloadId:", error)
   return { data, error }
 }
+
+export const queryAllowance = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("current_user_state")
+    .select("in_waitlist, has_redeemed")
+    .single()
+
+  return { data, error }
+}
+
