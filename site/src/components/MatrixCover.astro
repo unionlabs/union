@@ -282,7 +282,6 @@
 
       const fieldOfView = 60 * Math.PI / 180;
       const aspect = gl.canvas.clientWidth/gl.canvas.clientHeight;
-      console.log(gl.canvas.clientWidth, gl.canvas.clientHeight)
       const zNear = 0.1;
       const zFar = 100.0;
       const projectionMatrix = glMatrix.mat4.create();
@@ -292,10 +291,12 @@
 
       const modelViewMatrix = glMatrix.mat4.create();
 
+      // mouseX -= 0.05;
+      // mouseY -= 0.05;
+
       // Smooth out mouse movement
       mouseX += (targetMouseX - mouseX) * 0.1;
       mouseY += (targetMouseY - mouseY) * 0.1;
-      console.log({mouseX, mouseY})
 
       // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-10, 0, 0])
 
@@ -303,7 +304,7 @@
       glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 10, -30]);
       // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
       // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
-
+      console.log({targetMouseX, targetMouseY})
       glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.05, [1, 0, 0]);
       glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4 + mouseX * 0.05, [0, 1, 0]);
 
@@ -454,11 +455,11 @@
     // Update mouse position
     function updateMousePosition(event) {
       const rect = canvas.getBoundingClientRect();
-      targetMouseX = (event.clientX - rect.left) / canvas.width * 2 - 1;
-      targetMouseY = -((event.clientY - rect.top) / canvas.height * 2 - 1);
+      targetMouseX = (event.clientX - rect.left) / canvas.width * 4 - 1;
+      targetMouseY = -((event.clientY - rect.top) / canvas.height * 4) + 1;
     }
 
-    canvas.addEventListener('mousemove', updateMousePosition);
+    document.addEventListener('mousemove', updateMousePosition);
 
     // Cleanup function
     return () => {
