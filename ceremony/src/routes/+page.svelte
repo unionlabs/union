@@ -18,9 +18,11 @@ $effect(() => {
 {#if contributor}
   {#if contributor.loggedIn}
     <Ceremony {contributor}/>
+
   {:else if contributor.onWaitlist}
     <H1>Your on the list</H1>
   {:else}
+
     <!--Do this if no code and no waitlist?-->
     <Join />
   {/if}

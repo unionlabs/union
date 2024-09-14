@@ -231,6 +231,7 @@ export class ContributorState {
     console.log("Current contributionState:", this.contributionState)
 
     if (this.contributionState === "contribute") {
+
       switch (this.clientState) {
         case "idle":
         case "initializing":
@@ -254,6 +255,7 @@ export class ContributorState {
           this.state = "contribute"
           break
       }
+
     } else if (this.queueState.position !== null) {
       this.state = "inQueue"
     } else if (this.contributionState === "contributed") {

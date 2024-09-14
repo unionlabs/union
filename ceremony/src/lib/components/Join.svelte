@@ -3,15 +3,23 @@ import H1 from "$lib/components/typography/H1.svelte"
 import Button from "$lib/components/Button.svelte"
 import Text from "$lib/components/typography/Text.svelte"
 import { callJoinQueue } from "$lib/supabase"
+import Spinner from "$lib/components/Spinner.svelte";
 
 let code = $state("")
+let loading = $state(false)
 
 async function handleCode() {
+  loading = true
   //Maybe check format etc
   const codeValid = await callJoinQueue(code)
   if (codeValid) {
     console.log("valid")
   }
+}
+
+async function joinWaitlist() {
+  loading = true
+
 }
 
 async function handleWaitlist() {}
@@ -47,4 +55,4 @@ async function handleWaitlist() {}
 
 <Text>Or</Text>
 
-<Button>Join the waitlist</Button>
+<Button>Join the waitlist <Spinner /></Button>

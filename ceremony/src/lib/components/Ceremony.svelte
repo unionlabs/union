@@ -35,7 +35,7 @@ let addressValidState: ValidState = $state("PENDING")
     <H1>Your position: <span class="text-union-accent-500">{contributor.queueState.position}</span></H1>
     <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
 
-    <!--Todo format time correctly-->
+    <!--Todo format time correctly if we want this, can probably be thousands of minutes?-->
     <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).
     </H3>
 
@@ -45,13 +45,10 @@ let addressValidState: ValidState = $state("PENDING")
 
   {:else if contributor.state === 'contribute'}
     <H1>Starting contribution...</H1>
-
   {:else if contributor.state === 'contributing'}
     <H1>Contributing...</H1>
-
   {:else if contributor.state === 'verifying'}
     <H1>Verifying your contribution...</H1>
-
   {:else if contributor.state === 'contributed'}
 
     <div class="flex flex-col justify-center items-center gap-4">
@@ -65,7 +62,7 @@ let addressValidState: ValidState = $state("PENDING")
     <Install/>
 
   {:else}
-    <H1>Loading...</H1>
+    <H1>Not able to contribute at this time</H1>
   {/if}
 
 </div>
