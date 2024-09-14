@@ -280,7 +280,7 @@
 
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-      const fieldOfView = 80 * Math.PI / 180;
+      const fieldOfView = 60 * Math.PI / 180;
       const aspect = gl.canvas.clientWidth/gl.canvas.clientHeight;
       console.log(gl.canvas.clientWidth, gl.canvas.clientHeight)
       const zNear = 0.1;
@@ -295,16 +295,17 @@
       // Smooth out mouse movement
       mouseX += (targetMouseX - mouseX) * 0.1;
       mouseY += (targetMouseY - mouseY) * 0.1;
+      console.log({mouseX, mouseY})
 
       // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-10, 0, 0])
 
       // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, 0]);
-      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -30]);
-      glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
+      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 10, -30]);
+      // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
       // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
 
-      // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.05, [1, 0, 0]);
-      // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4 + mouseX * 0.05, [0, 1, 0]);
+      glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.05, [1, 0, 0]);
+      glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4 + mouseX * 0.05, [0, 1, 0]);
 
       // Set up attribute buffers
       {
