@@ -12,6 +12,8 @@
   let mouseY = 0;
   let targetMouseX = 0;
   let targetMouseY = 0;
+  let displayWidth = 1000;
+  let displayHeight = 1000;
 
   // Perlin noise implementation
   class PerlinNoise {
@@ -270,6 +272,7 @@
 
     // Draw scene
     function drawScene(gl, programInfo, buffers, cubePositions, deltaTime) {
+      gl.viewport(0, 0, displayWidth, displayHeight)
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
       gl.clearDepth(1.0);
       gl.enable(gl.DEPTH_TEST);
@@ -277,11 +280,13 @@
 
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-      const fieldOfView = 30 * Math.PI / 180;
-      const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+      const fieldOfView = 80 * Math.PI / 180;
+      const aspect = gl.canvas.clientWidth/gl.canvas.clientHeight;
+      console.log(gl.canvas.clientWidth, gl.canvas.clientHeight)
       const zNear = 0.1;
       const zFar = 100.0;
       const projectionMatrix = glMatrix.mat4.create();
+     
 
       glMatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
@@ -291,9 +296,15 @@
       mouseX += (targetMouseX - mouseX) * 0.1;
       mouseY += (targetMouseY - mouseY) * 0.1;
 
-      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 1, -30]);
-      glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.05, [1, 0, 0]);
-      glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4 + mouseX * 0.05, [0, 1, 0]);
+      // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-10, 0, 0])
+
+      // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, 0]);
+      glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -30]);
+      glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
+      // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
+
+      // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 4 + mouseY * 0.05, [1, 0, 0]);
+      // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4 + mouseX * 0.05, [0, 1, 0]);
 
       // Set up attribute buffers
       {
@@ -373,11 +384,49 @@
       }
     }
 
+
+    function onResize(entries) {
+      for (const entry of entries) {
+        let width:number;
+        let height:number;
+        let dpr = window.devicePixelRatio;
+        let dprSupport = false;
+        if (entry.devicePixelContentBoxSize) {
+          // NOTE: Only this path gives the correct answer
+          // The other paths are an imperfect fallback
+          // for browsers that don't provide anyway to do this
+          width = entry.devicePixelContentBoxSize[0].inlineSize;
+          height = entry.devicePixelContentBoxSize[0].blockSize;
+          dpr = 1; // it's already in width and height
+          dprSupport = true;
+        } else if (entry.contentBoxSize) {
+          if (entry.contentBoxSize[0]) {
+            width = entry.contentBoxSize[0].inlineSize;
+            height = entry.contentBoxSize[0].blockSize;
+          } else {
+            // legacy
+            width = entry.contentBoxSize.inlineSize;
+            height = entry.contentBoxSize.blockSize;
+          }
+        } else {
+          // legacy
+          width = entry.contentRect.width;
+          height = entry.contentRect.height;
+        }
+        // update global state reflecting ideal canvas size
+        displayWidth = Math.round(width * dpr);
+        displayHeight = Math.round(height * dpr);
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(onResize);
+    resizeObserver.observe(canvas, {box: 'content-box'});
+
     // Initialize cube positions
     const cubePositions = [];
     for (let x = -20; x < 20; x++) {
       for (let z = -20; z < 20; z++) {
-        cubePositions.push([x * 1.2, 0, z * 1.2]);
+        cubePositions.push([x * 1.2 + 0.6, 0, z * 1.2 + 0.6]);
       }
     }
 
@@ -388,6 +437,11 @@
       now *= 0.001;  // convert to seconds
       const deltaTime = now - then;
       then = now;
+
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+      // gl.canvas.clientWidth = displayWidth;
+      // gl.canvas.clientHeight = displayHeight;
 
       drawScene(gl, programInfo, buffers, cubePositions, now);
 
