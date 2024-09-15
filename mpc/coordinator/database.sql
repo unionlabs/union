@@ -148,7 +148,7 @@ BEGIN
     IF (public.open_to_public()) THEN
       INSERT INTO public.queue(id) VALUES ((SELECT auth.uid()));
     ELSE
-      RAISE EXCEPTION 'not_open_yet';
+      INSERT INTO public.waitlist(id) VALUES ((SELECT auth.uid()));
     END IF;
   ELSE
     PERFORM public.redeem(code_id);
@@ -460,14 +460,14 @@ CREATE POLICY allow_insert_self
       (SELECT auth.uid()) = id
     );
 
-
-
 CREATE OR REPLACE VIEW current_user_state AS (
-  SELECT (EXISTS (SELECT * FROM waitlist WHERE id = (SELECT auth.id)) AS in_waitlist
+  SELECT
+    (EXISTS (SELECT * FROM waitlist WHERE id = (SELECT auth.uid()))) AS in_waitlist,
+    (EXISTS (SELECT * FROM code WHERE user_id = (SELECT auth.uid()))) AS has_redeemed,
+    (EXISTS (SELECT * FROM queue WHERE id = (SELECT auth.uid()))) AS in_queue
 );
 
 ALTER VIEW current_user_state SET (security_invoker = off);
-
 
 ----------
 -- CRON --
