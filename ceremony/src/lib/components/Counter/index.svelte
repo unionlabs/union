@@ -56,7 +56,7 @@ $effect(() => {
 })
 </script>
 
-<div class="p-8 bg-gradient-to-t from-transparent via-black/70 to-transparent backdrop-blur w-full flex items-center justify-center flex-col min-h-48">
+<div class="pointer-events-none p-8 bg-gradient-to-t from-transparent via-black/70 to-transparent backdrop-blur w-full flex items-center justify-center flex-col min-h-48">
   <div class="flex flex-col md:flex-row  justify-center items-center gap-8">
     {@render pair(hours, 'hours')}
     {@render pair(minutes, 'minutes')}
