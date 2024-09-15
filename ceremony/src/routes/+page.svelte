@@ -5,6 +5,7 @@ import { ContributorState } from "$lib/stores/state.svelte.ts"
 import Ceremony from "$lib/components/Ceremony.svelte"
 import Join from "$lib/components/Join.svelte"
 import Spinner from "$lib/components/Spinner.svelte"
+import Counter from "$lib/components/Counter/index.svelte"
 
 let contributor: ContributorState = new ContributorState()
 
@@ -12,6 +13,8 @@ $effect.pre(() => {
   const userId = user.session?.user.id
   if (userId) contributor.setUserId(userId)
 })
+
+const targetTimestamp = 1726609600
 </script>
 
 <!--Fix jump between state on load-->
@@ -26,6 +29,8 @@ $effect.pre(() => {
     <Join {contributor}/>
   {/if}
 {:else}
-  <H1>Welcome to the union ceremony</H1>
+
+  <Counter {targetTimestamp}/>
+
 {/if}
 
