@@ -6,12 +6,14 @@ import Link from "$lib/components/typography/Link.svelte"
 import Spinner from "$lib/components/Spinner.svelte"
 import { page } from "$app/stores"
 import { auth } from "$lib/utils/auth.ts"
+import { toast } from "svelte-sonner"
 
 let loading = false
 
-async function login() {
-  loading = true
-  await auth(`${$page.url.origin}/`)
+function login() {
+  toast.info("Disabled")
+  // loading = true
+  // await auth(`${$page.url.origin}/`)
 }
 </script>
 
