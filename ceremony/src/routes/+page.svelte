@@ -14,20 +14,20 @@ $effect.pre(() => {
   if (userId) contributor.setUserId(userId)
 })
 
-const targetTimestamp = 1726609600
+const targetTimestamp = 1726812000
 </script>
 
 <!--Fix jump between state on load-->
 {#if contributor.loggedIn}
-  {#if !contributor.allowanceState}
-    <Spinner class="text-union-accent-500 size-6"/>
-  {:else if contributor.allowanceState === "invited"}
-    <Ceremony {contributor}/>
-  {:else if contributor.allowanceState === "waitingList"}
-    <H1>You're on the list</H1>
-  {:else if contributor.allowanceState === "join"}
-    <Join {contributor}/>
-  {/if}
+  <!--{#if !contributor.allowanceState}-->
+  <!--  <Spinner class="text-union-accent-500 size-6"/>-->
+  <!--{:else if contributor.allowanceState === "invited"}-->
+  <!--  <Ceremony {contributor}/>-->
+  <!--{:else if contributor.allowanceState === "waitingList"}-->
+  <!--  <H1>You're on the list</H1>-->
+  <!--{:else if contributor.allowanceState === "join"}-->
+  <!--  <Join {contributor}/>-->
+  <!--{/if}-->
 {:else}
 
   <Counter {targetTimestamp}/>

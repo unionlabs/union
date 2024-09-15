@@ -83,7 +83,7 @@ $effect(() => {
 
 <Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
 
-<Navbar/>
+<!--<Navbar/>-->
 <canvas
         id="canvas3d"
         class=" w-full h-auto inset-0 absolute -z-10 canvas-fade"

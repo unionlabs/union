@@ -52,7 +52,6 @@ function joinWaitlist() {
     <Button
             loading={codeLoading}
             type="button"
-            onclick={handleCode}
             disabled={code.length === 0}
     >
       ENTER
