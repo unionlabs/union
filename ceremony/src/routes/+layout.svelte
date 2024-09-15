@@ -5,8 +5,6 @@ import { checkAuth, type SessionError } from "$lib/utils/auth.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { Toaster } from "svelte-sonner"
-import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query"
-import { onMount } from "svelte"
 import { Application } from "@splinetool/runtime"
 
 import "../styles/tailwind.css"
@@ -34,22 +32,11 @@ beforeNavigate(async ({ from, to, cancel }) => {
   }
 })
 
-$effect(() => {
-  const {
-    data: { subscription }
-  } = supabase.auth.onAuthStateChange((event, session) => {
-    user.session = session
-  })
-  return () => {
-    subscription.unsubscribe()
-  }
-})
-
 let canvas: HTMLCanvasElement
 let app: Application
 let loading = $state(true)
 
-onMount(() => {
+$effect(() => {
   canvas = document.getElementById("canvas3d") as HTMLCanvasElement
   if (!canvas) {
     console.error("Canvas element not found")
@@ -63,7 +50,7 @@ onMount(() => {
   }
 
   app
-    .load("https://draft.spline.design/r6WgY2-52aHVU2TZ/scene.splinecode")
+    .load("https://prod.spline.design/6An57q5Kr37gF2k0/scene.splinecode")
     .then(splineScene => {
       loading = false
     })
@@ -71,9 +58,16 @@ onMount(() => {
       console.error("Failed to load Spline scene:", error)
       loading = false
     })
-})
 
-const queryClient = new QueryClient()
+  const {
+    data: { subscription }
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    user.session = session
+  })
+  return () => {
+    subscription.unsubscribe()
+  }
+})
 </script>
 
 <style>
@@ -89,15 +83,13 @@ const queryClient = new QueryClient()
 
 <Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
 
-<QueryClientProvider client={queryClient}>
-  <Navbar/>
-  <canvas
-          id="canvas3d"
-          class="pointer-events-none w-full h-auto inset-0 absolute -z-10 canvas-fade"
-          class:loaded={!loading}
-  ></canvas>
+<Navbar/>
+<canvas
+        id="canvas3d"
+        class=" w-full h-auto inset-0 absolute -z-10 canvas-fade"
+        class:loaded={!loading}
+></canvas>
 
-  <main class="flex flex-col items-center justify-center min-h-screen w-full bg-background-light-secondary">
-    {@render children()}
-  </main>
-</QueryClientProvider>
+<main class="flex flex-col items-center justify-center min-h-screen w-full">
+  {@render children()}
+</main>

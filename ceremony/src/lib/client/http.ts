@@ -19,14 +19,19 @@ export const get = async <T>(
     )
     const res = await _fetch(url, browser && credentials ? { credentials: "include" } : {})
     if (!res.ok) throw res.status
-    const data: T = await res.json()
-    return data ?? undefined
+    const data = await res.json()
+    return data as T
   } catch (error) {
     return undefined
   }
 }
 
-export const post = async <T>(resource: string, params: Params, body: object, _fetch = fetch) => {
+export const post = async <T>(
+  resource: string,
+  params: Params,
+  body: Record<string, unknown>,
+  _fetch: Fetch = fetch
+): Promise<T | undefined> => {
   try {
     const url = new URL(`${host}/${resource}`)
     Object.entries(params).forEach(
@@ -34,11 +39,14 @@ export const post = async <T>(resource: string, params: Params, body: object, _f
     )
     const res = await _fetch(url, {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(body)
     })
     if (!res.ok) throw res.status
-    const data: T = await res.json()
-    return data ?? undefined
+    const data = await res.json()
+    return data as T
   } catch (error) {
     return undefined
   }

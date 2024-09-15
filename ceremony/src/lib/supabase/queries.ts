@@ -6,8 +6,6 @@ export const getContributor = async (userId: string) => {
     .select("id")
     .eq("id", userId)
     .single()
-
-  if (error) console.error("Error in getContributor:", error)
   return { data, error }
 }
 
@@ -17,8 +15,6 @@ export const getSubmittedContribution = async (userId: string) => {
     .select("id")
     .eq("id", userId)
     .maybeSingle()
-
-  if (error) console.error("Error in getSubmittedContribution:", error)
   return { data, error }
 }
 
@@ -28,27 +24,21 @@ export const getContribution = async (userId: string) => {
     .select("id")
     .eq("id", userId)
     .maybeSingle()
-
-  if (error) console.error("Error in getContribution:", error)
   return { data, error }
 }
 
 export const getUserQueuePosition = async (userId: string) => {
-  const { data, error, count } = await supabase
-    .from("current_queue")
-    .select("*", { count: "exact" })
-    .eq("id", userId)
-    .single()
+  const { data, error } = await supabase.from("current_queue").select("*").eq("id", userId).single()
 
   if (error) {
     if (error.code === "PGRST116") {
       return { data: undefined, error: undefined }
     }
-    console.error("Error getting user data:", error)
+    console.log("Error getting user data:", error)
     return { data: undefined, error }
   }
 
-  return { data, count, error: undefined }
+  return { data, error: undefined }
 }
 
 export const getQueueCount = async () => {
@@ -56,12 +46,7 @@ export const getQueueCount = async () => {
     .from("current_queue")
     .select("*", { count: "exact", head: true })
 
-  if (error) {
-    console.error("Error getting total count:", error)
-    return { count: undefined, error }
-  }
-
-  return { count, error: undefined }
+  return { count, error }
 }
 
 export const getQueuePayloadId = async (userId: string) => {
@@ -70,7 +55,14 @@ export const getQueuePayloadId = async (userId: string) => {
     .select("payload_id")
     .eq("id", userId)
     .single()
+  return { data, error }
+}
 
-  if (error) console.error("Error in getQueuePayloadId:", error)
+export const queryAllowance = async () => {
+  const { data, error } = await supabase
+    .from("current_user_state")
+    .select("in_waitlist, has_redeemed")
+    .single()
+
   return { data, error }
 }

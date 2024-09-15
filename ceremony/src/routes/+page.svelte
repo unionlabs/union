@@ -1,63 +1,36 @@
 <script lang="ts">
+import { user } from "$lib/stores/user.svelte.ts"
 import H1 from "$lib/components/typography/H1.svelte"
-import { AddressForm, type ValidState } from "$lib/components/address/index.ts"
+import { ContributorState } from "$lib/stores/state.svelte.ts"
+import Ceremony from "$lib/components/Ceremony.svelte"
+import Join from "$lib/components/Join.svelte"
+import Spinner from "$lib/components/Spinner.svelte"
+import Counter from "$lib/components/Counter/index.svelte"
 
-let addressValidState: ValidState = $state("PENDING")
+let contributor: ContributorState = new ContributorState()
 
-$effect(() => {
-  console.info(`ADDRESS VALIDITY STATE: ${addressValidState}`)
+$effect.pre(() => {
+  const userId = user.session?.user.id
+  if (userId) contributor.setUserId(userId)
 })
+
+const targetTimestamp = 1726609600
 </script>
 
-<section class="relative w-full h-full flex items-center justify-center overflow-hidden">
-  <AddressForm class="" onValidation={result => (addressValidState = result)} />
-  <div class="max-w-7xl sm:px-6 lg:px-8">
-    <div class="max-w-7xl sm:px-6 lg:px-8 fade-in-text">
-      <H1 class="text-center">
-        Welcome to<br />Union Ceremony
-      </H1>
-    </div>
-  </div>
-</section>
+<!--Fix jump between state on load-->
+{#if contributor.loggedIn}
+  {#if !contributor.allowanceState}
+    <Spinner class="text-union-accent-500 size-6"/>
+  {:else if contributor.allowanceState === "invited"}
+    <Ceremony {contributor}/>
+  {:else if contributor.allowanceState === "waitingList"}
+    <H1>You're on the list</H1>
+  {:else if contributor.allowanceState === "join"}
+    <Join {contributor}/>
+  {/if}
+{:else}
 
-<style>
-  .deep-sea-rise {
-    opacity: 0;
-    transform: scale(0.5) translateY(140px);
-    filter: brightness(0.1);
-    animation: riseFromDepth 2.5s ease-out forwards;
-  }
+  <Counter {targetTimestamp}/>
 
-  .deep-sea-rise.visible {
-    opacity: 1;
-  }
+{/if}
 
-  @keyframes riseFromDepth {
-    0% {
-      opacity: 0;
-      transform: scale(0.5) translateY(140px);
-      filter: brightness(0.1);
-    }
-
-    100% {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-      filter: brightness(1);
-    }
-  }
-
-  .fade-in-text {
-    opacity: 0;
-    animation: fadeInText 1.5s ease-out forwards;
-    animation-delay: 2s;
-  }
-
-  @keyframes fadeInText {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-</style>

@@ -1,15 +1,17 @@
-export interface Status {
-  status: "idle" | "initializing" | "contributionStarted" | "contributionEnded" | "successful"
-  downloadStarted?: string
-  downloading?: {
-    file: string
-    progress: number
-  }
-  downloadEnded?: string
-  uploadStarted?: string
-  uploadEnded?: string
-  failed?: string
-}
+export type ClientState =
+  | "idle"
+  | "initializing"
+  | "downloadStarted"
+  | "downloading"
+  | "downloadEnded"
+  | "contributionStarted"
+  | "contributionEnded"
+  | "uploadStarted"
+  | "uploadEnded"
+  | "failed"
+  | "successful"
+  | "offline"
+  | undefined
 
 export interface ContributeBody {
   supabaseProject: string
@@ -18,9 +20,5 @@ export interface ContributeBody {
   apiKey: string
   contributorId: string
   payloadId: string
-}
-
-export interface QueueData {
-  id: string
-  joined: string
+  userEmail: string
 }

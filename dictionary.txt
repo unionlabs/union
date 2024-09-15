@@ -201,6 +201,7 @@ Timestamptz
 Tioga
 Tjpl
 Twoslash
+Tyoe
 UDHC
 UNBONDED
 UNBONDING
@@ -220,6 +221,7 @@ Vals
 Verkle
 Viridis
 Vitarana
+WAITLIST
 Wagmi
 Wdua
 Webgl
@@ -904,6 +906,7 @@ pkgconfig
 pkgs
 planq
 plpgsql
+plxl
 pname
 poisonphang
 polkachu
@@ -1343,6 +1346,7 @@ xsmfxu
 yamlfmt
 ypyp
 yqyp
+yzmmzyfhxg
 zellij
 zerion
 zerolog
