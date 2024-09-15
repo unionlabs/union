@@ -11,9 +11,10 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
     <!-- <div class="screw bg-neutral-800 rounded-full w-6 h-6 absolute top-0 right-0 z-20 flex items-center justify-center">
       <div class="absolute w-7 h-1 bg-black rotate-45"></div>
     </div> -->
-    <div class="shiny-border"></div>
+    <div class="shiny-border" id="glowContainer">
+    </div>
     <MatrixCover/>
-    <div class="backdrop-blur-2xl header-text-content p-8 flex flex-col gap-4">
+    <div class="backdrop-blur-2xl header-text-content p-6 md:p-8 flex flex-col gap-4">
       <H1>The Modular ZK<br> <span class="text-accent-500">Interop Layer</span></H1>
       <QuoteSubTitle>
         Connecting every blockchain, without compromising on security, efficiency,
@@ -101,7 +102,6 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
         position: relative;
         z-index: 1;
     }
-
     .glow {
         position: absolute;
         width: 500px;
@@ -120,12 +120,12 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
   const glow = container.querySelector('.glow');
   let isMouseOver = false;
 
-  container.addEventListener('mousemove', (e) => {
+  document.addEventListener('mousemove', (e) => {
     isMouseOver = true;
     updateGlowPosition(e);
   });
 
-  container.addEventListener('mouseleave', () => {
+  document.addEventListener('mouseleave', () => {
     isMouseOver = false;
     glow.style.opacity = '0';
   });
