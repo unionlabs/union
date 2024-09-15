@@ -29,8 +29,6 @@ const targetTimestamp = 1726812000
   <!--  <Join {contributor}/>-->
   <!--{/if}-->
 {:else}
-
   <Counter {targetTimestamp}/>
-
 {/if}
 
