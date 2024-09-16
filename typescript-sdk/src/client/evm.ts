@@ -53,6 +53,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
     .extend(publicActions)
     .extend(client => ({
       transferAsset: async ({
+        memo = "",
         amount,
         account,
         receiver,
@@ -63,22 +64,26 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
 
-        const pfmDetails = await getHubbleChainDetails({
+        const chainDetails = await getHubbleChainDetails({
           destinationChainId,
           sourceChainId: parameters.chainId
         })
 
-        if (pfmDetails.isErr()) return err(pfmDetails.error)
+        if (chainDetails.isErr()) return err(chainDetails.error)
 
-        const pfmMemo = createPfmMemo({
-          channel: pfmDetails.value.destinationChannel,
-          port: `${pfmDetails.value.port}`,
-          receiver: cosmosChainId.includes(destinationChainId)
-            ? bech32AddressToHex({ address: `${receiver}` })
-            : `${receiver}`
-        })
+        if (chainDetails.value.transferType === "pfm") {
+          if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+          const pfmMemo = createPfmMemo({
+            channel: chainDetails.value.destinationChannel,
+            port: chainDetails.value.port,
+            receiver: cosmosChainId.includes(destinationChainId)
+              ? bech32AddressToHex({ address: receiver })
+              : receiver
+          })
 
-        if (pfmMemo.isErr()) return err(pfmMemo.error)
+          if (pfmMemo.isErr()) return err(pfmMemo.error)
+          memo = pfmMemo.value
+        }
 
         return await transferAssetFromEvm(client, {
           amount,
@@ -88,9 +93,9 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           receiver,
           denomAddress,
           destinationChainId,
-          memo: pfmMemo.value,
-          sourceChannel: pfmDetails.value.sourceChannel,
-          relayContractAddress: getAddress(pfmDetails.value.relayContractAddress)
+          memo,
+          sourceChannel: chainDetails.value.sourceChannel,
+          relayContractAddress: getAddress(chainDetails.value.relayContractAddress)
         })
       },
       approveTransaction: async ({

@@ -45,12 +45,9 @@ try {
     amount: 1n,
     autoApprove: true,
     denomAddress: "ustrd",
-    // or `client.evm.account.address` if you want to send to yourself
     receiver: berachainAccount.address,
     destinationChainId: `${berachainTestnetbArtio.id}`
   } satisfies TransferAssetsParameters<"stride-internal-1">
-
-  consola.info(transactionPayload)
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
