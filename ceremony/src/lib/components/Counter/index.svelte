@@ -14,7 +14,6 @@
 // import Text from "$lib/components/typography/Text.svelte"
 import H2 from "$lib/components/typography/H2.svelte"
 import H3 from "$lib/components/typography/H3.svelte"
-import H1 from "$lib/components/typography/H1.svelte"
 
 type Props = {
   targetTimestamp: number
@@ -62,7 +61,6 @@ $effect(() => {
 </script>
 
 <div class="flex flex-col h-svh items-center justify-center gap-3">
-  <H1></H1>
   <H2>Ceremony set to begin</H2>
   <H3>2024-09-20 | <span class="text-union-accent-500">10:00 AM</span> (CET)</H3>
   <div class="flex gap-2 justify-center">
