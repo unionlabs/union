@@ -2,20 +2,20 @@ pragma solidity ^0.8.23;
 
 import "../25-handler/IBCMsgs.sol";
 
-interface IIBCChannelHandshake {
+interface IIBCChannel {
     /**
      * @dev channelOpenInit is called by a module to initiate a channel opening handshake with a module on another chain.
      */
     function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_)
         external
-        returns (string memory);
+        returns (uint32);
 
     /**
      * @dev channelOpenTry is called by a module to accept the first step of a channel opening handshake initiated by a module on another chain.
      */
     function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_)
         external
-        returns (string memory);
+        returns (uint32);
 
     /**
      * @dev channelOpenAck is called by the handshake-originating module to acknowledge the acceptance of the initial request by the counterparty module on the other chain.

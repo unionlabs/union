@@ -9,11 +9,17 @@ interface IIBCPacket {
      * is returned if one occurs.
      */
     function sendPacket(
-        string calldata sourceChannel,
-        IbcCoreClientV1Height.Data calldata timeoutHeight,
+        uint32 sourceChannel,
+        uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external returns (uint64);
+
+    /**
+     * @dev fulfillIntent is called by a module in order to receive & process an intent fulfillement
+     * for an IBC packet sent on the corresponding channel end on the counterparty chain.
+     */
+    function fulfillIntent(IBCMsgs.MsgFulfillIntent calldata msg_) external;
 
     /**
      * @dev recvPacket is called by a module in order to receive & process an IBC packet
@@ -26,7 +32,7 @@ interface IIBCPacket {
      * which will be verified by the counterparty chain using AcknowledgePacket.
      */
     function writeAcknowledgement(
-        IbcCoreChannelV1Packet.Data calldata packet,
+        IBCPacket calldata packet,
         bytes memory acknowledgement
     ) external;
 

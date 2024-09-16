@@ -11,7 +11,7 @@ import "../contracts/Glue.sol";
 import "../contracts/Multicall.sol";
 import "../contracts/core/02-client/IBCClient.sol";
 import "../contracts/core/03-connection/IBCConnection.sol";
-import "../contracts/core/04-channel/IBCChannelHandshake.sol";
+import "../contracts/core/04-channel/IBCChannel.sol";
 import "../contracts/core/04-channel/IBCPacket.sol";
 import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClientV2.sol";

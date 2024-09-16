@@ -67,7 +67,7 @@ sequenceDiagram
 
 ```
 
-To relax the contract size limit of ethereum, each ICS implementation is split into [IBCClient](contracts/core/02-client/IBCClient.sol), [IBCConnection](contracts/core/03-connection/IBCConnection.sol), [IBCChannel](contracts/core/04-channel/IBCChannelHandshake.sol), [IBCPacket](contracts/core/04-channel/IBCPacket.sol), and [IBCHandler](contracts/core/25-handler/IBCHandler.sol) contracts, as shown in the above figure.
+To relax the contract size limit of ethereum, each ICS implementation is split into [IBCClient](contracts/core/02-client/IBCClient.sol), [IBCConnection](contracts/core/03-connection/IBCConnection.sol), [IBCChannel](contracts/core/04-channel/IBCChannel.sol), [IBCPacket](contracts/core/04-channel/IBCPacket.sol), and [IBCHandler](contracts/core/25-handler/IBCHandler.sol) contracts, as shown in the above figure.
 
 In general, such a design causes storage splitting, so it is required to implement unnecessary authentication and accessors for inter-contract calls.
 

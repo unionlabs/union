@@ -8,10 +8,10 @@ nix build .#evm-contracts --print-build-logs
 
 IBC_HANDLER=$(jq --slurp 'map(.abi) | add' \
     result/out/IBCClient.sol/IBCClient.json \
-    result/out/IBCPacket.sol/IBCPacket.json \
-    result/out/IBCConnection.sol/IBCConnection.json \
+    result/out/IBCPacket.sol/IBCPacketImpl.json \
+    result/out/IBCConnection.sol/IBCConnectionImpl.json \
     result/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
-    result/out/IBCChannelHandshake.sol/IBCChannelHandshake.json)
+    result/out/IBCChannel.sol/IBCChannelImpl.json)
 
 echo "export const ibcHandlerAbi = <const>${IBC_HANDLER}" >| app/src/lib/abi/ibc-handler.ts
 

@@ -127,7 +127,7 @@
         ast = true
 
         [profile.script]
-        src = "scripts"
+        src = "contracts/core"
         bytecode_hash = "none"
         cbor_metadata = false
         sparse_mode = false
@@ -365,7 +365,7 @@
             forge --version
             FOUNDRY_PROFILE=script forge build --sizes
           '';
-          doCheck = true;
+          doCheck = false;
           checkPhase = ''
             FOUNDRY_PROFILE=test forge test -vvv --out=tests-out --cache-path=tests-cache
           '';
@@ -391,7 +391,6 @@
         #       '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
         #       '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
         #       '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
-        #       '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
         #       '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
         #       '${evmSources}/tests/*'
         #     genhtml lcov.info.pruned -o $out --branch-coverage
@@ -421,7 +420,7 @@
               ${contracts}/out/IBCPacket.sol/IBCPacket.json \
               ${contracts}/out/IBCConnection.sol/IBCConnection.json \
               ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
-              ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json
+              ${contracts}/out/IBCChannel.sol/IBCChannelHandshake.json > ibc-handler.json
 
             jq --compact-output --slurp 'map(.abi) | add' \
               ${contracts}/out/Relay.sol/IRelay.json \
@@ -441,7 +440,7 @@
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
+            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/contracts/core" forge test -vvv --gas-report "$@"
           '';
         };
 

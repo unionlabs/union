@@ -2,7 +2,7 @@ pragma solidity ^0.8.23;
 
 import "../25-handler/IBCMsgs.sol";
 
-interface IIBCConnectionHandshake {
+interface IIBCConnection {
     /* Handshake functions */
 
     /**
@@ -11,7 +11,7 @@ interface IIBCConnectionHandshake {
      */
     function connectionOpenInit(IBCMsgs.MsgConnectionOpenInit calldata msg_)
         external
-        returns (string memory);
+        returns (uint32);
 
     /**
      * @dev connectionOpenTry relays notice of a connection attempt on chain A to chain B (this
@@ -19,7 +19,7 @@ interface IIBCConnectionHandshake {
      */
     function connectionOpenTry(IBCMsgs.MsgConnectionOpenTry calldata msg_)
         external
-        returns (string memory);
+        returns (uint32);
 
     /**
      * @dev connectionOpenAck relays acceptance of a connection open attempt from chain B back

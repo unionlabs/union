@@ -7,17 +7,14 @@ interface IIBCClient {
     /**
      * @dev registerClient registers a new client type into the client registry
      */
-    function registerClient(
-        string calldata clientType,
-        ILightClient client
-    ) external;
+    function registerClient(bytes32 clientType, ILightClient client) external;
 
     /**
      * @dev createClient creates a new client state and populates it with a given consensus state
      */
     function createClient(IBCMsgs.MsgCreateClient calldata msg_)
         external
-        returns (string memory clientId);
+        returns (uint32 clientId);
 
     /**
      * @dev updateClient updates the consensus state and the state root from a provided header

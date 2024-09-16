@@ -47,17 +47,11 @@ contract PingPong is IBCAppBase {
     using PingPongLib for *;
 
     IBCHandler private ibcHandler;
-    string private channelId;
-    uint64 private revisionNumber;
+    uint32 private srcChannelId;
     uint64 private timeout;
 
-    constructor(
-        IBCHandler _ibcHandler,
-        uint64 _revisionNumber,
-        uint64 _timeout
-    ) {
+    constructor(IBCHandler _ibcHandler, uint64 _timeout) {
         ibcHandler = _ibcHandler;
-        revisionNumber = _revisionNumber;
         timeout = _timeout;
     }
 
@@ -69,13 +63,13 @@ contract PingPong is IBCAppBase {
         PingPongPacket memory packet,
         uint64 localTimeout
     ) public {
-        if (bytes(channelId).length == 0) {
+        if (srcChannelId == 0) {
             revert PingPongLib.ErrNoChannel();
         }
         ibcHandler.sendPacket(
-            channelId,
+            srcChannelId,
             // No height timeout
-            IbcCoreClientV1Height.Data({revision_number: 0, revision_height: 0}),
+            0,
             // Timestamp timeout
             localTimeout,
             // Raw protocol packet
@@ -84,7 +78,7 @@ contract PingPong is IBCAppBase {
     }
 
     function onRecvPacket(
-        IbcCoreChannelV1Packet.Data calldata packet,
+        IBCPacket calldata packet,
         address
     )
         external
@@ -100,7 +94,7 @@ contract PingPong is IBCAppBase {
         uint64 localTimeout = pp.counterpartyTimeout;
 
         pp.ping = !pp.ping;
-        pp.counterpartyTimeout = uint64(block.timestamp) + timeout;
+        pp.counterpartyTimeout = uint64(block.timestamp * 1e9) + timeout;
 
         // Send back the packet after having reversed the bool and set the counterparty timeout
         initiate(pp, localTimeout);
@@ -110,7 +104,7 @@ contract PingPong is IBCAppBase {
     }
 
     function onAcknowledgementPacket(
-        IbcCoreChannelV1Packet.Data calldata,
+        IBCPacket calldata,
         bytes calldata acknowledgement,
         address
     ) external virtual override onlyIBC {
@@ -129,7 +123,7 @@ contract PingPong is IBCAppBase {
     }
 
     function onTimeoutPacket(
-        IbcCoreChannelV1Packet.Data calldata,
+        IBCPacket calldata,
         address
     ) external virtual override onlyIBC {
         /*
@@ -140,59 +134,54 @@ contract PingPong is IBCAppBase {
     }
 
     function onChanOpenInit(
-        IbcCoreChannelV1GlobalEnums.Order,
-        string[] calldata,
-        string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata,
+        IBCChannelOrder,
+        uint32,
+        uint32,
+        IBCChannelCounterparty calldata,
+        bytes32,
         address
     ) external virtual override onlyIBC {
         // This protocol is only accepting a single counterparty.
-        if (bytes(channelId).length != 0) {
+        if (srcChannelId != 0) {
             revert PingPongLib.ErrOnlyOneChannel();
         }
     }
 
     function onChanOpenTry(
-        IbcCoreChannelV1GlobalEnums.Order,
-        string[] calldata,
-        string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata,
-        string calldata,
+        IBCChannelOrder,
+        uint32,
+        uint32,
+        IBCChannelCounterparty calldata,
+        bytes32,
+        bytes32,
         address
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenInit
-        if (bytes(channelId).length != 0) {
+        if (srcChannelId != 0) {
             revert PingPongLib.ErrOnlyOneChannel();
         }
     }
 
     function onChanOpenAck(
-        string calldata,
-        string calldata _channelId,
-        string calldata,
-        string calldata,
+        uint32 channelId,
+        uint32,
+        bytes32,
         address
     ) external virtual override onlyIBC {
         // Store the port/channel needed to send packets.
-        channelId = _channelId;
+        srcChannelId = channelId;
     }
 
     function onChanOpenConfirm(
-        string calldata,
-        string calldata _channelId,
+        uint32 channelId,
         address
     ) external virtual override onlyIBC {
         // Symmetric to onChanOpenAck
-        channelId = _channelId;
+        srcChannelId = channelId;
     }
 
     function onChanCloseInit(
-        string calldata,
-        string calldata,
+        uint32,
         address
     ) external virtual override onlyIBC {
         // The ping-pong is infinite, closing the channel is disallowed.
@@ -200,8 +189,7 @@ contract PingPong is IBCAppBase {
     }
 
     function onChanCloseConfirm(
-        string calldata,
-        string calldata,
+        uint32,
         address
     ) external virtual override onlyIBC {
         // Symmetric to onChanCloseInit

@@ -7,7 +7,6 @@ import {
 } from "../../../contracts/proto/ibc/core/channel/v1/channel.sol";
 import {IIBCModule} from "../../../contracts/core/05-port/IIBCModule.sol";
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
-import {IBCHost} from "../../../contracts/core/24-host/IBCHost.sol";
 import {Context} from "@openzeppelin/utils/Context.sol";
 
 contract MockApp is IIBCModule {

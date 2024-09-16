@@ -14,15 +14,17 @@ import "../../../../../contracts/apps/ucs/01-relay/IERC20Denom.sol";
 import "../../../utils/IBCHandler_Testable.sol";
 import {IBCHandler} from
     "../../../../../contracts/core/25-handler/IBCHandler.sol";
-import {IBCConnection} from
+import {IBCConnectionImpl} from
     "../../../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCClient} from "../../../../../contracts/core/02-client/IBCClient.sol";
-import {IBCHeight} from "../../../../../contracts/core/02-client/IBCHeight.sol";
-import {IBCChannelHandshake} from
-    "../../../../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import {IBCHeightLib} from
+    "../../../../../contracts/core/02-client/IBCHeight.sol";
+import {IBCChannelImpl} from
+    "../../../../../contracts/core/04-channel/IBCChannel.sol";
 import {IIBCPacket} from
     "../../../../../contracts/core/04-channel/IIBCPacket.sol";
-import {IBCPacket} from "../../../../../contracts/core/04-channel/IBCPacket.sol";
+import {IBCPacketImpl} from
+    "../../../../../contracts/core/04-channel/IBCPacket.sol";
 
 contract IBCHandlerFake is IBCHandler {
     using LibString for *;
@@ -149,7 +151,12 @@ contract RelayTests is Test {
 
         vm.prank(sender);
         relay.send(
-            sourceChannel, receiver, localTokens, extension, IBCHeight.zero(), 0
+            sourceChannel,
+            receiver,
+            localTokens,
+            extension,
+            IBCHeightLib.zero(),
+            0
         );
 
         return denomAddress;
@@ -180,7 +187,12 @@ contract RelayTests is Test {
 
         vm.prank(receiver);
         relay.send(
-            sourceChannel, sender, localTokens, extension, IBCHeight.zero(), 0
+            sourceChannel,
+            sender,
+            localTokens,
+            extension,
+            IBCHeightLib.zero(),
+            0
         );
     }
 
@@ -703,7 +715,7 @@ contract RelayTests is Test {
             args.receiver,
             localTokens,
             args.extension,
-            IBCHeight.zero(),
+            IBCHeightLib.zero(),
             0
         );
 
@@ -853,7 +865,7 @@ contract RelayTests is Test {
             receiver,
             localTokens,
             extension,
-            IBCHeight.zero(),
+            IBCHeightLib.zero(),
             0
         );
 
@@ -938,7 +950,7 @@ contract RelayTests is Test {
             abi.encodePacked(receiver),
             localTokens,
             extension,
-            IBCHeight.zero(),
+            IBCHeightLib.zero(),
             0
         );
 
@@ -1043,7 +1055,7 @@ contract RelayTests is Test {
                 abi.encodePacked(receiver),
                 localTokens,
                 extension,
-                IBCHeight.zero(),
+                IBCHeightLib.zero(),
                 0
             );
 
