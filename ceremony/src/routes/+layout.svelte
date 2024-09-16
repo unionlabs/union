@@ -36,38 +36,38 @@ let canvas: HTMLCanvasElement
 let app: Application
 let loading = $state(true)
 
-$effect(() => {
-  canvas = document.getElementById("canvas3d") as HTMLCanvasElement
-  if (!canvas) {
-    console.error("Canvas element not found")
-    return
-  }
+// $effect(() => {
+//   canvas = document.getElementById("canvas3d") as HTMLCanvasElement
+//   if (!canvas) {
+//     console.error("Canvas element not found")
+//     return
+//   }
 
-  app = new Application(canvas)
-  if (!app) {
-    console.error("Failed to create Spline Application")
-    return
-  }
+//   app = new Application(canvas)
+//   if (!app) {
+//     console.error("Failed to create Spline Application")
+//     return
+//   }
 
-  app
-    .load("https://prod.spline.design/6An57q5Kr37gF2k0/scene.splinecode")
-    .then(splineScene => {
-      loading = false
-    })
-    .catch(error => {
-      console.error("Failed to load Spline scene:", error)
-      loading = false
-    })
+//   app
+//     .load("https://prod.spline.design/6An57q5Kr37gF2k0/scene.splinecode")
+//     .then(splineScene => {
+//       loading = false
+//     })
+//     .catch(error => {
+//       console.error("Failed to load Spline scene:", error)
+//       loading = false
+//     })
 
-  const {
-    data: { subscription }
-  } = supabase.auth.onAuthStateChange((event, session) => {
-    user.session = session
-  })
-  return () => {
-    subscription.unsubscribe()
-  }
-})
+//   const {
+//     data: { subscription }
+//   } = supabase.auth.onAuthStateChange((event, session) => {
+//     user.session = session
+//   })
+//   return () => {
+//     subscription.unsubscribe()
+//   }
+// })
 </script>
 
 <style>
@@ -84,11 +84,12 @@ $effect(() => {
 <Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
 
 <!--<Navbar/>-->
-<canvas
+<!--<canvas
         id="canvas3d"
         class=" w-full h-auto inset-0 absolute z-0 canvas-fade"
         class:loaded={!loading}
 ></canvas>
+!-->
 
 <main class="flex flex-col items-center justify-center min-h-screen w-full">
   {@render children()}
