@@ -23,6 +23,7 @@ Boneh
 Borsh
 CBFF
 CCTP
+CEST
 CFLAGS
 CHAINSTACK
 CMOV
@@ -1357,4 +1358,3 @@ zktrie
 zstd
 αlphα
 λpxrx
-CEST
