@@ -34,9 +34,7 @@ jobs:
         id: 'changed-files'
         uses: tj-actions/changed-files@v45
         with:
-          since_last_remote_commit: true
-          files: |
-            ./site/**/*
+          files: site/**
 
       # delete Netlify comment if no site files changed
       - name: 'Site Files Changed'
