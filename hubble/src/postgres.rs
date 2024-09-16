@@ -605,3 +605,79 @@ pub async fn insert_client_mapping<'a, A: Acquire<'a, Database = Postgres>>(
 
     Ok(())
 }
+
+pub async fn get_chain_ids_and_ids<'a, A: Acquire<'a, Database = Postgres>>(
+    db: A,
+) -> sqlx::Result<std::collections::HashMap<String, i32>> {
+    let mut conn = db.acquire().await?;
+
+    let rows = sqlx::query!("SELECT chain_id, id FROM v0.chains")
+        .fetch_all(&mut *conn)
+        .await?;
+
+    let chain_ids_and_ids: std::collections::HashMap<String, i32> =
+        rows.into_iter().map(|row| (row.chain_id, row.id)).collect();
+
+    Ok(chain_ids_and_ids)
+}
+
+pub async fn insert_or_update_tokens<'a, A: Acquire<'a, Database = Postgres>>(
+    db: A,
+    tokens: &[(i64, String, String, i64, Option<String>, String)],
+) -> sqlx::Result<()> {
+    let mut conn = db.acquire().await?;
+
+    let (chain_ids, denoms, display_symbols, decimals, logo_uris, display_names): (
+        Vec<i64>,
+        Vec<String>,
+        Vec<String>,
+        Vec<i64>,
+        Vec<Option<String>>,
+        Vec<String>,
+    ) = tokens
+        .iter()
+        .map(
+            |(chain_id, denom, display_symbol, decimals, logo_uri, display_name)| {
+                (
+                    *chain_id,
+                    denom.clone(),
+                    display_symbol.clone(),
+                    *decimals,
+                    logo_uri.clone(),
+                    display_name.clone(),
+                )
+            },
+        )
+        .multiunzip();
+
+    sqlx::query!(
+        r#"
+        INSERT INTO v0.assets (chain_id, denom, display_symbol, decimals, logo_uri, display_name, gas_token)
+        SELECT 
+            unnest($1::bigint[]), 
+            unnest($2::text[]), 
+            unnest($3::text[]), 
+            unnest($4::bigint[]), 
+            unnest($5::text[]), 
+            unnest($6::text[]), 
+            false
+        ON CONFLICT (chain_id, denom) DO UPDATE SET
+            display_symbol = EXCLUDED.display_symbol,
+            decimals = EXCLUDED.decimals,
+            logo_uri = EXCLUDED.logo_uri,
+            display_name = EXCLUDED.display_name
+        "#,
+        &chain_ids,
+        &denoms,
+        &display_symbols,
+        &decimals,
+        &logo_uris as _,
+        &display_names
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    info!("Successfully inserted or updated {} tokens.", tokens.len());
+
+    Ok(())
+}

@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO v0.assets (chain_id, denom, display_symbol, decimals, logo_uri, display_name, gas_token)\n        SELECT \n            unnest($1::bigint[]), \n            unnest($2::text[]), \n            unnest($3::text[]), \n            unnest($4::bigint[]), \n            unnest($5::text[]), \n            unnest($6::text[]), \n            false\n        ON CONFLICT (chain_id, denom) DO UPDATE SET\n            display_symbol = EXCLUDED.display_symbol,\n            decimals = EXCLUDED.decimals,\n            logo_uri = EXCLUDED.logo_uri,\n            display_name = EXCLUDED.display_name\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "TextArray",
+        "TextArray",
+        "Int8Array",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dfeebefbfcbe4daa3bb09ca34535aab00b9c5b19fc2773adec4deb89bf691030"
+}
