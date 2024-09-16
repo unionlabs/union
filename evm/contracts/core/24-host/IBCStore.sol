@@ -1,28 +1,36 @@
 pragma solidity ^0.8.23;
 
-import "../../proto/ibc/core/connection/v1/connection.sol";
-import "../../proto/ibc/core/channel/v1/channel.sol";
 import "../02-client/ILightClient.sol";
+import "../05-port/IIBCModule.sol";
+import "../Types.sol";
 
 library IBCStoreLib {
-    string public constant COMMITMENT_PREFIX = "ibc";
+    bytes32 public constant COMMITMENT_PREFIX = keccak256("ethibc");
 
     error ErrClientNotFound();
+    error ErrModuleNotFound();
+    error ErrInvalidConnectionState();
 }
 
 abstract contract IBCStore {
+    bytes32 public constant COMMITMENT_PREFIX = IBCStoreLib.COMMITMENT_PREFIX;
+
     // Commitments
     // keccak256(IBC-compatible-store-path) => keccak256(IBC-compatible-commitment)
-    mapping(bytes32 => bytes32) public commitments;
+    mapping(bytes32 => bytes32) internal commitments;
 
-    // Store
-    mapping(string => address) public clientRegistry;
-    mapping(string => string) public clientTypes;
-    mapping(string => address) public clientImpls;
-    mapping(string => IbcCoreConnectionV1ConnectionEnd.Data) public connections;
-    mapping(string => mapping(string => IbcCoreChannelV1Channel.Data)) public
-        channels;
-    mapping(string => address) public capabilities;
+    // ClientType -> Address
+    mapping(bytes32 => address) internal clientRegistry;
+    // ClientId -> ClientType
+    mapping(uint32 => bytes32) internal clientTypes;
+    // ClientId -> Address
+    mapping(uint32 => address) internal clientImpls;
+    // ConnectionId -> Connection
+    mapping(uint32 => IBCConnection) internal connections;
+    // ChannelId -> Channel
+    mapping(uint32 => IBCChannel) internal channels;
+    // ChannelId -> PortId
+    mapping(uint32 => address) internal channelOwner;
 
     // Sequences for identifier
     bytes32 public constant nextClientSequencePath =
@@ -32,11 +40,12 @@ abstract contract IBCStore {
     bytes32 public constant nextChannelSequencePath =
         keccak256("nextChannelSequence");
 
-    string public constant COMMITMENT_PREFIX = IBCStoreLib.COMMITMENT_PREFIX;
+    function getClient(uint32 clientId) public view returns (ILightClient) {
+        return getClientInternal(clientId);
+    }
 
-    // Storage accessors
-    function getClient(string memory clientId)
-        public
+    function getClientInternal(uint32 clientId)
+        internal
         view
         returns (ILightClient)
     {
@@ -45,5 +54,42 @@ abstract contract IBCStore {
             revert IBCStoreLib.ErrClientNotFound();
         }
         return ILightClient(clientImpl);
+    }
+
+    function lookupModuleByChannel(uint32 channelId)
+        internal
+        view
+        virtual
+        returns (IIBCModule)
+    {
+        address module = channelOwner[channelId];
+        if (module == address(0)) {
+            revert IBCStoreLib.ErrModuleNotFound();
+        }
+        return IIBCModule(module);
+    }
+
+    function claimChannel(address portId, uint32 channelId) internal {
+        channelOwner[channelId] = portId;
+    }
+
+    function authenticateChannelOwner(uint32 channelId)
+        internal
+        view
+        returns (bool)
+    {
+        return msg.sender == channelOwner[channelId];
+    }
+
+    function ensureConnectionState(uint32 connectionId)
+        internal
+        view
+        returns (IBCConnection storage)
+    {
+        IBCConnection storage connection = connections[connectionId];
+        if (connection.state != IBCConnectionState.Open) {
+            revert IBCStoreLib.ErrInvalidConnectionState();
+        }
+        return connection;
     }
 }

@@ -9,8 +9,7 @@ import {
     IBCConnection
 } from "../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
-import {IBCChannelHandshake} from
-    "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import {IBCChannelImpl} from "../../../contracts/core/04-channel/IBCChannel.sol";
 import {
     IBCPacket,
     IBCPacketLib

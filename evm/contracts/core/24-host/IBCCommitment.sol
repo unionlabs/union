@@ -1,125 +1,103 @@
 pragma solidity ^0.8.23;
 
-import "solady/utils/LibString.sol";
-
 library IBCCommitment {
-    // Commitment path generators that comply with https://github.com/cosmos/ibc/tree/main/spec/core/ics-024-host-requirements#path-space
+    bytes1 public constant CLIENT_STATE = 0x00;
+    bytes1 public constant CONSENSUS_STATE = 0x01;
+    bytes1 public constant CONNECTIONS = 0x02;
+    bytes1 public constant CHANNELS = 0x05;
+    bytes1 public constant PACKETS = 0x06;
+    bytes1 public constant PACKET_ACKS = 0x07;
+    bytes1 public constant PACKET_RECEIPTS = 0x08;
+    bytes1 public constant NEXT_SEQ_SEND = 0x09;
+    bytes1 public constant NEXT_SEQ_RECV = 0x0A;
+    bytes1 public constant NEXT_SEQ_ACK = 0x0B;
 
-    function clientStatePath(string memory clientId)
+    function clientStatePath(uint32 clientId)
         internal
         pure
         returns (bytes memory)
     {
-        return abi.encodePacked("clients/", clientId, "/clientState");
+        return abi.encodePacked(CLIENT_STATE, clientId);
     }
 
     function consensusStatePath(
-        string memory clientId,
-        uint64 revisionNumber,
-        uint64 revisionHeight
+        uint32 clientId,
+        uint64 height
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            "clients/",
-            clientId,
-            "/consensusStates/",
-            LibString.toString(revisionNumber),
-            "-",
-            LibString.toString(revisionHeight)
-        );
+        return abi.encodePacked(CONSENSUS_STATE, clientId, height);
     }
 
-    function connectionPath(string memory connectionId)
+    function connectionPath(uint32 connectionId)
         internal
         pure
         returns (bytes memory)
     {
-        return abi.encodePacked("connections/", connectionId);
+        return abi.encodePacked(CONNECTIONS, connectionId);
     }
 
-    function channelPath(
-        string memory portId,
-        string memory channelId
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            "channelEnds/ports/", portId, "/channels/", channelId
-        );
+    function channelPath(uint32 channelId)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(CHANNELS, channelId);
     }
 
     function packetCommitmentPath(
-        string memory portId,
-        string memory channelId,
+        uint32 channelId,
         uint64 sequence
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            "commitments/ports/",
-            portId,
-            "/channels/",
-            channelId,
-            "/sequences/",
-            LibString.toString(sequence)
-        );
+        return abi.encodePacked(PACKETS, channelId, sequence);
     }
 
-    function packetAcknowledgementCommitmentPath(
-        string memory portId,
-        string memory channelId,
-        uint64 sequence
+    function batchPacketsCommitmentPath(
+        uint32 channelId,
+        bytes32 batchHash
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            "acks/ports/",
-            portId,
-            "/channels/",
-            channelId,
-            "/sequences/",
-            LibString.toString(sequence)
-        );
+        return abi.encodePacked(PACKETS, channelId, batchHash);
     }
 
-    function packetReceiptCommitmentPath(
-        string memory portId,
-        string memory channelId,
-        uint64 sequence
+    function batchAcksCommitmentPath(
+        uint32 channelId,
+        bytes32 batchHash
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            "receipts/ports/",
-            portId,
-            "/channels/",
-            channelId,
-            "/sequences/",
-            LibString.toString(sequence)
-        );
+        return abi.encodePacked(PACKET_ACKS, channelId, batchHash);
     }
 
-    function nextSequenceSendCommitmentPath(
-        string memory portId,
-        string memory channelId
+    function batchReceiptsCommitmentPath(
+        uint32 channelId,
+        bytes32 batchHash
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            "nextSequenceSend/ports/", portId, "/channels/", channelId
-        );
+        return abi.encodePacked(PACKET_RECEIPTS, channelId, batchHash);
     }
 
-    function nextSequenceRecvCommitmentPath(
-        string memory portId,
-        string memory channelId
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            "nextSequenceRecv/ports/", portId, "/channels/", channelId
-        );
+    function nextSequenceSendCommitmentPath(uint32 channelId)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(NEXT_SEQ_SEND, channelId);
     }
 
-    function nextSequenceAckCommitmentPath(
-        string memory portId,
-        string memory channelId
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(
-            "nextSequenceAck/ports/", portId, "/channels/", channelId
-        );
+    function nextSequenceRecvCommitmentPath(uint32 channelId)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(NEXT_SEQ_RECV, channelId);
+    }
+
+    function nextSequenceAckCommitmentPath(uint32 channelId)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(NEXT_SEQ_ACK, channelId);
     }
 
     // Key generators for Commitment mapping
 
-    function clientStateCommitmentKey(string memory clientId)
+    function clientStateCommitmentKey(uint32 clientId)
         internal
         pure
         returns (bytes32)
@@ -128,16 +106,13 @@ library IBCCommitment {
     }
 
     function consensusStateCommitmentKey(
-        string memory clientId,
-        uint64 revisionNumber,
-        uint64 revisionHeight
+        uint32 clientId,
+        uint64 height
     ) internal pure returns (bytes32) {
-        return keccak256(
-            consensusStatePath(clientId, revisionNumber, revisionHeight)
-        );
+        return keccak256(consensusStatePath(clientId, height));
     }
 
-    function connectionCommitmentKey(string memory connectionId)
+    function connectionCommitmentKey(uint32 connectionId)
         internal
         pure
         returns (bytes32)
@@ -145,58 +120,63 @@ library IBCCommitment {
         return keccak256(connectionPath(connectionId));
     }
 
-    function channelCommitmentKey(
-        string memory portId,
-        string memory channelId
-    ) internal pure returns (bytes32) {
-        return keccak256(channelPath(portId, channelId));
+    function channelCommitmentKey(uint32 channelId)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(channelPath(channelId));
     }
 
     function packetCommitmentKey(
-        string memory portId,
-        string memory channelId,
+        uint32 channelId,
         uint64 sequence
     ) internal pure returns (bytes32) {
-        return keccak256(packetCommitmentPath(portId, channelId, sequence));
+        return keccak256(packetCommitmentPath(channelId, sequence));
     }
 
-    function packetAcknowledgementCommitmentKey(
-        string memory portId,
-        string memory channelId,
-        uint64 sequence
+    function batchPacketsCommitmentKey(
+        uint32 channelId,
+        bytes32 batchHash
     ) internal pure returns (bytes32) {
-        return keccak256(
-            packetAcknowledgementCommitmentPath(portId, channelId, sequence)
-        );
+        return keccak256(batchPacketsCommitmentPath(channelId, batchHash));
     }
 
-    function packetReceiptCommitmentKey(
-        string memory portId,
-        string memory channelId,
-        uint64 sequence
+    function batchAcksCommitmentKey(
+        uint32 channelId,
+        bytes32 batchHash
     ) internal pure returns (bytes32) {
-        return
-            keccak256(packetReceiptCommitmentPath(portId, channelId, sequence));
+        return keccak256(batchAcksCommitmentPath(channelId, batchHash));
     }
 
-    function nextSequenceSendCommitmentKey(
-        string memory portId,
-        string memory channelId
+    function batchReceiptsCommitmentKey(
+        uint32 channelId,
+        bytes32 batchHash
     ) internal pure returns (bytes32) {
-        return keccak256(nextSequenceSendCommitmentPath(portId, channelId));
+        return keccak256(batchReceiptsCommitmentPath(channelId, batchHash));
     }
 
-    function nextSequenceRecvCommitmentKey(
-        string memory portId,
-        string memory channelId
-    ) internal pure returns (bytes32) {
-        return keccak256(nextSequenceRecvCommitmentPath(portId, channelId));
+    function nextSequenceSendCommitmentKey(uint32 channelId)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(nextSequenceSendCommitmentPath(channelId));
     }
 
-    function nextSequenceAckCommitmentKey(
-        string memory portId,
-        string memory channelId
-    ) internal pure returns (bytes32) {
-        return keccak256(nextSequenceAckCommitmentPath(portId, channelId));
+    function nextSequenceRecvCommitmentKey(uint32 channelId)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(nextSequenceRecvCommitmentPath(channelId));
+    }
+
+    function nextSequenceAckCommitmentKey(uint32 channelId)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(nextSequenceAckCommitmentPath(channelId));
     }
 }

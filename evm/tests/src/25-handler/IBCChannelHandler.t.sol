@@ -5,18 +5,16 @@ import "solady/utils/LibString.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {IBCHandler} from "../../../contracts/core/25-handler/IBCHandler.sol";
-import {IBCConnection} from
+import {IBCConnectionImpl} from
     "../../../contracts/core/03-connection/IBCConnection.sol";
 import {IBCClient} from "../../../contracts/core/02-client/IBCClient.sol";
-import {IBCChannelHandshake} from
-    "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import {IBCChannelImpl} from "../../../contracts/core/04-channel/IBCChannel.sol";
 import {
     IBCPacket,
     IBCPacketLib
 } from "../../../contracts/core/04-channel/IBCPacket.sol";
 import {CometblsClient} from "../../../contracts/clients/CometblsClientV2.sol";
-import {IBCChannelLib} from
-    "../../../contracts/core/04-channel/IBCChannelHandshake.sol";
+import {IBCChannelLib} from "../../../contracts/core/04-channel/IBCChannel.sol";
 import {ILightClient} from "../../../contracts/core/02-client/ILightClient.sol";
 import {IBCMsgs} from "../../../contracts/core/25-handler/IBCMsgs.sol";
 import {

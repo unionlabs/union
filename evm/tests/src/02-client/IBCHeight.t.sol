@@ -2,7 +2,7 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 
-import {IBCHeight} from "../../../contracts/core/02-client/IBCHeight.sol";
+import {IBCHeightLib} from "../../../contracts/core/02-client/IBCHeight.sol";
 import {IbcCoreClientV1Height} from
     "../../../contracts/proto/ibc/core/client/v1/client.sol";
 
@@ -13,7 +13,7 @@ contract IBCHeightProxy {
         pure
         returns (uint128)
     {
-        return IBCHeight.toUint128(self);
+        return IBCHeightLib.toUint128(self);
     }
 
     function fromUint128(uint128 composite)
@@ -21,7 +21,7 @@ contract IBCHeightProxy {
         pure
         returns (IbcCoreClientV1Height.Data memory)
     {
-        return IBCHeight.fromUint128(composite);
+        return IBCHeightLib.fromUint128(composite);
     }
 
     function isZero(IbcCoreClientV1Height.Data memory self)
@@ -29,42 +29,42 @@ contract IBCHeightProxy {
         pure
         returns (bool)
     {
-        return IBCHeight.isZero(self);
+        return IBCHeightLib.isZero(self);
     }
 
     function lt(
         IbcCoreClientV1Height.Data memory self,
         IbcCoreClientV1Height.Data memory other
     ) public pure returns (bool) {
-        return IBCHeight.lt(self, other);
+        return IBCHeightLib.lt(self, other);
     }
 
     function lte(
         IbcCoreClientV1Height.Data memory self,
         IbcCoreClientV1Height.Data memory other
     ) public pure returns (bool) {
-        return IBCHeight.lte(self, other);
+        return IBCHeightLib.lte(self, other);
     }
 
     function eq(
         IbcCoreClientV1Height.Data memory self,
         IbcCoreClientV1Height.Data memory other
     ) public pure returns (bool) {
-        return IBCHeight.eq(self, other);
+        return IBCHeightLib.eq(self, other);
     }
 
     function gt(
         IbcCoreClientV1Height.Data memory self,
         IbcCoreClientV1Height.Data memory other
     ) public pure returns (bool) {
-        return IBCHeight.gt(self, other);
+        return IBCHeightLib.gt(self, other);
     }
 
     function gte(
         IbcCoreClientV1Height.Data memory self,
         IbcCoreClientV1Height.Data memory other
     ) public pure returns (bool) {
-        return IBCHeight.gte(self, other);
+        return IBCHeightLib.gte(self, other);
     }
 }
 

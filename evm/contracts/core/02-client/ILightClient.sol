@@ -1,12 +1,11 @@
 pragma solidity ^0.8.23;
 
-import "../../proto/ibc/core/client/v1/client.sol";
+import "../Types.sol";
 
 struct ConsensusStateUpdate {
-    // commitment for updated consensusState
+    bytes32 clientStateCommitment;
     bytes32 consensusStateCommitment;
-    // updated height
-    IbcCoreClientV1Height.Data height;
+    uint64 height;
 }
 
 /**
@@ -19,32 +18,26 @@ interface ILightClient {
      * If succeeded, it returns a commitment for the initial state.
      */
     function createClient(
-        string calldata clientId,
+        uint32 clientId,
         bytes calldata clientStateBytes,
         bytes calldata consensusStateBytes
-    )
-        external
-        returns (
-            bytes32 clientStateCommitment,
-            ConsensusStateUpdate memory update,
-            bool ok
-        );
+    ) external returns (ConsensusStateUpdate memory update);
 
     /**
      * @dev getTimestampAtHeight returns the timestamp of the consensus state at the given height.
      */
     function getTimestampAtHeight(
-        string calldata clientId,
-        IbcCoreClientV1Height.Data calldata height
+        uint32 clientId,
+        uint64 height
     ) external view returns (uint64);
 
     /**
      * @dev getLatestHeight returns the latest height of the client state corresponding to `clientId`.
      */
-    function getLatestHeight(string calldata clientId)
+    function getLatestHeight(uint32 clientId)
         external
         view
-        returns (IbcCoreClientV1Height.Data memory);
+        returns (uint64 height);
 
     /**
      * @dev updateClient updates the client corresponding to `clientId`.
@@ -59,22 +52,17 @@ interface ILightClient {
      * 5. persist the state(s) on the host
      */
     function updateClient(
-        string calldata clientId,
+        uint32 clientId,
         bytes calldata clientMessageBytes
-    )
-        external
-        returns (
-            bytes32 clientStateCommitment,
-            ConsensusStateUpdate[] memory updates
-        );
+    ) external returns (ConsensusStateUpdate memory update);
 
     /**
      * @dev verifyMembership is a generic proof verification method which verifies a proof of the existence of a value at a given CommitmentPath at the specified height.
      * The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
      */
     function verifyMembership(
-        string calldata clientId,
-        IbcCoreClientV1Height.Data calldata height,
+        uint32 clientId,
+        uint64 height,
         uint64 delayTimePeriod,
         uint64 delayBlockPeriod,
         bytes calldata proof,
@@ -88,8 +76,8 @@ interface ILightClient {
      * The caller is expected to construct the full CommitmentPath from a CommitmentPrefix and a standardized path (as defined in ICS 24).
      */
     function verifyNonMembership(
-        string calldata clientId,
-        IbcCoreClientV1Height.Data calldata height,
+        uint32 clientId,
+        uint64 height,
         uint64 delayTimePeriod,
         uint64 delayBlockPeriod,
         bytes calldata proof,
@@ -100,7 +88,7 @@ interface ILightClient {
     /**
      * @dev getClientState returns the clientState corresponding to `clientId`.
      */
-    function getClientState(string calldata clientId)
+    function getClientState(uint32 clientId)
         external
         view
         returns (bytes memory);
@@ -109,12 +97,12 @@ interface ILightClient {
      * @dev getConsensusState returns the consensusState corresponding to `clientId` and `height`.
      */
     function getConsensusState(
-        string calldata clientId,
-        IbcCoreClientV1Height.Data calldata height
+        uint32 clientId,
+        uint64 height
     ) external view returns (bytes memory);
 
     /**
      * @dev isFrozen returns whether the `clientId` is frozen or not.
      */
-    function isFrozen(string calldata clientId) external view returns (bool);
+    function isFrozen(uint32 clientId) external view returns (bool);
 }
