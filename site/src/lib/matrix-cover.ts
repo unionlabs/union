@@ -9,6 +9,7 @@ let targetMouseX = 0
 let targetMouseY = 0
 let displayWidth = 1000
 let displayHeight = 1000
+const RETINA_ENABLED = false
 
 // Perlin noise implementation
 class PerlinNoise {
@@ -442,6 +443,9 @@ function initWebGL() {
         // legacy
         width = entry.contentRect.width
         height = entry.contentRect.height
+      }
+      if (!RETINA_ENABLED) {
+        dpr = 0.71
       }
       // update global state reflecting ideal canvas size
       displayWidth = Math.round(width * dpr)
