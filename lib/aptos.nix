@@ -19,7 +19,7 @@
 
       aptos = craneLib.buildPackage rec {
         pname = "movement";
-        version = "17c10f224fd6d76101881799de3cf49750acfe03";
+        version = "d34bb3e3dad03241967c0263a6f1fcfe6bccb7d7";
 
         buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.systemd config.treefmt.build.programs.rustfmt pkgs.elfutils pkgs.lld pkgs.mold ] ++ (
           lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
