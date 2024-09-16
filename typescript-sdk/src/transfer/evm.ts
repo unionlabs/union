@@ -195,7 +195,7 @@ export async function approveTransferAssetFromEvm(
  * ```
  */
 export async function transferAssetFromEvmSimulate(
-  client: WalletClient & PublicActions,
+  _client: WalletClient & PublicActions,
   {
     memo,
     amount,

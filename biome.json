@@ -1,5 +1,5 @@
 {
-  "$schema": "https://esm.sh/@biomejs/biome@1.8.3/configuration_schema.json",
+  "$schema": "https://esm.sh/@biomejs/biome@1.9.1/configuration_schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -70,7 +70,8 @@
       "*.json",
       "*.jsonc",
       "*.astro",
-      "*.svelte"
+      "*.svelte",
+      "*.graphql"
     ],
     "ignoreUnknown": true,
     "ignore": [
@@ -122,7 +123,8 @@
       "*.json",
       "*.jsonc",
       "*.astro",
-      "*.svelte"
+      "*.svelte",
+      "*.graphql"
     ],
     "ignore": [
       "_",
@@ -172,29 +174,30 @@
       },
       "nursery": {
         "all": true,
-        "noConsole": "off",
-        "useTopLevelRegex": "off",
+        "noSecrets": "off",
+        "noProcessEnv": "off",
+        "useStrictMode": "off",
         "noExportedImports": "off",
-        "useImportRestrictions": "off",
-        "noUndeclaredDependencies": "off",
-        "noUnusedFunctionParameters": "off",
-        "noUselessUndefinedInitialization": "off"
+        "useImportRestrictions": "off"
       },
       "performance": {
         "all": true,
         "noDelete": "off",
         "noBarrelFile": "off",
         "noReExportAll": "off",
+        "useTopLevelRegex": "off",
         "noAccumulatingSpread": "warn"
       },
       "correctness": {
         "all": true,
         "noNodejsModules": "off",
         "noUnusedVariables": "off",
-        "noUndeclaredVariables": "off"
+        "noUndeclaredVariables": "off",
+        "noUndeclaredDependencies": "off"
       },
       "suspicious": {
         "all": true,
+        "noConsole": "off",
         "noConsoleLog": "off",
         "noExplicitAny": "off",
         "noCatchAssign": "off",
@@ -228,7 +231,8 @@
       "*.json",
       "*.jsonc",
       "*.astro",
-      "*.svelte"
+      "*.svelte",
+      "*.graphql"
     ],
     "ignore": [
       "_",
@@ -294,7 +298,8 @@
           "correctness": {
             "noUnusedLabels": "off",
             "noUnusedImports": "off",
-            "useHookAtTopLevel": "off"
+            "useHookAtTopLevel": "off",
+            "noUnusedFunctionParameters": "off"
           },
           "style": {
             "useConst": "off",
@@ -303,7 +308,7 @@
           "suspicious": {
             "noConfusingLabels": "off"
           },
-          "nursery": {
+          "complexity": {
             "noUselessUndefinedInitialization": "off"
           }
         }
@@ -313,9 +318,7 @@
       "include": ["scripts", "*config*"],
       "linter": {
         "rules": {
-          "nursery": {
-            "noConsole": "off"
-          }
+          "nursery": {}
         }
       }
     },

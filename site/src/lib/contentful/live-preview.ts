@@ -72,7 +72,7 @@ function findElementByDataAttribute({ entryId, fieldId }: { entryId: string; fie
 
 function displayFieldData({
   entry,
-  client,
+  client: _client,
   fieldId,
   entryId
 }: {

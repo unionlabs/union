@@ -50,7 +50,7 @@ const abbreviateNumber = (num: number, displayDecimals: number): string => {
 
 $: supportedAsset = asset ? getSupportedAsset(chain, asset.address) : null
 
-$: balance = asset ? asset.balance ?? BigInt(0) : BigInt(0)
+$: balance = asset ? (asset.balance ?? BigInt(0)) : BigInt(0)
 $: decimals = asset && supportedAsset ? supportedAsset.decimals : asset ? asset.decimals : 0
 $: symbol =
   asset && supportedAsset ? supportedAsset.display_symbol : asset ? asset.symbol : "Unknown"

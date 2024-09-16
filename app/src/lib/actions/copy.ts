@@ -45,7 +45,7 @@ const resolveConfiguration = <K extends keyof HTMLElementEventMap>(
   const events =
     typeof parameters.event === "string"
       ? [parameters.event]
-      : parameters.event ?? (["click"] as K | Array<K>)
+      : (parameters.event ?? (["click"] as K | Array<K>))
   return { trigger, enabled, text, events, synthetic }
 }
 
