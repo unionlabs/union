@@ -29,7 +29,7 @@ export type TransferState = DiscriminatedUnion<
 >
 
 export const transferStep = (state: TransferState): number => {
-  // biome-ignore lint/nursery/useDefaultSwitchClause: i want typescript to error if we forgot a case
+  // biome-ignore lint/style/useDefaultSwitchClause: i want typescript to error if we forgot a case
   switch (state.kind) {
     case "PRE_TRANSFER":
       return 1

@@ -41,8 +41,8 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       receiver,
       denomAddress,
       destinationChainId,
-      memo = timestamp(),
       relayContractAddress,
+      memo: _memo = timestamp(),
       account = parameters.account,
       gasPrice = parameters.gasPrice
     }: TransferAssetsParameters<CosmosChainId>): Promise<Result<string, Error>> => {
@@ -138,9 +138,9 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       return err(new Error("Unsupported network"))
     },
     simulateTransaction: async ({
-      memo,
       amount,
       receiver,
+      memo: _memo,
       denomAddress,
       destinationChainId,
       relayContractAddress,

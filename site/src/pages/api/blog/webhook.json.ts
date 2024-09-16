@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro"
 import { purgeCache } from "@netlify/functions"
 
-export const POST: APIRoute = async ({ params, request, ...context }) => {
+export const POST: APIRoute = async ({ request }) => {
   const body = (await request.json()) as { sys: { id: string } }
 
   const contentfulWebhookSecret = process.env.CONTENTFUL_WEBHOOK_SECRET
