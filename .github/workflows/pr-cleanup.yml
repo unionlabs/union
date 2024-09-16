@@ -43,7 +43,7 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'false'
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.NETLIFY_DEMOLISHER }}
           script: |
             const { owner, repo } = context.repo
             // https://octokit.github.io/rest.js/v21/#issues-list-comments
