@@ -14,7 +14,7 @@ $effect.pre(() => {
   if (userId) contributor.setUserId(userId)
 })
 
-const targetTimestamp = 1726812000
+const targetTimestamp = 1726819200
 </script>
 
 <!--Fix jump between state on load-->

@@ -62,7 +62,7 @@ $effect(() => {
 
 <div class="flex flex-col h-svh items-center justify-center gap-3">
   <H2>Ceremony set to begin</H2>
-  <H3>2024-09-20 | <span class="text-union-accent-500">10:00 AM</span> (CET)</H3>
+  <H3>2024-09-20 | <span class="text-union-accent-500">10:00 AM</span> (CEST)</H3>
   <div class="flex gap-2 justify-center">
     {@render pair(hours, 'h')}
     {@render pair(minutes, 'm')}
