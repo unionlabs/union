@@ -6,7 +6,8 @@
 
       inherit (lib) flatten unique;
 
-      craneLib = crane.lib.${system}.overrideToolchain rust.toolchains.nightly;
+      # craneLib = crane.mkLib.${system}.overrideToolchain rust.toolchains.nightly;
+      craneLib = (crane.mkLib unstablePkgs).overrideToolchain (_: rust.toolchains.nightly);
 
       fs = unstablePkgs.lib.fileset;
 
