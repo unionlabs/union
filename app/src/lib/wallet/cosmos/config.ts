@@ -121,12 +121,15 @@ function createCosmosStore(
 
 export const cosmosStore = createCosmosStore()
 
-export const getCosmosOfflineSigner = (chainId: string): Promise<OfflineSigner> =>
+export const getCosmosOfflineSigner = ({
+  chainId,
+  connectedWallet
+}: {
+  chainId: string
+  connectedWallet: CosmosWalletId
+}): Promise<OfflineSigner> =>
   // @ts-expect-error
-  get(cosmosStore).connectedWallet === "keplr"
-    ? window.keplr?.getOfflineSignerAuto(chainId, { disableBalanceCheck: false })
-    : window.leap?.getOfflineSignerAuto(chainId, { disableBalanceCheck: false })
-
+  window[connectedWallet]?.getOfflineSignerAuto(chainId, { disableBalanceCheck: false })
 
 export const userAddrCosmos: Readable<UserAddressCosmos | null> = derived(
   [cosmosStore],

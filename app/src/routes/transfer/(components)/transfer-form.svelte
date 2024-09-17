@@ -5,6 +5,7 @@ import {
   type EvmChainId,
   createUnionClient,
   type CosmosChainId,
+  type OfflineSigner,
   evmChainFromChainId,
   bech32ToBech32Address
 } from "@unionlabs/client"
@@ -37,6 +38,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { Input } from "$lib/components/ui/input/index.js"
 import { userAddrOnChain } from "$lib/utilities/address.ts"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
@@ -44,7 +46,6 @@ import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { parseUnits, formatUnits, type HttpTransport, getAddress } from "viem"
-import { cosmosStore, getCosmosOfflineSigner } from "$/lib/wallet/cosmos/config.ts"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 
@@ -230,7 +231,7 @@ const transfer = async () => {
       return
     }
 
-    const wallet = window[connectedWallet as "keplr" | "leap"]
+    const wallet = window[connectedWallet]
 
     if (!wallet) {
       transferState.set({
@@ -239,6 +240,10 @@ const transfer = async () => {
       })
       return
     }
+
+    const cosmosOfflineSigner = (await wallet.getOfflineSignerAuto($fromChainId, {
+      disableBalanceCheck: false
+    })) as OfflineSigner
 
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
@@ -280,8 +285,6 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
-        const cosmosOfflineSigner = await getCosmosOfflineSigner($fromChainId)
-
         const unionClient = createUnionClient({
           account: cosmosOfflineSigner,
           transport: http(`https://${rpcUrl}`),
