@@ -3,7 +3,7 @@ import { raise } from "$lib/utilities/index.ts"
 import { getCosmosChainBalances } from "./cosmos.ts"
 import { createQueries } from "@tanstack/svelte-query"
 import { erc20ReadMulticall } from "./evm/multicall.ts"
-import { bytesToBech32Address } from "@unionlabs/client"
+import { bech32ToBech32Address } from "@unionlabs/client"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { getBalancesFromAlchemy } from "./evm/alchemy.ts"
 import { getBalancesFromRoutescan } from "./evm/routescan.ts"
@@ -72,10 +72,11 @@ export function userBalancesQuery({
           const url = chain.rpcs.filter(rpc => rpc.type === "rest").at(0)?.url
           if (!url) raise(`No REST RPC available for chain ${chain.chain_id}`)
 
-          const bech32Address = bytesToBech32Address({
+          const bech32Address = bech32ToBech32Address({
             toPrefix: chain.addr_prefix,
-            bytes: userAddr.cosmos.bytes
+            address: userAddr.cosmos.canonical
           })
+
           return getCosmosChainBalances({ url, walletAddress: bech32Address })
         }
 
