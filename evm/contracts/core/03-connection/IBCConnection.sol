@@ -37,7 +37,8 @@ library IBCConnectionLib {
     error ErrNoCounterpartyVersion();
     error ErrUnsupportedVersion();
     error ErrVersionMustBeUnset();
-    error ErrInvalidProof();
+    error ErrInvalidConnectionProof();
+    error ErrInvalidClientStateProof();
     error ErrInvalidConnectionState();
 
     // yes, these are all defined as strings in the ibc spec
@@ -443,7 +444,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 expectedConnection
             )
         ) {
-            revert IBCConnectionLib.ErrInvalidProof();
+            revert IBCConnectionLib.ErrInvalidConnectionProof();
         }
         if (
             !verifyClientState(
@@ -454,7 +455,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 msg_.clientStateBytes
             )
         ) {
-            revert IBCConnectionLib.ErrInvalidProof();
+            revert IBCConnectionLib.ErrInvalidClientStateProof();
         }
 
         updateConnectionCommitment(connectionId);
@@ -521,7 +522,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 expectedConnection
             )
         ) {
-            revert IBCConnectionLib.ErrInvalidProof();
+            revert IBCConnectionLib.ErrInvalidConnectionProof();
         }
         if (
             !verifyClientState(
@@ -532,7 +533,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 msg_.clientStateBytes
             )
         ) {
-            revert IBCConnectionLib.ErrInvalidProof();
+            revert IBCConnectionLib.ErrInvalidClientStateProof();
         }
 
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN;
@@ -593,7 +594,7 @@ contract IBCConnection is IBCStore, IIBCConnectionHandshake {
                 expectedConnection
             )
         ) {
-            revert IBCConnectionLib.ErrInvalidProof();
+            revert IBCConnectionLib.ErrInvalidClientStateProof();
         }
 
         connection.state = IbcCoreConnectionV1GlobalEnums.State.STATE_OPEN;

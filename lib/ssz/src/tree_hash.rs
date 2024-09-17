@@ -108,7 +108,7 @@ pub fn mix_in_type(root: &Hash256, type_index: usize) -> Hash256 {
 /// serialization) return hash(root + selector).
 /// ```
 ///
-/// https://github.com/ethereum/consensus-specs/blob/v1.1.0-beta.3/ssz/simple-serialize.md#union
+/// <https://github.com/ethereum/consensus-specs/blob/v1.1.0-beta.3/ssz/simple-serialize.md#union>
 #[must_use]
 pub fn mix_in_selector(root: &Hash256, selector: u8) -> Option<Hash256> {
     if selector > MAX_UNION_SELECTOR {

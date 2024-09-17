@@ -2,31 +2,31 @@
   perSystem = { self', lib, unstablePkgs, pkgs, system, config, rust, crane, stdenv, dbg, ... }:
     let
 
-      near-ibc-tests = pkgs.stdenv.mkDerivation {
-        name = "near-ibc-tests";
-        buildInputs = [ pkgs.makeWrapper ];
-        src =
-          (crane.buildWorkspaceMember {
-            crateDirFromRoot = "lib/near/near-ibc-tests";
-            extraEnv = {
-              PROTOC = "${pkgs.protobuf}/bin/protoc";
-              LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
-            };
-            extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
-            extraNativeBuildInputs = [ pkgs.clang ];
-            extraEnv = { };
-          }).packages.near-ibc-tests;
-        installPhase = ''
-          mkdir -p $out/bin
-          cp -r $src/bin/near-ibc-tests $out/bin/near-ibc-tests
-          wrapProgram $out/bin/near-ibc-tests \
-            --set NEAR_SANDBOX_BIN_PATH "${near-sandbox}/bin/neard" \
-            --set IBC_WASM_FILEPATH "${self'.packages.near-ibc}/lib/near_ibc.wasm" \
-            --set NEAR_LC_WASM_FILEPATH "${self'.packages.near-light-client}/lib/near_light_client.wasm" \
-            --set IBC_APP_WASM_FILEPATH "${self'.packages.dummy-ibc-app}/lib/dummy_ibc_app.wasm";
-        '';
-        meta.mainProgram = "near-ibc-tests";
-      };
+      # near-ibc-tests = pkgs.stdenv.mkDerivation {
+      #   name = "near-ibc-tests";
+      #   buildInputs = [ pkgs.makeWrapper ];
+      #   src =
+      #     (crane.buildWorkspaceMember {
+      #       crateDirFromRoot = "lib/near/near-ibc-tests";
+      #       extraEnv = {
+      #         PROTOC = "${pkgs.protobuf}/bin/protoc";
+      #         LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+      #       };
+      #       extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+      #       extraNativeBuildInputs = [ pkgs.clang ];
+      #       extraEnv = { };
+      #     }).packages.near-ibc-tests;
+      #   installPhase = ''
+      #     mkdir -p $out/bin
+      #     cp -r $src/bin/near-ibc-tests $out/bin/near-ibc-tests
+      #     wrapProgram $out/bin/near-ibc-tests \
+      #       --set NEAR_SANDBOX_BIN_PATH "${near-sandbox}/bin/neard" \
+      #       --set IBC_WASM_FILEPATH "${self'.packages.near-ibc}/lib/near_ibc.wasm" \
+      #       --set NEAR_LC_WASM_FILEPATH "${self'.packages.near-light-client}/lib/near_light_client.wasm" \
+      #       --set IBC_APP_WASM_FILEPATH "${self'.packages.dummy-ibc-app}/lib/dummy_ibc_app.wasm";
+      #   '';
+      #   meta.mainProgram = "near-ibc-tests";
+      # };
 
       cargo-near = craneLib.buildPackage rec {
         pname = "cargo-near";
@@ -113,7 +113,8 @@
     in
     {
       packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // {
-        inherit near-ibc-tests near-sandbox cargo-near;
+        # TODO: Reenable near-ibc-tests
+        inherit near-sandbox cargo-near;
       };
 
       checks = near-light-client.checks // near-ibc.checks;

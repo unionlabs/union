@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use cometbft_rpc::AbciQueryResponse;
+use cometbft_rpc::types::AbciQueryResponse;
 use contracts::ibc_handler::IBCHandler;
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use ics23::ibc_api::SDK_SPECS;
@@ -13,7 +13,7 @@ use unionlabs::{
         BerachainChainSpec, LATEST_BEACON_BLOCK_HEADER_PREFIX,
         LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     },
-    encoding::{DecodeAs, EthAbi, Ssz},
+    encoding::{DecodeAs, Ssz},
     ethereum::IBC_HANDLER_COMMITMENTS_SLOT,
     google::protobuf::duration::Duration,
     hash::H160,
@@ -28,18 +28,18 @@ use unionlabs::{
             tendermint::fraction::Fraction,
         },
     },
-    id::ClientId,
     option_unwrap, result_unwrap,
-    traits::{Chain, ChainIdOf, FromStrExact, HeightOf},
+    traits::FromStrExact,
     uint::U256,
 };
 
 use crate::{
     ethereum::{
-        self, balance_of_signers, EthereumConsensusChain, EthereumIbcChain,
-        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite,
+        balance_of_signers, EthereumConsensusChain, EthereumIbcChain, EthereumSignerMiddleware,
+        EthereumSignersConfig, ReadWrite,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, SignerBalance},
+    BoxDynError,
 };
 
 // FLOW:
@@ -110,34 +110,9 @@ impl FromStrExact for BerachainChainType {
     const EXPECTING: &'static str = "berachain";
 }
 
-impl Chain for Berachain {
-    type ChainType = BerachainChainType;
-    type SelfClientState = berachain::client_state::ClientState;
-    type SelfConsensusState = berachain::consensus_state::ConsensusState;
-
-    type StoredClientState<Tr: Chain> = Tr::SelfClientState;
-    type StoredConsensusState<Tr: Chain> = Tr::SelfConsensusState;
-
-    type Header = berachain::header::Header;
-
-    type Height = Height;
-
-    type ClientId = ClientId;
-
-    type ClientType = String;
-
-    type Error = ethers::providers::ProviderError;
-
-    type IbcStateEncoding = EthAbi;
-
-    type StateProof = StorageProof;
-
-    /// We expose the execution chain id instead of the consensus chain id since the execution chain id is the "public facing" one.
-    fn chain_id(&self) -> ChainIdOf<Self> {
-        self.execution_chain_id
-    }
-
-    async fn query_latest_height(&self) -> Result<HeightOf<Self>, Self::Error> {
+#[allow(dead_code)]
+impl Berachain {
+    async fn query_latest_height(&self) -> Result<Height, BoxDynError> {
         Ok(Height {
             revision_number: self.consensus_chain_revision,
             revision_height: self
@@ -154,11 +129,7 @@ impl Chain for Berachain {
         })
     }
 
-    async fn query_latest_height_as_destination(&self) -> Result<Height, Self::Error> {
-        self.query_latest_height().await
-    }
-
-    async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
+    async fn query_latest_timestamp(&self) -> Result<i64, BoxDynError> {
         Ok(self
             .provider
             .get_block(self.provider.get_block_number().await?)
@@ -169,7 +140,7 @@ impl Chain for Berachain {
             .unwrap())
     }
 
-    async fn self_client_state(&self, height: Height) -> Self::SelfClientState {
+    async fn self_client_state(&self, height: Height) -> berachain::client_state::ClientState {
         let commit = self
             .tm_client
             .commit(Some(height.revision_height.try_into().unwrap()))
@@ -206,7 +177,10 @@ impl Chain for Berachain {
         }
     }
 
-    async fn self_consensus_state(&self, height: Height) -> Self::SelfConsensusState {
+    async fn self_consensus_state(
+        &self,
+        height: Height,
+    ) -> berachain::consensus_state::ConsensusState {
         let execution_header = self
             .execution_header_at_beacon_slot(height.revision_height)
             .await;
@@ -261,8 +235,9 @@ impl EthereumConsensusChain for Berachain {
             .block_number
     }
 
-    async fn get_proof(&self, address: H160, location: U256, block: u64) -> StorageProof {
-        ethereum::get_proof(self, address, location, block).await
+    async fn get_proof(&self, _address: H160, _location: U256, _block: u64) -> StorageProof {
+        todo!()
+        // ethereum::get_proof(self, address, location, block).await
     }
 }
 
@@ -362,7 +337,7 @@ impl Berachain {
             .abci_query(
                 "store/beacon/key",
                 data,
-                Some((slot - 1).try_into().unwrap()),
+                Some((slot as i64 - 1).try_into().unwrap()),
                 prove,
             )
             .await

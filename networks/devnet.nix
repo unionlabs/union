@@ -60,7 +60,7 @@
           self'.packages.ethereum-light-client-minimal
           # self'.packages.ethereum-light-client-mainnet
           # self'.packages.scroll-light-client
-          self'.packages.arbitrum-light-client
+          # self'.packages.arbitrum-light-client
           # self'.packages.berachain-light-client
           self'.packages.ics08-movement
         ];
@@ -102,7 +102,7 @@
             instances = [ ];
           }
         ];
-        portIncrease = 0;
+        portIncrease = 100;
         has08Wasm = true;
       };
 

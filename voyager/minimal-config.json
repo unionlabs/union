@@ -48,7 +48,7 @@
   },
   "voyager": {
     "num_workers": 4,
-    "laddr": "0.0.0.0:65534",
+    "laddr": "0.0.0.0:7717",
     "queue": {
       "type": "pg-queue",
       "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",

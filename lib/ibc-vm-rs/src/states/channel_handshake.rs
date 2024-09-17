@@ -6,7 +6,7 @@ use unionlabs::{
         channel::{self, channel::Channel, counterparty::Counterparty, order::Order},
         client::height::Height,
         commitment::merkle_path::MerklePath,
-        connection,
+        connection::{self, connection_end::ConnectionEnd},
     },
     ics24::{
         ChannelEndPath, ConnectionPath, NextSequenceAckPath, NextSequenceRecvPath,
@@ -17,8 +17,8 @@ use unionlabs::{
 };
 
 use crate::{
-    states::connection_handshake::ConnectionEnd, Either, IbcAction, IbcError, IbcEvent, IbcHost,
-    IbcMsg, IbcQuery, IbcResponse, IbcVmResponse, Runnable, Status,
+    Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcMsg, IbcQuery, IbcResponse, IbcVmResponse,
+    Runnable, Status,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -280,11 +280,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenTry {
                         port_id: port_id.clone(),
                         channel_id: "".to_string(),
                     },
-                    connection_hops: vec![connection
-                        .counterparty
-                        .connection_id
-                        .validate()
-                        .unwrap()],
+                    connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: counterparty_version.clone(),
                 };
 
@@ -535,11 +531,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenAck {
                         port_id: port_id.clone(),
                         channel_id: channel_id.clone().to_string(),
                     },
-                    connection_hops: vec![connection
-                        .counterparty
-                        .connection_id
-                        .validate()
-                        .unwrap()],
+                    connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: counterparty_version.clone(),
                 };
 
@@ -751,11 +743,7 @@ impl<T: IbcHost> Runnable<T> for ChannelOpenConfirm {
                         port_id: port_id.clone(),
                         channel_id: channel_id.clone().to_string(),
                     },
-                    connection_hops: vec![connection
-                        .counterparty
-                        .connection_id
-                        .validate()
-                        .unwrap()],
+                    connection_hops: vec![connection.counterparty.connection_id.unwrap()],
                     version: channel.version,
                 };
 

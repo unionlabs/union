@@ -8,13 +8,12 @@ edition = { workspace = true }
 workspace = true
 
 [dependencies]
-arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 either                   = { workspace = true }
 frame-support-procedural = { workspace = true }
 frunk                    = { workspace = true }
 futures                  = { workspace = true, features = ["alloc", "std"] }
 itertools                = { version = "0.12.1", default-features = false }
-macros.workspace         = true
+macros                   = { workspace = true }
 queue-msg-macro          = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
@@ -30,5 +29,3 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 [features]
 default = []
-
-arbitrary = ["dep:arbitrary", "unionlabs/arbitrary"]

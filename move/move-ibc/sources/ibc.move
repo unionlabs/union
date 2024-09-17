@@ -289,7 +289,7 @@ module IBC::Core {
 
 
     // Initializes the IBCStore resource in the signer's account
-    fun init_module(account: &signer)  {
+    fun init_module(account: &signer) {
         assert!(signer::address_of(account) == @IBC, E_NOT_ENOUGH_PERMISSIONS_TO_INITIALIZE);
         let vault_constructor_ref = &object::create_named_object(account, VAULT_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);

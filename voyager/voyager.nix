@@ -8,6 +8,20 @@
         };
       };
 
+      voy-modules-list = builtins.filter
+        (member:
+          (pkgs.lib.hasPrefix "voyager/modules" member)
+          || (pkgs.lib.hasPrefix "voyager/plugins" member)
+        )
+        (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
+
+      voyager-modules = crane.buildWorkspaceMember {
+        crateDirFromRoot = voy-modules-list;
+        pname = "voyager-modules";
+        version = "0.0.0";
+        dev = true;
+      };
+
       voyager = crane.buildWorkspaceMember attrs;
       voyager-dev = pkgs.lib.warn
         "voyager-dev is not intended to be used in production"
@@ -22,7 +36,7 @@
             runtimeInputs = [ pkgs.curl ];
             text = ''
               set -e
-              curl localhost:65534/msg -H "content-type: application/json" -d "$@"
+              curl localhost:7177/msg -H "content-type: application/json" -d "$@"
             '';
           };
         ethereum-multi-send = pkgs.writeShellApplication {
@@ -47,8 +61,8 @@
           '';
         };
         voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
-      };
-      checks = voyager.checks;
+      } // voyager-modules.packages;
+      checks = voyager.checks // voyager-modules.checks;
     };
 
   flake.nixosModules.voyager = { lib, pkgs, config, ... }:
@@ -63,11 +77,21 @@
           type = types.package;
           default = self.packages.${pkgs.system}.voyager;
         };
-        chains = mkOption {
+        plugins = mkOption {
           # The configuration design is breaking quite often, would be a waste
           # of effort to fix the type for now.
-          type = types.attrs;
+          type = types.listOf (types.submodule {
+            options = {
+              enabled = mkOption {
+                type = types.bool;
+                default = true;
+              };
+              path = mkOption { type = types.path; };
+              config = mkOption { type = types.attrs; };
+            };
+          });
         };
+        optimizer-delay-milliseconds = mkOption { type = types.int; default = 100; };
         workers = mkOption {
           type = types.int;
           default = 20;
@@ -91,28 +115,33 @@
         log-level = mkOption {
           type = types.str;
           default = "info";
-          description = "RUST_LOG passed to voyager";
+          # TODO: Support RUST_LOG per plugin (this will need to be done in voyager)
+          description = "RUST_LOG passed to voyager and all of the plugins.";
           example = "voyager=debug";
         };
         log-format = mkOption {
           type = types.enum [ "json" "text" ];
           default = "json";
+          # TODO: This is kinda dirty, find a better way? Probably through each plugin's config
+          description = "The log format for voyager. This will also be passed to all of the plugins as RUST_LOG_FORMAT.";
           example = "text";
         };
         stack-size = mkOption {
           type = types.nullOr types.number;
+          description = "The stack size (in bytes) for worker threads. See <https://docs.rs/tokio/1.40.0/tokio/runtime/struct.Builder.html#method.thread_stack_size> for more information.";
           default = null;
           example = 20971520;
         };
-        # laddr = mkOption {
-        #   type = types.str;
-        #   default = "0.0.0.0:65534";
-        #   example = "0.0.0.0:65534";
-        # };
-        # max-batch-size = mkOption {
-        #   type = types.number;
-        #   example = 10;
-        # };
+        rest_laddr = mkOption {
+          type = types.str;
+          default = "0.0.0.0:7177";
+          example = "0.0.0.0:7177";
+        };
+        rpc_laddr = mkOption {
+          type = types.str;
+          default = "0.0.0.0:7178";
+          example = "0.0.0.0:7178";
+        };
         voyager-extra = mkOption {
           type = types.attrs;
           default = { };
@@ -122,7 +151,7 @@
       config =
         let
           configJson = pkgs.writeText "config.json" (builtins.toJSON {
-            chain = cfg.chains;
+            plugins = cfg.plugins;
             voyager = cfg.voyager-extra // {
               num_workers = cfg.workers;
               queue = {
@@ -176,6 +205,7 @@
               };
               environment = {
                 RUST_LOG = "${cfg.log-level}";
+                RUST_LOG_FORMAT = "${cfg.log-format}";
               };
             };
           };

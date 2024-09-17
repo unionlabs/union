@@ -1,18 +1,17 @@
 //! Beacon API client, implemented as per https://ethereum.github.io/beacon-APIs/releases/v2.4.1/beacon-node-oapi.json
 
-use std::{fmt::Display, marker::PhantomData};
+use std::fmt::Display;
 
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tracing::{debug, info, trace};
 use unionlabs::{
-    ethereum::{
-        beacon::{GenesisData, LightClientBootstrap, LightClientFinalityUpdate},
-        config::ChainSpec,
-        SignedBeaconBlock,
+    ethereum::beacon::{
+        genesis_data::GenesisData, light_client_bootstrap::UnboundedLightClientBootstrap,
+        light_client_finality_update::UnboundedLightClientFinalityUpdate,
+        signed_beacon_block::UnboundedSignedBeaconBlock,
     },
     hash::H256,
-    typenum::Unsigned,
 };
 
 use crate::{
@@ -20,13 +19,12 @@ use crate::{
     types::{BeaconHeaderData, LightClientUpdatesResponse, Spec},
 };
 
-type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
-pub struct BeaconApiClient<C: ChainSpec> {
+pub struct BeaconApiClient {
     client: Client,
     base_url: String,
-    _marker: PhantomData<C>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -37,23 +35,23 @@ pub enum NewError {
     Error(#[from] Error),
 }
 
-impl<C: ChainSpec> BeaconApiClient<C> {
+impl BeaconApiClient {
     pub async fn new(base_url: String) -> core::result::Result<Self, NewError> {
         let this = Self {
             client: reqwest::Client::new(),
             base_url,
-            _marker: PhantomData,
         };
 
-        let spec = this.spec().await?;
+        // TODO: Do checks against a spec?
+        let _spec = this.spec().await?;
 
-        if spec.data.seconds_per_slot != C::SECONDS_PER_SLOT::U64 {
-            return Err(NewError::IncorrectChainSpec);
-        }
+        // if spec.data.seconds_per_slot != C::SECONDS_PER_SLOT::U64 {
+        //     return Err(NewError::IncorrectChainSpec);
+        // }
 
-        if spec.data.slots_per_epoch != C::SLOTS_PER_EPOCH::U64 {
-            return Err(NewError::IncorrectChainSpec);
-        }
+        // if spec.data.slots_per_epoch != C::SLOTS_PER_EPOCH::U64 {
+        //     return Err(NewError::IncorrectChainSpec);
+        // }
 
         Ok(this)
     }
@@ -62,7 +60,9 @@ impl<C: ChainSpec> BeaconApiClient<C> {
         self.get_json("/eth/v1/config/spec").await
     }
 
-    pub async fn finality_update(&self) -> Result<Response<LightClientFinalityUpdate<C>, Version>> {
+    pub async fn finality_update(
+        &self,
+    ) -> Result<Response<UnboundedLightClientFinalityUpdate, Version>> {
         self.get_json("/eth/v1/beacon/light_client/finality_update")
             .await
     }
@@ -78,7 +78,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
     pub async fn block(
         &self,
         block_id: BlockId,
-    ) -> Result<Response<SignedBeaconBlock<C>, BeaconBlockExtra>> {
+    ) -> Result<Response<UnboundedSignedBeaconBlock, BeaconBlockExtra>> {
         self.get_json(format!("/eth/v2/beacon/blocks/{block_id}"))
             .await
     }
@@ -86,7 +86,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
     pub async fn bootstrap(
         &self,
         finalized_root: H256,
-    ) -> Result<Response<LightClientBootstrap<C>>> {
+    ) -> Result<Response<UnboundedLightClientBootstrap>> {
         self.get_json(format!(
             "/eth/v1/beacon/light_client/bootstrap/{finalized_root}"
         ))
@@ -104,7 +104,7 @@ impl<C: ChainSpec> BeaconApiClient<C> {
         &self,
         start_period: u64,
         count: u64,
-    ) -> Result<LightClientUpdatesResponse<C>> {
+    ) -> Result<LightClientUpdatesResponse> {
         self.get_json(format!(
             "/eth/v1/beacon/light_client/updates?start_period={start_period}&count={count}"
         ))
@@ -127,7 +127,10 @@ impl<C: ChainSpec> BeaconApiClient<C> {
         Ok(height)
     }
 
-    pub async fn bootstrap_for_slot(&self, slot: u64) -> Result<Response<LightClientBootstrap<C>>> {
+    pub async fn bootstrap_for_slot(
+        &self,
+        slot: u64,
+    ) -> Result<Response<UnboundedLightClientBootstrap>> {
         // NOTE(benluelo): While this is technically two actions, I consider it to be one
         // action - if the beacon chain doesn't have the header, it won't have the bootstrap
         // either. It would be nice if the beacon chain exposed "fetch bootstrap by slot"
@@ -135,9 +138,10 @@ impl<C: ChainSpec> BeaconApiClient<C> {
 
         let mut amount_of_slots_back: u64 = 0;
 
-        let floored_slot = slot
-            / (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64)
-            * (C::SLOTS_PER_EPOCH::U64 * C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64);
+        let spec = self.spec().await?.data;
+
+        let floored_slot = slot / (spec.slots_per_epoch * spec.epochs_per_sync_committee_period)
+            * (spec.slots_per_epoch * spec.epochs_per_sync_committee_period);
 
         info!("fetching bootstrap at {}", floored_slot);
 
@@ -177,25 +181,6 @@ impl<C: ChainSpec> BeaconApiClient<C> {
             };
         }
     }
-
-    // pub async fn get_light_client_updates_simple<
-    //     const SYNC_COMMITTEE_SIZE: usize,
-    //     const BYTES_PER_LOGS_BLOOM: usize,
-    //     const MAX_EXTRA_DATA_BYTES: usize,
-    // >(
-    //     &self,
-    //     start_period: SyncCommitteePeriod,
-    //     count: u64,
-    // ) -> Result<
-    //     LightClientUpdatesResponse<SYNC_COMMITTEE_SIZE, BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES>,
-    // > {
-    //     let count = if count < 1 { 1 } else { count };
-    //     self.get_json(format!(
-    //         "/eth/v1/beacon/light_client/updates?start_period={}&count={}",
-    //         start_period, count
-    //     ))
-    //     .await
-    // }
 
     // Helper functions
 
@@ -250,6 +235,15 @@ pub struct Response<Data, Extra = Nil> {
     pub data: Data,
     #[serde(flatten)]
     pub extra: Extra,
+}
+
+impl<Data, Extra> Response<Data, Extra> {
+    pub fn map_data<T>(self, f: impl FnOnce(Data) -> T) -> Response<T, Extra> {
+        Response {
+            data: f(self.data),
+            extra: self.extra,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

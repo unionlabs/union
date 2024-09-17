@@ -7,7 +7,6 @@ use crate::{
     errors::{required, InvalidLength, MissingField},
     google::protobuf::timestamp::{Timestamp, TryFromTimestampError},
     hash::H256,
-    tendermint::types::signed_header::SignedHeader,
 };
 
 #[model(
@@ -39,18 +38,6 @@ impl From<LightHeader> for protos::union::ibc::lightclients::cometbls::v1::Light
             validators_hash: value.validators_hash.into(),
             next_validators_hash: value.next_validators_hash.into(),
             app_hash: value.app_hash.into(),
-        }
-    }
-}
-
-impl From<SignedHeader> for LightHeader {
-    fn from(value: SignedHeader) -> Self {
-        Self {
-            height: value.header.height,
-            time: value.header.time,
-            validators_hash: value.header.validators_hash,
-            next_validators_hash: value.header.next_validators_hash,
-            app_hash: value.header.app_hash,
         }
     }
 }

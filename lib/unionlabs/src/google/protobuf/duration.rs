@@ -51,7 +51,7 @@ type DurationInner = BoundedI128<
 /// > of the same sign as the `seconds` field. Must be from -999,999,999
 /// > to +999,999,999 inclusive.
 #[model(proto(raw(protos::google::protobuf::Duration), into, from), no_serde)]
-#[derive(PartialOrd, Ord, Eq, Copy)]
+#[derive(PartialOrd, Ord, Copy)]
 #[debug("Duration({})", self)]
 pub struct Duration(DurationInner);
 

@@ -4,7 +4,7 @@ use macros::model;
 
 use crate::{
     errors::{required, MissingField},
-    ibc::core::client::height::{Height, IsHeight},
+    ibc::core::client::height::Height,
     id::{ChannelId, ChannelIdValidator, PortId, PortIdValidator},
     validated::{Validate, ValidateT},
 };
@@ -32,7 +32,7 @@ impl From<Packet> for protos::ibc::core::channel::v1::Packet {
             destination_port: value.destination_port.to_string(),
             destination_channel: value.destination_channel.to_string(),
             data: value.data,
-            timeout_height: Some(value.timeout_height.into_height().into()),
+            timeout_height: Some(value.timeout_height.into()),
             timeout_timestamp: value.timeout_timestamp,
         }
     }
@@ -98,7 +98,7 @@ impl From<Packet> for contracts::ibc_handler::IbcCoreChannelV1PacketData {
             destination_port: value.destination_port.to_string(),
             destination_channel: value.destination_channel.to_string(),
             data: value.data.into(),
-            timeout_height: value.timeout_height.into_height().into(),
+            timeout_height: value.timeout_height.into(),
             timeout_timestamp: value.timeout_timestamp,
         }
     }

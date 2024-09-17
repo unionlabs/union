@@ -16,7 +16,7 @@ crate-type = ["cdylib", "rlib"]
 cosmwasm-std          = { workspace = true, features = ["abort"] }
 ethereum-light-client = { workspace = true, features = ["mainnet", "library"] }
 ethereum-verifier     = { workspace = true }
-ethers-core.workspace = true
+ethers-core           = { workspace = true }
 gnark-mimc            = { workspace = true }
 hex                   = { workspace = true }
 ics008-wasm-client    = { workspace = true }

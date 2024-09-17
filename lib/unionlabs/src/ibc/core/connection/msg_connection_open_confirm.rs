@@ -1,15 +1,12 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
-use crate::{ibc::core::client::height::IsHeight, id::ConnectionId};
+use crate::{ibc::core::client::height::Height, id::ConnectionId};
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenConfirm)))]
-#[serde(bound(
-    serialize = "ProofAck: Serialize",
-    deserialize = "ProofAck: for<'d> Deserialize<'d>"
-))]
-pub struct MsgConnectionOpenConfirm<ProofHeight: IsHeight, ProofAck> {
+pub struct MsgConnectionOpenConfirm {
     pub connection_id: ConnectionId,
-    pub proof_ack: ProofAck,
-    pub proof_height: ProofHeight,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_ack: Vec<u8>,
+    pub proof_height: Height,
 }

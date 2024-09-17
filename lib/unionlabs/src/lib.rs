@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 pub use typenum;
 
 use crate::{
-    ibc::core::client::height::{HeightFromStrError, IsHeight},
+    ibc::core::client::height::{Height, HeightFromStrError},
     id::Bounded,
     validated::Validated,
 };
@@ -119,9 +119,11 @@ pub trait TypeUrl {
 }
 
 #[cfg(feature = "ethabi")]
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum TryFromEthAbiBytesError<E> {
-    TryFromEthAbi(E),
+    #[error("unable to convert from the raw ethers type")]
+    TryFromEthAbi(#[source] E),
+    #[error("unable to decode from raw ethabi bytes")]
     Decode(ethers_core::abi::AbiError),
 }
 
@@ -148,7 +150,6 @@ macro_rules! export_wasm_client_type {
 /// We need to be able to determine the light client from the light client code itself (not instantiated yet).
 /// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE_<TYPE>: u8 = 0` variable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(rename_all = "snake_case")]
 pub enum WasmClientType {
     EthereumMinimal,
@@ -158,13 +159,13 @@ pub enum WasmClientType {
     Scroll,
     Arbitrum,
     Linea,
+    // TODO: Rename to beacon-kit
     Berachain,
     EvmInCosmos,
     Movement,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[serde(rename_all = "snake_case")]
 pub enum ClientType {
     Wasm(WasmClientType),
@@ -265,19 +266,21 @@ pub fn parse_wasm_client_type(
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(
-    try_from = "&str",
-    into = "String",
-    bound(serialize = "", deserialize = "")
-)]
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 // REVIEW: Add a variant "greater than" to indicate that any height >= H is valid? Might help with optimization passes
-pub enum QueryHeight<H: IsHeight> {
+pub enum QueryHeight {
+    #[serde(rename = "latest")]
     Latest,
-    Specific(H),
+    #[serde(untagged)]
+    Specific(Height),
 }
 
-impl<H: IsHeight> Display for QueryHeight<H> {
+impl From<Height> for QueryHeight {
+    fn from(height: Height) -> Self {
+        Self::Specific(height)
+    }
+}
+
+impl Display for QueryHeight {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             QueryHeight::Latest => f.write_str("latest"),
@@ -286,13 +289,7 @@ impl<H: IsHeight> Display for QueryHeight<H> {
     }
 }
 
-impl<H: IsHeight> From<QueryHeight<H>> for String {
-    fn from(val: QueryHeight<H>) -> Self {
-        val.to_string()
-    }
-}
-
-impl<H: IsHeight> FromStr for QueryHeight<H> {
+impl FromStr for QueryHeight {
     type Err = HeightFromStrError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -303,38 +300,12 @@ impl<H: IsHeight> FromStr for QueryHeight<H> {
     }
 }
 
-impl<H: IsHeight> TryFrom<&'_ str> for QueryHeight<H> {
-    type Error = HeightFromStrError;
-
-    fn try_from(value: &'_ str) -> Result<Self, Self::Error> {
-        value.parse()
-    }
-}
-
 // TODO: remove this as it is unused
 pub trait MaybeRecoverableError: std::error::Error {
     fn is_recoverable(&self) -> bool;
 }
 
 fn _is_object_safe(_: &dyn MaybeRecoverableError) {}
-
-#[cfg(not(feature = "arbitrary"))]
-pub trait MaybeArbitrary =;
-#[cfg(feature = "arbitrary")]
-pub trait MaybeArbitrary = for<'a> arbitrary::Arbitrary<'a>;
-
-pub fn impl_maybe_arbitrary<T: MaybeArbitrary>() {}
-
-#[cfg(feature = "arbitrary")]
-fn arbitrary_cow_static<T>(
-    u: &mut arbitrary::Unstructured,
-) -> arbitrary::Result<std::borrow::Cow<'static, T>>
-where
-    T: ToOwned + ?Sized,
-    T::Owned: for<'a> arbitrary::Arbitrary<'a>,
-{
-    u.arbitrary::<T::Owned>().map(alloc::borrow::Cow::Owned)
-}
 
 pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {
     expr.then_some(()).ok_or(err)

@@ -1,22 +1,19 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
-    ibc::core::client::height::IsHeight,
+    ibc::core::client::height::Height,
     id::{ChannelId, PortId},
 };
 
 #[model(proto(raw(protos::ibc::core::channel::v1::MsgChannelOpenAck)))]
-#[serde(bound(
-    serialize = "ProofTry: Serialize",
-    deserialize = "ProofTry: for<'d> Deserialize<'d>",
-))]
-pub struct MsgChannelOpenAck<ProofTry, ProofHeight: IsHeight> {
+pub struct MsgChannelOpenAck {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub counterparty_channel_id: ChannelId,
     // yes, this is actually just an unbounded string
     pub counterparty_version: String,
-    pub proof_try: ProofTry,
-    pub proof_height: ProofHeight,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_try: Vec<u8>,
+    pub proof_height: Height,
 }

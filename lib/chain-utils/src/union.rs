@@ -5,16 +5,7 @@ use ethers::prelude::k256::ecdsa;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
-    encoding::Proto,
-    google::protobuf::any::Any,
-    hash::H256,
-    ibc::{
-        core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-        lightclients::cometbls,
-    },
-    id::ClientId,
-    signer::CosmosSigner,
-    traits::{Chain, ClientState, FromStrExact},
+    hash::H256, ibc::core::client::height::Height, id::ClientId, signer::CosmosSigner,
     WasmClientType,
 };
 
@@ -47,7 +38,6 @@ pub struct Config {
 
 impl ChainKeyring for Union {
     type Address = String;
-
     type Signer = CosmosSigner;
 
     fn keyring(&self) -> &ConcurrentKeyring<Self::Address, Self::Signer> {
@@ -64,137 +54,6 @@ impl ChainKeyring for Union {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct UnionChainType;
-
-impl FromStrExact for UnionChainType {
-    const EXPECTING: &'static str = "union";
-}
-
-impl Chain for Union {
-    type ChainType = UnionChainType;
-    type SelfClientState = cometbls::client_state::ClientState;
-    type SelfConsensusState = cometbls::consensus_state::ConsensusState;
-
-    type StoredClientState<Tr: Chain> = Any<Tr::SelfClientState>;
-    type StoredConsensusState<Tr: Chain> = Any<Tr::SelfConsensusState>;
-
-    type Header = cometbls::header::Header;
-
-    type Height = Height;
-
-    type ClientId = UnionClientId;
-
-    type ClientType = String;
-
-    type Error = tendermint_rpc::Error;
-
-    type IbcStateEncoding = Proto;
-
-    type StateProof = unionlabs::union::ics23::merkle_proof::MerkleProof;
-
-    fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
-        self.chain_id.clone()
-    }
-
-    async fn query_latest_height(&self) -> Result<Height, Self::Error> {
-        self.tm_client
-            .latest_block()
-            .await
-            .map(|response| self.make_height(response.block.header.height.value()))
-    }
-
-    async fn query_latest_height_as_destination(&self) -> Result<Height, Self::Error> {
-        self.query_latest_height().await
-    }
-
-    async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
-        self.tm_client
-            .latest_block()
-            .await
-            .map(|response| response.block.header.time.unix_timestamp())
-    }
-
-    async fn self_client_state(&self, height: Height) -> Self::SelfClientState {
-        let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .unwrap()
-        .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
-        .await
-        .unwrap()
-        .into_inner()
-        .params
-        .unwrap();
-
-        let commit = self
-            .tm_client
-            .commit(u32::try_from(height.revision_height).unwrap())
-            .await
-            .unwrap();
-
-        let height = commit.signed_header.header.height;
-
-        // Expected to be nanos
-        let unbonding_period =
-            u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap() * 1_000_000_000;
-
-        cometbls::client_state::ClientState {
-            chain_id: self.chain_id.clone(),
-            // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-            trusting_period: unbonding_period * 85 / 100,
-            unbonding_period,
-            // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
-            max_clock_drift: (60 * 20) * 1_000_000_000,
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
-            latest_height: Height {
-                revision_number: self.chain_id.split('-').last().unwrap().parse().unwrap(),
-                revision_height: height.value(),
-            },
-        }
-    }
-
-    async fn self_consensus_state(&self, height: Height) -> Self::SelfConsensusState {
-        let commit = self
-            .tm_client
-            .commit(u32::try_from(height.revision_height).unwrap())
-            .await
-            .unwrap();
-
-        cometbls::consensus_state::ConsensusState {
-            timestamp: commit
-                .signed_header
-                .header
-                .time
-                .unix_timestamp_nanos()
-                .try_into()
-                .unwrap(),
-            app_hash: MerkleRoot {
-                hash: commit
-                    .signed_header
-                    .header
-                    .app_hash
-                    .as_bytes()
-                    .to_vec()
-                    .try_into()
-                    .unwrap(),
-            },
-            next_validators_hash: commit
-                .signed_header
-                .header
-                .next_validators_hash
-                .as_bytes()
-                .to_vec()
-                .try_into()
-                .unwrap(),
-        }
-    }
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum UnionInitError {
     #[error("tendermint rpc error")]
@@ -202,7 +61,6 @@ pub enum UnionInitError {
     #[error(
         "unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`"
     )]
-    // TODO: Once the `Id` trait in unionlabs is cleaned up to no longer use static id types, this error should just wrap `IdParseError`
     ChainIdParse {
         found: String,
         #[source]

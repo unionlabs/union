@@ -5,18 +5,16 @@ use crate::{
     ByteArrayExt,
 };
 
-/*
-(The following scheme assumes the big-endian encoding)
-[0:32] (bytes in big-endian)
-[0:16] Reserved with all 0
-[16:24] CodeSize, uint64 in big-endian
-[24:32] Nonce, uint64 in big-endian
-[32:64] Balance
-[64:96] StorageRoot
-[96:128] KeccakCodeHash
-[128:160] PoseidonCodehash
-(total 160 bytes)
- */
+// (The following scheme assumes the big-endian encoding)
+// [0:32] (bytes in big-endian)
+// [0:16] Reserved with all 0
+// [16:24] CodeSize, uint64 in big-endian
+// [24:32] Nonce, uint64 in big-endian
+// [32:64] Balance
+// [64:96] StorageRoot
+// [96:128] KeccakCodeHash
+// [128:160] PoseidonCodehash
+// (total 160 bytes)
 // https://github.com/scroll-tech/zktrie/blob/a12f2f262ad3e82301e39ecdf9bfe235befc7074/docs/zktrie.md
 pub struct Account {
     pub code_size: u64,

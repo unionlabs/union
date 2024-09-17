@@ -1,12 +1,11 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use ibc_vm_rs::states::connection_handshake;
 use near_primitives_core::hash::CryptoHash;
 use near_sdk::AccountId;
 use unionlabs::{
     ibc::core::{
         channel::{self, packet::Packet},
         client::height::Height,
-        connection::version::Version,
+        connection::{self, version::Version},
     },
     id::{ChannelId, ConnectionId, PortId},
     near::types::{self, BlockHeaderInnerLiteView},
@@ -34,7 +33,7 @@ pub struct CreateClient {
 #[derive(serde::Serialize)]
 pub struct ConnectionOpenInit {
     pub client_id: String,
-    pub counterparty: connection_handshake::Counterparty,
+    pub counterparty: connection::counterparty::Counterparty,
     pub version: Version,
     pub delay_period: u64,
 }
@@ -42,7 +41,7 @@ pub struct ConnectionOpenInit {
 #[derive(serde::Serialize)]
 pub struct ConnectionOpenTry {
     pub client_id: String,
-    pub counterparty: connection_handshake::Counterparty,
+    pub counterparty: connection::counterparty::Counterparty,
     pub counterparty_versions: Vec<Version>,
     pub connection_end_proof: Vec<u8>,
     pub proof_height: Height,

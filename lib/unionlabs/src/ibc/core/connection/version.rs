@@ -6,6 +6,7 @@ use crate::{errors::UnknownEnumVariant, ibc::core::channel::order::Order};
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 pub struct Version {
     // TODO(benluelo): "The identifier field specifies a unique version identifier. A value of "1" specifies IBC 1.0.0."
+    // TODO: Cow
     pub identifier: String,
     pub features: Vec<Order>,
 }

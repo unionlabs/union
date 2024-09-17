@@ -27,13 +27,11 @@ pub struct Ics024IdentifierCharacters;
 #[error("invalid ics-024 identifier character: `{0}`")]
 pub struct InvalidIcs024IdentifierCharacter(char);
 
-impl<T: Into<String> + From<String>> Validate<T> for Ics024IdentifierCharacters {
+impl<T: AsRef<str>> Validate<T> for Ics024IdentifierCharacters {
     type Error = InvalidIcs024IdentifierCharacter;
 
-    fn validate(t: T) -> Result<T, Self::Error> {
-        let s = t.into();
-
-        for c in s.chars() {
+    fn validate(s: T) -> Result<T, Self::Error> {
+        for c in s.as_ref().chars() {
             match c {
                 'a'..='z'
                 | 'A'..='Z'
@@ -51,95 +49,27 @@ impl<T: Into<String> + From<String>> Validate<T> for Ics024IdentifierCharacters 
             }
         }
 
-        Ok(T::from(s))
-    }
-}
-
-#[cfg(feature = "arbitrary")]
-impl<T: Into<String> + From<String>> crate::validated::ValidateExt<T>
-    for Ics024IdentifierCharacters
-{
-    fn restrict(t: T, u: &mut arbitrary::Unstructured) -> arbitrary::Result<T> {
-        const VALID_CHARS: [u8; 71] =
-            *b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890._+-#[]<>";
-
-        let s: String = t.into();
-
-        Ok(T::from(
-            s.bytes()
-                .map(|c| match c {
-                    b'a'..=b'z'
-                    | b'A'..=b'Z'
-                    | b'0'..=b'9'
-                    | b'.'
-                    | b'_'
-                    | b'+'
-                    | b'-'
-                    | b'#'
-                    | b'['
-                    | b']'
-                    | b'<'
-                    | b'>' => Ok(c as char),
-                    _ => Ok(*u.choose(&VALID_CHARS)? as char),
-                })
-                .collect::<Result<String, _>>()?,
-        ))
+        Ok(s)
     }
 }
 
 pub struct Bounded<const MIN: usize, const MAX: usize>;
 
-impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize> Validate<T>
-    for Bounded<MIN, MAX>
-{
+impl<T: AsRef<str>, const MIN: usize, const MAX: usize> Validate<T> for Bounded<MIN, MAX> {
     type Error = InvalidLength;
 
-    fn validate(t: T) -> Result<T, Self::Error> {
+    fn validate(s: T) -> Result<T, Self::Error> {
         const { assert!(MIN <= MAX) };
 
-        let s: String = t.into();
-
-        let len = s.len();
+        let len = s.as_ref().len();
 
         if (MIN..=MAX).contains(&len) {
-            Ok(T::from(s))
+            Ok(s)
         } else {
             Err(InvalidLength {
                 expected: ExpectedLength::Between(MIN, MAX),
                 found: len,
             })
-        }
-    }
-}
-
-#[cfg(feature = "arbitrary")]
-impl<T: Into<String> + From<String>, const MIN: usize, const MAX: usize>
-    crate::validated::ValidateExt<T> for Bounded<MIN, MAX>
-{
-    fn restrict(t: T, u: &mut arbitrary::Unstructured) -> arbitrary::Result<T> {
-        const { assert!(MIN <= MAX) };
-
-        let s: String = t.into();
-
-        let len = s.len();
-
-        if len < MIN {
-            // can't add more data, since that might invalidate other validations run before this
-            Err(arbitrary::Error::IncorrectFormat)
-        } else if len > MAX {
-            fn floor_char_boundary(string: &str, index: usize) -> &str {
-                if string.is_char_boundary(index) {
-                    &string[..index]
-                } else {
-                    floor_char_boundary(string, index - 1)
-                }
-            }
-
-            Ok(T::from(
-                floor_char_boundary(&s, u.int_in_range(MIN..=MAX)?).to_owned(),
-            ))
-        } else {
-            Ok(T::from(s))
         }
     }
 }

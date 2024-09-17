@@ -6,16 +6,24 @@ use crate::{
 };
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenAck)))]
-pub struct MsgConnectionOpenAck<ClientState, ProofTry, ProofClient, ProofConsensus> {
+pub struct MsgConnectionOpenAck {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,
     pub version: Version,
-    pub client_state: ClientState,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub client_state: Vec<u8>,
     // TODO: Make this type generic
     pub proof_height: Height,
-    pub proof_try: ProofTry,
-    pub proof_client: ProofClient,
-    pub proof_consensus: ProofConsensus,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_try: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_client: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_consensus: Vec<u8>,
     // TODO: Make this type generic
     pub consensus_height: Height,
 }

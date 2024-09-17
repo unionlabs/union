@@ -1,20 +1,20 @@
 [package]
-edition.workspace      = true
-license-file.workspace = true
-name                   = "ibc-vm-rs"
-repository.workspace   = true
-version                = "0.1.0"
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "ibc-vm-rs"
+repository   = { workspace = true }
+version      = "0.1.0"
 
 [dependencies]
-enumorph.workspace                 = true
-frame-support-procedural.workspace = true
-hex.workspace                      = true
-lazy_static.workspace              = true
-schemars                           = { workspace = true, features = ["derive"], optional = true }
-serde-utils.workspace              = true
-serde.workspace                    = true
-thiserror.workspace                = true
-unionlabs.workspace                = true
+enumorph                 = { workspace = true }
+frame-support-procedural = { workspace = true }
+hex                      = { workspace = true }
+lazy_static              = { workspace = true }
+schemars                 = { workspace = true, features = ["derive"], optional = true }
+serde                    = { workspace = true }
+serde-utils              = { workspace = true }
+thiserror                = { workspace = true }
+unionlabs                = { workspace = true }
 
 [lints]
 workspace = true

@@ -48,11 +48,14 @@ impl From<BeaconBlockHeader> for protos::union::ibc::lightclients::ethereum::v1:
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromBeaconBlockHeaderError {
-    ParentRoot(InvalidLength),
-    StateRoot(InvalidLength),
-    BodyRoot(InvalidLength),
+    #[error("invalid `parent_root`")]
+    ParentRoot(#[source] InvalidLength),
+    #[error("invalid `state_root`")]
+    StateRoot(#[source] InvalidLength),
+    #[error("invalid `body_root`")]
+    BodyRoot(#[source] InvalidLength),
 }
 
 impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::BeaconBlockHeader>

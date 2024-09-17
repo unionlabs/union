@@ -954,7 +954,7 @@ pub mod cometbls_client {
             fallback: false,
         }
     }
-    ///The parsed JSON ABI of the contract.
+    /// The parsed JSON ABI of the contract.
     #[cfg(feature = "providers")]
     pub static COMETBLSCLIENT_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(__abi);
@@ -1054,7 +1054,7 @@ pub mod cometbls_client {
             let deployer = ::ethers::contract::ContractDeployer::new(deployer);
             Ok(deployer)
         }
-        ///Calls the contract's `UPGRADE_INTERFACE_VERSION` (0xad3cb1cc) function
+        /// Calls the contract's `UPGRADE_INTERFACE_VERSION` (0xad3cb1cc) function
         pub fn upgrade_interface_version(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
@@ -1062,7 +1062,7 @@ pub mod cometbls_client {
                 .method_hash([173, 60, 177, 204], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `createClient` (0x2629636b) function
+        /// Calls the contract's `createClient` (0x2629636b) function
         pub fn create_client(
             &self,
             client_id: ::std::string::String,
@@ -1077,7 +1077,7 @@ pub mod cometbls_client {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getClientState` (0x76c81c42) function
+        /// Calls the contract's `getClientState` (0x76c81c42) function
         pub fn get_client_state(
             &self,
             client_id: ::std::string::String,
@@ -1086,7 +1086,7 @@ pub mod cometbls_client {
                 .method_hash([118, 200, 28, 66], client_id)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getConsensusState` (0x6cf44bf4) function
+        /// Calls the contract's `getConsensusState` (0x6cf44bf4) function
         pub fn get_consensus_state(
             &self,
             client_id: ::std::string::String,
@@ -1096,7 +1096,7 @@ pub mod cometbls_client {
                 .method_hash([108, 244, 75, 244], (client_id, height))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getLatestHeight` (0x329681d0) function
+        /// Calls the contract's `getLatestHeight` (0x329681d0) function
         pub fn get_latest_height(
             &self,
             client_id: ::std::string::String,
@@ -1105,7 +1105,7 @@ pub mod cometbls_client {
                 .method_hash([50, 150, 129, 208], client_id)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getTimestampAtHeight` (0x4b0bbdc4) function
+        /// Calls the contract's `getTimestampAtHeight` (0x4b0bbdc4) function
         pub fn get_timestamp_at_height(
             &self,
             client_id: ::std::string::String,
@@ -1115,7 +1115,7 @@ pub mod cometbls_client {
                 .method_hash([75, 11, 189, 196], (client_id, height))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `initialize` (0x485cc955) function
+        /// Calls the contract's `initialize` (0x485cc955) function
         pub fn initialize(
             &self,
             ibc_handler: ::ethers::core::types::Address,
@@ -1125,7 +1125,7 @@ pub mod cometbls_client {
                 .method_hash([72, 92, 201, 85], (ibc_handler, admin))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `misbehavior` (0x21c90b05) function
+        /// Calls the contract's `misbehavior` (0x21c90b05) function
         pub fn misbehavior(
             &self,
             client_id: ::std::string::String,
@@ -1136,7 +1136,7 @@ pub mod cometbls_client {
                 .method_hash([33, 201, 11, 5], (client_id, header_a, header_b))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `owner` (0x8da5cb5b) function
+        /// Calls the contract's `owner` (0x8da5cb5b) function
         pub fn owner(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
@@ -1144,25 +1144,25 @@ pub mod cometbls_client {
                 .method_hash([141, 165, 203, 91], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `paused` (0x5c975abb) function
+        /// Calls the contract's `paused` (0x5c975abb) function
         pub fn paused(&self) -> ::ethers::contract::builders::ContractCall<M, bool> {
             self.0
                 .method_hash([92, 151, 90, 187], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `proxiableUUID` (0x52d1902d) function
+        /// Calls the contract's `proxiableUUID` (0x52d1902d) function
         pub fn proxiable_uuid(&self) -> ::ethers::contract::builders::ContractCall<M, [u8; 32]> {
             self.0
                 .method_hash([82, 209, 144, 45], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `renounceOwnership` (0x715018a6) function
+        /// Calls the contract's `renounceOwnership` (0x715018a6) function
         pub fn renounce_ownership(&self) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
                 .method_hash([113, 80, 24, 166], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `transferOwnership` (0xf2fde38b) function
+        /// Calls the contract's `transferOwnership` (0xf2fde38b) function
         pub fn transfer_ownership(
             &self,
             new_owner: ::ethers::core::types::Address,
@@ -1171,7 +1171,7 @@ pub mod cometbls_client {
                 .method_hash([242, 253, 227, 139], new_owner)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `updateClient` (0x6fbf8079) function
+        /// Calls the contract's `updateClient` (0x6fbf8079) function
         pub fn update_client(
             &self,
             client_id: ::std::string::String,
@@ -1184,7 +1184,7 @@ pub mod cometbls_client {
                 .method_hash([111, 191, 128, 121], (client_id, client_message_bytes))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `upgradeToAndCall` (0x4f1ef286) function
+        /// Calls the contract's `upgradeToAndCall` (0x4f1ef286) function
         pub fn upgrade_to_and_call(
             &self,
             new_implementation: ::ethers::core::types::Address,
@@ -1194,7 +1194,7 @@ pub mod cometbls_client {
                 .method_hash([79, 30, 242, 134], (new_implementation, data))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `verifyMembership` (0xf9bb5a51) function
+        /// Calls the contract's `verifyMembership` (0xf9bb5a51) function
         pub fn verify_membership(
             &self,
             client_id: ::std::string::String,
@@ -1222,7 +1222,7 @@ pub mod cometbls_client {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `verifyNonMembership` (0x999fbbb3) function
+        /// Calls the contract's `verifyNonMembership` (0x999fbbb3) function
         pub fn verify_non_membership(
             &self,
             client_id: ::std::string::String,
@@ -1248,7 +1248,7 @@ pub mod cometbls_client {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `verifyZKP` (0x61ce4b12) function
+        /// Calls the contract's `verifyZKP` (0x61ce4b12) function
         pub fn verify_zkp(
             &self,
             zkp_bytes: ::ethers::core::types::Bytes,
@@ -1263,33 +1263,33 @@ pub mod cometbls_client {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Gets the contract's `Initialized` event
+        /// Gets the contract's `Initialized` event
         pub fn initialized_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, InitializedFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `OwnershipTransferred` event
+        /// Gets the contract's `OwnershipTransferred` event
         pub fn ownership_transferred_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, OwnershipTransferredFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `Paused` event
+        /// Gets the contract's `Paused` event
         pub fn paused_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, PausedFilter> {
             self.0.event()
         }
-        ///Gets the contract's `Unpaused` event
+        /// Gets the contract's `Unpaused` event
         pub fn unpaused_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, UnpausedFilter> {
             self.0.event()
         }
-        ///Gets the contract's `Upgraded` event
+        /// Gets the contract's `Upgraded` event
         pub fn upgraded_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, UpgradedFilter> {
@@ -1312,7 +1312,7 @@ pub mod cometbls_client {
             Self::new(contract.address(), contract.client())
         }
     }
-    ///Custom Error type `AddressEmptyCode` with signature `AddressEmptyCode(address)` and selector `0x9996b315`
+    /// Custom Error type `AddressEmptyCode` with signature `AddressEmptyCode(address)` and selector `0x9996b315`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1327,7 +1327,7 @@ pub mod cometbls_client {
     pub struct AddressEmptyCode {
         pub target: ::ethers::core::types::Address,
     }
-    ///Custom Error type `ERC1967InvalidImplementation` with signature `ERC1967InvalidImplementation(address)` and selector `0x4c9c8ce3`
+    /// Custom Error type `ERC1967InvalidImplementation` with signature `ERC1967InvalidImplementation(address)` and selector `0x4c9c8ce3`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1345,7 +1345,7 @@ pub mod cometbls_client {
     pub struct ERC1967InvalidImplementation {
         pub implementation: ::ethers::core::types::Address,
     }
-    ///Custom Error type `ERC1967NonPayable` with signature `ERC1967NonPayable()` and selector `0xb398979f`
+    /// Custom Error type `ERC1967NonPayable` with signature `ERC1967NonPayable()` and selector `0xb398979f`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1358,7 +1358,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ERC1967NonPayable", abi = "ERC1967NonPayable()")]
     pub struct ERC1967NonPayable;
-    ///Custom Error type `EnforcedPause` with signature `EnforcedPause()` and selector `0xd93c0665`
+    /// Custom Error type `EnforcedPause` with signature `EnforcedPause()` and selector `0xd93c0665`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1371,7 +1371,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "EnforcedPause", abi = "EnforcedPause()")]
     pub struct EnforcedPause;
-    ///Custom Error type `ErrClientFrozen` with signature `ErrClientFrozen()` and selector `0xb3e34670`
+    /// Custom Error type `ErrClientFrozen` with signature `ErrClientFrozen()` and selector `0xb3e34670`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1384,7 +1384,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ErrClientFrozen", abi = "ErrClientFrozen()")]
     pub struct ErrClientFrozen;
-    ///Custom Error type `ErrDelayPeriodNotExpired` with signature `ErrDelayPeriodNotExpired()` and selector `0x54e4c159`
+    /// Custom Error type `ErrDelayPeriodNotExpired` with signature `ErrDelayPeriodNotExpired()` and selector `0x54e4c159`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1397,7 +1397,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ErrDelayPeriodNotExpired", abi = "ErrDelayPeriodNotExpired()")]
     pub struct ErrDelayPeriodNotExpired;
-    ///Custom Error type `ErrHeaderExpired` with signature `ErrHeaderExpired()` and selector `0x6c4c87b6`
+    /// Custom Error type `ErrHeaderExpired` with signature `ErrHeaderExpired()` and selector `0x6c4c87b6`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1410,7 +1410,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ErrHeaderExpired", abi = "ErrHeaderExpired()")]
     pub struct ErrHeaderExpired;
-    ///Custom Error type `ErrInvalidMisbehavior` with signature `ErrInvalidMisbehavior()` and selector `0x5882336d`
+    /// Custom Error type `ErrInvalidMisbehavior` with signature `ErrInvalidMisbehavior()` and selector `0x5882336d`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1423,7 +1423,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ErrInvalidMisbehavior", abi = "ErrInvalidMisbehavior()")]
     pub struct ErrInvalidMisbehavior;
-    ///Custom Error type `ErrInvalidMisbehaviorHeadersSequence` with signature `ErrInvalidMisbehaviorHeadersSequence()` and selector `0xce011f04`
+    /// Custom Error type `ErrInvalidMisbehaviorHeadersSequence` with signature `ErrInvalidMisbehaviorHeadersSequence()` and selector `0xce011f04`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1439,7 +1439,7 @@ pub mod cometbls_client {
         abi = "ErrInvalidMisbehaviorHeadersSequence()"
     )]
     pub struct ErrInvalidMisbehaviorHeadersSequence;
-    ///Custom Error type `ErrInvalidUntrustedValidatorsHash` with signature `ErrInvalidUntrustedValidatorsHash()` and selector `0x895cf0ce`
+    /// Custom Error type `ErrInvalidUntrustedValidatorsHash` with signature `ErrInvalidUntrustedValidatorsHash()` and selector `0x895cf0ce`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1455,7 +1455,7 @@ pub mod cometbls_client {
         abi = "ErrInvalidUntrustedValidatorsHash()"
     )]
     pub struct ErrInvalidUntrustedValidatorsHash;
-    ///Custom Error type `ErrInvalidZKP` with signature `ErrInvalidZKP()` and selector `0x396df4ec`
+    /// Custom Error type `ErrInvalidZKP` with signature `ErrInvalidZKP()` and selector `0x396df4ec`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1468,7 +1468,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ErrInvalidZKP", abi = "ErrInvalidZKP()")]
     pub struct ErrInvalidZKP;
-    ///Custom Error type `ErrMaxClockDriftExceeded` with signature `ErrMaxClockDriftExceeded()` and selector `0x4ccc303c`
+    /// Custom Error type `ErrMaxClockDriftExceeded` with signature `ErrMaxClockDriftExceeded()` and selector `0x4ccc303c`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1481,7 +1481,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ErrMaxClockDriftExceeded", abi = "ErrMaxClockDriftExceeded()")]
     pub struct ErrMaxClockDriftExceeded;
-    ///Custom Error type `ErrNotIBC` with signature `ErrNotIBC()` and selector `0xe54f8f9d`
+    /// Custom Error type `ErrNotIBC` with signature `ErrNotIBC()` and selector `0xe54f8f9d`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1494,7 +1494,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ErrNotIBC", abi = "ErrNotIBC()")]
     pub struct ErrNotIBC;
-    ///Custom Error type `ErrTrustedConsensusStateNotFound` with signature `ErrTrustedConsensusStateNotFound()` and selector `0x09128dc8`
+    /// Custom Error type `ErrTrustedConsensusStateNotFound` with signature `ErrTrustedConsensusStateNotFound()` and selector `0x09128dc8`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1510,7 +1510,7 @@ pub mod cometbls_client {
         abi = "ErrTrustedConsensusStateNotFound()"
     )]
     pub struct ErrTrustedConsensusStateNotFound;
-    ///Custom Error type `ErrUntrustedHeightLTETrustedHeight` with signature `ErrUntrustedHeightLTETrustedHeight()` and selector `0xf97b0922`
+    /// Custom Error type `ErrUntrustedHeightLTETrustedHeight` with signature `ErrUntrustedHeightLTETrustedHeight()` and selector `0xf97b0922`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1526,7 +1526,7 @@ pub mod cometbls_client {
         abi = "ErrUntrustedHeightLTETrustedHeight()"
     )]
     pub struct ErrUntrustedHeightLTETrustedHeight;
-    ///Custom Error type `ErrUntrustedTimestampLTETrustedTimestamp` with signature `ErrUntrustedTimestampLTETrustedTimestamp()` and selector `0x14a286e4`
+    /// Custom Error type `ErrUntrustedTimestampLTETrustedTimestamp` with signature `ErrUntrustedTimestampLTETrustedTimestamp()` and selector `0x14a286e4`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1542,7 +1542,7 @@ pub mod cometbls_client {
         abi = "ErrUntrustedTimestampLTETrustedTimestamp()"
     )]
     pub struct ErrUntrustedTimestampLTETrustedTimestamp;
-    ///Custom Error type `ExpectedPause` with signature `ExpectedPause()` and selector `0x8dfc202b`
+    /// Custom Error type `ExpectedPause` with signature `ExpectedPause()` and selector `0x8dfc202b`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1555,7 +1555,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "ExpectedPause", abi = "ExpectedPause()")]
     pub struct ExpectedPause;
-    ///Custom Error type `FailedInnerCall` with signature `FailedInnerCall()` and selector `0x1425ea42`
+    /// Custom Error type `FailedInnerCall` with signature `FailedInnerCall()` and selector `0x1425ea42`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1568,7 +1568,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "FailedInnerCall", abi = "FailedInnerCall()")]
     pub struct FailedInnerCall;
-    ///Custom Error type `InvalidInitialization` with signature `InvalidInitialization()` and selector `0xf92ee8a9`
+    /// Custom Error type `InvalidInitialization` with signature `InvalidInitialization()` and selector `0xf92ee8a9`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1581,7 +1581,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "InvalidInitialization", abi = "InvalidInitialization()")]
     pub struct InvalidInitialization;
-    ///Custom Error type `NotInitializing` with signature `NotInitializing()` and selector `0xd7e6bcf8`
+    /// Custom Error type `NotInitializing` with signature `NotInitializing()` and selector `0xd7e6bcf8`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1594,7 +1594,7 @@ pub mod cometbls_client {
     )]
     #[etherror(name = "NotInitializing", abi = "NotInitializing()")]
     pub struct NotInitializing;
-    ///Custom Error type `OwnableInvalidOwner` with signature `OwnableInvalidOwner(address)` and selector `0x1e4fbdf7`
+    /// Custom Error type `OwnableInvalidOwner` with signature `OwnableInvalidOwner(address)` and selector `0x1e4fbdf7`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1609,7 +1609,7 @@ pub mod cometbls_client {
     pub struct OwnableInvalidOwner {
         pub owner: ::ethers::core::types::Address,
     }
-    ///Custom Error type `OwnableUnauthorizedAccount` with signature `OwnableUnauthorizedAccount(address)` and selector `0x118cdaa7`
+    /// Custom Error type `OwnableUnauthorizedAccount` with signature `OwnableUnauthorizedAccount(address)` and selector `0x118cdaa7`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1627,7 +1627,7 @@ pub mod cometbls_client {
     pub struct OwnableUnauthorizedAccount {
         pub account: ::ethers::core::types::Address,
     }
-    ///Custom Error type `UUPSUnauthorizedCallContext` with signature `UUPSUnauthorizedCallContext()` and selector `0xe07c8dba`
+    /// Custom Error type `UUPSUnauthorizedCallContext` with signature `UUPSUnauthorizedCallContext()` and selector `0xe07c8dba`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1643,7 +1643,7 @@ pub mod cometbls_client {
         abi = "UUPSUnauthorizedCallContext()"
     )]
     pub struct UUPSUnauthorizedCallContext;
-    ///Custom Error type `UUPSUnsupportedProxiableUUID` with signature `UUPSUnsupportedProxiableUUID(bytes32)` and selector `0xaa1d49a4`
+    /// Custom Error type `UUPSUnsupportedProxiableUUID` with signature `UUPSUnsupportedProxiableUUID(bytes32)` and selector `0xaa1d49a4`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1661,7 +1661,7 @@ pub mod cometbls_client {
     pub struct UUPSUnsupportedProxiableUUID {
         pub slot: [u8; 32],
     }
-    ///Container type for all of the contract's custom errors
+    /// Container type for all of the contract's custom errors
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum CometblsClientErrors {
         AddressEmptyCode(AddressEmptyCode),
@@ -2220,7 +2220,7 @@ pub mod cometbls_client {
         #[ethevent(indexed)]
         pub implementation: ::ethers::core::types::Address,
     }
-    ///Container type for all of the contract's events
+    /// Container type for all of the contract's events
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum CometblsClientEvents {
         InitializedFilter(InitializedFilter),
@@ -2287,7 +2287,7 @@ pub mod cometbls_client {
             Self::UpgradedFilter(value)
         }
     }
-    ///Container type for all input parameters for the `UPGRADE_INTERFACE_VERSION` function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`
+    /// Container type for all input parameters for the `UPGRADE_INTERFACE_VERSION` function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2303,7 +2303,7 @@ pub mod cometbls_client {
         abi = "UPGRADE_INTERFACE_VERSION()"
     )]
     pub struct UpgradeInterfaceVersionCall;
-    ///Container type for all input parameters for the `createClient` function with signature `createClient(string,bytes,bytes)` and selector `0x2629636b`
+    /// Container type for all input parameters for the `createClient` function with signature `createClient(string,bytes,bytes)` and selector `0x2629636b`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2320,7 +2320,7 @@ pub mod cometbls_client {
         pub client_state_bytes: ::ethers::core::types::Bytes,
         pub consensus_state_bytes: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
+    /// Container type for all input parameters for the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2335,7 +2335,7 @@ pub mod cometbls_client {
     pub struct GetClientStateCall {
         pub client_id: ::std::string::String,
     }
-    ///Container type for all input parameters for the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
+    /// Container type for all input parameters for the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2354,7 +2354,7 @@ pub mod cometbls_client {
         pub client_id: ::std::string::String,
         pub height: IbcCoreClientV1HeightData,
     }
-    ///Container type for all input parameters for the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
+    /// Container type for all input parameters for the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2369,7 +2369,7 @@ pub mod cometbls_client {
     pub struct GetLatestHeightCall {
         pub client_id: ::std::string::String,
     }
-    ///Container type for all input parameters for the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
+    /// Container type for all input parameters for the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2388,7 +2388,7 @@ pub mod cometbls_client {
         pub client_id: ::std::string::String,
         pub height: IbcCoreClientV1HeightData,
     }
-    ///Container type for all input parameters for the `initialize` function with signature `initialize(address,address)` and selector `0x485cc955`
+    /// Container type for all input parameters for the `initialize` function with signature `initialize(address,address)` and selector `0x485cc955`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2404,7 +2404,7 @@ pub mod cometbls_client {
         pub ibc_handler: ::ethers::core::types::Address,
         pub admin: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `misbehavior` function with signature `misbehavior(string,((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes),((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes))` and selector `0x21c90b05`
+    /// Container type for all input parameters for the `misbehavior` function with signature `misbehavior(string,((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes),((int64,(int64,int64),bytes,bytes,bytes),(uint64,uint64),bytes))` and selector `0x21c90b05`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2424,7 +2424,7 @@ pub mod cometbls_client {
         pub header_a: UnionIbcLightclientsCometblsV1HeaderData,
         pub header_b: UnionIbcLightclientsCometblsV1HeaderData,
     }
-    ///Container type for all input parameters for the `owner` function with signature `owner()` and selector `0x8da5cb5b`
+    /// Container type for all input parameters for the `owner` function with signature `owner()` and selector `0x8da5cb5b`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2437,7 +2437,7 @@ pub mod cometbls_client {
     )]
     #[ethcall(name = "owner", abi = "owner()")]
     pub struct OwnerCall;
-    ///Container type for all input parameters for the `paused` function with signature `paused()` and selector `0x5c975abb`
+    /// Container type for all input parameters for the `paused` function with signature `paused()` and selector `0x5c975abb`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2450,7 +2450,7 @@ pub mod cometbls_client {
     )]
     #[ethcall(name = "paused", abi = "paused()")]
     pub struct PausedCall;
-    ///Container type for all input parameters for the `proxiableUUID` function with signature `proxiableUUID()` and selector `0x52d1902d`
+    /// Container type for all input parameters for the `proxiableUUID` function with signature `proxiableUUID()` and selector `0x52d1902d`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2463,7 +2463,7 @@ pub mod cometbls_client {
     )]
     #[ethcall(name = "proxiableUUID", abi = "proxiableUUID()")]
     pub struct ProxiableUUIDCall;
-    ///Container type for all input parameters for the `renounceOwnership` function with signature `renounceOwnership()` and selector `0x715018a6`
+    /// Container type for all input parameters for the `renounceOwnership` function with signature `renounceOwnership()` and selector `0x715018a6`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2476,7 +2476,7 @@ pub mod cometbls_client {
     )]
     #[ethcall(name = "renounceOwnership", abi = "renounceOwnership()")]
     pub struct RenounceOwnershipCall;
-    ///Container type for all input parameters for the `transferOwnership` function with signature `transferOwnership(address)` and selector `0xf2fde38b`
+    /// Container type for all input parameters for the `transferOwnership` function with signature `transferOwnership(address)` and selector `0xf2fde38b`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2491,7 +2491,7 @@ pub mod cometbls_client {
     pub struct TransferOwnershipCall {
         pub new_owner: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
+    /// Container type for all input parameters for the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2507,7 +2507,7 @@ pub mod cometbls_client {
         pub client_id: ::std::string::String,
         pub client_message_bytes: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `upgradeToAndCall` function with signature `upgradeToAndCall(address,bytes)` and selector `0x4f1ef286`
+    /// Container type for all input parameters for the `upgradeToAndCall` function with signature `upgradeToAndCall(address,bytes)` and selector `0x4f1ef286`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2523,7 +2523,7 @@ pub mod cometbls_client {
         pub new_implementation: ::ethers::core::types::Address,
         pub data: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `verifyMembership` function with signature `verifyMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes,bytes)` and selector `0xf9bb5a51`
+    /// Container type for all input parameters for the `verifyMembership` function with signature `verifyMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes,bytes)` and selector `0xf9bb5a51`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2548,7 +2548,7 @@ pub mod cometbls_client {
         pub path: ::ethers::core::types::Bytes,
         pub value: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
+    /// Container type for all input parameters for the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2572,7 +2572,7 @@ pub mod cometbls_client {
         pub prefix: ::ethers::core::types::Bytes,
         pub path: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `verifyZKP` function with signature `verifyZKP(bytes,string,bytes32,(int64,(int64,int64),bytes,bytes,bytes))` and selector `0x61ce4b12`
+    /// Container type for all input parameters for the `verifyZKP` function with signature `verifyZKP(bytes,string,bytes32,(int64,(int64,int64),bytes,bytes,bytes))` and selector `0x61ce4b12`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2593,7 +2593,7 @@ pub mod cometbls_client {
         pub trusted_validators_hash: [u8; 32],
         pub header: UnionIbcLightclientsCometblsV1LightHeaderData,
     }
-    ///Container type for all of the contract's call
+    /// Container type for all of the contract's call
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum CometblsClientCalls {
         UpgradeInterfaceVersion(UpgradeInterfaceVersionCall),
@@ -2844,7 +2844,7 @@ pub mod cometbls_client {
             Self::VerifyZKP(value)
         }
     }
-    ///Container type for all return fields from the `UPGRADE_INTERFACE_VERSION` function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`
+    /// Container type for all return fields from the `UPGRADE_INTERFACE_VERSION` function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2856,7 +2856,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct UpgradeInterfaceVersionReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `createClient` function with signature `createClient(string,bytes,bytes)` and selector `0x2629636b`
+    /// Container type for all return fields from the `createClient` function with signature `createClient(string,bytes,bytes)` and selector `0x2629636b`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2872,7 +2872,7 @@ pub mod cometbls_client {
         pub update: ConsensusStateUpdate,
         pub ok: bool,
     }
-    ///Container type for all return fields from the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
+    /// Container type for all return fields from the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2884,7 +2884,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct GetClientStateReturn(pub ::ethers::core::types::Bytes);
-    ///Container type for all return fields from the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
+    /// Container type for all return fields from the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2896,7 +2896,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct GetConsensusStateReturn(pub ::ethers::core::types::Bytes);
-    ///Container type for all return fields from the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
+    /// Container type for all return fields from the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2908,7 +2908,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct GetLatestHeightReturn(pub IbcCoreClientV1HeightData);
-    ///Container type for all return fields from the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
+    /// Container type for all return fields from the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2920,7 +2920,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct GetTimestampAtHeightReturn(pub u64);
-    ///Container type for all return fields from the `owner` function with signature `owner()` and selector `0x8da5cb5b`
+    /// Container type for all return fields from the `owner` function with signature `owner()` and selector `0x8da5cb5b`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2932,7 +2932,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct OwnerReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `paused` function with signature `paused()` and selector `0x5c975abb`
+    /// Container type for all return fields from the `paused` function with signature `paused()` and selector `0x5c975abb`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2944,7 +2944,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct PausedReturn(pub bool);
-    ///Container type for all return fields from the `proxiableUUID` function with signature `proxiableUUID()` and selector `0x52d1902d`
+    /// Container type for all return fields from the `proxiableUUID` function with signature `proxiableUUID()` and selector `0x52d1902d`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2956,7 +2956,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct ProxiableUUIDReturn(pub [u8; 32]);
-    ///Container type for all return fields from the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
+    /// Container type for all return fields from the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2968,7 +2968,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct UpdateClientReturn(pub [u8; 32], pub ::std::vec::Vec<ConsensusStateUpdate>);
-    ///Container type for all return fields from the `verifyMembership` function with signature `verifyMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes,bytes)` and selector `0xf9bb5a51`
+    /// Container type for all return fields from the `verifyMembership` function with signature `verifyMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes,bytes)` and selector `0xf9bb5a51`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2980,7 +2980,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct VerifyMembershipReturn(pub bool);
-    ///Container type for all return fields from the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
+    /// Container type for all return fields from the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2992,7 +2992,7 @@ pub mod cometbls_client {
         Hash,
     )]
     pub struct VerifyNonMembershipReturn(pub bool);
-    ///Container type for all return fields from the `verifyZKP` function with signature `verifyZKP(bytes,string,bytes32,(int64,(int64,int64),bytes,bytes,bytes))` and selector `0x61ce4b12`
+    /// Container type for all return fields from the `verifyZKP` function with signature `verifyZKP(bytes,string,bytes32,(int64,(int64,int64),bytes,bytes,bytes))` and selector `0x61ce4b12`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

@@ -4,12 +4,12 @@ use typenum::Unsigned;
 
 use crate::{bls::BlsPublicKey, errors::InvalidLength, ethereum::config::SYNC_COMMITTEE_SIZE};
 
-#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::SyncCommittee),
     into,
     from
 ))]
+#[derive(Ssz)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct SyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     #[serde(with = "::serde_utils::hex_string_list")]
@@ -29,14 +29,14 @@ impl<C: SYNC_COMMITTEE_SIZE> From<SyncCommittee<C>>
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromSyncCommitteeError {
-    /// One of the `pubkeys` had an invalid length
-    PubKey(InvalidLength),
-    /// Invalid amount of `pubkeys`
-    PubKeys(InvalidLength),
-    /// The `aggregate_pubkey` had an invalid length
-    AggregatePubKey(InvalidLength),
+    #[error("invalid `pubkeys`")]
+    PubKey(#[source] InvalidLength),
+    #[error("invalid amount of `pubkeys`")]
+    PubKeys(#[source] InvalidLength),
+    #[error("invalid `aggregate_pubkey`")]
+    AggregatePubKey(#[source] InvalidLength),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE> TryFrom<protos::union::ibc::lightclients::ethereum::v1::SyncCommittee>
@@ -69,5 +69,27 @@ impl<C: SYNC_COMMITTEE_SIZE> TryFrom<protos::union::ibc::lightclients::ethereum:
                 .try_into()
                 .map_err(TryFromSyncCommitteeError::AggregatePubKey)?,
         })
+    }
+}
+
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::SyncCommittee),
+    from
+))]
+pub struct UnboundedSyncCommittee {
+    #[serde(with = "::serde_utils::hex_string_list")]
+    pub pubkeys: Vec<BlsPublicKey>,
+    #[serde(with = "::serde_utils::hex_string")]
+    pub aggregate_pubkey: BlsPublicKey,
+}
+
+impl From<UnboundedSyncCommittee>
+    for protos::union::ibc::lightclients::ethereum::v1::SyncCommittee
+{
+    fn from(value: UnboundedSyncCommittee) -> Self {
+        Self {
+            pubkeys: value.pubkeys.iter().copied().map(Into::into).collect(),
+            aggregate_pubkey: value.aggregate_pubkey.into(),
+        }
     }
 }

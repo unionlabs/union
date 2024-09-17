@@ -24,13 +24,11 @@ pub enum Error {
     InvalidL2IbcContractProof(linea_zktrie::verify::Error),
 }
 
-/*
-1. assert rootHash(rollup) in l1StateRoot
-2. assert rollup.currentL2BlockNumber = l2BlockNumber
-3. assert rollup.currentL2Timestamp = l2Timestamp
-4. assert rollup.stateRootHashes[l2BlockNumber] = l2StateRoot
-5. assert rootHash(l2IbcContract) in l2StateRoot
- */
+// 1. assert rootHash(rollup) in l1StateRoot
+// 2. assert rollup.currentL2BlockNumber = l2BlockNumber
+// 3. assert rollup.currentL2Timestamp = l2Timestamp
+// 4. assert rollup.stateRootHashes[l2BlockNumber] = l2StateRoot
+// 5. assert rootHash(l2IbcContract) in l2StateRoot
 pub fn verify_header(
     client_state: ClientState,
     header: Header,

@@ -1251,7 +1251,7 @@ pub mod ucs01_relay {
             fallback: false,
         }
     }
-    ///The parsed JSON ABI of the contract.
+    /// The parsed JSON ABI of the contract.
     #[cfg(feature = "providers")]
     pub static UCS01RELAY_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(__abi);
@@ -1351,7 +1351,7 @@ pub mod ucs01_relay {
             let deployer = ::ethers::contract::ContractDeployer::new(deployer);
             Ok(deployer)
         }
-        ///Calls the contract's `UPGRADE_INTERFACE_VERSION` (0xad3cb1cc) function
+        /// Calls the contract's `UPGRADE_INTERFACE_VERSION` (0xad3cb1cc) function
         pub fn upgrade_interface_version(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
@@ -1359,7 +1359,7 @@ pub mod ucs01_relay {
                 .method_hash([173, 60, 177, 204], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getDenomAddress` (0x3a74ce26) function
+        /// Calls the contract's `getDenomAddress` (0x3a74ce26) function
         pub fn get_denom_address(
             &self,
             source_channel: ::std::string::String,
@@ -1369,7 +1369,7 @@ pub mod ucs01_relay {
                 .method_hash([58, 116, 206, 38], (source_channel, denom))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getOutstanding` (0x2b66b116) function
+        /// Calls the contract's `getOutstanding` (0x2b66b116) function
         pub fn get_outstanding(
             &self,
             source_channel: ::std::string::String,
@@ -1379,7 +1379,7 @@ pub mod ucs01_relay {
                 .method_hash([43, 102, 177, 22], (source_channel, token))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `ibcAddress` (0x696a9bf4) function
+        /// Calls the contract's `ibcAddress` (0x696a9bf4) function
         pub fn ibc_address(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
@@ -1387,7 +1387,7 @@ pub mod ucs01_relay {
                 .method_hash([105, 106, 155, 244], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `initialize` (0x485cc955) function
+        /// Calls the contract's `initialize` (0x485cc955) function
         pub fn initialize(
             &self,
             ibc_handler: ::ethers::core::types::Address,
@@ -1397,7 +1397,7 @@ pub mod ucs01_relay {
                 .method_hash([72, 92, 201, 85], (ibc_handler, admin))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onAcknowledgementPacket` (0xfb8b532e) function
+        /// Calls the contract's `onAcknowledgementPacket` (0xfb8b532e) function
         pub fn on_acknowledgement_packet(
             &self,
             ibc_packet: IbcCoreChannelV1PacketData,
@@ -1408,7 +1408,7 @@ pub mod ucs01_relay {
                 .method_hash([251, 139, 83, 46], (ibc_packet, acknowledgement, p2))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onChanCloseConfirm` (0x3f41c9ea) function
+        /// Calls the contract's `onChanCloseConfirm` (0x3f41c9ea) function
         pub fn on_chan_close_confirm(
             &self,
             p0: ::std::string::String,
@@ -1419,7 +1419,7 @@ pub mod ucs01_relay {
                 .method_hash([63, 65, 201, 234], (p0, p1, p2))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onChanCloseInit` (0x7538ed68) function
+        /// Calls the contract's `onChanCloseInit` (0x7538ed68) function
         pub fn on_chan_close_init(
             &self,
             p0: ::std::string::String,
@@ -1430,7 +1430,7 @@ pub mod ucs01_relay {
                 .method_hash([117, 56, 237, 104], (p0, p1, p2))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onChanOpenAck` (0x60ca56eb) function
+        /// Calls the contract's `onChanOpenAck` (0x60ca56eb) function
         pub fn on_chan_open_ack(
             &self,
             p0: ::std::string::String,
@@ -1446,7 +1446,7 @@ pub mod ucs01_relay {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onChanOpenConfirm` (0xf8288cc6) function
+        /// Calls the contract's `onChanOpenConfirm` (0xf8288cc6) function
         pub fn on_chan_open_confirm(
             &self,
             p0: ::std::string::String,
@@ -1457,7 +1457,7 @@ pub mod ucs01_relay {
                 .method_hash([248, 40, 140, 198], (p0, p1, p2))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onChanOpenInit` (0xf2f83f7a) function
+        /// Calls the contract's `onChanOpenInit` (0xf2f83f7a) function
         pub fn on_chan_open_init(
             &self,
             order: u8,
@@ -1475,7 +1475,7 @@ pub mod ucs01_relay {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onChanOpenTry` (0x218d1e3e) function
+        /// Calls the contract's `onChanOpenTry` (0x218d1e3e) function
         pub fn on_chan_open_try(
             &self,
             order: u8,
@@ -1503,7 +1503,7 @@ pub mod ucs01_relay {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onRecvPacket` (0x2301c6f5) function
+        /// Calls the contract's `onRecvPacket` (0x2301c6f5) function
         pub fn on_recv_packet(
             &self,
             ibc_packet: IbcCoreChannelV1PacketData,
@@ -1513,7 +1513,7 @@ pub mod ucs01_relay {
                 .method_hash([35, 1, 198, 245], (ibc_packet, relayer))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onRecvPacketProcessing` (0xbd950f89) function
+        /// Calls the contract's `onRecvPacketProcessing` (0xbd950f89) function
         pub fn on_recv_packet_processing(
             &self,
             ibc_packet: IbcCoreChannelV1PacketData,
@@ -1523,7 +1523,7 @@ pub mod ucs01_relay {
                 .method_hash([189, 149, 15, 137], (ibc_packet, p1))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `onTimeoutPacket` (0x52c7157d) function
+        /// Calls the contract's `onTimeoutPacket` (0x52c7157d) function
         pub fn on_timeout_packet(
             &self,
             ibc_packet: IbcCoreChannelV1PacketData,
@@ -1533,7 +1533,7 @@ pub mod ucs01_relay {
                 .method_hash([82, 199, 21, 125], (ibc_packet, p1))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `owner` (0x8da5cb5b) function
+        /// Calls the contract's `owner` (0x8da5cb5b) function
         pub fn owner(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
@@ -1541,25 +1541,25 @@ pub mod ucs01_relay {
                 .method_hash([141, 165, 203, 91], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `paused` (0x5c975abb) function
+        /// Calls the contract's `paused` (0x5c975abb) function
         pub fn paused(&self) -> ::ethers::contract::builders::ContractCall<M, bool> {
             self.0
                 .method_hash([92, 151, 90, 187], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `proxiableUUID` (0x52d1902d) function
+        /// Calls the contract's `proxiableUUID` (0x52d1902d) function
         pub fn proxiable_uuid(&self) -> ::ethers::contract::builders::ContractCall<M, [u8; 32]> {
             self.0
                 .method_hash([82, 209, 144, 45], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `renounceOwnership` (0x715018a6) function
+        /// Calls the contract's `renounceOwnership` (0x715018a6) function
         pub fn renounce_ownership(&self) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
                 .method_hash([113, 80, 24, 166], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `send` (0xa5b7e178) function
+        /// Calls the contract's `send` (0xa5b7e178) function
         pub fn send(
             &self,
             source_channel: ::std::string::String,
@@ -1583,7 +1583,7 @@ pub mod ucs01_relay {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `transferOwnership` (0xf2fde38b) function
+        /// Calls the contract's `transferOwnership` (0xf2fde38b) function
         pub fn transfer_ownership(
             &self,
             new_owner: ::ethers::core::types::Address,
@@ -1592,7 +1592,7 @@ pub mod ucs01_relay {
                 .method_hash([242, 253, 227, 139], new_owner)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `updateMetadata` (0xec1bd897) function
+        /// Calls the contract's `updateMetadata` (0xec1bd897) function
         pub fn update_metadata(
             &self,
             denom: ::ethers::core::types::Address,
@@ -1607,7 +1607,7 @@ pub mod ucs01_relay {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `upgradeToAndCall` (0x4f1ef286) function
+        /// Calls the contract's `upgradeToAndCall` (0x4f1ef286) function
         pub fn upgrade_to_and_call(
             &self,
             new_implementation: ::ethers::core::types::Address,
@@ -1617,58 +1617,58 @@ pub mod ucs01_relay {
                 .method_hash([79, 30, 242, 134], (new_implementation, data))
                 .expect("method not found (this should never happen)")
         }
-        ///Gets the contract's `DenomCreated` event
+        /// Gets the contract's `DenomCreated` event
         pub fn denom_created_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, DenomCreatedFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `Initialized` event
+        /// Gets the contract's `Initialized` event
         pub fn initialized_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, InitializedFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `OwnershipTransferred` event
+        /// Gets the contract's `OwnershipTransferred` event
         pub fn ownership_transferred_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, OwnershipTransferredFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `Paused` event
+        /// Gets the contract's `Paused` event
         pub fn paused_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, PausedFilter> {
             self.0.event()
         }
-        ///Gets the contract's `Received` event
+        /// Gets the contract's `Received` event
         pub fn received_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ReceivedFilter> {
             self.0.event()
         }
-        ///Gets the contract's `Refunded` event
+        /// Gets the contract's `Refunded` event
         pub fn refunded_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, RefundedFilter> {
             self.0.event()
         }
-        ///Gets the contract's `Sent` event
+        /// Gets the contract's `Sent` event
         pub fn sent_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, SentFilter> {
             self.0.event()
         }
-        ///Gets the contract's `Unpaused` event
+        /// Gets the contract's `Unpaused` event
         pub fn unpaused_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, UnpausedFilter> {
             self.0.event()
         }
-        ///Gets the contract's `Upgraded` event
+        /// Gets the contract's `Upgraded` event
         pub fn upgraded_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, UpgradedFilter> {
@@ -1688,7 +1688,7 @@ pub mod ucs01_relay {
             Self::new(contract.address(), contract.client())
         }
     }
-    ///Custom Error type `AddressEmptyCode` with signature `AddressEmptyCode(address)` and selector `0x9996b315`
+    /// Custom Error type `AddressEmptyCode` with signature `AddressEmptyCode(address)` and selector `0x9996b315`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1703,7 +1703,7 @@ pub mod ucs01_relay {
     pub struct AddressEmptyCode {
         pub target: ::ethers::core::types::Address,
     }
-    ///Custom Error type `AddressInsufficientBalance` with signature `AddressInsufficientBalance(address)` and selector `0xcd786059`
+    /// Custom Error type `AddressInsufficientBalance` with signature `AddressInsufficientBalance(address)` and selector `0xcd786059`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1721,7 +1721,7 @@ pub mod ucs01_relay {
     pub struct AddressInsufficientBalance {
         pub account: ::ethers::core::types::Address,
     }
-    ///Custom Error type `ERC1967InvalidImplementation` with signature `ERC1967InvalidImplementation(address)` and selector `0x4c9c8ce3`
+    /// Custom Error type `ERC1967InvalidImplementation` with signature `ERC1967InvalidImplementation(address)` and selector `0x4c9c8ce3`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1739,7 +1739,7 @@ pub mod ucs01_relay {
     pub struct ERC1967InvalidImplementation {
         pub implementation: ::ethers::core::types::Address,
     }
-    ///Custom Error type `ERC1967NonPayable` with signature `ERC1967NonPayable()` and selector `0xb398979f`
+    /// Custom Error type `ERC1967NonPayable` with signature `ERC1967NonPayable()` and selector `0xb398979f`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1752,7 +1752,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "ERC1967NonPayable", abi = "ERC1967NonPayable()")]
     pub struct ERC1967NonPayable;
-    ///Custom Error type `EnforcedPause` with signature `EnforcedPause()` and selector `0xd93c0665`
+    /// Custom Error type `EnforcedPause` with signature `EnforcedPause()` and selector `0xd93c0665`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1765,7 +1765,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "EnforcedPause", abi = "EnforcedPause()")]
     pub struct EnforcedPause;
-    ///Custom Error type `ErrInvalidAcknowledgement` with signature `ErrInvalidAcknowledgement()` and selector `0x6ec7d33f`
+    /// Custom Error type `ErrInvalidAcknowledgement` with signature `ErrInvalidAcknowledgement()` and selector `0x6ec7d33f`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1781,7 +1781,7 @@ pub mod ucs01_relay {
         abi = "ErrInvalidAcknowledgement()"
     )]
     pub struct ErrInvalidAcknowledgement;
-    ///Custom Error type `ErrInvalidAmount` with signature `ErrInvalidAmount()` and selector `0xb3726016`
+    /// Custom Error type `ErrInvalidAmount` with signature `ErrInvalidAmount()` and selector `0xb3726016`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1794,7 +1794,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "ErrInvalidAmount", abi = "ErrInvalidAmount()")]
     pub struct ErrInvalidAmount;
-    ///Custom Error type `ErrInvalidBytesAddress` with signature `ErrInvalidBytesAddress()` and selector `0x78718c3b`
+    /// Custom Error type `ErrInvalidBytesAddress` with signature `ErrInvalidBytesAddress()` and selector `0x78718c3b`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1807,7 +1807,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "ErrInvalidBytesAddress", abi = "ErrInvalidBytesAddress()")]
     pub struct ErrInvalidBytesAddress;
-    ///Custom Error type `ErrInvalidCounterpartyProtocolVersion` with signature `ErrInvalidCounterpartyProtocolVersion()` and selector `0xbb928590`
+    /// Custom Error type `ErrInvalidCounterpartyProtocolVersion` with signature `ErrInvalidCounterpartyProtocolVersion()` and selector `0xbb928590`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1823,7 +1823,7 @@ pub mod ucs01_relay {
         abi = "ErrInvalidCounterpartyProtocolVersion()"
     )]
     pub struct ErrInvalidCounterpartyProtocolVersion;
-    ///Custom Error type `ErrInvalidHexAddress` with signature `ErrInvalidHexAddress()` and selector `0xfe6f1570`
+    /// Custom Error type `ErrInvalidHexAddress` with signature `ErrInvalidHexAddress()` and selector `0xfe6f1570`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1836,7 +1836,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "ErrInvalidHexAddress", abi = "ErrInvalidHexAddress()")]
     pub struct ErrInvalidHexAddress;
-    ///Custom Error type `ErrInvalidProtocolOrdering` with signature `ErrInvalidProtocolOrdering()` and selector `0xb8526e65`
+    /// Custom Error type `ErrInvalidProtocolOrdering` with signature `ErrInvalidProtocolOrdering()` and selector `0xb8526e65`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1852,7 +1852,7 @@ pub mod ucs01_relay {
         abi = "ErrInvalidProtocolOrdering()"
     )]
     pub struct ErrInvalidProtocolOrdering;
-    ///Custom Error type `ErrInvalidProtocolVersion` with signature `ErrInvalidProtocolVersion()` and selector `0x3d3f7720`
+    /// Custom Error type `ErrInvalidProtocolVersion` with signature `ErrInvalidProtocolVersion()` and selector `0x3d3f7720`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1868,7 +1868,7 @@ pub mod ucs01_relay {
         abi = "ErrInvalidProtocolVersion()"
     )]
     pub struct ErrInvalidProtocolVersion;
-    ///Custom Error type `ErrNotIBC` with signature `ErrNotIBC()` and selector `0xe54f8f9d`
+    /// Custom Error type `ErrNotIBC` with signature `ErrNotIBC()` and selector `0xe54f8f9d`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1881,7 +1881,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "ErrNotIBC", abi = "ErrNotIBC()")]
     pub struct ErrNotIBC;
-    ///Custom Error type `ErrUnauthorized` with signature `ErrUnauthorized()` and selector `0xcc12cef6`
+    /// Custom Error type `ErrUnauthorized` with signature `ErrUnauthorized()` and selector `0xcc12cef6`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1894,7 +1894,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "ErrUnauthorized", abi = "ErrUnauthorized()")]
     pub struct ErrUnauthorized;
-    ///Custom Error type `ErrUnstoppable` with signature `ErrUnstoppable()` and selector `0x0637c796`
+    /// Custom Error type `ErrUnstoppable` with signature `ErrUnstoppable()` and selector `0x0637c796`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1907,7 +1907,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "ErrUnstoppable", abi = "ErrUnstoppable()")]
     pub struct ErrUnstoppable;
-    ///Custom Error type `ExpectedPause` with signature `ExpectedPause()` and selector `0x8dfc202b`
+    /// Custom Error type `ExpectedPause` with signature `ExpectedPause()` and selector `0x8dfc202b`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1920,7 +1920,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "ExpectedPause", abi = "ExpectedPause()")]
     pub struct ExpectedPause;
-    ///Custom Error type `FailedInnerCall` with signature `FailedInnerCall()` and selector `0x1425ea42`
+    /// Custom Error type `FailedInnerCall` with signature `FailedInnerCall()` and selector `0x1425ea42`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1933,7 +1933,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "FailedInnerCall", abi = "FailedInnerCall()")]
     pub struct FailedInnerCall;
-    ///Custom Error type `InvalidInitialization` with signature `InvalidInitialization()` and selector `0xf92ee8a9`
+    /// Custom Error type `InvalidInitialization` with signature `InvalidInitialization()` and selector `0xf92ee8a9`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1946,7 +1946,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "InvalidInitialization", abi = "InvalidInitialization()")]
     pub struct InvalidInitialization;
-    ///Custom Error type `NotInitializing` with signature `NotInitializing()` and selector `0xd7e6bcf8`
+    /// Custom Error type `NotInitializing` with signature `NotInitializing()` and selector `0xd7e6bcf8`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1959,7 +1959,7 @@ pub mod ucs01_relay {
     )]
     #[etherror(name = "NotInitializing", abi = "NotInitializing()")]
     pub struct NotInitializing;
-    ///Custom Error type `OwnableInvalidOwner` with signature `OwnableInvalidOwner(address)` and selector `0x1e4fbdf7`
+    /// Custom Error type `OwnableInvalidOwner` with signature `OwnableInvalidOwner(address)` and selector `0x1e4fbdf7`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1974,7 +1974,7 @@ pub mod ucs01_relay {
     pub struct OwnableInvalidOwner {
         pub owner: ::ethers::core::types::Address,
     }
-    ///Custom Error type `OwnableUnauthorizedAccount` with signature `OwnableUnauthorizedAccount(address)` and selector `0x118cdaa7`
+    /// Custom Error type `OwnableUnauthorizedAccount` with signature `OwnableUnauthorizedAccount(address)` and selector `0x118cdaa7`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1992,7 +1992,7 @@ pub mod ucs01_relay {
     pub struct OwnableUnauthorizedAccount {
         pub account: ::ethers::core::types::Address,
     }
-    ///Custom Error type `SafeERC20FailedOperation` with signature `SafeERC20FailedOperation(address)` and selector `0x5274afe7`
+    /// Custom Error type `SafeERC20FailedOperation` with signature `SafeERC20FailedOperation(address)` and selector `0x5274afe7`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -2010,7 +2010,7 @@ pub mod ucs01_relay {
     pub struct SafeERC20FailedOperation {
         pub token: ::ethers::core::types::Address,
     }
-    ///Custom Error type `UUPSUnauthorizedCallContext` with signature `UUPSUnauthorizedCallContext()` and selector `0xe07c8dba`
+    /// Custom Error type `UUPSUnauthorizedCallContext` with signature `UUPSUnauthorizedCallContext()` and selector `0xe07c8dba`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -2026,7 +2026,7 @@ pub mod ucs01_relay {
         abi = "UUPSUnauthorizedCallContext()"
     )]
     pub struct UUPSUnauthorizedCallContext;
-    ///Custom Error type `UUPSUnsupportedProxiableUUID` with signature `UUPSUnsupportedProxiableUUID(bytes32)` and selector `0xaa1d49a4`
+    /// Custom Error type `UUPSUnsupportedProxiableUUID` with signature `UUPSUnsupportedProxiableUUID(bytes32)` and selector `0xaa1d49a4`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -2044,7 +2044,7 @@ pub mod ucs01_relay {
     pub struct UUPSUnsupportedProxiableUUID {
         pub slot: [u8; 32],
     }
-    ///Container type for all of the contract's custom errors
+    /// Container type for all of the contract's custom errors
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum UCS01RelayErrors {
         AddressEmptyCode(AddressEmptyCode),
@@ -2689,7 +2689,7 @@ pub mod ucs01_relay {
         #[ethevent(indexed)]
         pub implementation: ::ethers::core::types::Address,
     }
-    ///Container type for all of the contract's events
+    /// Container type for all of the contract's events
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum UCS01RelayEvents {
         DenomCreatedFilter(DenomCreatedFilter),
@@ -2796,7 +2796,7 @@ pub mod ucs01_relay {
             Self::UpgradedFilter(value)
         }
     }
-    ///Container type for all input parameters for the `UPGRADE_INTERFACE_VERSION` function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`
+    /// Container type for all input parameters for the `UPGRADE_INTERFACE_VERSION` function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2812,7 +2812,7 @@ pub mod ucs01_relay {
         abi = "UPGRADE_INTERFACE_VERSION()"
     )]
     pub struct UpgradeInterfaceVersionCall;
-    ///Container type for all input parameters for the `getDenomAddress` function with signature `getDenomAddress(string,string)` and selector `0x3a74ce26`
+    /// Container type for all input parameters for the `getDenomAddress` function with signature `getDenomAddress(string,string)` and selector `0x3a74ce26`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2828,7 +2828,7 @@ pub mod ucs01_relay {
         pub source_channel: ::std::string::String,
         pub denom: ::std::string::String,
     }
-    ///Container type for all input parameters for the `getOutstanding` function with signature `getOutstanding(string,address)` and selector `0x2b66b116`
+    /// Container type for all input parameters for the `getOutstanding` function with signature `getOutstanding(string,address)` and selector `0x2b66b116`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2844,7 +2844,7 @@ pub mod ucs01_relay {
         pub source_channel: ::std::string::String,
         pub token: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `ibcAddress` function with signature `ibcAddress()` and selector `0x696a9bf4`
+    /// Container type for all input parameters for the `ibcAddress` function with signature `ibcAddress()` and selector `0x696a9bf4`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2857,7 +2857,7 @@ pub mod ucs01_relay {
     )]
     #[ethcall(name = "ibcAddress", abi = "ibcAddress()")]
     pub struct IbcAddressCall;
-    ///Container type for all input parameters for the `initialize` function with signature `initialize(address,address)` and selector `0x485cc955`
+    /// Container type for all input parameters for the `initialize` function with signature `initialize(address,address)` and selector `0x485cc955`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2873,7 +2873,7 @@ pub mod ucs01_relay {
         pub ibc_handler: ::ethers::core::types::Address,
         pub admin: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `onAcknowledgementPacket` function with signature `onAcknowledgementPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,address)` and selector `0xfb8b532e`
+    /// Container type for all input parameters for the `onAcknowledgementPacket` function with signature `onAcknowledgementPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),bytes,address)` and selector `0xfb8b532e`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2893,7 +2893,7 @@ pub mod ucs01_relay {
         pub acknowledgement: ::ethers::core::types::Bytes,
         pub p2: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `onChanCloseConfirm` function with signature `onChanCloseConfirm(string,string,address)` and selector `0x3f41c9ea`
+    /// Container type for all input parameters for the `onChanCloseConfirm` function with signature `onChanCloseConfirm(string,string,address)` and selector `0x3f41c9ea`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2913,7 +2913,7 @@ pub mod ucs01_relay {
         pub ::std::string::String,
         pub ::ethers::core::types::Address,
     );
-    ///Container type for all input parameters for the `onChanCloseInit` function with signature `onChanCloseInit(string,string,address)` and selector `0x7538ed68`
+    /// Container type for all input parameters for the `onChanCloseInit` function with signature `onChanCloseInit(string,string,address)` and selector `0x7538ed68`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2933,7 +2933,7 @@ pub mod ucs01_relay {
         pub ::std::string::String,
         pub ::ethers::core::types::Address,
     );
-    ///Container type for all input parameters for the `onChanOpenAck` function with signature `onChanOpenAck(string,string,string,string,address)` and selector `0x60ca56eb`
+    /// Container type for all input parameters for the `onChanOpenAck` function with signature `onChanOpenAck(string,string,string,string,address)` and selector `0x60ca56eb`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2955,7 +2955,7 @@ pub mod ucs01_relay {
         pub counterparty_version: ::std::string::String,
         pub relayer: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `onChanOpenConfirm` function with signature `onChanOpenConfirm(string,string,address)` and selector `0xf8288cc6`
+    /// Container type for all input parameters for the `onChanOpenConfirm` function with signature `onChanOpenConfirm(string,string,address)` and selector `0xf8288cc6`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2975,7 +2975,7 @@ pub mod ucs01_relay {
         pub ::std::string::String,
         pub ::ethers::core::types::Address,
     );
-    ///Container type for all input parameters for the `onChanOpenInit` function with signature `onChanOpenInit(uint8,string[],string,string,(string,string),string,address)` and selector `0xf2f83f7a`
+    /// Container type for all input parameters for the `onChanOpenInit` function with signature `onChanOpenInit(uint8,string[],string,string,(string,string),string,address)` and selector `0xf2f83f7a`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -2999,7 +2999,7 @@ pub mod ucs01_relay {
         pub version: ::std::string::String,
         pub relayer: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `onChanOpenTry` function with signature `onChanOpenTry(uint8,string[],string,string,(string,string),string,string,address)` and selector `0x218d1e3e`
+    /// Container type for all input parameters for the `onChanOpenTry` function with signature `onChanOpenTry(uint8,string[],string,string,(string,string),string,string,address)` and selector `0x218d1e3e`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3024,7 +3024,7 @@ pub mod ucs01_relay {
         pub counterparty_version: ::std::string::String,
         pub relayer: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `onRecvPacket` function with signature `onRecvPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0x2301c6f5`
+    /// Container type for all input parameters for the `onRecvPacket` function with signature `onRecvPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0x2301c6f5`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3043,7 +3043,7 @@ pub mod ucs01_relay {
         pub ibc_packet: IbcCoreChannelV1PacketData,
         pub relayer: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `onRecvPacketProcessing` function with signature `onRecvPacketProcessing((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0xbd950f89`
+    /// Container type for all input parameters for the `onRecvPacketProcessing` function with signature `onRecvPacketProcessing((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0xbd950f89`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3062,7 +3062,7 @@ pub mod ucs01_relay {
         pub ibc_packet: IbcCoreChannelV1PacketData,
         pub p1: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `onTimeoutPacket` function with signature `onTimeoutPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0x52c7157d`
+    /// Container type for all input parameters for the `onTimeoutPacket` function with signature `onTimeoutPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0x52c7157d`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3081,7 +3081,7 @@ pub mod ucs01_relay {
         pub ibc_packet: IbcCoreChannelV1PacketData,
         pub p1: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `owner` function with signature `owner()` and selector `0x8da5cb5b`
+    /// Container type for all input parameters for the `owner` function with signature `owner()` and selector `0x8da5cb5b`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3094,7 +3094,7 @@ pub mod ucs01_relay {
     )]
     #[ethcall(name = "owner", abi = "owner()")]
     pub struct OwnerCall;
-    ///Container type for all input parameters for the `paused` function with signature `paused()` and selector `0x5c975abb`
+    /// Container type for all input parameters for the `paused` function with signature `paused()` and selector `0x5c975abb`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3107,7 +3107,7 @@ pub mod ucs01_relay {
     )]
     #[ethcall(name = "paused", abi = "paused()")]
     pub struct PausedCall;
-    ///Container type for all input parameters for the `proxiableUUID` function with signature `proxiableUUID()` and selector `0x52d1902d`
+    /// Container type for all input parameters for the `proxiableUUID` function with signature `proxiableUUID()` and selector `0x52d1902d`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3120,7 +3120,7 @@ pub mod ucs01_relay {
     )]
     #[ethcall(name = "proxiableUUID", abi = "proxiableUUID()")]
     pub struct ProxiableUUIDCall;
-    ///Container type for all input parameters for the `renounceOwnership` function with signature `renounceOwnership()` and selector `0x715018a6`
+    /// Container type for all input parameters for the `renounceOwnership` function with signature `renounceOwnership()` and selector `0x715018a6`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3133,7 +3133,7 @@ pub mod ucs01_relay {
     )]
     #[ethcall(name = "renounceOwnership", abi = "renounceOwnership()")]
     pub struct RenounceOwnershipCall;
-    ///Container type for all input parameters for the `send` function with signature `send(string,bytes,(address,uint128)[],string,(uint64,uint64),uint64)` and selector `0xa5b7e178`
+    /// Container type for all input parameters for the `send` function with signature `send(string,bytes,(address,uint128)[],string,(uint64,uint64),uint64)` and selector `0xa5b7e178`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3156,7 +3156,7 @@ pub mod ucs01_relay {
         pub timeout_height: IbcCoreClientV1HeightData,
         pub timeout_timestamp: u64,
     }
-    ///Container type for all input parameters for the `transferOwnership` function with signature `transferOwnership(address)` and selector `0xf2fde38b`
+    /// Container type for all input parameters for the `transferOwnership` function with signature `transferOwnership(address)` and selector `0xf2fde38b`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3171,7 +3171,7 @@ pub mod ucs01_relay {
     pub struct TransferOwnershipCall {
         pub new_owner: ::ethers::core::types::Address,
     }
-    ///Container type for all input parameters for the `updateMetadata` function with signature `updateMetadata(address,string,string,uint8)` and selector `0xec1bd897`
+    /// Container type for all input parameters for the `updateMetadata` function with signature `updateMetadata(address,string,string,uint8)` and selector `0xec1bd897`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3192,7 +3192,7 @@ pub mod ucs01_relay {
         pub new_symbol: ::std::string::String,
         pub new_decimals: u8,
     }
-    ///Container type for all input parameters for the `upgradeToAndCall` function with signature `upgradeToAndCall(address,bytes)` and selector `0x4f1ef286`
+    /// Container type for all input parameters for the `upgradeToAndCall` function with signature `upgradeToAndCall(address,bytes)` and selector `0x4f1ef286`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -3208,7 +3208,7 @@ pub mod ucs01_relay {
         pub new_implementation: ::ethers::core::types::Address,
         pub data: ::ethers::core::types::Bytes,
     }
-    ///Container type for all of the contract's call
+    /// Container type for all of the contract's call
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum UCS01RelayCalls {
         UpgradeInterfaceVersion(UpgradeInterfaceVersionCall),
@@ -3525,7 +3525,7 @@ pub mod ucs01_relay {
             Self::UpgradeToAndCall(value)
         }
     }
-    ///Container type for all return fields from the `UPGRADE_INTERFACE_VERSION` function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`
+    /// Container type for all return fields from the `UPGRADE_INTERFACE_VERSION` function with signature `UPGRADE_INTERFACE_VERSION()` and selector `0xad3cb1cc`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -3537,7 +3537,7 @@ pub mod ucs01_relay {
         Hash,
     )]
     pub struct UpgradeInterfaceVersionReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `getDenomAddress` function with signature `getDenomAddress(string,string)` and selector `0x3a74ce26`
+    /// Container type for all return fields from the `getDenomAddress` function with signature `getDenomAddress(string,string)` and selector `0x3a74ce26`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -3549,7 +3549,7 @@ pub mod ucs01_relay {
         Hash,
     )]
     pub struct GetDenomAddressReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `getOutstanding` function with signature `getOutstanding(string,address)` and selector `0x2b66b116`
+    /// Container type for all return fields from the `getOutstanding` function with signature `getOutstanding(string,address)` and selector `0x2b66b116`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -3561,7 +3561,7 @@ pub mod ucs01_relay {
         Hash,
     )]
     pub struct GetOutstandingReturn(pub ::ethers::core::types::U256);
-    ///Container type for all return fields from the `ibcAddress` function with signature `ibcAddress()` and selector `0x696a9bf4`
+    /// Container type for all return fields from the `ibcAddress` function with signature `ibcAddress()` and selector `0x696a9bf4`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -3573,7 +3573,7 @@ pub mod ucs01_relay {
         Hash,
     )]
     pub struct IbcAddressReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `onRecvPacket` function with signature `onRecvPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0x2301c6f5`
+    /// Container type for all return fields from the `onRecvPacket` function with signature `onRecvPacket((uint64,string,string,string,string,bytes,(uint64,uint64),uint64),address)` and selector `0x2301c6f5`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -3585,7 +3585,7 @@ pub mod ucs01_relay {
         Hash,
     )]
     pub struct OnRecvPacketReturn(pub ::ethers::core::types::Bytes);
-    ///Container type for all return fields from the `owner` function with signature `owner()` and selector `0x8da5cb5b`
+    /// Container type for all return fields from the `owner` function with signature `owner()` and selector `0x8da5cb5b`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -3597,7 +3597,7 @@ pub mod ucs01_relay {
         Hash,
     )]
     pub struct OwnerReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `paused` function with signature `paused()` and selector `0x5c975abb`
+    /// Container type for all return fields from the `paused` function with signature `paused()` and selector `0x5c975abb`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -3609,7 +3609,7 @@ pub mod ucs01_relay {
         Hash,
     )]
     pub struct PausedReturn(pub bool);
-    ///Container type for all return fields from the `proxiableUUID` function with signature `proxiableUUID()` and selector `0x52d1902d`
+    /// Container type for all return fields from the `proxiableUUID` function with signature `proxiableUUID()` and selector `0x52d1902d`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -3621,7 +3621,7 @@ pub mod ucs01_relay {
         Hash,
     )]
     pub struct ProxiableUUIDReturn(pub [u8; 32]);
-    ///`LocalToken(address,uint128)`
+    /// `LocalToken(address,uint128)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

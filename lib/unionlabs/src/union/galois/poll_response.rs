@@ -1,5 +1,4 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::{required, MissingField},
@@ -13,12 +12,12 @@ pub enum PollResponse {
     Done(ProveRequestDone),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[model]
 pub struct ProveRequestFailed {
     pub message: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[model]
 pub struct ProveRequestDone {
     pub response: ProveResponse,
 }

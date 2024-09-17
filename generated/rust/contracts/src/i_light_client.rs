@@ -415,7 +415,7 @@ pub mod i_light_client {
             fallback: false,
         }
     }
-    ///The parsed JSON ABI of the contract.
+    /// The parsed JSON ABI of the contract.
     #[cfg(feature = "providers")]
     pub static ILIGHTCLIENT_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(__abi);
@@ -462,7 +462,7 @@ pub mod i_light_client {
                 client,
             ))
         }
-        ///Calls the contract's `createClient` (0x2629636b) function
+        /// Calls the contract's `createClient` (0x2629636b) function
         pub fn create_client(
             &self,
             client_id: ::std::string::String,
@@ -477,7 +477,7 @@ pub mod i_light_client {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getClientState` (0x76c81c42) function
+        /// Calls the contract's `getClientState` (0x76c81c42) function
         pub fn get_client_state(
             &self,
             client_id: ::std::string::String,
@@ -486,7 +486,7 @@ pub mod i_light_client {
                 .method_hash([118, 200, 28, 66], client_id)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getConsensusState` (0x6cf44bf4) function
+        /// Calls the contract's `getConsensusState` (0x6cf44bf4) function
         pub fn get_consensus_state(
             &self,
             client_id: ::std::string::String,
@@ -496,7 +496,7 @@ pub mod i_light_client {
                 .method_hash([108, 244, 75, 244], (client_id, height))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getLatestHeight` (0x329681d0) function
+        /// Calls the contract's `getLatestHeight` (0x329681d0) function
         pub fn get_latest_height(
             &self,
             client_id: ::std::string::String,
@@ -505,7 +505,7 @@ pub mod i_light_client {
                 .method_hash([50, 150, 129, 208], client_id)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getTimestampAtHeight` (0x4b0bbdc4) function
+        /// Calls the contract's `getTimestampAtHeight` (0x4b0bbdc4) function
         pub fn get_timestamp_at_height(
             &self,
             client_id: ::std::string::String,
@@ -515,7 +515,7 @@ pub mod i_light_client {
                 .method_hash([75, 11, 189, 196], (client_id, height))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `updateClient` (0x6fbf8079) function
+        /// Calls the contract's `updateClient` (0x6fbf8079) function
         pub fn update_client(
             &self,
             client_id: ::std::string::String,
@@ -528,7 +528,7 @@ pub mod i_light_client {
                 .method_hash([111, 191, 128, 121], (client_id, client_message_bytes))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `verifyMembership` (0xf9bb5a51) function
+        /// Calls the contract's `verifyMembership` (0xf9bb5a51) function
         pub fn verify_membership(
             &self,
             client_id: ::std::string::String,
@@ -556,7 +556,7 @@ pub mod i_light_client {
                 )
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `verifyNonMembership` (0x999fbbb3) function
+        /// Calls the contract's `verifyNonMembership` (0x999fbbb3) function
         pub fn verify_non_membership(
             &self,
             client_id: ::std::string::String,
@@ -589,7 +589,7 @@ pub mod i_light_client {
             Self::new(contract.address(), contract.client())
         }
     }
-    ///Container type for all input parameters for the `createClient` function with signature `createClient(string,bytes,bytes)` and selector `0x2629636b`
+    /// Container type for all input parameters for the `createClient` function with signature `createClient(string,bytes,bytes)` and selector `0x2629636b`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -606,7 +606,7 @@ pub mod i_light_client {
         pub client_state_bytes: ::ethers::core::types::Bytes,
         pub consensus_state_bytes: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
+    /// Container type for all input parameters for the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -621,7 +621,7 @@ pub mod i_light_client {
     pub struct GetClientStateCall {
         pub client_id: ::std::string::String,
     }
-    ///Container type for all input parameters for the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
+    /// Container type for all input parameters for the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -640,7 +640,7 @@ pub mod i_light_client {
         pub client_id: ::std::string::String,
         pub height: IbcCoreClientV1HeightData,
     }
-    ///Container type for all input parameters for the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
+    /// Container type for all input parameters for the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -655,7 +655,7 @@ pub mod i_light_client {
     pub struct GetLatestHeightCall {
         pub client_id: ::std::string::String,
     }
-    ///Container type for all input parameters for the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
+    /// Container type for all input parameters for the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -674,7 +674,7 @@ pub mod i_light_client {
         pub client_id: ::std::string::String,
         pub height: IbcCoreClientV1HeightData,
     }
-    ///Container type for all input parameters for the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
+    /// Container type for all input parameters for the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -690,7 +690,7 @@ pub mod i_light_client {
         pub client_id: ::std::string::String,
         pub client_message_bytes: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `verifyMembership` function with signature `verifyMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes,bytes)` and selector `0xf9bb5a51`
+    /// Container type for all input parameters for the `verifyMembership` function with signature `verifyMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes,bytes)` and selector `0xf9bb5a51`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -715,7 +715,7 @@ pub mod i_light_client {
         pub path: ::ethers::core::types::Bytes,
         pub value: ::ethers::core::types::Bytes,
     }
-    ///Container type for all input parameters for the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
+    /// Container type for all input parameters for the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -739,7 +739,7 @@ pub mod i_light_client {
         pub prefix: ::ethers::core::types::Bytes,
         pub path: ::ethers::core::types::Bytes,
     }
-    ///Container type for all of the contract's call
+    /// Container type for all of the contract's call
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum ILightClientCalls {
         CreateClient(CreateClientCall),
@@ -869,7 +869,7 @@ pub mod i_light_client {
             Self::VerifyNonMembership(value)
         }
     }
-    ///Container type for all return fields from the `createClient` function with signature `createClient(string,bytes,bytes)` and selector `0x2629636b`
+    /// Container type for all return fields from the `createClient` function with signature `createClient(string,bytes,bytes)` and selector `0x2629636b`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -885,7 +885,7 @@ pub mod i_light_client {
         pub update: ConsensusStateUpdate,
         pub ok: bool,
     }
-    ///Container type for all return fields from the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
+    /// Container type for all return fields from the `getClientState` function with signature `getClientState(string)` and selector `0x76c81c42`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -897,7 +897,7 @@ pub mod i_light_client {
         Hash,
     )]
     pub struct GetClientStateReturn(pub ::ethers::core::types::Bytes);
-    ///Container type for all return fields from the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
+    /// Container type for all return fields from the `getConsensusState` function with signature `getConsensusState(string,(uint64,uint64))` and selector `0x6cf44bf4`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -909,7 +909,7 @@ pub mod i_light_client {
         Hash,
     )]
     pub struct GetConsensusStateReturn(pub ::ethers::core::types::Bytes);
-    ///Container type for all return fields from the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
+    /// Container type for all return fields from the `getLatestHeight` function with signature `getLatestHeight(string)` and selector `0x329681d0`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -921,7 +921,7 @@ pub mod i_light_client {
         Hash,
     )]
     pub struct GetLatestHeightReturn(pub IbcCoreClientV1HeightData);
-    ///Container type for all return fields from the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
+    /// Container type for all return fields from the `getTimestampAtHeight` function with signature `getTimestampAtHeight(string,(uint64,uint64))` and selector `0x4b0bbdc4`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -933,7 +933,7 @@ pub mod i_light_client {
         Hash,
     )]
     pub struct GetTimestampAtHeightReturn(pub u64);
-    ///Container type for all return fields from the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
+    /// Container type for all return fields from the `updateClient` function with signature `updateClient(string,bytes)` and selector `0x6fbf8079`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -948,7 +948,7 @@ pub mod i_light_client {
         pub client_state_commitment: [u8; 32],
         pub updates: ::std::vec::Vec<ConsensusStateUpdate>,
     }
-    ///Container type for all return fields from the `verifyMembership` function with signature `verifyMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes,bytes)` and selector `0xf9bb5a51`
+    /// Container type for all return fields from the `verifyMembership` function with signature `verifyMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes,bytes)` and selector `0xf9bb5a51`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -960,7 +960,7 @@ pub mod i_light_client {
         Hash,
     )]
     pub struct VerifyMembershipReturn(pub bool);
-    ///Container type for all return fields from the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
+    /// Container type for all return fields from the `verifyNonMembership` function with signature `verifyNonMembership(string,(uint64,uint64),uint64,uint64,bytes,bytes,bytes)` and selector `0x999fbbb3`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

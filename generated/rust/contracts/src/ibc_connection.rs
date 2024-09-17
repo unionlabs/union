@@ -707,7 +707,7 @@ pub mod ibc_connection {
             fallback: false,
         }
     }
-    ///The parsed JSON ABI of the contract.
+    /// The parsed JSON ABI of the contract.
     #[cfg(feature = "providers")]
     pub static IBCCONNECTION_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(__abi);
@@ -807,7 +807,7 @@ pub mod ibc_connection {
             let deployer = ::ethers::contract::ContractDeployer::new(deployer);
             Ok(deployer)
         }
-        ///Calls the contract's `COMMITMENT_PREFIX` (0xa9550dac) function
+        /// Calls the contract's `COMMITMENT_PREFIX` (0xa9550dac) function
         pub fn commitment_prefix(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, ::std::string::String> {
@@ -815,7 +815,7 @@ pub mod ibc_connection {
                 .method_hash([169, 85, 13, 172], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `capabilities` (0x5717bcf5) function
+        /// Calls the contract's `capabilities` (0x5717bcf5) function
         pub fn capabilities(
             &self,
             p0: ::std::string::String,
@@ -824,7 +824,7 @@ pub mod ibc_connection {
                 .method_hash([87, 23, 188, 245], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `channels` (0x5b3de260) function
+        /// Calls the contract's `channels` (0x5b3de260) function
         pub fn channels(
             &self,
             p0: ::std::string::String,
@@ -842,7 +842,7 @@ pub mod ibc_connection {
                 .method_hash([91, 61, 226, 96], (p0, p1))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `clientImpls` (0xd1297b8d) function
+        /// Calls the contract's `clientImpls` (0xd1297b8d) function
         pub fn client_impls(
             &self,
             p0: ::std::string::String,
@@ -851,7 +851,7 @@ pub mod ibc_connection {
                 .method_hash([209, 41, 123, 141], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `clientRegistry` (0x990491a5) function
+        /// Calls the contract's `clientRegistry` (0x990491a5) function
         pub fn client_registry(
             &self,
             p0: ::std::string::String,
@@ -860,7 +860,7 @@ pub mod ibc_connection {
                 .method_hash([153, 4, 145, 165], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `clientTypes` (0xc2380105) function
+        /// Calls the contract's `clientTypes` (0xc2380105) function
         pub fn client_types(
             &self,
             p0: ::std::string::String,
@@ -869,7 +869,7 @@ pub mod ibc_connection {
                 .method_hash([194, 56, 1, 5], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `commitments` (0x839df945) function
+        /// Calls the contract's `commitments` (0x839df945) function
         pub fn commitments(
             &self,
             p0: [u8; 32],
@@ -878,7 +878,7 @@ pub mod ibc_connection {
                 .method_hash([131, 157, 249, 69], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `connectionOpenAck` (0xe7f32c0f) function
+        /// Calls the contract's `connectionOpenAck` (0xe7f32c0f) function
         pub fn connection_open_ack(
             &self,
             msg: MsgConnectionOpenAck,
@@ -887,7 +887,7 @@ pub mod ibc_connection {
                 .method_hash([231, 243, 44, 15], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `connectionOpenConfirm` (0x87c54dd4) function
+        /// Calls the contract's `connectionOpenConfirm` (0x87c54dd4) function
         pub fn connection_open_confirm(
             &self,
             msg: MsgConnectionOpenConfirm,
@@ -896,7 +896,7 @@ pub mod ibc_connection {
                 .method_hash([135, 197, 77, 212], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `connectionOpenInit` (0x8775f7f8) function
+        /// Calls the contract's `connectionOpenInit` (0x8775f7f8) function
         pub fn connection_open_init(
             &self,
             msg: MsgConnectionOpenInit,
@@ -905,7 +905,7 @@ pub mod ibc_connection {
                 .method_hash([135, 117, 247, 248], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `connectionOpenTry` (0x7b666dc1) function
+        /// Calls the contract's `connectionOpenTry` (0x7b666dc1) function
         pub fn connection_open_try(
             &self,
             msg: MsgConnectionOpenTry,
@@ -914,7 +914,7 @@ pub mod ibc_connection {
                 .method_hash([123, 102, 109, 193], (msg,))
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `connections` (0x31973f00) function
+        /// Calls the contract's `connections` (0x31973f00) function
         pub fn connections(
             &self,
             p0: ::std::string::String,
@@ -931,7 +931,7 @@ pub mod ibc_connection {
                 .method_hash([49, 151, 63, 0], p0)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getClient` (0x7eb78932) function
+        /// Calls the contract's `getClient` (0x7eb78932) function
         pub fn get_client(
             &self,
             client_id: ::std::string::String,
@@ -940,7 +940,7 @@ pub mod ibc_connection {
                 .method_hash([126, 183, 137, 50], client_id)
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `getCompatibleVersions` (0xc8e4bcb9) function
+        /// Calls the contract's `getCompatibleVersions` (0xc8e4bcb9) function
         pub fn get_compatible_versions(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<
@@ -951,7 +951,7 @@ pub mod ibc_connection {
                 .method_hash([200, 228, 188, 185], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `nextChannelSequencePath` (0x8669fd15) function
+        /// Calls the contract's `nextChannelSequencePath` (0x8669fd15) function
         pub fn next_channel_sequence_path(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, [u8; 32]> {
@@ -959,7 +959,7 @@ pub mod ibc_connection {
                 .method_hash([134, 105, 253, 21], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `nextClientSequencePath` (0x990c3888) function
+        /// Calls the contract's `nextClientSequencePath` (0x990c3888) function
         pub fn next_client_sequence_path(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, [u8; 32]> {
@@ -967,7 +967,7 @@ pub mod ibc_connection {
                 .method_hash([153, 12, 56, 136], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Calls the contract's `nextConnectionSequencePath` (0x46807086) function
+        /// Calls the contract's `nextConnectionSequencePath` (0x46807086) function
         pub fn next_connection_sequence_path(
             &self,
         ) -> ::ethers::contract::builders::ContractCall<M, [u8; 32]> {
@@ -975,28 +975,28 @@ pub mod ibc_connection {
                 .method_hash([70, 128, 112, 134], ())
                 .expect("method not found (this should never happen)")
         }
-        ///Gets the contract's `ConnectionOpenAck` event
+        /// Gets the contract's `ConnectionOpenAck` event
         pub fn connection_open_ack_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ConnectionOpenAckFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `ConnectionOpenConfirm` event
+        /// Gets the contract's `ConnectionOpenConfirm` event
         pub fn connection_open_confirm_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ConnectionOpenConfirmFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `ConnectionOpenInit` event
+        /// Gets the contract's `ConnectionOpenInit` event
         pub fn connection_open_init_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ConnectionOpenInitFilter>
         {
             self.0.event()
         }
-        ///Gets the contract's `ConnectionOpenTry` event
+        /// Gets the contract's `ConnectionOpenTry` event
         pub fn connection_open_try_filter(
             &self,
         ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, ConnectionOpenTryFilter>
@@ -1020,7 +1020,7 @@ pub mod ibc_connection {
             Self::new(contract.address(), contract.client())
         }
     }
-    ///Custom Error type `ErrClientNotFound` with signature `ErrClientNotFound()` and selector `0xb6c71f7d`
+    /// Custom Error type `ErrClientNotFound` with signature `ErrClientNotFound()` and selector `0xb6c71f7d`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1033,7 +1033,7 @@ pub mod ibc_connection {
     )]
     #[etherror(name = "ErrClientNotFound", abi = "ErrClientNotFound()")]
     pub struct ErrClientNotFound;
-    ///Custom Error type `ErrConnectionAlreadyExists` with signature `ErrConnectionAlreadyExists()` and selector `0xf863275f`
+    /// Custom Error type `ErrConnectionAlreadyExists` with signature `ErrConnectionAlreadyExists()` and selector `0xf863275f`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1049,7 +1049,7 @@ pub mod ibc_connection {
         abi = "ErrConnectionAlreadyExists()"
     )]
     pub struct ErrConnectionAlreadyExists;
-    ///Custom Error type `ErrInvalidConnectionState` with signature `ErrInvalidConnectionState()` and selector `0x8ca98990`
+    /// Custom Error type `ErrInvalidConnectionState` with signature `ErrInvalidConnectionState()` and selector `0x8ca98990`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1065,7 +1065,7 @@ pub mod ibc_connection {
         abi = "ErrInvalidConnectionState()"
     )]
     pub struct ErrInvalidConnectionState;
-    ///Custom Error type `ErrInvalidProof` with signature `ErrInvalidProof()` and selector `0x14209932`
+    /// Custom Error type `ErrInvalidProof` with signature `ErrInvalidProof()` and selector `0x14209932`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1078,7 +1078,7 @@ pub mod ibc_connection {
     )]
     #[etherror(name = "ErrInvalidProof", abi = "ErrInvalidProof()")]
     pub struct ErrInvalidProof;
-    ///Custom Error type `ErrNoCounterpartyVersion` with signature `ErrNoCounterpartyVersion()` and selector `0x33ca2894`
+    /// Custom Error type `ErrNoCounterpartyVersion` with signature `ErrNoCounterpartyVersion()` and selector `0x33ca2894`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1091,7 +1091,7 @@ pub mod ibc_connection {
     )]
     #[etherror(name = "ErrNoCounterpartyVersion", abi = "ErrNoCounterpartyVersion()")]
     pub struct ErrNoCounterpartyVersion;
-    ///Custom Error type `ErrUnsupportedVersion` with signature `ErrUnsupportedVersion()` and selector `0xbcdf6cca`
+    /// Custom Error type `ErrUnsupportedVersion` with signature `ErrUnsupportedVersion()` and selector `0xbcdf6cca`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1104,7 +1104,7 @@ pub mod ibc_connection {
     )]
     #[etherror(name = "ErrUnsupportedVersion", abi = "ErrUnsupportedVersion()")]
     pub struct ErrUnsupportedVersion;
-    ///Custom Error type `ErrValidateSelfClient` with signature `ErrValidateSelfClient()` and selector `0x58a3849b`
+    /// Custom Error type `ErrValidateSelfClient` with signature `ErrValidateSelfClient()` and selector `0x58a3849b`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1117,7 +1117,7 @@ pub mod ibc_connection {
     )]
     #[etherror(name = "ErrValidateSelfClient", abi = "ErrValidateSelfClient()")]
     pub struct ErrValidateSelfClient;
-    ///Custom Error type `ErrVersionMustBeUnset` with signature `ErrVersionMustBeUnset()` and selector `0x82c28dca`
+    /// Custom Error type `ErrVersionMustBeUnset` with signature `ErrVersionMustBeUnset()` and selector `0x82c28dca`
     #[derive(
         Clone,
         ::ethers::contract::EthError,
@@ -1130,7 +1130,7 @@ pub mod ibc_connection {
     )]
     #[etherror(name = "ErrVersionMustBeUnset", abi = "ErrVersionMustBeUnset()")]
     pub struct ErrVersionMustBeUnset;
-    ///Container type for all of the contract's custom errors
+    /// Container type for all of the contract's custom errors
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum IBCConnectionErrors {
         ErrClientNotFound(ErrClientNotFound),
@@ -1337,6 +1337,8 @@ pub mod ibc_connection {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ConnectionOpenAck",
@@ -1357,6 +1359,8 @@ pub mod ibc_connection {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ConnectionOpenConfirm",
@@ -1377,6 +1381,8 @@ pub mod ibc_connection {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ConnectionOpenInit",
@@ -1396,6 +1402,8 @@ pub mod ibc_connection {
         PartialEq,
         Eq,
         Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
     )]
     #[ethevent(
         name = "ConnectionOpenTry",
@@ -1407,8 +1415,17 @@ pub mod ibc_connection {
         pub counterparty_client_id: ::std::string::String,
         pub counterparty_connection_id: ::std::string::String,
     }
-    ///Container type for all of the contract's events
-    #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
+    /// Container type for all of the contract's events
+    #[derive(
+        Clone,
+        ::ethers::contract::EthAbiType,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        ::serde::Serialize,
+        ::serde::Deserialize,
+    )]
     pub enum IBCConnectionEvents {
         ConnectionOpenAckFilter(ConnectionOpenAckFilter),
         ConnectionOpenConfirmFilter(ConnectionOpenConfirmFilter),
@@ -1464,7 +1481,7 @@ pub mod ibc_connection {
             Self::ConnectionOpenTryFilter(value)
         }
     }
-    ///Container type for all input parameters for the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
+    /// Container type for all input parameters for the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1477,7 +1494,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "COMMITMENT_PREFIX", abi = "COMMITMENT_PREFIX()")]
     pub struct CommitmentPrefixCall;
-    ///Container type for all input parameters for the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
+    /// Container type for all input parameters for the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1490,7 +1507,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "capabilities", abi = "capabilities(string)")]
     pub struct CapabilitiesCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
+    /// Container type for all input parameters for the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1503,7 +1520,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "channels", abi = "channels(string,string)")]
     pub struct ChannelsCall(pub ::std::string::String, pub ::std::string::String);
-    ///Container type for all input parameters for the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`
+    /// Container type for all input parameters for the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1516,7 +1533,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "clientImpls", abi = "clientImpls(string)")]
     pub struct ClientImplsCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `clientRegistry` function with signature `clientRegistry(string)` and selector `0x990491a5`
+    /// Container type for all input parameters for the `clientRegistry` function with signature `clientRegistry(string)` and selector `0x990491a5`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1529,7 +1546,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "clientRegistry", abi = "clientRegistry(string)")]
     pub struct ClientRegistryCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `clientTypes` function with signature `clientTypes(string)` and selector `0xc2380105`
+    /// Container type for all input parameters for the `clientTypes` function with signature `clientTypes(string)` and selector `0xc2380105`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1542,7 +1559,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "clientTypes", abi = "clientTypes(string)")]
     pub struct ClientTypesCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `commitments` function with signature `commitments(bytes32)` and selector `0x839df945`
+    /// Container type for all input parameters for the `commitments` function with signature `commitments(bytes32)` and selector `0x839df945`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1555,7 +1572,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "commitments", abi = "commitments(bytes32)")]
     pub struct CommitmentsCall(pub [u8; 32]);
-    ///Container type for all input parameters for the `connectionOpenAck` function with signature `connectionOpenAck((string,bytes,(string,string[]),string,bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address))` and selector `0xe7f32c0f`
+    /// Container type for all input parameters for the `connectionOpenAck` function with signature `connectionOpenAck((string,bytes,(string,string[]),string,bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address))` and selector `0xe7f32c0f`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1573,7 +1590,7 @@ pub mod ibc_connection {
     pub struct ConnectionOpenAckCall {
         pub msg: MsgConnectionOpenAck,
     }
-    ///Container type for all input parameters for the `connectionOpenConfirm` function with signature `connectionOpenConfirm((string,bytes,(uint64,uint64),address))` and selector `0x87c54dd4`
+    /// Container type for all input parameters for the `connectionOpenConfirm` function with signature `connectionOpenConfirm((string,bytes,(uint64,uint64),address))` and selector `0x87c54dd4`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1591,7 +1608,7 @@ pub mod ibc_connection {
     pub struct ConnectionOpenConfirmCall {
         pub msg: MsgConnectionOpenConfirm,
     }
-    ///Container type for all input parameters for the `connectionOpenInit` function with signature `connectionOpenInit((string,(string,string[]),(string,string,(bytes)),uint64,address))` and selector `0x8775f7f8`
+    /// Container type for all input parameters for the `connectionOpenInit` function with signature `connectionOpenInit((string,(string,string[]),(string,string,(bytes)),uint64,address))` and selector `0x8775f7f8`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1609,7 +1626,7 @@ pub mod ibc_connection {
     pub struct ConnectionOpenInitCall {
         pub msg: MsgConnectionOpenInit,
     }
-    ///Container type for all input parameters for the `connectionOpenTry` function with signature `connectionOpenTry(((string,string,(bytes)),uint64,string,bytes,(string,string[])[],bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address))` and selector `0x7b666dc1`
+    /// Container type for all input parameters for the `connectionOpenTry` function with signature `connectionOpenTry(((string,string,(bytes)),uint64,string,bytes,(string,string[])[],bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address))` and selector `0x7b666dc1`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1627,7 +1644,7 @@ pub mod ibc_connection {
     pub struct ConnectionOpenTryCall {
         pub msg: MsgConnectionOpenTry,
     }
-    ///Container type for all input parameters for the `connections` function with signature `connections(string)` and selector `0x31973f00`
+    /// Container type for all input parameters for the `connections` function with signature `connections(string)` and selector `0x31973f00`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1640,7 +1657,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "connections", abi = "connections(string)")]
     pub struct ConnectionsCall(pub ::std::string::String);
-    ///Container type for all input parameters for the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
+    /// Container type for all input parameters for the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1655,7 +1672,7 @@ pub mod ibc_connection {
     pub struct GetClientCall {
         pub client_id: ::std::string::String,
     }
-    ///Container type for all input parameters for the `getCompatibleVersions` function with signature `getCompatibleVersions()` and selector `0xc8e4bcb9`
+    /// Container type for all input parameters for the `getCompatibleVersions` function with signature `getCompatibleVersions()` and selector `0xc8e4bcb9`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1668,7 +1685,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "getCompatibleVersions", abi = "getCompatibleVersions()")]
     pub struct GetCompatibleVersionsCall;
-    ///Container type for all input parameters for the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
+    /// Container type for all input parameters for the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1681,7 +1698,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "nextChannelSequencePath", abi = "nextChannelSequencePath()")]
     pub struct NextChannelSequencePathCall;
-    ///Container type for all input parameters for the `nextClientSequencePath` function with signature `nextClientSequencePath()` and selector `0x990c3888`
+    /// Container type for all input parameters for the `nextClientSequencePath` function with signature `nextClientSequencePath()` and selector `0x990c3888`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1694,7 +1711,7 @@ pub mod ibc_connection {
     )]
     #[ethcall(name = "nextClientSequencePath", abi = "nextClientSequencePath()")]
     pub struct NextClientSequencePathCall;
-    ///Container type for all input parameters for the `nextConnectionSequencePath` function with signature `nextConnectionSequencePath()` and selector `0x46807086`
+    /// Container type for all input parameters for the `nextConnectionSequencePath` function with signature `nextConnectionSequencePath()` and selector `0x46807086`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -1710,7 +1727,7 @@ pub mod ibc_connection {
         abi = "nextConnectionSequencePath()"
     )]
     pub struct NextConnectionSequencePathCall;
-    ///Container type for all of the contract's call
+    /// Container type for all of the contract's call
     #[derive(Clone, ::ethers::contract::EthAbiType, Debug, PartialEq, Eq, Hash)]
     pub enum IBCConnectionCalls {
         CommitmentPrefix(CommitmentPrefixCall),
@@ -1954,7 +1971,7 @@ pub mod ibc_connection {
             Self::NextConnectionSequencePath(value)
         }
     }
-    ///Container type for all return fields from the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
+    /// Container type for all return fields from the `COMMITMENT_PREFIX` function with signature `COMMITMENT_PREFIX()` and selector `0xa9550dac`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1966,7 +1983,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct CommitmentPrefixReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
+    /// Container type for all return fields from the `capabilities` function with signature `capabilities(string)` and selector `0x5717bcf5`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1978,7 +1995,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct CapabilitiesReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
+    /// Container type for all return fields from the `channels` function with signature `channels(string,string)` and selector `0x5b3de260`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -1995,7 +2012,7 @@ pub mod ibc_connection {
         pub counterparty: IbcCoreChannelV1CounterpartyData,
         pub version: ::std::string::String,
     }
-    ///Container type for all return fields from the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`
+    /// Container type for all return fields from the `clientImpls` function with signature `clientImpls(string)` and selector `0xd1297b8d`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2007,7 +2024,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct ClientImplsReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `clientRegistry` function with signature `clientRegistry(string)` and selector `0x990491a5`
+    /// Container type for all return fields from the `clientRegistry` function with signature `clientRegistry(string)` and selector `0x990491a5`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2019,7 +2036,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct ClientRegistryReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `clientTypes` function with signature `clientTypes(string)` and selector `0xc2380105`
+    /// Container type for all return fields from the `clientTypes` function with signature `clientTypes(string)` and selector `0xc2380105`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2031,7 +2048,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct ClientTypesReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `commitments` function with signature `commitments(bytes32)` and selector `0x839df945`
+    /// Container type for all return fields from the `commitments` function with signature `commitments(bytes32)` and selector `0x839df945`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2043,7 +2060,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct CommitmentsReturn(pub [u8; 32]);
-    ///Container type for all return fields from the `connectionOpenInit` function with signature `connectionOpenInit((string,(string,string[]),(string,string,(bytes)),uint64,address))` and selector `0x8775f7f8`
+    /// Container type for all return fields from the `connectionOpenInit` function with signature `connectionOpenInit((string,(string,string[]),(string,string,(bytes)),uint64,address))` and selector `0x8775f7f8`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2055,7 +2072,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct ConnectionOpenInitReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `connectionOpenTry` function with signature `connectionOpenTry(((string,string,(bytes)),uint64,string,bytes,(string,string[])[],bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address))` and selector `0x7b666dc1`
+    /// Container type for all return fields from the `connectionOpenTry` function with signature `connectionOpenTry(((string,string,(bytes)),uint64,string,bytes,(string,string[])[],bytes,bytes,bytes,(uint64,uint64),(uint64,uint64),address))` and selector `0x7b666dc1`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2067,7 +2084,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct ConnectionOpenTryReturn(pub ::std::string::String);
-    ///Container type for all return fields from the `connections` function with signature `connections(string)` and selector `0x31973f00`
+    /// Container type for all return fields from the `connections` function with signature `connections(string)` and selector `0x31973f00`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2084,7 +2101,7 @@ pub mod ibc_connection {
         pub counterparty: IbcCoreConnectionV1CounterpartyData,
         pub delay_period: u64,
     }
-    ///Container type for all return fields from the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
+    /// Container type for all return fields from the `getClient` function with signature `getClient(string)` and selector `0x7eb78932`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2096,7 +2113,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct GetClientReturn(pub ::ethers::core::types::Address);
-    ///Container type for all return fields from the `getCompatibleVersions` function with signature `getCompatibleVersions()` and selector `0xc8e4bcb9`
+    /// Container type for all return fields from the `getCompatibleVersions` function with signature `getCompatibleVersions()` and selector `0xc8e4bcb9`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2108,7 +2125,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct GetCompatibleVersionsReturn(pub ::std::vec::Vec<IbcCoreConnectionV1VersionData>);
-    ///Container type for all return fields from the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
+    /// Container type for all return fields from the `nextChannelSequencePath` function with signature `nextChannelSequencePath()` and selector `0x8669fd15`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2120,7 +2137,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct NextChannelSequencePathReturn(pub [u8; 32]);
-    ///Container type for all return fields from the `nextClientSequencePath` function with signature `nextClientSequencePath()` and selector `0x990c3888`
+    /// Container type for all return fields from the `nextClientSequencePath` function with signature `nextClientSequencePath()` and selector `0x990c3888`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -2132,7 +2149,7 @@ pub mod ibc_connection {
         Hash,
     )]
     pub struct NextClientSequencePathReturn(pub [u8; 32]);
-    ///Container type for all return fields from the `nextConnectionSequencePath` function with signature `nextConnectionSequencePath()` and selector `0x46807086`
+    /// Container type for all return fields from the `nextConnectionSequencePath` function with signature `nextConnectionSequencePath()` and selector `0x46807086`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

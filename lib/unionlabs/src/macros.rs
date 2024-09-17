@@ -15,16 +15,77 @@ macro_rules! hex_string_array_wrapper {
                 PartialOrd,
                 Ord,
                 ::ssz::Ssz,
-                ::serde::Serialize,
-                ::serde::Deserialize,
                 Hash
             )]
             #[ssz(transparent)]
-            #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-            pub struct $Struct(#[serde(with = "::serde_utils::hex_string")] pub [u8; $N]);
+            pub struct $Struct(pub [u8; $N]);
+
+            impl ::serde::Serialize for $Struct {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    use serde::ser::SerializeTupleStruct;
+
+                    if serializer.is_human_readable() {
+                        serializer.serialize_str(&::serde_utils::to_hex(self))
+                    } else {
+                        let mut s = serializer.serialize_tuple_struct(stringify!($Struct), $N)?;
+                        for b in self.0 {
+                            s.serialize_field(&b)?;
+                        }
+                        s.end()
+                    }
+                }
+            }
+
+            impl<'de> ::serde::Deserialize<'de> for $Struct {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: ::serde::Deserializer<'de>,
+                {
+                    if deserializer.is_human_readable() {
+                        String::deserialize(deserializer)
+                            .and_then(|x| ::serde_utils::parse_hex::<Self>(x).map_err(::serde::de::Error::custom))
+                    } else {
+                        struct ArrayVisitor;
+
+                        impl<'de> serde::de::Visitor<'de> for ArrayVisitor {
+                            type Value = [u8; $N];
+
+                            fn expecting(&self, formatter: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+                                write!(formatter, "an array of length {}", $N)
+                            }
+
+                            fn visit_seq<A>(self, mut seq: A) -> ::core::result::Result<[u8; $N], A::Error>
+                            where
+                                A: serde::de::SeqAccess<'de>,
+                            {
+                                let mut arr = [0_u8; $N];
+
+                                for (i, b) in arr.iter_mut().enumerate() {
+                                    let val = seq
+                                        .next_element()?
+                                        .ok_or_else(|| serde::de::Error::invalid_length(i, &self))?;
+
+                                    *b = val;
+                                }
+
+                                Ok(arr)
+                            }
+                        }
+
+                        Ok(Self(deserializer.deserialize_tuple($N, ArrayVisitor)?))
+                    }
+                }
+            }
 
             impl $Struct {
                 pub const BYTES_LEN: usize = $N;
+
+                pub const BITS_LEN: usize = $N * 8;
+
+                pub const ZERO: Self = Self([0; $N]);
 
                 #[doc = concat!("The [`Display`](core::fmt::Display) impl for [`", stringify!($Struct), "`]")]
                 /// prefixes the output with `0x`, which may not be desirable in all contexts.
@@ -36,6 +97,11 @@ macro_rules! hex_string_array_wrapper {
 
                 pub fn iter(&self) -> core::slice::Iter<u8> {
                     (&self).into_iter()
+                }
+
+                #[must_use]
+                pub fn iter_bits(&self) -> $crate::hash::BytesBitIterator<'_> {
+                    $crate::hash::BytesBitIterator::new(self)
                 }
             }
 
@@ -265,7 +331,6 @@ macro_rules! wrapper_enum {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
         #[serde(rename_all = "snake_case")]
         $(#[$meta])*
-        #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
         pub enum $Enum {
             $(
@@ -448,3 +513,18 @@ macro_rules! iter {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! assert_all_eq (
+    ($a:expr, $b:expr) => {
+        assert_eq!($a, $b);
+    };
+    ($a:expr, $b:expr, $c:expr) => {
+        assert_eq!($a, $b);
+        assert_eq!($b, $c);
+    };
+    ($a:expr, $b:expr, $c:expr, $($rest:expr),*$(,)?) => {
+        assert_eq!($a, $b);
+        assert_all_eq!($b, $c, $($rest),*);
+    }
+);

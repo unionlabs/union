@@ -3,7 +3,7 @@ use ibc_vm_rs::{
         channel_handshake::{ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry},
         client_state::UpdateClient,
         connection_handshake::{
-            self, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+            ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         },
         packet::{Acknowledgement, RecvPacket, SendPacket},
         CreateClient,
@@ -50,7 +50,7 @@ impl IbcHost for Contract {
             .unwrap())
     }
 
-    fn commit_raw(&mut self, key: Path<ClientId, Height>, value: Vec<u8>) -> Result<(), Error> {
+    fn commit_raw(&mut self, key: Path, value: Vec<u8>) -> Result<(), Error> {
         self.commitments.insert(&key.to_string(), &value);
         Ok(())
     }
@@ -67,17 +67,13 @@ impl IbcHost for Contract {
             .get(&format!("clients/{client_id}/clientState"))
     }
 
-    fn read<T: Decode<Proto>>(&self, key: &Path<ClientId, Height>) -> Option<T> {
+    fn read<T: Decode<Proto>>(&self, key: &Path) -> Option<T> {
         self.commitments
             .get(&key.to_string())
             .map(|item| T::decode(&item).unwrap())
     }
 
-    fn commit<T: Encode<Proto>>(
-        &mut self,
-        key: Path<ClientId, Height>,
-        value: T,
-    ) -> Result<(), Error> {
+    fn commit<T: Encode<Proto>>(&mut self, key: Path, value: T) -> Result<(), Error> {
         self.commitments.insert(&key.to_string(), &value.encode());
         Ok(())
     }
@@ -89,7 +85,7 @@ impl IbcHost for Contract {
             .unwrap())
     }
 
-    fn read_raw(&self, key: &Path<ClientId, Height>) -> Option<Vec<u8>> {
+    fn read_raw(&self, key: &Path) -> Option<Vec<u8>> {
         self.commitments.get(&key.to_string())
     }
 
@@ -109,7 +105,7 @@ impl IbcHost for Contract {
         env::sha256(&data)
     }
 
-    fn delete(&mut self, key: &Path<ClientId, Height>) -> Result<(), Self::Error> {
+    fn delete(&mut self, key: &Path) -> Result<(), Self::Error> {
         let _ = self.commitments.remove(&key.to_string());
         Ok(())
     }
@@ -170,7 +166,7 @@ impl Contract {
     pub fn connection_open_init(
         &mut self,
         client_id: ClientId,
-        counterparty: connection_handshake::Counterparty,
+        counterparty: connection::counterparty::Counterparty,
         version: connection::version::Version,
         delay_period: u64,
     ) -> PromiseOrValue<IbcVmResponse> {
@@ -188,7 +184,7 @@ impl Contract {
     pub fn connection_open_try(
         &mut self,
         client_id: ClientId,
-        counterparty: connection_handshake::Counterparty,
+        counterparty: connection::counterparty::Counterparty,
         counterparty_versions: Vec<connection::version::Version>,
         connection_end_proof: Vec<u8>,
         proof_height: Height,

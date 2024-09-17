@@ -95,7 +95,7 @@ impl<H: HashScheme> ZkTrie<H> {
         let k = to_secure_key::<H>(key)?;
         let key_hash = k.into();
 
-        //mitigate the create-delete issue: do not delete non-existent key
+        // mitigate the create-delete issue: do not delete non-existent key
         match self.try_get_node(db, &key_hash) {
             Ok(_) => {}
             Err(Error::KeyNotFound) => return Ok(()),

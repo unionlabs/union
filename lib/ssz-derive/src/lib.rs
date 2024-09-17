@@ -5,12 +5,8 @@
 //!
 //! The following struct/enum attributes are available:
 //!
-//! - `#[ssz(tag)]`: encodes and decodes an `enum` with 0 fields per variant
 //! - `#[ssz(union)]`: encodes and decodes an `enum` with a one-byte variant selector.
-//! - `#[ssz(transparent)]`: allows encoding an `enum` by serializing only the
-//!     value whilst ignoring outermost the `enum`.
-//! - `#[ssz(transparent)]`: encodes and decodes a `struct` with exactly one
-//!     non-skipped field as if the outermost `struct` does not exist.
+//! - `#[ssz(transparent)]`: encodes and decodes a `struct` with exactly one field as if the outermost `struct` does not exist.
 //!
 //! The following field attributes are available:
 //!
@@ -24,7 +20,6 @@
 //!
 //! /// Represented as an SSZ "list" wrapped in an SSZ "container".
 //! #[derive(Debug, PartialEq, Ssz)]
-//! #[ssz(struct_behaviour = "container")]   // "container" is the default behaviour
 //! struct TypicalStruct {
 //!     foo: List<u8, U4>
 //! }
@@ -102,7 +97,7 @@
 //!
 //! /// Represented as an SSZ "union".
 //! #[derive(Debug, PartialEq, Ssz)]
-//! #[ssz(enum_behaviour = "union")]
+//! #[ssz(union)]
 //! enum UnionEnum {
 //!     Foo(u8),
 //!     Bar(List<u8, U4>),
@@ -119,7 +114,7 @@
 //!
 //! /// Represented as only the value in the enum variant.
 //! #[derive(Debug, PartialEq, Encode)]
-//! #[ssz(enum_behaviour = "transparent")]
+//! #[ssz(transparent)]
 //! enum TransparentEnum {
 //!     Foo(u8),
 //!     Bar(List<u8, U4>),
@@ -133,23 +128,6 @@
 //!     TransparentEnum::Bar(vec![42, 42].try_into().unwrap()).as_ssz_bytes(),
 //!     vec![42, 42]
 //! );
-//!
-//! /// Represented as an SSZ "uint8"
-//! #[derive(Debug, PartialEq, Ssz)]
-//! #[ssz(enum_behaviour = "tag")]
-//! enum TagEnum {
-//!     Foo,
-//!     Bar,
-//! }
-//! assert_eq!(
-//!    TagEnum::Foo.as_ssz_bytes(),
-//!    vec![0]
-//! );
-//! assert_eq!(
-//!    TagEnum::from_ssz_bytes(&[1]).unwrap(),
-//!    TagEnum::Bar,
-//! );
-//! ```
 
 use syn::{parse_macro_input, DeriveInput};
 

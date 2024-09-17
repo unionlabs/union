@@ -5,7 +5,9 @@ use unionlabs::{
     ibc::core::{
         client::height::Height,
         commitment::merkle_path::MerklePath,
-        connection::{self, version::Version},
+        connection::{
+            self, connection_end::ConnectionEnd, counterparty::Counterparty, version::Version,
+        },
     },
     ics24::ConnectionPath,
     id::ClientId,
@@ -16,9 +18,6 @@ use crate::{
     Either, IbcAction, IbcError, IbcEvent, IbcHost, IbcQuery, IbcResponse, IbcVmResponse, Runnable,
     Status, DEFAULT_IBC_VERSION, DEFAULT_MERKLE_PREFIX,
 };
-
-pub type Counterparty = connection::counterparty::Counterparty<ClientId, String>;
-pub type ConnectionEnd = connection::connection_end::ConnectionEnd<ClientId, ClientId, String>;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
@@ -211,7 +210,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                     state: connection::state::State::Init,
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
-                        connection_id: String::new(),
+                        connection_id: None,
                         prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period,
@@ -235,7 +234,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                             path: MerklePath {
                                 key_path: vec![
                                     "ibc".to_string(),
-                                    format!("connections/{}", counterparty_connection_id),
+                                    format!("connections/{}", counterparty_connection_id.unwrap()),
                                 ],
                             },
                             // TODO(aeryz): generic over the encoding
@@ -279,7 +278,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenTry {
                         connection_id,
                         client_id,
                         counterparty_client_id: counterparty.client_id,
-                        counterparty_connection_id: counterparty.connection_id.validate().unwrap(),
+                        counterparty_connection_id: counterparty.connection_id.unwrap(),
                     })],
                     IbcVmResponse::Empty,
                 ))
@@ -355,7 +354,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     state: connection::state::State::Tryopen,
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
-                        connection_id: connection_id.clone(),
+                        connection_id: Some(connection_id.clone().validate().unwrap()),
                         prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period: connection.delay_period,
@@ -401,7 +400,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenAck {
                     return Err(IbcError::MembershipVerificationFailure.into());
                 }
                 connection.state = connection::state::State::Open;
-                connection.counterparty.connection_id = counterparty_connection_id.clone();
+                connection.counterparty.connection_id =
+                    Some(counterparty_connection_id.clone().validate().unwrap());
 
                 let counterparty_client_id = connection.counterparty.client_id.clone();
 
@@ -487,13 +487,14 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                     state: connection::state::State::Open,
                     counterparty: Counterparty {
                         client_id: client_id.clone(),
-                        connection_id: connection_id.clone(),
+                        connection_id: Some(connection_id.clone().validate().unwrap()),
                         prefix: DEFAULT_MERKLE_PREFIX.clone(),
                     },
                     delay_period: connection.delay_period,
                 };
 
-                let counterparty_connection_id = connection.counterparty.connection_id.clone();
+                let counterparty_connection_id =
+                    connection.counterparty.connection_id.clone().unwrap();
 
                 Either::Left((
                     ConnectionOpenConfirm::ConnectionStateVerified {
@@ -534,7 +535,8 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                 }
 
                 let counterparty_client_id = connection.counterparty.client_id.clone();
-                let counterparty_connection_id = connection.counterparty.connection_id.clone();
+                let counterparty_connection_id =
+                    connection.counterparty.connection_id.clone().unwrap();
 
                 connection.state = connection::state::State::Open;
                 host.commit(
@@ -551,9 +553,7 @@ impl<T: IbcHost> Runnable<T> for ConnectionOpenConfirm {
                             connection_id: connection_id.validate().unwrap(),
                             client_id,
                             counterparty_client_id,
-                            counterparty_connection_id: counterparty_connection_id
-                                .validate()
-                                .unwrap(),
+                            counterparty_connection_id,
                         },
                     )],
                     IbcVmResponse::Empty,

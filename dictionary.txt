@@ -266,6 +266,7 @@ anypb
 anys
 appchain
 appchains
+appetito
 appmodule
 appparams
 aptos
@@ -306,6 +307,7 @@ bankkeeper
 banktypes
 bartio
 baseapp
+batchable
 beacond
 beacondata
 beatae
@@ -353,6 +355,7 @@ brainer
 builtins
 bumpp
 bunx
+buon
 byteorder
 bytevec
 cachix
@@ -794,6 +797,7 @@ misbehaviour
 misbehiavor
 mktemp
 mmxyqu
+moka
 mollitia
 monitonically
 monniker
@@ -853,6 +857,7 @@ nums
 numtide
 observablehq
 oceanlewis
+octas
 ofetch
 offchain
 omit
@@ -925,6 +930,7 @@ preimages
 preprocessors
 prerender
 prerendered
+prettyplease
 prevote
 prevotes
 println
@@ -984,6 +990,7 @@ redelegating
 redelegation
 redelegations
 reencode
+reencoded
 reentrancy
 reexcute
 reexecute
@@ -1069,6 +1076,7 @@ slurpfile
 smallvec
 snapshotter
 snapshottypes
+soketto
 solomachine
 sonner
 spearbit
@@ -1228,6 +1236,7 @@ unbonded
 unbonding
 uncompr
 uncons
+unconstructable
 undelegate
 undelegations
 unergonomic
@@ -1259,6 +1268,7 @@ unloadable
 unmarshal
 unmarshalling
 unopinionated
+unparse
 unplugin
 unprefixed
 unsetting
@@ -1345,13 +1355,16 @@ xprv
 xqxp
 xsmfxu
 yamlfmt
+yoinked
 ypyp
 yqyp
 yzmmzyfhxg
 zellij
 zerion
+zeroize
 zerolog
 zetachain
+zkevm
 zkgm
 zkps
 zktrie

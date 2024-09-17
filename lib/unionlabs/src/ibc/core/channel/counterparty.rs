@@ -14,6 +14,7 @@ use crate::id::PortId;
 )]
 pub struct Counterparty {
     pub port_id: PortId,
+    // TODO: Option<ChannelId>, same as connection counterparty
     pub channel_id: String,
 }
 
@@ -26,7 +27,7 @@ impl From<Counterparty> for protos::ibc::core::channel::v1::Counterparty {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromChannelCounterpartyError {
     #[error("error parsing port id")]
     PortId(#[source] <PortId as FromStr>::Err),

@@ -6,7 +6,7 @@ repository   = { workspace = true }
 version      = "0.1.0"
 
 [dependencies]
-jsonrpsee   = { version = "0.22.3", features = ["tracing", "ws-client"] }
+jsonrpsee   = { workspace = true, features = ["tracing", "ws-client"] }
 macros      = { workspace = true }
 serde       = { workspace = true, features = ["derive"] }
 serde-utils = { workspace = true }

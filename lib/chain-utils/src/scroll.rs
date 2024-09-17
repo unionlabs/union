@@ -1,8 +1,8 @@
-use std::{error::Error, sync::Arc};
+use std::sync::Arc;
 
 use contracts::ibc_handler::IBCHandler;
 use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
-use futures::{FutureExt, TryFutureExt};
+use futures::FutureExt;
 use scroll_api::ScrollClient;
 use serde::{Deserialize, Serialize};
 use tracing::debug;
@@ -10,20 +10,21 @@ use unionlabs::{
     ethereum::config::Mainnet,
     google::protobuf::any::Any,
     hash::{H160, H256},
-    ibc::{core::client::height::Height, lightclients::scroll},
-    traits::{Chain, ClientIdOf, ClientState, FromStrExact},
+    ibc::{
+        core::client::height::Height,
+        lightclients::{ethereum, scroll},
+    },
+    id::ClientId,
     uint::U256,
 };
 
 use crate::{
     ethereum::{
-        self, balance_of_signers, Ethereum, EthereumConsensusChain, EthereumIbcChain,
-        EthereumInitError, EthereumKeyring, EthereumSignerMiddleware, EthereumSignersConfig,
-        ReadWrite, Readonly,
+        balance_of_signers, Ethereum, EthereumConsensusChain, EthereumIbcChain, EthereumKeyring,
+        EthereumSignerMiddleware, EthereumSignersConfig, ReadWrite, Readonly,
     },
     keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
-    union::Union,
-    wasm::Wasm,
+    BoxDynError,
 };
 
 pub const SCROLL_REVISION_NUMBER: u64 = 0;
@@ -55,7 +56,7 @@ pub struct Scroll {
     /// [ScrollChain.committedBatches](https://github.com/scroll-tech/scroll/blob/71f88b04f5a69196138c8cec63a75cf1f0ba2d99/contracts/src/L1/rollup/ScrollChain.sol#L156)
     pub rollup_committed_batches_slot: U256,
 
-    pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
+    pub l1_client_id: ClientId,
     /// GRPC url of Union, used to query the L1 state with [`Self::l1_client_id`].
     pub union_grpc_url: String,
 }
@@ -78,8 +79,8 @@ pub struct Config {
     pub rollup_message_queue_slot: U256,
     pub rollup_committed_batches_slot: U256,
 
-    pub l1_client_id: ClientIdOf<Ethereum<Mainnet>>,
-    pub l1: ethereum::Config<Readonly>,
+    pub l1_client_id: ClientId,
+    pub l1: crate::ethereum::Config<Readonly>,
     pub scroll_api: String,
     pub union_grpc_url: String,
 }
@@ -148,8 +149,8 @@ impl EthereumConsensusChain for Scroll {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ScrollInitError {
-    #[error("unable to initialize L1")]
-    Ethereum(#[from] EthereumInitError),
+    // #[error("unable to initialize L1")]
+    // Ethereum(#[from] EthereumInitError),
     #[error("unable to connect to websocket")]
     Ws(#[from] WsClientError),
     #[error("provider error")]
@@ -176,7 +177,9 @@ impl Scroll {
             multicall_address: config.multicall_address,
             provider: Arc::new(provider),
             scroll_api_client: ScrollClient::new(config.scroll_api),
-            l1: Ethereum::new(config.l1).await?,
+            l1: todo!(),
+            // l1: Ethereum::new(config.l1).await?,
+            #[allow(unreachable_code)]
             rollup_contract_address: config.rollup_contract_address,
             rollup_finalized_state_roots_slot: config.rollup_finalized_state_roots_slot,
             rollup_last_finalized_batch_index_slot: config.rollup_last_finalized_batch_index_slot,
@@ -230,42 +233,13 @@ impl Scroll {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
-pub struct ScrollChainType;
-impl FromStrExact for ScrollChainType {
-    const EXPECTING: &'static str = "scroll";
-}
-
-type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
-
-impl Chain for Scroll {
-    type ChainType = ScrollChainType;
-
-    type SelfClientState = scroll::client_state::ClientState;
-    type SelfConsensusState = scroll::consensus_state::ConsensusState;
-
-    type StoredClientState<Tr: Chain> = <Ethereum<Mainnet> as Chain>::StoredClientState<Tr>;
-    type StoredConsensusState<Tr: Chain> = <Ethereum<Mainnet> as Chain>::StoredConsensusState<Tr>;
-
-    type Header = scroll::header::Header;
-
-    type Height = <Ethereum<Mainnet> as Chain>::Height;
-
-    type ClientId = <Ethereum<Mainnet> as Chain>::ClientId;
-
-    type IbcStateEncoding = <Ethereum<Mainnet> as Chain>::IbcStateEncoding;
-
-    type StateProof = <Ethereum<Mainnet> as Chain>::StateProof;
-
-    type ClientType = String;
-
-    type Error = BoxDynError;
-
-    fn chain_id(&self) -> <Self::SelfClientState as ClientState>::ChainId {
+#[allow(dead_code)]
+impl Scroll {
+    fn chain_id(&self) -> U256 {
         self.chain_id
     }
 
-    async fn query_latest_height(&self) -> Result<Self::Height, Self::Error> {
+    async fn query_latest_height(&self) -> Result<Height, BoxDynError> {
         // the latest height of scroll is the latest height of the l1 light client on union
         let l1_client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
             self.union_grpc_url.clone(),
@@ -280,29 +254,32 @@ impl Chain for Scroll {
         .ok_or("client state missing???")?;
 
         // don't worry about it
-        let Any(l1_client_state) =
-            <<Wasm<Union> as Chain>::StoredClientState<Ethereum<Mainnet>>>::try_from(
-                l1_client_state,
-            )
-            .unwrap();
+        let Any(_l1_client_state) = <Any<
+            unionlabs::ibc::lightclients::wasm::client_state::ClientState<
+                ethereum::client_state::ClientState,
+            >,
+        >>::try_from(l1_client_state)
+        .unwrap();
 
-        Ok(self.l1.make_height(l1_client_state.data.latest_slot))
+        // Ok(self.l1.make_height(l1_client_state.data.latest_slot))
+
+        todo!()
     }
 
-    async fn query_latest_height_as_destination(&self) -> Result<Self::Height, Self::Error> {
-        // the height of scroll (as destination) is the beacon height of the l1
-        self.l1
-            .query_latest_height_as_destination()
-            .await
-            .map_err(Into::into)
-    }
+    // async fn query_latest_height_as_destination(&self) -> Result<Height, BoxDynError> {
+    //     // the height of scroll (as destination) is the beacon height of the l1
+    //     self.l1
+    //         .query_latest_height_as_destination()
+    //         .await
+    //         .map_err(Into::into)
+    // }
 
-    // FIXME: must be scroll timestamp, not L1
-    async fn query_latest_timestamp(&self) -> Result<i64, Self::Error> {
-        self.l1.query_latest_timestamp().map_err(Into::into).await
-    }
+    // // FIXME: must be scroll timestamp, not L1
+    // async fn query_latest_timestamp(&self) -> Result<i64, BoxDynError> {
+    //     self.l1.query_latest_timestamp().map_err(Into::into).await
+    // }
 
-    async fn self_client_state(&self, height: Self::Height) -> Self::SelfClientState {
+    async fn self_client_state(&self, height: Height) -> scroll::client_state::ClientState {
         scroll::client_state::ClientState {
             l1_client_id: self.l1_client_id.to_string(),
             chain_id: self.chain_id(),
@@ -321,7 +298,10 @@ impl Chain for Scroll {
         }
     }
 
-    async fn self_consensus_state(&self, height: Self::Height) -> Self::SelfConsensusState {
+    async fn self_consensus_state(
+        &self,
+        height: Height,
+    ) -> scroll::consensus_state::ConsensusState {
         let batch_index = self
             .batch_index_of_beacon_slot(height.revision_height)
             .await;

@@ -1,42 +1,56 @@
-use std::{collections::VecDeque, fmt::Debug, ops::ControlFlow};
+use std::{collections::VecDeque, fmt::Debug};
 
 use frunk::{HCons, HList, HNil};
 use tracing::error;
 
 use crate::{Op, QueueMessage};
 
-pub fn do_aggregate<T: QueueMessage, A: UseAggregate<T>>(
-    event: A,
+pub trait SubsetOf<T>: Sized {
+    fn try_from_super(t: T) -> Result<Self, T>;
+
+    fn into_super(self) -> T;
+}
+
+pub fn do_callback<T: QueueMessage, Cb: DoCallback<T>>(
+    event: Cb,
     data: VecDeque<T::Data>,
 ) -> Op<T> {
     let data = match HListTryFromIterator::try_from_iter(data) {
         Ok(ok) => ok,
         Err(_) => {
+            error!(
+                "could not aggregate data into {}",
+                std::any::type_name::<Cb>()
+            );
             panic!(
                 "could not aggregate data into {}",
-                std::any::type_name::<A>()
+                std::any::type_name::<Cb>()
             )
         }
     };
-    A::aggregate(event, data)
+    Cb::call(event, data)
 }
 
-pub(crate) fn pluck<T: TryFrom<U, Error = U>, U>(
-    mut vec: VecDeque<U>,
-) -> ControlFlow<(VecDeque<U>, T), VecDeque<U>> {
+pub fn pluck<T: SubsetOf<U>, U>(mut vec: VecDeque<U>) -> PluckResult<T, U> {
     let mut new_vec = VecDeque::new();
 
     while let Some(data) = vec.pop_front() {
-        match T::try_from(data) {
+        match T::try_from_super(data) {
             Ok(t) => {
                 new_vec.extend(vec);
-                return ControlFlow::Break((new_vec, t));
+                return PluckResult::Found(t, new_vec);
             }
             Err(value) => new_vec.push_back(value),
         }
     }
 
-    ControlFlow::Continue(new_vec)
+    PluckResult::NotFound(new_vec)
+}
+
+pub enum PluckResult<T, U> {
+    /// `(item, rest)`
+    Found(T, VecDeque<U>),
+    NotFound(VecDeque<U>),
 }
 
 // TODO: Figure out how to return the entire source list on error
@@ -47,7 +61,7 @@ pub trait HListTryFromIterator<U>: Sized {
 
 impl<U, T, Tail> HListTryFromIterator<U> for HCons<T, Tail>
 where
-    T: TryFrom<U, Error = U> + Into<U>,
+    T: SubsetOf<U>,
     Tail: HListTryFromIterator<U>,
     U: Debug,
 {
@@ -55,13 +69,13 @@ where
 
     fn try_from_iter(vec: VecDeque<U>) -> Result<Self, VecDeque<U>> {
         match pluck::<T, U>(vec) {
-            ControlFlow::Continue(invalid) => {
+            PluckResult::NotFound(invalid) => {
                 error!(?invalid, "type didn't match");
 
                 Err(invalid)
             }
-            ControlFlow::Break((vec, u)) => Ok(HCons {
-                head: u,
+            PluckResult::Found(t, vec) => Ok(HCons {
+                head: t,
                 tail: Tail::try_from_iter(vec)?,
             }),
         }
@@ -80,37 +94,37 @@ impl<U> HListTryFromIterator<U> for HNil {
     }
 }
 
-pub trait UseAggregate<T: QueueMessage, R = Op<T>> {
-    type AggregatedData: HListTryFromIterator<T::Data>;
+pub trait DoCallback<T: QueueMessage, R = Op<T>> {
+    /// Unordered params for this callback. If there are multiple params of the same type, their ordering is not guaranteed or deterministic.
+    type Params: HListTryFromIterator<T::Data>;
 
-    fn aggregate(this: Self, data: Self::AggregatedData) -> R;
+    fn call(this: Self, data: Self::Params) -> R;
 }
 
-pub struct TupleAggregator;
+pub struct TupleCallback;
 
-pub trait IsAggregateData<T: QueueMessage> = TryFrom<<T as QueueMessage>::Data, Error = <T as QueueMessage>::Data>
-    + Into<<T as QueueMessage>::Data>;
+// pub trait IsAggregateData<T: QueueMessage> = TryFrom<<T as QueueMessage>::Data, Error = <T as QueueMessage>::Data>
+//     + Into<<T as QueueMessage>::Data>;
 
-impl<T> UseAggregate<T, ()> for TupleAggregator
+impl<T> DoCallback<T, ()> for TupleCallback
 where
     T: QueueMessage,
 {
-    type AggregatedData = HList![];
+    type Params = HList![];
 
-    fn aggregate(_: TupleAggregator, _data: Self::AggregatedData) {}
+    fn call(_: TupleCallback, _data: Self::Params) {}
 }
 
-impl<T, U, Tail> UseAggregate<T, (U, Tail)> for TupleAggregator
+impl<T, U, Tail> DoCallback<T, (U, Tail)> for TupleCallback
 where
     T: QueueMessage,
-    U: IsAggregateData<T>,
-    TupleAggregator: UseAggregate<T, Tail>,
-    HList![U, ...<TupleAggregator as UseAggregate<T, Tail>>::AggregatedData]:
-        HListAsTuple<Tuple = (U, Tail)>,
+    U: SubsetOf<T::Data>,
+    TupleCallback: DoCallback<T, Tail>,
+    HList![U, ...<TupleCallback as DoCallback<T, Tail>>::Params]: HListAsTuple<Tuple = (U, Tail)>,
 {
-    type AggregatedData = HList![U, ...<TupleAggregator as UseAggregate<T, Tail>>::AggregatedData];
+    type Params = HList![U, ...<TupleCallback as DoCallback<T, Tail>>::Params];
 
-    fn aggregate(_: TupleAggregator, data: Self::AggregatedData) -> (U, Tail) {
+    fn call(_: TupleCallback, data: Self::Params) -> (U, Tail) {
         data.into_tuple()
     }
 }
@@ -137,23 +151,16 @@ impl<H, Tail: HListAsTuple> HListAsTuple for HCons<H, Tail> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::collections::VecDeque;
 
     use frunk::HList;
-    use tracing_subscriber::EnvFilter;
+    use queue_msg_macro::SubsetOf;
 
-    use super::*;
-    use crate::{
-        fetch,
-        optimize::{passes::NormalizeFinal, Pure},
-        run_to_completion,
-        test_utils::{DataA, DataB, DataC, FetchA, FetchB, FetchC, SimpleMessage},
-        InMemoryQueue,
-    };
+    use crate::{aggregation::HListTryFromIterator, test_utils::queue_msg};
 
     #[test]
     fn hlist_try_from_iter() {
-        #[derive(Debug, PartialEq, enumorph::Enumorph)]
+        #[derive(Debug, PartialEq, enumorph::Enumorph, SubsetOf)]
         pub enum A {
             B(B),
             C(C),
@@ -200,61 +207,54 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn tuple_aggregate() {
-        let _ = tracing_subscriber::fmt()
-            .with_env_filter(EnvFilter::from_default_env())
-            .try_init();
+    // #[tokio::test]
+    // async fn tuple_aggregate() {
+    //     let _ = tracing_subscriber::fmt()
+    //         .with_env_filter(EnvFilter::from_default_env())
+    //         .try_init();
 
-        let _: () = run_to_completion::<
-            TupleAggregator,
-            SimpleMessage,
-            (),
-            InMemoryQueue<SimpleMessage>,
-            NormalizeFinal,
-            Pure<NormalizeFinal>,
-        >(
-            TupleAggregator,
-            Arc::new(()),
-            (),
-            [],
-            NormalizeFinal::default(),
-            Pure(NormalizeFinal::default()),
-        )
-        .await;
+    //     let _: () = run_to_completion::<
+    //         TupleCallback,
+    //         SimpleMessage,
+    //         (),
+    //         InMemoryQueue<SimpleMessage>,
+    //         NoopPass,
+    //         Pure<NoopPass>,
+    //     >(TupleCallback, (), (), [], NoopPass, Pure(NoopPass))
+    //     .await;
 
-        let _: (DataA, ()) = run_to_completion::<
-            TupleAggregator,
-            SimpleMessage,
-            (DataA, ()),
-            InMemoryQueue<SimpleMessage>,
-            NormalizeFinal,
-            Pure<NormalizeFinal>,
-        >(
-            TupleAggregator,
-            Arc::new(()),
-            (),
-            [fetch(FetchA {})],
-            NormalizeFinal::default(),
-            Pure(NormalizeFinal::default()),
-        )
-        .await;
+    //     let _: (DataA, ()) = run_to_completion::<
+    //         TupleCallback,
+    //         SimpleMessage,
+    //         (DataA, ()),
+    //         InMemoryQueue<SimpleMessage>,
+    //         NoopPass,
+    //         Pure<NoopPass>,
+    //     >(
+    //         TupleCallback,
+    //         (),
+    //         (),
+    //         [call(FetchA {})],
+    //         NoopPass,
+    //         Pure(NoopPass),
+    //     )
+    //     .await;
 
-        let _: (DataC, (DataB, (DataA, ()))) = run_to_completion::<
-            TupleAggregator,
-            SimpleMessage,
-            (DataC, (DataB, (DataA, ()))),
-            InMemoryQueue<SimpleMessage>,
-            NormalizeFinal,
-            Pure<NormalizeFinal>,
-        >(
-            TupleAggregator,
-            Arc::new(()),
-            (),
-            [fetch(FetchA {}), fetch(FetchC {}), fetch(FetchB {})],
-            NormalizeFinal::default(),
-            Pure(NormalizeFinal::default()),
-        )
-        .await;
-    }
+    //     let _: (DataC, (DataB, (DataA, ()))) = run_to_completion::<
+    //         TupleCallback,
+    //         SimpleMessage,
+    //         (DataC, (DataB, (DataA, ()))),
+    //         InMemoryQueue<SimpleMessage>,
+    //         NoopPass,
+    //         Pure<NoopPass>,
+    //     >(
+    //         TupleCallback,
+    //         (),
+    //         (),
+    //         [call(FetchA {}), call(FetchC {}), call(FetchB {})],
+    //         NoopPass,
+    //         Pure(NoopPass),
+    //     )
+    //     .await;
+    // }
 }

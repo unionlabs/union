@@ -10,9 +10,11 @@ use crate::{
     },
     hash::H256,
     ibc::lightclients::ethereum::{
-        light_client_header::{LightClientHeader, TryFromLightClientHeaderError},
-        sync_aggregate::{SyncAggregate, TryFromSyncAggregateError},
-        sync_committee::{SyncCommittee, TryFromSyncCommitteeError},
+        light_client_header::{
+            LightClientHeader, TryFromLightClientHeaderError, UnboundedLightClientHeader,
+        },
+        sync_aggregate::{SyncAggregate, TryFromSyncAggregateError, UnboundedSyncAggregate},
+        sync_committee::{SyncCommittee, TryFromSyncCommitteeError, UnboundedSyncCommittee},
     },
 };
 
@@ -74,15 +76,22 @@ impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromLightClientUpdateError {
+    #[error(transparent)]
     MissingField(MissingField),
-    AttestedHeader(TryFromLightClientHeaderError),
-    NextSyncCommittee(TryFromSyncCommitteeError),
-    NextSyncCommitteeBranch(TryFromBranchError<NextSyncCommitteeBranch>),
-    FinalityBranch(TryFromBranchError<FinalityBranch>),
-    SyncAggregate(TryFromSyncAggregateError),
-    FinalizedHeader(TryFromLightClientHeaderError),
+    #[error("invalid `attested_header`")]
+    AttestedHeader(#[source] TryFromLightClientHeaderError),
+    #[error("invalid `next_sync_committee`")]
+    NextSyncCommittee(#[from] TryFromSyncCommitteeError),
+    #[error("invalid `next_sync_committee_branch`")]
+    NextSyncCommitteeBranch(#[from] TryFromBranchError<NextSyncCommitteeBranch>),
+    #[error("invalid `finality_branch`")]
+    FinalityBranch(#[from] TryFromBranchError<FinalityBranch>),
+    #[error("invalid `sync_aggregate`")]
+    SyncAggregate(#[from] TryFromSyncAggregateError),
+    #[error("invalid `finalized_header`")]
+    FinalizedHeader(#[source] TryFromLightClientHeaderError),
 }
 
 impl<C: SYNC_COMMITTEE_SIZE + BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
@@ -138,11 +147,64 @@ where
 }
 
 // TODO: Remove the bounds on T::Error and only require said bounds when implementing the respective traits, will clean up try_from_proto_branch as well
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, thiserror::Error)]
 pub enum TryFromBranchError<T>
 where
     T: TryFrom<Vec<H256>, Error: Debug + PartialEq + Eq + Clone>,
 {
+    #[error("error decoding branch: {0:?}")]
     Branch(<T as TryFrom<Vec<H256>>>::Error),
-    BranchNode(InvalidLength),
+    #[error("error decoding branch node")]
+    BranchNode(#[source] InvalidLength),
+}
+
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate),
+    from
+))]
+pub struct UnboundedLightClientUpdate {
+    /// Header attested to by the sync committee
+    pub attested_header: UnboundedLightClientHeader,
+    /// Next sync committee corresponding to `attested_header.state_root`
+    // NOTE: These fields aren't actually optional, they are just because of the current structure of the ethereum Header.
+    // TODO: Remove the Option and improve ethereum::header::Header to be an enum, instead of using optional fields and bools.
+    #[serde(default)]
+    pub next_sync_committee: Option<UnboundedSyncCommittee>,
+    #[serde(default)]
+    pub next_sync_committee_branch: Option<NextSyncCommitteeBranch>,
+    /// Finalized header corresponding to `attested_header.state_root`
+    pub finalized_header: UnboundedLightClientHeader,
+    pub finality_branch: FinalityBranch,
+    /// Sync committee aggregate signature
+    pub sync_aggregate: UnboundedSyncAggregate,
+    /// Slot at which the aggregate signature was created (untrusted)
+    #[serde(with = "::serde_utils::string")]
+    pub signature_slot: u64,
+}
+
+impl From<UnboundedLightClientUpdate>
+    for protos::union::ibc::lightclients::ethereum::v1::LightClientUpdate
+{
+    fn from(value: UnboundedLightClientUpdate) -> Self {
+        Self {
+            attested_header: Some(value.attested_header.into()),
+            next_sync_committee: value.next_sync_committee.map(Into::into),
+            next_sync_committee_branch: value
+                .next_sync_committee_branch
+                .unwrap_or_default()
+                .iter()
+                .copied()
+                .map(H256::into_bytes)
+                .collect(),
+            finalized_header: Some(value.finalized_header.into()),
+            finality_branch: value
+                .finality_branch
+                .iter()
+                .copied()
+                .map(H256::into_bytes)
+                .collect(),
+            sync_aggregate: Some(value.sync_aggregate.into()),
+            signature_slot: value.signature_slot,
+        }
+    }
 }

@@ -12,7 +12,6 @@ test-include = []
 workspace = true
 
 [dependencies]
-arbitrary                = { workspace = true, optional = true, features = ["derive"] }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
@@ -43,7 +42,7 @@ serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
 sha2                     = { workspace = true }
-sha3.workspace           = true
+sha3                     = { workspace = true }
 ssz                      = { workspace = true }
 static_assertions        = { workspace = true }
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
@@ -74,8 +73,7 @@ grpc     = ["protos/client"]
 near     = ["borsh", "near-sdk", "near-primitives-core"]
 std      = ["ethers-core/std"]
 
-arbitrary  = ["dep:arbitrary", "primitive-types/arbitrary"]
-fuzzing    = ["arbitrary"]
+fuzzing    = []
 test_utils = []
 
 schemars = ["dep:schemars"]

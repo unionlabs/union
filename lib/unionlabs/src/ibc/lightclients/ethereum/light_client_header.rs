@@ -11,16 +11,19 @@ use crate::{
     hash::H256,
     ibc::lightclients::ethereum::{
         beacon_block_header::{BeaconBlockHeader, TryFromBeaconBlockHeaderError},
-        execution_payload_header::{ExecutionPayloadHeader, TryFromExecutionPayloadHeaderError},
+        execution_payload_header::{
+            ExecutionPayloadHeader, TryFromExecutionPayloadHeaderError,
+            UnboundedExecutionPayloadHeader,
+        },
     },
 };
 
-#[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::LightClientHeader),
     into,
     from
 ))]
+#[derive(Ssz)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct LightClientHeader<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
     pub beacon: BeaconBlockHeader,
@@ -43,13 +46,18 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<LightClientHeader<C>>
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromLightClientHeaderError {
+    #[error(transparent)]
     MissingField(MissingField),
-    BeaconBlockHeader(TryFromBeaconBlockHeaderError),
-    ExecutionPayloadHeader(TryFromExecutionPayloadHeaderError),
-    ExecutionBranch(InvalidLength),
-    ExecutionBranchNode(InvalidLength),
+    #[error("invalid `beacon_block_header`")]
+    BeaconBlockHeader(#[from] TryFromBeaconBlockHeaderError),
+    #[error("invalid `execution_payload_header`")]
+    ExecutionPayloadHeader(#[from] TryFromExecutionPayloadHeaderError),
+    #[error("invalid `execution_branch`")]
+    ExecutionBranch(#[source] InvalidLength),
+    #[error("invalid `execution_branch_node`")]
+    ExecutionBranchNode(#[source] InvalidLength),
 }
 
 impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
@@ -90,5 +98,30 @@ impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES>
                     })
                 })?,
         })
+    }
+}
+
+#[model(proto(
+    raw(protos::union::ibc::lightclients::ethereum::v1::LightClientHeader),
+    from
+))]
+pub struct UnboundedLightClientHeader {
+    pub beacon: BeaconBlockHeader,
+    pub execution: UnboundedExecutionPayloadHeader,
+    pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_INDEX)],
+}
+
+impl From<UnboundedLightClientHeader>
+    for protos::union::ibc::lightclients::ethereum::v1::LightClientHeader
+{
+    fn from(value: UnboundedLightClientHeader) -> Self {
+        Self {
+            beacon: Some(value.beacon.into()),
+            execution: Some(value.execution.into()),
+            execution_branch: Vec::from(value.execution_branch)
+                .into_iter()
+                .map(H256::into_bytes)
+                .collect(),
+        }
     }
 }

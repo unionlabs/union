@@ -1,52 +1,36 @@
 use macros::model;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     ibc::core::{
-        client::height::IsHeight,
+        client::height::Height,
         connection::{counterparty::Counterparty, version::Version},
     },
-    traits::Id,
+    id::ClientId,
 };
 
 #[model(proto(raw(protos::ibc::core::connection::v1::MsgConnectionOpenTry)))]
-#[serde(bound(
-    serialize = "
-        ClientId: Serialize,
-        CounterpartyClientId: Serialize,
-        ClientState: Serialize,
-        ProofInit: Serialize,
-        ProofClient: Serialize,
-        ProofConsensus: Serialize,
-    ",
-    deserialize = "
-        ClientId: for<'d> Deserialize<'d>,
-        CounterpartyClientId: for<'d> Deserialize<'d>,
-        ClientState: for<'d> Deserialize<'d>,
-        ProofInit: for<'d> Deserialize<'d>,
-        ProofClient: for<'d> Deserialize<'d>,
-        ProofConsensus: for<'d> Deserialize<'d>,
-    ",
-))]
-pub struct MsgConnectionOpenTry<
-    ClientState,
-    ClientId: Id,
-    CounterpartyClientId: Id,
-    CounterpartyConnectionId: Id,
-    ProofHeight: IsHeight,
-    ConsensusHeight: IsHeight,
-    ProofInit,
-    ProofClient,
-    ProofConsensus,
-> {
+pub struct MsgConnectionOpenTry {
     pub client_id: ClientId,
-    pub client_state: ClientState,
-    pub counterparty: Counterparty<CounterpartyClientId, CounterpartyConnectionId>,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub client_state: Vec<u8>,
+    pub counterparty: Counterparty,
     pub delay_period: u64,
     pub counterparty_versions: Vec<Version>,
-    pub proof_height: ProofHeight,
-    pub proof_init: ProofInit,
-    pub proof_client: ProofClient,
-    pub proof_consensus: ProofConsensus,
-    pub consensus_height: ConsensusHeight,
+    pub proof_height: Height,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_init: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_client: Vec<u8>,
+    #[serde(with = "::serde_utils::hex_string")]
+    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
+    pub proof_consensus: Vec<u8>,
+    /// The height the counterparty trusts of the chain this is being sent to.
+    ///
+    /// Given a connection handshake between A<->B, if the open try is being sent to B, then this is the trusted height of the B client on A. This is used in self client/consensus state verification, where chain B will construct the expected client/consensus states of itself and verify that it's client on A has stored them correctly.
+    ///
+    /// This is deprecated in IBC v9.
+    pub consensus_height: Height,
 }

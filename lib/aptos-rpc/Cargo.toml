@@ -1,0 +1,27 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "aptos-rpc"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+hex         = { workspace = true, features = ["alloc"] }
+macros      = { workspace = true }
+reqwest     = { workspace = true, features = ["rustls-tls", "json"] }
+serde       = { workspace = true, features = ["derive"] }
+serde-utils = { workspace = true }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+tokio       = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tracing     = { workspace = true }
+unionlabs   = { workspace = true }
+
+[features]
+default = []
+
+[dev-dependencies]
+tracing-subscriber = { workspace = true }

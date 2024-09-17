@@ -90,7 +90,6 @@ pub type BitVector<N> = Bitfield<Fixed<N>>;
 /// assert_eq!(bitvector.len(), 8); // `BitVector` length is fixed at the type-level.
 /// assert!(bitvector.set(7, true).is_ok()); // Setting inside the capacity is permitted.
 /// assert!(bitvector.set(9, true).is_err()); // Setting outside the capacity is not.
-///
 /// ```
 ///
 /// ## Note
@@ -566,28 +565,6 @@ impl<'de, N: Unsigned + Clone> Deserialize<'de> for Bitfield<Fixed<N>> {
         let bytes = serde_utils::hex_string::deserialize::<_, Vec<u8>>(deserializer)?;
         Self::from_ssz_bytes(&bytes)
             .map_err(|e| serde::de::Error::custom(format!("Bitfield {:?}", e)))
-    }
-}
-
-#[cfg(feature = "arbitrary")]
-impl<N: 'static + Unsigned> arbitrary::Arbitrary<'_> for Bitfield<Fixed<N>> {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
-        let size = N::USIZE;
-        let mut vec = smallvec![0u8; size];
-        u.fill_buffer(&mut vec)?;
-        Ok(Self::from_bytes(vec).map_err(|_| arbitrary::Error::IncorrectFormat)?)
-    }
-}
-
-#[cfg(feature = "arbitrary")]
-impl<N: 'static + Unsigned> arbitrary::Arbitrary<'_> for Bitfield<Variable<N>> {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
-        let max_size = N::USIZE;
-        let rand = usize::arbitrary(u)?;
-        let size = std::cmp::min(rand, max_size);
-        let mut vec = smallvec![0u8; size];
-        u.fill_buffer(&mut vec)?;
-        Ok(Self::from_bytes(vec).map_err(|_| arbitrary::Error::IncorrectFormat)?)
     }
 }
 

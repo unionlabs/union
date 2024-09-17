@@ -6,12 +6,12 @@ version = "0.1.0"
 
 [dependencies]
 borsh                   = { workspace = true, features = ["borsh-derive"] }
-ibc-vm-rs.workspace     = true
+ibc-vm-rs               = { workspace = true }
 near-contract-standards = { workspace = true }
 near-sdk                = { workspace = true }
 near-sdk-contract-tools = { workspace = true }
-serde.workspace         = true
-serde_json.workspace    = true
+serde                   = { workspace = true }
+serde_json              = { workspace = true }
 unionlabs               = { workspace = true, features = ["near"] }
 
 [lib]
