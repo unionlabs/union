@@ -11,6 +11,7 @@ interface EnvironmentVariables {
   // `rollup-plugin-visualizer`
   readonly VISUALIZE: string
   readonly DEBUG_TABLE: "true" | "false"
+  readonly ENVIRONMENT: "development" | "preview" | "staging" | "production"
 }
 
 // Node.js environment variables types

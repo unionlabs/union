@@ -74,7 +74,7 @@ export async function transferAssetFromEvm(
     if (approveResponse.isErr()) return approveResponse
   }
 
-  memo ||= timestamp()
+  memo ??= timestamp()
 
   /**
    * @dev
@@ -220,7 +220,7 @@ export async function transferAssetFromEvmSimulate(
   /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
   relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
 
-  memo ||= timestamp()
+  memo ??= timestamp()
 
   const gasEstimation = await simulateTransaction({
     memo,

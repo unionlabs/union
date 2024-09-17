@@ -39,7 +39,7 @@ try {
   })
 
   const transactionPayload = {
-    amount: 1n,
+    amount: 2n,
     autoApprove: true,
     denomAddress: HONEY_CONTRACT_ADDRESS,
     destinationChainId: "stride-internal-1",
@@ -54,7 +54,7 @@ try {
     process.exit(1)
   }
 
-  consola.success("Union to Berachain gas cost:", gasEstimationResponse.value)
+  consola.success("Berachain to Stride gas cost:", gasEstimationResponse.value)
 
   if (ONLY_ESTIMATE_GAS) process.exit(0)
 

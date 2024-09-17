@@ -82,7 +82,12 @@ export function bytesToBech32Address<ToPrefix extends string>({
   bytes,
   toPrefix
 }: { bytes: Uint8Array; toPrefix: ToPrefix }): Bech32Address<ToPrefix> {
-  return bech32.encode(toPrefix, bech32.toWords(bytes), false) as Bech32Address<ToPrefix>
+  return bech32.encode(toPrefix, bytes, false) as Bech32Address<ToPrefix>
+}
+
+export function bech32ToBytes(bech32Address: string): Uint8Array {
+  const { words } = bech32.decode(bech32Address as `${string}1${string}`)
+  return bech32.fromWords(words)
 }
 
 /**
