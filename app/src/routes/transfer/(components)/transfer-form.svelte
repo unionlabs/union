@@ -31,14 +31,12 @@ import AssetsDialog from "./assets-dialog.svelte"
 import { truncate } from "$lib/utilities/format.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import Stepper from "$lib/components/stepper.svelte"
-import type { OfflineSigner } from "@leapwallet/types"
 import { raise, sleep } from "$lib/utilities/index.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
 import * as Card from "$lib/components/ui/card/index.ts"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import { Input } from "$lib/components/ui/input/index.js"
 import { userAddrOnChain } from "$lib/utilities/address.ts"
-import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { Button } from "$lib/components/ui/button/index.ts"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
@@ -46,6 +44,7 @@ import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
 import { parseUnits, formatUnits, type HttpTransport, getAddress } from "viem"
+import { cosmosStore, getCosmosOfflineSigner } from "$/lib/wallet/cosmos/config.ts"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 
@@ -281,17 +280,7 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
-        const cosmosOfflineSigner = (
-          $cosmosStore.connectedWallet === "keplr"
-            ? window?.keplr?.getOfflineSigner($fromChainId, {
-                disableBalanceCheck: false
-              })
-            : window.leap
-              ? window.leap.getOfflineSigner($fromChainId, {
-                  disableBalanceCheck: false
-                })
-              : undefined
-        ) as OfflineSigner
+        const cosmosOfflineSigner = await getCosmosOfflineSigner($fromChainId)
 
         const unionClient = createUnionClient({
           account: cosmosOfflineSigner,
