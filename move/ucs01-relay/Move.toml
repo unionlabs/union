@@ -15,4 +15,4 @@ subdir = "aptos-move/framework/aptos-framework"
 
 [dependencies]
 # AptosStdlib = { git = "https://github.com/aeryz/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "movement" }
-move-ibc = {local = "../move-ibc"}
+ibc = {local = "../move-ibc"}

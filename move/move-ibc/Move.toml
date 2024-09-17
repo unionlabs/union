@@ -4,7 +4,7 @@ name    = "ibc"
 version = "1.0.0"
 
 [addresses]
-IBC = "_" # This will be storage of our IBCStore
+IBC = "0x11111" # This will be storage of our IBCStore
 
 [dev-addresses]
 IBC = "0x11111"
