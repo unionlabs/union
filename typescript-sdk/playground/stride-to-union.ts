@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import "#patch.ts"
 import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
@@ -31,17 +32,14 @@ try {
   const client = createUnionClient({
     account: cosmosAccount,
     chainId: "stride-internal-1",
-    gasPrice: { amount: "0.0025", denom: "strd" },
-    transport: http(
-      //
-      // "https://stride.testnet-1.stridenet.co/"
-      "https://stride-testnet-rpc.polkachu.com/"
-    )
+    gasPrice: { amount: "0.0025", denom: "ustrd" },
+    transport: http("https://stride-testnet-rpc.polkachu.com")
   })
 
   const transactionPayload = {
     amount: 1n,
-    denomAddress: "strd",
+    autoApprove: true,
+    denomAddress: "ustrd",
     destinationChainId: "union-testnet-8",
     receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
   } satisfies TransferAssetsParameters<"stride-internal-1">

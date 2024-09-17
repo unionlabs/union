@@ -37,12 +37,12 @@ export interface CosmosClientParameters {
 export const createCosmosClient = (parameters: CosmosClientParameters) =>
   createClient({ transport: fallback([]) }).extend(_ => ({
     transferAsset: async ({
+      memo,
       amount,
       receiver,
       denomAddress,
       destinationChainId,
       relayContractAddress,
-      memo: _memo = timestamp(),
       account = parameters.account,
       gasPrice = parameters.gasPrice
     }: TransferAssetsParameters<CosmosChainId>): Promise<Result<string, Error>> => {
@@ -65,26 +65,29 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       }
 
       const stamp = timestamp()
-      const ucsDetails = await getHubbleChainDetails({
+      const chainDetails = await getHubbleChainDetails({
         sourceChainId,
         destinationChainId
       })
 
-      if (ucsDetails.isErr()) return err(ucsDetails.error)
+      if (chainDetails.isErr()) return err(chainDetails.error)
 
-      const pfmMemo = createPfmMemo({
-        port: `${ucsDetails.value.port}`,
-        channel: ucsDetails.value.destinationChannel,
-        receiver: cosmosChainId.includes(destinationChainId)
-          ? bech32AddressToHex({ address: `${receiver}` })
-          : `${receiver}`
-      })
+      if (chainDetails.value.transferType === "pfm") {
+        if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+        const pfmMemo = createPfmMemo({
+          port: chainDetails.value.port,
+          channel: chainDetails.value.destinationChannel,
+          receiver: cosmosChainId.includes(destinationChainId)
+            ? bech32AddressToHex({ address: receiver })
+            : receiver
+        })
+        if (pfmMemo.isErr()) return err(pfmMemo.error)
+        memo = pfmMemo.value
+      }
 
-      if (pfmMemo.isErr()) return err(pfmMemo.error)
-
-      const sourceChannel = ucsDetails.value.sourceChannel
-      destinationChainId = ucsDetails.value.destinationChainId
-      relayContractAddress ??= ucsDetails.value.relayContractAddress
+      const sourceChannel = chainDetails.value.sourceChannel
+      destinationChainId = chainDetails.value.destinationChainId
+      relayContractAddress ??= chainDetails.value.relayContractAddress
 
       if (sourceChainId === "union-testnet-8") {
         if (!sourceChannel) return err(new Error("Source channel not found"))
@@ -101,7 +104,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 transfer: {
                   channel: sourceChannel,
                   receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
-                  memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
+                  memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
                 }
               },
               funds: [{ amount: amount.toString(), denom: denomAddress }]
@@ -110,6 +113,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         })
         return transfer
       }
+
       if (destinationChainId === "union-testnet-8") {
         if (!sourceChannel) return err(new Error("Source channel not found"))
 
@@ -128,7 +132,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
               token: { denom: denomAddress, amount: amount.toString() },
               timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
               receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
-              memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
+              memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
             }
           ]
         })
@@ -138,9 +142,9 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
       return err(new Error("Unsupported network"))
     },
     simulateTransaction: async ({
+      memo,
       amount,
       receiver,
-      memo: _memo,
       denomAddress,
       destinationChainId,
       relayContractAddress,
@@ -165,31 +169,34 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         })
       }
 
-      const ucsDetails = await getHubbleChainDetails({
+      const chainDetails = await getHubbleChainDetails({
         sourceChainId,
         destinationChainId
       })
 
-      if (ucsDetails.isErr()) return err(ucsDetails.error)
+      if (chainDetails.isErr()) return err(chainDetails.error)
 
-      const pfmMemo = createPfmMemo({
-        port: `${ucsDetails.value.port}`,
-        channel: ucsDetails.value.destinationChannel,
-        receiver: cosmosChainId.includes(destinationChainId)
-          ? bech32AddressToHex({ address: `${receiver}` })
-          : `${receiver}`
-      })
-
-      if (pfmMemo.isErr()) return err(pfmMemo.error)
-
-      const sourceChannel = ucsDetails.value.sourceChannel
-      destinationChainId = ucsDetails.value.destinationChainId
-      relayContractAddress ??= ucsDetails.value.relayContractAddress
+      if (chainDetails.value.transferType === "pfm") {
+        if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+        const pfmMemo = createPfmMemo({
+          port: chainDetails.value.port,
+          channel: chainDetails.value.destinationChannel,
+          receiver: cosmosChainId.includes(destinationChainId)
+            ? bech32AddressToHex({ address: receiver })
+            : receiver
+        })
+        if (pfmMemo.isErr()) return err(pfmMemo.error)
+        memo = pfmMemo.value
+      }
+      const sourceChannel = chainDetails.value.sourceChannel
+      destinationChainId = chainDetails.value.destinationChainId
+      relayContractAddress ??= chainDetails.value.relayContractAddress
 
       if (sourceChainId === "union-testnet-8") {
         if (!relayContractAddress) return err(new Error("Relay contract address not found"))
 
         const stamp = timestamp()
+
         return await cosmwasmTransferSimulate({
           gasPrice,
           rpcUrl,
@@ -201,7 +208,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
                 transfer: {
                   channel: sourceChannel,
                   receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
-                  memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
+                  memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
                 }
               },
               funds: [{ amount: amount.toString(), denom: denomAddress }]
@@ -216,6 +223,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
         if (!account) return err(new Error("No account found"))
 
         const stamp = timestamp()
+
         return await ibcTransferSimulate({
           gasPrice,
           account,
@@ -228,7 +236,7 @@ export const createCosmosClient = (parameters: CosmosClientParameters) =>
               token: { denom: denomAddress, amount: amount.toString() },
               timeoutHeight: { revisionHeight: 888_888_888n, revisionNumber: 8n },
               receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
-              memo: pfmMemo.value ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
+              memo: memo ?? `${stamp} Sending ${amount} ${denomAddress} to ${receiver}`
             }
           ]
         })

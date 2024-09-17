@@ -5,6 +5,7 @@ import {
   type EvmChainId,
   createUnionClient,
   type CosmosChainId,
+  type OfflineSigner,
   evmChainFromChainId,
   bech32ToBech32Address
 } from "@unionlabs/client"
@@ -29,6 +30,7 @@ import ChainButton from "./chain-button.svelte"
 import { toIsoString } from "$lib/utilities/date"
 import AssetsDialog from "./assets-dialog.svelte"
 import { truncate } from "$lib/utilities/format.ts"
+import { userAddrCosmos } from "$lib/wallet/cosmos"
 import Stepper from "$lib/components/stepper.svelte"
 import { raise, sleep } from "$lib/utilities/index.ts"
 import { userBalancesQuery } from "$lib/queries/balance"
@@ -41,10 +43,9 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import { getSupportedAsset } from "$lib/utilities/helpers.ts"
 import CardSectionHeading from "./card-section-heading.svelte"
 import ArrowLeftRight from "virtual:icons/lucide/arrow-left-right"
-import { parseUnits, formatUnits, type HttpTransport, getAddress } from "viem"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { submittedTransfers } from "$lib/stores/submitted-transfers.ts"
-import { userAddrCosmos, getCosmosOfflineSigner } from "$lib/wallet/cosmos"
+import { parseUnits, formatUnits, type HttpTransport, getAddress } from "viem"
 import { type Writable, writable, derived, get, type Readable } from "svelte/store"
 import { type TransferState, stepBefore, stepAfter } from "$lib/transfer/transfer.ts"
 
@@ -143,10 +144,6 @@ let receiver = derived([toChain, userAddress], ([$toChain, $userAddress]) => {
   }
 })
 
-$: {
-  console.info($receiver)
-}
-
 let ucs01Configuration = derived(
   [fromChain, toChainId, receiver],
   ([$fromChain, $toChainId, $receiver]) => {
@@ -234,7 +231,7 @@ const transfer = async () => {
       return
     }
 
-    const wallet = window[connectedWallet as "keplr" | "leap"]
+    const wallet = window[connectedWallet]
 
     if (!wallet) {
       transferState.set({
@@ -243,6 +240,10 @@ const transfer = async () => {
       })
       return
     }
+
+    const cosmosOfflineSigner = (await wallet.getOfflineSignerAuto($fromChainId, {
+      disableBalanceCheck: false
+    })) as OfflineSigner
 
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
@@ -284,8 +285,6 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
-        const cosmosOfflineSigner = getCosmosOfflineSigner($fromChainId)
-
         const unionClient = createUnionClient({
           account: cosmosOfflineSigner,
           transport: http(`https://${rpcUrl}`),

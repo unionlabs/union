@@ -1,12 +1,15 @@
 import type { Chain, UserAddresses } from "$lib/types"
-import { bytesToBech32Address } from "@unionlabs/client"
+import { bech32ToBech32Address } from "@unionlabs/client"
 
 export const userAddrOnChain = (userAddr: UserAddresses, chain?: Chain): string | null => {
   if (!chain) return null
 
   if (chain.rpc_type === "cosmos") {
     if (userAddr.cosmos?.bytes) {
-      return bytesToBech32Address({ bytes: userAddr.cosmos.bytes, toPrefix: chain.addr_prefix })
+      return bech32ToBech32Address({
+        toPrefix: chain.addr_prefix,
+        address: userAddr.cosmos.canonical
+      })
     }
     console.log("userAddrOnChain got no cosmos address")
     return null
