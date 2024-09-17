@@ -1,8 +1,8 @@
 module UCS01::Relay {    
-    use IBC::Core;
+    use IBC::ibc;
     use IBC::channel;
     use IBC::height;
-    use IBC::packet::{Self, Packet};
+    use IBC::packet::{Packet};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
     use std::event;
@@ -10,13 +10,10 @@ module UCS01::Relay {
     use std::string::{Self, String};
     use std::string_utils;
     use std::from_bcs;
-    use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset};
-    use std::bcs;
+    use aptos_framework::fungible_asset::{Metadata};
     use aptos_framework::signer;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::vector;
-    use aptos_framework::coin;
-    use UCS01::fa_coin;
     use UCS01::EthABI;
 
     const ASSET_SYMBOL: vector<u8> = b"FA";
@@ -250,10 +247,10 @@ module UCS01::Relay {
         version: String,
     ) acquires SignerRef {
         let counterparty = channel::new_counterparty(counterparty_port_id, counterparty_channel_id);
-        Core::channel_open_init(
+        ibc::channel_open_init(
             &get_signer(),
-            // get_self_address(),
-            port_id,
+            get_self_address(),
+            // port_id,
             connection_hops,
             ordering,
             counterparty,
@@ -282,10 +279,10 @@ module UCS01::Relay {
         proof_height_revision_num: u64,
         proof_height_revision_height: u64,
     ) acquires SignerRef {
-        Core::channel_open_try(
+        ibc::channel_open_try(
             &get_signer(),
-            // get_self_address(),
-            port_id,
+            get_self_address(),
+            // port_id,
             connection_hops,
             ordering,
             channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
@@ -318,10 +315,10 @@ module UCS01::Relay {
         proof_height_revision_height: u64,
     ) acquires SignerRef {
         // Store the channel_id
-        Core::channel_open_ack(
+        ibc::channel_open_ack(
             &get_signer(),
-            // get_self_address(),
-            port_id,
+            get_self_address(),
+            // port_id,
             channel_id,
             counterparty_channel_id,
             counterparty_version,
@@ -340,10 +337,10 @@ module UCS01::Relay {
         proof_height_revision_num: u64,
         proof_height_revision_height: u64,
     ) acquires SignerRef {
-        Core::channel_open_confirm(
+        ibc::channel_open_confirm(
             &get_signer(),
-            // get_self_address(),
-            port_id,
+            get_self_address(),
+            // port_id,
             channel_id,
             proof_ack,
             height::new(proof_height_revision_num, proof_height_revision_height),
@@ -810,7 +807,7 @@ module UCS01::Relay {
         timeout_height_number: u64,
         timeout_height_height: u64,
         timeout_timestamp: u64
-    ) acquires RelayStore {
+    ) acquires RelayStore, SignerRef {
         let num_tokens = vector::length(&denom_list);
         
         if(vector::length(&amount_list) != num_tokens) {
@@ -848,8 +845,9 @@ module UCS01::Relay {
 
         let timeout_height = height::new(timeout_height_number, timeout_height_height);
 
-        let packet_sequence = IBC::Core::send_packet(
+        let packet_sequence = IBC::ibc::send_packet(
             sender,
+            get_self_address(),
             source_channel,
             timeout_height,
             timeout_timestamp,
