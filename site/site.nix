@@ -9,7 +9,7 @@
     {
       packages = {
         site = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-qu8ONoTI18z6ou9T+RHuQKv/UG6B+zUF7/egreCqkx4=";
+          npmDepsHash = "sha256-vBuX0cT9u3K54mX99jb4G1pdkFwogbqwzEm7pWPnwk4=";
           src = ./.;
           sourceRoot = "site";
           pname = packageJSON.name;

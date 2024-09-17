@@ -1,0 +1,9 @@
+{
+  "sites": [
+    {
+      "slug": "union-app",
+      "distDir": "build",
+      "buildCommand": "npm install && npm_config_yes=true npx vite@latest build"
+    }
+  ]
+}
