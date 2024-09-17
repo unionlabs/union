@@ -19,7 +19,6 @@ concurrency:
 env:
   NODE_OPTIONS: '--no-warnings'
   ACTIONS_RUNNER_DEBUG: true
-  ASTRO_TELEMETRY_DISABLED: true
 
 jobs:
   garnix:
@@ -64,6 +63,7 @@ jobs:
       pull-requests: write
     env:
       npm_config_yes: true
+      ENVIRONMENT: 'preview'
     environment: 'app-preview'
     if: github.event_name == 'pull_request'
     steps:
@@ -72,11 +72,14 @@ jobs:
           lfs: true
       - uses: nixbuild/nix-quick-install-action@v28
       - name: Fetch from Cache
+        env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix develop
           nix build .#app
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="app" deploy result >> /tmp/app_deploy.txt
@@ -104,6 +107,7 @@ jobs:
     needs: [garnix]
     env:
       npm_config_yes: true
+      ENVIRONMENT: 'preview'
     if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
@@ -111,11 +115,14 @@ jobs:
           lfs: true
       - uses: nixbuild/nix-quick-install-action@v28
       - name: Fetch from Cache
+        env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix develop
           nix build .#app
       - name: '[workflow-dispatch] 🔶 Publish to Cloudflare Pages'
         env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="app" deploy result
@@ -125,6 +132,7 @@ jobs:
     needs: [garnix]
     env:
       npm_config_yes: true
+      ENVIRONMENT: 'staging'
     environment: 'app-staging'
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
@@ -133,11 +141,14 @@ jobs:
           lfs: true
       - uses: nixbuild/nix-quick-install-action@v28
       - name: Fetch from Cache
+        env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix develop
           nix build .#app
       - name: '[staging] 🔶 Publish to Cloudflare Pages'
         env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="app" --branch="staging" deploy result
@@ -147,6 +158,7 @@ jobs:
     needs: [garnix]
     env:
       npm_config_yes: true
+      ENVIRONMENT: 'production'
     environment: 'app-production'
     if: github.event_name == 'push' && github.ref == 'refs/heads/release/app'
     steps:
@@ -155,11 +167,14 @@ jobs:
           lfs: true
       - uses: nixbuild/nix-quick-install-action@v28
       - name: Fetch from Cache
+        env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix develop
           nix build .#app
       - name: '[production] 🔶 Publish to Cloudflare Pages'
         env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
         run: npx --yes wrangler@latest pages --project-name="app" --branch="main" deploy result

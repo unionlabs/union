@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/client",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "homepage": "https://jsr.io/@union/client",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
@@ -27,7 +27,7 @@
     "test": "vitest --run",
     "test:typecheck": "vitest --typecheck.only",
     "clean": "rm -rf dist node_modules",
-    "postinstall": "patch-package",
+    "postinstall": "npm_config_yes=true npx patch-package@latest",
     "prepublish": "bun run build"
   },
   "dependencies": {
@@ -36,10 +36,10 @@
     "@scure/base": "1.1.8",
     "neverthrow": "^8.0.0",
     "ofetch": "^1.3.4",
-    "viem": "^2.21.7"
+    "viem": "^2.21.8"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.16.2",
+    "@arethetypeswrong/cli": "^0.16.4",
     "@cosmjs/amino": "0.32.4",
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/tendermint-rpc": "^0.32.4",
@@ -50,7 +50,7 @@
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
     "patch-package": "^8.0.0",
-    "tsup": "^8.2.4",
+    "tsup": "^8.3.0",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",
     "vite-tsconfig-paths": "^5.0.1",
@@ -58,7 +58,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/unionlabs/union.git",
+    "url": "git+https://github.com/unionlabs/union.git",
     "directory": "typescript-sdk"
   },
   "license": "MIT",

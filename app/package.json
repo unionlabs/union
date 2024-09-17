@@ -23,9 +23,9 @@
     "@tanstack/svelte-query": "^5.55.4",
     "@tanstack/svelte-table": "^8.20.5",
     "@tanstack/svelte-virtual": "^3.10.7",
-    "@unionlabs/client": "^0.0.22",
-    "@wagmi/connectors": "^5.1.9",
-    "@wagmi/core": "^2.13.4",
+    "@unionlabs/client": "^0.0.23",
+    "@wagmi/connectors": "^5.1.11",
+    "@wagmi/core": "^2.13.5",
     "bits-ui": "^0.21.13",
     "cmdk-sv": "^0.0.18",
     "gql.tada": "^1.8.7",
@@ -40,7 +40,7 @@
     "three": "^0.168.0",
     "valibot": "^0.41.0",
     "vaul-svelte": "^0.3.2",
-    "viem": "^2.21.3"
+    "viem": "^2.21.8"
   },
   "devDependencies": {
     "@cosmjs/tendermint-rpc": "0.32.4",
@@ -87,7 +87,7 @@
     "typed-query-selector": "^2.12.0",
     "typescript": "^5.6.2",
     "unplugin-icons": "^0.19.3",
-    "vite": "^5.4.3",
+    "vite": "^5.4.6",
     "vite-plugin-inspect": "^0.8.7",
     "vite-plugin-node-polyfills": "^0.22.0",
     "vite-plugin-tailwind-purgecss": "^0.3.3",
