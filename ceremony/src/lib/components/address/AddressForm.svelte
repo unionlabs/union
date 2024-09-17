@@ -8,10 +8,11 @@ import type { HTMLInputAttributes } from "svelte/elements"
 
 interface Props extends HTMLInputAttributes {
   class?: string
-  onValidation: (valid: ValidState) => ValidState
+  setAddress: (address: string) => void
+  onValidation?: (valid: ValidState) => ValidState
 }
 
-let { onValidation, class: className = "", ...props }: Props = $props()
+let { setAddress, onValidation, class: className = "", ...props }: Props = $props()
 
 let inputText = $state("")
 const debouncedInputText = new Debounced(
@@ -33,7 +34,8 @@ const onAddressSubmit = (event: Event) => {
   if (!debouncedInputText.current) return
   const addressValidation = isValidBech32Address(debouncedInputText.current)
   validState = addressValidation ? "VALID" : "INVALID"
-  onValidation(validState)
+  onValidation?.(validState)
+  if (validState === "VALID") setAddress(debouncedInputText.current)
 }
 </script>
 
