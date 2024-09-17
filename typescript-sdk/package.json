@@ -23,8 +23,9 @@
     "publish-jsr-dry-run": "DRY_RUN=1 bun ./scripts/publish.ts",
     "test": "vitest --run",
     "test:typecheck": "vitest --typecheck.only",
+    "check-package": "bunx publint@latest --strict && bunx @arethetypeswrong/cli --pack --ignore-rules 'cjs-resolves-to-esm'",
     "clean": "rm -rf dist node_modules",
-    "postinstall": "npm_config_yes=true npx patch-package@latest",
+    "postinstall": "patch-package",
     "prepublish": "bun run build"
   },
   "dependencies": {
@@ -40,7 +41,6 @@
     "viem": "^2.21.8"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.16.4",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.9",
     "@types/node": "^22.5.5",
