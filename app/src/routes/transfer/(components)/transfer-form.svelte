@@ -294,9 +294,10 @@ const transfer = async () => {
 
         const transfer = await unionClient.transferAsset({
           autoApprove: true,
-          amount: parsedAmount,
           receiver: $receiver,
+          amount: parsedAmount,
           denomAddress: $assetAddress,
+          account: cosmosOfflineSigner,
           // TODO: verify chain id is correct
           destinationChainId: $toChain.chain_id as ChainId
         })

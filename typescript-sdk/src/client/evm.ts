@@ -53,14 +53,15 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
     .extend(publicActions)
     .extend(client => ({
       transferAsset: async ({
-        memo = "",
+        memo,
         amount,
         account,
         receiver,
         denomAddress,
         simulate = true,
         destinationChainId,
-        autoApprove = false
+        autoApprove = false,
+        relayContractAddress
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
 
@@ -85,17 +86,21 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           memo = pfmMemo.value
         }
 
+        destinationChainId ??= chainDetails.value.destinationChainId
+        const sourceChannel = chainDetails.value.sourceChannel
+        relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)
+
         return await transferAssetFromEvm(client, {
+          memo,
           amount,
           account,
-          autoApprove,
           simulate,
           receiver,
+          autoApprove,
           denomAddress,
+          sourceChannel,
           destinationChainId,
-          memo,
-          sourceChannel: chainDetails.value.sourceChannel,
-          relayContractAddress: getAddress(chainDetails.value.relayContractAddress)
+          relayContractAddress
         })
       },
       approveTransaction: async ({
@@ -124,7 +129,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         amount,
         receiver,
         denomAddress,
-        destinationChainId
+        destinationChainId,
+        relayContractAddress
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<string, Error>> => {
         const sourceChainId = parameters.chainId
 
@@ -138,24 +144,29 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           })
           return ok(gas.toString())
         }
-        const pfmDetails = await getHubbleChainDetails({
+        const chainDetails = await getHubbleChainDetails({
           destinationChainId,
           sourceChainId: parameters.chainId
         })
 
-        if (pfmDetails.isErr()) return err(pfmDetails.error)
+        if (chainDetails.isErr()) return err(chainDetails.error)
 
-        const pfmMemo = createPfmMemo({
-          channel: pfmDetails.value.destinationChannel,
-          port: `${pfmDetails.value.port}`,
-          receiver: cosmosChainId.includes(destinationChainId)
-            ? bech32AddressToHex({ address: `${receiver}` })
-            : `${receiver}`
-        })
+        if (chainDetails.value.transferType === "pfm") {
+          if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+          const pfmMemo = createPfmMemo({
+            port: chainDetails.value.port,
+            channel: chainDetails.value.destinationChannel,
+            receiver: cosmosChainId.includes(destinationChainId)
+              ? bech32AddressToHex({ address: receiver })
+              : receiver
+          })
 
-        if (pfmMemo.isErr()) return err(pfmMemo.error)
+          if (pfmMemo.isErr()) return err(pfmMemo.error)
+          memo = pfmMemo.value
+        }
 
-        const { relayContractAddress, sourceChannel } = pfmDetails.value
+        const sourceChannel = chainDetails.value.sourceChannel
+        relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)
 
         if (!sourceChannel) return err(new Error("Source channel not found"))
         if (!relayContractAddress) return err(new Error("Relay contract address not found"))
@@ -165,8 +176,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           amount,
           receiver,
           sourceChannel,
+          relayContractAddress,
           denomAddress: getAddress(denomAddress),
-          relayContractAddress: getAddress(relayContractAddress),
           account: typeof client.account === "string" ? client.account : client.account?.address
         })
       }
