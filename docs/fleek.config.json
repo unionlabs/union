@@ -2,8 +2,8 @@
   "sites": [
     {
       "slug": "union-docs",
-      "distDir": "dist",
-      "buildCommand": "npm install && npm_config_yes=true npx astro@latest build"
+      "distDir": "result",
+      "buildCommand": "echo 'build done by nix'"
     }
   ]
 }

@@ -64,6 +64,21 @@
             '';
           };
         };
+        deploy-docs-ipfs = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "deploy-docs-ipfs";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd docs/
+
+              export PUPPETEER_SKIP_DOWNLOAD=1 
+              nix build .#docs
+              npm_config_yes=true npx @fleek-platform/cli sites deploy
+            '';
+          };
+        };
       };
     };
 }

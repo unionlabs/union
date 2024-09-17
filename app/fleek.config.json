@@ -2,8 +2,8 @@
   "sites": [
     {
       "slug": "union-app",
-      "distDir": "build",
-      "buildCommand": "npm install && npm_config_yes=true npx vite@latest build"
+      "distDir": "result",
+      "buildCommand": "echo 'build done by nix'"
     }
   ]
 }
