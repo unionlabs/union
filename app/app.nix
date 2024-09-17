@@ -2,17 +2,17 @@
   perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config python3 ];
-      nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
+      nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs nodePackages_latest."patch-package" ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         app = unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-HBPye1r21Ng1p7JYODzS+S1WJmBYk6n7LkNzZUzAvNI=";
+          npmDepsHash = "sha256-KIxRD0SCb5yex5HmoZ3BbmNzyt7Y5RuZKdwuc3gtX78=";
           src = ./.;
           sourceRoot = "app";
-          npmFlags = [ "--legacy-peer-deps" "--ignore-scripts" ];
+          npmFlags = [ "--enable-pre-post-scripts" ];
           pname = packageJSON.name;
           version = packageJSON.version;
           nativeBuildInputs = combinedDeps;
