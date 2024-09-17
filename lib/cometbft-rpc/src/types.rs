@@ -46,21 +46,21 @@ pub struct StatusResponse {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SyncInfo {
-    pub(crate) catching_up: bool,
+    pub catching_up: bool,
     #[serde(with = "::serde_utils::hex_allow_unprefixed_maybe_empty")]
-    pub(crate) earliest_app_hash: Option<H256>,
+    pub earliest_app_hash: Option<H256>,
     #[serde(with = "::serde_utils::hex_allow_unprefixed_maybe_empty")]
-    pub(crate) earliest_block_hash: Option<H256>,
+    pub earliest_block_hash: Option<H256>,
     #[serde(with = "::serde_utils::string")]
-    pub(crate) earliest_block_height: u64,
-    pub(crate) earliest_block_time: Timestamp,
+    pub earliest_block_height: u64,
+    pub earliest_block_time: Timestamp,
     #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub(crate) latest_app_hash: H256,
+    pub latest_app_hash: H256,
     #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub(crate) latest_block_hash: H256,
+    pub latest_block_hash: H256,
     #[serde(with = "::serde_utils::string")]
-    pub(crate) latest_block_height: u64,
-    pub(crate) latest_block_time: Timestamp,
+    pub latest_block_height: u64,
+    pub latest_block_time: Timestamp,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

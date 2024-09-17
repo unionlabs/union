@@ -714,31 +714,6 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
 
             Call::MakeMsgAcknowledgement(msg) => make_msg_acknowledgement(ctx, msg).await,
 
-            // Fetch::UpdateHeaders(FetchUpdateHeaders {
-            //     chain_id,
-            //     counterparty_chain_id,
-            //     counterparty_client_id,
-            //     update_from,
-            //     update_to,
-            // }) => Ok(aggregate(
-            //     [
-            //         ctx.consensus_module(&chain_id)?
-            //             .fetch_update_headers(update_from, update_to)
-            //             .await
-            //             .map_err(json_rpc_error_to_queue_error)?,
-            //         // REVIEW: If we notice that this causes too much latency, it can be
-            // pre-fetched and put into the data section. I would prefer to keep all fetch messages
-            // "single-purpose" if possible though.         fetch(FetchClientInfo {
-            //             chain_id: counterparty_chain_id.clone(),
-            //             client_id: counterparty_client_id.clone(),
-            //         }),
-            //     ],
-            //     [],
-            //     AggregateMsgUpdateClientsFromOrderedHeaders {
-            //         counterparty_chain_id,
-            //         counterparty_client_id,
-            //     },
-            // )),
             Call::UpdateHeaders(FetchUpdateHeaders {
                 chain_id,
                 counterparty_chain_id,

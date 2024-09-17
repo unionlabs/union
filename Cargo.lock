@@ -1121,23 +1121,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aptos-rpc"
-version = "0.1.0"
-dependencies = [
- "hex",
- "macros",
- "reqwest 0.11.27",
- "serde",
- "serde-utils",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
-]
-
-[[package]]
 name = "aptos-runtimes"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
