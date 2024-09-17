@@ -57,8 +57,6 @@ export async function simulateTransaction({
   receiver,
   denomAddress,
   sourceChannel,
-  sourceChainId,
-  destinationChainId,
   relayContractAddress
 }: {
   memo?: string
