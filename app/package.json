@@ -16,14 +16,18 @@
   },
   "dependencies": {
     "@builder.io/partytown": "^0.10.2",
+    "@cosmjs/amino": "^0.32.4",
+    "@cosmjs/cosmwasm-stargate": "0.32.4",
     "@cosmjs/encoding": "^0.32.4",
+    "@cosmjs/stargate": "0.32.4",
+    "@cosmjs/tendermint-rpc": "^0.32.4",
     "@sentry/sveltekit": "^8.29.0",
     "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/query-core": "^5.55.4",
     "@tanstack/svelte-query": "^5.55.4",
     "@tanstack/svelte-table": "^8.20.5",
     "@tanstack/svelte-virtual": "^3.10.7",
-    "@unionlabs/client": "^0.0.23",
+    "@unionlabs/client": "^0.0.24",
     "@wagmi/connectors": "^5.1.11",
     "@wagmi/core": "^2.13.5",
     "bits-ui": "^0.21.13",
@@ -43,7 +47,6 @@
     "viem": "^2.21.8"
   },
   "devDependencies": {
-    "@cosmjs/tendermint-rpc": "0.32.4",
     "@iconify-json/fa6-solid": "^1.2.0",
     "@iconify-json/logos": "^1.2.0",
     "@iconify-json/lucide": "^1.2.3",
