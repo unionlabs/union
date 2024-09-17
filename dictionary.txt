@@ -538,6 +538,7 @@ fetchzip
 fields
 fileset
 flamegraph
+fleek
 floorlog
 fmtlib
 foldl
