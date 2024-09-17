@@ -15,7 +15,7 @@ type State =
   | "offline"
   | "noClient"
 
-export type AllowanceState = "invited" | "waitingList" | "join" | undefined
+export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
 
 export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
 
@@ -109,6 +109,11 @@ export class ContributorState {
 
   async checkAllowanceState(userId: string | undefined): Promise<AllowanceState> {
     this.allowanceState = await getAllowanceState(userId)
+    return this.allowanceState
+  }
+
+  setAllowanceState(state: AllowanceState) {
+    this.allowanceState = state
     return this.allowanceState
   }
 
@@ -246,12 +251,8 @@ export class ContributorState {
   }
 
   private updateState() {
-    console.log("ClientState:", this.clientState)
-    console.log("ContributionState:", this.contributionState)
-
     if (this.contributionState === "contribute") {
       switch (this.clientState) {
-        case "idle":
         case "initializing":
         case "downloadStarted":
         case "downloading":
@@ -284,7 +285,5 @@ export class ContributorState {
     } else {
       this.state = "loading"
     }
-
-    console.log("State:", this.state)
   }
 }

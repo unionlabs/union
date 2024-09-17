@@ -7,6 +7,7 @@ import Install from "$lib/components/Install.svelte"
 import { start } from "$lib/client"
 import H4 from "$lib/components/typography/H4.svelte"
 import { AddressForm, type ValidState } from "$lib/components/address"
+import Blink from "$lib/components/Blink.svelte"
 
 type Props = {
   contributor: ContributorState
@@ -15,16 +16,16 @@ type Props = {
 let { contributor }: Props = $props()
 
 $effect(() => {
-  console.info(`ADDRESS VALIDITY STATE: ${addressValidState}`)
-  if (contributor?.state === "contribute") {
+  if (contributor?.contributionState === "contribute" && contributor.state !== "contributing") {
+    console.log("Call client start")
     start()
   }
 })
 
-window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
-  e.preventDefault()
-  e.returnValue = ""
-})
+// window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
+//   e.preventDefault()
+//   e.returnValue = ""
+// })
 
 let addressValidState: ValidState = $state("PENDING")
 </script>
@@ -34,15 +35,11 @@ let addressValidState: ValidState = $state("PENDING")
   {#if contributor.state === 'inQueue'}
     <H1>Your position: <span class="text-union-accent-500">{contributor.queueState.position}</span></H1>
     <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
-
-    <!--Todo format time correctly if we want this, can probably be thousands of minutes?-->
     <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).
     </H3>
-
     {#if contributor.clientState === 'offline'}
       <Install/>
     {/if}
-
   {:else if contributor.state === 'contribute'}
     <H1>Starting contribution...</H1>
   {:else if contributor.state === 'contributing'}
@@ -68,6 +65,12 @@ let addressValidState: ValidState = $state("PENDING")
 </div>
 
 
-<div class="absolute bottom-10 left-10">
-  <H4>Client: <span class="text-union-accent-500">{contributor.clientState}</span></H4>
+<div class="absolute bottom-10 flex flex-col px-8 text-center gap-4">
+  <H4>
+    <Blink
+            loading={contributor.state === 'contributing'}
+            sleep={contributor.clientState === 'offline'}
+    />
+  </H4>
+  <H4>{contributor.clientState}</H4>
 </div>

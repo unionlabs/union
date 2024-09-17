@@ -4,8 +4,7 @@ import { checkAuth, type SessionError } from "$lib/utils/auth.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { Toaster } from "svelte-sonner"
-//import Navbar from "$lib/layout/Navbar/index.svelte"
-// import { Application } from "@splinetool/runtime"
+import Navbar from "$lib/layout/Navbar/index.svelte"
 
 import "../styles/tailwind.css"
 
@@ -32,33 +31,7 @@ beforeNavigate(async ({ from, to, cancel }) => {
   }
 })
 
-// let canvas: HTMLCanvasElement
-// let app: Application
-// let loading = $state(true)
-
 $effect(() => {
-  // canvas = document.getElementById("canvas3d") as HTMLCanvasElement
-  // if (!canvas) {
-  //   console.error("Canvas element not found")
-  //   return
-  // }
-  //
-  // app = new Application(canvas)
-  // if (!app) {
-  //   console.error("Failed to create Spline Application")
-  //   return
-  // }
-  //
-  // app
-  //   .load("https://prod.spline.design/6An57q5Kr37gF2k0/scene.splinecode")
-  //   .then(splineScene => {
-  //     loading = false
-  //   })
-  //   .catch(error => {
-  //     console.error("Failed to load Spline scene:", error)
-  //     loading = false
-  //   })
-
   const {
     data: { subscription }
   } = supabase.auth.onAuthStateChange((event, session) => {
@@ -72,24 +45,7 @@ $effect(() => {
 
 <Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
 
-<!--<Navbar/>-->
-<!--<canvas-->
-<!--        id="canvas3d"-->
-<!--        class=" w-full h-auto inset-0 absolute z-0 canvas-fade"-->
-<!--        class:loaded={!loading}-->
-<!--&gt;</canvas>-->
-
+<Navbar/>
 <main class="flex flex-col items-center justify-center min-h-screen w-full">
   {@render children()}
 </main>
-
-<!--<style>-->
-<!--    .canvas-fade {-->
-<!--        opacity: 0;-->
-<!--        transition: opacity 1s ease-in-out;-->
-<!--    }-->
-
-<!--    .canvas-fade.loaded {-->
-<!--        opacity: 1;-->
-<!--    }-->
-<!--</style>-->

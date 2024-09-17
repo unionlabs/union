@@ -18,7 +18,7 @@ async function logout() {
   if (error) {
     console.error("Error logging out:", error.message)
   } else {
-    window.location.href = "/auth/login"
+    window.location.href = "/auth/dive"
     user.session = null
     invalidateAll()
   }
@@ -46,8 +46,7 @@ async function logout() {
           </div>
         {:else}
           <div class="flex items-center gap-4">
-            <NavLink href="/auth/login">Log in</NavLink>
-            <NavLink href="/auth/register">Register</NavLink>
+            <NavLink href="/auth/dive">Dive in</NavLink>
           </div>
         {/if}
       </div>
@@ -65,8 +64,7 @@ async function logout() {
           {#if user.session}
             <Button class="py-2" onclick={logout}>{"Log out"}</Button>
           {:else}
-            <NavLink class="p-2" href="/auth/login">Log in</NavLink>
-            <NavLink class="p-2" href="/auth/register">Register</NavLink>
+            <NavLink class="p-2" href="/auth/dive">Register</NavLink>
           {/if}
         </div>
       </div>

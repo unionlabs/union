@@ -5,30 +5,32 @@ import { ContributorState } from "$lib/stores/state.svelte.ts"
 import Ceremony from "$lib/components/Ceremony.svelte"
 import Join from "$lib/components/Join.svelte"
 import Spinner from "$lib/components/Spinner.svelte"
-import Counter from "$lib/components/Counter/index.svelte"
+import Blink from "$lib/components/Blink.svelte"
+import H2 from "$lib/components/typography/H2.svelte"
 
 let contributor: ContributorState = new ContributorState()
 
-$effect.pre(() => {
+$effect(() => {
   const userId = user.session?.user.id
   if (userId) contributor.setUserId(userId)
 })
-
-const targetTimestamp = 1726819200
 </script>
 
-<!--Fix jump between state on load-->
+
 {#if contributor.loggedIn}
-  <!--{#if !contributor.allowanceState}-->
-  <!--  <Spinner class="text-union-accent-500 size-6"/>-->
-  <!--{:else if contributor.allowanceState === "invited"}-->
-  <!--  <Ceremony {contributor}/>-->
-  <!--{:else if contributor.allowanceState === "waitingList"}-->
-  <!--  <H1>You're on the list</H1>-->
-  <!--{:else if contributor.allowanceState === "join"}-->
-  <!--  <Join {contributor}/>-->
-  <!--{/if}-->
+  {#if !contributor.allowanceState}
+    <Spinner class="text-union-accent-500 size-6"/>
+  {:else if contributor.allowanceState === "hasRedeemed" || contributor.allowanceState === "inQueue"}
+    <Ceremony {contributor}/>
+  {:else if contributor.allowanceState === "inWaitlist"}
+    <H1>You're on the list</H1>
+  {:else if contributor.allowanceState === "join"}
+    <Join {contributor}/>
+  {/if}
 {:else}
-  <Counter {targetTimestamp}/>
+  <H2>
+    <Blink/>
+  </H2>
+  <H1>Welcome to union ceremony</H1>
 {/if}
 
