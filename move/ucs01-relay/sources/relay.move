@@ -241,7 +241,6 @@ module UCS01::Relay {
     public entry fun channel_open_init(
         connection_hops: vector<String>,
         ordering: u8,
-        port_id: String,
         counterparty_port_id: String,
         counterparty_channel_id: String,
         version: String,
@@ -250,7 +249,6 @@ module UCS01::Relay {
         ibc::channel_open_init(
             &get_signer(),
             get_self_address(),
-            // port_id,
             connection_hops,
             ordering,
             counterparty,
@@ -268,7 +266,6 @@ module UCS01::Relay {
 
 
     public entry fun chan_open_try(
-        port_id: String,
         connection_hops: vector<String>,
         ordering: u8,
         counterparty_port_id: String,
@@ -282,7 +279,6 @@ module UCS01::Relay {
         ibc::channel_open_try(
             &get_signer(),
             get_self_address(),
-            // port_id,
             connection_hops,
             ordering,
             channel::new_counterparty(counterparty_port_id, counterparty_channel_id),
@@ -306,7 +302,6 @@ module UCS01::Relay {
     }
 
     public entry fun channel_open_ack(
-        port_id: String,
         channel_id: String,
         counterparty_channel_id: String,
         counterparty_version: String,
@@ -331,7 +326,6 @@ module UCS01::Relay {
     }
 
     public entry fun channel_open_confirm(
-        port_id: String,
         channel_id: String,
         proof_ack: vector<u8>,
         proof_height_revision_num: u64,
@@ -347,14 +341,12 @@ module UCS01::Relay {
         );
     }
     public entry fun channel_close_init(
-        _port_id: String,
         _channel_id: String
     ) {
         abort E_UNSTOPPABLE
     }
 
     public entry fun channel_close_confirm(
-        _port_id: String,
         _channel_id: String
     ) {
         abort E_UNSTOPPABLE
@@ -362,13 +354,13 @@ module UCS01::Relay {
 
     public fun timeout_packet(
         sequence: u64,
-        source_port: String,
+        _source_port: String,
         source_channel: String,
-        destination_port: String,
-        destination_channel: String,
+        _destination_port: String,
+        _destination_channel: String,
         data: vector<u8>, 
-        timeout_height: height::Height,
-        timeout_timestamp: u64,
+        _timeout_height: height::Height,
+        _timeout_timestamp: u64,
     ) acquires RelayStore, SignerRef {
         // Decode the packet data
         let relay_packet = decode_packet(data);
@@ -441,7 +433,7 @@ module UCS01::Relay {
     public fun decode_packet(buf: vector<u8>): RelayPacket {
         let index = 0;
 
-        let unknown_data_32 = EthABI::decode_uint(buf, &mut index);
+        let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
 
         // Decoding sender address
         let sender = EthABI::decode_address(buf, &mut index);
@@ -450,22 +442,22 @@ module UCS01::Relay {
         let receiver = EthABI::decode_address(buf, &mut index);
 
         // Decoding unknown data (128 as u256)
-        let unknown_data_128 = EthABI::decode_uint(buf, &mut index);
+        let _unknown_data_128 = EthABI::decode_uint(buf, &mut index);
 
         // Decoding the length of tokens (before length)
-        let before_length = EthABI::decode_uint(buf, &mut index);
+        let _before_length = EthABI::decode_uint(buf, &mut index);
 
         // Decoding the number of tokens
         let num_tokens = (EthABI::decode_uint(buf, &mut index) as u64);
 
         // Decoding the token starting point and sequence
         if (num_tokens > 0) {
-            let after_length = EthABI::decode_uint(buf, &mut index);
+            let _after_length = EthABI::decode_uint(buf, &mut index);
             if (num_tokens > 1) {
-                let starting_point = EthABI::decode_uint(buf, &mut index);
+                let _starting_point = EthABI::decode_uint(buf, &mut index);
                 let idx = 2;
                 while (num_tokens > idx) {
-                    let next_starting_point = EthABI::decode_uint(buf, &mut index);
+                    let _next_starting_point = EthABI::decode_uint(buf, &mut index);
                     idx = idx + 1;
                 };
             };
@@ -476,7 +468,7 @@ module UCS01::Relay {
         let i = 0;
         while (i < num_tokens) {
             // Decoding unknown data (64 as u256)
-            let unknown_data_64 = EthABI::decode_uint(buf, &mut index);
+            let _unknown_data_64 = EthABI::decode_uint(buf, &mut index);
 
             // Decoding the amount of token
             let amount = EthABI::decode_uint(buf, &mut index);
@@ -510,7 +502,7 @@ module UCS01::Relay {
     public fun trim_prefix(s: String, prefix: String): String {
         // Check if the string starts with the prefix
         if (!starts_with(s, prefix)) {
-            return s; // If the prefix doesn't match, return the string as-is
+            return s // If the prefix doesn't match, return the string as-is
         };
 
         // Get the lengths
@@ -547,7 +539,7 @@ module UCS01::Relay {
             let token = vector::borrow(&packet.tokens, i);
 
             if (token.amount == 0) {
-                abort E_INVALID_AMOUNT; // Abort if the amount is 0
+                abort E_INVALID_AMOUNT // Abort if the amount is 0
             };
 
             // Create the denomination slice to check the prefix
@@ -704,7 +696,6 @@ module UCS01::Relay {
                 let token = get_metadata(denom_address);
                 UCS01::fa_coin::mint_with_metadata(&get_signer(), user_to_refund, token_from_vec.amount, token);
             } else {
-                let str_bytes = *string::bytes(&token_from_vec.denom);
                 let token_denom = token_from_vec.denom;
 
                 if(starts_with(token_from_vec.denom, string::utf8(b"@"))) {
@@ -768,12 +759,12 @@ module UCS01::Relay {
         revision_height: u64,
         timeout_timestamp: u64,
         acknowledgement: vector<u8>,
-        proof: vector<u8>,
+        _proof: vector<u8>,
         proof_revision_number: u64,
         proof_revision_height: u64,
     ) acquires RelayStore, SignerRef {
         let timeout_height = height::new(revision_number, revision_height);
-        let proof_height = height::new(proof_revision_number, proof_revision_height);
+        let _proof_height = height::new(proof_revision_number, proof_revision_height);
         let packet = IBC::packet::new(
             sequence,
             source_port,
@@ -786,7 +777,7 @@ module UCS01::Relay {
         );
 
         if (vector::length(&acknowledgement) != ACK_LENGTH || (*vector::borrow(&acknowledgement, 0) != ACK_FAILURE && *vector::borrow(&acknowledgement, 0) != ACK_SUCCESS)) {
-            abort E_INVALID_ACKNOWLEDGEMENT;
+            abort E_INVALID_ACKNOWLEDGEMENT
         };
 
         if (*vector::borrow(&acknowledgement, 0) == ACK_FAILURE) {
@@ -811,7 +802,7 @@ module UCS01::Relay {
         let num_tokens = vector::length(&denom_list);
         
         if(vector::length(&amount_list) != num_tokens) {
-            abort E_INVALID_BYTES_ADDRESS;
+            abort E_INVALID_BYTES_ADDRESS
         };
 
         let normalized_tokens: vector<Token> = vector::empty<Token>();
@@ -880,7 +871,7 @@ module UCS01::Relay {
         amount: u64,
     ): String acquires RelayStore {
         if (amount == 0) {
-            abort E_INVALID_AMOUNT;
+            abort E_INVALID_AMOUNT
         };
 
         let store = borrow_global<RelayStore>(get_vault_addr());
@@ -1041,8 +1032,8 @@ module UCS01::Relay {
 
 
 
-    #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
-    public fun test_send_token_valid_address(admin: &signer, bob: &signer, alice: address) acquires RelayStore, SignerRef {
+    #[test(admin = @UCS01, bob = @0x1235)]
+    public fun test_send_token_valid_address(admin: &signer, bob: &signer) acquires RelayStore, SignerRef {
         // Initialize the store
         initialize_store(admin);
 
@@ -1091,8 +1082,8 @@ module UCS01::Relay {
         assert!(ucs01_balance == 1000, 102);
     }
 
-    #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
-    public fun test_send_token_burn(admin: &signer, bob: &signer, alice: address) acquires RelayStore, SignerRef {
+    #[test(admin = @UCS01, bob = @0x1235)]
+    public fun test_send_token_burn(admin: &signer, bob: &signer) acquires RelayStore, SignerRef {
         // Initialize the store
         initialize_store(admin);
 
@@ -1101,7 +1092,7 @@ module UCS01::Relay {
         let amount: u64 = 1000;
 
         // Upsert denom to address pair
-        let pair = AddressToDenomPair {
+        let _pair = AddressToDenomPair {
             source_channel,
             denom,
         };
@@ -1136,14 +1127,14 @@ module UCS01::Relay {
         assert!(ucs01_balance == 0, 102);
     }
 
-    #[test(admin = @UCS01, alice = @0x1234)]
+    #[test(admin = @UCS01)]
     #[expected_failure(abort_code = E_INVALID_AMOUNT)]
-    public fun test_send_zero_amount(admin: &signer, alice: address) acquires RelayStore, SignerRef {
+    public fun test_send_zero_amount(admin: &signer) acquires RelayStore, SignerRef {
         // Initialize the store
         initialize_store(admin);
 
         let source_channel = string::utf8(b"channel-1");
-        let denom = @0x111111;
+        let _denom = @0x111111;
         let admin = &get_signer();
         UCS01::fa_coin::initialize(
             admin,
@@ -1157,7 +1148,7 @@ module UCS01::Relay {
 
         
         let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
-        let asset = get_metadata(asset_addr);
+        let _asset = get_metadata(asset_addr);
 
         // Attempt to send zero amount
         send_token(admin, source_channel, asset_addr, 0);
@@ -1436,7 +1427,7 @@ module UCS01::Relay {
         on_recv_packet_processing(ibc_packet);
 
         // Step 6: Verify that a new denomination was created and minting occurred
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        let _store = borrow_global_mut<RelayStore>(get_vault_addr());
         // Construct the foreign denomination using the source and destination channels
         let our_denom = make_foreign_denom(
             port_id,
@@ -1460,7 +1451,7 @@ module UCS01::Relay {
         let source_channel = string::utf8(b"channel-1");
         let destination_channel = string::utf8(b"dest-channel");
         let port_id = string::utf8(b"port-1");
-        let foreign_denom = string::utf8(b"foreign-token-denom");
+        let _foreign_denom = string::utf8(b"foreign-token-denom");
         let token_owner = &get_signer();
 
         UCS01::fa_coin::initialize(
@@ -1473,12 +1464,12 @@ module UCS01::Relay {
             TEST_SYMBOL
         );
         let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
-        let asset = get_metadata(asset_addr);
+        let _asset = get_metadata(asset_addr);
 
         let new_denom = make_denom_prefix(port_id, destination_channel);
         string::append(&mut new_denom, string_utils::to_string_with_canonical_addresses(&asset_addr));
         // Step 3: Insert an existing foreign token address into the store
-        let existing_denom_address: address = @0x1;
+        let _existing_denom_address: address = @0x1;
         let pair = DenomToAddressPair {
             source_channel: source_channel,
             denom: new_denom,

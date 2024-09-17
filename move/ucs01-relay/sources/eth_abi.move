@@ -164,9 +164,6 @@ module UCS01::EthABI {
     public fun test_encode_decode_uint() {
         let some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
-        let addr1 = @0x1111111111111111111111111111111111111111;
-        let addr2 = @0x0000000000000000000000000000000000000033;
-
         let data: u8 = 4;
         let data2: u32 = 444;
         let data3: u128 = 1444223;

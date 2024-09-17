@@ -230,7 +230,7 @@ module UCS01::fa_coin {
         );
 
         let recipient = @0xface;
-        let creator_address = signer::address_of(creator);
+        let _creator_address = signer::address_of(creator);
 
         mint(creator, recipient, 1000, ASSET_SYMBOL);
 
@@ -368,7 +368,7 @@ module UCS01::fa_coin {
 
         assert!(alice_balance == 1000, 402);
         
-        let to_wallet = primary_fungible_store::primary_store(bob, asset);
+        let _to_wallet = primary_fungible_store::primary_store(bob, asset);
 
         // UCS01::Relay::tx(alice, bob, 10, asset);
 
