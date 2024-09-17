@@ -78,12 +78,10 @@ export class ContributorState {
     client: IntervalID | null
     queue: IntervalID | null
     contribution: IntervalID | null
-    allowance: IntervalID | null
   } = {
     client: null,
     queue: null,
-    contribution: null,
-    allowance: null
+    contribution: null
   }
 
   constructor(userId?: string) {
