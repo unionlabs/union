@@ -16,7 +16,6 @@ $effect(() => {
 })
 </script>
 
-
 {#if contributor.loggedIn}
   {#if !contributor.allowanceState}
     <Spinner class="text-union-accent-500 size-6"/>

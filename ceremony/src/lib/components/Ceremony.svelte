@@ -8,6 +8,7 @@ import { start } from "$lib/client"
 import H4 from "$lib/components/typography/H4.svelte"
 import { AddressForm, type ValidState } from "$lib/components/address"
 import Blink from "$lib/components/Blink.svelte"
+import Tweet from "$lib/components/Tweet.svelte"
 
 type Props = {
   contributor: ContributorState
@@ -52,6 +53,7 @@ let addressValidState: ValidState = $state("PENDING")
       <H1>Thank you! Your contribution is completed.</H1>
       <H2>Get your nft</H2>
       <AddressForm class="" onValidation={result => (addressValidState = result)}/>
+      <Tweet tweetText="0____0"/>
     </div>
 
   {:else if contributor.state === 'noClient'}
