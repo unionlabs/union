@@ -55,6 +55,20 @@
             '';
           };
         };
+        deploy-app-ipfs = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "deploy-app-ipfs";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd app/
+
+              nix build .#app
+              npm_config_yes=true npx @fleek-platform/cli sites deploy
+            '';
+          };
+        };
       };
     };
 }

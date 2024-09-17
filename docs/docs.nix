@@ -9,7 +9,7 @@
     {
       packages = {
         docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-nnugNuwQybGENX7QAna0oZgtenUGsHaxKkIMxl/HrF8=";
+          npmDepsHash = "sha256-YHawlfw4E8kaXb49bTSxgItGgUKTlHxAUqqkp2SZQkI=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "docs";
@@ -61,6 +61,21 @@
               npm_config_yes=true npx astro build
 
               nix build .\#checks.${pkgs.system}.spellcheck --print-build-logs
+            '';
+          };
+        };
+        deploy-docs-ipfs = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "deploy-docs-ipfs";
+            runtimeInputs = combinedDeps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd docs/
+
+              export PUPPETEER_SKIP_DOWNLOAD=1 
+              nix build .#docs
+              npm_config_yes=true npx @fleek-platform/cli sites deploy
             '';
           };
         };
