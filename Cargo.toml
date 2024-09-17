@@ -16,7 +16,6 @@ members = [
 
   "hubble",
 
-  "lib/aptos-rpc",
   "lib/beacon-api",
   "lib/cometbft-rpc",
 

@@ -1127,7 +1127,6 @@ impl<'a> TransferProtocol for Ucs01Protocol<'a> {
 }
 
 #[cfg(test)]
-#[allow(deprecated)] // TODO: Remove usage of mock_info
 mod tests {
     use cosmwasm_std::{
         testing::{message_info, mock_dependencies, mock_env},
