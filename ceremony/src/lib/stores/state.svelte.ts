@@ -56,8 +56,8 @@ type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 
 const second = 1000
 const CLIENT_POLING_INTERVAL = second
-const CONTRIBUTION_POLLING_INTERVAL = second * 10
-const QUEUE_POLLING_INTERVAL = second * 10
+const CONTRIBUTION_POLLING_INTERVAL = second * 5
+const QUEUE_POLLING_INTERVAL = second * 5
 
 export class ContributorState {
   userId = $state<string | undefined>(undefined)
@@ -114,7 +114,8 @@ export class ContributorState {
 
   setAllowanceState(state: AllowanceState) {
     this.allowanceState = state
-    return this.allowanceState
+    this.pollQueueInfo()
+    this.pollContributionState()
   }
 
   startPolling() {
