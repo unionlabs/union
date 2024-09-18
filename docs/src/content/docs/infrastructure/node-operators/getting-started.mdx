@@ -5,9 +5,10 @@ sidebar:
 ---
 
 import { dedent } from "ts-dedent"
+import Code from '#/components/Code.astro'
 import DownloadFile from "#/components/DownloadFile.astro"
+import { Tabs, TabItem } from "@astrojs/starlight/components"
 import FunctionResult from '#/components/FunctionResult.astro'
-import { Tabs, TabItem, Code } from "@astrojs/starlight/components"
 import { chainVersion, getSeedsParts } from '#/lib/constants/versions.ts'
 
 This guide is intended for validators running on bare-metal servers and explains how Union releases work. Check out the [NixOS](/infrastructure/node-operators/nixos/) and the [Kubernetes](/infrastructure/node-operators/kubernetes/) guide for more production-ready deployments.
@@ -85,16 +86,12 @@ We'll need to set up a few configuration files and obtain the <DownloadFile file
 
 First, set some environment variables, which are used throughout initialization.
 
-<Code
-  lang='bash'
-  code={dedent(`
-    export CHAIN_ID=union-testnet-8
-    export MONIKER="Unionized Goblin"
-    export KEY_NAME=alice
-    export GENESIS_URL="https://union.build/genesis.json"
-  `)}
-/>
-
+```sh title="env.sh"
+export CHAIN_ID=union-testnet-8
+export MONIKER="Unionized Goblin"
+export KEY_NAME=alice
+export GENESIS_URL="https://union.build/genesis.json"
+```
 
 Then we'll have `uniond` initialize our data and configuration directories. By default, `/User/{USER}/.uniond` is used.
 

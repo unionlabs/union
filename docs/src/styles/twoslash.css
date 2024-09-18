@@ -24,7 +24,8 @@ Code blocks structurally look like:
 }
 
 .astro-code {
-  overflow: visible !important;
+  overflow-y: visible !important;
+	overflow-x: auto !important;
 }
 
 .twoslash .twoslash-popup-code, .twoslash .twoslash-popup-error, .twoslash .twoslash-popup-docs {
@@ -58,11 +59,11 @@ pre {
 	 margin-bottom: 3rem;
 
     /* Important to allow the code to move horizontally; */
-    overflow-x: auto;
+    overflow-x: auto !important;
     position: relative;
 }
  pre.shiki {
-    overflow-x: auto;
+    overflow-x: auto !important;
 }
  pre.shiki:hover .dim {
 	 opacity: 1;
@@ -118,6 +119,7 @@ pre.twoslash data-lsp:hover::before {
 
 pre .code-container {
 	 overflow: auto;
+	overflow-x: auto !important;
 }
 /* The try button */
  pre .code-container > a {

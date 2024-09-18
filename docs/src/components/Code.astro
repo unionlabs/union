@@ -1,19 +1,44 @@
 ---
-import "#/styles/fonts.css"
-import "@shikijs/twoslash/style-rich.css"
-import { highlightCode, type HighlightArgs } from "#/lib/highlight-code.ts"
+import { shikiConfig } from "markdown.config"
+import { Code as AstroCode } from "astro:components"
+import type { PartiallyRequired } from "#/lib/types.ts"
 
-interface Props extends HighlightArgs {}
+type AstroCodeProps = Parameters<typeof AstroCode>[number]
 
-const { code, lang = "plaintext" } = Astro.props
+type CodeProps = PartiallyRequired<AstroCodeProps, "lang" | "code"> & {
+  inline?: boolean
+  transformers?: AstroCodeProps["transformers"]
+}
 
-const highlightedCode = await highlightCode({ code: code.trim(), lang })
+interface Props extends CodeProps {}
+
+const { code, lang, inline = false, transformers: _transformers } = Astro.props
 ---
 
-<div
+<AstroCode
+  lang={lang}
+  code={code.trim()}
+  theme={shikiConfig.theme}
+  class="text-sm sm:text-base"
+/>
+
+<style lang="postcss">
+  figure[data-rehype-pretty-code-figure],
+  pre {
+    @apply rounded-lg overflow-visible;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    width: 100%;
+    min-width: 100%;
+  }
+
+</style>
+
+<!-- <div
   class="code-snippet font-mono overflow-auto max-h-[500px] h-full overflow-y-visible"
   set:html={highlightedCode}
-/>
+/> -->
 
 <!-- <style is:global>
   @media (prefers-color-scheme: light) {

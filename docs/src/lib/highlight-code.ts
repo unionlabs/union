@@ -6,7 +6,16 @@ import { rehypePrettyCode } from "rehype-pretty-code"
 
 // let highlighter: Awaited<ReturnType<typeof createHighlighter>> | undefined
 
-export type BuiltinLang = "ts" | "typescript" | "jsx" | "sh" | "plaintext"
+export type BuiltinLang =
+  | "ts"
+  | "typescript"
+  | "jsx"
+  | "sh"
+  | "plaintext"
+  | "toml"
+  | "json"
+  | "yaml"
+  | "bash"
 
 export type HighlightArgs = {
   code: string

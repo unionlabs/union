@@ -33,11 +33,6 @@ html {
   color-scheme: dark;
 }
 
-pre button.rehype-pretty-copy {
-  top: 5px;
-  background-color: transparent;
-}
-
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -53,8 +48,7 @@ pre {
 
 pre > code {
   counter-reset: line;
-  overflow: hidden !important;
-
+  overflow-x: auto !important;
 }
 
 code[data-theme*=" "],
@@ -154,4 +148,111 @@ code[data-line-numbers] > [data-line]::before {
 figcaption + pre {
   border-top-left-radius: 0px !important;
   border-top-right-radius: 0px !important;
+}
+
+.rehype-pretty-copy {
+  position: absolute;
+
+  opacity: 1;
+  height: 18px;
+  /*  make stick to top right corner */
+  position: sticky;
+  top: 6px;
+  right: 16px;
+
+  & span.ready {
+    opacity: 1;
+    display: block;
+    color: white;
+    background-color: #00ff04;
+  }
+}
+.rehype-pretty-copy span.ready {
+  opacity: 1;
+  display: block;
+  color: white;
+  background-color: #00ff04;
+}
+
+.rehype-pretty-copy span {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+pre {
+  overflow-y: visible;
+}
+
+pre:has(code) {
+  position: relative;
+  padding-right: 60px;
+}
+
+pre button.copy {
+  position: sticky;
+  right: 16px;
+  top: 16px !important;
+  height: 28px;
+  float: right;
+  margin-right: -60px;
+  width: 28px;
+  padding: 0;
+  display: flex;
+  cursor: pointer;
+  color: white;
+  border-radius: 0.25rem;
+  backdrop-filter: blur(5px);
+  background: transparent;
+
+  top: 1px;
+  right: 1px;
+  padding: 0;
+
+  & span {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    @apply mt-auto;
+  }
+
+  & .ready {
+    color: white;
+    background-image: url(https://api.iconify.design/fluent:clipboard-32-regular.svg);
+  }
+
+  & .success {
+    display: none;
+    background-image: url(https://api.iconify.design/fluent:clipboard-32-regular.svg?color=%232cc970);
+  }
+
+  &.copied {
+    & .success {
+      display: block;
+    }
+
+    & .ready {
+      display: none;
+    }
+  }
+}
+
+.copy-code {
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: inherit;
+  position: absolute;
+  top: 10px;
+  right: 0;
+  background-color: #fff;
+  color: #000;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  border-radius: 0.25rem 0 0 0.25rem;
 }

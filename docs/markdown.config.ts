@@ -17,7 +17,7 @@ import remarkSmartypants from "remark-smartypants"
 import type { AstroUserConfig } from "astro/config"
 import { escapeHTML } from "astro/runtime/server/escape.js"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
-import { transformerCopyButton } from "@rehype-pretty/transformers"
+// import { transformerCopyButton } from "@rehype-pretty/transformers"
 import { rendererRich, transformerTwoslash } from "@shikijs/twoslash"
 import { rehypeHeadingIds, type RemarkPlugin, type ShikiConfig } from "@astrojs/markdown-remark"
 
@@ -36,8 +36,8 @@ export const shikiConfig = {
     transformerMetaWordHighlight(),
     transformerNotationHighlight(),
     transformerNotationErrorLevel(),
-    transformerNotationWordHighlight(),
-    transformerCopyButton({ visibility: "always", feedbackDuration: 3_0000 })
+    transformerNotationWordHighlight()
+    // transformerCopyButton({ visibility: "hover", feedbackDuration: 3_000 })
   ]
 } satisfies ShikiConfig
 
@@ -46,6 +46,11 @@ export const markdownConfiguration = {
   shikiConfig,
   smartypants: false,
   syntaxHighlight: "shiki",
+  remarkRehype: {
+    allowDangerousHtml: true,
+    clobberPrefix: "union-docs-",
+    passThrough: ["code", "root"]
+  },
   remarkPlugins: [
     mermaid(),
     remarkMathPlugin,
@@ -53,11 +58,11 @@ export const markdownConfiguration = {
     [remarkToc, { heading: "contents", prefix: "toc-" }]
   ],
   rehypePlugins: [
-    rehypeHeadingIds,
     rehypeSlug,
-    [rehypeAutolinkHeadings, { behavior: "wrap" }],
+    rehypeHeadingIds,
     rehypeKatexPlugin,
-    rehypeMathjaxPlugin
+    rehypeMathjaxPlugin,
+    [rehypeAutolinkHeadings, { behavior: "wrap" }]
   ]
 } satisfies Markdown
 

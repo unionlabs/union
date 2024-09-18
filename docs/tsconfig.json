@@ -36,7 +36,6 @@
   "include": ["src", "public", "scripts"],
   "files": [
     "reset.d.ts",
-    "ec.config.mjs",
     "astro.config.ts",
     "svelte.config.js",
     "tailwind.config.ts",
