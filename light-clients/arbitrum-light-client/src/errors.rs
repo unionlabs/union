@@ -84,6 +84,12 @@ pub enum Error {
 
     #[error("error while calling custom query: {0}")]
     CustomQuery(#[from] unionlabs::cosmwasm::wasm::union::custom_query::Error),
+
+    #[error("substitute client is frozen")]
+    SubstituteClientFrozen,
+
+    #[error("forbidden fields have been changed during state migration")]
+    MigrateFieldsChanged,
 }
 
 impl From<Error> for IbcClientError<ArbitrumLightClient> {
