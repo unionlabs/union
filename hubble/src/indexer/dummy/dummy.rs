@@ -155,7 +155,7 @@ impl FetcherClient for DummyFetcherClient {
         // sleep(Duration::from_millis(10)).await;
         let reference = BlockReference::new(
             match selection {
-                BlockSelection::LastFinalized => 43000 as u64,
+                BlockSelection::LastFinalized => 43000,
                 BlockSelection::Height(height) => height,
             },
             match selection {
