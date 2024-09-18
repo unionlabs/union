@@ -119,7 +119,8 @@ EXECUTE FUNCTION set_initial_score_trigger();
 -----------
 CREATE TABLE code (
   id text PRIMARY KEY,
-  user_id uuid DEFAULT NULL
+  user_id uuid DEFAULT NULL,
+  display_name text NOT NULL DEFAULT ('John Doe')
 );
 
 ALTER TABLE code ENABLE ROW LEVEL SECURITY;
@@ -127,7 +128,7 @@ ALTER TABLE code ADD FOREIGN KEY (user_id) REFERENCES auth.users(id);
 CREATE UNIQUE INDEX idx_code_user_id ON code(user_id);
 
 CREATE OR REPLACE FUNCTION redeem(code_id text) RETURNS void AS $$
-  DECLARE
+DECLARE
   redeemed_code public.code%ROWTYPE := NULL;
 BEGIN
   UPDATE public.code c
@@ -444,12 +445,12 @@ CREATE TABLE contribution_signature(
 ALTER TABLE contribution_signature ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contribution_signature ADD FOREIGN KEY (id) REFERENCES contribution_status(id);
 
-CREATE POLICY view_self
+CREATE POLICY view_all
   ON contribution_signature
   FOR SELECT
     TO authenticated
     USING (
-      (SELECT auth.uid()) = id
+      true
     );
 
 CREATE POLICY allow_insert_self
@@ -462,12 +463,25 @@ CREATE POLICY allow_insert_self
 
 CREATE OR REPLACE VIEW current_user_state AS (
   SELECT
-    (EXISTS (SELECT * FROM waitlist WHERE id = (SELECT auth.uid()))) AS in_waitlist,
-    (EXISTS (SELECT * FROM code WHERE user_id = (SELECT auth.uid()))) AS has_redeemed,
-    (EXISTS (SELECT * FROM queue WHERE id = (SELECT auth.uid()))) AS in_queue
+    (EXISTS (SELECT * FROM public.waitlist WHERE id = (SELECT auth.uid()))) AS in_waitlist,
+    (EXISTS (SELECT * FROM public.code WHERE user_id = (SELECT auth.uid()))) AS has_redeemed,
+    (EXISTS (SELECT * FROM public.queue WHERE id = (SELECT auth.uid()))) AS in_queue,
+    (COALESCE((SELECT display_name FROM public.code WHERE user_id = (SELECT auth.uid())), (SELECT raw_user_meta_data->>'name' FROM auth.users u WHERE u.id = (SELECT auth.uid())))) AS display_name
 );
 
 ALTER VIEW current_user_state SET (security_invoker = off);
+
+CREATE OR REPLACE VIEW users_contribution AS (
+  SELECT c.id, u.raw_user_meta_data->>'user_name' AS user_name, u.raw_user_meta_data->>'avatar_url' AS avatar_url, c.seq, q.payload_id, cs.public_key, cs.signature
+  FROM public.contribution c
+  INNER JOIN public.queue q ON (c.id = q.id)
+  INNER JOIN public.contribution_signature cs ON (c.id = cs.id)
+  INNER JOIN auth.users u ON (c.id = u.id)
+  WHERE c.success
+  ORDER BY c.seq ASC
+);
+
+ALTER VIEW users_contribution SET (security_invoker = on);
 
 ----------
 -- CRON --

@@ -15,3 +15,5 @@ reqwest           = { workspace = true, features = ["json"] }
 serde_json        = { workspace = true }
 thiserror         = { workspace = true }
 tokio             = { workspace = true, features = ["full"] }
+tracing            = { workspace = true }
+tracing-subscriber  = { workspace = true, features = ["env-filter", "json", "tracing-log"] }

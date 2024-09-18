@@ -186,7 +186,7 @@ async fn contribute(
     // Gnark phase2 contribution appends the sha256 hash at the end
     let phase2_contribution_hash = &phase2_contribution[phase2_contribution.len() - 32..];
     let signature = CleartextSignedMessage::sign(
-        &signed_message(&payload_id, &hex::encode(phase2_contribution_hash)),
+        &signed_message(&current_payload.id, &payload_id, &hex::encode(phase2_contribution_hash)),
         &mut secret_key,
         || String::new(),
     )
@@ -215,6 +215,7 @@ async fn contribute(
                 | OpenFlags::SQLITE_OPEN_URI,
         )
         .journal_mode(JournalMode::Wal)
+        .num_conns(1)
         .open()
         .await?;
     pool.conn(|conn| {
@@ -350,6 +351,7 @@ async fn contribute(
             .send(Status::UploadEnded(payload_id.clone()))
             .expect("impossible");
     }
+    pool.close().await?;
     Ok(())
 }
 
