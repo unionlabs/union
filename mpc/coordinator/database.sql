@@ -234,7 +234,7 @@ CREATE POLICY view_all
       true
     );
 
--- The next contributor is the one with the higest score that didn't contribute yet.
+-- The next contributor is the one with the highest score that didn't contribute yet.
 CREATE OR REPLACE FUNCTION set_next_contributor_trigger() RETURNS TRIGGER AS $$
 BEGIN
   CALL public.set_next_contributor();
@@ -302,7 +302,7 @@ CREATE OR REPLACE VIEW current_queue_position AS
 
 ALTER VIEW current_queue_position SET (security_invoker = on);
 
--- The current payload is from the latest successfull contribution
+-- The current payload is from the latest successful contribution
 CREATE OR REPLACE VIEW current_payload_id AS
   SELECT COALESCE(
     (SELECT q.payload_id

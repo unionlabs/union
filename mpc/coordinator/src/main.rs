@@ -9,12 +9,7 @@ use tracing_subscriber::EnvFilter;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    #[arg(
-        global = true,
-        short = 'f',
-        long,
-        default_value = "json"
-    )]
+    #[arg(global = true, short = 'f', long, default_value = "json")]
     log_format: LogFormat,
     #[command(subcommand)]
     command: Command,

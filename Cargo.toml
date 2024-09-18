@@ -226,9 +226,9 @@ ibc-vm-rs                      = { path = "lib/ibc-vm-rs", default-features = fa
 ics008-wasm-client             = { path = "cosmwasm/ics08-light-clients/interface", default-features = false }
 ics23                          = { path = "lib/ics23", default-features = false }
 macros                         = { path = "lib/macros", default-features = false }
-mpc-shared                = { path = "mpc/shared", default-features = false }
 move-bindgen                   = { path = "tools/move-bindgen", default-features = false }
 move-bindgen-derive            = { path = "lib/move-bindgen-derive", default-features = false }
+mpc-shared                     = { path = "mpc/shared", default-features = false }
 pg-queue                       = { path = "lib/pg-queue", default-features = false }
 poseidon-rs                    = { path = "lib/poseidon-rs", default-features = false }
 protos                         = { path = "generated/rust/protos", default-features = false }

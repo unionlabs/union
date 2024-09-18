@@ -84,6 +84,13 @@ pub fn phase2_verify(
     }
 }
 
-pub fn signed_message(previous_payload_id: &str, next_payload_id: &str, payload_hash: &str) -> String {
-    format!("0______0 - {} - {} - {}", previous_payload_id, next_payload_id, payload_hash)
+pub fn signed_message(
+    previous_payload_id: &str,
+    next_payload_id: &str,
+    payload_hash: &str,
+) -> String {
+    format!(
+        "0______0 - {} - {} - {}",
+        previous_payload_id, next_payload_id, payload_hash
+    )
 }
