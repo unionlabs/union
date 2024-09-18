@@ -17,6 +17,7 @@ Beriker
 Bitfield
 Bitvector
 Bkpvid
+Blex
 Blured
 Boiron
 Boneh
@@ -43,8 +44,10 @@ Cosmoverse
 Counterparties
 Counterparty
 Cpath
+Cpolygon
 Creds
 Cryptopunkssvg
+Csvg
 Cypherpunk
 DATADIR
 DYLD
@@ -69,7 +72,9 @@ Fil
 Filenaming
 Founderheads
 Frontmatter
+Fsvg
 Fuga
+Fwww
 GOARCH
 GOPATH
 GOPRIVATE
