@@ -27,12 +27,16 @@ function handlePaste(e: ClipboardEvent): void {
 }
 
 function normalizeString(words: Array<string>): string {
-  return words.map(word => word.trim().toLowerCase()).join("")
+  return words
+    .map(word => word.trim().toLowerCase())
+    .join("")
+    .replace(/[^a-z0-9]/gi, "")
 }
 
 async function handleCodeJoin() {
   codeLoading = true
   try {
+    console.log(code)
     const codeOk = await callJoinQueue(code)
     if (codeOk) {
       contributor.setAllowanceState("hasRedeemed")
