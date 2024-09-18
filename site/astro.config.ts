@@ -41,8 +41,8 @@ export default defineConfig({
       CONTENTFUL_SPACE_ID: envField.string({ context: "client", access: "public" }),
       CONTENTFUL_ENVIRONMENT: envField.string({ context: "client", access: "public" }),
       CONTENTFUL_ACCESS_TOKEN: envField.string({ context: "client", access: "public" }),
-      CONTENTFUL_DELIVERY_TOKEN: envField.string({ context: "client", access: "public" }),
-      CONTENTFUL_PREVIEW_TOKEN: envField.string({ context: "client", access: "public" })
+      CONTENTFUL_PREVIEW_TOKEN: envField.string({ context: "client", access: "public" }),
+      CONTENTFUL_DELIVERY_TOKEN: envField.string({ context: "client", access: "public" })
     }
   },
   markdown: markdownConfiguration,
