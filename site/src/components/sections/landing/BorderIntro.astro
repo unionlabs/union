@@ -14,7 +14,7 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
     <div class="shiny-border" id="glowContainer">
     </div>
     <MatrixCover/>
-    <div class="backdrop-blur-2xl header-text-content p-6 md:p-8 flex flex-col gap-4">
+    <div class="backdrop-blur-2xl header-text-content p-6 md:p-8 flex flex-col gap-4 m-4">
       <H1>The Modular ZK<br> <span class="text-accent-500">Interop Layer</span></H1>
       <QuoteSubTitle>
         Connecting every blockchain, without compromising on security, efficiency,
@@ -50,9 +50,9 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 
 <style lang="postcss" is:global>
   .header-grid {
-    --outer-border: 16px;
-    --inner-border: 2px;
-    height: calc(100svh - 80px);
+    --outer-border: 0px;
+    --inner-border: 0px;
+    height: calc(100svh);
     width: full;
     display: grid;
     grid-template-rows: 0 var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
@@ -60,7 +60,7 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
   }
 
   .shiny-border {
-    background-color: rgb(55, 55, 55); 
+    background-color: theme(colors.black); 
     grid-area: 2 / 2 / 7 / 7;
   }
   .header-grid > canvas {
@@ -76,7 +76,7 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
         position: relative;
         width: 100%;
         padding: 2px;
-        background-color: theme(colors.neutral.800);
+        background-color: theme(colors.black);
         clip-path: polygon(
                 0 0,
                 calc(100% - 75px) 0,

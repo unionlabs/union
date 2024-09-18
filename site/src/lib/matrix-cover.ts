@@ -322,7 +322,6 @@ function initWebGL() {
     glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -16])
     // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
     // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
-    console.log(totalTime)
     const startRotation = Math.PI / 2 // Starting rotation angle
     const endRotation = Math.PI / 4 // Ending rotation angle
     const duration = 4 // Total duration of the transition in seconds
