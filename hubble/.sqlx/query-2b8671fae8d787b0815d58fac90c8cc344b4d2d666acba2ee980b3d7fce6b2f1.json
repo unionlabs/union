@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM hubble.block_status\n        WHERE indexer_id = $1 AND height = $2\n        RETURNING hash\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "hash",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2b8671fae8d787b0815d58fac90c8cc344b4d2d666acba2ee980b3d7fce6b2f1"
+}

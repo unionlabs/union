@@ -545,6 +545,7 @@ fetchurl
 fetchzip
 fields
 fileset
+finalizer
 flamegraph
 fleek
 floorlog

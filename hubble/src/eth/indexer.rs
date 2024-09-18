@@ -593,16 +593,16 @@ impl BlockInsert {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionInsert {
-    hash: String,
-    index: i32,
-    events: Vec<EventInsert>,
+    pub hash: String,
+    pub index: i32,
+    pub events: Vec<EventInsert>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EventInsert {
-    data: serde_json::Value,
-    log_index: usize,
-    transaction_log_index: i32,
+    pub data: serde_json::Value,
+    pub log_index: usize,
+    pub transaction_log_index: i32,
 }
 
 pub trait ToLowerHex {

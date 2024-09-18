@@ -55,6 +55,24 @@
         indexers = mkOption {
           type = types.listOf (
             types.submodule {
+              options.indexer_id = mkOption {
+                type = types.nullOr types.str;
+                description = "Id of the indexer which is used by the internal administration of Hubble. Should never change.";
+                example = "amazing-testnet";
+                default = null;
+              };
+              options.internal_chain_id = mkOption {
+                type = types.nullOr types.number;
+                description = "Hubble internal chain id, used to fetch the current height when migrating to fetchers.";
+                example = "4";
+                default = null;
+              };
+              options.new_chain_override = mkOption {
+                type = types.nullOr types.bool;
+                description = "Indicator that this is a new chain, so the current height must not be used when migrating to fetchers.";
+                example = "false";
+                default = null;
+              };
               options.label = mkOption { type = types.str; example = "something-custom"; };
               options.filter = mkOption {
                 type = types.nullOr types.str;
@@ -97,7 +115,7 @@
 
               options.chain_id = mkOption { type = types.nullOr types.str; example = "union-testnet-8"; default = null; };
               options.grpc_url = mkOption { type = types.nullOr types.str; example = "https://grpc.example.com"; default = null; };
-              options.type = mkOption { type = types.enum [ "tendermint" "ethereum" "beacon" "bera" "ethereum-fork" "arb" "scroll" ]; };
+              options.type = mkOption { type = types.enum [ "tendermint" "ethereum" "beacon" "bera" "ethereum-fork" "arb" "scroll" "eth-fetcher" ]; };
               options.start_height = mkOption { type = types.int; example = 1; default = 0; };
               options.chunk_size = mkOption { type = types.int; example = 1; default = 200; };
               options.until = mkOption { type = types.int; example = 1; default = 1000000000000; };

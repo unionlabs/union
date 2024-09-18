@@ -19,6 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 alloy              = { version = "0.1", features = ["full"] }
+async-trait        = "0.1.82"
 axum               = { workspace = true, features = ["macros", "tokio"] }
 backon             = "0.4.4"
 base64             = { workspace = true }
