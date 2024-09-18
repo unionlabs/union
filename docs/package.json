@@ -22,7 +22,7 @@
     "@expressive-code/plugin-collapsible-sections": "^0.36.1",
     "@expressive-code/plugin-line-numbers": "^0.36.1",
     "@rehype-pretty/transformers": "^0.13.2",
-    "@unionlabs/client": "^0.0.25",
+    "@unionlabs/client": "^0.0.26",
     "@webcontainer/api": "^1.3.0-internal.8",
     "@xterm/addon-clipboard": "^0.1.0",
     "@xterm/addon-fit": "^0.10.0",
