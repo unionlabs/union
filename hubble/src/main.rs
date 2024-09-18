@@ -20,6 +20,7 @@ mod cli;
 mod consensus;
 mod eth;
 mod healthz;
+mod indexer;
 mod logging;
 mod metrics;
 mod postgres;

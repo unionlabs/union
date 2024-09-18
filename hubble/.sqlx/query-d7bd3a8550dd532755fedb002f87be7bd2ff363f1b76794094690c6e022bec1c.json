@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO hubble.indexer_status (indexer_id, height, timestamp)\n        VALUES ($1, $2, $3)\n        ON CONFLICT (indexer_id) DO \n        UPDATE SET\n            height = excluded.height,\n            timestamp = excluded.timestamp\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d7bd3a8550dd532755fedb002f87be7bd2ff363f1b76794094690c6e022bec1c"
+}

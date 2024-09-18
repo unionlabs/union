@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM hubble.block_fix\n        WHERE indexer_id = $1\n        AND   start_height = $2\n        AND   end_height <= $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6b41e53bdcfd1235f3cdc46a8d4ed6627f1d79b682ba4c0f5f47732df3bf2b0c"
+}

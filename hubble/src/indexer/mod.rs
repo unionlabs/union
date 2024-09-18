@@ -1,0 +1,216 @@
+pub mod api;
+pub mod dummy;
+pub mod eth;
+mod fetcher;
+mod finalizer;
+mod fixer;
+mod postgres;
+
+use std::{future::Future, time::Duration};
+
+use api::{
+    BlockHandle, BlockHeight, BlockRange, FetchMode, FetcherClient, IndexerError, IndexerId,
+};
+use color_eyre::eyre::Report;
+use futures::StreamExt;
+use tokio::{task::JoinSet, time::sleep};
+use tracing::{error, info};
+
+enum EndOfRunResult {
+    Exit,
+    Restart,
+}
+
+#[derive(Clone)]
+pub struct Indexer<T: FetcherClient> {
+    pub pg_pool: sqlx::PgPool,
+    pub indexer_id: IndexerId,
+    pub start_height: BlockHeight,
+    pub chunk_size: usize,
+    pub context: T::Context,
+}
+
+impl<T> Indexer<T>
+where
+    T: FetcherClient,
+{
+    pub fn new(
+        pg_pool: sqlx::PgPool,
+        indexer_id: IndexerId,
+        start_height: BlockHeight,
+        chunk_size: usize,
+        context: T::Context,
+    ) -> Self {
+        Indexer {
+            pg_pool,
+            indexer_id,
+            start_height,
+            chunk_size,
+            context,
+        }
+    }
+
+    pub async fn index(&self) -> Result<(), Report> {
+        loop {
+            let mut join_set = JoinSet::new();
+
+            match self
+                .create_fetcher_client(&mut join_set, self.context.clone())
+                .await
+            {
+                Some(fetcher_client) => {
+                    let self_clone = self.clone();
+                    let fetcher_client_clone = fetcher_client.clone();
+                    join_set
+                        .spawn(async move { self_clone.run_fetcher(fetcher_client_clone).await });
+
+                    let self_clone = self.clone();
+                    let fetcher_client_clone = fetcher_client.clone();
+                    join_set
+                        .spawn(async move { self_clone.run_finalizer(fetcher_client_clone).await });
+
+                    let self_clone = self.clone();
+                    let fetcher_client_clone = fetcher_client.clone();
+                    join_set.spawn(async move { self_clone.run_fixer(fetcher_client_clone).await });
+
+                    if let EndOfRunResult::Exit = self
+                        .handle_end_of_run(&mut join_set, fetcher_client)
+                        .await?
+                    {
+                        return Ok(());
+                    }
+                }
+                None => {
+                    // can't create client => try again later
+                    sleep(Duration::from_millis(1000)).await;
+                }
+            }
+        }
+    }
+
+    async fn create_fetcher_client(
+        &self,
+        join_set: &mut JoinSet<Result<(), IndexerError>>,
+        context: T::Context,
+    ) -> Option<T> {
+        info!("creating client (context: {})", self.context);
+        match T::create(self.pg_pool.clone(), join_set, context).await {
+            Ok(client) => {
+                info!("created client: {}", client);
+                Some(client)
+            }
+            Err(error) => {
+                error!(
+                    "error creating client: {} (context: {})",
+                    error, self.context
+                );
+                None
+            }
+        }
+    }
+
+    async fn handle_end_of_run(
+        &self,
+        join_set: &mut JoinSet<Result<(), IndexerError>>,
+        fetcher_client: T,
+    ) -> Result<EndOfRunResult, Report> {
+        while let Some(res) = join_set.join_next().await {
+            match res {
+                Ok(Err(err)) => {
+                    error!(
+                        "{}: error: {:?}. re-initialize (client: {}, context: {})",
+                        self.indexer_id, err, fetcher_client, self.context
+                    );
+                    join_set.abort_all();
+                    sleep(Duration::from_secs(1)).await;
+                    info!("{}: restarting", self.indexer_id);
+                    return Ok(EndOfRunResult::Restart);
+                }
+                Err(err) => return Err(err.into()),
+                Ok(Ok(_)) => {
+                    info!("{}: indexer exited gracefully", self.indexer_id);
+                }
+            }
+        }
+        Ok(EndOfRunResult::Exit)
+    }
+}
+
+// Utility that verifies that received blocks have the expected height.
+// 'f' can assume that the height is verified, so it only needs to
+// implement the 'happy path'.
+pub trait HappyRangeFetcher<T: BlockHandle> {
+    async fn fetch_range_expect_all<F, Fut>(
+        &self,
+        range: BlockRange,
+        mode: FetchMode,
+        f: F,
+    ) -> Result<(), IndexerError>
+    where
+        F: Fn(T) -> Fut,
+        Fut: Future<Output = Result<(), Report>>;
+}
+
+impl<T: BlockHandle> HappyRangeFetcher<T> for T {
+    async fn fetch_range_expect_all<F, Fut>(
+        &self,
+        range: BlockRange,
+        mode: FetchMode,
+        f: F,
+    ) -> Result<(), IndexerError>
+    where
+        F: Fn(T) -> Fut,
+        Fut: Future<Output = Result<(), Report>>,
+    {
+        let mut stream = self.fetch_range(range.clone(), mode)?;
+        let mut expected_block_heights = range.clone().into_iter();
+
+        while let Some(expected_block_height) = expected_block_heights.next() {
+            match stream.next().await {
+                Some(Ok(block)) => {
+                    let actual_block_height = block.reference().height;
+
+                    match expected_block_height == actual_block_height {
+                        true => f(block).await?,
+                        false => {
+                            error!(
+                                "{}: unexpected height (actual {}, expecting {})",
+                                actual_block_height, actual_block_height, expected_block_height
+                            );
+                            return Err(IndexerError::UnexpectedHeightRange(
+                                expected_block_height,
+                                range,
+                                actual_block_height,
+                            ));
+                        }
+                    }
+                }
+                Some(Err(error)) => {
+                    error!("{}: error reading block: {})", expected_block_height, error);
+                    return Err(IndexerError::ErrorReadingBlock(
+                        expected_block_height,
+                        range,
+                        error.into(),
+                    ));
+                }
+                None => {
+                    error!(
+                        "{}: missing block: {})",
+                        expected_block_height, expected_block_height
+                    );
+                    return Err(IndexerError::MissingBlock(expected_block_height, range));
+                }
+            }
+        }
+
+        if let Some(result) = stream.next().await {
+            error!("{}: too many blocks", range);
+            return Err(match result {
+                Ok(block) => IndexerError::TooManyBlocks(range, block.reference()),
+                Err(error) => IndexerError::TooManyBlocksError(range, Report::from(error)),
+            });
+        }
+
+        Ok(())
+    }
+}

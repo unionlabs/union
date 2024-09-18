@@ -1,6 +1,8 @@
 #![allow(clippy::disallowed_types)]
 use alloy::{
     eips::{BlockId, BlockNumberOrTag},
+    network::{Ethereum, Network},
+    primitives::TxHash,
     providers::{Provider, RootProvider},
     rpc::types::{Block, BlockTransactionsKind, Filter, Log, TransactionReceipt},
     transports::{
@@ -36,5 +38,13 @@ impl RaceClient<RootProvider<Http<Client>>> {
         filter: &Filter,
     ) -> Result<Vec<Log>, RpcError<TransportErrorKind>> {
         self.race(|c| c.get_logs(filter)).await
+    }
+
+    pub async fn get_transaction_by_hash(
+        &self,
+        tx_hash: TxHash,
+    ) -> Result<Option<<Ethereum as Network>::TransactionResponse>, RpcError<TransportErrorKind>>
+    {
+        self.race_some(|c| c.get_transaction_by_hash(tx_hash)).await
     }
 }

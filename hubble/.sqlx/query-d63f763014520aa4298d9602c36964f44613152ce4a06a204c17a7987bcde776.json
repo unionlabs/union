@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                            INSERT INTO v0.clients (chain_id, client_id, counterparty_chain_id)\n                            VALUES ($1, $2, $3)\n                            ON CONFLICT DO NOTHING\n                            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d63f763014520aa4298d9602c36964f44613152ce4a06a204c17a7987bcde776"
+}

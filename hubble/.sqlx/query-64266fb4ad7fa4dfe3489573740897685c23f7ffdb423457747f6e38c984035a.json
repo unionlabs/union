@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT MIN(height) min_height, MAX(height) max_height\n        FROM hubble.block_status\n        WHERE indexer_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "min_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "max_height",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "64266fb4ad7fa4dfe3489573740897685c23f7ffdb423457747f6e38c984035a"
+}

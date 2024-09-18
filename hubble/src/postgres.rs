@@ -235,7 +235,8 @@ where
             );
             let min_height = height.iter().min().expect("at least one height");
 
-            schedule_replication_reset(tx, *chain_id, (*min_height).into(), "block reorg").await?;
+            schedule_replication_reset(tx, *chain_id, (*min_height).into(), "block reorg (upsert)")
+                .await?;
         }
     }
     Ok(())
@@ -412,6 +413,32 @@ impl<T> FetchOrCreated<T> {
             }
         }
     }
+}
+
+pub async fn fetch_or_insert_chain_id_tx(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    canonical: String,
+) -> sqlx::Result<FetchOrCreated<ChainId>> {
+    use FetchOrCreated::*;
+    let db_chain_id = if let Some(chain_id) = sqlx::query!(
+        "SELECT id FROM \"v0\".chains WHERE chain_id = $1 LIMIT 1",
+        canonical.to_string()
+    )
+    .fetch_optional(tx.as_mut())
+    .await?
+    {
+        Fetched(ChainId::new(chain_id.id, canonical.leak()))
+    } else {
+        let id = sqlx::query!(
+            "INSERT INTO \"v0\".chains (chain_id) VALUES ($1) RETURNING id",
+            canonical.to_string()
+        )
+        .fetch_one(tx.as_mut())
+        .await?
+        .id;
+        Created(ChainId::new(id, canonical.leak()))
+    };
+    Ok(db_chain_id)
 }
 
 pub async fn fetch_or_insert_chain_id<'a, A: Acquire<'a, Database = Postgres>>(

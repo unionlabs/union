@@ -1827,9 +1827,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.79"
+version = "0.1.82"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a507401cad91ec6a857ed5513a2073c82a9b9048762b885bb98655b306964681"
+checksum = "a27b8a3a6e1a44fa4c8baf1f653e4172e81486d4941f2237e20dc2d0cf4ddff1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6218,6 +6218,7 @@ name = "hubble"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "async-trait",
  "axum 0.6.20",
  "backon",
  "base64 0.21.7",

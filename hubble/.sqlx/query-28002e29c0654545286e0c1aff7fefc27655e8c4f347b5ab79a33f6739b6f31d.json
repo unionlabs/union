@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT start_height, max(end_height) as end_height\n        FROM hubble.block_fix\n        WHERE start_height = (\n            SELECT min(start_height)\n            FROM hubble.block_fix\n            WHERE indexer_id = $1\n        )\n        GROUP BY start_height\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "start_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "end_height",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "28002e29c0654545286e0c1aff7fefc27655e8c4f347b5ab79a33f6739b6f31d"
+}
