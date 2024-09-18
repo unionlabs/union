@@ -4,5 +4,8 @@ description: ""
 ---
 
 import Terminal from '#/components/Terminal.astro'
+import { demoFiles } from '../integrations/typescript/_data/demo-files.ts'
 
-<Terminal />
+<Terminal
+  webcontainerFiles={JSON.stringify(demoFiles)}
+/>

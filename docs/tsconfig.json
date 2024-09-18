@@ -18,6 +18,8 @@
     "allowJs": true,
     "checkJs": true,
     "baseUrl": ".",
+    "resolvePackageJsonExports": true,
+    "resolvePackageJsonImports": true,
     "paths": {
       "#/*": ["./src/*"],
       "~root/*": ["../*"],
