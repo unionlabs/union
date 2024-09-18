@@ -10,7 +10,7 @@ import { AddressForm, type ValidState } from "$lib/components/address"
 import Blink from "$lib/components/Blink.svelte"
 import Tweet from "$lib/components/Tweet.svelte"
 import SwimLoad from "$lib/components/SwimLoad.svelte"
-import { getNumberSuffix } from "$lib/utils/utils.svelte.ts"
+import { getNumberSuffix } from "$lib/utils/utils.ts"
 
 type Props = {
   contributor: ContributorState
