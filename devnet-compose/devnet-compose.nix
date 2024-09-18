@@ -3,17 +3,9 @@
     let
       devnet-compose = crane.buildWorkspaceMember {
         crateDirFromRoot = "devnet-compose";
-        cargoTestExtraAttrs = {
-          partitions = 1;
-          partitionType = "count";
-        };
-        extraEnv = {
-          SQLX_OFFLINE = "1";
-        };
       };
     in
     {
-      inherit (devnet-compose) checks;
       packages = {
         devnet-compose = devnet-compose.packages.devnet-compose;
 
