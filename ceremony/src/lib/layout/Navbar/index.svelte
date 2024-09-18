@@ -1,11 +1,12 @@
 <script lang="ts">
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
-import { goto, invalidateAll } from "$app/navigation"
+import { invalidateAll } from "$app/navigation"
 import Link from "$lib/components/typography/Link.svelte"
 import Button from "$lib/components/Button.svelte"
 import NavLink from "$lib/layout/Navbar/NavLink.svelte"
 import Badge from "$lib/components/Badge.svelte"
+import { ContributorState, getContributorState } from "$lib/stores/state.svelte.ts"
 
 let isOpen = $state(false)
 
@@ -22,19 +23,31 @@ async function logout() {
     invalidateAll()
   }
 }
+
+let loggedIn = $derived(!!user.session?.user.id)
 </script>
 
 <header class="absolute top-0 inset-x-0 flex items-center justify-between gap-4  px-2 md:h-16 md:px-4 z-50">
   <nav class=" w-full p-4">
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
-        <Link href="/0____0" class="inline-flex flex-shrink-0 items-center text-white">
-          <img
-                  src="/union-logo-supermolot.svg"
-                  alt="Union Logo"
-                  class="size-full max-w-32 h-12 select-none"
-          />
-        </Link>
+        {#if loggedIn}
+          <a href="/0____0" class="inline-flex flex-shrink-0 items-center text-white">
+            <img
+                    src="/union-logo-supermolot.svg"
+                    alt="Union Logo"
+                    class="size-full max-w-32 h-12 select-none"
+            />
+          </a>
+          {:else}
+          <a href="/" class="inline-flex flex-shrink-0 items-center text-white">
+            <img
+                    src="/union-logo-supermolot.svg"
+                    alt="Union Logo"
+                    class="size-full max-w-32 h-12 select-none"
+            />
+          </a>
+          {/if}
         <Badge>Ceremony</Badge>
       </div>
 
