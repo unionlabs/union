@@ -11,7 +11,7 @@ export const load: LayoutLoad = async ({ url }) => {
 
   if (pathname) {
     const segments = pathname.split("/").filter(Boolean)
-    if (segments[0] === "app") {
+    if (segments[0] === "0____0") {
       const authCheck = await checkAuth()
       return authCheck.match(
         () => {
@@ -19,7 +19,7 @@ export const load: LayoutLoad = async ({ url }) => {
         },
         (error: SessionError) => {
           console.error(error.message)
-          throw redirect(302, "/auth/register")
+          throw redirect(302, "/auth/dive")
         }
       )
     }

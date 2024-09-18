@@ -1,4 +1,4 @@
-import { onDestroy } from "svelte"
+import { getContext, onDestroy, setContext } from "svelte"
 import { checkState } from "$lib/client"
 import { getAllowanceState, getUserQueueInfo, getContributionState } from "$lib/supabase"
 
@@ -285,4 +285,14 @@ export class ContributorState {
       this.state = "loading"
     }
   }
+}
+
+const CONTRIBUTOR_KEY = Symbol("CONTRIBUTOR")
+
+export function setContributorState() {
+  return setContext(CONTRIBUTOR_KEY, new ContributorState())
+}
+
+export function getContributorState(): ContributorState {
+  return getContext<ContributorState>(CONTRIBUTOR_KEY)
 }

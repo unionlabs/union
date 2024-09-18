@@ -5,16 +5,20 @@ import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { Toaster } from "svelte-sonner"
 import Navbar from "$lib/layout/Navbar/index.svelte"
+import { setContributorState } from "$lib/stores/state.svelte.ts"
 
 import "../styles/tailwind.css"
+import { watch } from "runed"
 
 let { children } = $props()
+
+let contributor = setContributorState()
 
 beforeNavigate(async ({ from, to, cancel }) => {
   const pathname = to?.route?.id
   if (pathname) {
     const segments = pathname.split("/").filter(Boolean)
-    if (segments[0] === "app") {
+    if (segments[0] === "0____0") {
       const authCheck = await checkAuth()
 
       authCheck.match(
@@ -24,7 +28,7 @@ beforeNavigate(async ({ from, to, cancel }) => {
         (error: SessionError) => {
           console.error(error.message)
           cancel()
-          goto("/auth/register")
+          goto("/auth/dive")
         }
       )
     }
@@ -41,6 +45,13 @@ $effect(() => {
     subscription.unsubscribe()
   }
 })
+
+watch(
+  () => user.session?.user.id,
+  () => {
+    contributor.setUserId(user.session?.user.id)
+  }
+)
 </script>
 
 <Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>

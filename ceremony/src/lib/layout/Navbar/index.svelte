@@ -1,7 +1,7 @@
 <script lang="ts">
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
-import { invalidateAll } from "$app/navigation"
+import { goto, invalidateAll } from "$app/navigation"
 import Link from "$lib/components/typography/Link.svelte"
 import Button from "$lib/components/Button.svelte"
 import NavLink from "$lib/layout/Navbar/NavLink.svelte"
@@ -18,7 +18,6 @@ async function logout() {
   if (error) {
     console.error("Error logging out:", error.message)
   } else {
-    window.location.href = "/auth/dive"
     user.session = null
     invalidateAll()
   }
@@ -29,7 +28,7 @@ async function logout() {
   <nav class=" w-full p-4">
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
-        <Link href="/" class="inline-flex flex-shrink-0 items-center text-white">
+        <Link href="/0____0" class="inline-flex flex-shrink-0 items-center text-white">
           <img
                   src="/union-logo-supermolot.svg"
                   alt="Union Logo"
@@ -42,7 +41,7 @@ async function logout() {
       <div class="hidden md:block">
         {#if user.session}
           <div class="flex items-center gap-4">
-            <Button onclick={logout}>{"Log out"}</Button>
+            <Button onclick={logout}>Log out</Button>
           </div>
         {:else}
           <div class="flex items-center gap-4">
@@ -62,9 +61,9 @@ async function logout() {
       <div class="md:hidden mt-4 w-full bg-black">
         <div class="flex flex-col divide-y divide-white/50">
           {#if user.session}
-            <Button class="py-2" onclick={logout}>{"Log out"}</Button>
+            <Button class="py-2" onclick={logout}>Log out</Button>
           {:else}
-            <NavLink class="p-2" href="/auth/dive">Register</NavLink>
+            <NavLink class="p-2" href="/auth/dive">Dive in</NavLink>
           {/if}
         </div>
       </div>

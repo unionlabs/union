@@ -12,7 +12,7 @@ async function diveIn(provider: AuthProviders) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider,
     options: {
-      redirectTo: `${$page.url.origin}/`
+      redirectTo: `${$page.url.origin}/0____0`
     }
   })
 
