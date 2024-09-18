@@ -5,9 +5,12 @@
     clippy::std_instead_of_alloc,
     clippy::alloc_instead_of_core
 )]
-#![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::module_name_repetitions,
+    clippy::too_long_first_doc_paragraph
+)]
 #![feature(trait_alias)]
-#![feature(error_in_core)]
 
 extern crate alloc;
 
@@ -147,6 +150,7 @@ macro_rules! export_wasm_client_type {
 }
 
 /// This type is used to discriminate 08-wasm light clients.
+///
 /// We need to be able to determine the light client from the light client code itself (not instantiated yet).
 /// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE_<TYPE>: u8 = 0` variable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -301,7 +305,7 @@ impl FromStr for QueryHeight {
 }
 
 // TODO: remove this as it is unused
-pub trait MaybeRecoverableError: std::error::Error {
+pub trait MaybeRecoverableError: core::error::Error {
     fn is_recoverable(&self) -> bool;
 }
 
@@ -311,9 +315,9 @@ pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {
     expr.then_some(()).ok_or(err)
 }
 
-pub struct ErrorReporter<T: std::error::Error>(pub T);
+pub struct ErrorReporter<T: core::error::Error>(pub T);
 
-impl<T: std::error::Error> Display for ErrorReporter<T> {
+impl<T: core::error::Error> Display for ErrorReporter<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)?;
 

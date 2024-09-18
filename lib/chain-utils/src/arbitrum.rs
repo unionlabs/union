@@ -310,7 +310,7 @@ impl FromStrExact for ArbitrumChainType {
 impl Arbitrum {
     pub async fn query_latest_height(
         &self,
-    ) -> Result<Height, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<Height, Box<dyn core::error::Error + Send + Sync>> {
         // the latest height of arbitrum is the latest height of the l1 light client on union
 
         let l1_client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
@@ -347,7 +347,7 @@ impl Arbitrum {
 
     // pub async fn query_latest_timestamp(
     //     &self,
-    // ) -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {
+    // ) -> Result<i64, Box<dyn core::error::Error + Send + Sync>> {
     //     match &self.l1 {
     //         AnyEthereum::Mainnet(eth) => eth.query_latest_timestamp().map_err(Into::into).await,
     //         AnyEthereum::Minimal(eth) => eth.query_latest_timestamp().map_err(Into::into).await,

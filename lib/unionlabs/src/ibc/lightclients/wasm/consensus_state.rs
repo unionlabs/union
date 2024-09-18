@@ -25,12 +25,12 @@ impl<Data: Encode<Proto>> From<ConsensusState<Data>>
 }
 
 #[derive(DebugNoBound, thiserror::Error)]
-pub enum TryFromWasmConsensusStateError<Data: Decode<Proto, Error: std::error::Error>> {
+pub enum TryFromWasmConsensusStateError<Data: Decode<Proto, Error: core::error::Error>> {
     #[error("unable to decode wasm consensus state data")]
     Data(#[source] DecodeErrorOf<Proto, Data>),
 }
 
-impl<Data: Decode<Proto, Error: std::error::Error + Clone>> Clone
+impl<Data: Decode<Proto, Error: core::error::Error + Clone>> Clone
     for TryFromWasmConsensusStateError<Data>
 {
     fn clone(&self) -> Self {
@@ -40,7 +40,7 @@ impl<Data: Decode<Proto, Error: std::error::Error + Clone>> Clone
     }
 }
 
-impl<Data: Decode<Proto, Error: std::error::Error + PartialEq>> PartialEq
+impl<Data: Decode<Proto, Error: core::error::Error + PartialEq>> PartialEq
     for TryFromWasmConsensusStateError<Data>
 {
     fn eq(&self, other: &Self) -> bool {
@@ -52,7 +52,7 @@ impl<Data: Decode<Proto, Error: std::error::Error + PartialEq>> PartialEq
 
 impl<Data> TryFrom<protos::ibc::lightclients::wasm::v1::ConsensusState> for ConsensusState<Data>
 where
-    Data: Decode<Proto, Error: std::error::Error>,
+    Data: Decode<Proto, Error: core::error::Error>,
 {
     type Error = TryFromWasmConsensusStateError<Data>;
 
@@ -65,4 +65,4 @@ where
     }
 }
 
-assert_impl_all!(TryFromWasmConsensusStateError<crate::ibc::lightclients::scroll::consensus_state::ConsensusState>: std::error::Error);
+assert_impl_all!(TryFromWasmConsensusStateError<crate::ibc::lightclients::scroll::consensus_state::ConsensusState>: core::error::Error);

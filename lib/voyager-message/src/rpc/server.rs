@@ -680,7 +680,7 @@ impl VoyagerRpcServer for Server {
     }
 }
 
-pub(crate) fn fatal_error(t: impl std::error::Error) -> ErrorObjectOwned {
+pub(crate) fn fatal_error(t: impl core::error::Error) -> ErrorObjectOwned {
     ErrorObject::owned(
         FATAL_JSONRPC_ERROR_CODE,
         ErrorReporter(t).to_string(),

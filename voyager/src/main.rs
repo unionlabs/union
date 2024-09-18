@@ -1,4 +1,4 @@
-#![feature(trait_alias, min_exhaustive_patterns)]
+#![feature(trait_alias)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives

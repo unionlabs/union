@@ -30,5 +30,3 @@ fn main() -> eyre::Result<()> {
     cli.run()?;
     Ok(())
 }
-
-//

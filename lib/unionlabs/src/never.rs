@@ -12,4 +12,4 @@ impl Display for Never {
     }
 }
 
-impl std::error::Error for Never {}
+impl core::error::Error for Never {}

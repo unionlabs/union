@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use cosmwasm_std::{to_json_binary, Binary, Deps, DepsMut, Env, StdError};
-use frame_support_procedural::{CloneNoBound, DebugNoBound, PartialEqNoBound};
+use frame_support_procedural::{CloneNoBound, PartialEqNoBound};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, Encoding, Proto},
     google::protobuf::any::Any,
@@ -38,7 +38,8 @@ pub enum StorageState {
 }
 
 // TODO: Add #[source] to all variants
-#[derive(DebugNoBound, CloneNoBound, PartialEqNoBound, thiserror::Error)]
+#[derive(macros::Debug, CloneNoBound, PartialEqNoBound, thiserror::Error)]
+#[debug(bound())]
 pub enum DecodeError<T: IbcClient> {
     #[error("unable to decode header")]
     Header(DecodeErrorOf<T::Encoding, T::Header>),
@@ -57,7 +58,8 @@ pub enum DecodeError<T: IbcClient> {
     ),
 }
 
-#[derive(DebugNoBound, PartialEqNoBound, thiserror::Error)]
+#[derive(macros::Debug, PartialEqNoBound, thiserror::Error)]
+#[debug(bound())]
 pub enum IbcClientError<T: IbcClient> {
     #[error("decode error ({0:?})")]
     Decode(#[from] DecodeError<T>),
@@ -80,17 +82,17 @@ pub type WasmConsensusStateOf<T> =
     wasm::consensus_state::ConsensusState<<T as IbcClient>::ConsensusState>;
 
 pub trait IbcClient: Sized {
-    type Error: std::error::Error + PartialEq + Clone + Into<IbcClientError<Self>>;
+    type Error: core::error::Error + PartialEq + Clone + Into<IbcClientError<Self>>;
     type CustomQuery: cosmwasm_std::CustomQuery;
-    type Header: Decode<Self::Encoding, Error: PartialEq + Clone> + Debug + 'static;
+    type Header: Decode<Self::Encoding, Error: Debug + PartialEq + Clone> + Debug + 'static;
     type Misbehaviour: Decode<Self::Encoding, Error: PartialEq + Clone> + Debug + 'static;
     type ClientState: Decode<Self::Encoding, Error: PartialEq + Clone>
-        + Decode<Proto, Error: PartialEq + Clone + std::error::Error>
+        + Decode<Proto, Error: PartialEq + Clone + core::error::Error>
         + Encode<Proto>
         + Debug
         + 'static;
     type ConsensusState: Decode<Self::Encoding, Error: PartialEq + Clone>
-        + Decode<Proto, Error: PartialEq + Clone + std::error::Error>
+        + Decode<Proto, Error: PartialEq + Clone + core::error::Error>
         + Encode<Proto>
         + Debug
         + 'static;

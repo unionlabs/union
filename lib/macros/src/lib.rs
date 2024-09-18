@@ -141,11 +141,11 @@ fn derive_debug(
                                 }
                             }
 
-                            DebugAsDisplay(format!(#lit, #(#exprs,)*))
+                            &DebugAsDisplay(format!(#lit, #(#exprs,)*))
                         }}
                     }
                     Some(DebugMetaFmt::Wrap(path)) => {
-                        quote! { (#path)(#binding) }
+                        quote! { &(#path)(#binding) }
                     }
                     Some(DebugMetaFmt::Skip(_)) => {
                         quote! {}
@@ -160,11 +160,11 @@ fn derive_debug(
                     Some(_) | None => Some(match ident {
                         Some(ident) => {
                             quote! {
-                                debug_builder.field(stringify!(#ident), &#expr);
+                                debug_builder.field(stringify!(#ident), #expr as &dyn ::core::fmt::Debug);
                             }
                         }
                         None => quote! {
-                            debug_builder.field(&#expr);
+                            debug_builder.field(#expr as &dyn ::core::fmt::Debug);
                         },
                     }),
                 })

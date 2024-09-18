@@ -36,7 +36,7 @@ where
 }
 
 #[derive(DebugNoBound, thiserror::Error)]
-pub enum TryFromWasmClientStateError<Data: Decode<Proto, Error: std::error::Error>> {
+pub enum TryFromWasmClientStateError<Data: Decode<Proto, Error: core::error::Error>> {
     #[error(transparent)]
     MissingField(MissingField),
     #[error("unable to decode wasm client state data")]
@@ -45,7 +45,7 @@ pub enum TryFromWasmClientStateError<Data: Decode<Proto, Error: std::error::Erro
     Checksum(#[from] InvalidLength),
 }
 
-impl<Data: Decode<Proto, Error: std::error::Error + Clone>> Clone
+impl<Data: Decode<Proto, Error: core::error::Error + Clone>> Clone
     for TryFromWasmClientStateError<Data>
 {
     fn clone(&self) -> Self {
@@ -57,7 +57,7 @@ impl<Data: Decode<Proto, Error: std::error::Error + Clone>> Clone
     }
 }
 
-impl<Data: Decode<Proto, Error: std::error::Error + PartialEq>> PartialEq
+impl<Data: Decode<Proto, Error: core::error::Error + PartialEq>> PartialEq
     for TryFromWasmClientStateError<Data>
 {
     fn eq(&self, other: &Self) -> bool {
@@ -72,7 +72,7 @@ impl<Data: Decode<Proto, Error: std::error::Error + PartialEq>> PartialEq
 
 impl<Data> TryFrom<protos::ibc::lightclients::wasm::v1::ClientState> for ClientState<Data>
 where
-    Data: Decode<Proto, Error: std::error::Error>,
+    Data: Decode<Proto, Error: core::error::Error>,
 {
     type Error = TryFromWasmClientStateError<Data>;
 
