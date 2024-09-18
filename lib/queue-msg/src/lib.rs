@@ -1,4 +1,4 @@
-#![feature(trait_alias, extract_if, min_exhaustive_patterns)]
+#![feature(trait_alias, extract_if)]
 // #![warn(clippy::large_futures, clippy::large_stack_frames)]
 
 use std::{
@@ -812,7 +812,7 @@ impl std::fmt::Display for QueueError {
     }
 }
 
-impl std::error::Error for QueueError {
+impl core::error::Error for QueueError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Fatal(fatal) => Some(&**fatal as &(dyn Error + 'static)),

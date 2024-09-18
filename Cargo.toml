@@ -186,7 +186,7 @@ dlmalloc                 = { version = "=0.2.4", default-features = false }
 either                   = { version = "1.9.0", default-features = false }
 enumorph                 = { version = "0.1.2", default-features = false }
 ethabi                   = { version = "18.0.0", default-features = false }
-frame-support-procedural = { version = "22.0.0", default-features = false }
+frame-support-procedural = { version = "30.0.0", default-features = false }
 frunk                    = { version = "0.4.2", default-features = false }
 futures                  = { version = "0.3.28", default-features = false }
 go-parse-duration        = { version = "0.1.1", default-features = false }

@@ -193,10 +193,11 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
     let mut watcher = FileReader::new(home.join("data/upgrade-info.json"));
 
     info!(target: "unionvisor", "spawning supervisor process for the current uniond binary");
-    supervisor.spawn(logformat, args.clone()).map_err(|err| {
-        warn!(target: "supervisor", "failed to spawn initial binary call");
-        err
-    })?;
+    supervisor
+        .spawn(logformat, args.clone())
+        .inspect_err(|_err| {
+            warn!(target: "supervisor", "failed to spawn initial binary call");
+        })?;
     info!(target: "unionvisor", "spawned uniond, starting poll for upgrade signals");
     std::thread::sleep(Duration::from_millis(300));
     loop {
@@ -261,11 +262,10 @@ pub fn run_and_upgrade<S: AsRef<OsStr>, I: IntoIterator<Item = S> + Clone>(
                 // If this upgrade fails, we'll revert the local DB and exit the node, ensuring we keep the filesystem in
                 // the last correct state.
                 info!(target: "unionvisor", "spawning new supervisor process for {}", &upgrade.name);
-                supervisor.spawn(logformat, args.clone()).map_err(|err| {
+                supervisor.spawn(logformat, args.clone()).inspect_err(|err| {
                     error!(target: "unionvisor", err = err.to_string().as_str(), "spawning new supervisor process for {} failed", &upgrade.name);
                     // This error is most likely caused by incorrect args because of an upgrade. We can reduce the chance of that happening
                     // by introducing a configuration file with name -> args mappings.
-                    err
                 })?;
             }
         }

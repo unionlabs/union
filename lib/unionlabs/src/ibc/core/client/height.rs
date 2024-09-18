@@ -59,8 +59,8 @@ impl Display for HeightFromStrError {
     }
 }
 
-impl std::error::Error for HeightFromStrError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl core::error::Error for HeightFromStrError {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
             HeightFromStrError::ParseIntError(e) => Some(e),
             HeightFromStrError::Invalid => None,

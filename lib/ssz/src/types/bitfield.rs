@@ -49,6 +49,7 @@ pub type BitList<N> = Bitfield<Variable<N>>;
 /// See [Bitfield](struct.Bitfield.html) documentation.
 pub type BitVector<N> = Bitfield<Fixed<N>>;
 
+#[allow(clippy::too_long_first_doc_paragraph)]
 /// A heap-allocated, ordered, fixed-length collection of `bool` values. Use of
 /// [`BitList`](type.BitList.html) or [`BitVector`](type.BitVector.html) type aliases is preferred
 /// over direct use of this struct.

@@ -32,8 +32,10 @@ pub struct FetchGetLogs {
     pub to_slot: u64,
 }
 
-/// NOTE: This isn't just fetching one block because sometimes beacon slots are missed. We need to be able to fetch a range of slots to account for this.
+/// Fetch a block range.
+///
 /// The range is `[from_slot..to_slot)`, so to fetch a single block `N`, the range would be `N..N+1`.
+/// NOTE: This isn't just fetching one block because sometimes beacon slots are missed. We need to be able to fetch a range of slots to account for this.
 #[queue_msg]
 pub struct FetchBeaconBlockRange {
     pub from_slot: u64,

@@ -1,5 +1,3 @@
-#![feature(error_in_core)]
-
 use frame_support_procedural::PartialEqNoBound;
 use serde::{Deserialize, Serialize};
 use states::{

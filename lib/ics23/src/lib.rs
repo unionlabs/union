@@ -1,4 +1,3 @@
-#![feature(error_in_core)]
 // #![warn(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc)]
 

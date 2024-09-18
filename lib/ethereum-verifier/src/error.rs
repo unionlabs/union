@@ -125,14 +125,14 @@ pub enum Error {
     FinalizedSlotIsGenesis,
 }
 
-// NOTE: Implemented here instead of via #[from] since AmclError doesn't implement std::error::Error
+// NOTE: Implemented here instead of via #[from] since AmclError doesn't implement core::error::Error
 impl From<AmclError> for Error {
     fn from(e: AmclError) -> Self {
         Error::Bls(e)
     }
 }
 
-// NOTE: Implemented here instead of via #[from] since Box<TrieError<primitive_types::H256, rlp::DecoderError>> doesn't implement std::error::Error
+// NOTE: Implemented here instead of via #[from] since Box<TrieError<primitive_types::H256, rlp::DecoderError>> doesn't implement core::error::Error
 impl From<Box<TrieError<primitive_types::H256, rlp::DecoderError>>> for Error {
     fn from(e: Box<TrieError<primitive_types::H256, rlp::DecoderError>>) -> Self {
         Error::Trie(e)

@@ -108,6 +108,7 @@ pub struct CommitmentPath {
 }
 
 /// SHA-256 of the packet acknowledgement.
+///
 /// If the packet has not yet been acknowledged (either because the packet does not exist or the packet has not been acknowledged yet), then the acknowledgement commitment is unset.
 #[ibc_path("acks/ports/{port_id}/channels/{channel_id}/sequences/{sequence}", Option<H256>)]
 pub struct AcknowledgementPath {

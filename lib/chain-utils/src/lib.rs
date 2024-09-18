@@ -13,4 +13,4 @@ pub mod private_key;
 
 pub mod keyring;
 
-pub type BoxDynError = Box<dyn std::error::Error + Send + Sync + 'static>;
+pub type BoxDynError = Box<dyn core::error::Error + Send + Sync + 'static>;
