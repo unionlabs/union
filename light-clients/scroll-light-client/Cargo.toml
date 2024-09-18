@@ -33,6 +33,5 @@ unionlabs             = { workspace = true, features = ["ethabi", "stargate"] }
 
 [dev-dependencies]
 base64     = { workspace = true }
-bincode     = "1.3"
 hex        = { workspace = true }
 serde_json = { workspace = true }

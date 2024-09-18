@@ -337,14 +337,13 @@ fn check_allowed_fields(
 #[cfg(all(test))]
 mod test {
     use cosmwasm_std::{
-        testing::{mock_env, MockApi, MockQuerier, MockStorage},
-        OwnedDeps, DepsMut, Storage,
+        testing::{MockApi, MockQuerier, MockStorage},
+        OwnedDeps, DepsMut,
     };
     use ics008_wasm_client::storage_utils::{
         SUBJECT_CLIENT_STORE_PREFIX,  SUBSTITUTE_CLIENT_STORE_PREFIX, HOST_CLIENT_STATE_KEY,
         consensus_db_key, 
-        read_subject_consensus_state, save_subject_consensus_state, save_client_state,
-        save_consensus_state, read_subject_client_state, read_substitute_client_state,
+        read_subject_client_state,
     };
     use unionlabs::{
         cosmwasm::wasm::union::custom_query::UnionCustomQuery,
@@ -352,13 +351,10 @@ mod test {
         ibc::core::client::height::Height,
         uint::U256,
         google::protobuf::any::Any,
-        encoding::{DecodeAs, EncodeAs, EthAbi, Proto},
+        encoding::{EncodeAs, Proto},
         hash::H256,
     };
-    use bincode;
-    use std::fs;
 
-    use cosmwasm_std::StdError;
     use ics008_wasm_client::IbcClient;
     use crate::errors::Error;
 
@@ -411,29 +407,6 @@ mod test {
         }
     }
     
-
-    // fn create_client_state() -> WasmClientState {
-    //     WasmClientState {
-    //         data: ClientState {
-    //             l1_client_id: "client_1".to_string(),
-    //             chain_id: U256::from(1),
-    //             latest_slot: 1000,
-    //             frozen_height: Height::default(),
-    //             latest_batch_index_slot: U256::from(10),
-    //             l2_contract_address: H160::default(),
-    //             l2_finalized_state_roots_slot: U256::from(10),
-    //             l2_committed_batches_slot: U256::from(10),
-    //             ibc_contract_address: H160::default(),
-    //             ibc_commitment_slot: U256::from(10),
-    //         },
-    //         latest_height: Height {
-    //             revision_number: 0,
-    //             revision_height: 1000,
-    //         },
-    //         checksum: H256::default(),
-    //     }
-    // }
-
     fn save_states_to_migrate_store(
         deps: DepsMut<UnionCustomQuery>,
         subject_client_state: &WasmClientState,
@@ -604,7 +577,7 @@ mod test {
     fn migrate_client_store_fails_when_fields_differ() {
         let (
             mut deps,
-            mut subject_client_state,
+            subject_client_state,
             subject_consensus_state,
             mut substitute_client_state,
             substitute_consensus_state,
