@@ -323,7 +323,8 @@ function initWebGL() {
     // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
     // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
     const startRotation = Math.PI / 2 // Starting rotation angle
-    const endRotation = Math.PI / 4 // Ending rotation angle
+    const endRotationY = Math.PI / 8 // Ending rotation angle
+    const endRotationX = Math.PI / 7 // Ending rotation angle
     const duration = 4 // Total duration of the transition in seconds
 
     // Current time since the animation started (you need to define how you get this)
@@ -340,10 +341,11 @@ function initWebGL() {
     const timing = smoothStep(s)
 
     // Calculate the current rotation value
-    const rotation = startRotation + (endRotation - startRotation) * timing
+    const rotationY = startRotation + (endRotationY - startRotation) * timing
+    const rotationX = startRotation + (endRotationX - startRotation) * timing
 
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, rotation + mouseY * 0.05, [1, 0, 0])
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -rotation + mouseX * 0.05, [0, 1, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, rotationY + mouseY * 0.05, [1, 0, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -rotationX + mouseX * 0.05, [0, 1, 0])
 
     // Set up attribute buffers
     {
