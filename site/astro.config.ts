@@ -23,6 +23,7 @@ export default defineConfig({
     contentIntellisense: true,
     contentCollectionCache: true
   },
+
   trailingSlash: "ignore",
   adapter: vercel({
     imageService: true,
@@ -38,11 +39,35 @@ export default defineConfig({
   },
   env: {
     schema: {
-      CONTENTFUL_SPACE_ID: envField.string({ context: "client", access: "public" }),
-      CONTENTFUL_ENVIRONMENT: envField.string({ context: "client", access: "public" }),
-      CONTENTFUL_ACCESS_TOKEN: envField.string({ context: "client", access: "public" }),
-      CONTENTFUL_PREVIEW_TOKEN: envField.string({ context: "client", access: "public" }),
-      CONTENTFUL_DELIVERY_TOKEN: envField.string({ context: "client", access: "public" })
+      /**
+       * none of the contentful environment variables are optional
+       * but this is a hack for nix build to work
+       */
+      CONTENTFUL_SPACE_ID: envField.string({
+        context: "client",
+        access: "public",
+        optional: true
+      }),
+      CONTENTFUL_ENVIRONMENT: envField.string({
+        context: "client",
+        access: "public",
+        optional: true
+      }),
+      CONTENTFUL_ACCESS_TOKEN: envField.string({
+        context: "client",
+        access: "public",
+        optional: true
+      }),
+      CONTENTFUL_PREVIEW_TOKEN: envField.string({
+        context: "client",
+        access: "public",
+        optional: true
+      }),
+      CONTENTFUL_DELIVERY_TOKEN: envField.string({
+        context: "client",
+        access: "public",
+        optional: true
+      })
     }
   },
   markdown: markdownConfiguration,
