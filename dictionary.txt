@@ -995,6 +995,7 @@ redelegates
 redelegating
 redelegation
 redelegations
+redy
 reencode
 reencoded
 reentrancy
