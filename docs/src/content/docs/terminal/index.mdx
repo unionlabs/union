@@ -6,6 +6,12 @@ description: ""
 import Terminal from '#/components/Terminal.astro'
 import { demoFiles } from '../integrations/typescript/_data/demo-files.ts'
 
+```ts twoslash
+const foo = { a: 1, b: 2, c: 3 }
+//     ^?
+```
+
+
 <Terminal
   webcontainerFiles={JSON.stringify(demoFiles)}
 />

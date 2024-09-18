@@ -27,6 +27,13 @@ export default defineConfig({
   },
   trailingSlash: "ignore",
   markdown: markdownConfiguration,
+  vite: {
+    experimental: {},
+    optimizeDeps: {
+      include: ["@xterm/xterm"],
+      esbuildOptions: { target: "es2022" }
+    }
+  },
   server: _ => ({
     port: Number(PORT),
     /**

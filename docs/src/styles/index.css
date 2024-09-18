@@ -53,6 +53,8 @@ pre {
 
 pre > code {
   counter-reset: line;
+  overflow: hidden !important;
+
 }
 
 code[data-theme*=" "],

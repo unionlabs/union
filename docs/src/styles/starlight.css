@@ -3,7 +3,7 @@
   --dark-blue: #00262f;
 }
 
-/* :root[data-theme="light"] {
+:root[data-theme="light"] {
   --logo-text-color: #000000;
   --sl-color-text-accent: #04acd2;
   --sl-color-bg: #f9f9f9;
@@ -15,7 +15,7 @@
   --logo-text-color: #f9f9f9f9;
   --anchor-icon-filter: invert(1);
   --nav-selected-color: #374151;
-} */
+}
 
 h1 a,
 h2 a,

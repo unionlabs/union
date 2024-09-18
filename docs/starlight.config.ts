@@ -17,6 +17,14 @@ export const starlightConfig = starlight({
     discord: "https://discord.union.build",
     "x.com": "https://x.com/union_build"
   },
+  defaultLocale: "root",
+  locales: { root: { label: "English", lang: "en" } },
+  logo: {
+    alt: "Union Logo",
+    dark: "./src/assets/union-logo/union-logo-transparent.svg",
+    light: "./src/assets/union-logo/union-logo-white-transparent.svg"
+  },
+  expressiveCode: false,
   head: [
     {
       tag: "meta",
@@ -38,15 +46,6 @@ export const starlightConfig = starlight({
       attrs: { src: "/scripts/anchor-targets.js" }
     }
   ],
-  locales: {
-    root: { label: "English", lang: "en" }
-  },
-  defaultLocale: "root",
-  logo: {
-    alt: "Union Logo",
-    dark: "./src/assets/union-logo/union-logo-transparent.svg",
-    light: "./src/assets/union-logo/union-logo-white-transparent.svg"
-  },
   sidebar: [
     {
       label: "Introduction",
@@ -117,7 +116,9 @@ export const starlightConfig = starlight({
     "./src/styles/index.css",
     "./src/styles/fonts.css",
     "./src/styles/tailwind.css",
+    "./src/styles/twoslash.css",
     "./src/styles/starlight.css",
-    "./node_modules/katex/dist/katex.min.css"
+    "./node_modules/katex/dist/katex.min.css",
+    "./node_modules/@shikijs/twoslash/style-rich.css"
   ]
 })

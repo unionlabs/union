@@ -1,0 +1,40 @@
+---
+import { Code } from "astro:components"
+import { shikiConfig } from "markdown.config"
+import type { NoRepetition } from "#/lib/types.ts"
+import { transformerCopyButton } from "@rehype-pretty/transformers"
+import { Tabs, TabItem, Icon } from "@astrojs/starlight/components"
+import { commands, type CommandType, type PackageManager } from "./index.ts"
+
+interface Props {
+  prefix?: string
+  postfix?: string
+  packageId: string
+  command: CommandType
+  pkgManagers: NoRepetition<PackageManager>
+}
+
+const {
+  prefix,
+  postfix,
+  command,
+  packageId,
+  pkgManagers = ["pnpm", "bun", "npm", "yarn"]
+} = Astro.props
+---
+
+<Tabs syncKey="pkgManager">
+  {
+    pkgManagers.map(pkgManager => (
+      <TabItem label={pkgManager} icon={commands[pkgManager].icon}>
+        <Code
+          lang="bash"
+          theme="houston"
+          class="text-sm sm:text-base"
+          transformers={[transformerCopyButton({ visibility: 'always', feedbackDuration: 3_0000 })]}
+          code={`${prefix ?? ''} ${pkgManager} ${commands[pkgManager].commands[command]} ${packageId} ${postfix ?? ''}`.trim()}
+        />
+      </TabItem>
+    ))
+  }
+</Tabs>

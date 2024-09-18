@@ -4,16 +4,16 @@ import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-s
 /** @type {import('@astrojs/starlight/expressive-code').StarlightExpressiveCodeOptions} */
 // @ts-expect-error
 export default {
-  frames: {
-    extractFileNameFromCode: true,
-    showCopyToClipboardButton: true,
-    removeCommentsWhenCopyingTerminalFrames: true,
-  },
-  defaultProps: {
-    showLineNumbers: false,
-  },
-  useStarlightUiThemeColors: true,
-  useStarlightDarkModeSwitch: true,
-  themes: ["starlight-dark", "starlight-light"],
-  plugins: [pluginCollapsibleSections(), pluginLineNumbers()],
+  // frames: {
+  //   extractFileNameFromCode: true,
+  //   showCopyToClipboardButton: true,
+  //   removeCommentsWhenCopyingTerminalFrames: true,
+  // },
+  // defaultProps: {
+  //   showLineNumbers: false,
+  // },
+  // useStarlightUiThemeColors: true,
+  // useStarlightDarkModeSwitch: true,
+  // themes: ["starlight-dark", "starlight-light"],
+  // plugins: [pluginCollapsibleSections(), pluginLineNumbers()],
 };

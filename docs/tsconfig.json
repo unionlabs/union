@@ -23,7 +23,8 @@
     "paths": {
       "#/*": ["./src/*"],
       "~root/*": ["../*"],
-      "tailwind.config": ["./tailwind.config.ts"]
+      "tailwind.config": ["./tailwind.config.ts"],
+      "markdown.config": ["./markdown.config.ts"]
     },
     "plugins": [
       {
