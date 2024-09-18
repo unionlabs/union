@@ -1,10 +1,13 @@
 <script lang="ts">
 import Button from "$lib/components/Button.svelte"
-import Spinner from "$lib/components/Spinner.svelte"
 import { page } from "$app/stores"
 import { supabase } from "$lib/supabase/client.ts"
+// import Spinner from "$lib/components/Spinner.svelte"
 
-async function diveIn(provider: "github" | "google") {
+type AuthProviders = "github" | "google"
+const providers: Array<AuthProviders> = ["github", "google"]
+
+async function diveIn(provider: AuthProviders) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider,
     options: {
@@ -25,8 +28,9 @@ async function diveIn(provider: "github" | "google") {
 {/snippet}
 
 <div class="p-8 flex items-center flex-col gap-4">
-  {@render Dive('github')}
-  {@render Dive('google')}
+  {#each providers as provider}
+    {@render Dive(provider)}
+  {/each}
 </div>
 
 <!--{#if loading}-->
