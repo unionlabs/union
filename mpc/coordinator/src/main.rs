@@ -120,7 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     .contributor_payload(&current_contributor.id)
                     .await?
                     .ok_or(Error::NextPayloadNotFound)?;
-                info!(%current_contributor, %current_payload, %next_payload, "dected contribution, downloading...");
+                info!(%current_contributor, %current_payload, %next_payload, "detected contribution, downloading...");
                 let next_payload_content = client
                     .download_payload(&next_payload.id, &next_payload.id, progress)
                     .await?;
@@ -158,13 +158,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     .expect("impossible")
                     .0;
 
-                let signature_matches = signature.signed_text()
+                let signed_text_matches = signature.signed_text()
                     == signed_message(
                         &current_payload.id,
                         &next_payload.id,
                         &hex::encode(next_payload_hash),
                     );
-                if !signature_matches {
+                if !signed_text_matches {
                     error!(
                         %current_contributor,
                         %current_payload,
@@ -202,7 +202,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
 
                 if public_key_is_valid
-                    && signature_matches
+                    && signed_text_matches
                     && signature_is_valid
                     && contribution_is_valid
                 {
