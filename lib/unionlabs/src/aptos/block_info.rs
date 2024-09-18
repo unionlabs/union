@@ -32,10 +32,8 @@ pub struct BlockInfo {
     /// The consensus protocol is executed in rounds, which monotonically increase per epoch.
     pub round: Round,
     /// The identifier (hash) of the block.
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub id: H256,
     /// The accumulator root hash after executing this block.
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub executed_state_id: H256,
     /// The version of the latest transaction after executing this block.
     pub version: Version,

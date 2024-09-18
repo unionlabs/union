@@ -56,13 +56,15 @@ pub struct Header {
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
     #[prost(message, optional, tag = "3")]
     pub state_proof: ::core::option::Option<StateProof>,
-    #[prost(message, optional, tag = "4")]
-    pub tx_proof: ::core::option::Option<TransactionInfoWithProof>,
+    #[prost(uint64, tag = "4")]
+    pub tx_index: u64,
     #[prost(message, optional, tag = "5")]
-    pub state_proof_hash_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
+    pub tx_proof: ::core::option::Option<TransactionInfoWithProof>,
     #[prost(message, optional, tag = "6")]
+    pub state_proof_hash_proof: ::core::option::Option<super::super::ethereum::v1::StorageProof>,
+    #[prost(message, optional, tag = "7")]
     pub settlement_contract_proof: ::core::option::Option<super::super::ethereum::v1::AccountProof>,
-    #[prost(uint64, tag = "7")]
+    #[prost(uint64, tag = "8")]
     pub new_height: u64,
 }
 impl ::prost::Name for Header {

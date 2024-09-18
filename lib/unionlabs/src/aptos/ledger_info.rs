@@ -47,7 +47,7 @@ pub struct LedgerInfo {
 
     /// Hash of consensus specific data that is opaque to all parts of the system other than
     /// consensus.
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub consensus_data_hash: H256,
 }
 

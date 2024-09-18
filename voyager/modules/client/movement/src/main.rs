@@ -12,8 +12,7 @@ use tracing::instrument;
 use unionlabs::{
     self,
     aptos::sparse_merkle_proof::SparseMerkleProof,
-    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi, Proto},
-    ethereum::config::PresetBaseKind,
+    encoding::{Bcs, DecodeAs, EncodeAs, Proto},
     google::protobuf::any::Any,
     ibc::{
         core::client::height::Height,
@@ -258,7 +257,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     async fn reencode_counterparty_consensus_state(
         &self,
         consensus_state: Hex<Vec<u8>>,
-        client_type: ClientType<'static>,
+        _client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
         // match client_type.as_str() {
         //     ClientType::COMETBLS => Ok(Hex(Any(wasm::consensus_state::ConsensusState {

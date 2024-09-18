@@ -75,7 +75,7 @@ impl Serialize for AccountAddress {
             self.0.serialize(serializer)
         } else {
             // See comment in deserialize.
-            serializer.serialize_newtype_struct("AccountAddress", &self.0)
+            serializer.serialize_newtype_struct("AccountAddress", &self.0 .0)
         }
     }
 }

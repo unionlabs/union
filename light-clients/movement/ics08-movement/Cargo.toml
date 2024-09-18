@@ -7,8 +7,6 @@ version                = "0.1.0"
 
 [dependencies]
 hex = { workspace = true, features = ["alloc"] }
-# aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core" }
-# aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core" }
 aptos-verifier     = { workspace = true }
 bcs                = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 cosmwasm-std       = { workspace = true, features = ["abort"] }
@@ -23,6 +21,10 @@ sha2               = { workspace = true, features = ["std"] }
 sha3               = { workspace = true }
 thiserror          = { workspace = true }
 unionlabs          = { workspace = true, features = ["cosmwasm", "stargate"] }
+
+[dev-dependencies]
+aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core" }
 
 [lints]
 workspace = true

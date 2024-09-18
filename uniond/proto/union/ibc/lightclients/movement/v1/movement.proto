@@ -28,10 +28,11 @@ message Header {
   .ibc.core.client.v1.Height l1_height = 1;
   .ibc.core.client.v1.Height trusted_height = 2;
   StateProof state_proof = 3;
-  TransactionInfoWithProof tx_proof = 4;
-  .union.ibc.lightclients.ethereum.v1.StorageProof state_proof_hash_proof = 5;
-  .union.ibc.lightclients.ethereum.v1.AccountProof settlement_contract_proof = 6;
-  uint64 new_height = 7;
+  uint64 tx_index = 4;
+  TransactionInfoWithProof tx_proof = 5;
+  .union.ibc.lightclients.ethereum.v1.StorageProof state_proof_hash_proof = 6;
+  .union.ibc.lightclients.ethereum.v1.AccountProof settlement_contract_proof = 7;
+  uint64 new_height = 8;
 }
 
 message TransactionInfoWithProof {

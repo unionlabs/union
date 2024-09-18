@@ -42,6 +42,7 @@ pub mod data;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct StateProofResponse {
+    tx_index: u64,
     state_proof: StateProof,
     tx_proof: TransactionInfoWithProof,
 }
@@ -169,6 +170,7 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 revision_height: from,
                             },
                             state_proof: state_proof.state_proof,
+                            tx_index: state_proof.tx_index,
                             tx_proof: state_proof.tx_proof,
                             state_proof_hash_proof: StorageProof {
                                 key: Default::default(),

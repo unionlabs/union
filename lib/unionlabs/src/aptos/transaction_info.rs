@@ -29,26 +29,26 @@ pub struct TransactionInfoV0 {
     pub status: ExecutionStatus,
 
     /// The hash of this transaction.
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub transaction_hash: H256,
 
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub event_root_hash: H256,
 
     /// The hash value summarizing all changes caused to the world state by this transaction.
     /// i.e. hash of the output write set.
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
     pub state_change_hash: H256,
 
     /// The root hash of the Sparse Merkle Tree describing the world state at the end of this
     /// transaction. Depending on the protocol configuration, this can be generated periodical
     /// only, like per block.
-    #[serde(with = "::serde_utils::hex_allow_unprefixed_option")]
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed_option")]
     pub state_checkpoint_hash: Option<H256>,
 
     /// Potentially summarizes all evicted items from state. Always `None` for now.
-    #[serde(with = "::serde_utils::hex_allow_unprefixed_option")]
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed_option")]
     pub state_cemetery_hash: Option<H256>,
 }
 

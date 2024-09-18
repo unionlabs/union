@@ -23,7 +23,7 @@ pub struct TransactionInfoWithProof {
 
 #[model]
 pub struct TransactionAccumulatorProof {
-    #[serde(with = "::serde_utils::hex_allow_unprefixed_list")]
+    // #[serde(with = "::serde_utils::hex_allow_unprefixed_list")]
     pub siblings: Vec<H256>,
     pub phantom: Null,
 }
