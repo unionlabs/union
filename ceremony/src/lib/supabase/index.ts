@@ -10,31 +10,31 @@ import {
 import { supabase } from "$lib/supabase/client.ts"
 import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
 
-export const callJoinQueue = async (codeId: string): Promise<boolean> => {
+export const callJoinQueue = async (code: string | null): Promise<boolean> => {
   const userId = user.session?.user.id
   if (!userId) {
     throw new Error("User is not logged in")
   }
 
   try {
-    const { data, error } = await supabase.rpc("join_queue", { code_id: codeId })
+    const { error } = await supabase.rpc("join_queue", { code_id: code })
 
     if (error) {
-      console.error("Error calling join_queue:", error)
+      console.error("Error joining queue:", error)
       return false
     }
 
-    if (!data) {
-      console.error("No data returned from join_queue")
-      return false
-    }
-
-    console.log("Successfully joined queue:", data)
     return true
   } catch (err) {
     console.error("Unexpected error:", err)
-    return false // Ensure false is returned on error
+    return false
   }
+}
+
+export const checkIfOpen = async (): Promise<boolean> => {
+  const { data, error } = await supabase.rpc("open_to_public")
+  console.log("isOpen:", data)
+  return data
 }
 
 export const getUserQueueInfo = async () => {
@@ -110,8 +110,9 @@ export const getAllowanceState = async (userId: string | undefined): Promise<All
   const { data, error } = await queryAllowance()
   if (error || !data) return undefined
 
-  if (data.in_waitlist) return "waitingList"
-  if (data.has_redeemed) return "invited"
+  if (data.has_redeemed) return "hasRedeemed"
+  if (data.in_queue) return "inQueue"
+  if (data.in_waitlist) return "inWaitlist"
 
   return "join"
 }

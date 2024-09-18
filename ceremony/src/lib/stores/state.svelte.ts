@@ -1,4 +1,4 @@
-import { onDestroy } from "svelte"
+import { getContext, onDestroy, setContext } from "svelte"
 import { checkState } from "$lib/client"
 import { getAllowanceState, getUserQueueInfo, getContributionState } from "$lib/supabase"
 
@@ -15,7 +15,7 @@ type State =
   | "offline"
   | "noClient"
 
-export type AllowanceState = "invited" | "waitingList" | "join" | undefined
+export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
 
 export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
 
@@ -56,8 +56,8 @@ type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 
 const second = 1000
 const CLIENT_POLING_INTERVAL = second
-const CONTRIBUTION_POLLING_INTERVAL = second * 10
-const QUEUE_POLLING_INTERVAL = second * 10
+const CONTRIBUTION_POLLING_INTERVAL = second * 5
+const QUEUE_POLLING_INTERVAL = second * 5
 
 export class ContributorState {
   userId = $state<string | undefined>(undefined)
@@ -78,12 +78,10 @@ export class ContributorState {
     client: IntervalID | null
     queue: IntervalID | null
     contribution: IntervalID | null
-    allowance: IntervalID | null
   } = {
     client: null,
     queue: null,
-    contribution: null,
-    allowance: null
+    contribution: null
   }
 
   constructor(userId?: string) {
@@ -110,6 +108,12 @@ export class ContributorState {
   async checkAllowanceState(userId: string | undefined): Promise<AllowanceState> {
     this.allowanceState = await getAllowanceState(userId)
     return this.allowanceState
+  }
+
+  setAllowanceState(state: AllowanceState) {
+    this.allowanceState = state
+    this.pollQueueInfo()
+    this.pollContributionState()
   }
 
   startPolling() {
@@ -246,12 +250,8 @@ export class ContributorState {
   }
 
   private updateState() {
-    console.log("ClientState:", this.clientState)
-    console.log("ContributionState:", this.contributionState)
-
     if (this.contributionState === "contribute") {
       switch (this.clientState) {
-        case "idle":
         case "initializing":
         case "downloadStarted":
         case "downloading":
@@ -284,7 +284,15 @@ export class ContributorState {
     } else {
       this.state = "loading"
     }
-
-    console.log("State:", this.state)
   }
+}
+
+const CONTRIBUTOR_KEY = Symbol("CONTRIBUTOR")
+
+export function setContributorState() {
+  return setContext(CONTRIBUTOR_KEY, new ContributorState())
+}
+
+export function getContributorState(): ContributorState {
+  return getContext<ContributorState>(CONTRIBUTOR_KEY)
 }
