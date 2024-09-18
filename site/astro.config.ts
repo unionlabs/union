@@ -2,9 +2,9 @@ import icon from "astro-icon"
 import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
-import netlify from "@astrojs/netlify"
 import tailwind from "@astrojs/tailwind"
-import { defineConfig } from "astro/config"
+import vercel from "@astrojs/vercel/serverless"
+import { defineConfig, envField } from "astro/config"
 import { markdownConfiguration } from "./markdown.config.ts"
 
 const SITE_URL = "https://union.build"
@@ -17,16 +17,16 @@ const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
 
 export default defineConfig({
   site: SITE_URL,
-  output: "hybrid",
+  output: "server",
   experimental: {
-    serverIslands: true,
     clientPrerender: true,
-    directRenderScript: true
+    contentIntellisense: true,
+    contentCollectionCache: true
   },
   trailingSlash: "ignore",
-  adapter: netlify({
-    imageCDN: false,
-    edgeMiddleware: false
+  adapter: vercel({
+    imageService: true,
+    devImageService: "squoosh"
   }),
   image: {
     domains: [
@@ -35,6 +35,15 @@ export default defineConfig({
       "raw.githubusercontent.com",
       "avatars.githubusercontent.com"
     ]
+  },
+  env: {
+    schema: {
+      CONTENTFUL_SPACE_ID: envField.string({ context: "client", access: "public" }),
+      CONTENTFUL_ENVIRONMENT: envField.string({ context: "client", access: "public" }),
+      CONTENTFUL_ACCESS_TOKEN: envField.string({ context: "client", access: "public" }),
+      CONTENTFUL_PREVIEW_TOKEN: envField.string({ context: "client", access: "public" }),
+      CONTENTFUL_DELIVERY_TOKEN: envField.string({ context: "client", access: "public" })
+    }
   },
   markdown: markdownConfiguration,
   server: _ => ({ port: Number(PORT) }),
