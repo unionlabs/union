@@ -581,10 +581,11 @@ mod test {
         ethereum::config::Mainnet,
         ibc::{core::connection::connection_end::ConnectionEnd, lightclients::ethereum},
     };
-
+    use crate::{ errors::Error };
+    
     use super::*;
     use crate::client::test_utils::custom_query_handler;
-
+    
     #[derive(Deserialize)]
     struct MembershipTest<T> {
         #[serde(with = "unionlabs::uint::u256_big_endian_hex")]
