@@ -6,7 +6,7 @@ let { children, class: className = "", loading = false, ...props } = $props()
 
 <button
         {...props}
-        class={`flex items-center gap-2 px-4 py-2 text-black font-bold hover:text-black bg-union-accent-500 uppercase justify-center ${className}`}>
+        class={`flex items-center w-full gap-2 px-4 py-2 text-black font-bold hover:text-black bg-union-accent-500 uppercase justify-center ${className}`}>
   {@render children()}
   {#if loading}
     <Spinner class="size-4"/>

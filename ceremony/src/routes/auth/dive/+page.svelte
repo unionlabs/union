@@ -2,10 +2,11 @@
 import Button from "$lib/components/Button.svelte"
 import { page } from "$app/stores"
 import { supabase } from "$lib/supabase/client.ts"
+import H1 from "$lib/components/typography/H1.svelte"
 // import Spinner from "$lib/components/Spinner.svelte"
 
-type AuthProviders = "github" | "google"
-const providers: Array<AuthProviders> = ["github", "google"]
+type AuthProviders = "github" | "google" | "twitter"
+const providers: Array<AuthProviders> = ["github", "google", "twitter"]
 
 async function diveIn(provider: AuthProviders) {
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -23,14 +24,17 @@ async function diveIn(provider: AuthProviders) {
 
 {#snippet Dive(provider)}
 <Button onclick={() => diveIn(provider)}>
-  <span>Dive in using {provider}</span>
+  <span>{provider === "twitter" ? "X" : provider}</span>
 </Button>
 {/snippet}
 
 <div class="p-8 flex items-center flex-col gap-4">
-  {#each providers as provider}
-    {@render Dive(provider)}
-  {/each}
+  <H1>Dive in</H1>
+  <div class="flex gap-4">
+    {#each providers as provider}
+      {@render Dive(provider)}
+    {/each}
+  </div>
 </div>
 
 <!--{#if loading}-->
