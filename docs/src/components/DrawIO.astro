@@ -33,7 +33,7 @@ const { src } = Astro.props
     drawIOElement?.setAttribute('style', `filter: ${filter}`)
   }
 
-  document.addEventListener('DOMContentLoaded', event => {
+  document.addEventListener('DOMContentLoaded', _event => {
     selectThemeElement?.addEventListener('change', onThemeChange)
     return () => {
       selectThemeElement?.removeEventListener('change', onThemeChange)

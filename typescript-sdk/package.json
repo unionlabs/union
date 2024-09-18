@@ -1,7 +1,7 @@
 {
   "name": "@unionlabs/client",
-  "version": "0.0.25",
-  "homepage": "https://jsr.io/@union/client",
+  "version": "0.0.26",
+  "homepage": "https://union.build",
   "description": "Union Labs cross-chain transfers client",
   "type": "module",
   "main": "./dist/index.mjs",
@@ -21,11 +21,9 @@
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "publish-jsr": "bun ./scripts/publish.ts",
     "publish-jsr-dry-run": "DRY_RUN=1 bun ./scripts/publish.ts",
-    "faucet": "bun ./playground/faucet.ts",
-    "balance": "bun ./playground/balance.ts",
-    "transfer": "bun ./playground/transfer.ts",
     "test": "vitest --run",
     "test:typecheck": "vitest --typecheck.only",
+    "check-package": "bunx publint@latest --strict && bunx @arethetypeswrong/cli --pack --ignore-rules 'cjs-resolves-to-esm'",
     "clean": "rm -rf dist node_modules",
     "postinstall": "patch-package",
     "prepublish": "bun run build"
@@ -43,7 +41,6 @@
     "viem": "^2.21.8"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.16.4",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.9",
     "@types/node": "^22.5.5",

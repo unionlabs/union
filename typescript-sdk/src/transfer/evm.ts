@@ -17,10 +17,10 @@ import { simulateTransaction } from "../query/offchain/tenderly.ts"
 export type TransferAssetFromEvmParams = {
   memo?: string
   amount: bigint
-  account?: Account
   receiver: string
-  autoApprove?: boolean
+  account?: Account
   simulate?: boolean
+  autoApprove?: boolean
   denomAddress: Address
   sourceChannel: string
   relayContractAddress: Address
@@ -65,11 +65,11 @@ export async function transferAssetFromEvm(
   relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
 
   if (autoApprove) {
-    const approveResponse = await approveTransferAssetFromEvm(client, {
+    const approveResponse = await evmApproveTransferAsset(client, {
       amount,
       account,
       denomAddress,
-      relayContractAddress
+      receiver: relayContractAddress
     })
     if (approveResponse.isErr()) return approveResponse
   }
@@ -117,65 +117,105 @@ export async function transferAssetFromEvm(
 
 export type ApproveTransferAssetFromEvmParams = Pick<
   TransferAssetFromEvmParams,
-  "amount" | "account" | "simulate" | "denomAddress" | "relayContractAddress"
+  "amount" | "account" | "simulate" | "denomAddress" | "receiver"
 >
 
 /**
  * approve a transfer asset from evm
+ * if transferring to a different chain, `receiver` is the relayer contract address
+ * if transferring to the same chain, `receiver` is the recipient address
+ *
  * @example
  * ```ts
- * const transfer = await approveTransferAssetFromEvm(client, {
- *   memo: "test",
+ * const transfer = await evmApproveTransferAsset(client, {
  *   amount: 1n,
- *   account: evmAccount,
- *   sourceChannel: "channel-1",
+ *   simulate: true,
+ *   autoApprove: true,
+ *   account: privateKeyToAccount(`0x${PRIVATE_KEY}`),
  *   receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
  *   denomAddress: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
- *   relayContractAddress: "0x2222222222222222222222222222222222222222",
- *   destinationChainId: "stride-internal-1",
  * })
  * ```
  */
-export async function approveTransferAssetFromEvm(
+export async function evmApproveTransferAsset(
+  client: WalletClient & PublicActions,
+  { amount, account, receiver, denomAddress, simulate = true }: ApproveTransferAssetFromEvmParams
+): Promise<Result<Hex, Error>> {
+  account ||= client.account
+  if (!account) return err(new Error("No account found"))
+
+  const approvalParameters = {
+    account,
+    abi: erc20Abi,
+    chain: client.chain,
+    functionName: "approve",
+    address: getAddress(denomAddress),
+    args: [getAddress(receiver), amount]
+  } as const
+
+  if (!simulate) {
+    const approveHash = await client.writeContract(approvalParameters)
+    if (!approveHash) return err(new Error("Approval failed"))
+    return ok(approveHash)
+  }
+
+  const { request } = await client.simulateContract(approvalParameters)
+  if (!request) return err(new Error("Simulation failed"))
+
+  const approveHash = await client.writeContract(request)
+  if (!approveHash) return err(new Error("Approval failed"))
+
+  const _receipt = await client.waitForTransactionReceipt({ hash: approveHash })
+
+  return ok(approveHash)
+}
+
+export async function evmSameChainTransfer(
   client: WalletClient & PublicActions,
   {
     amount,
     account,
+    receiver,
     denomAddress,
-    simulate = true,
-    relayContractAddress
-  }: ApproveTransferAssetFromEvmParams
+    simulate = true
+  }: Omit<
+    TransferAssetFromEvmParams,
+    "memo" | "sourceChannel" | "relayContractAddress" | "destinationChainId" | "autoApprove"
+  >
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
   if (!account) return err(new Error("No account found"))
 
   denomAddress = getAddress(denomAddress)
-  /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
-  relayContractAddress = getAddress(relayContractAddress).toLowerCase() as Address
 
-  const approveWriteContractParameters = {
+  const transferParameters = {
     account,
     abi: erc20Abi,
     chain: client.chain,
-    address: denomAddress,
-    functionName: "approve",
-    args: [relayContractAddress, amount]
+    functionName: "transfer",
+    address: getAddress(denomAddress),
+    args: [getAddress(receiver), amount]
   } as const
 
   if (!simulate) {
-    const { request: approveRequest } = await client.simulateContract(
-      approveWriteContractParameters
-    )
-    const approveHash = await client.writeContract(approveRequest)
-    return ok(approveHash)
+    const hash = await client.writeContract({
+      account,
+      abi: erc20Abi,
+      chain: client.chain,
+      functionName: "transfer",
+      address: getAddress(denomAddress),
+      args: [getAddress(receiver), amount]
+    })
+    if (!hash) return err(new Error("Transfer failed"))
+    return ok(hash)
   }
 
-  const approveHash = await client.writeContract(approveWriteContractParameters)
+  const { request } = await client.simulateContract(transferParameters)
+  const transferHash = await client.writeContract(request)
 
-  if (!approveHash) return err(new Error("Approval failed"))
-  const receipt = await client.waitForTransactionReceipt({ hash: approveHash })
+  const _receipt = await client.waitForTransactionReceipt({ hash: transferHash })
 
-  return ok(approveHash)
+  return ok(transferHash)
 }
 
 /**

@@ -1,3 +1,12 @@
+import {
+  transformerNotationDiff,
+  transformerMetaHighlight,
+  transformerNotationFocus,
+  transformerMetaWordHighlight,
+  transformerNotationHighlight,
+  transformerNotationErrorLevel,
+  transformerNotationWordHighlight
+} from "@shikijs/transformers"
 import remarkToc from "remark-toc"
 import rehypeSlug from "rehype-slug"
 import { visit } from "unist-util-visit"
@@ -8,13 +17,40 @@ import remarkSmartypants from "remark-smartypants"
 import type { AstroUserConfig } from "astro/config"
 import { escapeHTML } from "astro/runtime/server/escape.js"
 import rehypeAutolinkHeadings from "rehype-autolink-headings"
-import { rehypeHeadingIds, type RemarkPlugin } from "@astrojs/markdown-remark"
+// import { transformerCopyButton } from "@rehype-pretty/transformers"
+import { rendererRich, transformerTwoslash } from "@shikijs/twoslash"
+import { rehypeHeadingIds, type RemarkPlugin, type ShikiConfig } from "@astrojs/markdown-remark"
 
 type Markdown = AstroUserConfig["markdown"]
 
+export const shikiConfig = {
+  theme: "houston",
+  transformers: [
+    transformerTwoslash({
+      explicitTrigger: /\btwoslash\b/,
+      renderer: rendererRich({ jsdoc: true })
+    }),
+    transformerNotationDiff(),
+    transformerMetaHighlight(),
+    transformerNotationFocus(),
+    transformerMetaWordHighlight(),
+    transformerNotationHighlight(),
+    transformerNotationErrorLevel(),
+    transformerNotationWordHighlight()
+    // transformerCopyButton({ visibility: "hover", feedbackDuration: 3_000 })
+  ]
+} satisfies ShikiConfig
+
 export const markdownConfiguration = {
   gfm: true,
+  shikiConfig,
   smartypants: false,
+  syntaxHighlight: "shiki",
+  remarkRehype: {
+    allowDangerousHtml: true,
+    clobberPrefix: "union-docs-",
+    passThrough: ["code", "root"]
+  },
   remarkPlugins: [
     mermaid(),
     remarkMathPlugin,
@@ -22,11 +58,11 @@ export const markdownConfiguration = {
     [remarkToc, { heading: "contents", prefix: "toc-" }]
   ],
   rehypePlugins: [
-    rehypeHeadingIds,
     rehypeSlug,
-    [rehypeAutolinkHeadings, { behavior: "wrap" }],
+    rehypeHeadingIds,
     rehypeKatexPlugin,
-    rehypeMathjaxPlugin
+    rehypeMathjaxPlugin,
+    [rehypeAutolinkHeadings, { behavior: "wrap" }]
   ]
 } satisfies Markdown
 

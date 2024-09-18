@@ -1,5 +1,6 @@
 import { ofetch } from "ofetch"
 import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
+import type { ChainId } from "../../client/types.ts"
 import { bech32AddressToHex } from "../../convert.ts"
 import { encodeFunctionData, getAddress, type Address } from "viem"
 
@@ -64,6 +65,8 @@ export async function simulateTransaction({
   account?: Address
   denomAddress: Address
   sourceChannel: string
+  sourceChainId?: ChainId
+  destinationChainId?: ChainId
   relayContractAddress: Address
 }) {
   let { url: TENDERLY_URL, key: TENDERLY_KEY } = getTenderlyCreds({
@@ -101,6 +104,7 @@ export async function simulateTransaction({
       0n
     ]
   })
+
   const data = await tenderlyRequest<TenderlySimulationResponse>("/simulate", {
     method: "POST",
     body: JSON.stringify({

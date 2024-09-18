@@ -1,16 +1,15 @@
 ---
 title: "TypeScript SDK"
 ---
-import { PackageManagers } from 'starlight-package-managers'
 import { Tabs, TabItem } from '@astrojs/starlight/components'
+import PackageManager from '#/components/package-manager/PackageManager.astro'
 
 ## Installation
 
-<PackageManagers
-  type="add"
-  frame="none"
-  pkg="@unionlabs/client@latest"
-  pkgManagers={['npm', 'pnpm', 'bun', 'yarn']}
+<PackageManager
+  command='add'
+  packageId='@unionlabs/client'
+  pkgManagers={['bun','pnpm','npm','yarn']}
 />
 
 The Union Client is TypeScript-first and framework agnostic.
@@ -23,7 +22,7 @@ If you need testnet tokens for testing, visit https://app.union.build/faucet and
 
 :::
 
-### Client Initialization
+## Client Initialization
 
 <Tabs>
   <TabItem label='EVM Based Client'>
@@ -48,6 +47,9 @@ import {
 } from "@unionlabs/client"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
+const PRIVATE_KEY = process.env["PRIVATE_KEY"]
+if (!PRIVATE_KEY) throw new Error("Private key not found")
+
 const account = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexStringToUint8Array(PRIVATE_KEY)),
   "stride"
@@ -70,16 +72,14 @@ import {
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
-/**
- * we initialize a multi-chain client. Our choices here are:
- *  - Berachain bArtio, an EVM chain,
- *  - Stride Testnet, a Cosmos SDK chain
- */
+const PRIVATE_KEY = process.env["PRIVATE_KEY"]
+if (!PRIVATE_KEY) throw new Error("Private key not found")
+
 const clients = createMultiUnionClient([
   {
     chainId: "80084",
     transport: http("https://bartio.rpc.berachain.com"),
-    account: privateKeyToAccount(`0x${process.env.PRIVATE_KEY}`),
+    account: privateKeyToAccount(`0x${PRIVATE_KEY}`),
   },
   {
     chainId: "stride-internal-1",
@@ -94,7 +94,7 @@ const clients = createMultiUnionClient([
   </TabItem>
 </Tabs>
 
-### Transferring Assets
+## Transferring Assets
 
 We will transfer 1 [`HONEY`](https://bartio.beratrail.io/token/0x0E4aaF1351de4c0264C5c7056Ef3777b41BD8e03) from [**Berachain bArtio**](https://www.berachain.com) to [**Stride Testnet**](https://stride.zone).
 
@@ -155,6 +155,10 @@ export const unionClient = createUnionClient({
 
 Run the above example
 
-```bash frame="none"
-PRIVATE_KEY="" npm_config_yes=true npx tsx main.ts
-```
+<PackageManager
+  packageId='tsx'
+  command='dynamic'
+  postfix='main.ts'
+  prefix='PRIVATE_KEY=""'
+  pkgManagers={['bun','pnpm','npm','yarn']}
+/>

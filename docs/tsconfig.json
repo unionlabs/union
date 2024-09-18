@@ -18,10 +18,13 @@
     "allowJs": true,
     "checkJs": true,
     "baseUrl": ".",
+    "resolvePackageJsonExports": true,
+    "resolvePackageJsonImports": true,
     "paths": {
       "#/*": ["./src/*"],
       "~root/*": ["../*"],
-      "tailwind.config": ["./tailwind.config.ts"]
+      "tailwind.config": ["./tailwind.config.ts"],
+      "markdown.config": ["./markdown.config.ts"]
     },
     "plugins": [
       {
@@ -33,12 +36,12 @@
   "include": ["src", "public", "scripts"],
   "files": [
     "reset.d.ts",
-    "ec.config.mjs",
     "astro.config.ts",
     "svelte.config.js",
     "tailwind.config.ts",
     "postcss.config.cjs",
-    "markdown.config.ts"
+    "markdown.config.ts",
+    "starlight.config.ts"
   ],
   "exclude": ["_", "dist", "node_modules"]
 }

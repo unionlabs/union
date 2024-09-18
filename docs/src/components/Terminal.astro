@@ -41,7 +41,7 @@ const { webcontainerFiles } = Astro.props
     type FileSystemTree,
     type WebContainerProcess,
   } from '@webcontainer/api'
-  import { initiateTerminal, type Terminal } from '#/lib/xterm/terminal'
+  import { initiateTerminal, type Terminal } from '#/lib/xterm/terminal.ts'
 
   const writeToWebContainerFile = async ({ path, content }: { path: string; content: string }) => {
     await webcontainerInstance.fs.writeFile(path, content)
@@ -129,6 +129,9 @@ const { webcontainerFiles } = Astro.props
 </script>
 
 <style is:inline>
+  .rehype-pretty-copy {
+    background-color: red;
+  }
   .sl-markdown-content {
     margin-top: 0.3rem;
   }
