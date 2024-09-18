@@ -42,7 +42,7 @@ impl<T: FetcherClient> Indexer<T> {
                         (next_height..last_finalized.reference().height).into();
                     info!("missing blocks: {}", catch_up_range);
 
-                    for slice in catch_up_range.range_chunks(self.chunk_size).into_iter() {
+                    for slice in catch_up_range.range_chunks(self.chunk_size) {
                         info!("{}: handling chunk", slice);
 
                         last_finalized

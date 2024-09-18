@@ -105,6 +105,7 @@ repository   = "https://github.com/unionlabs/union"
 
 [workspace.lints.clippy]
 disallowed_types = "deny"
+module_inception = "allow" # it's useful sometimes
 
 [profile.release]
 lto       = "thin"

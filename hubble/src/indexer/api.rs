@@ -79,9 +79,9 @@ impl From<Range<BlockHeight>> for BlockRange {
     }
 }
 
-impl Into<Range<BlockHeight>> for BlockRange {
-    fn into(self) -> Range<BlockHeight> {
-        self.start_inclusive..self.end_exclusive
+impl From<BlockRange> for Range<BlockHeight> {
+    fn from(val: BlockRange) -> Self {
+        val.start_inclusive..val.end_exclusive
     }
 }
 

@@ -15,7 +15,7 @@ impl Display for EthContext {
             self.urls
                 .iter()
                 .enumerate()
-                .map(|(index, url)| format!("{}: {}", index, url.as_str().to_string()))
+                .map(|(index, url)| format!("{}: {}", index, url.as_str()))
                 .collect::<Vec<_>>()
                 .join(", ")
         )

@@ -163,9 +163,9 @@ impl<T: BlockHandle> HappyRangeFetcher<T> for T {
         Fut: Future<Output = Result<(), Report>>,
     {
         let mut stream = self.fetch_range(range.clone(), mode)?;
-        let mut expected_block_heights = range.clone().into_iter();
+        let expected_block_heights = range.clone().into_iter();
 
-        while let Some(expected_block_height) = expected_block_heights.next() {
+        for expected_block_height in expected_block_heights {
             match stream.next().await {
                 Some(Ok(block)) => {
                     let actual_block_height = block.reference().height;

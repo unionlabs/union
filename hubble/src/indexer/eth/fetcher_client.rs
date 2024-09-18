@@ -112,7 +112,7 @@ impl EthFetcherClient {
             Ok(None) => {
                 info!("{}: does not exist", selection);
 
-                Err(IndexerError::NoBlock(selection).into())
+                Err(IndexerError::NoBlock(selection))
             }
             Err(report) => {
                 info!("{}: error: {}", selection, report);
@@ -145,7 +145,7 @@ impl EthFetcherClient {
         // We know now there is a potential match, we still apply a Filter to only
         // get the logs we want.
         let log_filter = Filter::new().select(block.header.hash.unwrap());
-        let log_addresses: Vec<Address> = self.contracts.iter().cloned().collect();
+        let log_addresses: Vec<Address> = self.contracts.to_vec();
         let log_filter = log_filter.address(log_addresses);
 
         let logs = self.provider.clients[provider_index]
