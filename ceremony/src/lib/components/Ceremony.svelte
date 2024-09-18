@@ -25,11 +25,6 @@ $effect(() => {
   }
 })
 
-// window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
-//   e.preventDefault()
-//   e.returnValue = ""
-// })
-
 let addressValidState: ValidState = $state("PENDING")
 </script>
 
