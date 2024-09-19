@@ -17,7 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	authtypes "cosmossdk.io/x/auth/types"
 	"github.com/stretchr/testify/require"
 
 	"union/app"

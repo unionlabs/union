@@ -6,8 +6,8 @@ import (
 	store "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	consensuskeeper "cosmossdk.io/x/consensus/keeper"
+	stakingkeeper "cosmossdk.io/x/staking/keeper"
 )
 
 type AppKeepers struct {
