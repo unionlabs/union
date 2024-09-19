@@ -9,7 +9,13 @@ let targetMouseX = 0
 let targetMouseY = 0
 let displayWidth = 1000
 let displayHeight = 1000
+
+// config
 const RETINA_ENABLED = false
+const WIDTH = 60 // Must be even
+const duration = 0.04 // Total duration of the transition in seconds
+
+const W2 = WIDTH / 2
 
 // Perlin noise implementation
 class PerlinNoise {
@@ -283,7 +289,7 @@ function initWebGL() {
   function calculateWaveOffset(x, z, time) {
     const scale = 0.1
     const speed = 0.5
-    const amplitude = 1.0
+    const amplitude = 1.7
 
     const noiseValue = perlin.noise(x * scale, z * scale, time * speed)
     return noiseValue * amplitude
@@ -299,10 +305,10 @@ function initWebGL() {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-    const fieldOfView = (50 * Math.PI) / 180
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight
+    const fieldOfView = (Math.max(20, 35 * aspect) * Math.PI) / 180
     const zNear = 0.1
-    const zFar = 100.0
+    const zFar = 1000.0
     const projectionMatrix = glMatrix.mat4.create()
 
     glMatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar)
@@ -314,18 +320,22 @@ function initWebGL() {
 
     // Smooth out mouse movement
     mouseX += (targetMouseX - mouseX) * 0.1
-    mouseY += (targetMouseY - mouseY) * 0.1
+    // mouseY += (targetMouseY - mouseY) * 0.1
 
     // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [-10, 0, 0])
 
     // glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, 0]);
-    glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -16])
+    const startTranslation = [0, 0, -20]
+    const endTranslation = [0, -8, -60 * aspect]
+    // const endTranslation = [0, 10, 10]
     // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
     // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
     const startRotation = Math.PI / 2 // Starting rotation angle
-    const endRotationY = Math.PI / 8 // Ending rotation angle
-    const endRotationX = Math.PI / 7 // Ending rotation angle
-    const duration = 4 // Total duration of the transition in seconds
+    const endRotationY = Math.PI * 0.2 * (aspect / 2) // Ending rotation angle
+    // const endRotationY = Math.PI * 0.09 // Ending rotation angle
+    const endRotationX = Math.PI * 0.25 // Ending rotation angle
+    // const endRotationY = Math.PI * 0.5 // Ending rotation angle
+    // const endRotationX = Math.PI * 0.5 // Ending rotation angle
 
     // Current time since the animation started (you need to define how you get this)
 
@@ -344,8 +354,18 @@ function initWebGL() {
     const rotationY = startRotation + (endRotationY - startRotation) * timing
     const rotationX = startRotation + (endRotationX - startRotation) * timing
 
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, rotationY + mouseY * 0.05, [1, 0, 0])
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -rotationX + mouseX * 0.05, [0, 1, 0])
+    const translation = [
+      startTranslation[0] + (endTranslation[0] - startTranslation[0]) * timing,
+      startTranslation[1] + (endTranslation[1] - startTranslation[1]) * timing,
+      startTranslation[2] + (endTranslation[2] - startTranslation[2]) * timing
+    ] as glMatrix.ReadonlyVec3
+
+    glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, translation)
+
+    // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, rotationY + mouseY * 0.05, [1, 0, 0])
+    // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -rotationX + mouseX * 0.05, [0, 1, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, rotationY, [1, 0, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -rotationX, [0, 1, 0])
 
     // Set up attribute buffers
     {
@@ -458,10 +478,14 @@ function initWebGL() {
   resizeObserver.observe(canvas, { box: "content-box" })
 
   // Initialize cube positions
-  const cubePositions = []
-  for (let x = -28; x < 10; x++) {
-    for (let z = -28; z < 10; z++) {
-      cubePositions.push([x * 1.2 + 0.6, 0, z * 1.2 + 0.6])
+  const cubePositions: Array<glMatrix.vec3> = []
+
+  // Manhattan distance based rotation from square to diamond
+  for (let x = -W2; x <= W2; x++) {
+    for (let z = -W2; z <= W2; z++) {
+      if (Math.abs(x) + Math.abs(z) <= W2) {
+        cubePositions.push([x * 1.2 + 0.6, 0, z * 1.2 + 0.6])
+      }
     }
   }
 
@@ -489,7 +513,7 @@ function initWebGL() {
   function updateMousePosition(event) {
     const rect = canvas.getBoundingClientRect()
     targetMouseX = ((event.clientX - rect.left) / canvas.width) * 4 - 1
-    targetMouseY = -(((event.clientY - rect.top) / canvas.height) * 4) + 1
+    targetMouseY = ((event.clientY - rect.top) / canvas.height) * 4 + 1
   }
 
   document.addEventListener("mousemove", updateMousePosition)
