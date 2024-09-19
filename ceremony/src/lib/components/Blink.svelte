@@ -28,7 +28,7 @@ function startRandomBlinking() {
 
 $effect(() => {
   if (sleep) {
-    eye = "-"
+    eye = "×"
     clearInterval(blinkInterval)
   } else {
     eye = "0"

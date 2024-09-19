@@ -5,12 +5,13 @@ import H3 from "$lib/components/typography/H3.svelte"
 import H2 from "$lib/components/typography/H2.svelte"
 import Install from "$lib/components/Install.svelte"
 import { start } from "$lib/client"
-import H4 from "$lib/components/typography/H4.svelte"
 import { AddressForm, type ValidState } from "$lib/components/address"
 import Blink from "$lib/components/Blink.svelte"
 import Tweet from "$lib/components/Tweet.svelte"
 import SwimLoad from "$lib/components/SwimLoad.svelte"
 import { getNumberSuffix } from "$lib/utils/utils.ts"
+import Text from "$lib/components/typography/Text.svelte"
+import Status from "$lib/components/Status.svelte"
 
 type Props = {
   contributor: ContributorState
@@ -30,23 +31,12 @@ let addressValidState: ValidState = $state("PENDING")
 
 <div class="p-8 w-full flex items-center justify-center flex-col">
 
-  <H1>
-    <Blink
-            loading={contributor.state === 'contributing'}
-            sleep={contributor.clientState === 'offline'}
-    />
-  </H1>
-  <H1>{contributor.clientState}</H1>
+  {#if contributor.state !== 'inQueue'}
 
-  {#if contributor.clientState === 'offline'}
-    <Install/>
-  {/if}
-
-
-  {#if contributor.state === 'inQueue'}
+    <Status {contributor} />
 
     <div class="border p-8 w-full max-w-4xl flex flex-col items-center">
-      <H1>You are <span class="!text-union-accent-500">{contributor.queueState.position}<span
+      <H1 class="mb-6">You are <span class="!text-union-accent-500">{contributor.queueState.position}<span
               class="lowercase">{getNumberSuffix(contributor.queueState.position)}</span> </span> in queue</H1>
 
       <SwimLoad max={contributor.queueState.count} current={contributor.queueState.position}/>
@@ -66,12 +56,15 @@ let addressValidState: ValidState = $state("PENDING")
 
 
   {:else if contributor.state === 'contribute'}
+    <Status {contributor} />
     <H1>Starting contribution...</H1>
 
   {:else if contributor.state === 'contributing'}
+    <Status {contributor} />
     <H1>Contributing...</H1>
 
   {:else if contributor.state === 'verifying'}
+    <Status {contributor} />
     <H1>Verifying your contribution...</H1>
 
   {:else if contributor.state === 'contributed'}
@@ -82,8 +75,9 @@ let addressValidState: ValidState = $state("PENDING")
     </div>
 
   {:else if contributor.state === 'noClient'}
+
+    <Status {contributor} />
     <H1>No client. Cannot start contribution.</H1>
-    <Install/>
 
   {:else}
     <H1>Not able to contribute at this time</H1>
