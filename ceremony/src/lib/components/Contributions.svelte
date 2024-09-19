@@ -1,25 +1,25 @@
 <script lang="ts">
-  import Spinner from "$lib/components/Spinner.svelte"
-  import H4 from "$lib/components/typography/H4.svelte"
-  import Blink from "$lib/components/Blink.svelte"
-  import Text from "$lib/components/typography/Text.svelte"
-  import {getContributions} from "$lib/supabase"
+import Spinner from "$lib/components/Spinner.svelte"
+import H4 from "$lib/components/typography/H4.svelte"
+import Blink from "$lib/components/Blink.svelte"
+import Text from "$lib/components/typography/Text.svelte"
+import { getContributions } from "$lib/supabase"
 
-  let intervalId: NodeJS.Timeout | number
-  let contributions = $state()
+let intervalId: NodeJS.Timeout | number
+let contributions = $state()
 
-  async function loadContributions() {
-    contributions = await getContributions()
+async function loadContributions() {
+  contributions = await getContributions()
+}
+
+$effect(() => {
+  loadContributions()
+  intervalId = setInterval(loadContributions, 1000 * 5)
+
+  return () => {
+    if (intervalId) clearInterval(intervalId)
   }
-
-  $effect(() => {
-    loadContributions()
-    intervalId = setInterval(loadContributions, 1000 * 5)
-
-    return () => {
-      if (intervalId) clearInterval(intervalId)
-    }
-  })
+})
 </script>
 {#if contributions}
 
