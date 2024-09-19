@@ -135,3 +135,27 @@ export const getUserContribution = async (hash: string) => {
 
   return data
 }
+
+interface WalletData {
+  id: string
+  wallet: string
+}
+
+export const insertWalletData = async (data: WalletData) => {
+  const { data: insertedData, error } = await supabase
+    .from("wallet_address")
+    .insert([
+      {
+        id: data.id,
+        wallet: data.wallet
+      }
+    ])
+    .select()
+
+  if (error) {
+    console.error("Error inserting data:", error)
+    return null
+  }
+
+  return insertedData
+}

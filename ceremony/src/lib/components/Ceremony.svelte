@@ -37,7 +37,10 @@ let addressValidState: ValidState = $state("PENDING")
     <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
     <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).
     </H3>
-    
+
+    <H2>Get your nft</H2>
+    <AddressForm class="" onValidation={result => (addressValidState = result)}/>
+
     {#if contributor.clientState === 'offline'}
       <Install/>
     {/if}
@@ -55,12 +58,9 @@ let addressValidState: ValidState = $state("PENDING")
 
     <div class="flex flex-col justify-center items-center gap-4">
       <H1>Thank you! Your contribution is completed.</H1>
-      <H2>Get your nft</H2>
-      <AddressForm class="" onValidation={result => (addressValidState = result)}/>
-      <Tweet tweetText="0____0"/>
+      <Tweet url="https://union.build"/>
     </div>
 
-    <!--Your turn but no client-->
   {:else if contributor.state === 'noClient'}
     <H1>No client. Cannot start contribution.</H1>
     <Install/>

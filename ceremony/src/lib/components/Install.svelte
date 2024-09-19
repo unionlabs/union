@@ -4,11 +4,14 @@ import H1 from "$lib/components/typography/H1.svelte"
 import Button from "$lib/components/Button.svelte"
 
 let command = "docker run -p 4919:4919 -it haitlahcen/union-mpc-cli:latest"
+
 const copy = () => {
   navigator.clipboard.writeText(command)
   toast.success("Copied to clipboard", { position: "bottom-right" })
 }
 </script>
+
+
 
 <code class="text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-black text-white p-4 pl-6 font-mono">
     <span class="flex gap-4">

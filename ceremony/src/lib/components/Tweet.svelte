@@ -2,13 +2,14 @@
 import Button from "$lib/components/Button.svelte"
 
 type Props = {
-  tweetText: string
+  tweetText?: string
   url?: string
 }
 
 let { tweetText, url }: Props = $props()
 
 function shareOnTwitter() {
+  const tweetText = "I've contributed to Union Ceremony\n\n"
   const twitterIntentUrl = new URL("https://twitter.com/intent/tweet")
   twitterIntentUrl.searchParams.append("text", tweetText)
   if (url) twitterIntentUrl.searchParams.append("url", url)
