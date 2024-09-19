@@ -124,8 +124,6 @@ export const getContributions = async () => {
   const { data, error } = await queryContributions()
   if (error || !data) return undefined
 
-  console.log(data)
-
   return data
 }
 

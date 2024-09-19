@@ -43,7 +43,7 @@ let addressValidState: ValidState = $state("PENDING")
   {/if}
 
 
-  {#if contributor.state !== 'inQueue'}
+  {#if contributor.state === 'inQueue'}
 
     <div class="border p-8 w-full max-w-4xl flex flex-col items-center">
       <H1>You are <span class="!text-union-accent-500">{contributor.queueState.position}<span
