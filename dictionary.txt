@@ -107,6 +107,7 @@ Jemalloc
 Joye
 KEYPAIR
 Karel
+Kaylei
 Keplr
 Keybase
 Kubat
