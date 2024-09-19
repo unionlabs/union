@@ -32,7 +32,7 @@ use pgp::{
     ArmorOptions, Deserializable, KeyType, SecretKeyParamsBuilder, SignedSecretKey,
 };
 use ratatui::{backend::CrosstermBackend, Terminal, Viewport};
-use reqwest::header::LOCATION;
+use reqwest::{header::LOCATION, Body};
 use serde::Deserialize;
 use tokio::{
     net::TcpListener,
@@ -279,7 +279,8 @@ async fn contribute(
                     ),
                 )
                 .send()
-                .await?;
+                .await?
+                .error_for_status()?;
             let location = response
                 .headers()
                 .get(LOCATION)
@@ -337,17 +338,20 @@ async fn contribute(
         // ==================================================
         // https://tus.io/protocols/resumable-upload#patch ==
         // ==================================================
+        let chunks = phase2_contribution
+            .into_iter()
+            .skip(upload_offset)
+            .collect::<Vec<_>>()
+            // 1mb
+            .chunks(1024 * 1024)
+            .map(|x| Ok::<_, std::io::Error>(x.to_vec()))
+            .collect::<Vec<_>>();
         upload_client
             .patch(&upload_location)
             .header("Tus-Resumable", "1.0.0")
             .header("Content-Type", "application/offset+octet-stream")
             .header("Upload-Offset", upload_offset.to_string())
-            .body(
-                phase2_contribution
-                    .into_iter()
-                    .skip(upload_offset)
-                    .collect::<Vec<_>>(),
-            )
+            .body(Body::wrap_stream(futures_util::stream::iter(chunks)))
             .send()
             .await?
             .error_for_status()?;
