@@ -1,7 +1,5 @@
 <script lang="ts">
 import Spinner from "$lib/components/Spinner.svelte"
-import H4 from "$lib/components/typography/H4.svelte"
-import Blink from "$lib/components/Blink.svelte"
 import Text from "$lib/components/typography/Text.svelte"
 import { getContributions } from "$lib/supabase"
 
