@@ -82,7 +82,5 @@ export const queryUserContribution = async (hash: string) => {
     .eq("public_key_hash", hash)
     .single()
 
-  console.log(data)
-
   return { data, error }
 }
