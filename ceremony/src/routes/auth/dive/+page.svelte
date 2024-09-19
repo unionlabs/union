@@ -5,8 +5,8 @@ import { supabase } from "$lib/supabase/client.ts"
 import H1 from "$lib/components/typography/H1.svelte"
 // import Spinner from "$lib/components/Spinner.svelte"
 
-type AuthProviders = "github" | "google" | "twitter"
-const providers: Array<AuthProviders> = ["github", "google", "twitter"]
+type AuthProviders = "github" | "google"
+const providers: Array<AuthProviders> = ["github", "google"]
 
 async function diveIn(provider: AuthProviders) {
   const { data, error } = await supabase.auth.signInWithOAuth({

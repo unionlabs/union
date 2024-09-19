@@ -1,11 +1,18 @@
 import { get, post } from "$lib/client/http.ts"
-import { user } from "$lib/stores/user.svelte.ts"
 import { getQueuePayloadId } from "$lib/supabase/queries.ts"
 import type { ClientState, ContributeBody } from "$lib/client/types.ts"
+import { supabase } from "$lib/supabase/client.ts"
 
 export const start = async (): Promise<ClientState | undefined> => {
-  const userId = user?.session?.user.id
-  const email = user?.session?.user?.email
+  const { data: session, error: sessionError } = await supabase.auth.refreshSession()
+
+  if (sessionError) {
+    console.error("Error refreshing session:", sessionError)
+    return
+  }
+
+  const userId = session.session?.user.id
+  const email = session.session?.user?.email
 
   if (!userId) {
     console.log("User not logged in")
@@ -27,7 +34,7 @@ export const start = async (): Promise<ClientState | undefined> => {
   const contributeBody: Partial<ContributeBody> = {
     payloadId: data.payload_id,
     contributorId: userId,
-    jwt: user?.session?.access_token,
+    jwt: session.session?.access_token,
     supabaseProject: import.meta.env.VITE_SUPABASE_URL,
     apiKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
     bucket: import.meta.env.VITE_BUCKET_ID,

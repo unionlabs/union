@@ -66,3 +66,23 @@ export const queryAllowance = async () => {
 
   return { data, error }
 }
+
+export const queryContributions = async () => {
+  const { data, error } = await supabase
+    .from("users_contribution")
+    .select("public_key_hash, user_name, avatar_url")
+
+  return { data, error }
+}
+
+export const queryUserContribution = async (hash: string) => {
+  const { data, error } = await supabase
+    .from("users_contribution")
+    .select("*")
+    .eq("public_key_hash", hash)
+    .single()
+
+  console.log(data)
+
+  return { data, error }
+}
