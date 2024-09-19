@@ -107,6 +107,7 @@ Jemalloc
 Joye
 KEYPAIR
 Karel
+Kaylei
 Keplr
 Keybase
 Kubat
@@ -116,6 +117,7 @@ Lahcen
 Layerzero
 Lightshift
 Livenesses
+Lukas
 MARKETCAP
 Mathjax
 Maxblocks

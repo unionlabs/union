@@ -5,7 +5,10 @@ import {
   getQueueCount,
   getSubmittedContribution,
   getUserQueuePosition,
-  queryAllowance
+  queryAllowance,
+  queryContributions,
+  queryUserContribution,
+  queryUserPublicHash
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
@@ -115,4 +118,55 @@ export const getAllowanceState = async (userId: string | undefined): Promise<All
   if (data.in_waitlist) return "inWaitlist"
 
   return "join"
+}
+
+export const getContributions = async () => {
+  const { data, error } = await queryContributions()
+  if (error || !data) return undefined
+
+  return data
+}
+
+export const getUserContribution = async (hash: string) => {
+  console.log(hash)
+  const { data, error } = await queryUserContribution(hash)
+  if (error || !data) return undefined
+
+  return data
+}
+
+interface WalletData {
+  id: string
+  wallet: string
+}
+
+export const insertWalletData = async (data: WalletData) => {
+  const { data: insertedData, error } = await supabase
+    .from("wallet_address")
+    .insert([
+      {
+        id: data.id,
+        wallet: data.wallet
+      }
+    ])
+    .select()
+
+  if (error) {
+    console.error("Error inserting data:", error)
+    return null
+  }
+
+  return insertedData
+}
+
+export const getPublicHash = async () => {
+  const userId = user.session?.user.id
+  if (!userId) {
+    throw new Error("User ID is required")
+  }
+
+  const { data, error } = await queryUserPublicHash(userId)
+  if (error || !data) return undefined
+
+  return data.public_key_hash
 }

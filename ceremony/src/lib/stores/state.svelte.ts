@@ -226,7 +226,7 @@ export class ContributorState {
         ...this.queueState,
         position: queueInfo.position,
         count: queueInfo.count,
-        estimatedTime: queueInfo.position * 30
+        estimatedTime: queueInfo.position * 60
       }
     } else {
       this.queueState = {

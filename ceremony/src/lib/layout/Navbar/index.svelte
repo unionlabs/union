@@ -27,7 +27,7 @@ async function logout() {
 let loggedIn = $derived(!!user.session?.user.id)
 </script>
 
-<header class="absolute top-0 inset-x-0 flex items-center justify-between gap-4  px-2 md:h-16 md:px-4 z-50">
+<header class="sticky bg-black top-0 inset-x-0 flex items-center justify-between gap-4  px-2 md:h-16 md:px-4 z-50">
   <nav class=" w-full p-4">
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
@@ -54,10 +54,12 @@ let loggedIn = $derived(!!user.session?.user.id)
       <div class="hidden md:block">
         {#if user.session}
           <div class="flex items-center gap-4">
+            <NavLink class="p-2" href="/contributions">Contributions</NavLink>
             <Button onclick={logout}>Log out</Button>
           </div>
         {:else}
           <div class="flex items-center gap-4">
+            <NavLink class="p-2" href="/contributions">Contributions</NavLink>
             <NavLink href="/auth/dive">Dive in</NavLink>
           </div>
         {/if}
@@ -74,8 +76,10 @@ let loggedIn = $derived(!!user.session?.user.id)
       <div class="md:hidden mt-4 w-full bg-black">
         <div class="flex flex-col divide-y divide-white/50">
           {#if user.session}
+            <NavLink class="p-2" href="/contributions">Contributions</NavLink>
             <Button class="py-2" onclick={logout}>Log out</Button>
           {:else}
+            <NavLink class="p-2" href="/contributions">Contributions</NavLink>
             <NavLink class="p-2" href="/auth/dive">Dive in</NavLink>
           {/if}
         </div>

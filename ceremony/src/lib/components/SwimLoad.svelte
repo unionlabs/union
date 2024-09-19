@@ -7,7 +7,7 @@ type Props = {
   current: number | null
 }
 
-let { min = 0, max, current }: Props = $props()
+let { min = 1, max, current }: Props = $props()
 
 let progress = $derived(current != null && max != null ? ((current - min) / (max - min)) * 100 : 0)
 let clampedProgress = $derived(Math.max(0, Math.min(100, progress)))

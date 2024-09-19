@@ -5,6 +5,8 @@ import { watch, Debounced } from "runed"
 import type { ValidState } from "./index.ts"
 import { isValidBech32Address } from "./validator.ts"
 import type { HTMLInputAttributes } from "svelte/elements"
+import { insertWalletData } from "$lib/supabase"
+import { user } from "$lib/stores/user.svelte.ts"
 
 interface Props extends HTMLInputAttributes {
   class?: string
@@ -28,12 +30,31 @@ $effect(() => {
   if (validState === "INVALID") toast.error(`Address is not valid`)
 })
 
-const onAddressSubmit = (event: Event) => {
+const onAddressSubmit = async (event: Event) => {
   event.preventDefault()
   if (!debouncedInputText.current) return
   const addressValidation = isValidBech32Address(debouncedInputText.current)
   validState = addressValidation ? "VALID" : "INVALID"
   onValidation(validState)
+
+  const userId = user.session?.user.id
+  if (validState === "VALID") {
+    try {
+      if (!userId) return
+      const result = await insertWalletData({
+        id: userId,
+        wallet: debouncedInputText.current
+      })
+      if (result) {
+        toast.success("Wallet address saved successfully")
+      } else {
+        toast.error("Failed to save wallet address")
+      }
+    } catch (error) {
+      console.error("Error saving wallet address:", error)
+      toast.error("An error occurred while saving the wallet address")
+    }
+  }
 }
 </script>
 
