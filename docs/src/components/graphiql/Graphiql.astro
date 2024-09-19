@@ -1,0 +1,85 @@
+---
+import "graphiql/graphiql.min.css"
+import "@graphiql/plugin-explorer/dist/style.css"
+
+interface Props {}
+---
+
+<article id="graphiql">...</article>
+
+<script>
+  import ReactDOM from 'react-dom/client'
+  import { graphiqlElement } from './index.ts'
+
+  const graphqlElement = document.querySelector('article#graphiql')
+  if (!graphqlElement) throw new Error('GraphQL element not found')
+
+  const root = ReactDOM.createRoot(graphqlElement)
+  root.render(graphiqlElement)
+</script>
+
+<script>
+  const footerElement = document.querySelector('footer.sl-flex')
+  footerElement?.remove()
+  const asideElement = document.querySelector('aside.right-sidebar-container')
+  asideElement?.remove()
+</script>
+
+<style lang="postcss" is:global>
+:root {
+  --sl-mobile-toc-height: 0;
+}
+
+main[data-pagefind-body] {
+  padding: 0;
+  margin-top: -16px;
+  height: 100% !important;
+}
+
+.main-pane {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.content-panel {
+  padding: 0;
+}
+
+.sl-flex {}
+
+.right-sidebar-container {
+  display: none;
+  width: 0px;
+}
+
+.sl-markdown-content :not(a, strong, em, del, span, input, code)+ :not(a, strong, em, del, span, input, code, :where(.not-content *)) {
+  margin: 0;
+}
+
+.sl-container,
+.sl-markdown-content {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+}
+
+#graphiql {
+  margin-top: var(--sl-nav-height);
+  height: calc(100vh - var(--sl-nav-height));
+}
+
+.graphiql-table {
+  color: #F9F9F9;
+}
+
+.graphiql-sidebar {}
+
+.graphiql-logo-link {
+  display: none;
+}
+
+.graphiql-session-header {
+  height: 5px !important;
+}
+</style>

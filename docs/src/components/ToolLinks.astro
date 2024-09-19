@@ -1,0 +1,78 @@
+---
+import type { NoRepetition } from "#/lib/types.ts"
+import { Icon } from "@astrojs/starlight/components"
+
+type IconName = Parameters<typeof Icon>[number]["name"]
+
+interface Props {
+  tool: string
+  github: string
+  registries: NoRepetition<"npm" | "jsr.io" | "crates.io" | "github" | "dockerhub" | "ghcr.io">
+}
+
+const { tool, github, registries } = Astro.props
+
+const githubLink = `https://github.com/${github}`
+---
+
+<div class="flex row not-content">
+  <a href={github} class="flex" target="_blank">
+    <Icon name="github" class="size-4" />
+    GitHub
+  </a>
+  {
+    'npm' in registries && (
+      <a href={`https://npm.im/${tool}`} class="flex" target="_blank" rel="noopener noreferrer">
+        <Icon name="seti:npm" class="size-4" />
+        npm
+      </a>
+    )
+  }
+  {
+    'crates.io' in registries && (
+      <a
+        href={`https://crates.io/crates/${tool}`}
+        class="flex"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <svg viewBox="0 0 14 16" fill="currentColor" class="astro-hco4ssbz">
+          <path
+            d="M11.2468 4.54809L7 2L2.77581 4.53452L7.02308 6.98668L11.2468 4.54809ZM12 6.42265L8 8.73205V13.4L12 11V6.42265ZM2 6.396V11L6 13.4V8.7054L2 6.396ZM7 0L14 4V12L7 16L0 12V4L7 0Z"
+            class="astro-hco4ssbz"
+          />
+        </svg>
+        crates.io
+      </a>
+    )
+  }
+</div>
+
+<style>
+  .flex {
+    display: flex;
+    font-size: var(--sl-text-sm);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .flex.row {
+    gap: 0.5em 1.5em;
+  }
+
+  a {
+    gap: 0.5em;
+    color: var(--sl-color-text);
+    text-decoration: none;
+  }
+  a.flex:hover {
+    color: var(--sl-color-text-accent);
+    text-decoration: underline;
+  }
+  svg {
+    height: calc(var(--sl-text-sm) * 1.5);
+  }
+  .flex.api {
+    gap: 1em;
+  }
+</style>

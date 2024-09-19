@@ -17,6 +17,36 @@
   --nav-selected-color: #374151;
 }
 
+.starlight-aside {
+  border-radius: 0.5rem;
+}
+
+.sidebar-content {
+      height: 100%;
+    min-height: max-content;
+    padding: 0;
+    flex-direction: column;
+    gap: 1rem;
+    & section {
+    padding: 1rem var(--sl-sidebar-pad-x) 0;
+
+    }
+}
+
+.tablist-wrapper {
+  & ul {
+  padding: 0;
+  padding-top: 3px;
+  margin-bottom: 5px;
+}
+}
+
+a[href="#sidebar-panel-0"],
+a[href="#sidebar-panel-1"]
+{
+  border: unset;
+}
+
 h1 a,
 h2 a,
 h3 a,
@@ -62,6 +92,9 @@ h5 > a:hover::after {
 
 li a[aria-current="page"] {
   color: var(--nav-selected-color);
+}
+ul[data-astro-source-file$="@lorenzo_lewis/starlight-utils/components/NavLinks.astro"] {
+  margin-left: 10px;
 }
 
 a[aria-current="true"]
