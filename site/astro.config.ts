@@ -3,8 +3,8 @@ import { loadEnv } from "vite"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
 import tailwind from "@astrojs/tailwind"
+import { defineConfig } from "astro/config"
 import vercel from "@astrojs/vercel/serverless"
-import { defineConfig, envField } from "astro/config"
 import { markdownConfiguration } from "./markdown.config.ts"
 
 const SITE_URL = "https://union.build"
@@ -36,39 +36,6 @@ export default defineConfig({
       "raw.githubusercontent.com",
       "avatars.githubusercontent.com"
     ]
-  },
-  env: {
-    schema: {
-      /**
-       * none of the contentful environment variables are optional
-       * but this is a hack for nix build to work
-       */
-      CONTENTFUL_SPACE_ID: envField.string({
-        context: "client",
-        access: "public",
-        optional: true
-      }),
-      CONTENTFUL_ENVIRONMENT: envField.string({
-        context: "client",
-        access: "public",
-        optional: true
-      }),
-      CONTENTFUL_ACCESS_TOKEN: envField.string({
-        context: "client",
-        access: "public",
-        optional: true
-      }),
-      CONTENTFUL_PREVIEW_TOKEN: envField.string({
-        context: "client",
-        access: "public",
-        optional: true
-      }),
-      CONTENTFUL_DELIVERY_TOKEN: envField.string({
-        context: "client",
-        access: "public",
-        optional: true
-      })
-    }
   },
   markdown: markdownConfiguration,
   server: _ => ({ port: Number(PORT) }),
