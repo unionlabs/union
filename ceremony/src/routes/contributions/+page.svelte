@@ -7,6 +7,7 @@ import H4 from "$lib/components/typography/H4.svelte"
 import { page } from "$app/stores"
 import H2 from "$lib/components/typography/H2.svelte"
 import Button from "$lib/components/Button.svelte"
+import { toast } from "svelte-sonner"
 
 let hash = $derived($page.url.searchParams.get("hash"))
 
