@@ -52,6 +52,7 @@ typenum                  = { workspace = true, features = ["const-generics", "no
 uint                     = "*"
 wasmparser               = { version = "0.113" }
 
+base64.workspace     = true
 bcs                  = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
 bs58                 = "0.4"
