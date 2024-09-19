@@ -1,5 +1,13 @@
 BEGIN;
 
+-----------
+-- Erase --
+-----------
+ -- TRUNCATE TABLE auth.users CASCADE;
+ -- DELETE FROM storage.objects o
+ -- WHERE o.bucket_id = 'contributions'
+ -- AND o.name <> '00000000-0000-0000-0000-000000000000';
+
 -- Default bucket for contributions upload
 INSERT INTO storage.buckets(id, name, public) VALUES('contributions', 'contributions', false);
 
@@ -488,7 +496,7 @@ CREATE OR REPLACE VIEW current_user_state AS (
 ALTER VIEW current_user_state SET (security_invoker = off);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS users_contribution AS (
-  SELECT c.id, u.raw_user_meta_data->>'name' AS user_name, u.raw_user_meta_data->>'avatar_url' AS avatar_url, c.seq, q.payload_id, cs.public_key, cs.signature, cs.public_key_hash, s.started AS time_started, su.created_at AS time_submitted, c.created_at AS time_verified
+  SELECT c.id, COALESCE(u.raw_user_meta_data->>'user_name', u.raw_user_meta_data->>'name') AS user_name, u.raw_user_meta_data->>'avatar_url' AS avatar_url, c.seq, q.payload_id, cs.public_key, cs.signature, cs.public_key_hash, s.started AS time_started, su.created_at AS time_submitted, c.created_at AS time_verified
   FROM public.contribution c
   INNER JOIN public.queue q ON (c.id = q.id)
   INNER JOIN public.contribution_status s ON (c.id = s.id)
