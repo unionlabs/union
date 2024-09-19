@@ -29,7 +29,7 @@ impl Config {
             Some(internal_chain_id) => {
                 let record = sqlx::query!(
                     r#"
-                        SELECT MAX(height) as height
+                        SELECT MAX(height) + 1 as height
                         FROM hubble.contract_status
                         WHERE internal_chain_id = $1
                     "#,

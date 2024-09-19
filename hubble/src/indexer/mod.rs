@@ -14,7 +14,7 @@ use api::{
 use color_eyre::eyre::Report;
 use futures::StreamExt;
 use tokio::{task::JoinSet, time::sleep};
-use tracing::{error, info};
+use tracing::{error, info, info_span, Instrument};
 
 enum EndOfRunResult {
     Exit,
@@ -56,25 +56,34 @@ where
 
             match self
                 .create_fetcher_client(&mut join_set, self.context.clone())
+                .instrument(info_span!("creator"))
                 .await
             {
                 Some(fetcher_client) => {
                     let self_clone = self.clone();
                     let fetcher_client_clone = fetcher_client.clone();
-                    join_set
-                        .spawn(async move { self_clone.run_fetcher(fetcher_client_clone).await });
+                    join_set.spawn(
+                        async move { self_clone.run_fetcher(fetcher_client_clone).await }
+                            .instrument(info_span!("fetcher")),
+                    );
 
                     let self_clone = self.clone();
                     let fetcher_client_clone = fetcher_client.clone();
-                    join_set
-                        .spawn(async move { self_clone.run_finalizer(fetcher_client_clone).await });
+                    join_set.spawn(
+                        async move { self_clone.run_finalizer(fetcher_client_clone).await }
+                            .instrument(info_span!("finalizer")),
+                    );
 
                     let self_clone = self.clone();
                     let fetcher_client_clone = fetcher_client.clone();
-                    join_set.spawn(async move { self_clone.run_fixer(fetcher_client_clone).await });
+                    join_set.spawn(
+                        async move { self_clone.run_fixer(fetcher_client_clone).await }
+                            .instrument(info_span!("fixer")),
+                    );
 
                     if let EndOfRunResult::Exit = self
                         .handle_end_of_run(&mut join_set, fetcher_client)
+                        .instrument(info_span!("terminator"))
                         .await?
                     {
                         return Ok(());

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                        SELECT MAX(height) + 1 as height\n                        FROM hubble.contract_status\n                        WHERE internal_chain_id = $1\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "height",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d6c52cbf996f09ccbc32252e4849b60f6d0eb83b8f622083d53ebb4b79703fc4"
+}
