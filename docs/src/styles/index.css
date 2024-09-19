@@ -1,3 +1,7 @@
+input, textarea {
+  touch-action: manipulation;
+}
+
 g {
   margin-top: 12px !important;
   padding-top: 20px !important;

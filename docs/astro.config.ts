@@ -138,7 +138,7 @@ export default defineConfig({
                 {
                   label: "TypeScript SDK",
                   link: "/integrations/typescript",
-                  badge: { variant: "note", text: "new" }
+                  badge: { variant: "success", text: "new" }
                 },
                 {
                   label: "API",
@@ -168,28 +168,19 @@ export default defineConfig({
         {
           label: "API",
           items: [
-            { label: "GraphQL", link: "/reference/graphql" }
-            // { label: "OpenAPI", link: "/reference/openapi" }
+            {
+              label: "GraphQL",
+              link: "/reference/graphql",
+              badge: { text: "new", variant: "success" }
+            }
           ]
         }
-        // {
-        //   label: "leadingNavLinks",
-        //   items: [
-        //     { label: "Blog", link: "https://blog.union.build" },
-        //     { label: "Testnet App", link: "https://app.union.build" }
-        //   ]
-        // }
       ],
       plugins: [
         starlightUtils({
           multiSidebar: {
             switcherStyle: "horizontalList"
           }
-          // navLinks: {
-          //   leading: {
-          //     useSidebarLabelled: "leadingNavLinks"
-          //   }
-          // }
         }),
         starlightHeadingBadges(),
         starlightLinksValidator()
