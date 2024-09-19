@@ -5,9 +5,11 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte"
 const config = {
   preprocess: vitePreprocess(),
 
-  adapter: adapterStatic({
-    fallback: "index.html"
-  })
+  kit: {
+    adapter: adapterStatic({
+      fallback: "index.html"
+    }),
+  }
 }
 
 export default config
