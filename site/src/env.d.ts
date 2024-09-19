@@ -11,11 +11,14 @@ interface EnvironmentVariables {
   readonly PORT: string
   /* https://union.build in production, http://localhost:${PORT} in development */
   readonly SITE_URL: string
-  readonly CONTENTFUL_SPACE_ID: string
-  readonly CONTENTFUL_PREVIEW_TOKEN: string
-  readonly CONTENTFUL_DELIVERY_TOKEN: string
-  readonly CONTENTFUL_WEBHOOK_SECRET: string
-  readonly CONTENTFUL_MANAGEMENT_TOKEN: string
+  readonly PUBLIC_ENVIRONMENT: string
+  readonly PUBLIC_CONTENTFUL_SPACE_ID: string
+  readonly PUBLIC_CONTENTFUL_ENVIRONMENT: string
+  readonly PUBLIC_CONTENTFUL_ACCESS_TOKEN: string
+  readonly PUBLIC_CONTENTFUL_PREVIEW_TOKEN: string
+  readonly PUBLIC_CONTENTFUL_DELIVERY_TOKEN: string
+  readonly PUBLIC_CONTENTFUL_WEBHOOK_SECRET: string
+  readonly PUBLIC_CONTENTFUL_MANAGEMENT_TOKEN: string
 }
 
 // Node.js environment variables types

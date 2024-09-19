@@ -2,14 +2,14 @@
   perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, mkCi, ... }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with unstablePkgs; [ vips nodePackages_latest.nodejs ];
+      nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
         site = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-Ssi3vPVWqfYI9m+hW37YSmRqfocrkKBZKOQ1UwSW2rw=";
+          npmDepsHash = "sha256-lQitux06VwxsUT5QsZeqpYF7Rgz5ihCJixqGz03ApqM=";
           src = ./.;
           sourceRoot = "site";
           pname = packageJSON.name;
@@ -18,7 +18,7 @@
           buildInputs = combinedDeps;
           installPhase = ''
             mkdir -p $out
-            cp -r ./dist/* $out
+            cp -r ./.vercel/output/* $out
           '';
           doDist = false;
           PUPPETEER_SKIP_DOWNLOAD = 1;

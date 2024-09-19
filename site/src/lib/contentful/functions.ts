@@ -1,10 +1,8 @@
 import * as contentful from "contentful"
+import { env } from "#/lib/constants/env.ts"
 import { ContentfulLivePreview } from "@contentful/live-preview"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
-import { CONTENTFUL_SPACE_ID, CONTENTFUL_ACCESS_TOKEN } from "astro:env/client"
 import { BLOCKS, INLINES, MARKS, type Document } from "@contentful/rich-text-types"
-
-console.info({ CONTENTFUL_SPACE_ID, CONTENTFUL_ACCESS_TOKEN })
 
 export type ConfigOptions = {
   locale: string
@@ -22,9 +20,9 @@ export function initializeContentfulLivePreview({
   subscriptions
 }: ConfigOptions) {
   const contentfulClient = contentful.createClient({
-    space: CONTENTFUL_SPACE_ID,
+    space: env.CONTENTFUL_SPACE_ID,
     host: "preview.contentful.com",
-    accessToken: CONTENTFUL_ACCESS_TOKEN
+    accessToken: env.CONTENTFUL_ACCESS_TOKEN
   })
   ContentfulLivePreview.init({
     locale,
