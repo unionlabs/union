@@ -44,7 +44,9 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use types::Status;
 
-const ENDPOINT: &str = "/contribute";
+const CONTRIBUTE_ENDPOINT: &str = "/contribute";
+const SK_ENDPOINT: &str = "/secret_key";
+const CLEAR_ENDPOINT: &str = "/clear";
 
 const CONTRIB_SK_PATH: &str = "contrib_key.sk.asc";
 
@@ -383,9 +385,33 @@ async fn handle(
             .body(body)
             .unwrap())
     };
+    let raw_response = |status, body| {
+        Ok(hyper::Response::builder()
+            .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+            .header(hyper::header::CONTENT_TYPE, "application/octet-stream")
+            .header(
+                hyper::header::CONTENT_DISPOSITION,
+                format!("attachment; filename={CONTRIB_SK_PATH}"),
+            )
+            .status(status)
+            .body(body)
+            .unwrap())
+    };
     let response_empty = |status| response(status, BoxBody::default());
     match (req.method(), req.uri().path()) {
-        (&Method::POST, ENDPOINT)
+        (&Method::POST, CLEAR_ENDPOINT) => {
+            let _ = tokio::fs::remove_file(CONTRIB_SK_PATH).await;
+            response_empty(hyper::StatusCode::OK)
+        }
+        (&Method::GET, SK_ENDPOINT) => {
+            if let Ok(_) = tokio::fs::metadata(CONTRIB_SK_PATH).await {
+                let content = tokio::fs::read(CONTRIB_SK_PATH).await?;
+                raw_response(hyper::StatusCode::OK, full(content))
+            } else {
+                response_empty(hyper::StatusCode::NOT_FOUND)
+            }
+        }
+        (&Method::POST, CONTRIBUTE_ENDPOINT)
             if lock
                 .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
                 .is_ok() =>
@@ -416,8 +442,10 @@ async fn handle(
             response_empty(hyper::StatusCode::ACCEPTED)
         }
         // FE must poll GET and dispatch accordingly.
-        (&Method::POST, ENDPOINT) => response_empty(hyper::StatusCode::SERVICE_UNAVAILABLE),
-        (&Method::GET, ENDPOINT) => match latest_status.read().await.clone() {
+        (&Method::POST, CONTRIBUTE_ENDPOINT) => {
+            response_empty(hyper::StatusCode::SERVICE_UNAVAILABLE)
+        }
+        (&Method::GET, CONTRIBUTE_ENDPOINT) => match latest_status.read().await.clone() {
             Status::Failed(e) => {
                 lock.compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
                     .expect("impossible");
@@ -434,24 +462,26 @@ async fn handle(
             ),
         },
         // CORS preflight request.
-        (&Method::OPTIONS, ENDPOINT) => Ok(hyper::Response::builder()
-            .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-            .header(
-                hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
-                hyper::header::CONTENT_TYPE,
-            )
-            .header(
-                hyper::header::ACCESS_CONTROL_ALLOW_METHODS,
-                format!(
-                    "{}, {}, {}",
-                    Method::OPTIONS.as_str(),
-                    Method::GET.as_str(),
-                    Method::POST.as_str()
-                ),
-            )
-            .status(hyper::StatusCode::OK)
-            .body(BoxBody::default())
-            .unwrap()),
+        (&Method::OPTIONS, CONTRIBUTE_ENDPOINT | SK_ENDPOINT | CLEAR_ENDPOINT) => {
+            Ok(hyper::Response::builder()
+                .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                .header(
+                    hyper::header::ACCESS_CONTROL_ALLOW_HEADERS,
+                    hyper::header::CONTENT_DISPOSITION,
+                )
+                .header(
+                    hyper::header::ACCESS_CONTROL_ALLOW_METHODS,
+                    format!(
+                        "{}, {}, {}",
+                        Method::OPTIONS.as_str(),
+                        Method::GET.as_str(),
+                        Method::POST.as_str()
+                    ),
+                )
+                .status(hyper::StatusCode::OK)
+                .body(BoxBody::default())
+                .unwrap())
+        }
         _ => response_empty(hyper::StatusCode::NOT_FOUND),
     }
 }
