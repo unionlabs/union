@@ -30,20 +30,40 @@ let addressValidState: ValidState = $state("PENDING")
 
 <div class="p-8 w-full flex items-center justify-center flex-col">
 
-  {#if contributor.state === 'inQueue'}
-    <H1>You are <span class="!text-union-accent-500">{contributor.queueState.position}<span
-            class="lowercase">{getNumberSuffix(contributor.queueState.position)}</span> </span> in queue</H1>
-    <SwimLoad max={100} current={50}/>
-    <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
-    <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span> (est.).
-    </H3>
+  <H1>
+    <Blink
+            loading={contributor.state === 'contributing'}
+            sleep={contributor.clientState === 'offline'}
+    />
+  </H1>
+  <H1>{contributor.clientState}</H1>
 
-    <H2>Get your nft</H2>
-    <AddressForm class="" onValidation={result => (addressValidState = result)}/>
+  {#if contributor.clientState === 'offline'}
+    <Install/>
+  {/if}
 
-    {#if contributor.clientState === 'offline'}
-      <Install/>
-    {/if}
+
+  {#if contributor.state !== 'inQueue'}
+
+    <div class="border p-8 w-full max-w-4xl flex flex-col items-center">
+      <H1>You are <span class="!text-union-accent-500">{contributor.queueState.position}<span
+              class="lowercase">{getNumberSuffix(contributor.queueState.position)}</span> </span> in queue</H1>
+
+      <SwimLoad max={contributor.queueState.count} current={contributor.queueState.position}/>
+
+      <div class="mb-4 text-center">
+        <H2>Queue length: <span class="text-union-accent-500">{contributor.queueState.count}</span></H2>
+        <H3>Waiting time: <span class="text-union-accent-500">{contributor.queueState.estimatedTime} minutes</span>
+          (est.).
+        </H3>
+      </div>
+
+      <div class="text-center">
+        <H2 class="mb-2">Get your nft</H2>
+        <AddressForm class="" onValidation={result => (addressValidState = result)}/>
+      </div>
+    </div>
+
 
   {:else if contributor.state === 'contribute'}
     <H1>Starting contribution...</H1>
@@ -58,7 +78,7 @@ let addressValidState: ValidState = $state("PENDING")
 
     <div class="flex flex-col justify-center items-center gap-4">
       <H1>Thank you! Your contribution is completed.</H1>
-      <Tweet />
+      <Tweet/>
     </div>
 
   {:else if contributor.state === 'noClient'}
@@ -74,11 +94,4 @@ let addressValidState: ValidState = $state("PENDING")
 
 
 <div class="absolute bottom-10 flex flex-col px-8 text-center gap-4">
-  <H4>
-    <Blink
-            loading={contributor.state === 'contributing'}
-            sleep={contributor.clientState === 'offline'}
-    />
-  </H4>
-  <H4>{contributor.clientState}</H4>
 </div>
