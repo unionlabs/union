@@ -31,7 +31,7 @@ let addressValidState: ValidState = $state("PENDING")
 
 <div class="p-8 w-full flex items-center justify-center flex-col">
 
-  {#if contributor.state !== 'inQueue'}
+  {#if contributor.state === 'inQueue'}
 
     <Status {contributor} />
 
