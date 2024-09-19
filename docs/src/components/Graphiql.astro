@@ -1,0 +1,96 @@
+---
+import "graphiql/graphiql.min.css"
+import "@graphiql/plugin-explorer/dist/style.css"
+
+interface Props {}
+---
+
+<article id="graphiql">...</article>
+
+<script>
+  const footerElement = document.querySelector('footer.sl-flex')
+  footerElement?.remove()
+  const asideElement = document.querySelector('aside.right-sidebar-container')
+  asideElement?.remove()
+</script>
+
+<script>
+  import * as React from 'react'
+  import { dedent } from 'ts-dedent'
+  import { GraphiQL } from 'graphiql'
+  import ReactDOM from 'react-dom/client'
+  import { createGraphiQLFetcher } from '@graphiql/toolkit'
+  import { explorerPlugin } from '@graphiql/plugin-explorer'
+
+  const graphqlElement = document.querySelector('article#graphiql')
+  const root = ReactDOM.createRoot(graphqlElement as HTMLElement)
+  const GRAPHQL_ENDPOINT = 'https://graphql.union.build/v1/graphql'
+  const fetcher = createGraphiQLFetcher({
+    url: GRAPHQL_ENDPOINT,
+    enableIncrementalDelivery: true,
+  })
+
+  root.render(
+    React.createElement(GraphiQL, {
+      fetcher,
+      disableTabs: true,
+      plugins: [explorerPlugin()],
+      isHeadersEditorEnabled: false,
+      defaultEditorToolsVisibility: true,
+      defaultQuery: /* GraphQL */ `
+        query UserTransfers {
+          v0_transfers(where: { sender: { _eq: "union17ttpfu2xsmfxu6shl756mmxyqu33l5ljs5j6md" } }) {
+            source_transaction_hash
+            destination_transaction_hash
+          }
+        }
+      `,
+    }),
+  )
+</script>
+
+<style lang="postcss" is:global>
+  main[data-pagefind-body] {
+    padding: 0;
+    margin-top: -16px;
+    height: 100% !important;
+  }
+  .main-pane {
+    height: 100% !important;
+    width: 100% !important;
+  }
+  .content-panel {
+    padding: 0;
+  }
+  .sl-flex {}
+  .right-sidebar-container {
+    display: none;
+    width: 0px;
+  }
+
+  .sl-markdown-content :not(a, strong, em, del, span, input, code) + :not(a, strong, em, del, span, input, code, :where(.not-content *)) {
+    margin: 0;
+  }
+.sl-container, .sl-markdown-content {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+}
+      #graphiql {
+      height: 100vh;
+    }
+        .graphiql-table {
+      color: #F9F9F9;
+    }
+
+    .graphiql-sidebar {
+
+    }
+    /* .graphiql-session-header {
+      height: 10px !important;
+    } */
+    .graphiql-logo-link {
+      display: none;
+    }
+</style>
