@@ -8,7 +8,8 @@ import {
   queryAllowance,
   queryContributions,
   queryUserContribution,
-  queryUserPublicHash
+  queryUserPublicHash,
+  queryUserWallet
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
@@ -169,4 +170,16 @@ export const getPublicHash = async () => {
   if (error || !data) return undefined
 
   return data.public_key_hash
+}
+
+export const getUserWallet = async (userId: string | undefined) => {
+  if (!userId) {
+    console.log("Need to be logged in to get allowance state")
+    return undefined
+  }
+
+  const { data, error } = await queryUserWallet(userId)
+  if (error || !data) return undefined
+
+  return data.wallet
 }

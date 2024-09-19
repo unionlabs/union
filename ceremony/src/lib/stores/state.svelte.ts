@@ -1,6 +1,11 @@
 import { getContext, onDestroy, setContext } from "svelte"
 import { checkState } from "$lib/client"
-import { getAllowanceState, getUserQueueInfo, getContributionState } from "$lib/supabase"
+import {
+  getAllowanceState,
+  getUserQueueInfo,
+  getContributionState,
+  getUserWallet
+} from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
 
@@ -67,6 +72,7 @@ export class ContributorState {
   state = $state<State>("loading")
   clientState = $state<ClientState>("offline")
   contributionState = $state<ContributionState>("notContributed")
+  userWallet = $state("")
   queueState = $state<UserContext>({
     position: null,
     count: null,
@@ -100,6 +106,7 @@ export class ContributorState {
     if (this.userId === undefined && userId) {
       this.userId = userId
       this.loggedIn = true
+      this.checkUserWallet(userId)
       this.checkAllowanceState(userId)
       this.startPolling()
     }
@@ -108,6 +115,11 @@ export class ContributorState {
   async checkAllowanceState(userId: string | undefined): Promise<AllowanceState> {
     this.allowanceState = await getAllowanceState(userId)
     return this.allowanceState
+  }
+
+  async checkUserWallet(userId: string | undefined): Promise<string> {
+    this.userWallet = await getUserWallet(userId)
+    return this.userWallet
   }
 
   setAllowanceState(state: AllowanceState) {

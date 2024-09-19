@@ -7,13 +7,15 @@ import { isValidBech32Address } from "./validator.ts"
 import type { HTMLInputAttributes } from "svelte/elements"
 import { insertWalletData } from "$lib/supabase"
 import { user } from "$lib/stores/user.svelte.ts"
+import type { ContributorState } from "$lib/stores/state.svelte.ts"
 
 interface Props extends HTMLInputAttributes {
   class?: string
   onValidation: (valid: ValidState) => ValidState
+  contributor: ContributorState
 }
 
-let { onValidation, class: className = "", ...props }: Props = $props()
+let { onValidation, class: className = "", contributor, ...props }: Props = $props()
 
 let inputText = $state("")
 const debouncedInputText = new Debounced(
@@ -47,6 +49,7 @@ const onAddressSubmit = async (event: Event) => {
       })
       if (result) {
         toast.success("Wallet address saved successfully")
+        contributor.checkUserWallet(user.session?.user.id)
       } else {
         toast.error("Failed to save wallet address")
       }

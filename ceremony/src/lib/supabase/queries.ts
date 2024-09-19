@@ -95,3 +95,13 @@ export const queryUserPublicHash = async (id: string) => {
 
   return { data, error }
 }
+
+export const queryUserWallet = async (id: string) => {
+  const { data, error } = await supabase
+    .from("wallet_address")
+    .select("wallet")
+    .eq("id", id)
+    .single()
+
+  return { data, error }
+}
