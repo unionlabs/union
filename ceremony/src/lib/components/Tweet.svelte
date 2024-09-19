@@ -1,18 +1,22 @@
 <script lang="ts">
 import Button from "$lib/components/Button.svelte"
+import { getPublicHash } from "$lib/supabase"
 
-type Props = {
-  tweetText?: string
-  url?: string
+let hash = $state(undefined)
+
+async function getHash() {
+  hash = await getPublicHash()
 }
 
-let { tweetText, url }: Props = $props()
+$effect(() => {
+  getHash()
+})
 
 function shareOnTwitter() {
-  const tweetText = "I've contributed to Union Ceremony\n\n"
+  let url = `https://ceremony.union.build/contributions/${hash}`
+  const tweetText = `I've contributed to Union Ceremony\n\n${url}`
   const twitterIntentUrl = new URL("https://twitter.com/intent/tweet")
   twitterIntentUrl.searchParams.append("text", tweetText)
-  if (url) twitterIntentUrl.searchParams.append("url", url)
   window.open(twitterIntentUrl.toString(), "_blank")
 }
 </script>

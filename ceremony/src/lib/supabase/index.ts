@@ -7,7 +7,8 @@ import {
   getUserQueuePosition,
   queryAllowance,
   queryContributions,
-  queryUserContribution
+  queryUserContribution,
+  queryUserPublicHash
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
@@ -158,4 +159,16 @@ export const insertWalletData = async (data: WalletData) => {
   }
 
   return insertedData
+}
+
+export const getPublicHash = async () => {
+  const userId = user.session?.user.id
+  if (!userId) {
+    throw new Error("User ID is required")
+  }
+
+  const { data, error } = await queryUserPublicHash(userId)
+  if (error || !data) return undefined
+
+  return data.public_key_hash
 }

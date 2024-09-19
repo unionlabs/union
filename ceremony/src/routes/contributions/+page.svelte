@@ -44,3 +44,4 @@ $effect(() => {
 {:else}
   <Spinner class="size-5 text-union-accent-500"/>
 {/if}
+

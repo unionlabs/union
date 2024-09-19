@@ -58,14 +58,16 @@ let addressValidState: ValidState = $state("PENDING")
 
     <div class="flex flex-col justify-center items-center gap-4">
       <H1>Thank you! Your contribution is completed.</H1>
-      <Tweet url="https://union.build"/>
+      <Tweet />
     </div>
 
   {:else if contributor.state === 'noClient'}
     <H1>No client. Cannot start contribution.</H1>
     <Install/>
+
   {:else}
     <H1>Not able to contribute at this time</H1>
+
   {/if}
 
 </div>

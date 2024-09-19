@@ -85,3 +85,13 @@ export const queryUserContribution = async (hash: string) => {
 
   return { data, error }
 }
+
+export const queryUserPublicHash = async (id: string) => {
+  const { data, error } = await supabase
+    .from("contribution_signature")
+    .select("public_key_hash")
+    .eq("id", id)
+    .single()
+
+  return { data, error }
+}
