@@ -28,7 +28,8 @@ CREATE POLICY allow_insert_self
     );
 
 CREATE TABLE waitlist(
-  id UUID PRIMARY KEY
+  id UUID PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT(now())
 );
 
 ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
@@ -47,8 +48,21 @@ CREATE POLICY allow_insert_self
   FOR INSERT
     TO authenticated
     WITH CHECK (
-      (SELECT auth.uid()) = id
+      (SELECT auth.uid()) = id AND open_to_public() = false
     );
+
+CREATE OR REPLACE FUNCTION waitlist_overwrite_timestamp() RETURNS TRIGGER AS $$
+BEGIN
+  NEW.created_at = now();
+  RETURN NEW;
+END
+$$ LANGUAGE plpgsql SET search_path = '';
+
+CREATE TRIGGER waitlist_overwrite_timestamp
+BEFORE INSERT
+ON waitlist
+FOR EACH ROW
+EXECUTE FUNCTION waitlist_overwrite_timestamp();
 
 -----------
 -- Queue --
@@ -162,7 +176,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 -------------------------
 CREATE OR REPLACE FUNCTION expiration_delay() RETURNS INTERVAL AS $$
 BEGIN
-  RETURN INTERVAL '30 minutes';
+  RETURN INTERVAL '1 hour';
 END
 $$ LANGUAGE plpgsql SET search_path = '';
 
@@ -439,11 +453,13 @@ EXECUTE FUNCTION set_contribution_submitted_trigger();
 CREATE TABLE contribution_signature(
   id uuid PRIMARY KEY,
   public_key text NOT NULL,
-  signature text NOT NULL
+  signature text NOT NULL,
+  public_key_hash text GENERATED ALWAYS AS (encode(sha256(decode(public_key, 'hex')), 'hex')) STORED
 );
 
 ALTER TABLE contribution_signature ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contribution_signature ADD FOREIGN KEY (id) REFERENCES contribution_status(id);
+CREATE UNIQUE INDEX idx_contribution_signature_pkh ON contribution_signature(public_key_hash);
 
 CREATE POLICY view_all
   ON contribution_signature
@@ -471,17 +487,20 @@ CREATE OR REPLACE VIEW current_user_state AS (
 
 ALTER VIEW current_user_state SET (security_invoker = off);
 
-CREATE OR REPLACE VIEW users_contribution AS (
-  SELECT c.id, u.raw_user_meta_data->>'user_name' AS user_name, u.raw_user_meta_data->>'avatar_url' AS avatar_url, c.seq, q.payload_id, cs.public_key, cs.signature
+CREATE MATERIALIZED VIEW IF NOT EXISTS users_contribution AS (
+  SELECT c.id, u.raw_user_meta_data->>'name' AS user_name, u.raw_user_meta_data->>'avatar_url' AS avatar_url, c.seq, q.payload_id, cs.public_key, cs.signature, cs.public_key_hash, s.started AS time_started, su.created_at AS time_submitted, c.created_at AS time_verified
   FROM public.contribution c
   INNER JOIN public.queue q ON (c.id = q.id)
+  INNER JOIN public.contribution_status s ON (c.id = s.id)
+  INNER JOIN public.contribution_submitted su ON (c.id = su.id)
   INNER JOIN public.contribution_signature cs ON (c.id = cs.id)
   INNER JOIN auth.users u ON (c.id = u.id)
   WHERE c.success
   ORDER BY c.seq ASC
 );
 
-ALTER VIEW users_contribution SET (security_invoker = on);
+CREATE UNIQUE INDEX idx_users_contribution_user_id ON users_contribution(id);
+CREATE UNIQUE INDEX idx_users_contribution_pkh ON users_contribution(public_key_hash);
 
 ----------
 -- CRON --
@@ -489,5 +508,7 @@ ALTER VIEW users_contribution SET (security_invoker = on);
 
 -- Will rotate the current contributor if the slot expired without any contribution submitted
 SELECT cron.schedule('update-contributor', '10 seconds', 'CALL set_next_contributor()');
+
+SELECT cron.schedule('update-users-contribution', '30 seconds', 'REFRESH MATERIALIZED VIEW CONCURRENTLY public.users_contribution');
 
 COMMIT;
