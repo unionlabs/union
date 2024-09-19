@@ -1,13 +1,13 @@
 use std::collections::VecDeque;
 
-use aptos_move_ibc::ibc::{self, ClientExt as _};
+use aptos_move_ibc::ibc::ClientExt as _;
 use aptos_rest_client::error::RestError;
 use call::FetchUpdate;
 use jsonrpsee::core::{async_trait, RpcResult};
 use queue_msg::{call, data, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, instrument, warn};
+use tracing::{debug, instrument};
 use unionlabs::{
     aptos::{
         account::AccountAddress, state_proof::StateProof,
@@ -253,7 +253,7 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
         let vault_addr = self
             .ctx
             .get_vault_addr(
-                self.ctx.ibc_handler_address.0.get().clone().into(),
+                (*self.ctx.ibc_handler_address.0.get()).into(),
                 Some(ledger_version),
             )
             .await

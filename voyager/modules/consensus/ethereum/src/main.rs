@@ -452,7 +452,7 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
                     .ctx
                     .provider
                     .get_proof(
-                        ethers::types::H160::from(self.ctx.ibc_handler_address.0),
+                        ethers::types::H160::from(*self.ctx.ibc_handler_address.get()),
                         vec![],
                         Some(bootstrap.header.execution.block_number.into()),
                     )

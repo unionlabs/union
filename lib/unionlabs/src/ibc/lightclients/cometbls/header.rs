@@ -116,13 +116,13 @@ mod tests {
             signed_header: LightHeader {
                 height: 3683.try_into().unwrap(),
                 time: "2024-09-09T18:06:26.197881152Z".parse().unwrap(),
-                validators_hash: H256(hex!(
+                validators_hash: H256::new(hex!(
                     "2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d"
                 )),
-                next_validators_hash: H256(hex!(
+                next_validators_hash: H256::new(hex!(
                     "2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d"
                 )),
-                app_hash: H256(hex!(
+                app_hash: H256::new(hex!(
                     "fc45a4f41582fbfc1e3b7f79b0fd39d5f738133e68fdd47468fb037b0a44c9da"
                 )),
             },

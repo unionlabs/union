@@ -66,7 +66,7 @@ pub struct MimcSafeBytes {
 impl MimcSafeBytes {
     #[must_use]
     pub fn into_bytes(self) -> Vec<u8> {
-        [self.lsb.0, self.msb.0].concat()
+        [*self.lsb.get(), *self.msb.get()].concat()
     }
 }
 

@@ -519,7 +519,7 @@ mod tests {
             &proof,
             &SDK_SPECS,
             &MerkleRoot {
-                hash: unionlabs::hash::H256(root),
+                hash: unionlabs::hash::H256::new(root),
             },
             &[b"ibc".to_vec(), key.to_vec()],
             ConnectionEnd {

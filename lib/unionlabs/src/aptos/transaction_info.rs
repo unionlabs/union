@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::InvalidLength,
-    hash::hash_v2::{Hash, HexUnprefixed},
+    hash::{hash_v2::HexUnprefixed, H256},
 };
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
@@ -32,26 +32,26 @@ pub struct TransactionInfoV0 {
     pub status: ExecutionStatus,
 
     /// The hash of this transaction.
-    pub transaction_hash: Hash<32, HexUnprefixed>,
+    pub transaction_hash: H256<HexUnprefixed>,
 
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
-    pub event_root_hash: Hash<32, HexUnprefixed>,
+    pub event_root_hash: H256<HexUnprefixed>,
 
     /// The hash value summarizing all changes caused to the world state by this transaction.
     /// i.e. hash of the output write set.
-    pub state_change_hash: Hash<32, HexUnprefixed>,
+    pub state_change_hash: H256<HexUnprefixed>,
 
     /// The root hash of the Sparse Merkle Tree describing the world state at the end of this
     /// transaction. Depending on the protocol configuration, this can be generated periodical
     /// only, like per block.
-    pub state_checkpoint_hash: Option<Hash<32, HexUnprefixed>>,
+    pub state_checkpoint_hash: Option<H256<HexUnprefixed>>,
 
     /// Potentially summarizes all evicted items from state. Always `None` for now.
-    pub state_cemetery_hash: Option<Hash<32, HexUnprefixed>>,
+    pub state_cemetery_hash: Option<H256<HexUnprefixed>>,
 }
 
 // impl TransactionInfoV0 {
-//     pub fn hash(&self) -> Hash<32, HexUnprefixed> {
+//     pub fn hash(&self) -> H256<HexUnprefixed> {
 //         let mut state = Sha3_256::new();
 //         state.update(
 //             Sha3_256::new()
@@ -59,7 +59,7 @@ pub struct TransactionInfoV0 {
 //                 .finalize(),
 //         );
 //         bcs::serialize_into(&mut state, &self).expect("expected to be able to serialize");
-//         Hash<32, HexUnprefixed>(state.finalize().into())
+//         H256<HexUnprefixed>(state.finalize().into())
 //     }
 // }
 

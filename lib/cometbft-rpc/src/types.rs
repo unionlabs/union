@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedU8,
     google::protobuf::timestamp::Timestamp,
-    hash::{H160, H256},
+    hash::{hash_v2::HexUnprefixed, H160, H256},
     tendermint::{
         abci::{exec_tx_result::ExecTxResult, response_query::ResponseQuery},
         crypto::public_key::PublicKey,
@@ -47,17 +47,13 @@ pub struct StatusResponse {
 #[serde(deny_unknown_fields)]
 pub struct SyncInfo {
     pub catching_up: bool,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed_maybe_empty")]
-    pub earliest_app_hash: Option<H256>,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed_maybe_empty")]
-    pub earliest_block_hash: Option<H256>,
+    pub earliest_app_hash: Option<H256<HexUnprefixed>>,
+    pub earliest_block_hash: Option<H256<HexUnprefixed>>,
     #[serde(with = "::serde_utils::string")]
     pub earliest_block_height: u64,
     pub earliest_block_time: Timestamp,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub latest_app_hash: H256,
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub latest_block_hash: H256,
+    pub latest_app_hash: H256<HexUnprefixed>,
+    pub latest_block_hash: H256<HexUnprefixed>,
     #[serde(with = "::serde_utils::string")]
     pub latest_block_height: u64,
     pub latest_block_time: Timestamp,
@@ -66,8 +62,7 @@ pub struct SyncInfo {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ValidatorInfo {
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub address: H160,
+    pub address: H160<HexUnprefixed>,
     #[serde(deserialize_with = "serde_as::<_, protos::tendermint::crypto::PublicKey, _>")]
     pub pub_key: PublicKey,
     // REVIEW: is this bounded the same way as Validator?
@@ -119,8 +114,7 @@ pub struct CommitResponse {
 #[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TxResponse {
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub hash: H256,
+    pub hash: H256<HexUnprefixed>,
     // review: is this really optional?
     #[serde(with = "::serde_utils::string_opt")]
     pub height: Option<NonZeroU64>,
@@ -158,6 +152,5 @@ pub struct BroadcastTxSyncResponse {
 
     pub log: String,
 
-    #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub hash: H256,
+    pub hash: H256<HexUnprefixed>,
 }

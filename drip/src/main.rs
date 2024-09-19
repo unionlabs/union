@@ -22,7 +22,11 @@ use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use tokio::net::TcpListener;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::EnvFilter;
-use unionlabs::{hash::H256, signer::CosmosSigner, ErrorReporter};
+use unionlabs::{
+    hash::{hash_v2::HexUnprefixed, H256},
+    signer::CosmosSigner,
+    ErrorReporter,
+};
 
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
@@ -180,7 +184,7 @@ async fn main() {
                                 i += 1;
                             }
                             // this will be displayed to users, print the hash in the same way that cosmos sdk does
-                            Ok(tx_hash) => break tx_hash.to_string_unprefixed().to_uppercase(),
+                            Ok(tx_hash) => break tx_hash.into_encoding::<HexUnprefixed>().to_string().to_uppercase(),
                         };
                     };
 

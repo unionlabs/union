@@ -31,7 +31,7 @@ mod tests {
         let hash = create_object_address(address, b"Vault Seed Example");
 
         assert_eq!(
-            H256::from(hex!(
+            <H256>::from(hex!(
                 "14117a3adabf98fc2affa2f1583c201d348a6cb5791d94286987fffa49bb8bcb"
             )),
             hash

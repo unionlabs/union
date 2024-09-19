@@ -3,7 +3,10 @@ use macros::model;
 use super::epoch_state::{EpochState, TryFromEpochStateError};
 use crate::{
     errors::InvalidLength,
-    hash::hash_v2::{Hash, HexUnprefixed},
+    hash::{
+        hash_v2::{Hash, HexUnprefixed},
+        H256,
+    },
 };
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
@@ -35,9 +38,9 @@ pub struct BlockInfo {
     /// The consensus protocol is executed in rounds, which monotonically increase per epoch.
     pub round: Round,
     /// The identifier (hash) of the block.
-    pub id: Hash<32, HexUnprefixed>,
+    pub id: H256<HexUnprefixed>,
     /// The accumulator root hash after executing this block.
-    pub executed_state_id: Hash<32, HexUnprefixed>,
+    pub executed_state_id: H256<HexUnprefixed>,
     /// The version of the latest transaction after executing this block.
     pub version: Version,
     /// The timestamp this block was proposed by a proposer.
@@ -79,7 +82,7 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::BlockInfo> for Bloc
         Ok(Self {
             epoch: value.epoch,
             round: value.round,
-            id: Hash::try_from(value.id).map_err(TryFromBlockInfoError::Id)?,
+            id: H256::try_from(value.id).map_err(TryFromBlockInfoError::Id)?,
             executed_state_id: Hash::try_from(value.executed_state_id)
                 .map_err(TryFromBlockInfoError::ExecutedStateId)?,
             version: value.version,

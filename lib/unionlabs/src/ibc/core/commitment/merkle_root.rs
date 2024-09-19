@@ -47,7 +47,7 @@ impl TryFrom<protos::ibc::core::commitment::v1::MerkleRoot> for MerkleRoot {
 impl From<MerkleRoot> for IbcCoreCommitmentV1MerkleRootData {
     fn from(value: MerkleRoot) -> Self {
         Self {
-            hash: value.hash.into(),
+            hash: value.hash.get().into(),
         }
     }
 }
@@ -58,7 +58,7 @@ impl TryFrom<IbcCoreCommitmentV1MerkleRootData> for MerkleRoot {
 
     fn try_from(value: IbcCoreCommitmentV1MerkleRootData) -> Result<Self, Self::Error> {
         Ok(Self {
-            hash: value.hash.try_into()?,
+            hash: value.hash.to_vec().try_into()?,
         })
     }
 }

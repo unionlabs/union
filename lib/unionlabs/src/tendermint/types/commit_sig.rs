@@ -98,6 +98,7 @@ impl TryFrom<contracts::glue::TendermintTypesCommitSigData> for CommitSig {
             BlockIdFlag::Commit => Ok(Self::Commit {
                 validator_address: value
                     .validator_address
+                    .to_vec()
                     .try_into()
                     .map_err(TryFromEthAbiCommitSigError::ValidatorAddress)?,
                 timestamp: value
@@ -109,6 +110,7 @@ impl TryFrom<contracts::glue::TendermintTypesCommitSigData> for CommitSig {
             BlockIdFlag::Nil => Ok(Self::Nil {
                 validator_address: value
                     .validator_address
+                    .to_vec()
                     .try_into()
                     .map_err(TryFromEthAbiCommitSigError::ValidatorAddress)?,
                 timestamp: value
@@ -204,7 +206,7 @@ impl From<CommitSig> for contracts::glue::TendermintTypesCommitSigData {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Commit.into(),
-                validator_address: validator_address.into(),
+                validator_address: validator_address.get().into(),
                 timestamp: timestamp.into(),
                 signature: signature.into(),
             },
@@ -214,7 +216,7 @@ impl From<CommitSig> for contracts::glue::TendermintTypesCommitSigData {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Nil.into(),
-                validator_address: validator_address.into(),
+                validator_address: validator_address.get().into(),
                 timestamp: timestamp.into(),
                 signature: signature.into(),
             },

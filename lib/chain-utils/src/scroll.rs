@@ -203,7 +203,7 @@ impl Scroll {
             .l1
             .provider
             .get_storage_at(
-                ethers::types::H160(self.rollup_contract_address.0),
+                ethers::types::H160(*self.rollup_contract_address.get()),
                 H256::from(self.rollup_last_finalized_batch_index_slot.to_be_bytes()).into(),
                 Some(ethers::types::BlockId::Number(
                     ethers::types::BlockNumber::Number(execution_height.into()),
@@ -319,7 +319,7 @@ impl Scroll {
         let storage_root = self
             .provider
             .get_storage_at(
-                ethers::types::H160(self.rollup_contract_address.0),
+                ethers::types::H160(*self.rollup_contract_address.get()),
                 H256::from(self.rollup_last_finalized_batch_index_slot.to_be_bytes()).into(),
                 Some(ethers::types::BlockId::Number(
                     ethers::types::BlockNumber::Number(scroll_height.into()),

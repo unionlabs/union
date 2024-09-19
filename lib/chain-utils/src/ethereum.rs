@@ -580,7 +580,7 @@ impl EthereumStateRead for CommitmentPath {
             .unwrap()
             .into();
 
-        if commitment == H256::ZERO {
+        if commitment == <H256>::default() {
             None
         } else {
             Some(commitment)
@@ -607,7 +607,7 @@ impl EthereumStateRead for AcknowledgementPath {
             .unwrap()
             .into();
 
-        if ack_commitment == H256::ZERO {
+        if ack_commitment == <H256>::default() {
             None
         } else {
             Some(ack_commitment)

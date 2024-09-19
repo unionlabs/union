@@ -7,14 +7,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::InvalidLength,
-    hash::hash_v2::{Hash, HexUnprefixed},
+    hash::{
+        hash_v2::{Hash, HexUnprefixed},
+        H256,
+    },
 };
 
 #[derive(
     macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
 )]
 #[debug("AccountAddress({})", self)]
-pub struct AccountAddress(pub Hash<32, HexUnprefixed>);
+pub struct AccountAddress(pub H256<HexUnprefixed>);
 
 impl AccountAddress {
     /// Returns whether the address is a "special" address. Addresses are considered
@@ -28,8 +31,10 @@ impl AccountAddress {
     /// <https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md>
     #[must_use]
     pub fn is_special(&self) -> bool {
-        self.0.as_ref()[..32 - 1].iter().all(|x| *x == 0)
-            && is_special_byte(self.0.as_ref()[32 - 1])
+        (self.0).get()[..<H256>::BYTES_LEN - 1]
+            .iter()
+            .all(|x| *x == 0)
+            && is_special_byte((self.0).get()[<H256>::BYTES_LEN - 1])
     }
 }
 

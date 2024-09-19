@@ -86,7 +86,7 @@ pub fn compute_domain(
 
     let mut domain = [0; 32];
     domain[..4].copy_from_slice(&domain_type.0);
-    domain[4..].copy_from_slice(&fork_data_root.0[..28]);
+    domain[4..].copy_from_slice(&fork_data_root.get()[..28]);
 
     Domain(domain)
 }
@@ -157,9 +157,9 @@ pub fn validate_merkle_branch<'a>(
                 let val = index / v % 2;
                 value = Sha256::digest(
                     if val == 1 {
-                        [b.0, value.0]
+                        [*b.get(), *value.get()]
                     } else {
-                        [value.0, b.0]
+                        [*value.get(), *b.get()]
                     }
                     .concat(),
                 )
@@ -257,13 +257,13 @@ mod tests {
     fn compute_domain_works() {
         let domain_type = DomainType([1, 2, 3, 4]);
         let current_version = Version([5, 6, 7, 8]);
-        let genesis_validators_root = H256([1; 32]);
+        let genesis_validators_root = H256::new([1; 32]);
         let fork_data_root = compute_fork_data_root(current_version, genesis_validators_root);
         let genesis_version = Version([0, 0, 0, 0]);
 
         let mut domain = Domain::default();
         domain.0[..4].copy_from_slice(&domain_type.0);
-        domain.0[4..].copy_from_slice(&fork_data_root.0[..28]);
+        domain.0[4..].copy_from_slice(&fork_data_root.get()[..28]);
 
         // Uses the values instead of the default ones when `current_version` and
         // `genesis_validators_root` is provided.
@@ -280,7 +280,7 @@ mod tests {
         let fork_data_root = compute_fork_data_root(genesis_version, Default::default());
         let mut domain = Domain::default();
         domain.0[..4].copy_from_slice(&domain_type.0);
-        domain.0[4..].copy_from_slice(&fork_data_root.0[..28]);
+        domain.0[4..].copy_from_slice(&fork_data_root.get()[..28]);
 
         // Uses default values when version and validators root is None
         assert_eq!(

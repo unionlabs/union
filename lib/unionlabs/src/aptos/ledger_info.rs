@@ -7,7 +7,10 @@ use super::{
 };
 use crate::{
     errors::{required, InvalidLength, MissingField},
-    hash::hash_v2::{Hash, HexUnprefixed},
+    hash::{
+        hash_v2::{Hash, HexUnprefixed},
+        H256,
+    },
 };
 
 /// Wrapper to support future upgrades, this is the data being persisted.
@@ -47,7 +50,7 @@ pub struct LedgerInfo {
 
     /// Hash of consensus specific data that is opaque to all parts of the system other than
     /// consensus.
-    pub consensus_data_hash: Hash<32, HexUnprefixed>,
+    pub consensus_data_hash: H256<HexUnprefixed>,
 }
 
 impl From<LedgerInfoWithSignatures>

@@ -497,7 +497,7 @@ fn test_zktrie_random() {
     for (k, v) in &data {
         let k: H256 = k.clone().try_into().unwrap();
         let v: H256 = v.clone().try_into().unwrap();
-        let v = Byte32::from_bytes_padding(&v.0);
+        let v = Byte32::from_bytes_padding(v.get());
         trie.update(db, k.as_ref(), 1, vec![v]).unwrap();
     }
     for idx in delete_idx {

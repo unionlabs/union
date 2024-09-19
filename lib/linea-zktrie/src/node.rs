@@ -66,7 +66,7 @@ pub struct EmptyLeafNode {}
 
 impl EmptyLeafNode {
     // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/node/EmptyLeafNode.java#L80
-    pub const HASH: H256 = H256([0u8; 32]);
+    pub const HASH: H256 = H256::new([0u8; 32]);
 
     pub fn hash(&self) -> H256 {
         Self::HASH
