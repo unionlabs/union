@@ -25,11 +25,12 @@ const copy = () => {
 
     <H1 class="mb-4">Run the mpc client</H1>
     <Text>You need to have docker running to contribute.<br>
-      For macOS we recommend installing
+      For macOS you need to install
       <a href="https://orbstack.dev/"
          class="underline underline-offset-4 decoration-union-accent-500"
          target="_blank">OrbStack</a>
-      because docker desktop is too slow.
+      because docker desktop is too slow. <br>
+      If you use docker desktop it is extremely likely that you lose your contribution slot.
     </Text>
     <Text class="mt-4 !text-union-accent-500">Once you have OrbStack/Docker running you should paste this in your terminal.</Text>
     <div class="max-w-4xl p-8">

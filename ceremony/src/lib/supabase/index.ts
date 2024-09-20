@@ -5,8 +5,8 @@ import {
   getQueueCount,
   getSubmittedContribution,
   getUserQueuePosition,
-  queryAllowance,
   queryContributions,
+  queryCurrentUserState,
   queryUserContribution,
   queryUserPublicHash,
   queryUserWallet
@@ -105,13 +105,13 @@ export const getContributionState = async (): Promise<ContributionState> => {
   }
 }
 
-export const getAllowanceState = async (userId: string | undefined): Promise<AllowanceState> => {
+export const getCurrentUserState = async (userId: string | undefined): Promise<AllowanceState> => {
   if (!userId) {
     console.log("Need to be logged in to get allowance state")
     return undefined
   }
 
-  const { data, error } = await queryAllowance()
+  const { data, error } = await queryCurrentUserState()
   if (error || !data) return undefined
 
   if (data.has_redeemed) return "hasRedeemed"
@@ -183,4 +183,11 @@ export const getUserWallet = async (userId: string | undefined) => {
   if (error || !data) return undefined
 
   return data.wallet
+}
+
+export const getWaitListPosition = async (): Promise<number | undefined> => {
+  const { data, error } = await queryCurrentUserState()
+  if (error || !data) return undefined
+
+  return data.waitlist_position
 }
