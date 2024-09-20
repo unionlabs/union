@@ -6,13 +6,19 @@ import Blink from "$lib/components/Blink.svelte"
 import SwimLoad from "$lib/components/SwimLoad.svelte"
 import H1 from "$lib/components/typography/H1.svelte"
 import { ContributorState } from "$lib/stores/state.svelte.js"
-import { start } from "$lib/client"
+import Text from "$lib/components/typography/Text.svelte"
+import Warning from "$lib/components/Warning.svelte"
 
 type Props = {
   contributor: ContributorState
 }
 
 let { contributor }: Props = $props()
+
+window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
+  e.preventDefault()
+  e.returnValue = ""
+})
 </script>
 
 <H1 class="mb-4 text-7xl">
@@ -29,4 +35,5 @@ let { contributor }: Props = $props()
       (est.).
     </H3>
   </div>
+<Warning />
 </div>

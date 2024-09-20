@@ -52,8 +52,7 @@ let loggedIn = $derived(!!user.session?.user.id)
       <div class="hidden md:block">
         {#if user.session}
           <div class="flex items-center gap-4">
-            <NavLink class="p-2" href="/contributions">Contributions</NavLink>
-            <Button variant="primary" class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" onclick={logout}>Log out</Button>
+            <Button variant="secondary" onclick={logout}>Log out</Button>
           </div>
         {:else}
           <div class="flex items-center gap-4">
@@ -73,7 +72,7 @@ let loggedIn = $derived(!!user.session?.user.id)
       <div class="md:hidden mt-4 w-full bg-black">
         <div class="flex flex-col divide-y divide-white/50">
           {#if user.session}
-            <NavLink class="p-2" href="/contributions">Contributions</NavLink>
+            <Button variant="secondary" onclick={logout}>Log out</Button>
           {:else}
             <NavLink class="p-2" href="/contributions">Contributions</NavLink>
           {/if}

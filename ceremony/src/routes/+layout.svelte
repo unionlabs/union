@@ -10,7 +10,6 @@ import { setContributorState } from "$lib/stores/state.svelte.ts"
 import "../styles/tailwind.css"
 
 import { watch } from "runed"
-import { generateSecret } from "$lib/client"
 
 let { children } = $props()
 
@@ -66,6 +65,7 @@ watch(
 
 <Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
 <Navbar/>
+
 <main>
   {@render children()}
 </main>

@@ -55,7 +55,7 @@ $effect(() => {
   <Text class="py-8">Or</Text>
   <H2>Don't have an invite?</H2>
   <Text>You can join the waitlist now to get priority access when the ceremony opens.</Text>
-  <Button class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" loading={waitlistLoading} onclick={handleWaitlistJoin} type="button">
+  <Button variant="secondary" loading={waitlistLoading} onclick={handleWaitlistJoin} type="button">
     {isOpenToPublic ? "Join the queue" : "Join the waitlist"}
   </Button>
 </div>

@@ -1,3 +1,5 @@
+import { browser } from "$app/environment"
+
 export function getNumberSuffix(n: number | null): string {
   if (n == null) return ""
 
@@ -19,4 +21,13 @@ export function getNumberSuffix(n: number | null): string {
   }
 
   return "th"
+}
+
+export function isSafari(): boolean {
+  if (!browser) {
+    return false
+  }
+
+  const ua = navigator.userAgent.toLowerCase()
+  return ua.indexOf("safari") > -1 && ua.indexOf("chrome") === -1
 }

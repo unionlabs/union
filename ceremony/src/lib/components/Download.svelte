@@ -39,7 +39,7 @@ function setDownloadedSecret() {
   <H1>Store your PGP secret</H1>
   <Text class="text-center mb-4">
     Please store your secret somewhere safe, such as in your password manager.
-    <br> Never share your secret.
+    <br> There's no need to open the file and remember to never share a secret.
     <br> This secret key is the only way to prove that you have contributed.
   </Text>
   <div class="flex gap-4">
