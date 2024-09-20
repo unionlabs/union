@@ -45,7 +45,7 @@ const skip = async () => {
   <Text class="py-8">Or</Text>
   <H4>I don't want rewards</H4>
   <Text>You can contribute without adding an address.</Text>
-  <Button onclick={skip} class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800">Skip
+  <Button onclick={skip} variant="secondary">Skip
     rewards
   </Button>
 </div>
