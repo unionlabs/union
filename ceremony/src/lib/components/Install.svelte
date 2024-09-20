@@ -1,5 +1,4 @@
 <script lang="ts">
-import Blink from "$lib/components/Blink.svelte"
 import Text from "$lib/components/typography/Text.svelte"
 import H1 from "$lib/components/typography/H1.svelte"
 import type { ContributorState } from "$lib/stores/state.svelte.ts"
@@ -32,15 +31,15 @@ const copy = () => {
       because docker desktop is too slow. <br>
       If you use docker desktop it is extremely likely that you lose your contribution slot.
     </Text>
-    <Text class="mt-4 !text-union-accent-500">Once you have OrbStack/Docker running you should open a terminal window and paste the command to start the MPC client then come back here.
+    <Text class="mt-4 !text-union-accent-500">Once you have OrbStack/Docker running you should open a terminal window
+      and paste the command to start the MPC client then return here.
     </Text>
     <div class="max-w-4xl p-8">
-      <code class="text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-black text-white p-4 pl-6 font-mono border-white border">
+      <code onclick={copy} class="cursor-pointer text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-black text-white p-4 pl-6 font-mono border-white border">
           <span class="flex gap-4">
               <span class="shrink-0 text-union-accent-500 select-none">
                   $
               </span>
-
               <span class="flex-1">
                   <span>{command}</span>
               </span>
