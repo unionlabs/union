@@ -53,7 +53,7 @@ let loggedIn = $derived(!!user.session?.user.id)
         {#if user.session}
           <div class="flex items-center gap-4">
             <NavLink class="p-2" href="/contributions">Contributions</NavLink>
-            <Button class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" onclick={logout}>Log out</Button>
+            <Button variant="primary" class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" onclick={logout}>Log out</Button>
           </div>
         {:else}
           <div class="flex items-center gap-4">

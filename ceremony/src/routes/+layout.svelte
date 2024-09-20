@@ -10,6 +10,7 @@ import { setContributorState } from "$lib/stores/state.svelte.ts"
 import "../styles/tailwind.css"
 
 import { watch } from "runed"
+import { generateSecret } from "$lib/client"
 
 let { children } = $props()
 

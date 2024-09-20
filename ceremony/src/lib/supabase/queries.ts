@@ -30,15 +30,7 @@ export const getContribution = async (userId: string) => {
 export const getUserQueuePosition = async (userId: string) => {
   const { data, error } = await supabase.from("current_queue").select("*").eq("id", userId).single()
 
-  if (error) {
-    if (error.code === "PGRST116") {
-      return { data: undefined, error: undefined }
-    }
-    console.log("Error getting user data:", error)
-    return { data: undefined, error }
-  }
-
-  return { data, error: undefined }
+  return { data, error }
 }
 
 export const getQueueCount = async () => {

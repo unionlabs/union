@@ -24,13 +24,13 @@ export const callJoinQueue = async (code: string | null): Promise<boolean> => {
     const { error } = await supabase.rpc("join_queue", { code_id: code })
 
     if (error) {
-      console.error("Error joining queue:", error)
+      console.log("Error joining queue:", error)
       return false
     }
 
     return true
   } catch (err) {
-    console.error("Unexpected error:", err)
+    console.log("Unexpected error:", err)
     return false
   }
 }
@@ -51,7 +51,7 @@ export const getUserQueueInfo = async () => {
   const { count, error: countError } = await getQueueCount()
 
   if (error) {
-    console.error("Error getting user queue position:", error)
+    console.log("Error getting user queue position:", error)
     return { error }
   }
 
@@ -129,8 +129,6 @@ export const getContributions = async () => {
 }
 
 export const getUserContribution = async (hash: string) => {
-  console.log(hash)
-
   const { data, error } = await queryUserContribution(hash)
   if (error || !data) return undefined
 

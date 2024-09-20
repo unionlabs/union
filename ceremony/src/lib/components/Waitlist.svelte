@@ -15,7 +15,7 @@ let { contributor }: Props = $props()
 <H1 class="mb-4">You're on the waitlist </H1>
 <Text class="mb-12">When the ceremony opens to the public you will have position <span>{contributor.waitListPosition}</span> of public queue.</Text>
 <H4 class="mb-4">Received an invite?</H4>
-<Text class="mb-4">You can skip the waitlist and join now</Text>
+<Text class="mb-4">You can skip the waitlist and join now.</Text>
 <form class="flex flex-col items-center">
   <Code {contributor} secondary={true}/>
 </form>

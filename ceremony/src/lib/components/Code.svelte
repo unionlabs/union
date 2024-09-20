@@ -49,7 +49,7 @@ async function handleCodeJoin() {
 }
 
 function handleKeyDown(event: KeyboardEvent, index: number) {
-  if (event.key === "Enter") {
+  if (event.key === "Enter" || event.key === " ") {
     event.preventDefault()
     if (index < words.length - 1) {
       // Move to next input
@@ -57,8 +57,8 @@ function handleKeyDown(event: KeyboardEvent, index: number) {
         `input:nth-child(${2 * index + 3})`
       ) as HTMLInputElement
       nextInput?.focus()
-    } else {
-      // On last input, trigger the USE CODE button
+    } else if (event.key === "Enter") {
+      // On last input, trigger the USE CODE button only for Enter key
       handleCodeJoin()
     }
   } else if (event.key === "Backspace" && words[index] === "" && index > 0) {

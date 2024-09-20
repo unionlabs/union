@@ -26,11 +26,6 @@ function setDownloadedSecret() {
   localStorage.setItem("downloaded-secret", "true")
   contributor.downloadedSecret = true
 }
-
-onMount(async () => {
-  const email = user.session?.user.email
-  await generateSecret(email)
-})
 </script>
 
 {#if !download}
