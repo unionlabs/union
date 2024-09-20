@@ -6,6 +6,7 @@ import sitemap from "@astrojs/sitemap"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
+import starlightThemeRapide from "starlight-theme-rapide"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightHeadingBadges from "starlight-heading-badges"
@@ -177,6 +178,7 @@ export default defineConfig({
         }
       ],
       plugins: [
+        starlightThemeRapide(),
         starlightUtils({
           multiSidebar: {
             switcherStyle: "horizontalList"
@@ -187,7 +189,7 @@ export default defineConfig({
       ],
       customCss: [
         "./src/styles/index.css",
-        "./src/styles/fonts.css",
+        // "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
         "./src/styles/twoslash.css",
         "./src/styles/starlight.css",

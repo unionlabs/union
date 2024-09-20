@@ -97,6 +97,68 @@ _: {
             '';
           };
         };
+        generate-rust-docs = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "generate-rust-docs";
+            text =
+              let
+                /**
+                 * The list of rust packages that we want to generate docs for.
+                 */
+                rustPackages = [ "hubble" "voyager" ];
+              in
+              ''
+                ${ensureAtRepositoryRoot}
+                
+                rm -rf docs/generated/rust
+                mkdir -p docs/generated/rust
+
+                ${lib.concatMapStrings (pkg: ''
+                  cargo rustdoc \
+                    --release \
+                    --all-features \
+                    --package='${pkg}' \
+                    -- \
+                    --default-theme='ayu' \
+                    --document-private-items
+
+                '') rustPackages}
+                cp -r target/doc/* docs/generated/rust/
+              '';
+          };
+        };
+        generate-rust-docs = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "generate-rust-docs";
+            text =
+              let
+                /**
+                 * The list of rust packages that we want to generate docs for.
+                 */
+                rustPackages = [ "hubble" "voyager" ];
+              in
+              ''
+                ${ensureAtRepositoryRoot}
+                
+                rm -rf docs/generated/rust
+                mkdir -p docs/generated/rust
+
+                ${lib.concatMapStrings (pkg: ''
+                  cargo rustdoc \
+                    --release \
+                    --all-features \
+                    --package='${pkg}' \
+                    -- \
+                    --default-theme='ayu' \
+                    --document-private-items
+
+                '') rustPackages}
+                cp -r target/doc/* docs/generated/rust/
+              '';
+          };
+        };
       };
     };
 }
