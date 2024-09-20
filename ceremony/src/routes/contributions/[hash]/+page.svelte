@@ -35,10 +35,10 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
 
 <svelte:head>
   <title>Union Ceremony</title>
-  <meta name="description" content=""/>
+  <meta name="description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
 
-  <meta property="og:title" content="Union Ceremony"/>
-  <meta property="og:description" content=""/>
+  <meta property="og:title" content="Union Ceremony "/>
+  <meta property="og:description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://ceremony.union.build"/>
   <meta property="og:site_name" content="Union Ceremony"/>
@@ -50,14 +50,15 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
   <meta property="og:image:height" content="675"/>
   <meta property="og:image:alt" content="Union Ceremony event banner"/>
 
-  <meta name="twitter:title" content=""/>
-  <meta name="twitter:description" content=""/>
+  <meta name="twitter:title" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
+  <meta name="twitter:description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:site" content="@union_build"/>
   <meta name="twitter:creator" content="@union_build"/>
   <meta name="twitter:image" content={imagePath}/>
   <meta name="twitter:image:alt" content="Union Ceremony event banner"/>
 </svelte:head>
+
 
 <div class="w-full flex justify-center mt-[80px] pb-16">
   {#await getUserContribution(hash)}
