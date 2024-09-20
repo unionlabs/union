@@ -169,6 +169,7 @@ QUMGLDJ
 Quickstart
 Qyby
 RUSTFLAGS
+Rapide
 Recvs
 Redelegate
 Redelegates
@@ -1009,6 +1010,7 @@ qxrx
 qypy
 rabby
 randao
+rapide
 ratelimit
 ratelimited
 rawfile
