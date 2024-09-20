@@ -63,7 +63,7 @@ export const queryContributions = async () => {
   const { data, error } = await supabase
     .from("users_contribution")
     .select("public_key_hash, user_name, avatar_url")
-    .order("time_verified", { ascending: true })
+    .order("time_verified", { ascending: false })
 
   return { data, error }
 }

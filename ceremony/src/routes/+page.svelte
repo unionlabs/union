@@ -5,9 +5,11 @@ import Button from "$lib/components/Button.svelte"
 import Text from "$lib/components/typography/Text.svelte"
 import { supabase } from "$lib/supabase/client.ts"
 import { page } from "$app/stores"
-import H4 from "$lib/components/typography/H4.svelte"
+import { type ContributorState, getContributorState } from "$lib/stores/state.svelte.ts"
+import { goto } from "$app/navigation"
 
 let accepted = $state(false)
+const contributor: ContributorState = getContributorState()
 
 type AuthProviders = "github" | "google"
 const providers: Array<AuthProviders> = ["github", "google"]
@@ -24,6 +26,10 @@ async function diveIn(provider: AuthProviders) {
     console.error("Error signing up with GitHub:", error.message)
   }
 }
+
+$effect(() => {
+  if (contributor.loggedIn) goto("0____0")
+})
 </script>
 
 {#snippet Dive(provider: AuthProviders)}
@@ -33,7 +39,7 @@ async function diveIn(provider: AuthProviders) {
 {/snippet}
 
 
-<section class="w-full h-svh px-6 lg:px-8 flex flex-col items-center justify-center gap-8">
+<section class="w-full h-svh px-6 lg:px-8 flex flex-col items-center justify-center gap-8 mt-[80px] md:mt-0">
   <div class="text-5xl font-supermolot font-bold">
     <Blink/>
   </div>

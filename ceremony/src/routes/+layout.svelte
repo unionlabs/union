@@ -66,6 +66,6 @@ watch(
 <Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
 <Navbar/>
 
-<main>
+<main class="w-full h-full overflow-y-scroll">
   {@render children()}
 </main>
