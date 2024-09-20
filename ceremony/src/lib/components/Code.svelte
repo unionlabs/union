@@ -88,11 +88,11 @@ function handleKeyDown(event: KeyboardEvent, index: number) {
 </div>
 
 {#if secondary}
-  <Button class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" loading={codeLoading} type="button" on:click={handleCodeJoin}>
+  <Button class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" loading={codeLoading} type="button" onclick={handleCodeJoin}>
   Redeem code
   </Button>
 {:else}
-  <Button loading={codeLoading} type="button" on:click={handleCodeJoin}>
+  <Button loading={codeLoading} type="button" onclick={handleCodeJoin}>
     Redeem code
   </Button>
 {/if}
