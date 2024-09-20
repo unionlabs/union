@@ -21,24 +21,36 @@ const copy = () => {
 </script>
 
 {#if contributor}
-  <div class="flex flex-col items-center  text-center mb-4">
+  <div class="flex flex-col items-center text-center mb-4">
 
     <H1 class="mb-4">Run the MPC client</H1>
     <Text>
-      You must have docker installed in order to contribute.
+      You must have docker installed in order to contribute. <br> On linux, install docker through your package manager, and skip to step 5.
       <br>
-      For macOS we highly recommend
+      On macOS, we highly recommend
       <a href="https://orbstack.dev/"
          class="underline underline-offset-4 decoration-union-accent-500"
          target="_blank">OrbStack</a>
-      because docker desktop is too slow.
+      because <span class="text-rose-400">Docker Desktop is too slow.</span>
       <br>
       <strong>
-        If you use docker desktop it is extremely likely that you will lose your contribution slot.
+        If you use Docker Desktop it is extremely likely that you will <span class="text-rose-400">lose your contribution slot.</span>
       </strong>
     </Text>
     <Text class="mt-4 !text-union-accent-500">
-      Once you have OrbStack installed, open a terminal window and paste the following command to run the MPC client:
+      <a href="https://orbstack.dev/">1. Install OrbStack</a>
+    </Text>
+    <Text class="mt-4 !text-union-accent-500">
+      2. Open OrbStack from the Applications/ folder
+    </Text>
+    <Text class="mt-4 !text-union-accent-500">
+      3. Click allow on the OrbStack popups
+    </Text>
+    <Text class="mt-4 !text-union-accent-500">
+      4. Open Terminal from the Applications/Utilities/ folder
+    </Text>
+    <Text class="mt-4 !text-union-accent-500">
+      5. Paste the following command in Terminal to start the MPC client:
     </Text>
     <div class="max-w-4xl p-8">
       <button onclick={copy}>
@@ -72,7 +84,7 @@ const copy = () => {
       For Brave, disable the shields in the address bar.
     </Text>
     {#if isSafari()}
-      <div class="border border-rose-500 bg-rose-500/10 text-rose-600 py-2 px-3">
+      <div class="border border-rose-400 bg-rose-400/10 text-rose-400 py-2 px-3">
         Safari is not supported
       </div>
     {/if}

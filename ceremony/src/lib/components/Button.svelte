@@ -20,12 +20,13 @@ let {
 }: Props = $props()
 
 const styles = {
-  primary: "bg-union-accent-500 text-black hover:text-black",
-  secondary: "bg-transparent text-white border-2 border-white hover:bg-neutral-800"
+  primary: "bg-union-accent-500 text-black hover:text-black disabled:bg-neutral-500",
+  secondary:
+    "bg-transparent text-white border-2 border-white hover:bg-neutral-800 disabled:bg-neutral-500"
 }
 const getClass = (type: "primary" | "secondary") => styles[type] || styles.primary
 let combinedClasses = $derived(
-  `flex items-center w-fit gap-2 px-4 py-2 font-bold uppercase justify-center ${getClass(variant)} ${className}`
+  `flex items-center w-fit gap-2 px-4 py-2 font-bold uppercase justify-center transition ${getClass(variant)} ${className}`
 )
 </script>
 

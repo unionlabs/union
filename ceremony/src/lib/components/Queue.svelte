@@ -7,12 +7,18 @@ import SwimLoad from "$lib/components/SwimLoad.svelte"
 import H1 from "$lib/components/typography/H1.svelte"
 import { ContributorState } from "$lib/stores/state.svelte.js"
 import Text from "$lib/components/typography/Text.svelte"
+import Warning from "$lib/components/Warning.svelte"
 
 type Props = {
   contributor: ContributorState
 }
 
 let { contributor }: Props = $props()
+
+window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
+  e.preventDefault()
+  e.returnValue = ""
+})
 </script>
 
 <H1 class="mb-4 text-7xl">
@@ -29,8 +35,5 @@ let { contributor }: Props = $props()
       (est.).
     </H3>
   </div>
-  <div class="text-center font-bold text-lg">
-    <Text>You are connected to your MPC Client.</Text>
-    <Text>Do not close this tab or your terminal running the MPC Client.</Text>
-  </div>
+<Warning />
 </div>
