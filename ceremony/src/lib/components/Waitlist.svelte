@@ -4,7 +4,7 @@ import Code from "$lib/components/Code.svelte"
 import Text from "$lib/components/typography/Text.svelte"
 import H1 from "$lib/components/typography/H1.svelte"
 import type { ContributorState } from "$lib/stores/state.svelte.ts"
-import {getNumberSuffix} from "$lib/utils/utils.ts";
+import { getNumberSuffix } from "$lib/utils/utils.ts"
 
 type Props = {
   contributor: ContributorState
