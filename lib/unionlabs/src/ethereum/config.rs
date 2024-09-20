@@ -9,7 +9,6 @@ use typenum::{NonZero, Unsigned};
 use crate::{
     ethereum::Version,
     ibc::lightclients::ethereum::{fork::Fork, fork_parameters::ForkParameters},
-    traits::FromStrExact,
 };
 
 /// Minimal config.
@@ -48,14 +47,6 @@ impl FromStr for PresetBaseKind {
     }
 }
 
-impl FromStrExact for Minimal {
-    const EXPECTING: &'static str = "minimal";
-}
-
-impl FromStrExact for Mainnet {
-    const EXPECTING: &'static str = "mainnet";
-}
-
 // https://github.com/rust-lang/rust/issues/35853#issuecomment-415993963
 macro_rules! with_dollar_sign {
     ($($body:tt)*) => {
@@ -75,7 +66,7 @@ macro_rules! consts_traits {
             }
         )+
 
-        pub trait ChainSpec: 'static + FromStrExact + Debug + Clone + PartialEq + Eq + Default + Send + Sync + Unpin + $($CONST+)+ {
+        pub trait ChainSpec: 'static + Debug + Clone + PartialEq + Eq + Default + Send + Sync + Unpin + $($CONST+)+ {
             const PRESET: preset::Preset;
             // const PRESET_BASE_KIND: PresetBaseKind;
 

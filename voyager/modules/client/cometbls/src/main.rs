@@ -91,9 +91,9 @@ impl ModuleContext for Module {
     type Info = ClientModuleInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        Ok(dbg!(Self {
+        Ok(Self {
             ibc_interface: config.ibc_interface,
-        }))
+        })
     }
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {

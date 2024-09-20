@@ -107,6 +107,9 @@ repository   = "https://github.com/unionlabs/union"
 disallowed_types = "deny"
 module_inception = "allow" # it's useful sometimes
 
+[workspace.lints.rustdoc]
+broken-intra-doc-links = "deny"
+
 [profile.release]
 lto       = "thin"
 opt-level = 3

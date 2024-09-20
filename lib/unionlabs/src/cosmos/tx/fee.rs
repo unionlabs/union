@@ -6,11 +6,11 @@ use crate::cosmos::base::coin::{Coin, TryFromCoinError};
 pub struct Fee {
     /// amount is the amount of coins to be paid as a fee
     pub amount: Vec<Coin>,
-    /// [`gas_limit`] is the maximum gas that can be used in transaction processing
+    /// `gas_limit` is the maximum gas that can be used in transaction processing
     /// before an out of gas error occurs
     pub gas_limit: u64,
     /// if unset, the first signer is responsible for paying the fees. If set, the specified account must pay the fees.
-    /// the payer must be a tx signer (and thus have signed this field in [`AuthInfo`]).
+    /// the payer must be a tx signer (and thus have signed this field in [`AuthInfo`](crate::cosmos::tx::auth_info::AuthInfo)).
     /// setting this field does *not* change the ordering of required signers for the transaction.
     pub payer: String,
     /// if set, the fee payer (either the first signer or the value of the payer field) requests that a fee grant be used

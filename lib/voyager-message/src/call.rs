@@ -1,17 +1,10 @@
-#![allow(unused_imports)] // TODO: Remove
-
 use enumorph::Enumorph;
-use jsonrpsee::{
-    core::RpcResult,
-    types::{ErrorObject, ErrorObjectOwned},
-};
-use macros::apply;
-use queue_msg::{
-    call, conc, data, defer, noop, now, promise, queue_msg, seq, HandleCall, Op, QueueError,
-};
-use serde_json::{json, Value};
+use jsonrpsee::{core::RpcResult, types::ErrorObject};
+use macros::{apply, model};
+use queue_msg::{call, conc, data, defer, noop, now, promise, seq, HandleCall, Op, QueueError};
+use serde_json::Value;
 use serde_utils::Hex;
-use tracing::{debug, info, info_span, instrument, trace, Instrument};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{
     ibc::core::{
         channel::{
@@ -30,31 +23,29 @@ use unionlabs::{
     },
     ics24::{
         AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath,
-        CommitmentPath, ConnectionPath, Path, ReceiptPath,
+        CommitmentPath, ConnectionPath, ReceiptPath,
     },
     id::{ClientId, ConnectionId},
     traits::Member,
     QueryHeight, DELAY_PERIOD,
 };
 
+#[cfg(doc)]
+use crate::data::ClientInfo;
 use crate::{
     callback::AggregateFetchBlockRange,
-    data::{
-        ClientInfo, DecodedClientStateMeta, DecodedConsensusStateMeta, EncodedClientState,
-        EncodedConsensusState, EncodedHeader, IbcMessage, IbcProof, IbcState, LatestHeight,
-        MsgCreateClientData, RawIbcProof, SelfClientState, SelfConsensusState, WithChainId,
-    },
+    data::{IbcMessage, LatestHeight, MsgCreateClientData, WithChainId},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{
         ChainModuleClient, ClientModuleClient, ConsensusModuleClient, QueueInteractionsClient,
     },
-    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcServer},
+    rpc::json_rpc_error_to_rpc_error,
     top_level_identifiable_enum, ChainId, Context, IbcInterface, PluginMessage, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };
 
 #[apply(top_level_identifiable_enum)]
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
 pub enum Call<C = serde_json::Value> {
     FetchBlock(FetchBlock),
@@ -85,99 +76,20 @@ pub enum Call<C = serde_json::Value> {
     Plugin(PluginMessage<C>),
 }
 
-#[queue_msg]
+#[model]
 pub struct FetchBlockRange {
     pub chain_id: ChainId<'static>,
     pub from_height: Height,
     pub to_height: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct FetchBlock {
     pub chain_id: ChainId<'static>,
     pub height: Height,
 }
 
-#[queue_msg]
-pub struct FetchSelfClientState {
-    pub chain_id: ChainId<'static>,
-    pub at: QueryHeight,
-    /// The counterparty IBC interface that the state must be encoded for.
-    pub ibc_interface: IbcInterface<'static>,
-    #[serde(default, skip_serializing_if = "Value::is_null")]
-    /// Additional metadata that will be passed to
-    /// [`ClientModulePlugin::encode_client_state`]. This field is analogous to
-    /// [`ClientInfo::metadata`].
-    pub metadata: Value,
-}
-
-#[queue_msg]
-pub struct FetchSelfConsensusState {
-    pub chain_id: ChainId<'static>,
-    pub at: QueryHeight,
-    /// The counterparty IBC interface that the state must be encoded for.
-    pub ibc_interface: IbcInterface<'static>,
-}
-
-// TODO: This should have a height field
-#[queue_msg]
-pub struct FetchClientInfo {
-    pub chain_id: ChainId<'static>,
-    pub client_id: ClientId,
-}
-
-#[queue_msg]
-pub struct DecodeClientStateMeta {
-    pub ibc_state: IbcState<ClientStatePath>,
-    pub client_info: ClientInfo,
-}
-
-#[queue_msg]
-pub struct DecodeConsensusStateMeta {
-    pub ibc_state: IbcState<ClientConsensusStatePath>,
-    pub client_info: ClientInfo,
-}
-
-#[queue_msg]
-pub struct EncodeClientState {
-    pub client_state: Value,
-    pub client_info: ClientInfo,
-}
-
-#[queue_msg]
-pub struct EncodeConsensusState {
-    pub consensus_state: Value,
-    pub client_info: ClientInfo,
-}
-
-#[queue_msg]
-pub struct EncodeHeader {
-    pub header: Value,
-    pub client_info: ClientInfo,
-}
-
-#[queue_msg]
-pub struct EncodeProof {
-    pub raw_proof: RawIbcProof,
-    pub client_info: ClientInfo,
-}
-
-/// Fetches a raw, unencoded IBC proof from the specified chain.
-#[queue_msg]
-pub struct FetchRawProof {
-    pub chain_id: ChainId<'static>,
-    pub at: Height,
-    pub path: Path,
-}
-
-#[queue_msg]
-pub struct FetchState {
-    pub chain_id: ChainId<'static>,
-    pub at: QueryHeight,
-    pub path: Path,
-}
-
-#[queue_msg]
+#[model]
 pub struct FetchUpdateHeaders {
     pub chain_id: ChainId<'static>,
     pub counterparty_chain_id: ChainId<'static>,
@@ -185,29 +97,24 @@ pub struct FetchUpdateHeaders {
     pub update_to: Height,
 }
 
-#[queue_msg]
-pub struct FetchLatestHeight {
-    pub chain_id: ChainId<'static>,
-}
-
-#[queue_msg]
+#[model]
 pub struct FetchUnfinalizedTrustedClientState {
     pub chain_id: ChainId<'static>,
     pub client_id: ClientId,
 }
 
 /// Build a [`MsgCreateClient`] [`IbcMessage`].
-#[queue_msg]
+#[model]
 pub struct MakeMsgCreateClient {
     /// The chain to create the client on.
     pub chain_id: ChainId<'static>,
     /// The height of the counterparty that the client will trust. The
-    /// [`SelfClientState`] and [`SelfConsensusState`] will be queried at this
+    /// `SelfClientState` and `SelfConsensusState` will be queried at this
     /// height.
     pub height: QueryHeight,
     #[serde(default, skip_serializing_if = "Value::is_null")]
     /// Additional metadata that will be passed to
-    /// [`ClientModulePlugin::encode_client_state`]. This field is analogous to
+    /// [`ClientModuleClient::encode_client_state`]. This field is analogous to
     /// [`ClientInfo::metadata`].
     pub metadata: Value,
     /// The chain to create a client of.
@@ -216,7 +123,7 @@ pub struct MakeMsgCreateClient {
     pub ibc_interface: IbcInterface<'static>,
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeMsgConnectionOpenTry {
     /// The chain id of the chain that the event was emitted on.
     pub origin_chain_id: ChainId<'static>,
@@ -228,7 +135,7 @@ pub struct MakeMsgConnectionOpenTry {
     pub connection_open_init_event: crate::data::ConnectionOpenInit,
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeMsgConnectionOpenAck {
     /// The chain id of the chain that the event was emitted on.
     pub origin_chain_id: ChainId<'static>,
@@ -240,7 +147,7 @@ pub struct MakeMsgConnectionOpenAck {
     pub connection_open_try_event: crate::data::ConnectionOpenTry,
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeMsgConnectionOpenConfirm {
     /// The chain id of the chain that the event was emitted on.
     pub origin_chain_id: ChainId<'static>,
@@ -252,7 +159,7 @@ pub struct MakeMsgConnectionOpenConfirm {
     pub connection_open_ack_event: crate::data::ConnectionOpenAck,
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeMsgChannelOpenTry {
     /// The chain id of the chain that the event was emitted on.
     pub origin_chain_id: ChainId<'static>,
@@ -264,7 +171,7 @@ pub struct MakeMsgChannelOpenTry {
     pub channel_open_init_event: crate::data::ChannelOpenInit,
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeMsgChannelOpenAck {
     /// The chain id of the chain that the event was emitted on.
     pub origin_chain_id: ChainId<'static>,
@@ -276,7 +183,7 @@ pub struct MakeMsgChannelOpenAck {
     pub channel_open_try_event: crate::data::ChannelOpenTry,
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeMsgChannelOpenConfirm {
     /// The chain id of the chain that the event was emitted on.
     pub origin_chain_id: ChainId<'static>,
@@ -288,7 +195,7 @@ pub struct MakeMsgChannelOpenConfirm {
     pub channel_open_ack_event: crate::data::ChannelOpenAck,
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeMsgRecvPacket {
     /// The chain id of the chain that the event was emitted on.
     pub origin_chain_id: ChainId<'static>,
@@ -300,7 +207,7 @@ pub struct MakeMsgRecvPacket {
     pub send_packet_event: crate::data::SendPacket,
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeMsgAcknowledgement {
     /// The chain id of the chain that the event was emitted on.
     pub origin_chain_id: ChainId<'static>,
@@ -312,19 +219,19 @@ pub struct MakeMsgAcknowledgement {
     pub write_acknowledgement_event: crate::data::WriteAcknowledgement,
 }
 
-#[queue_msg]
+#[model]
 pub struct WaitForHeight {
     pub chain_id: ChainId<'static>,
     pub height: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct WaitForHeightRelative {
     pub chain_id: ChainId<'static>,
     pub height: u64,
 }
 
-#[queue_msg]
+#[model]
 pub struct WaitForTimestamp {
     pub chain_id: ChainId<'static>,
     /// THIS IS NANOSECONDS
@@ -332,7 +239,7 @@ pub struct WaitForTimestamp {
 }
 
 /// Wait for the client `.client_id` on `.chain_id` to trust a height >= `.height`.
-#[queue_msg]
+#[model]
 pub struct WaitForTrustedHeight {
     pub chain_id: ChainId<'static>,
     pub client_id: ClientId,

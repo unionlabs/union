@@ -137,7 +137,7 @@ impl ServerInner {
         at: Height,
         path: Path,
     ) -> Result<IbcState, jsonrpsee::core::client::Error> {
-        let key = (chain_id.clone().into_static(), path.clone(), at);
+        let key = (chain_id.clone().into_owned(), path.clone(), at);
 
         let state = self
             .ibc_state_cache

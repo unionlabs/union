@@ -15,6 +15,12 @@ use unionlabs::{
     traits::Member,
     ErrorReporter,
 };
+#[cfg(doc)]
+// #[cfg_attr(not(doc), allow(unused_imports))]
+use {
+    crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},
+    unionlabs::ibc::core::client::msg_update_client::MsgUpdateClient,
+};
 
 use crate::{
     data::{ClientInfo, Data},
@@ -68,11 +74,9 @@ impl IModuleKindInfo for ClientModuleInfo {}
 #[model]
 pub struct PluginModuleInfo {
     /// A jaq filter to run on every message before pushing them to the queue.
-    /// This ***MUST*** return a bool. If this returns true, the message will be
+    /// This ***MUST*** return a bool. If this returns `true`, the message will be
     /// pushed to the optimization queue with this plugin's name as the tag,
-    /// else it will be passed on to the next plugin to be filtered. If this is
-    /// None, this plugin will not be registered as an
-    /// [`OptimizationPassPlugin`].
+    /// else it will be passed on to the next plugin to be filtered.
     pub interest_filter: String,
 }
 

@@ -29,7 +29,6 @@ use unionlabs::{
         },
     },
     option_unwrap, result_unwrap,
-    traits::FromStrExact,
     uint::U256,
 };
 
@@ -105,10 +104,6 @@ impl ChainKeyring for Berachain {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct BerachainChainType;
-
-impl FromStrExact for BerachainChainType {
-    const EXPECTING: &'static str = "berachain";
-}
 
 #[allow(dead_code)]
 impl Berachain {

@@ -339,7 +339,7 @@ fn check_allowed_fields(
         && subject_client_state.l1_contract_address == substitute_client_state.l1_contract_address
 }
 
-#[cfg(all(test))]
+#[cfg(test)]
 mod test {
     use cosmwasm_std::{
         testing::{MockApi, MockQuerier, MockStorage},
@@ -448,6 +448,7 @@ mod test {
         );
     }
 
+    #[allow(clippy::type_complexity)]
     fn prepare_migrate_tests() -> (
         OwnedDeps<MockStorage, MockApi, MockQuerier<UnionCustomQuery>, UnionCustomQuery>,
         WasmClientState,

@@ -15,11 +15,9 @@ use crate::errors::{required, MissingField};
 /// response to a `get_state_proof` request.
 ///
 /// From a `StateProof` response, a client should be able to ratchet their
-/// [`TrustedState`] to the last epoch change LI in the [`EpochChangeProof`]
+/// `TrustedState` to the last epoch change LI in the [`EpochChangeProof`]
 /// or the latest [`LedgerInfoWithSignatures`] if the epoch changes get them into
 /// the most recent epoch.
-///
-/// [`TrustedState`]: crate::trusted_state::TrustedState
 #[model(proto(
     raw(protos::union::ibc::lightclients::movement::v1::StateProof),
     into,
