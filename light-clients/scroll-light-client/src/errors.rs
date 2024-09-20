@@ -85,6 +85,12 @@ pub enum Error {
 
     #[error("error decoding batch header")]
     BatchHeaderDecode(#[from] BatchHeaderV3DecodeError),
+
+    #[error("substitute client is frozen")]
+    SubstituteClientFrozen,
+
+    #[error("forbidden fields have been changed during state migration")]
+    MigrateFieldsChanged,
 }
 
 impl From<Error> for IbcClientError<ScrollLightClient> {

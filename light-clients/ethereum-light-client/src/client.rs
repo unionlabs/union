@@ -583,7 +583,7 @@ mod test {
     };
 
     use super::*;
-    use crate::client::test_utils::custom_query_handler;
+    use crate::{client::test_utils::custom_query_handler, errors::Error};
 
     #[derive(Deserialize)]
     struct MembershipTest<T> {
