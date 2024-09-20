@@ -87,12 +87,7 @@ function handleKeyDown(event: KeyboardEvent, index: number) {
   {/each}
 </div>
 
-{#if secondary}
-  <Button class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" loading={codeLoading} type="button" onclick={handleCodeJoin}>
+
+<Button variant={secondary ? "secondary" : "primary"} loading={codeLoading} type="button" onclick={handleCodeJoin}>
   Redeem code
-  </Button>
-{:else}
-  <Button loading={codeLoading} type="button" onclick={handleCodeJoin}>
-    Redeem code
-  </Button>
-{/if}
+</Button>
