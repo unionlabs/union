@@ -36,10 +36,10 @@ let imageUrl = $derived(new URL(imagePath, $page.url.origin).href)
 
 <svelte:head>
   <title>Union Ceremony</title>
-  <meta name="description" content="dsadsa"/>
+  <meta name="description" content=""/>
 
   <meta property="og:title" content="Union Ceremony "/>
-  <meta property="og:description" content="dsadsa"/>
+  <meta property="og:description" content=""/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://ceremony.union.build"/>
   <meta property="og:site_name" content="Union Ceremony"/>
@@ -51,8 +51,8 @@ let imageUrl = $derived(new URL(imagePath, $page.url.origin).href)
   <meta property="og:image:height" content="675"/>
   <meta property="og:image:alt" content="Union Ceremony event banner"/>
 
-  <meta name="twitter:title" content="dsadsa"/>
-  <meta name="twitter:description" content="dsadsa"/>
+  <meta name="twitter:title" content=""/>
+  <meta name="twitter:description" content=""/>
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:site" content="@union_build"/>
   <meta name="twitter:creator" content="@union_build"/>
