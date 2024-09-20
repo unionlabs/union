@@ -49,12 +49,12 @@ let imageUrl = $derived(new URL(imagePath, $page.url.origin).href)
   <meta name="twitter:image" content={imageUrl}/>
 </svelte:head>
 
-<div class="w-full flex justify-center">
+<div class="w-full flex justify-center mt-[80px] pb-16">
   {#await getUserContribution(hash)}
     <Spinner class="size-5 text-union-accent-500"/>
   {:then contribution}
     {#if contribution}
-      <div class="flex flex-col items-start gap-1 px-3 py-2 px-4">
+      <div class="flex flex-col items-start gap-1 py-2 px-4">
         <div>
           <H2>Contributor: <span class="!text-union-accent-500">{contribution.user_name}</span></H2>
         </div>
