@@ -2,18 +2,19 @@ use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
 use ics008_wasm_client::{
     storage_utils::{
-        read_client_state, read_consensus_state, save_client_state, save_consensus_state,
-        update_client_state, read_subject_client_state, read_substitute_client_state,
-        read_substitute_consensus_state, save_subject_consensus_state, save_subject_client_state,
+        read_client_state, read_consensus_state, read_subject_client_state,
+        read_substitute_client_state, read_substitute_consensus_state, save_client_state,
+        save_consensus_state, save_subject_client_state, save_subject_consensus_state,
+        update_client_state,
     },
     IbcClient, IbcClientError, Status, StorageState,
 };
 use unionlabs::{
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
     encoding::{DecodeAs, Proto},
+    ensure,
     ethereum::keccak256,
     hash::H256,
-    ensure,
     ibc::{
         core::{
             client::{genesis_metadata::GenesisMetadata, height::Height},
@@ -196,7 +197,9 @@ impl IbcClient for ArbitrumLightClient {
     }
 
     // Implementing the migration logic
-    fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), IbcClientError<Self>> {
+    fn migrate_client_store(
+        mut deps: DepsMut<Self::CustomQuery>,
+    ) -> Result<(), IbcClientError<Self>> {
         // Read the subject and substitute client states
         let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
         let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
@@ -231,7 +234,7 @@ impl IbcClient for ArbitrumLightClient {
         let mut updated_subject_client_state = subject_client_state;
         updated_subject_client_state.data.frozen_height = Height::default(); // Unfreeze
         updated_subject_client_state.latest_height = substitute_client_state.latest_height;
-        
+
         save_subject_client_state::<Self>(deps, updated_subject_client_state);
 
         Ok(())
@@ -316,19 +319,23 @@ fn do_verify_non_membership(
     Ok(())
 }
 
-
 fn check_allowed_fields(
     subject_client_state: &ClientState,
     substitute_client_state: &ClientState,
 ) -> bool {
     subject_client_state.l1_client_id == substitute_client_state.l1_client_id
         && subject_client_state.chain_id == substitute_client_state.chain_id
-        && subject_client_state.l2_ibc_contract_address == substitute_client_state.l2_ibc_contract_address
-        && subject_client_state.l2_ibc_commitment_slot == substitute_client_state.l2_ibc_commitment_slot
-        && subject_client_state.l1_nodes_confirm_data_offset == substitute_client_state.l1_nodes_confirm_data_offset
-        && subject_client_state.l1_next_node_num_slot_offset_bytes == substitute_client_state.l1_next_node_num_slot_offset_bytes
+        && subject_client_state.l2_ibc_contract_address
+            == substitute_client_state.l2_ibc_contract_address
+        && subject_client_state.l2_ibc_commitment_slot
+            == substitute_client_state.l2_ibc_commitment_slot
+        && subject_client_state.l1_nodes_confirm_data_offset
+            == substitute_client_state.l1_nodes_confirm_data_offset
+        && subject_client_state.l1_next_node_num_slot_offset_bytes
+            == substitute_client_state.l1_next_node_num_slot_offset_bytes
         && subject_client_state.l1_nodes_slot == substitute_client_state.l1_nodes_slot
-        && subject_client_state.l1_next_node_num_slot == substitute_client_state.l1_next_node_num_slot
+        && subject_client_state.l1_next_node_num_slot
+            == substitute_client_state.l1_next_node_num_slot
         && subject_client_state.l1_contract_address == substitute_client_state.l1_contract_address
 }
 
@@ -336,29 +343,30 @@ fn check_allowed_fields(
 mod test {
     use cosmwasm_std::{
         testing::{MockApi, MockQuerier, MockStorage},
-        OwnedDeps, DepsMut,
+        DepsMut, OwnedDeps,
     };
-    use ics008_wasm_client::storage_utils::{
-        SUBJECT_CLIENT_STORE_PREFIX, SUBSTITUTE_CLIENT_STORE_PREFIX, HOST_CLIENT_STATE_KEY,
-        consensus_db_key, read_subject_client_state,
+    use ics008_wasm_client::{
+        storage_utils::{
+            consensus_db_key, read_subject_client_state, HOST_CLIENT_STATE_KEY,
+            SUBJECT_CLIENT_STORE_PREFIX, SUBSTITUTE_CLIENT_STORE_PREFIX,
+        },
+        IbcClient,
     };
     use unionlabs::{
         bounded::BoundedU32,
-        id::ClientId,
         cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-        hash::H160,
-        ibc::core::client::height::Height,
-        uint::U256,
-        google::protobuf::any::Any,
         encoding::{EncodeAs, Proto},
-        hash::H256,
+        google::protobuf::any::Any,
+        hash::{H160, H256},
+        ibc::core::client::height::Height,
+        id::ClientId,
+        uint::U256,
     };
 
-    use ics008_wasm_client::IbcClient;
+    use super::{
+        ArbitrumLightClient, ClientState, ConsensusState, WasmClientState, WasmConsensusState,
+    };
     use crate::errors::Error;
-
-    use super::{ArbitrumLightClient, WasmClientState, WasmConsensusState, ClientState, ConsensusState};
-
 
     const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
         revision_number: 0,
@@ -370,9 +378,9 @@ mod test {
         revision_height: 970,
     };
 
-
     #[allow(clippy::type_complexity)]
-    fn mock_dependencies() -> OwnedDeps<MockStorage, MockApi, MockQuerier<UnionCustomQuery>, UnionCustomQuery> {
+    fn mock_dependencies(
+    ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<UnionCustomQuery>, UnionCustomQuery> {
         OwnedDeps::<_, _, _, UnionCustomQuery> {
             storage: MockStorage::default(),
             api: MockApi::default(),

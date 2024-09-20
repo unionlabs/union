@@ -2,9 +2,10 @@ use cosmwasm_std::{Deps, DepsMut, Env};
 use ethereum_light_client::client::{canonicalize_stored_value, check_commitment_key};
 use ics008_wasm_client::{
     storage_utils::{
-        read_client_state, read_consensus_state, save_client_state, save_consensus_state,
-        update_client_state, read_subject_client_state, read_substitute_client_state, 
-        read_substitute_consensus_state, save_subject_consensus_state, save_subject_client_state
+        read_client_state, read_consensus_state, read_subject_client_state,
+        read_substitute_client_state, read_substitute_consensus_state, save_client_state,
+        save_consensus_state, save_subject_client_state, save_subject_consensus_state,
+        update_client_state,
     },
     IbcClient, IbcClientError, Status, StorageState,
 };
@@ -199,7 +200,9 @@ impl IbcClient for ScrollLightClient {
         Err(Error::Unimplemented.into())
     }
 
-    fn migrate_client_store(mut deps: DepsMut<Self::CustomQuery>) -> Result<(), IbcClientError<Self>> {
+    fn migrate_client_store(
+        mut deps: DepsMut<Self::CustomQuery>,
+    ) -> Result<(), IbcClientError<Self>> {
         // Read the subject and substitute client states
         let subject_client_state: WasmClientState = read_subject_client_state(deps.as_ref())?;
         let substitute_client_state: WasmClientState = read_substitute_client_state(deps.as_ref())?;
@@ -234,7 +237,7 @@ impl IbcClient for ScrollLightClient {
         let mut updated_subject_client_state = subject_client_state;
         updated_subject_client_state.data.frozen_height = Height::default(); // Unfreeze
         updated_subject_client_state.latest_height = substitute_client_state.latest_height;
-        
+
         save_subject_client_state::<Self>(deps, updated_subject_client_state);
 
         Ok(())
@@ -328,8 +331,10 @@ fn check_allowed_fields(
     subject_client_state.l1_client_id == substitute_client_state.l1_client_id
         && subject_client_state.chain_id == substitute_client_state.chain_id
         && subject_client_state.l2_contract_address == substitute_client_state.l2_contract_address
-        && subject_client_state.l2_finalized_state_roots_slot == substitute_client_state.l2_finalized_state_roots_slot
-        && subject_client_state.l2_committed_batches_slot == substitute_client_state.l2_committed_batches_slot
+        && subject_client_state.l2_finalized_state_roots_slot
+            == substitute_client_state.l2_finalized_state_roots_slot
+        && subject_client_state.l2_committed_batches_slot
+            == substitute_client_state.l2_committed_batches_slot
         && subject_client_state.ibc_contract_address == substitute_client_state.ibc_contract_address
         && subject_client_state.ibc_commitment_slot == substitute_client_state.ibc_commitment_slot
 }
@@ -338,28 +343,28 @@ fn check_allowed_fields(
 mod test {
     use cosmwasm_std::{
         testing::{MockApi, MockQuerier, MockStorage},
-        OwnedDeps, DepsMut,
+        DepsMut, OwnedDeps,
     };
-    use ics008_wasm_client::storage_utils::{
-        SUBJECT_CLIENT_STORE_PREFIX,  SUBSTITUTE_CLIENT_STORE_PREFIX, HOST_CLIENT_STATE_KEY,
-        consensus_db_key, 
-        read_subject_client_state,
+    use ics008_wasm_client::{
+        storage_utils::{
+            consensus_db_key, read_subject_client_state, HOST_CLIENT_STATE_KEY,
+            SUBJECT_CLIENT_STORE_PREFIX, SUBSTITUTE_CLIENT_STORE_PREFIX,
+        },
+        IbcClient,
     };
     use unionlabs::{
         cosmwasm::wasm::union::custom_query::UnionCustomQuery,
-        hash::H160,
+        encoding::{EncodeAs, Proto},
+        google::protobuf::any::Any,
+        hash::{H160, H256},
         ibc::core::client::height::Height,
         uint::U256,
-        google::protobuf::any::Any,
-        encoding::{EncodeAs, Proto},
-        hash::H256,
     };
 
-    use ics008_wasm_client::IbcClient;
+    use super::{
+        ClientState, ConsensusState, ScrollLightClient, WasmClientState, WasmConsensusState,
+    };
     use crate::errors::Error;
-
-    use super::{ScrollLightClient, WasmClientState, WasmConsensusState, ClientState, ConsensusState};
-
 
     const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
         revision_number: 0,
@@ -371,9 +376,9 @@ mod test {
         revision_height: 970,
     };
 
-
     #[allow(clippy::type_complexity)]
-    fn mock_dependencies() -> OwnedDeps<MockStorage, MockApi, MockQuerier<UnionCustomQuery>, UnionCustomQuery> {
+    fn mock_dependencies(
+    ) -> OwnedDeps<MockStorage, MockApi, MockQuerier<UnionCustomQuery>, UnionCustomQuery> {
         OwnedDeps::<_, _, _, UnionCustomQuery> {
             storage: MockStorage::default(),
             api: MockApi::default(),
@@ -383,11 +388,11 @@ mod test {
     }
 
     fn create_client_state(
-        l1_client_id: String, 
-        chain_id: U256, 
-        latest_slot: u64, 
+        l1_client_id: String,
+        chain_id: U256,
+        latest_slot: u64,
         height: Height,
-        frozen_height: Height
+        frozen_height: Height,
     ) -> WasmClientState {
         WasmClientState {
             data: ClientState {
@@ -406,7 +411,7 @@ mod test {
             checksum: H256::default(),
         }
     }
-    
+
     fn save_states_to_migrate_store(
         deps: DepsMut<UnionCustomQuery>,
         subject_client_state: &WasmClientState,
@@ -450,20 +455,20 @@ mod test {
         let deps = mock_dependencies();
 
         let subject_client_state = create_client_state(
-            "client_1".to_string(), 
-            U256::from(1), 
+            "client_1".to_string(),
+            U256::from(1),
             INITIAL_CONSENSUS_STATE_HEIGHT.revision_height,
-            INITIAL_CONSENSUS_STATE_HEIGHT, 
+            INITIAL_CONSENSUS_STATE_HEIGHT,
             Height::default(),
         );
         let substitute_client_state = create_client_state(
             "client_1".to_string(),
-            U256::from(1),          
+            U256::from(1),
             INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT.revision_height,
-            INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT,                  
+            INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT,
             Height::default(),
         );
-        
+
         let subject_consensus_state = WasmConsensusState {
             data: ConsensusState {
                 state_root: H256::default(),
@@ -498,14 +503,13 @@ mod test {
             substitute_consensus_state,
         ) = prepare_migrate_tests();
 
-
         subject_client_state.data.frozen_height = Height {
             revision_number: 0,
             revision_height: 1000,
         };
 
         substitute_client_state.data.frozen_height = Height::default();
-        
+
         save_states_to_migrate_store(
             deps.as_mut(),
             &subject_client_state,
@@ -513,19 +517,21 @@ mod test {
             &subject_consensus_state,
             &substitute_consensus_state,
         );
-        
+
         let original_subject_client_state: WasmClientState =
             read_subject_client_state::<ScrollLightClient>(deps.as_ref()).unwrap();
-            
-        assert_eq!(original_subject_client_state.data.frozen_height, Height {
-            revision_number: 0,
-            revision_height: 1000,
-        });
+
+        assert_eq!(
+            original_subject_client_state.data.frozen_height,
+            Height {
+                revision_number: 0,
+                revision_height: 1000,
+            }
+        );
 
         // Perform migration
         let result = ScrollLightClient::migrate_client_store(deps.as_mut());
 
-            
         // Assert success, print error if any
         if let Err(ref e) = result {
             println!("Migration failed with error: {:?}", e);
@@ -534,7 +540,10 @@ mod test {
         assert!(result.is_ok());
         let updated_subject_client_state: WasmClientState =
             read_subject_client_state::<ScrollLightClient>(deps.as_ref()).unwrap();
-        assert_eq!(updated_subject_client_state.data.frozen_height, Height::default());
+        assert_eq!(
+            updated_subject_client_state.data.frozen_height,
+            Height::default()
+        );
 
         assert_eq!(
             updated_subject_client_state.latest_height,
@@ -608,7 +617,7 @@ mod test {
             subject_client_state,
             subject_consensus_state,
             mut substitute_client_state,
-            _substitute_consensus_state,  // we won't save this to storage
+            _substitute_consensus_state, // we won't save this to storage
         ) = prepare_migrate_tests();
 
         // modify latest height to a height where the consensus state is not found
@@ -623,17 +632,16 @@ mod test {
             &subject_client_state,
             &substitute_client_state,
             &subject_consensus_state,
-            &subject_consensus_state,  // Reusing subject consensus intentionally
+            &subject_consensus_state, // Reusing subject consensus intentionally
         );
 
         // Perform migration
         let result = ScrollLightClient::migrate_client_store(deps.as_mut());
 
         // Assert failure
-        assert_eq!(result, Err(Error::ConsensusStateNotFound(substitute_client_state.latest_height).into()));
+        assert_eq!(
+            result,
+            Err(Error::ConsensusStateNotFound(substitute_client_state.latest_height).into())
+        );
     }
-
-
-    
 }
-
