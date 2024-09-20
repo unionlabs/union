@@ -32,7 +32,8 @@ const copy = () => {
       because docker desktop is too slow. <br>
       If you use docker desktop it is extremely likely that you lose your contribution slot.
     </Text>
-    <Text class="mt-4 !text-union-accent-500">Once you have OrbStack/Docker running you should paste this in your terminal.</Text>
+    <Text class="mt-4 !text-union-accent-500">Once you have OrbStack/Docker running you should open a terminal window and paste the command to start the MPC client then come back here.
+    </Text>
     <div class="max-w-4xl p-8">
       <code class="text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-black text-white p-4 pl-6 font-mono border-white border">
           <span class="flex gap-4">
@@ -56,6 +57,8 @@ const copy = () => {
         </Button>
       </code>
     </div>
-    <Text>Is it running but still see this page? We support Chrome, FireFox and Brave. <br>For Brave disable the shields in the address bar.</Text>
+    <Text>Is it running but still see this page? We support Chrome, FireFox and Brave. <br>For Brave disable the shields
+      in the address bar.
+    </Text>
   </div>
 {/if}

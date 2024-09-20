@@ -70,7 +70,7 @@ const onAddressSubmit = async (event: Event) => {
     spellcheck="false"
     autocapitalize="none"
     bind:value={inputText}
-    placeholder="union1qp0wtsfltjk9rnvyu3fkdv0s0skp4y5y3py96f"
+    placeholder="union1ab…."
     class={clsx([
       className,
       'text-md font-supermolot h-9 px-2 outline-none border-2',

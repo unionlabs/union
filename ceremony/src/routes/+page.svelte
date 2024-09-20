@@ -7,6 +7,7 @@ import { ContributorState, getContributorState } from "$lib/stores/state.svelte.
 import Text from "$lib/components/typography/Text.svelte"
 import { supabase } from "$lib/supabase/client.ts"
 import { page } from "$app/stores"
+import H4 from "$lib/components/typography/H4.svelte"
 
 const contributor: ContributorState = getContributorState()
 
@@ -43,9 +44,12 @@ async function diveIn(provider: AuthProviders) {
     <Text>Participation is currently exclusive to those who have an invitation.</Text>
     <Text>If you don't have a invitation you can still join the waitlist.</Text>
   </div>
-  <div class="flex gap-4">
-    {#each providers as provider}
-      {@render Dive(provider)}
-    {/each}
+  <div>
+    <H4 class="text-center mb-4">Log in</H4>
+    <div class="flex gap-4">
+      {#each providers as provider}
+        {@render Dive(provider)}
+      {/each}
+    </div>
   </div>
 </section>

@@ -2,6 +2,7 @@
 import Spinner from "$lib/components/Spinner.svelte"
 import Text from "$lib/components/typography/Text.svelte"
 import { getContributions } from "$lib/supabase"
+import Live from "$lib/components/Live.svelte"
 
 let intervalId: NodeJS.Timeout | number
 let contributions = $state()
@@ -44,4 +45,6 @@ $effect(() => {
 {:else}
   <Spinner class="size-5 text-union-accent-500"/>
 {/if}
+
+<Live />
 

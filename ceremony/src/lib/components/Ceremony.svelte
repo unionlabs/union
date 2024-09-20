@@ -40,22 +40,31 @@ window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
 
   {#if !contributor.userWallet}
     <Reward {contributor}/>
+
   {:else if contributor.state === 'contributed'}
     <Thanks {contributor}/>
-  {:else if contributor.clientState === 'offline'}
-    <Install {contributor}/>
-  {:else if !contributor.downloadedSecret}
-    <Download {contributor}/>
-  {:else if contributor.state === "inQueue"}
-    <Queue {contributor}/>
-  {:else if contributor.state === 'contribute'}
-    <H1>Starting contribution...</H1>
-  {:else if contributor.state === 'contributing'}
-    <H1>Contributing...</H1>
+
   {:else if contributor.state === 'verifying'}
     <H1>Verifying your contribution...</H1>
+
+  {:else if contributor.clientState === 'offline'}
+    <Install {contributor}/>
+
+  {:else if !contributor.downloadedSecret}
+    <Download {contributor}/>
+
+  {:else if contributor.state === "inQueue"}
+    <Queue {contributor}/>
+
+  {:else if contributor.state === 'contribute'}
+    <H1>Starting contribution...</H1>
+
+  {:else if contributor.state === 'contributing'}
+    <H1>Contributing...</H1>
+
   {:else}
     <H1>Not able to contribute at this time</H1>
+
   {/if}
 
 </div>
