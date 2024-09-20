@@ -36,7 +36,6 @@ const skip = async () => {
 }
 </script>
 
-
 <div class="text-center flex flex-col items-center gap-4">
   <H2 class="">Add an address</H2>
   <Text class="">You may receive rewards for successful contributions.</Text>
