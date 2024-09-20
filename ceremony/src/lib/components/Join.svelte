@@ -6,6 +6,7 @@ import { callJoinQueue, checkIfOpen } from "$lib/supabase"
 import type { ContributorState } from "$lib/stores/state.svelte.ts"
 import { toast } from "svelte-sonner"
 import Code from "$lib/components/Code.svelte"
+import H2 from "$lib/components/typography/H2.svelte"
 
 type Props = {
   contributor: ContributorState
@@ -45,13 +46,16 @@ $effect(() => {
 </script>
 
 <div class="text-center flex flex-col gap-4 items-center">
+
   <H1>Join the ceremony</H1>
+  <Text>Have an invite? Enter your code below.</Text>
   <form class="flex flex-col items-center">
     <Code {contributor}/>
   </form>
-  <Text>Or</Text>
-  <Button loading={waitlistLoading} onclick={handleWaitlistJoin} type="button">
+  <Text class="py-8">Or</Text>
+  <H2>Don't have an invite?</H2>
+  <Text>You can join the waitlist now to get priority access when the ceremony opens.</Text>
+  <Button class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" loading={waitlistLoading} onclick={handleWaitlistJoin} type="button">
     {isOpenToPublic ? "Join the queue" : "Join the waitlist"}
   </Button>
-
 </div>

@@ -54,3 +54,14 @@ export const checkState = async (): Promise<ClientState> => {
     return "offline"
   }
 }
+
+export const getSecret = async () => {
+  try {
+    const response = await get("contribute", {})
+
+    return response ?? "offline"
+  } catch (error) {
+    console.log("Error fetching status:", error)
+    return "offline"
+  }
+}

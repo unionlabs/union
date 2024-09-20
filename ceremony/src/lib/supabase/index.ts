@@ -130,6 +130,7 @@ export const getContributions = async () => {
 
 export const getUserContribution = async (hash: string) => {
   console.log(hash)
+
   const { data, error } = await queryUserContribution(hash)
   if (error || !data) return undefined
 
