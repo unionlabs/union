@@ -12,8 +12,8 @@ BEGIN;
 INSERT INTO storage.buckets(id, name, public) VALUES('contributions', 'contributions', false);
 
 CREATE TABLE wallet_address(
-  id UUID PRIMARY KEY,
-  wallet TEXT NOT NULL
+  id uuid PRIMARY KEY,
+  wallet text NOT NULL
 );
 
 ALTER TABLE wallet_address ENABLE ROW LEVEL SECURITY;
@@ -36,12 +36,14 @@ CREATE POLICY allow_insert_self
     );
 
 CREATE TABLE waitlist(
-  id UUID PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT(now())
+  id uuid PRIMARY KEY,
+  created_at timestamptz NOT NULL DEFAULT(now()),
+  seq smallserial NOT NULL,
 );
 
 ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
 ALTER TABLE waitlist ADD FOREIGN KEY (id) REFERENCES auth.users(id);
+CREATE UNIQUE INDEX idx_waitlist_seq ON waitlist(seq);
 
 CREATE POLICY view_self
   ON waitlist
@@ -85,7 +87,7 @@ CREATE TABLE queue (
   id uuid PRIMARY KEY,
   payload_id uuid NOT NULL DEFAULT(gen_random_uuid()),
   joined timestamptz NOT NULL DEFAULT (now()),
-  score INTEGER NOT NULL
+  score integer NOT NULL
 );
 
 ALTER TABLE queue ENABLE ROW LEVEL SECURITY;
@@ -154,14 +156,27 @@ DECLARE
   redeemed_code public.code%ROWTYPE := NULL;
 BEGIN
   UPDATE public.code c
-   SET user_id = (SELECT auth.uid())
-   WHERE c.id = encode(sha256(code_id::bytea), 'hex')
-   AND c.user_id IS NULL
-   RETURNING * INTO redeemed_code;
+    SET user_id = (SELECT auth.uid())
+    WHERE c.id = encode(sha256(code_id::bytea), 'hex')
+    AND c.user_id IS NULL
+    RETURNING * INTO redeemed_code;
   IF (redeemed_code IS NULL) THEN
     RAISE EXCEPTION 'redeem_code_invalid';
   END IF;
   INSERT INTO public.queue(id) VALUES ((SELECT auth.uid()));
+  PERFORM public.do_log(
+    json_build_object(
+      'type', 'redeem',
+      'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid())),
+      'code', code_id
+    )
+  );
+  PERFORM public.do_log(
+    json_build_object(
+      'type', 'join_queue',
+      'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid()))
+    )
+  );
 END
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
@@ -170,14 +185,39 @@ BEGIN
   IF (code_id IS NULL) THEN
     IF (public.open_to_public()) THEN
       INSERT INTO public.queue(id) VALUES ((SELECT auth.uid()));
+      PERFORM public.do_log(
+        json_build_object(
+          'type', 'join_queue',
+          'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid()))
+        )
+      );
     ELSE
       INSERT INTO public.waitlist(id) VALUES ((SELECT auth.uid()));
+      PERFORM public.do_log(
+        json_build_object(
+          'type', 'join_waitlist',
+          'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid()))
+        )
+      );
     END IF;
   ELSE
     PERFORM public.redeem(code_id);
   END IF;
 END
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+-- Username
+CREATE OR REPLACE VIEW user_name AS
+  SELECT u.id,
+    COALESCE(
+      (SELECT c.display_name FROM public.code c WHERE c.user_id = u.id),
+      COALESCE(
+        u.raw_user_meta_data->>'user_name',
+        u.raw_user_meta_data->>'name'
+      )
+    ) AS user_name FROM auth.users u;
+
+ALTER VIEW user_name SET (security_invoker = off);
 
 -------------------------
 -- Contribution Status --
@@ -206,7 +246,6 @@ CREATE POLICY view_all
     USING (
       true
     );
-
 
 ----------------------------
 -- Contribution Submitted --
@@ -259,6 +298,12 @@ CREATE POLICY view_all
 -- The next contributor is the one with the highest score that didn't contribute yet.
 CREATE OR REPLACE FUNCTION set_next_contributor_trigger() RETURNS TRIGGER AS $$
 BEGIN
+  PERFORM public.do_log(
+      json_build_object(
+        'type', 'contribution_verified',
+        'user', (SELECT un.user_name FROM auth.users u WHERE u.id = NEW.id)
+      )
+    );
   CALL public.set_next_contributor();
   RETURN NEW;
 END
@@ -341,13 +386,20 @@ ALTER VIEW current_payload_id SET (security_invoker = on);
 
 CREATE OR REPLACE PROCEDURE set_next_contributor() AS $$
 BEGIN
-  IF (SELECT COUNT(*) FROM public.current_contributor_id) = 0 THEN
+  IF (NOT EXISTS (SELECT * FROM public.current_contributor_id)) THEN
     INSERT INTO public.contribution_status(id)
     SELECT cq.id
-    FROM public.current_queue cq LIMIT 1;
+    FROM public.current_queue cq
+    LIMIT 1;
+    PERFORM public.do_log(
+      json_build_object(
+        'type', 'contribution_started',
+        'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT cci.id FROM public.current_contributor_id cci))
+      )
+    );
   END IF;
 END
-$$ LANGUAGE plpgsql SET search_path = '';
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 CREATE OR REPLACE FUNCTION can_upload(name varchar) RETURNS BOOLEAN AS $$
 BEGIN
@@ -410,6 +462,12 @@ CREATE POLICY allow_authenticated_contributor_download
 CREATE OR REPLACE PROCEDURE set_contribution_submitted(queue_id uuid, object_id uuid) AS $$
 BEGIN
   INSERT INTO public.contribution_submitted(id, object_id) VALUES(queue_id, object_id);
+  PERFORM public.do_log(
+    json_build_object(
+      'type', 'contribution_submitted',
+      'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid()))
+    )
+  );
 END
 $$ LANGUAGE plpgsql SET search_path = '';
 
@@ -490,18 +548,62 @@ CREATE OR REPLACE VIEW current_user_state AS (
     (EXISTS (SELECT * FROM public.waitlist WHERE id = (SELECT auth.uid()))) AS in_waitlist,
     (EXISTS (SELECT * FROM public.code WHERE user_id = (SELECT auth.uid()))) AS has_redeemed,
     (EXISTS (SELECT * FROM public.queue WHERE id = (SELECT auth.uid()))) AS in_queue,
-    (COALESCE((SELECT display_name FROM public.code WHERE user_id = (SELECT auth.uid())), (SELECT raw_user_meta_data->>'name' FROM auth.users u WHERE u.id = (SELECT auth.uid())))) AS display_name
+    (SELECT un.user_name FROM public.user_name un WHERE un.id = (SELECT auth.uid())) AS display_name,
+    ((SELECT COUNT(*)
+      FROM public.waitlist w
+      WHERE w.id <> (SELECT auth.uid())
+      AND w.seq < (SELECT ww.seq FROM public.waitlist ww WHERE w.id = (SELECT auth.uid()))
+    ) + 1) AS waitlist_position
 );
 
 ALTER VIEW current_user_state SET (security_invoker = off);
 
+-----------------
+-- Logging     --
+-----------------
+CREATE TABLE log(
+  id smallserial PRIMARY KEY,
+  created_at timestamptz NOT NULL DEFAULT(now()),
+  message jsonb NOT NULL
+);
+
+ALTER TABLE log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY view_all
+  ON log
+  FOR SELECT
+    TO authenticated
+    USING (
+      true
+    );
+
+CREATE OR REPLACE FUNCTION do_log(message jsonb) RETURNS void AS $$
+BEGIN
+  INSERT INTO public.log(message) VALUES (message);
+END
+$$ LANGUAGE plpgsql SET search_path = '';
+
 CREATE MATERIALIZED VIEW IF NOT EXISTS users_contribution AS (
-  SELECT c.id, COALESCE(u.raw_user_meta_data->>'user_name', u.raw_user_meta_data->>'name') AS user_name, u.raw_user_meta_data->>'avatar_url' AS avatar_url, c.seq, q.payload_id, cs.public_key, cs.signature, cs.public_key_hash, s.started AS time_started, su.created_at AS time_submitted, c.created_at AS time_verified
+  SELECT c.id,
+         un.user_name,
+         u.raw_user_meta_data->>'avatar_url' AS avatar_url,
+         c.seq,
+         q.payload_id,
+         cs.public_key,
+         cs.signature,
+         cs.public_key_hash,
+         s.started AS time_started,
+         su.created_at AS time_submitted,
+         c.created_at AS time_verified,
+         w.wallet AS wallet,
+         (su.created_at - s.started) AS time_contribute
   FROM public.contribution c
   INNER JOIN public.queue q ON (c.id = q.id)
   INNER JOIN public.contribution_status s ON (c.id = s.id)
   INNER JOIN public.contribution_submitted su ON (c.id = su.id)
   INNER JOIN public.contribution_signature cs ON (c.id = cs.id)
+  INNER JOIN public.wallet_address w ON (c.id = w.id)
+  INNER JOIN public.user_name un ON (c.id = un.id)
   INNER JOIN auth.users u ON (c.id = u.id)
   WHERE c.success
   ORDER BY c.seq ASC
