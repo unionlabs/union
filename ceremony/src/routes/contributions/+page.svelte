@@ -1,25 +1,29 @@
 <script lang="ts">
-  import { getContributions } from "$lib/supabase"
-  import Spinner from "$lib/components/Spinner.svelte"
-  import Text from "$lib/components/typography/Text.svelte"
-  import Blink from "$lib/components/Blink.svelte"
-  import H4 from "$lib/components/typography/H4.svelte"
+import { getContributions } from "$lib/supabase"
+import Spinner from "$lib/components/Spinner.svelte"
+import Text from "$lib/components/typography/Text.svelte"
+import Blink from "$lib/components/Blink.svelte"
+import H4 from "$lib/components/typography/H4.svelte"
 
-  let intervalId: NodeJS.Timeout | number
-  let contributions = $state()
+let intervalId: NodeJS.Timeout | number
+let contributions = $state()
 
-  async function loadContributions() {
-    contributions = await getContributions();
+async function loadContributions() {
+  contributions = await getContributions()
+}
+
+$effect(() => {
+  loadContributions()
+  intervalId = setInterval(loadContributions, 1000 * 5)
+
+  return () => {
+    if (intervalId) clearInterval(intervalId)
   }
+})
 
-  $effect(() => {
-    loadContributions()
-    intervalId = setInterval(loadContributions, 1000 * 5)
-
-    return () => {
-      if (intervalId) clearInterval(intervalId)
-    }
-  })
+function getFirstLetter(str: string): string | undefined {
+  return str.length > 0 ? str[0] : undefined
+}
 </script>
 
 {#if contributions}
@@ -32,7 +36,11 @@
         {/if}
         <a href="/contributions/{contribution.public_key_hash}"
            class="text-white flex gap-1 items-center border-white border px-3 py-2 w-full">
-          <img class="size-7" src={contribution.avatar_url} alt="">
+          {#if contribution.avatar_url}
+            <img class="size-7" src={contribution.avatar_url} alt="">
+          {:else}
+            <div class="flex size-7 bg-union-accent-500 items-center justify-center text-black">{getFirstLetter(contribution.user_name)}</div>
+          {/if}
           <Text class="uppercase max-w-48 truncate">{contribution.user_name}</Text>
         </a>
       {/each}
