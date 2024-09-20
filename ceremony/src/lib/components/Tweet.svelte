@@ -22,5 +22,5 @@ function shareOnTwitter() {
 </script>
 
 <Button onclick={shareOnTwitter}>
-  Tweet This
+  Tweet your attestation
 </Button>

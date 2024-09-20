@@ -6,9 +6,10 @@ import Button from "$lib/components/Button.svelte"
 
 type Props = {
   contributor: ContributorState
+  secondary?: boolean
 }
 
-let { contributor }: Props = $props()
+let { contributor, secondary = false }: Props = $props()
 
 let words: Array<string> = $state(new Array(6).fill(""))
 let code = $derived(normalizeString(words))
@@ -44,17 +45,39 @@ async function handleCodeJoin() {
     toast.error("An error occurred while redeeming the code")
   } finally {
     codeLoading = false
-    words = new Array(6).fill("")
+  }
+}
+
+function handleKeyDown(event: KeyboardEvent, index: number) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault()
+    if (index < words.length - 1) {
+      // Move to next input
+      const nextInput = document.querySelector(
+        `input:nth-child(${2 * index + 3})`
+      ) as HTMLInputElement
+      nextInput?.focus()
+    } else if (event.key === "Enter") {
+      // On last input, trigger the USE CODE button only for Enter key
+      handleCodeJoin()
+    }
+  } else if (event.key === "Backspace" && words[index] === "" && index > 0) {
+    event.preventDefault()
+    // Move to previous input
+    const prevInput = document.querySelector(
+      `input:nth-child(${2 * index - 1})`
+    ) as HTMLInputElement
+    prevInput?.focus()
   }
 }
 </script>
-
 
 <div class="flex gap-2 max-w-4xl flex-wrap justify-center mb-8">
   {#each words as word, index}
     <input
             bind:value={words[index]}
             onpaste={handlePaste}
+            onkeydown={(e) => handleKeyDown(e, index)}
             class="bg-transparent border-b border-white w-20 text-center text-union-accent-500 outline-none focus:ring-0 focus:border-union-accent-500"
             style="--tw-ring-color: transparent;"
     />
@@ -63,6 +86,13 @@ async function handleCodeJoin() {
     {/if}
   {/each}
 </div>
-<Button loading={codeLoading} type="button" onclick={handleCodeJoin}>
-  USE CODE
-</Button>
+
+{#if secondary}
+  <Button class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" loading={codeLoading} type="button" onclick={handleCodeJoin}>
+  Redeem code
+  </Button>
+{:else}
+  <Button loading={codeLoading} type="button" onclick={handleCodeJoin}>
+    Redeem code
+  </Button>
+{/if}

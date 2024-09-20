@@ -29,7 +29,7 @@ export const get = async <T>(
 export const post = async <T>(
   resource: string,
   params: Params,
-  body: Record<string, unknown>,
+  body: Record<string, unknown> | string,
   _fetch: Fetch = fetch
 ): Promise<T | undefined> => {
   try {

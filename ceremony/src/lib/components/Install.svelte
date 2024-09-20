@@ -1,11 +1,18 @@
 <script lang="ts">
-import { toast } from "svelte-sonner"
+import Blink from "$lib/components/Blink.svelte"
+import Text from "$lib/components/typography/Text.svelte"
 import H1 from "$lib/components/typography/H1.svelte"
+import type { ContributorState } from "$lib/stores/state.svelte.ts"
 import Button from "$lib/components/Button.svelte"
+import { toast } from "svelte-sonner"
 
-let open = $state(false)
+type Props = {
+  contributor: ContributorState
+}
+let { contributor }: Props = $props()
 
-let command = "docker run -p 4919:4919 -it haitlahcen/union-mpc-cli:latest"
+let command =
+  "docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -p 4919:4919 -it ghcr.io/unionlabs/union/mpc-client:latest"
 
 const copy = () => {
   navigator.clipboard.writeText(command)
@@ -13,13 +20,23 @@ const copy = () => {
 }
 </script>
 
-{#if open}
-  <section class="fixed inset-0 h-full w-full bg-black flex justify-center z-50">
+{#if contributor}
+  <div class="flex flex-col items-center  text-center mb-4">
+
+    <H1 class="mb-4">Run the mpc client</H1>
+    <Text>You need to have docker running to contribute.<br>
+      For macOS you need to install
+      <a href="https://orbstack.dev/"
+         class="underline underline-offset-4 decoration-union-accent-500"
+         target="_blank">OrbStack</a>
+      because docker desktop is too slow. <br>
+      If you use docker desktop it is extremely likely that you lose your contribution slot.
+    </Text>
+    <Text class="mt-4 !text-union-accent-500">Once you have OrbStack/Docker running you should paste this in your terminal.</Text>
     <div class="max-w-4xl p-8">
-      <H1>How to</H1>
-      <code class="text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-black text-white p-4 pl-6 font-mono">
+      <code class="text-sm sm:text-base inline-flex text-left items-center space-x-4 bg-black text-white p-4 pl-6 font-mono border-white border">
           <span class="flex gap-4">
-              <span class="shrink-0 text-union-accent-500">
+              <span class="shrink-0 text-union-accent-500 select-none">
                   $
               </span>
 
@@ -38,11 +55,7 @@ const copy = () => {
           </svg>
         </Button>
       </code>
-      <Button onclick={() => open = !open}>Close</Button>
     </div>
-  </section>
+    <Text>Is it running but still see this page? We support Chrome, FireFox and Brave. <br>For Brave disable the shields in the address bar.</Text>
+  </div>
 {/if}
-
-<Button onclick={() => open = !open}>Install Client</Button>
-
-

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { beforeNavigate, goto } from "$app/navigation"
+import { afterNavigate, beforeNavigate, goto } from "$app/navigation"
 import { checkAuth, type SessionError } from "$lib/utils/auth.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
@@ -8,7 +8,9 @@ import Navbar from "$lib/layout/Navbar/index.svelte"
 import { setContributorState } from "$lib/stores/state.svelte.ts"
 
 import "../styles/tailwind.css"
+
 import { watch } from "runed"
+import { generateSecret } from "$lib/client"
 
 let { children } = $props()
 
@@ -28,10 +30,18 @@ beforeNavigate(async ({ from, to, cancel }) => {
         (error: SessionError) => {
           console.error(error.message)
           cancel()
-          goto("/auth/dive")
+          goto("/")
         }
       )
     }
+  }
+})
+
+afterNavigate(() => {
+  const url = new URL(window.location.href)
+  if (url.hash) {
+    url.hash = ""
+    history.replaceState(null, "", url.toString())
   }
 })
 

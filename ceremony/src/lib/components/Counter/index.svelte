@@ -1,17 +1,4 @@
 <script lang="ts">
-// import Zero from "./numbers/zero.svelte"
-// import One from "./numbers/one.svelte"
-// import Two from "./numbers/two.svelte"
-// import Three from "./numbers/three.svelte"
-// import Four from "./numbers/four.svelte"
-// import Five from "./numbers/five.svelte"
-// import Six from "./numbers/six.svelte"
-// import Seven from "./numbers/seven.svelte"
-// import Eight from "./numbers/eight.svelte"
-// import Nine from "./numbers/nine.svelte"
-// import H4 from "$lib/components/typography/H4.svelte"
-// import H1 from "$lib/components/typography/H1.svelte"
-// import Text from "$lib/components/typography/Text.svelte"
 import H2 from "$lib/components/typography/H2.svelte"
 import H3 from "$lib/components/typography/H3.svelte"
 
@@ -24,8 +11,6 @@ const { targetTimestamp }: Props = $props()
 let hours = $state("00")
 let minutes = $state("00")
 let seconds = $state("00")
-
-// const components = [Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine]
 
 let interval: ReturnType<typeof setInterval>
 

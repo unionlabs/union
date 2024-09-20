@@ -19,7 +19,7 @@ export const load: LayoutLoad = async ({ url }) => {
         },
         (error: SessionError) => {
           console.error(error.message)
-          throw redirect(302, "/auth/dive")
+          throw redirect(302, "/")
         }
       )
     }

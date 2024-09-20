@@ -54,3 +54,16 @@ export const checkState = async (): Promise<ClientState> => {
     return "offline"
   }
 }
+
+export const generateSecret = async (email: string | undefined) => {
+  if (!email) {
+    console.log("No email")
+    return
+  }
+  try {
+    return await post<string>("secret_key", {}, email)
+  } catch (error) {
+    console.log("Error fetching secret:", error)
+    return undefined
+  }
+}

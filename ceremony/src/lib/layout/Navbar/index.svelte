@@ -2,11 +2,9 @@
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
 import { invalidateAll } from "$app/navigation"
-import Link from "$lib/components/typography/Link.svelte"
 import Button from "$lib/components/Button.svelte"
 import NavLink from "$lib/layout/Navbar/NavLink.svelte"
 import Badge from "$lib/components/Badge.svelte"
-import { ContributorState, getContributorState } from "$lib/stores/state.svelte.ts"
 
 let isOpen = $state(false)
 
@@ -27,7 +25,7 @@ async function logout() {
 let loggedIn = $derived(!!user.session?.user.id)
 </script>
 
-<header class="sticky bg-black top-0 inset-x-0 flex items-center justify-between gap-4  px-2 md:h-16 md:px-4 z-50">
+<header class="fixed bg-black top-0 inset-x-0 flex items-center justify-between gap-4  px-2 md:h-16 md:px-4 z-50">
   <nav class=" w-full p-4">
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
@@ -55,12 +53,11 @@ let loggedIn = $derived(!!user.session?.user.id)
         {#if user.session}
           <div class="flex items-center gap-4">
             <NavLink class="p-2" href="/contributions">Contributions</NavLink>
-            <Button onclick={logout}>Log out</Button>
+            <Button variant="primary" class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800" onclick={logout}>Log out</Button>
           </div>
         {:else}
           <div class="flex items-center gap-4">
             <NavLink class="p-2" href="/contributions">Contributions</NavLink>
-            <NavLink href="/auth/dive">Dive in</NavLink>
           </div>
         {/if}
       </div>
@@ -77,10 +74,8 @@ let loggedIn = $derived(!!user.session?.user.id)
         <div class="flex flex-col divide-y divide-white/50">
           {#if user.session}
             <NavLink class="p-2" href="/contributions">Contributions</NavLink>
-            <Button class="py-2" onclick={logout}>Log out</Button>
           {:else}
             <NavLink class="p-2" href="/contributions">Contributions</NavLink>
-            <NavLink class="p-2" href="/auth/dive">Dive in</NavLink>
           {/if}
         </div>
       </div>

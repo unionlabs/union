@@ -30,15 +30,7 @@ export const getContribution = async (userId: string) => {
 export const getUserQueuePosition = async (userId: string) => {
   const { data, error } = await supabase.from("current_queue").select("*").eq("id", userId).single()
 
-  if (error) {
-    if (error.code === "PGRST116") {
-      return { data: undefined, error: undefined }
-    }
-    console.log("Error getting user data:", error)
-    return { data: undefined, error }
-  }
-
-  return { data, error: undefined }
+  return { data, error }
 }
 
 export const getQueueCount = async () => {
@@ -58,10 +50,10 @@ export const getQueuePayloadId = async (userId: string) => {
   return { data, error }
 }
 
-export const queryAllowance = async () => {
+export const queryCurrentUserState = async () => {
   const { data, error } = await supabase
     .from("current_user_state")
-    .select("in_waitlist, has_redeemed, in_queue")
+    .select("in_waitlist, has_redeemed, in_queue, waitlist_position")
     .single()
 
   return { data, error }
@@ -90,6 +82,16 @@ export const queryUserPublicHash = async (id: string) => {
   const { data, error } = await supabase
     .from("contribution_signature")
     .select("public_key_hash")
+    .eq("id", id)
+    .single()
+
+  return { data, error }
+}
+
+export const queryUserWallet = async (id: string) => {
+  const { data, error } = await supabase
+    .from("wallet_address")
+    .select("wallet")
     .eq("id", id)
     .single()
 

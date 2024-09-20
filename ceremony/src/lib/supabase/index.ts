@@ -5,10 +5,11 @@ import {
   getQueueCount,
   getSubmittedContribution,
   getUserQueuePosition,
-  queryAllowance,
   queryContributions,
+  queryCurrentUserState,
   queryUserContribution,
-  queryUserPublicHash
+  queryUserPublicHash,
+  queryUserWallet
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
@@ -23,13 +24,13 @@ export const callJoinQueue = async (code: string | null): Promise<boolean> => {
     const { error } = await supabase.rpc("join_queue", { code_id: code })
 
     if (error) {
-      console.error("Error joining queue:", error)
+      console.log("Error joining queue:", error)
       return false
     }
 
     return true
   } catch (err) {
-    console.error("Unexpected error:", err)
+    console.log("Unexpected error:", err)
     return false
   }
 }
@@ -50,7 +51,7 @@ export const getUserQueueInfo = async () => {
   const { count, error: countError } = await getQueueCount()
 
   if (error) {
-    console.error("Error getting user queue position:", error)
+    console.log("Error getting user queue position:", error)
     return { error }
   }
 
@@ -104,13 +105,13 @@ export const getContributionState = async (): Promise<ContributionState> => {
   }
 }
 
-export const getAllowanceState = async (userId: string | undefined): Promise<AllowanceState> => {
+export const getCurrentUserState = async (userId: string | undefined): Promise<AllowanceState> => {
   if (!userId) {
     console.log("Need to be logged in to get allowance state")
     return undefined
   }
 
-  const { data, error } = await queryAllowance()
+  const { data, error } = await queryCurrentUserState()
   if (error || !data) return undefined
 
   if (data.has_redeemed) return "hasRedeemed"
@@ -128,7 +129,6 @@ export const getContributions = async () => {
 }
 
 export const getUserContribution = async (hash: string) => {
-  console.log(hash)
   const { data, error } = await queryUserContribution(hash)
   if (error || !data) return undefined
 
@@ -169,4 +169,23 @@ export const getPublicHash = async () => {
   if (error || !data) return undefined
 
   return data.public_key_hash
+}
+
+export const getUserWallet = async (userId: string | undefined) => {
+  if (!userId) {
+    console.log("Need to be logged in to get allowance state")
+    return undefined
+  }
+
+  const { data, error } = await queryUserWallet(userId)
+  if (error || !data) return undefined
+
+  return data.wallet
+}
+
+export const getWaitListPosition = async (): Promise<number | undefined> => {
+  const { data, error } = await queryCurrentUserState()
+  if (error || !data) return undefined
+
+  return data.waitlist_position
 }

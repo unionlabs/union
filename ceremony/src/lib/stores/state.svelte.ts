@@ -1,6 +1,12 @@
 import { getContext, onDestroy, setContext } from "svelte"
 import { checkState } from "$lib/client"
-import { getAllowanceState, getUserQueueInfo, getContributionState } from "$lib/supabase"
+import {
+  getCurrentUserState,
+  getUserQueueInfo,
+  getContributionState,
+  getUserWallet,
+  getWaitListPosition
+} from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
 
@@ -62,11 +68,14 @@ const QUEUE_POLLING_INTERVAL = second * 5
 export class ContributorState {
   userId = $state<string | undefined>(undefined)
   loggedIn = $state<boolean>(false)
-  allowanceState = $state<AllowanceState>(undefined)
+  currentUserState = $state<AllowanceState>(undefined)
   pollingState = $state<"stopped" | "polling">("stopped")
   state = $state<State>("loading")
   clientState = $state<ClientState>("offline")
   contributionState = $state<ContributionState>("notContributed")
+  userWallet = $state("")
+  waitListPosition = $state<number | undefined>(undefined)
+  downloadedSecret = $state<boolean>(localStorage.getItem("downloaded-secret") === "true")
   queueState = $state<UserContext>({
     position: null,
     count: null,
@@ -88,7 +97,7 @@ export class ContributorState {
     if (userId) {
       this.userId = userId
       this.loggedIn = true
-      this.checkAllowanceState(userId)
+      this.checkCurrentUserState(userId)
       this.startPolling()
     }
     onDestroy(() => {
@@ -100,18 +109,30 @@ export class ContributorState {
     if (this.userId === undefined && userId) {
       this.userId = userId
       this.loggedIn = true
-      this.checkAllowanceState(userId)
+      this.checkWaitListPosition(userId)
+      this.checkUserWallet(userId)
+      this.checkCurrentUserState(userId)
       this.startPolling()
     }
   }
 
-  async checkAllowanceState(userId: string | undefined): Promise<AllowanceState> {
-    this.allowanceState = await getAllowanceState(userId)
-    return this.allowanceState
+  async checkWaitListPosition(_userId: string | undefined): Promise<number | undefined> {
+    this.waitListPosition = await getWaitListPosition()
+    return this.waitListPosition
+  }
+
+  async checkCurrentUserState(userId: string | undefined): Promise<AllowanceState> {
+    this.currentUserState = await getCurrentUserState(userId)
+    return this.currentUserState
+  }
+
+  async checkUserWallet(userId: string | undefined): Promise<string> {
+    this.userWallet = await getUserWallet(userId)
+    return this.userWallet
   }
 
   setAllowanceState(state: AllowanceState) {
-    this.allowanceState = state
+    this.currentUserState = state
     this.pollQueueInfo()
     this.pollContributionState()
   }
