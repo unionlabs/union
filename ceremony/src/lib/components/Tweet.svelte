@@ -14,7 +14,7 @@ $effect(() => {
 
 function shareOnTwitter() {
   let url = `https://ceremony.union.build/contributions/${hash}`
-  const tweetText = `I've contributed to Union Ceremony\n\n${url}`
+  const tweetText = `I just contributed to the @union_build Trusted Setup Ceremony, to secure its ZK circuit for trustless, decentralized interoperability. \n\nI attest to my contribution. My public key hash is: \n\n${url}\n\n#JoinTheUnion`
   const twitterIntentUrl = new URL("https://twitter.com/intent/tweet")
   twitterIntentUrl.searchParams.append("text", tweetText)
   window.open(twitterIntentUrl.toString(), "_blank")
