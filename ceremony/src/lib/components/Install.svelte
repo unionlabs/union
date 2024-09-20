@@ -25,7 +25,7 @@ const copy = () => {
 
     <H1 class="mb-4">Run the MPC client</H1>
     <Text>
-      You need to have docker installed to contribute.
+      You must have docker installed in order to contribute.
       <br>
       For macOS we highly recommend
       <a href="https://orbstack.dev/"
