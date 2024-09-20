@@ -12,7 +12,7 @@ type Props = {
 let { contributor }: Props = $props()
 
 let command =
-  "docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -p 4919:4919 -it ghcr.io/unionlabs/union/mpc-client:latest"
+  "mkdir -p ceremony && docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -v $(pwd)/ceremony:/ceremony -w /ceremony -p 4919:4919 --rm -it ghcr.io/unionlabs/union/mpc-client:latest"
 
 const copy = () => {
   navigator.clipboard.writeText(command)
