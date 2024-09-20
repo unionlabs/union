@@ -36,15 +36,15 @@ const skip = async () => {
 }
 </script>
 
-
 <div class="text-center flex flex-col items-center gap-4">
   <H2 class="">Add an address</H2>
   <Text class="">You may receive rewards for successful contributions.</Text>
+  <Text>You can enter your union or any cosmos address.</Text>
   <AddressForm class="" onValidation={result => (addressValidState = result)} {contributor} />
   <Text class="py-8">Or</Text>
   <H4>I don't want rewards</H4>
-  <Text>You can contribute without adding an address</Text>
-  <Button onclick={skip} class="bg-transparent text-white hover:text-white border-2 border-white hover:bg-neutral-800">Skip
+  <Text>You can contribute without adding an address.</Text>
+  <Button onclick={skip} variant="secondary">Skip
     rewards
   </Button>
 </div>

@@ -30,31 +30,41 @@ async function copyToClipboard(text: string, label: string) {
   }
 }
 
-const imagePath = "/images/ceremony.png"
-let imageUrl = $derived(new URL(imagePath, $page.url.origin).href)
+const imagePath = "https://ceremony.union.build/images/ceremony.png"
 </script>
 
 <svelte:head>
-  <meta property="og:type" content="Website"/>
+  <title>Union Ceremony</title>
+  <meta name="description" content=""/>
+
+  <meta property="og:title" content="Union Ceremony"/>
+  <meta property="og:description" content=""/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://ceremony.union.build"/>
   <meta property="og:site_name" content="Union Ceremony"/>
-  <meta property="og:locale" content="en"/>
+  <meta property="og:locale" content="en_US"/>
+  <meta property="og:image" content={imagePath}/>
+  <meta property="og:image:secure_url" content={imagePath}/>
   <meta property="og:image:type" content="image/png"/>
   <meta property="og:image:width" content="1200"/>
   <meta property="og:image:height" content="675"/>
+  <meta property="og:image:alt" content="Union Ceremony event banner"/>
+
+  <meta name="twitter:title" content=""/>
+  <meta name="twitter:description" content=""/>
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:site" content="@union_build"/>
   <meta name="twitter:creator" content="@union_build"/>
-  <meta property="og:image" content={imageUrl}/>
-  <meta property="og:image:secure_url" content={imageUrl}/>
-  <meta name="twitter:image" content={imageUrl}/>
+  <meta name="twitter:image" content={imagePath}/>
+  <meta name="twitter:image:alt" content="Union Ceremony event banner"/>
 </svelte:head>
 
-<div class="w-full flex justify-center">
+<div class="w-full flex justify-center mt-[80px] pb-16">
   {#await getUserContribution(hash)}
     <Spinner class="size-5 text-union-accent-500"/>
   {:then contribution}
     {#if contribution}
-      <div class="flex flex-col items-start gap-1 px-3 py-2 px-4">
+      <div class="flex flex-col items-start gap-1 py-2 px-4">
         <div>
           <H2>Contributor: <span class="!text-union-accent-500">{contribution.user_name}</span></H2>
         </div>

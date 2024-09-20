@@ -37,7 +37,7 @@ async function diveIn(provider: AuthProviders) {
   <div class="text-5xl font-supermolot font-bold">
     <Blink/>
   </div>
-  <H1>Welcome to the Union Ceremony</H1>
+  <H1 class="text-center">Welcome to the Union Ceremony</H1>
   <div class="text-center">
     <Text>Participation is currently invite only.</Text>
     <Text>If you don’t have an invitation, please join the waitlist.</Text>
