@@ -1,38 +1,43 @@
 <script lang="ts">
-  import Text from "$lib/components/typography/Text.svelte"
-  import H1 from "$lib/components/typography/H1.svelte"
-  import type {ContributorState} from "$lib/stores/state.svelte.ts"
-  import Button from "$lib/components/Button.svelte"
-  import {toast} from "svelte-sonner"
+import Text from "$lib/components/typography/Text.svelte"
+import H1 from "$lib/components/typography/H1.svelte"
+import type { ContributorState } from "$lib/stores/state.svelte.ts"
+import Button from "$lib/components/Button.svelte"
+import { toast } from "svelte-sonner"
 
-  type Props = {
-    contributor: ContributorState
-  }
-  let {contributor}: Props = $props()
+type Props = {
+  contributor: ContributorState
+}
+let { contributor }: Props = $props()
 
-  let command =
-    "docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -p 4919:4919 -it ghcr.io/unionlabs/union/mpc-client:latest"
+let command =
+  "docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -p 4919:4919 -it ghcr.io/unionlabs/union/mpc-client:latest"
 
-  const copy = () => {
-    navigator.clipboard.writeText(command)
-    toast.success("Copied to clipboard", {position: "bottom-right"})
-  }
+const copy = () => {
+  navigator.clipboard.writeText(command)
+  toast.success("Copied to clipboard", { position: "bottom-right" })
+}
 </script>
 
 {#if contributor}
   <div class="flex flex-col items-center  text-center mb-4">
 
-    <H1 class="mb-4">Run the mpc client</H1>
-    <Text>You need to have docker running to contribute.<br>
-      For macOS you need to install
+    <H1 class="mb-4">Run the MPC client</H1>
+    <Text>
+      You need to have docker installed to contribute.
+      <br>
+      For macOS we highly recommend
       <a href="https://orbstack.dev/"
          class="underline underline-offset-4 decoration-union-accent-500"
          target="_blank">OrbStack</a>
-      because docker desktop is too slow. <br>
-      If you use docker desktop it is extremely likely that you lose your contribution slot.
+      because docker desktop is too slow.
+      <br>
+      <strong>
+        If you use docker desktop it is extremely likely that you will lose your contribution slot.
+      </strong>
     </Text>
-    <Text class="mt-4 !text-union-accent-500">Once you have OrbStack/Docker running you should open a terminal window
-      and paste the command to start the MPC client then return here.
+    <Text class="mt-4 !text-union-accent-500">
+      Once you have OrbStack installed, open a terminal window and paste the following command to run the MPC client:
     </Text>
     <div class="max-w-4xl p-8">
       <button onclick={copy}>
@@ -57,8 +62,13 @@
         </code>
       </button>
     </div>
-    <Text>Is it running but still see this page? We support Chrome, FireFox and Brave. <br>For Brave disable the shields
-      in the address bar.
+    <Text>
+      Once the MPC client is running you can return to this page.
+    </Text>
+    <Text>
+      If the MPC client is running but you still see this page, ensure that you are using either Chrome, FireFox or Brave.
+      <br>
+      For Brave, disable the shields in the address bar.
     </Text>
   </div>
 {/if}
