@@ -93,6 +93,7 @@ builds:
     - '*.x86_64-linux.*'
     - 'packages.aarch64-linux.*'
     - 'devShell.x86_64-linux'
+    - 'devShell.aarch64-linux'
     - 'homeConfigurations.*'
     - 'nixosConfigurations.*'
 enableGithubOrgAccessTokens: true
