@@ -55,7 +55,7 @@ $effect(() => {
     <H1 class="py-8">Verifying your contribution...</H1>
     <Warning stupid={false}/>
 
-  {:else if contributor.clientState !== 'offline'}
+  {:else if contributor.clientState === 'offline'}
     <Install {contributor}/>
 
   {:else if !contributor.downloadedSecret}
