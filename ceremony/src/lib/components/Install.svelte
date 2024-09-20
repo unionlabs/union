@@ -4,6 +4,7 @@ import H1 from "$lib/components/typography/H1.svelte"
 import type { ContributorState } from "$lib/stores/state.svelte.ts"
 import Button from "$lib/components/Button.svelte"
 import { toast } from "svelte-sonner"
+import { isSafari } from "$lib/utils/utils.ts"
 
 type Props = {
   contributor: ContributorState
@@ -65,10 +66,15 @@ const copy = () => {
     <Text>
       Once the MPC client is running you can return to this page.
     </Text>
-    <Text>
+    <Text class="mb-4">
       If the MPC client is running but you still see this page, ensure that you are using either Chrome, FireFox or Brave.
       <br>
       For Brave, disable the shields in the address bar.
     </Text>
+    {#if isSafari()}
+      <div class="border border-rose-500 bg-rose-500/10 text-rose-600 py-2 px-3">
+        Safari is not supported
+      </div>
+    {/if}
   </div>
 {/if}
