@@ -104,8 +104,10 @@ impl ModuleContext for Module {
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: todo!(),
-            kind: ChainModuleInfo { chain_id: todo!() },
+            name: plugin_name(&config.chain_id),
+            kind: ChainModuleInfo {
+                chain_id: config.chain_id,
+            },
         }
     }
 
@@ -117,6 +119,7 @@ impl ModuleContext for Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
+    pub chain_id: ChainId<'static>,
     pub rpc_url: String,
     pub movement_rpc_url: String,
     pub ibc_handler_address: Address,
@@ -126,6 +129,12 @@ impl aptos_move_ibc::ibc::ClientExt for Module {
     fn client(&self) -> &aptos_rest_client::Client {
         &self.aptos_client
     }
+}
+
+fn plugin_name(chain_id: &ChainId<'_>) -> String {
+    pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+
+    format!("{PLUGIN_NAME}/{}", chain_id)
 }
 
 impl Module {
@@ -242,9 +251,7 @@ impl Module {
     }
 
     fn plugin_name(&self) -> String {
-        pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
-
-        format!("{PLUGIN_NAME}/{}", self.chain_id)
+        plugin_name(&self.chain_id)
     }
 
     #[must_use]
@@ -1266,8 +1273,8 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<
 
         Ok(into_value(SparseMerkleProof {
             leaf: proof.leaf().map(|leaf| SparseMerkleLeafNode {
-                key: leaf.key().as_ref().into(),
-                value_hash: leaf.value_hash().as_ref().into(),
+                key: (*leaf.key().as_ref()).into(),
+                value_hash: (*leaf.value_hash().as_ref()).into(),
             }),
             siblings: proof
                 .siblings()

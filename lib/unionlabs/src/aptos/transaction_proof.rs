@@ -3,7 +3,7 @@ use macros::model;
 use crate::{
     aptos::transaction_info::{TransactionInfo, TryFromTransactionInfoError},
     errors::{required, InvalidLength, MissingField},
-    hash::H256,
+    hash::hash_v2::{Hash, HexUnprefixed},
 };
 
 /// `TransactionInfo` and a `TransactionAccumulatorProof` connecting it to the ledger root.
@@ -23,8 +23,7 @@ pub struct TransactionInfoWithProof {
 
 #[model]
 pub struct TransactionAccumulatorProof {
-    // #[serde(with = "::serde_utils::hex_allow_unprefixed_list")]
-    pub siblings: Vec<H256>,
+    pub siblings: Vec<Hash<32, HexUnprefixed>>,
     pub phantom: Null,
 }
 

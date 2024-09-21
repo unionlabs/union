@@ -28,8 +28,8 @@ impl From<ClientState> for protos::union::ibc::lightclients::movement::v1::Clien
             chain_id: value.chain_id,
             l1_client_id: value.l1_client_id.to_string(),
             l1_contract_address: value.l1_contract_address.into(),
-            l2_contract_address: value.l2_contract_address.0 .0.to_vec(),
-            table_handle: value.table_handle.0 .0.to_vec(),
+            l2_contract_address: value.l2_contract_address.0.into_bytes(),
+            table_handle: value.table_handle.0.into_bytes(),
             frozen_height: Some(value.frozen_height.into()),
             latest_block_num: value.latest_block_num,
         }

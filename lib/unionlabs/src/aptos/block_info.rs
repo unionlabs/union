@@ -1,7 +1,10 @@
 use macros::model;
 
 use super::epoch_state::{EpochState, TryFromEpochStateError};
-use crate::{errors::InvalidLength, hash::H256};
+use crate::{
+    errors::InvalidLength,
+    hash::hash_v2::{Hash, HexUnprefixed},
+};
 
 /// The round of a block is a consensus-internal counter, which starts with 0 and increases
 /// monotonically.
@@ -32,9 +35,9 @@ pub struct BlockInfo {
     /// The consensus protocol is executed in rounds, which monotonically increase per epoch.
     pub round: Round,
     /// The identifier (hash) of the block.
-    pub id: H256,
+    pub id: Hash<32, HexUnprefixed>,
     /// The accumulator root hash after executing this block.
-    pub executed_state_id: H256,
+    pub executed_state_id: Hash<32, HexUnprefixed>,
     /// The version of the latest transaction after executing this block.
     pub version: Version,
     /// The timestamp this block was proposed by a proposer.
@@ -48,8 +51,8 @@ impl From<BlockInfo> for protos::union::ibc::lightclients::movement::v1::BlockIn
         Self {
             epoch: value.epoch,
             round: value.round,
-            id: value.id.0.to_vec(),
-            executed_state_id: value.executed_state_id.0.to_vec(),
+            id: value.id.into_bytes(),
+            executed_state_id: value.executed_state_id.into_bytes(),
             version: value.version,
             timestamp_usecs: value.timestamp_usecs,
             next_epoch_state: value.next_epoch_state.map(Into::into),
@@ -76,8 +79,8 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::BlockInfo> for Bloc
         Ok(Self {
             epoch: value.epoch,
             round: value.round,
-            id: H256::try_from(value.id).map_err(TryFromBlockInfoError::Id)?,
-            executed_state_id: H256::try_from(value.executed_state_id)
+            id: Hash::try_from(value.id).map_err(TryFromBlockInfoError::Id)?,
+            executed_state_id: Hash::try_from(value.executed_state_id)
                 .map_err(TryFromBlockInfoError::ExecutedStateId)?,
             version: value.version,
             timestamp_usecs: value.timestamp_usecs,

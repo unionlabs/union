@@ -277,6 +277,90 @@ impl ::prost::Name for EpochChangeProof {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StorageProof {
+    #[prost(message, optional, tag = "3")]
+    pub proof: ::core::option::Option<SparseMerkleProof>,
+    #[prost(oneof = "storage_proof::StateValue", tags = "1, 2")]
+    pub state_value: ::core::option::Option<storage_proof::StateValue>,
+}
+/// Nested message and enum types in `StorageProof`.
+pub mod storage_proof {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum StateValue {
+        #[prost(bytes, tag = "1")]
+        V0(::prost::alloc::vec::Vec<u8>),
+        #[prost(message, tag = "2")]
+        WithMetadata(super::StateValueWithMetadata),
+    }
+}
+impl ::prost::Name for StorageProof {
+    const NAME: &'static str = "StorageProof";
+    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StateValueWithMetadata {
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(oneof = "state_value_with_metadata::Metadata", tags = "2, 3")]
+    pub metadata: ::core::option::Option<state_value_with_metadata::Metadata>,
+}
+/// Nested message and enum types in `StateValueWithMetadata`.
+pub mod state_value_with_metadata {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Metadata {
+        #[prost(message, tag = "2")]
+        V0(super::StateValueMetadataV0),
+        #[prost(message, tag = "3")]
+        V1(super::StateValueMetadataV1),
+    }
+}
+impl ::prost::Name for StateValueWithMetadata {
+    const NAME: &'static str = "StateValueWithMetadata";
+    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StateValueMetadataV0 {
+    #[prost(uint64, tag = "1")]
+    pub deposit: u64,
+    #[prost(uint64, tag = "2")]
+    pub creation_time_usecs: u64,
+}
+impl ::prost::Name for StateValueMetadataV0 {
+    const NAME: &'static str = "StateValueMetadataV0";
+    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StateValueMetadataV1 {
+    #[prost(uint64, tag = "1")]
+    pub slot_deposit: u64,
+    #[prost(uint64, tag = "2")]
+    pub bytes_deposit: u64,
+    #[prost(uint64, tag = "3")]
+    pub creation_time_usecs: u64,
+}
+impl ::prost::Name for StateValueMetadataV1 {
+    const NAME: &'static str = "StateValueMetadataV1";
+    const PACKAGE: &'static str = "union.ibc.lightclients.movement.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.movement.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SparseMerkleProof {
     #[prost(message, optional, tag = "1")]
     pub leaf: ::core::option::Option<SparseMerkleLeafNode>,

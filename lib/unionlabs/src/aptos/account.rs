@@ -3,13 +3,18 @@
 /// We only use the strict parsing and display functionality, and wrap our `H256` type instead of `[u8; 32]`.
 use core::{fmt, str::FromStr};
 
-use serde::{de::Error as _, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
-use crate::{errors::InvalidLength, hash::H256};
+use crate::{
+    errors::InvalidLength,
+    hash::hash_v2::{Hash, HexUnprefixed},
+};
 
-#[derive(macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    macros::Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
+)]
 #[debug("AccountAddress({})", self)]
-pub struct AccountAddress(pub H256);
+pub struct AccountAddress(pub Hash<32, HexUnprefixed>);
 
 impl AccountAddress {
     /// Returns whether the address is a "special" address. Addresses are considered
@@ -23,8 +28,8 @@ impl AccountAddress {
     /// <https://github.com/aptos-foundation/AIPs/blob/main/aips/aip-40.md>
     #[must_use]
     pub fn is_special(&self) -> bool {
-        (self.0).0[..H256::BYTES_LEN - 1].iter().all(|x| *x == 0)
-            && is_special_byte((self.0).0[H256::BYTES_LEN - 1])
+        self.0.as_ref()[..32 - 1].iter().all(|x| *x == 0)
+            && is_special_byte(self.0.as_ref()[32 - 1])
     }
 }
 
@@ -66,42 +71,6 @@ pub enum AccountAddressParseError {
     InvalidLength(usize),
 }
 
-impl Serialize for AccountAddress {
-    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
-    where
-        S: ::serde::Serializer,
-    {
-        if serializer.is_human_readable() {
-            self.0.serialize(serializer)
-        } else {
-            // See comment in deserialize.
-            serializer.serialize_newtype_struct("AccountAddress", &self.0 .0)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for AccountAddress {
-    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
-    where
-        D: ::serde::Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            let s = <String>::deserialize(deserializer)?;
-            AccountAddress::from_str(&s).map_err(D::Error::custom)
-        } else {
-            // In order to preserve the Serde data model and help analysis tools,
-            // make sure to wrap our value in a container with the same name
-            // as the original type.
-            #[derive(::serde::Deserialize)]
-            #[serde(rename = "AccountAddress")]
-            struct Value([u8; H256::BYTES_LEN]);
-
-            let value = Value::deserialize(deserializer)?;
-            Ok(AccountAddress(H256(value.0)))
-        }
-    }
-}
-
 impl FromStr for AccountAddress {
     type Err = AccountAddressParseError;
 
@@ -139,7 +108,7 @@ impl FromStr for AccountAddress {
         // Check if the address is in LONG form. If it is not, this is only allowed for
         // special addresses, in which case we check it is in proper SHORT form.
         match address.len() {
-            H256::BYTES_LEN => Ok(Self(H256(address.try_into().unwrap()))),
+            32 => Ok(Self(Hash::new(address.try_into().unwrap()))),
             1 => {
                 let b = address[0];
 
@@ -152,11 +121,11 @@ impl FromStr for AccountAddress {
                     return Err(AccountAddressParseError::InvalidPaddingZeroes);
                 }
 
-                let mut address = [0; H256::BYTES_LEN];
+                let mut address = [0; 32];
 
-                address[H256::BYTES_LEN - 1] = b;
+                address[32 - 1] = b;
 
-                Ok(Self(H256(address)))
+                Ok(Self(Hash::new(address)))
             }
             len => Err(AccountAddressParseError::InvalidLength(len)),
         }
@@ -166,7 +135,7 @@ impl FromStr for AccountAddress {
 impl fmt::Display for AccountAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.is_special() {
-            f.write_fmt(format_args!("0x{:x}", self.0 .0[H256::BYTES_LEN - 1]))
+            f.write_fmt(format_args!("0x{:x}", self.0.as_ref()[32 - 1]))
         } else {
             self.0.fmt(f)
         }

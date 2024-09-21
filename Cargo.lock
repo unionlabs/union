@@ -11582,9 +11582,9 @@ dependencies = [
 
 [[package]]
 name = "serde_bytes"
-version = "0.11.14"
+version = "0.11.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b8497c313fd43ab992087548117643f6fcd935cbf36f176ffda0aacf9591734"
+checksum = "387cc504cb06bb40a96c8e04e951fe01854cf6bc921053c954e4a606d9675c6a"
 dependencies = [
  "serde",
 ]
@@ -14102,6 +14102,8 @@ dependencies = [
 name = "voyager-client-module-cometbls"
 version = "0.1.0"
 dependencies = [
+ "ark-bn254",
+ "ark-serialize 0.4.2",
  "clap 4.5.4",
  "cometbft-rpc",
  "dashmap",
@@ -14110,6 +14112,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
+ "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
  "queue-msg",

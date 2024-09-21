@@ -86,21 +86,35 @@ impl ModuleContext for Module {
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: todo!(),
+            name: plugin_name(&config.chain_id),
             kind: PluginModuleInfo {
-                interest_filter: todo!(),
+                interest_filter: format!(
+                    r#"
+if ."@type" == "data" then
+    ."@value" as $data |
+
+    # pull all transaction data messages
+    ($data."@type" == "identified_ibc_message_batch" or $data."@type" == "identified_ibc_message")
+        and $data."@value".chain_id == "{chain_id}"
+else
+    false
+end
+"#,
+                    chain_id = config.chain_id,
+                ),
             },
         }
     }
 
-    async fn cmd(config: Self::Config, cmd: Self::Cmd) {
-        todo!()
+    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
+        match cmd {}
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
+    pub chain_id: ChainId<'static>,
     pub rpc_url: String,
     pub ibc_handler_address: Address,
 
@@ -113,11 +127,15 @@ impl aptos_move_ibc::ibc::ClientExt for Module {
     }
 }
 
+fn plugin_name(chain_id: &ChainId<'_>) -> String {
+    pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+
+    format!("{PLUGIN_NAME}/{}", chain_id)
+}
+
 impl Module {
     fn plugin_name(&self) -> String {
-        pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
-
-        format!("{PLUGIN_NAME}/{}", self.chain_id)
+        plugin_name(&self.chain_id)
     }
 }
 

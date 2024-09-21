@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+use ark_serialize::{CanonicalSerialize, SerializationError, Valid};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -16,6 +17,7 @@ use unionlabs::{
     ibc::lightclients::cometbls::{
         client_state::ClientState, consensus_state::ConsensusState, header::Header,
     },
+    union::ics23,
     ErrorReporter,
 };
 use voyager_message::{
@@ -308,10 +310,20 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                     None::<()>,
                 )
             })
-            .map(|header| match self.ctx.ibc_interface {
-                SupportedIbcInterface::IbcSolidity => header.encode_as::<EthAbi>(),
-                SupportedIbcInterface::IbcMoveAptos => header.encode_as::<Bcs>(),
-            })
+            .map(|mut header| match self.ctx.ibc_interface {
+                SupportedIbcInterface::IbcSolidity => Ok(header.encode_as::<EthAbi>()),
+                SupportedIbcInterface::IbcMoveAptos => {
+                    header.zero_knowledge_proof =
+                        reencode_zkp_for_move(&header.zero_knowledge_proof).map_err(|e| {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                format!("unable to decode zkp: {}", e),
+                                None::<()>,
+                            )
+                        })?;
+                    Ok(header.encode_as::<Bcs>())
+                }
+            })?
             .map(Hex)
     }
 
@@ -328,22 +340,96 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                 )
             })
             .map(|cs| match self.ctx.ibc_interface {
-                SupportedIbcInterface::IbcSolidity => {
-                    unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
+                SupportedIbcInterface::IbcSolidity => ics23::merkle_proof::MerkleProof::try_from(
+                    protos::ibc::core::commitment::v1::MerkleProof::from(cs),
+                )
+                .unwrap()
+                .encode_as::<EthAbi>(),
+                SupportedIbcInterface::IbcMoveAptos => encode_merkle_proof_for_move(
+                    ics23::merkle_proof::MerkleProof::try_from(
                         protos::ibc::core::commitment::v1::MerkleProof::from(cs),
                     )
-                    .unwrap()
-                    .encode_as::<EthAbi>()
-                }
-                SupportedIbcInterface::IbcMoveAptos => {
-                    // TODO: Currently disabled, test this later
-                    unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
-                        protos::ibc::core::commitment::v1::MerkleProof::from(cs),
-                    )
-                    .unwrap()
-                    .encode_as::<Bcs>()
-                }
+                    .unwrap(),
+                ),
             })
             .map(Hex)
     }
+}
+
+fn reencode_zkp_for_move(zkp: &[u8]) -> Result<Vec<u8>, SerializationError> {
+    let mut buf = Vec::new();
+
+    let serialize_g1 =
+        |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
+            let proof = ark_bn254::G1Affine::new_unchecked(
+                ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                    &zkp[*cursor..*cursor + 32],
+                )),
+                ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                    &zkp[*cursor + 32..*cursor + 64],
+                )),
+            );
+            proof.check()?;
+            *cursor += 64;
+            proof.serialize_compressed(buf)?;
+            Ok(())
+        };
+
+    let serialize_g2 =
+        |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
+            let proof = ark_bn254::G2Affine::new_unchecked(
+                ark_bn254::Fq2::new(
+                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                        &zkp[*cursor + 32..*cursor + 64],
+                    )),
+                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                        &zkp[*cursor..*cursor + 32],
+                    )),
+                ),
+                ark_bn254::Fq2::new(
+                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                        &zkp[*cursor + 96..*cursor + 128],
+                    )),
+                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+                        &zkp[*cursor + 64..*cursor + 96],
+                    )),
+                ),
+            );
+            proof.check()?;
+            *cursor += 128;
+            proof.serialize_compressed(buf)?;
+            Ok(())
+        };
+
+    let mut cursor = 0;
+    // zkp.proof.a
+    serialize_g1(&mut cursor, &mut buf, zkp)?;
+    // zkp.proof.b
+    serialize_g2(&mut cursor, &mut buf, zkp)?;
+    // zkp.proof.c
+    serialize_g1(&mut cursor, &mut buf, zkp)?;
+    // zkp.poc
+    serialize_g1(&mut cursor, &mut buf, zkp)?;
+    // zkp.pok
+    serialize_g1(&mut cursor, &mut buf, zkp)?;
+
+    Ok(buf)
+}
+#[model]
+struct MoveMembershipProof {
+    sub_proof: ics23::existence_proof::ExistenceProof,
+    top_level_proof: ics23::existence_proof::ExistenceProof,
+}
+
+fn encode_merkle_proof_for_move(proof: ics23::merkle_proof::MerkleProof) -> Vec<u8> {
+    match proof {
+        ics23::merkle_proof::MerkleProof::Membership(sub_proof, top_level_proof) => {
+            MoveMembershipProof {
+                sub_proof,
+                top_level_proof,
+            }
+        }
+        ics23::merkle_proof::MerkleProof::NonMembership(_, _) => todo!(),
+    }
+    .encode_as::<Bcs>()
 }

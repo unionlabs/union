@@ -107,6 +107,33 @@ message EpochChangeProof {
   bool more = 2;
 }
 
+message StorageProof {
+  oneof state_value {
+    bytes v0 = 1;  
+    StateValueWithMetadata with_metadata = 2;
+  }
+  SparseMerkleProof proof = 3;
+}
+
+message StateValueWithMetadata {
+  bytes data = 1;
+  oneof metadata {
+    StateValueMetadataV0 v0 = 2;
+    StateValueMetadataV1 v1 = 3;
+  }
+}
+
+message StateValueMetadataV0 {
+  uint64 deposit = 1;
+  uint64 creation_time_usecs = 2;
+}
+
+message StateValueMetadataV1 {
+  uint64 slot_deposit = 1;
+  uint64 bytes_deposit = 2;
+  uint64 creation_time_usecs = 3;
+}
+
 message SparseMerkleProof {
   SparseMerkleLeafNode leaf = 1;
   repeated bytes siblings = 2;

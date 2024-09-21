@@ -4,6 +4,8 @@ name    = "voyager-client-module-cometbls"
 version = "0.1.0"
 
 [dependencies]
+ark-bn254             = { version = "0.4", default-features = false, features = ["curve"] }
+ark-serialize         = "0.4.2"
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context"] }
 cometbft-rpc       = { workspace = true }
 dashmap            = { workspace = true }
@@ -24,3 +26,5 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
 voyager-message    = { workspace = true }
+num-bigint            = { workspace = true }
+

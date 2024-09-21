@@ -1,7 +1,10 @@
 use macros::model;
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::InvalidLength, hash::H256};
+use crate::{
+    errors::InvalidLength,
+    hash::hash_v2::{Hash, HexUnprefixed},
+};
 
 /// `TransactionInfo` is the object we store in the transaction accumulator. It consists of the
 /// transaction as well as the execution result of this transaction.
@@ -29,31 +32,26 @@ pub struct TransactionInfoV0 {
     pub status: ExecutionStatus,
 
     /// The hash of this transaction.
-    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub transaction_hash: H256,
+    pub transaction_hash: Hash<32, HexUnprefixed>,
 
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
-    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub event_root_hash: H256,
+    pub event_root_hash: Hash<32, HexUnprefixed>,
 
     /// The hash value summarizing all changes caused to the world state by this transaction.
     /// i.e. hash of the output write set.
-    // #[serde(with = "::serde_utils::hex_allow_unprefixed")]
-    pub state_change_hash: H256,
+    pub state_change_hash: Hash<32, HexUnprefixed>,
 
     /// The root hash of the Sparse Merkle Tree describing the world state at the end of this
     /// transaction. Depending on the protocol configuration, this can be generated periodical
     /// only, like per block.
-    // #[serde(with = "::serde_utils::hex_allow_unprefixed_option")]
-    pub state_checkpoint_hash: Option<H256>,
+    pub state_checkpoint_hash: Option<Hash<32, HexUnprefixed>>,
 
     /// Potentially summarizes all evicted items from state. Always `None` for now.
-    // #[serde(with = "::serde_utils::hex_allow_unprefixed_option")]
-    pub state_cemetery_hash: Option<H256>,
+    pub state_cemetery_hash: Option<Hash<32, HexUnprefixed>>,
 }
 
 // impl TransactionInfoV0 {
-//     pub fn hash(&self) -> H256 {
+//     pub fn hash(&self) -> Hash<32, HexUnprefixed> {
 //         let mut state = Sha3_256::new();
 //         state.update(
 //             Sha3_256::new()
@@ -61,7 +59,7 @@ pub struct TransactionInfoV0 {
 //                 .finalize(),
 //         );
 //         bcs::serialize_into(&mut state, &self).expect("expected to be able to serialize");
-//         H256(state.finalize().into())
+//         Hash<32, HexUnprefixed>(state.finalize().into())
 //     }
 // }
 
@@ -80,8 +78,14 @@ impl From<TransactionInfo> for protos::union::ibc::lightclients::movement::v1::T
             transaction_hash: value.transaction_hash.into(),
             event_root_hash: value.event_root_hash.into(),
             state_change_hash: value.state_change_hash.into(),
-            state_checkpoint_hash: value.state_checkpoint_hash.unwrap_or_default().into(),
-            state_cemetery_hash: value.state_cemetery_hash.unwrap_or_default().into(),
+            state_checkpoint_hash: match value.state_checkpoint_hash {
+                Some(val) => val.into(),
+                None => Vec::default(),
+            },
+            state_cemetery_hash: match value.state_cemetery_hash {
+                Some(val) => val.into(),
+                None => Vec::default(),
+            },
         }
     }
 }

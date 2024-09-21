@@ -2,31 +2,33 @@
 
 pub mod error;
 
+use std::io::Write as _;
+
 pub use error::Error;
 use error::StorageVerificationError;
 use hex_literal::hex;
 use sha3::{Digest, Sha3_256};
 use unionlabs::{
     aptos::{
+        account::AccountAddress,
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         transaction_info::TransactionInfo,
         transaction_proof::TransactionInfoWithProof,
     },
     encoding::{DecodeAs, Proto},
-    hash::H256,
+    hash::{BytesBitIterator, H256},
 };
 
 pub(crate) const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
 // "SPARSE_MERKLE_PLACEHOLDER_HASH"
-pub(crate) const SPARSE_MERKLE_PLACEHOLDER_HASH: H256 = H256(hex!(
-    "00005350415253455F4D45524B4C455F504C414345484F4C4445525F48415348"
-));
+pub(crate) const SPARSE_MERKLE_PLACEHOLDER_HASH: [u8; 32] =
+    hex!("00005350415253455F4D45524B4C455F504C414345484F4C4445525F48415348");
 
 /// Verifies an element whose hash is `element_hash` and version is `element_version` exists in
 /// the accumulator whose root hash is `expected_root_hash` using the provided proof.
 pub fn verify_tx_state(
     tx_info: &TransactionInfoWithProof,
-    expected_root_hash: H256,
+    expected_root_hash: [u8; 32],
     element_index: u64,
 ) -> Result<(), Error> {
     let element_hash = hash_tx_info(&tx_info.transaction_info);
@@ -45,10 +47,10 @@ pub fn verify_tx_state(
                 (
                     if index % 2 == 0 {
                         // the current node is a left child.
-                        hash_inner_node(hash, *sibling_hash)
+                        hash_inner_node(hash, *sibling_hash.get())
                     } else {
                         // the current node is a right child.
-                        hash_inner_node(*sibling_hash, hash)
+                        hash_inner_node(*sibling_hash.get(), hash)
                     },
                     // The index of the parent at its level.
                     index / 2,
@@ -59,29 +61,47 @@ pub fn verify_tx_state(
 
     if actual_root_hash != expected_root_hash {
         return Err(Error::RootHashMismatch {
-            expected: expected_root_hash,
-            given: actual_root_hash,
+            expected: H256(expected_root_hash),
+            given: H256(actual_root_hash),
         });
     }
 
     Ok(())
 }
 
-pub fn verify_existence_proof(
+pub fn verify_membership(
     proof: &[u8],
-    expected_root_hash: H256,
-    element_key: H256,
-    element_hash: H256,
+    expected_root_hash: [u8; 32],
+    table_handle: &AccountAddress,
+    key: &[u8],
+    value_hash: [u8; 32],
 ) -> Result<(), Error> {
     let proof = SparseMerkleProof::decode_as::<Proto>(proof).unwrap();
 
-    if proof.siblings.len() > H256::BITS_LEN {
+    let mut buf = vec![1];
+    bcs::serialize_into(&mut buf, &table_handle).unwrap();
+    buf.write_all(&key).unwrap();
+
+    let hash = Sha3_256::new()
+        .chain_update(Sha3_256::new().chain_update("APTOS::StateKey").finalize())
+        .chain_update(&buf)
+        .finalize()
+        .into();
+
+    verify_existence_proof(proof, expected_root_hash, hash, value_hash)
+}
+
+pub fn verify_existence_proof(
+    proof: SparseMerkleProof,
+    expected_root_hash: [u8; 32],
+    element_key: [u8; 32],
+    element_hash: [u8; 32],
+) -> Result<(), Error> {
+    if proof.siblings.len() > 256 {
         // "Sparse Merkle Tree proof has more than {} ({} + {}) siblings.",
-        return Err(StorageVerificationError::MaxSiblingsExceeded(
-            H256::BITS_LEN,
-            proof.siblings.len(),
-        )
-        .into());
+        return Err(
+            StorageVerificationError::MaxSiblingsExceeded(256, proof.siblings.len()).into(),
+        );
     }
 
     let Some(leaf) = proof.leaf else {
@@ -91,15 +111,20 @@ pub fn verify_existence_proof(
     // This is an inclusion proof, so the key and value hash provided in the proof
     // should match element_key and element_value_hash. `siblings` should prove the
     // route from the leaf node to the root.
-    if element_key != leaf.key {
-        return Err(StorageVerificationError::LeafKeyMismatch(element_key, leaf.key).into());
-        //     Key in proof: {:x}. Expected key: {:x}. \
-        // Element hash: {:x}. Value hash in proof {:x}",
+    if &element_key != leaf.key.get() {
+        return Err(StorageVerificationError::LeafKeyMismatch(
+            H256(element_key),
+            H256(*leaf.key.get()),
+        )
+        .into());
     }
-    if element_hash != leaf.value_hash {
-        return Err(
-            StorageVerificationError::LeafValueMismatch(element_hash, leaf.value_hash).into(),
-        );
+
+    if &element_hash != leaf.value_hash.get() {
+        return Err(StorageVerificationError::LeafValueMismatch(
+            H256(element_hash),
+            H256(*leaf.value_hash.get()),
+        )
+        .into());
     }
 
     let current_hash = proof.leaf.map_or(SPARSE_MERKLE_PLACEHOLDER_HASH, |leaf| {
@@ -110,23 +135,22 @@ pub fn verify_existence_proof(
         .iter()
         .rev()
         .zip(
-            element_key
-                .iter_bits()
+            BytesBitIterator::new(&element_key)
                 .rev()
-                .skip(H256::BITS_LEN - proof.siblings.len()),
+                .skip(256 - proof.siblings.len()),
         )
         .fold(current_hash, |hash, (sibling_hash, bit)| {
             if bit {
-                SparseMerkleInternalNode::new(*sibling_hash, hash).hash()
+                SparseMerkleInternalNode::new(*sibling_hash.get(), hash).hash()
             } else {
-                SparseMerkleInternalNode::new(hash, *sibling_hash).hash()
+                SparseMerkleInternalNode::new(hash, *sibling_hash.get()).hash()
             }
         });
 
     if actual_root_hash != expected_root_hash {
         return Err(StorageVerificationError::RootHashMismatch(
-            actual_root_hash,
-            expected_root_hash,
+            H256(actual_root_hash),
+            H256(expected_root_hash),
         )
         .into());
     }
@@ -134,7 +158,7 @@ pub fn verify_existence_proof(
     Ok(())
 }
 
-fn hash_tx_info(tx_info: &TransactionInfo) -> H256 {
+fn hash_tx_info(tx_info: &TransactionInfo) -> [u8; 32] {
     let mut state = Sha3_256::new();
     state.update(
         Sha3_256::new()
@@ -146,7 +170,7 @@ fn hash_tx_info(tx_info: &TransactionInfo) -> H256 {
     state.finalize().into()
 }
 
-fn hash_sparse_merkle_leaf_node(leaf: &SparseMerkleLeafNode) -> H256 {
+fn hash_sparse_merkle_leaf_node(leaf: &SparseMerkleLeafNode) -> [u8; 32] {
     let mut state = Sha3_256::new();
     state.update(
         Sha3_256::new()
@@ -158,7 +182,7 @@ fn hash_sparse_merkle_leaf_node(leaf: &SparseMerkleLeafNode) -> H256 {
     state.finalize().into()
 }
 
-fn hash_inner_node(left_child: H256, right_child: H256) -> H256 {
+fn hash_inner_node(left_child: [u8; 32], right_child: [u8; 32]) -> [u8; 32] {
     let mut state = Sha3_256::new();
     state.update(
         Sha3_256::new()
@@ -171,19 +195,19 @@ fn hash_inner_node(left_child: H256, right_child: H256) -> H256 {
 }
 
 pub struct SparseMerkleInternalNode {
-    left_child: H256,
-    right_child: H256,
+    left_child: [u8; 32],
+    right_child: [u8; 32],
 }
 
 impl SparseMerkleInternalNode {
-    pub fn new(left_child: H256, right_child: H256) -> Self {
+    pub fn new(left_child: [u8; 32], right_child: [u8; 32]) -> Self {
         Self {
             left_child,
             right_child,
         }
     }
 
-    pub fn hash(&self) -> H256 {
+    pub fn hash(&self) -> [u8; 32] {
         let mut state = Sha3_256::new();
         state.update(
             Sha3_256::new()

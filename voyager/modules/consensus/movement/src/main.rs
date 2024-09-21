@@ -92,21 +92,29 @@ impl ModuleContext for Module {
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: todo!(),
+            name: plugin_name(&config.chain_id),
             kind: ConsensusModuleInfo {
-                chain_id: todo!(),
-                client_type: todo!(),
+                chain_id: config.chain_id,
+                client_type: ClientType::new(ClientType::MOVEMENT),
             },
         }
     }
-
-    async fn cmd(config: Self::Config, cmd: Self::Cmd) {
-        todo!()
+    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
+        match cmd {}
     }
+}
+
+fn plugin_name(chain_id: &ChainId<'_>) -> String {
+    pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+
+    format!("{PLUGIN_NAME}/{}", chain_id)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
+    /// The identifier of the chain
+    pub chain_id: ChainId<'static>,
+
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: AccountAddress,
 
@@ -125,9 +133,7 @@ pub struct Config {
 
 impl Module {
     fn plugin_name(&self) -> String {
-        pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
-
-        format!("{PLUGIN_NAME}/{}", self.chain_id)
+        plugin_name(&self.chain_id)
     }
 }
 
@@ -342,4 +348,11 @@ mod tests {
 
         dbg!(res);
     }
+}
+
+#[test]
+fn state_proof_resp() {
+    let res = r#"{"tx_index":5,"state_proof":{"latest_li_w_sigs":{"V0":{"ledger_info":{"commit_info":{"epoch":1,"round":0,"id":"f4e6ce01b0e1eade7422599157af6b8baad15b665ba32ab223a902fe8609e357","executed_state_id":"646a84844c262c82878c8186dbf4d409097c3a655d05045297d56c003f2583ec","version":5,"timestamp_usecs":1726663664141191,"next_epoch_state":{"epoch":1,"verifier":{"validator_infos":[{"address":"d1126ce48bd65fb72190dbd9a6eaa65ba973f1e1664ac0cfba4db1d071fd0c36","public_key":"0x86fb211f41a07c6399ccc6ab3a8fe568fb0f574ce1b811896c44c6da4f267d543c6cac9fb8f4e9b92a3b809eefb91cbd","voting_power":100000000}]}}},"consensus_data_hash":"0000000000000000000000000000000000000000000000000000000000000000"},"signatures":{"validator_bitmask":{"inner":[]},"sig":null}}},"epoch_changes":{"ledger_info_with_sigs":[],"more":false}},"tx_proof":{"ledger_info_to_transaction_info_proof":{"siblings":["2cdec9e3799fd58a4a8387686a4dee116681a3af462cb6c39a6f3e3b9a933603","414343554d554c41544f525f504c414345484f4c4445525f4841534800000000","d24d4661c12aa515f6e18b48cab1c6e4ef7e961fff345ac02f51012cdf5f0d9c"],"phantom":null},"transaction_info":{"V0":{"gas_used":0,"status":"Success","transaction_hash":"fa047b46005f295eb00e3eb5c7935a6291e50036fb0db8e2679ade38c2df2a59","event_root_hash":"414343554d554c41544f525f504c414345484f4c4445525f4841534800000000","state_change_hash":"afb6e14fe47d850fd0a7395bcfb997ffacf4715e0f895cc162c218e4a7564bc6","state_checkpoint_hash":"7687ce784e3103ec0efe842e04020a87e8cc349eaa80abcd4672ecfce845a81d","state_cemetery_hash":null}}}}"#;
+
+    let resp: StateProofResponse = serde_json::from_str(res).unwrap();
 }
