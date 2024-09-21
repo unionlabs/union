@@ -16,12 +16,6 @@ interface IIBCPacket {
     ) external returns (uint64);
 
     /**
-     * @dev fulfillIntent is called by a module in order to receive & process an intent fulfillement
-     * for an IBC packet sent on the corresponding channel end on the counterparty chain.
-     */
-    function fulfillIntent(IBCMsgs.MsgFulfillIntent calldata msg_) external;
-
-    /**
      * @dev recvPacket is called by a module in order to receive & process an IBC packet
      * sent on the corresponding channel end on the counterparty chain.
      */
@@ -52,4 +46,24 @@ interface IIBCPacket {
      * sent on the corresponding channel end on the counterparty chain.
      */
     function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_) external;
+
+    /**
+     * @dev fulfillIntent is called by a module in order to receive & process an intent fulfillement
+     * for an IBC packet sent on the corresponding channel end on the counterparty chain.
+     */
+    function fulfillIntent(IBCMsgs.MsgFulfillIntent calldata msg_) external;
+
+    /**
+     * @dev batchSend is called by a module in order to commit multiple IBC packets.
+     * An error occur if any of the packets wasn't sent.
+     * If successful, a new commitment is registered for the batch.
+     */
+    function batchSend(IBCMsgs.MsgBatchSend calldata msg_) external;
+
+    /**
+     * @dev batchAcks is called by a module in order to commit multiple IBC packets acknowledgements.
+     * An error occur if any of the packets wasn't received.
+     * If successful, a new commitment is registered for the batch.
+     */
+    function batchAcks(IBCMsgs.MsgBatchAcks calldata msg_) external;
 }

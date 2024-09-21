@@ -99,9 +99,10 @@ library IBCMsgs {
 
     struct MsgPacketRecv {
         IBCPacket[] packets;
+        bytes[] relayerMsgs;
+        address relayer;
         bytes proof;
         uint64 proofHeight;
-        address relayer;
     }
 
     struct MsgPacketAcknowledgement {
@@ -124,5 +125,17 @@ library IBCMsgs {
         IBCPacket[] packets;
         bytes[] marketMakerMsgs;
         address marketMaker;
+        bytes emptyProof;
+    }
+
+    struct MsgBatchSend {
+        uint32 sourceChannel;
+        IBCPacket[] packets;
+    }
+
+    struct MsgBatchAcks {
+        uint32 sourceChannel;
+        IBCPacket[] packets;
+        bytes[] acks;
     }
 }

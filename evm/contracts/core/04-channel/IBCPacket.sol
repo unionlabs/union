@@ -47,12 +47,106 @@ library IBCPacketLib {
     error ErrNextSequenceMustBeGreaterThanTimeoutSequence();
     error ErrConnectionMismatch();
     error ErrNotEnoughPackets();
+    error ErrCommittedPacketNotPresent();
+    error ErrCommittedAckNotPresent();
+    error ErrCannotIntentOrderedPacket();
 }
 
 /**
  * @dev IBCPacket is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
  */
 abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
+    function batchSingleAck(bytes calldata ack)
+        internal
+        pure
+        returns (bytes[] memory)
+    {
+        bytes[] memory acks = new bytes[](1);
+        acks[0] = ack;
+        return acks;
+    }
+
+    function batchSingleAckMemory(bytes memory ack)
+        internal
+        pure
+        returns (bytes[] memory)
+    {
+        bytes[] memory acks = new bytes[](1);
+        acks[0] = ack;
+        return acks;
+    }
+
+    function batchSingle(IBCPacket calldata packet)
+        internal
+        pure
+        returns (IBCPacket[] memory)
+    {
+        IBCPacket[] memory packets = new IBCPacket[](1);
+        packets[0] = packet;
+        return packets;
+    }
+
+    function batchSingleMemory(IBCPacket memory packet)
+        internal
+        pure
+        returns (IBCPacket[] memory)
+    {
+        IBCPacket[] memory packets = new IBCPacket[](1);
+        packets[0] = packet;
+        return packets;
+    }
+
+    /**
+     * @dev batchSend is called by a module in order to commit multiple IBC packets.
+     * An error occur if any of the packets wasn't sent.
+     * If successful, a new commitment is registered for the batch.
+     */
+    function batchSend(IBCMsgs.MsgBatchSend calldata msg_) external override {
+        uint256 l = msg_.packets.length;
+        if (l < 2) {
+            revert IBCPacketLib.ErrNotEnoughPackets();
+        }
+        for (uint256 i = 0; i < l; i++) {
+            IBCPacket calldata packet = msg_.packets[i];
+            bytes32 commitment = commitments[IBCCommitment
+                .batchPacketsCommitmentKey(
+                msg_.sourceChannel, commitPacketsMemory(batchSingle(packet))
+            )];
+            if (commitment != bytes32(uint256(1))) {
+                revert IBCPacketLib.ErrCommittedPacketNotPresent();
+            }
+        }
+        commitments[IBCCommitment.batchPacketsCommitmentKey(
+            msg_.sourceChannel, commitPackets(msg_.packets)
+        )] = bytes32(uint256(1));
+    }
+
+    /**
+     * @dev batchAcks is called by a module in order to commit multiple IBC packets acknowledgements.
+     * An error occur if any of the packets wasn't received.
+     * If successful, a new commitment is registered for the batch.
+     */
+    function batchAcks(IBCMsgs.MsgBatchAcks calldata msg_) external override {
+        uint256 l = msg_.packets.length;
+        if (l < 2) {
+            revert IBCPacketLib.ErrNotEnoughPackets();
+        }
+        for (uint256 i = 0; i < l; i++) {
+            IBCPacket calldata packet = msg_.packets[i];
+            bytes calldata ack = msg_.acks[i];
+            bytes32 commitment = commitments[IBCCommitment
+                .batchAcksCommitmentKey(
+                msg_.sourceChannel, commitPacketsMemory(batchSingle(packet))
+            )];
+            if (commitment != commitAcksMemory(batchSingleAck(ack))) {
+                revert IBCPacketLib.ErrCommittedAckNotPresent();
+            }
+        }
+        commitments[IBCCommitment.batchAcksCommitmentKey(
+            msg_.sourceChannel, commitPackets(msg_.packets)
+        )] = commitAcks(msg_.acks);
+    }
+
     /**
      * @dev sendPacket is called by a module in order to send an IBC packet on a channel.
      * The packet sequence generated for the packet to be sent is returned. An error
@@ -84,26 +178,26 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
         });
-        IBCPacket[] memory packets = new IBCPacket[](1);
-        packets[0] = packet;
         commitments[IBCCommitment.batchPacketsCommitmentKey(
-            sourceChannel, commitPacketsMemory(packets)
+            sourceChannel, commitPacketsMemory(batchSingleMemory(packet))
         )] = bytes32(uint256(1));
         emit IBCPacketLib.SendPacket(packet);
         return sequence;
     }
 
-    function setPacketReceive(IBCPacket calldata packet) internal {
-        IBCPacket[] memory packets = new IBCPacket[](1);
-        packets[0] = packet;
+    function setPacketReceive(IBCPacket calldata packet)
+        internal
+        returns (bool)
+    {
         bytes32 receiptCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-            packet.destinationChannel, commitPacketsMemory(packets)
+            packet.destinationChannel, commitPacketsMemory(batchSingle(packet))
         );
-        bytes32 receipt = commitments[receiptCommitmentKey];
-        if (receipt != bytes32(0)) {
-            revert IBCPacketLib.ErrPacketAlreadyReceived();
+        bool alreadyReceived =
+            commitments[receiptCommitmentKey] == bytes32(uint256(1));
+        if (!alreadyReceived) {
+            commitments[receiptCommitmentKey] = bytes32(uint256(1));
         }
-        commitments[receiptCommitmentKey] = bytes32(uint256(1));
+        return alreadyReceived;
     }
 
     function setNextSequenceRecv(
@@ -125,20 +219,45 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         )] = bytes32(uint256(expectedRecvSequence + 1));
     }
 
-    function receivePreconditions(
-        uint32 destinationChannel,
-        IBCPacket[] calldata packets
-    ) internal returns (IBCConnection storage) {
+    function processReceive(
+        IBCPacket[] calldata packets,
+        address maker,
+        bytes[] calldata makerMsgs,
+        uint64 proofHeight,
+        bytes calldata proof,
+        bool intent
+    ) internal {
+        uint32 destinationChannel = packets[0].destinationChannel;
         IBCChannel storage channel = ensureChannelState(destinationChannel);
+        IBCConnection storage connection =
+            ensureConnectionState(channel.connectionId);
+        if (!intent) {
+            if (
+                !verifyCommitment(
+                    connection,
+                    proofHeight,
+                    proof,
+                    IBCCommitment.batchPacketsCommitmentKey(
+                        destinationChannel, commitPackets(packets)
+                    ),
+                    bytes32(uint256(1))
+                )
+            ) {
+                revert IBCPacketLib.ErrInvalidProof();
+            }
+        }
+        IIBCModule module = lookupModuleByChannel(destinationChannel);
         uint256 l = packets.length;
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = packets[i];
+            // Check packet height timeout
             if (
                 packet.timeoutHeight > 0
                     && (block.number >= packet.timeoutHeight)
             ) {
                 revert IBCPacketLib.ErrHeightTimeout();
             }
+            // Check packet timestamp timeout
             // For some reason cosmos is using nanos, we try to follow their convention to avoid friction
             uint64 currentTimestamp = uint64(block.timestamp * 1e9);
             if (
@@ -147,96 +266,76 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             ) {
                 revert IBCPacketLib.ErrTimestampTimeout();
             }
+
+            // Allow unordered channels to have packets already received.
+            bool alreadyReceived = false;
             if (channel.ordering == IBCChannelOrder.Unordered) {
-                setPacketReceive(packet);
+                alreadyReceived = setPacketReceive(packet);
             } else if (channel.ordering == IBCChannelOrder.Ordered) {
+                // We increase the sequence, hence can't avoid proofs
+                if (intent) {
+                    revert IBCPacketLib.ErrCannotIntentOrderedPacket();
+                }
                 setNextSequenceRecv(destinationChannel, packet.sequence);
             }
+
+            if (!alreadyReceived) {
+                bytes memory acknowledgement;
+                bytes calldata makerMsg = makerMsgs[i];
+                if (intent) {
+                    acknowledgement =
+                        module.onFulfillIntent(packet, maker, makerMsg);
+                    emit IBCPacketLib.FillIntentPacket(packet, maker, makerMsg);
+                } else {
+                    acknowledgement =
+                        module.onRecvPacket(packet, maker, makerMsg);
+                    emit IBCPacketLib.RecvPacket(packet, maker);
+                }
+                if (acknowledgement.length > 0) {
+                    _writeAcknowledgement(packet, acknowledgement);
+                }
+            }
         }
-        return ensureConnectionState(channel.connectionId);
+    }
+
+    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
+        processReceive(
+            msg_.packets,
+            msg_.relayer,
+            msg_.relayerMsgs,
+            msg_.proofHeight,
+            msg_.proof,
+            true
+        );
     }
 
     function fulfillIntent(IBCMsgs.MsgFulfillIntent calldata msg_)
         external
         override
     {
-        uint256 l = msg_.packets.length;
-        if (l == 0) {
-            revert IBCPacketLib.ErrNotEnoughPackets();
-        }
-        uint32 destinationChannel = msg_.packets[0].destinationChannel;
-        receivePreconditions(destinationChannel, msg_.packets);
-        for (uint256 i = 0; i < l; i++) {
-            IBCPacket calldata packet = msg_.packets[i];
-            bytes memory acknowledgement = lookupModuleByChannel(
-                destinationChannel
-            ).onFulfillIntent(packet, msg_.marketMaker, msg_.marketMakerMsgs[i]);
-            if (acknowledgement.length > 0) {
-                _writeAcknowledgement(packet, acknowledgement);
-            }
-            emit IBCPacketLib.FillIntentPacket(
-                packet, msg_.marketMaker, msg_.marketMakerMsgs[i]
-            );
-        }
-    }
-
-    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
-        uint256 l = msg_.packets.length;
-        if (l == 0) {
-            revert IBCPacketLib.ErrNotEnoughPackets();
-        }
-        uint32 destinationChannel = msg_.packets[0].destinationChannel;
-        IBCConnection storage connection =
-            receivePreconditions(destinationChannel, msg_.packets);
-        if (
-            !verifyCommitment(
-                connection,
-                msg_.proofHeight,
-                msg_.proof,
-                IBCCommitment.batchPacketsCommitmentKey(
-                    destinationChannel, commitPackets(msg_.packets)
-                ),
-                bytes32(uint256(1))
-            )
-        ) {
-            revert IBCPacketLib.ErrInvalidProof();
-        }
-        for (uint256 i = 0; i < l; i++) {
-            recvPacketExecute(msg_.packets[i], msg_.relayer);
-        }
-    }
-
-    function recvPacketExecute(
-        IBCPacket calldata packet,
-        address relayer
-    ) internal returns (bytes memory) {
-        bytes memory acknowledgement = lookupModuleByChannel(
-            packet.destinationChannel
-        ).onRecvPacket(packet, relayer);
-        if (acknowledgement.length > 0) {
-            _writeAcknowledgement(packet, acknowledgement);
-        }
-        emit IBCPacketLib.RecvPacket(packet, relayer);
-        return acknowledgement;
+        processReceive(
+            msg_.packets,
+            msg_.marketMaker,
+            msg_.marketMakerMsgs,
+            0,
+            msg_.emptyProof,
+            true
+        );
     }
 
     function _writeAcknowledgement(
         IBCPacket calldata packet,
         bytes memory acknowledgement
     ) internal {
-        // Commit the packet as a batch of 1 packet
-        IBCPacket[] memory packets = new IBCPacket[](1);
-        packets[0] = packet;
-        bytes[] memory acks = new bytes[](1);
-        acks[0] = acknowledgement;
         bytes32 ackCommitmentKey = IBCCommitment.batchAcksCommitmentKey(
-            packet.destinationChannel, commitPacketsMemory(packets)
+            packet.destinationChannel, commitPacketsMemory(batchSingle(packet))
         );
         bytes32 ackCommitment = commitments[ackCommitmentKey];
         if (ackCommitment != bytes32(0)) {
             revert IBCPacketLib.ErrAcknowledgementAlreadyExists();
         }
-        commitments[ackCommitmentKey] = commitAcksMemory(acks);
+        commitments[ackCommitmentKey] =
+            commitAcksMemory(batchSingleAckMemory(acknowledgement));
         emit IBCPacketLib.WriteAcknowledgement(packet, acknowledgement);
     }
 
