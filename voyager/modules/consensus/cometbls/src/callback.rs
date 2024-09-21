@@ -25,8 +25,9 @@ use unionlabs::{
 use voyager_message::{
     call::Call,
     callback::Callback,
+    core::ChainId,
     data::{DecodedHeaderMeta, OrderedHeaders},
-    ChainId, PluginMessage, VoyagerMessage,
+    PluginMessage, VoyagerMessage,
 };
 
 use crate::{

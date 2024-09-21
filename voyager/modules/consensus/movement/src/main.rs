@@ -2,12 +2,11 @@ use std::collections::VecDeque;
 
 use aptos_rest_client::error::RestError;
 use call::FetchUpdate;
-use ethers::providers::{Middleware, Provider, ProviderError, Ws, WsClientError};
 use jsonrpsee::core::{async_trait, RpcResult};
-use queue_msg::{aggregation::do_callback, call, data, defer, now, promise, seq, Op};
+use queue_msg::{call, data, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{instrument, warn};
+use tracing::instrument;
 use unionlabs::{
     aptos::{
         account::AccountAddress, state_proof::StateProof,
@@ -26,13 +25,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
+    core::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
-    module::{
-        ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo, PluginModuleServer,
-        QueueInteractionsServer,
-    },
-    run_module_server, ChainId, ClientType, DefaultCmd, ModuleContext, ModuleServer,
-    VoyagerMessage,
+    module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo, QueueInteractionsServer},
+    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
@@ -155,7 +151,7 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate { from, to }) => {
                 let state_proof: StateProofResponse = client
-                    .get(&format!(
+                    .get(format!(
                         "{}/movement/v1/state-proof/{}",
                         self.ctx.movement_rest_url, from
                     ))

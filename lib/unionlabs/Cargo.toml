@@ -52,7 +52,7 @@ typenum                  = { workspace = true, features = ["const-generics", "no
 uint                     = "*"
 wasmparser               = { version = "0.113" }
 
-base64.workspace     = true
+base64               = { workspace = true }
 bcs                  = { workspace = true }
 borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
 bs58                 = "0.4"

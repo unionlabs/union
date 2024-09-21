@@ -32,8 +32,8 @@ use unionlabs::{
 };
 
 use crate::{
-    module::{ClientStateMeta, ConsensusStateMeta},
-    top_level_identifiable_enum, ChainId, ClientType, IbcInterface, PluginMessage,
+    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta},
+    top_level_identifiable_enum, PluginMessage,
 };
 
 #[apply(top_level_identifiable_enum)]
@@ -46,8 +46,7 @@ pub enum Data<D = serde_json::Value> {
     // TODO: Remove this
     LatestHeight(LatestHeight),
 
-    ClientInfo(ClientInfo),
-
+    // ClientInfo(ClientInfo),
     OrderedHeaders(OrderedHeaders),
     OrderedMsgUpdateClients(OrderedMsgUpdateClients),
 
@@ -67,9 +66,9 @@ pub struct ChainEvent {
     /// The chain on the other end of this IBC event.
     pub counterparty_chain_id: ChainId<'static>,
     pub tx_hash: H256,
-    /// The "provable height" of the event. This is the minimum height at which the effect of the
-    /// IBC action that caused this event is provable in the state root of the chain identified by
-    /// [`Self::chain_id`].
+    /// The "provable height" of the event. This is the minimum height at which
+    /// the effect of the IBC action that caused this event is provable in
+    /// the state root of the chain identified by [`Self::chain_id`].
     pub provable_height: Height,
     pub event: FullIbcEvent,
 }
@@ -105,8 +104,9 @@ impl ChainEvent {
         }
     }
 
-    /// Returns the counterparty client id of this ibc event, if there is a counterparty.
-    /// This will return `None` for `UpdateClient` and `CreateClient`.
+    /// Returns the counterparty client id of this ibc event, if there is a
+    /// counterparty. This will return `None` for `UpdateClient` and
+    /// `CreateClient`.
     pub fn counterparty_client_id(&self) -> Option<&ClientId> {
         match self.event {
             FullIbcEvent::ConnectionOpenInit(ref event) => Some(&event.counterparty_client_id),
@@ -167,8 +167,8 @@ pub enum IbcMessage {
 }
 
 impl IbcMessage {
-    /// Returns the proof height of the IBC message, if it has one. (ConnectionOpenInit does not
-    /// contain a proof, for example)
+    /// Returns the proof height of the IBC message, if it has one.
+    /// (ConnectionOpenInit does not contain a proof, for example)
     pub fn proof_height(&self) -> Option<Height> {
         match self {
             IbcMessage::CreateClient(_) => None,
@@ -355,8 +355,8 @@ pub struct ConnectionMetadata {
     pub connection_id: ConnectionId,
 }
 
-/// Similar to [`IbcEvent`], but contains more information (counterparty clients, channel version,
-/// etc)
+/// Similar to [`IbcEvent`], but contains more information (counterparty
+/// clients, channel version, etc)
 #[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum FullIbcEvent {
@@ -385,43 +385,6 @@ pub enum FullIbcEvent {
 pub struct LatestHeight {
     pub chain_id: ChainId<'static>,
     pub height: Height,
-}
-
-/// The type of a light client on a chain, along with the IBC interface it's on
-/// (and any associated metadata).
-///
-/// # Examples
-///
-/// - 08-wasm client on union, tracking ethereum mainnet: `(ibc-go-v8/08-wasm, ethereum_mainnet,
-///   {"checksum": "0x..."})`
-/// - 07-tendermint client on stargaze, tracking osmosis: `(ibc-go-v8/native, tendermint)`
-/// - 08-wasm client on babylon, tracking union: `(ibc-go-v8/08-wasm, cometbls, {"checksum":
-///   "0x..."}))`
-/// - cometbls client on scroll, tracking union: `(ibc-solidity, cometbls)`
-#[model]
-pub struct ClientInfo {
-    pub client_type: ClientType<'static>,
-    pub ibc_interface: IbcInterface<'static>,
-    /// Additional metadata about this client.
-    ///
-    /// This is currently only used for threading the checksum for ibc-go 08-wasm clients, and can
-    /// likely be removed when support for that IBC interface is dropped.
-    #[serde(default)]
-    pub metadata: Value,
-}
-
-#[model]
-pub struct SelfClientState {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub self_client_state: Vec<u8>,
-}
-
-#[model]
-pub struct SelfConsensusState {
-    #[serde(with = "::serde_utils::hex_string")]
-    #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
-    pub self_consensus_state: Vec<u8>,
 }
 
 #[model]
@@ -454,7 +417,8 @@ pub struct IbcProof<P: IbcPath> {
 pub struct RawIbcProof {
     pub path: Path,
     pub height: Height,
-    /// The raw proof, encoded as JSON, which will be encoded by the relevant client module.
+    /// The raw proof, encoded as JSON, which will be encoded by the relevant
+    /// client module.
     pub proof: Value,
 }
 

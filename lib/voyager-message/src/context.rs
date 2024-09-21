@@ -14,13 +14,14 @@ use tracing::{debug, debug_span, error, info, instrument, warn, Instrument};
 use unionlabs::{ethereum::keccak256, traits::Member, ErrorReporter};
 
 use crate::{
+    core::{ChainId, ClientType, IbcInterface},
     module::{
         ChainModuleClient, ChainModuleInfo, ClientModuleClient, ClientModuleInfo,
         ConsensusModuleClient, ConsensusModuleInfo, ModuleInfo, ModuleKindInfo, PluginModuleInfo,
         QueueInteractionsClient,
     },
     rpc::{server::Server, VoyagerRpcServer},
-    ChainId, ClientType, IbcInterface, FATAL_JSONRPC_ERROR_CODE,
+    FATAL_JSONRPC_ERROR_CODE,
 };
 
 pub const INVALID_CONFIG_EXIT_CODE: u8 = 13;
@@ -69,8 +70,8 @@ impl ModuleRpcClient {
         let socket = Self::make_socket_path(name);
 
         let client = reconnecting_jsonrpc_ws_client::Client::new({
-            // NOTE: This needs to be leaked because the return type of the .build() method below
-            // captures the lifetime of the `name` parameter(?)
+            // NOTE: This needs to be leaked because the return type of the .build() method
+            // below captures the lifetime of the `name` parameter(?)
             let socket: &'static str = Box::leak(socket.clone().into_boxed_str());
             let name = name.to_owned();
             move || {
@@ -576,12 +577,12 @@ impl From<ConsensusModuleNotFound> for ErrorObjectOwned {
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ClientModuleNotFound {
-    #[error("no module loaded for client type `{}`", client_type.0)]
+    #[error("no module loaded for client type `{}`", client_type)]
     ClientTypeNotFound { client_type: ClientType<'static> },
     #[error(
         "no module loaded supporting IBC interface `{}` and client type `{}`",
-        client_type.0,
-        ibc_interface.0,
+        client_type,
+        ibc_interface
     )]
     IbcInterfaceNotFound {
         client_type: ClientType<'static>,

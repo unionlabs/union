@@ -41,9 +41,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
+    core::ChainId,
     data::{log_msg, Data, IbcMessage, MsgCreateClientData, WithChainId},
     module::{ModuleInfo, PluginModuleInfo, PluginModuleServer, QueueInteractionsServer},
-    run_module_server, ChainId, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
+    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};

@@ -31,17 +31,17 @@ use unionlabs::{
 };
 
 #[cfg(doc)]
-use crate::data::ClientInfo;
+use crate::core::ClientInfo;
 use crate::{
     callback::AggregateFetchBlockRange,
+    core::{ChainId, IbcInterface},
     data::{IbcMessage, LatestHeight, MsgCreateClientData, WithChainId},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{
         ChainModuleClient, ClientModuleClient, ConsensusModuleClient, QueueInteractionsClient,
     },
     rpc::json_rpc_error_to_rpc_error,
-    top_level_identifiable_enum, ChainId, Context, IbcInterface, PluginMessage, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    top_level_identifiable_enum, Context, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 #[apply(top_level_identifiable_enum)]
@@ -238,7 +238,8 @@ pub struct WaitForTimestamp {
     pub timestamp: i64,
 }
 
-/// Wait for the client `.client_id` on `.chain_id` to trust a height >= `.height`.
+/// Wait for the client `.client_id` on `.chain_id` to trust a height >=
+/// `.height`.
 #[model]
 pub struct WaitForTrustedHeight {
     pub chain_id: ChainId<'static>,

@@ -22,11 +22,12 @@ use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForHeight},
     callback::{AggregateMsgUpdateClientsFromOrderedHeaders, Callback},
+    core::ChainId,
     data::{ChainEvent, Data, FullIbcEvent},
     module::{ModuleInfo, PluginModuleInfo, PluginModuleServer, QueueInteractionsServer},
     rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
-    run_module_server, ChainId, DefaultCmd, ModuleContext, ModuleServer, PluginMessage,
-    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    run_module_server, DefaultCmd, ModuleContext, ModuleServer, PluginMessage, VoyagerMessage,
+    FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{

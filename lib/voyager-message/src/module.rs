@@ -8,7 +8,6 @@ use serde_json::{json, Value};
 use serde_utils::Hex;
 use tracing::debug;
 use unionlabs::{
-    hash::H256,
     ibc::core::client::height::Height,
     ics24::{IbcPath, Path},
     id::ClientId,
@@ -16,16 +15,15 @@ use unionlabs::{
     ErrorReporter,
 };
 #[cfg(doc)]
-// #[cfg_attr(not(doc), allow(unused_imports))]
 use {
     crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},
     unionlabs::ibc::core::client::msg_update_client::MsgUpdateClient,
 };
 
 use crate::{
-    data::{ClientInfo, Data},
-    ChainId, ClientType, IbcInterface, ModuleContext, ModuleServer, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
+    data::Data,
+    ModuleContext, ModuleServer, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 #[model]
@@ -74,9 +72,9 @@ impl IModuleKindInfo for ClientModuleInfo {}
 #[model]
 pub struct PluginModuleInfo {
     /// A jaq filter to run on every message before pushing them to the queue.
-    /// This ***MUST*** return a bool. If this returns `true`, the message will be
-    /// pushed to the optimization queue with this plugin's name as the tag,
-    /// else it will be passed on to the next plugin to be filtered.
+    /// This ***MUST*** return a bool. If this returns `true`, the message will
+    /// be pushed to the optimization queue with this plugin's name as the
+    /// tag, else it will be passed on to the next plugin to be filtered.
     pub interest_filter: String,
 }
 
@@ -416,26 +414,4 @@ pub trait ConsensusModule<D: Member, C: Member, Cb: Member> {
         update_to: Height,
         counterparty_chain_id: ChainId<'static>,
     ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
-}
-
-#[model]
-pub struct ClientStateMeta {
-    /// The counterparty height this client has been updated to. A consensus
-    /// state will exist at this height.
-    pub height: Height,
-
-    /// The chain id of the counterparty chain this client tracks.
-    pub chain_id: ChainId<'static>,
-}
-
-#[model]
-pub struct ConsensusStateMeta {
-    /// The timestamp of the counterparty at the height represented by this
-    /// consensus state.
-    pub timestamp_nanos: u64,
-}
-
-#[model]
-pub struct IbcGo08WasmClientMetadata {
-    pub checksum: H256,
 }

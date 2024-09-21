@@ -49,6 +49,7 @@ tracing                        = { workspace = true }
 tracing-subscriber             = { workspace = true, features = ["json"] }
 typenum                        = { workspace = true }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
+voyager-core                   = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

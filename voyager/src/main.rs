@@ -25,7 +25,8 @@ use tikv_jemallocator::Jemalloc;
 use tracing_subscriber::EnvFilter;
 use unionlabs::{ethereum::ibc_commitment_key, ics24};
 use voyager_message::{
-    call::FetchBlock, context::get_module_info, module::ChainModuleClient, ChainId, VoyagerMessage,
+    call::FetchBlock, context::get_module_info, core::ChainId, module::ChainModuleClient,
+    VoyagerMessage,
 };
 
 #[global_allocator]

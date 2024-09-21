@@ -37,9 +37,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
+    core::ChainId,
     data::{Data, IbcMessage, WithChainId},
     module::{ModuleInfo, PluginModuleInfo, PluginModuleServer, QueueInteractionsServer},
-    run_module_server, ChainId, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
+    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };
 

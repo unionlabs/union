@@ -10,7 +10,7 @@ use unionlabs::{
     uint::U256,
     QueryHeight,
 };
-use voyager_message::ChainId;
+use voyager_message::core::ChainId;
 
 use crate::cli::handshake::HandshakeCmd;
 

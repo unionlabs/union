@@ -7,10 +7,10 @@ use jsonrpsee::types::{
     error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
     ErrorObject,
 };
-use macros::{apply, model};
+use macros::model;
 use queue_msg::{aggregation::SubsetOf, QueueError, QueueMessage};
 use reth_ipc::client::IpcClientBuilder;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use tracing::{debug, debug_span, error, info, trace, Instrument};
 use unionlabs::{never::Never, traits::Member, ErrorReporter};
@@ -35,6 +35,7 @@ pub mod rpc;
 
 pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
+pub use voyager_core as core;
 
 pub struct VoyagerMessage<D = Value, F = Value, A = Value> {
     #[allow(clippy::type_complexity)] // it's a phantom data bro fight me
@@ -50,15 +51,17 @@ impl<D: Member, C: Member, Cb: Member> QueueMessage for VoyagerMessage<D, C, Cb>
     type Context = Context;
 }
 
-/// Error code for fatal errors. If a plugin or module responds with this error code, it will be
-/// treated as failed and not retried.
+/// Error code for fatal errors. If a plugin or module responds with this error
+/// code, it will be treated as failed and not retried.
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 
-/// Convert a [`jsonrpsee::core::client::Error`] to a `queue-msg` [`QueueError`].
+/// Convert a [`jsonrpsee::core::client::Error`] to a `queue-msg`
+/// [`QueueError`].
 ///
-/// All errors are treated as retryable, unless `error` is a `Call` variant and the contained
-/// [`ErrorObject`] is deemed to be fatal. See [`error_object_to_queue_error`] for more information
-/// on the conversion from [`ErrorObject`] to [`QueueError`].
+/// All errors are treated as retryable, unless `error` is a `Call` variant and
+/// the contained [`ErrorObject`] is deemed to be fatal. See
+/// [`error_object_to_queue_error`] for more information on the conversion from
+/// [`ErrorObject`] to [`QueueError`].
 pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> QueueError {
     match error {
         jsonrpsee::core::client::Error::Call(error) => error_object_to_queue_error(error),
@@ -70,13 +73,16 @@ pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> Q
 ///
 /// Certain error codes are treated as fatal (i.e. not retryable):
 ///
-/// - [`FATAL_JSONRPC_ERROR_CODE`]: Custom error code that can be returned by plugin and modules to
-///   denote that a fatal error has occurred, and this message is not retryable.
-/// - [`METHOD_NOT_FOUND_CODE`]: The plugin or module does not expose the method that was attempted
-///   to be called. This indicates a bug in the plugin or module.
-/// - [`INVALID_PARAMS_CODE`]: The custom message sent to the plugin or module could not be
-///   deserialized. This could either be due a bug in the plugin or module (JSON serialization not
-///   roundtripping correctly) or a message that was manually inserted into the queue via `/msg`.
+/// - [`FATAL_JSONRPC_ERROR_CODE`]: Custom error code that can be returned by
+///   plugin and modules to denote that a fatal error has occurred, and this
+///   message is not retryable.
+/// - [`METHOD_NOT_FOUND_CODE`]: The plugin or module does not expose the method
+///   that was attempted to be called. This indicates a bug in the plugin or
+///   module.
+/// - [`INVALID_PARAMS_CODE`]: The custom message sent to the plugin or module
+///   could not be deserialized. This could either be due a bug in the plugin or
+///   module (JSON serialization not roundtripping correctly) or a message that
+///   was manually inserted into the queue via `/msg`.
 pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
     if error.code() == FATAL_JSONRPC_ERROR_CODE
         || error.code() == METHOD_NOT_FOUND_CODE
@@ -88,219 +94,10 @@ pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
     }
 }
 
-macro_rules! str_newtype {
-    (
-        $(#[doc = $doc:literal])+
-        $vis:vis struct $Struct:ident;
-    ) => {
-        $(#[doc = $doc])+
-        #[derive(macros::Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-        // I tested this and apparently it's not required (newtype is automatically transparent?) but
-        // keeping it here for clarity
-        #[serde(transparent)]
-        #[debug("{}({:?})", stringify!($Struct), self.0)]
-        $vis struct $Struct<'a>(#[doc(hidden)] ::std::borrow::Cow<'a, str>);
-
-        impl<'a> ::core::fmt::Display for $Struct<'a> {
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                ::core::fmt::Display::fmt(&self.0, f)
-            }
-        }
-
-        #[allow(unused)]
-        impl<'a> $Struct<'a> {
-            /// Construct a new [`
-            #[doc = stringify!($Struct)]
-            /// `].
-            ///
-            /// This will capture the lifetime of the passed in value:
-            /// ```
-            #[doc = concat!(
-                "let _: ",
-                stringify!($Struct),
-                "<'static> = ",
-                stringify!($Struct),
-                "::new(\"static string\");"
-            )]
-            /// let owned_string: String = "owned string".into();
-            ///
-            /// // not static
-            #[doc = concat!(
-                "let _: ",
-                stringify!($Struct),
-                "<'_> = ",
-                stringify!($Struct),
-                "::new(&owned_string);"
-            )]
-            #[doc = concat!(
-                "let _: ",
-                stringify!($Struct),
-                "<'static> = ",
-                stringify!($Struct),
-                "::new(owned_string);"
-            )]
-            pub fn new(s: impl Into<::std::borrow::Cow<'a, str>>) -> Self {
-                Self(s.into())
-            }
-
-            /// Convert this [`
-            #[doc = concat!(stringify!($Struct))]
-            /// `] into an owned version of itself.
-            ///
-            /// This will allocate if the contained value is not already on the heap even if `'a == 'static`.
-            pub fn into_owned(self) -> $Struct<'static> {
-                use std::borrow::Cow;
-
-                $Struct(match self.0 {
-                    Cow::Borrowed(x) => Cow::Owned(x.to_owned()),
-                    Cow::Owned(x) => Cow::Owned(x),
-                })
-            }
-
-            /// Extracts a string slice containing the entire contained value.
-            pub fn as_str(&self) -> &str {
-                self.0.as_ref()
-            }
-
-
-            /// Borrow this [`
-            #[doc = stringify!($Struct)]
-            /// `], returning a new owned value pointing to the same data.
-            ///
-            /// ```
-            #[doc = concat!("let t = ", stringify!($Struct), "::new_static(\"static\");")]
-            ///
-            /// takes_ownership(t.borrow());
-            /// takes_ownership(t);
-            ///
-            #[doc = concat!("fn takes_ownership<'a>(c: ", stringify!($Struct), "<'a>) {}")]
-            /// ```
-            pub fn borrow<'b>(&'a self) -> $Struct<'b>
-            where
-                'a: 'b,
-            {
-                use std::borrow::Cow;
-
-                match self.0 {
-                    Cow::Borrowed(s) => Self(Cow::Borrowed(s)),
-                    Cow::Owned(ref s) => Self(Cow::Borrowed(s.as_str())),
-                }
-            }
-        }
-
-        /// `const`-friendly version of [`Self::new`].
-        #[allow(unused)]
-        impl $Struct<'static> {
-            pub const fn new_static(ibc_interface: &'static str) -> Self {
-                Self(::std::borrow::Cow::Borrowed(ibc_interface))
-            }
-        }
-    };
-}
-
-/// Represents the IBC interface of a chain. Since multiple chains with
-/// different consensus mechanisms can have the same execution environment, this
-/// value is used to describe how the IBC state is stored on-chain and how the
-/// IBC stack is to be interacted with.
-#[apply(str_newtype)]
-pub struct IbcInterface;
-
-/// Well-known IBC interfaces, defined as constants for reusability and to allow
-/// for pattern matching.
-impl IbcInterface<'static> {
-    /// Native light clients in ibc-go, through the client v1 router. This
-    /// entrypoint uses protobuf [`Any`] wrapping to route to the correct
-    /// module, such as "/ibc.lightclients.tendermint.v1.ClientState" for native
-    /// 07-tendermint clients.
-    ///
-    /// [`Any`]: https://protobuf.dev/programming-guides/proto3/#any
-    pub const IBC_GO_V8_NATIVE: &'static str = "ibc-go-v8/native";
-
-    /// 08-wasm light clients in ibc-go, through the client v1 router. Similar
-    /// to the ibc-go-v8/native entrypoint, this module also uses [`Any`]
-    /// wrapping for client routing, however, there is another level of
-    /// indirection, since the `Any` routing only routes to the wasm module. All
-    /// state for wasm clients is [wrapped](wasm-protos), with the internal
-    /// state being opaque bytes to be interpreted by the light client.
-    ///
-    /// [`Any`]: https://protobuf.dev/programming-guides/proto3/#any
-    /// [wasm-protos]: https://github.com/cosmos/ibc-go/blob/release/v8.4.x/proto/ibc/lightclients/wasm/v1/wasm.proto
-    pub const IBC_GO_V8_08_WASM: &'static str = "ibc-go-v8/08-wasm";
-
-    /// Solidity light clients, run via Union's IBC solidity stack. This stack
-    /// is fully virtualized in the EVM, and as such can be run on any chain
-    /// running the EVM as part of their execution layer (ethereum, ethereum
-    /// L2s, berachain, etc).
-    pub const IBC_SOLIDITY: &'static str = "ibc-solidity";
-
-    pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
-
-    // lots more to come - near, fuel - stay tuned
-}
-
-/// Newtype for client types. Clients of the same type have the same client
-/// state, consensus state, and header (client update) types.
-#[apply(str_newtype)]
-pub struct ClientType;
-
-/// Well-known client types, defined as constants for reusability and to allow
-/// for pattern matching.
-impl ClientType<'static> {
-    /// A client tracking CometBLS consensus.
-    pub const COMETBLS: &'static str = "cometbls";
-
-    /// A client tracking vanilla Tendermint (CometBFT).
-    pub const TENDERMINT: &'static str = "tendermint";
-
-    /// A client tracking the Ethereum beacon chain consensus, with the mainnet
-    /// configuration.
-    pub const ETHEREUM_MAINNET: &'static str = "ethereum-mainnet";
-
-    /// A client tracking the Ethereum beacon chain consensus, with the minimal
-    /// configuration.
-    pub const ETHEREUM_MINIMAL: &'static str = "ethereum-minimal";
-
-    /// A client tracking the state of the [Scroll] zkevm L2, settling on
-    /// Ethereum.
-    ///
-    /// [Scroll]: https://github.com/scroll-tech/scroll
-    pub const SCROLL: &'static str = "scroll";
-
-    /// A client tracking the state of the Arbitrum optimistic L2, settling on
-    /// Ethereum.
-    ///
-    /// [Arbitrum]: https://github.com/OffchainLabs/nitro-contracts
-    pub const ARBITRUM: &'static str = "arbitrum";
-
-    /// A client tracking the state of a [BeaconKit] chain.
-    ///
-    /// [BeaconKit]: https://github.com/berachain/beacon-kit
-    pub const BEACON_KIT: &'static str = "beacon-kit";
-
-    /// A client tracking the state of a [Movement] chain.
-    ///
-    /// [Movement]: https://github.com/movementlabsxyz/movement
-    pub const MOVEMENT: &'static str = "movement";
-
-    // lots more to come - near, linea, polygon - stay tuned
-}
-
-/// Identifier used to uniquely identify a chain, as provided by the chain itself.
-///
-/// # Examples
-///
-/// | chain id        | chain                    |
-/// | --------------- | ------------------------ |
-/// | 1               | ethereum mainnet         |
-/// | 11155111        | ethereum sepolia testnet |
-/// | union-testnet-8 | union testnet            |
-/// | stargaze-1      | stargaze mainnet         |
-#[apply(str_newtype)]
-pub struct ChainId;
-
 /// A message specific to a plugin.
 ///
-/// This is used in [`Call`], [`Callback`], and [`Data`] to route messages to plugins.
+/// This is used in [`Call`], [`Callback`], and [`Data`] to route messages to
+/// plugins.
 #[model]
 pub struct PluginMessage<T = serde_json::Value> {
     pub plugin: String,

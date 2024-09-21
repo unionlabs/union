@@ -8,12 +8,12 @@ aptos-rest-client = { workspace = true }
 aptos-types       = { workspace = true }
 move-core-types   = { workspace = true }
 
-bitvec.workspace   = true
+bitvec             = { workspace = true }
 chain-utils        = { workspace = true }
-enumorph.workspace = true
+enumorph           = { workspace = true }
 ethers             = { workspace = true, features = ["rustls", "ws"] }
-frunk.workspace    = true
-futures.workspace  = true
+frunk              = { workspace = true }
+futures            = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 num-bigint         = { workspace = true }

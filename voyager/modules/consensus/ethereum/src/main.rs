@@ -32,10 +32,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTimestamp},
+    core::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo, QueueInteractionsServer},
-    run_module_server, ChainId, ClientType, DefaultCmd, ModuleContext, ModuleServer,
-    VoyagerMessage,
+    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
 };
 
 use crate::{

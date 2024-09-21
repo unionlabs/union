@@ -14,13 +14,15 @@ use unionlabs::{
     id::ClientId,
     traits::Member,
 };
+use voyager_core::ClientInfo;
 
 use crate::{
     call::FetchBlockRange,
-    data::{ClientInfo, Data, LatestHeight, OrderedHeaders, OrderedMsgUpdateClients},
+    core::ChainId,
+    data::{Data, LatestHeight, OrderedHeaders, OrderedMsgUpdateClients},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ClientModuleClient, QueueInteractionsClient},
-    top_level_identifiable_enum, ChainId, Context, PluginMessage, VoyagerMessage,
+    top_level_identifiable_enum, Context, PluginMessage, VoyagerMessage,
 };
 
 #[apply(top_level_identifiable_enum)]
