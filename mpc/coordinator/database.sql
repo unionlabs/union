@@ -3,10 +3,11 @@ BEGIN;
 -----------
 -- Erase --
 -----------
- -- TRUNCATE TABLE auth.users CASCADE;
- -- DELETE FROM storage.objects o
- -- WHERE o.bucket_id = 'contributions'
- -- AND o.name <> '00000000-0000-0000-0000-000000000000';
+TRUNCATE TABLE public.log;
+TRUNCATE TABLE auth.users CASCADE;
+DELETE FROM storage.objects o
+WHERE o.bucket_id = 'contributions'
+AND o.name <> '00000000-0000-0000-0000-000000000000';
 
 -- Default bucket for contributions upload
 INSERT INTO storage.buckets(id, name, public) VALUES('contributions', 'contributions', false);
@@ -167,14 +168,13 @@ BEGIN
   PERFORM public.do_log(
     json_build_object(
       'type', 'redeem',
-      'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid())),
-      'code', code_id
+      'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = (SELECT auth.uid()))
     )
   );
   PERFORM public.do_log(
     json_build_object(
       'type', 'join_queue',
-      'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid()))
+      'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = (SELECT auth.uid()))
     )
   );
 END
@@ -188,7 +188,7 @@ BEGIN
       PERFORM public.do_log(
         json_build_object(
           'type', 'join_queue',
-          'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid()))
+          'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = (SELECT auth.uid()))
         )
       );
     ELSE
@@ -196,7 +196,7 @@ BEGIN
       PERFORM public.do_log(
         json_build_object(
           'type', 'join_waitlist',
-          'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid()))
+          'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = (SELECT auth.uid()))
         )
       );
     END IF;
@@ -301,9 +301,10 @@ BEGIN
   PERFORM public.do_log(
       json_build_object(
         'type', 'contribution_verified',
-        'user', (SELECT un.user_name FROM auth.users u WHERE u.id = NEW.id)
+        'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = NEW.id),
+        'success', NEW.success
       )
-    );
+  );
   CALL public.set_next_contributor();
   RETURN NEW;
 END
@@ -386,17 +387,41 @@ ALTER VIEW current_payload_id SET (security_invoker = on);
 
 CREATE OR REPLACE PROCEDURE set_next_contributor() AS $$
 BEGIN
-  IF (NOT EXISTS (SELECT * FROM public.current_contributor_id)) THEN
+  IF (NOT EXISTS (SELECT cci.id FROM public.current_contributor_id cci)) THEN
     INSERT INTO public.contribution_status(id)
     SELECT cq.id
     FROM public.current_queue cq
     LIMIT 1;
-    PERFORM public.do_log(
-      json_build_object(
-        'type', 'contribution_started',
-        'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT cci.id FROM public.current_contributor_id cci))
-      )
-    );
+    IF (EXISTS (SELECT cci.id FROM public.current_contributor_id cci)) THEN
+      PERFORM public.do_log(
+        json_build_object(
+          'type', 'contribution_started',
+          'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = (SELECT cci.id FROM public.current_contributor_id cci))
+        )
+      );
+      IF (EXISTS (SELECT cq.id FROM public.current_queue cq WHERE cq.position = 5)) THEN
+        -- I know it's ugly, just for the alert email
+        -- The JWT here is the public anon one, already embedded in the frontend
+        -- 5th in the queue get alerted
+        PERFORM net.http_post(
+            url := 'https://otfaamdxmgnkjqsosxye.supabase.co/functions/v1/ping',
+            headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90ZmFhbWR4bWdua2pxc29zeHllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjEzMjA5NDMsImV4cCI6MjAzNjg5Njk0M30.q91NJPFFHKJXnbhbpUYwsB0NmimtD7pGPx6PkbB_A3w"}'::jsonb,
+            body := concat(
+              '{"email": "',
+              (SELECT u.email
+               FROM auth.users u
+               WHERE u.id = (
+                 SELECT cq.id
+                 FROM public.current_queue cq
+                 WHERE cq.position = 5
+               )),
+               '", "secret":"',
+               (SELECT private.ping_secret()),
+               '"}'
+            )::jsonb
+        );
+      END IF;
+    END IF;
   END IF;
 END
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
@@ -465,7 +490,7 @@ BEGIN
   PERFORM public.do_log(
     json_build_object(
       'type', 'contribution_submitted',
-      'user', (SELECT un.user_name FROM auth.users u WHERE u.id = (SELECT auth.uid()))
+      'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = queue_id)
     )
   );
 END
@@ -577,7 +602,7 @@ CREATE POLICY view_all
       true
     );
 
-CREATE OR REPLACE FUNCTION do_log(message jsonb) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION do_log(message json) RETURNS void AS $$
 BEGIN
   INSERT INTO public.log(message) VALUES (message);
 END

@@ -115,8 +115,9 @@ async fn is_already_successful() -> bool {
 async fn wait_successful(tx_status: Sender<Status>) {
     loop {
         if is_already_successful().await {
+            let _ = tokio::fs::remove_dir_all(ZKGM_DIR).await;
             tx_status.send(Status::Successful).expect("impossible");
-            tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(10000)).await;
             break;
         }
     }
@@ -162,15 +163,19 @@ async fn contribute(
         .send(Status::DownloadStarted(current_payload.id.clone()))
         .expect("impossible");
     let payload = client
-        .download_payload(&current_payload.id, &current_payload.id, |percent| {
-            let tx_status = tx_status.clone();
-            let current_payload_clone = current_payload.id.clone();
-            async move {
-                tx_status
-                    .send(Status::Downloading(current_payload_clone, percent as u8))
-                    .expect("impossible");
-            }
-        })
+        .download_payload(
+            &current_payload.id,
+            &temp_file(&current_payload.id),
+            |percent| {
+                let tx_status = tx_status.clone();
+                let current_payload_clone = current_payload.id.clone();
+                async move {
+                    tx_status
+                        .send(Status::Downloading(current_payload_clone, percent as u8))
+                        .expect("impossible");
+                }
+            },
+        )
         .await?;
     tx_status
         .send(Status::DownloadEnded(current_payload.id.clone()))
@@ -360,8 +365,8 @@ async fn contribute(
             .into_iter()
             .skip(upload_offset)
             .collect::<Vec<_>>()
-            // 1mb
-            .chunks(1024 * 1024)
+            // 4mb
+            .chunks(4 * 1024 * 1024)
             .map(|x| Ok::<_, std::io::Error>(x.to_vec()))
             .collect::<Vec<_>>();
         upload_client
@@ -462,7 +467,6 @@ async fn handle(
                 match result {
                     Ok(_) => {
                         let _ = tokio::fs::write(SUCCESSFUL_PATH, &[1u8]).await;
-                        let _ = tokio::fs::remove_dir(ZKGM_DIR).await;
                     }
                     Err(e) => {
                         tx_status

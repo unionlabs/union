@@ -39,9 +39,14 @@ fn ui(f: &mut Frame, state: &UiState, throbber_state: &mut ThrobberState) {
     );
     f.render_widget(block, area);
 
-    let vertical = Layout::vertical([Constraint::Length(2), Constraint::Length(4)]).margin(1);
+    let vertical = Layout::vertical([
+        Constraint::Length(2),
+        Constraint::Length(4),
+        Constraint::Length(4),
+    ])
+    .margin(1);
     let horizontal = Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]);
-    let [progress_area, main] = vertical.areas(area);
+    let [progress_area, warning_area, main] = vertical.areas(area);
     let [list_area, gauge_area] = horizontal.areas(main);
     let chunks = ratatui::layout::Layout::default()
         .direction(ratatui::layout::Direction::Horizontal)
@@ -73,19 +78,24 @@ fn ui(f: &mut Frame, state: &UiState, throbber_state: &mut ThrobberState) {
         .ratio(steps_done as f64 / num_steps as f64);
     f.render_widget(progress, progress_area);
 
+    // Set full with state
+    let full = throbber_widgets_tui::Throbber::default()
+        .label(Span::styled(
+            "[!] This terminal must remain open, go back to the browser now. [!]",
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        ))
+        .style(ratatui::style::Style::default().fg(ratatui::style::Color::White))
+        .throbber_style(
+            ratatui::style::Style::default().add_modifier(ratatui::style::Modifier::BOLD),
+        )
+        .throbber_set(throbber_widgets_tui::CLOCK)
+        .use_type(throbber_widgets_tui::WhichUse::Spin);
+    f.render_stateful_widget(full, warning_area, throbber_state);
+
     match state {
-        UiState::Idle => {
-            // Set full with state
-            let full = throbber_widgets_tui::Throbber::default()
-                .label("Awaiting orders...")
-                .style(ratatui::style::Style::default().fg(ratatui::style::Color::White))
-                .throbber_style(
-                    ratatui::style::Style::default().add_modifier(ratatui::style::Modifier::BOLD),
-                )
-                .throbber_set(throbber_widgets_tui::CLOCK)
-                .use_type(throbber_widgets_tui::WhichUse::Spin);
-            f.render_stateful_widget(full, chunks[0], throbber_state);
-        }
+        UiState::Idle => {}
         UiState::Downloading(name, progress, started_at) => {
             // in progress download
             let item = ListItem::new(Line::from(vec![
@@ -324,7 +334,7 @@ pub async fn run_ui<B: Backend>(
                                 Paragraph::new(Line::from(vec![
                                     Span::from("Done, "),
                                     Span::styled(
-                                        "successfully contributed",
+                                        "successfully contributed, you can now exit this terminal",
                                         Style::default()
                                             .add_modifier(Modifier::BOLD)
                                             .fg(Color::Green),
