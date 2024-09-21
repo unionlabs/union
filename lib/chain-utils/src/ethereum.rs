@@ -38,8 +38,6 @@ use unionlabs::{
         NextConnectionSequencePath, NextSequenceAckPath, NextSequenceRecvPath,
         NextSequenceSendPath, ReceiptPath,
     },
-    iter,
-    traits::FromStrExact,
     uint::U256,
     ErrorReporter,
 };
@@ -335,35 +333,6 @@ impl EthereumSignersConfig for ReadWrite {
 pub struct EthereumChainType<C: ChainSpec>(PhantomData<fn() -> C>);
 
 pub const ETHEREUM_REVISION_NUMBER: u64 = 0;
-
-impl<C: ChainSpec> FromStrExact for EthereumChainType<C> {
-    const EXPECTING: &'static str = {
-        match core::str::from_utf8(
-            const {
-                let mut buf = [0_u8; 32];
-
-                iter! {
-                    for (i, b) in enumerate(b"eth-") {
-                        buf[i] = b;
-                    }
-                }
-
-                iter! {
-                    for (i, b) in enumerate(C::EXPECTING.as_bytes()) {
-                        buf[4 + i] = b;
-                    }
-                }
-
-                buf
-            }
-            .split_at(4 + C::EXPECTING.len())
-            .0,
-        ) {
-            Ok(ok) => ok,
-            Err(_) => panic!("called `Result::unwrap()` on an `Err` value"),
-        }
-    };
-}
 
 macro_rules! try_decode {
     ($($expr:expr),+) => {

@@ -1,4 +1,4 @@
-//! Beacon API client, implemented as per https://ethereum.github.io/beacon-APIs/releases/v2.4.1/beacon-node-oapi.json
+//! Beacon API client, implemented as per <https://ethereum.github.io/beacon-APIs/releases/v2.4.1/beacon-node-oapi.json>
 
 use std::fmt::Display;
 

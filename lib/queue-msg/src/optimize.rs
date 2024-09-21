@@ -35,10 +35,6 @@ pub trait PurePass<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'stat
 pub struct OptimizationResult<T: QueueMessage> {
     /// Messages that are considered incomplete by this optimization pass and are to be optimized
     /// further.
-    ///
-    /// For pure passes, it is recommended to return all messages here after being processed so
-    /// that subsequent passes can run on them as well. In fact, all of the passes defined in
-    /// [`passes`] work this way, with [`FinalPass`] requeueing everything under `ready`.
     pub optimize_further: Vec<(Vec<usize>, Op<T>, String)>,
     /// Messages that are considered complete by this optimization pass. No more passes will be run
     /// on these messages, and they will be requeued as "ready" in the queue.

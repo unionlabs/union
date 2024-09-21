@@ -5,8 +5,7 @@ use protos::cosmos::auth::v1beta1::Bech32PrefixRequest;
 use serde::{Deserialize, Serialize};
 use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
 use unionlabs::{
-    hash::H256, ibc::core::client::height::Height, signer::CosmosSigner, traits::FromStrExact,
-    WasmClientType,
+    hash::H256, ibc::core::client::height::Height, signer::CosmosSigner, WasmClientType,
 };
 
 use crate::{
@@ -76,13 +75,6 @@ impl CosmosSdkChainRpcs for Cosmos {
     fn tm_client(&self) -> &WebSocketClient {
         &self.tm_client
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct CosmosChainType;
-
-impl FromStrExact for CosmosChainType {
-    const EXPECTING: &'static str = "cosmos";
 }
 
 #[derive(Debug, thiserror::Error)]

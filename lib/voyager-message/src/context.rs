@@ -69,7 +69,8 @@ impl ModuleRpcClient {
         let socket = Self::make_socket_path(name);
 
         let client = reconnecting_jsonrpc_ws_client::Client::new({
-            // NOTE: This needs to be leaked because the return type of the .build() method below captures the lifetime of the `name` parameter(?)
+            // NOTE: This needs to be leaked because the return type of the .build() method below
+            // captures the lifetime of the `name` parameter(?)
             let socket: &'static str = Box::leak(socket.clone().into_boxed_str());
             let name = name.to_owned();
             move || {
@@ -405,7 +406,7 @@ impl Modules {
         Ok(self
             .chain_modules
             .get(chain_id)
-            .ok_or_else(|| ChainModuleNotFound(chain_id.clone().into_static()))?
+            .ok_or_else(|| ChainModuleNotFound(chain_id.clone().into_owned()))?
             .client())
     }
 
@@ -416,7 +417,7 @@ impl Modules {
         Ok(self
             .consensus_modules
             .get(chain_id)
-            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_static()))?
+            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_owned()))?
             .client())
     }
 
@@ -429,12 +430,12 @@ impl Modules {
             Some(ibc_interfaces) => match ibc_interfaces.get(ibc_interface) {
                 Some(client_module) => Ok(client_module.client()),
                 None => Err(ClientModuleNotFound::IbcInterfaceNotFound {
-                    client_type: client_type.clone().into_static(),
-                    ibc_interface: ibc_interface.clone().into_static(),
+                    client_type: client_type.clone().into_owned(),
+                    ibc_interface: ibc_interface.clone().into_owned(),
                 }),
             },
             None => Err(ClientModuleNotFound::ClientTypeNotFound {
-                client_type: client_type.clone().into_static(),
+                client_type: client_type.clone().into_owned(),
             }),
         }
     }

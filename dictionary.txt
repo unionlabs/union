@@ -1026,6 +1026,7 @@ rlpdump
 roadmap
 rollup
 rollups
+roundtripping
 routescan
 rpath
 rpcs

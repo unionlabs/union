@@ -2,11 +2,11 @@ use macros::model;
 
 #[model(proto(raw(protos::cosmos::tx::v1beta1::SignDoc), into, from))]
 pub struct SignDoc {
-    /// `body_bytes` is protobuf serialization of a [`TxBody`] that matches the
-    /// representation in [`TxRaw`].
+    /// `body_bytes` is protobuf serialization of a [`TxBody`](crate::cosmos::tx::tx_body::TxBody) that matches the
+    /// representation in [`TxRaw`](crate::cosmos::tx::tx_raw::TxRaw).
     pub body_bytes: Vec<u8>,
-    /// `auth_info_bytes` is a protobuf serialization of an [`AuthInfo`] that matches the
-    /// representation in [`TxRaw`].
+    /// `auth_info_bytes` is a protobuf serialization of an [`AuthInfo`](crate::cosmos::tx::auth_info::AuthInfo) that matches the
+    /// representation in [`TxRaw`](crate::cosmos::tx::tx_raw::TxRaw).
     pub auth_info_bytes: Vec<u8>,
     /// `chain_id` is the unique identifier of the chain this transaction targets.
     /// It prevents signed transactions from being used on another chain by an

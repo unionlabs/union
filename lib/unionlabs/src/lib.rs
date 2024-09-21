@@ -269,7 +269,7 @@ pub fn parse_wasm_client_type(
         .transpose()
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 // REVIEW: Add a variant "greater than" to indicate that any height >= H is valid? Might help with optimization passes
 pub enum QueryHeight {
     #[serde(rename = "latest")]

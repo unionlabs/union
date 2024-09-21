@@ -48,16 +48,16 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
 
     /// Enqueue an item into the queue, running a pure optimization pass on the item before enqueueing it.
     ///
-    /// All items will be enqueued to be optimized, unless marked as ready by [`O`].
+    /// All items will be enqueued to be optimized, unless marked as ready by `O`.
     fn enqueue<'a, O: PurePass<T>>(
         &'a self,
         item: Op<T>,
         pre_enqueue_passes: &'a O,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
 
-    /// Process the item at the front of the queue, if there is one. New items will be pre-processed by [`O`] before being reenqueued.
+    /// Process the item at the front of the queue, if there is one. New items will be pre-processed by `O` before being reenqueued.
     ///
-    /// All items will be enqueued to be optimized, unless marked as ready by [`O`].
+    /// All items will be enqueued to be optimized, unless marked as ready by `O`.
     fn process<'a, F, Fut, R, O>(
         &'a self,
         pre_reenqueue_passes: &'a O,
@@ -91,11 +91,8 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
     deny_unknown_fields
 )]
 #[debug(bound())]
-// TODO: Merge "event" and "data", and "fetch", "effect", and "wait"
-// essentially what we want is "pure custom message" and "impure custom message"
-// all other logic can be built with aggregations
 pub enum Op<T: QueueMessage> {
-    /// Inert data that will either be used in an aggregation or bubbled up to the top and sent as
+    /// Inert data that will either be used in an [`Op::Promise`] or bubbled up to the top and sent as
     /// an output.
     Data(T::Data),
     /// Execute an action.
@@ -152,7 +149,7 @@ pub enum Op<T: QueueMessage> {
         msg: Box<Self>,
     },
     Promise {
-        /// Messages that are expected to resolve to [`Data`].
+        /// Messages that are expected to resolve to [`Op::Data`].
         queue: VecDeque<Self>,
         /// The resolved data messages.
         data: VecDeque<T::Data>,
@@ -164,12 +161,7 @@ pub enum Op<T: QueueMessage> {
     Noop,
 }
 
-#[queue_msg]
-pub enum Defer {
-    Absolute(u64),
-    Relative(u64),
-}
-
+/// Convenience constructor for [`Op::Retry`]
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
 pub fn retry<T: QueueMessage>(count: NonZeroU8, t: impl Into<Op<T>>) -> Op<T> {
@@ -179,6 +171,7 @@ pub fn retry<T: QueueMessage>(count: NonZeroU8, t: impl Into<Op<T>>) -> Op<T> {
     }
 }
 
+/// Convenience constructor for [`Op::Repeat`]
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
 pub fn repeat<T: QueueMessage>(times: impl Into<Option<NonZeroU64>>, t: impl Into<Op<T>>) -> Op<T> {
@@ -188,47 +181,40 @@ pub fn repeat<T: QueueMessage>(times: impl Into<Option<NonZeroU64>>, t: impl Int
     }
 }
 
+/// Convenience constructor for [`Op::Seq`]
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
 pub fn seq<T: QueueMessage>(ts: impl IntoIterator<Item = Op<T>>) -> Op<T> {
     Op::Seq(ts.into_iter().collect())
 }
 
+/// Convenience constructor for [`Op::Conc`]
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
 pub fn conc<T: QueueMessage>(ts: impl IntoIterator<Item = Op<T>>) -> Op<T> {
     Op::Conc(ts.into_iter().collect())
 }
 
+/// Convenience constructor for [`Op::Defer`]
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
 pub fn defer<T: QueueMessage>(timestamp: u64) -> Op<T> {
     Op::Defer { until: timestamp }
 }
 
+/// Convenience constructor for [`Op::Call`]
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
 pub fn call<T: QueueMessage>(t: impl Into<T::Call>) -> Op<T> {
     Op::Call(t.into())
 }
 
-// #[inline]
-// #[must_use = "constructing an instruction has no effect"]
-// pub fn effect<T: QueueMessage>(t: impl Into<T::Effect>) -> Op<T> {
-//     Op::Effect(t.into())
-// }
-
+/// Convenience constructor for [`Op::Data`]
 #[inline]
 #[must_use = "constructing an instruction has no effect"]
 pub fn data<T: QueueMessage>(t: impl Into<T::Data>) -> Op<T> {
     Op::Data(t.into())
 }
-
-// #[inline]
-// #[must_use = "constructing an instruction has no effect"]
-// pub fn wait<T: QueueMessage>(t: impl Into<T::Wait>) -> Op<T> {
-//     Op::Wait(t.into())
-// }
 
 #[inline]
 #[must_use = "constructing an instruction has no effect"]

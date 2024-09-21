@@ -18,7 +18,6 @@ use unionlabs::{
             ethereum::{self, storage_proof::StorageProof},
         },
     },
-    traits::FromStrExact,
     uint::U256,
     validated::ValidateT,
 };
@@ -299,12 +298,6 @@ pub struct ExecutionState {
 pub struct GlobalState {
     pub bytes32_vals: [H256; 2],
     pub u64_vals: [u64; 2],
-}
-
-#[derive(Debug, Clone, PartialEq, Default)]
-pub struct ArbitrumChainType;
-impl FromStrExact for ArbitrumChainType {
-    const EXPECTING: &'static str = "arbitrum";
 }
 
 impl Arbitrum {

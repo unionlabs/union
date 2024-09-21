@@ -1,7 +1,7 @@
 {
   "plugins": [
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
@@ -10,7 +10,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-ethereum",
       "config": {
         "chain_id": "32382",
@@ -20,7 +20,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-chain-module-movement",
       "config": {
         "chain_id": "27",
@@ -29,21 +29,21 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-cometbls",
       "config": {
         "ibc_interface": "ibc-solidity"
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-cometbls",
       "config": {
         "ibc_interface": "ibc-move/aptos"
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-consensus-module-cometbls",
       "config": {
         "chain_id": "union-devnet-1",
@@ -53,7 +53,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-consensus-module-ethereum",
       "config": {
         "chain_id": "32382",
@@ -64,14 +64,14 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-client-module-ethereum",
       "config": {
         "chain_spec": "minimal"
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-transaction-module-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
@@ -96,7 +96,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-transaction-module-ethereum",
       "config": {
         "chain_id": "32382",
@@ -136,7 +136,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-packet-filter",
       "config": {
         "connection_event_filters": [{}],
@@ -145,7 +145,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "union-devnet-1",
@@ -159,7 +159,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "/home/ben/projects/union/union/target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "32382",

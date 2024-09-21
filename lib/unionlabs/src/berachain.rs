@@ -1,7 +1,4 @@
-use crate::{
-    ethereum::config::preset::{Preset, MAINNET},
-    traits::FromStrExact,
-};
+use crate::ethereum::config::preset::{Preset, MAINNET};
 
 const BERACHAIN_CHAIN_SPEC: Preset = Preset {
     SECONDS_PER_SLOT: 3,
@@ -15,9 +12,5 @@ pub const LATEST_BEACON_BLOCK_HEADER_PREFIX: u8 = 0x0b;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct BerachainChainSpec;
-
-impl FromStrExact for BerachainChainSpec {
-    const EXPECTING: &'static str = "berachain";
-}
 
 crate::ethereum::config::mk_chain_spec!(BerachainChainSpec is BERACHAIN_CHAIN_SPEC);

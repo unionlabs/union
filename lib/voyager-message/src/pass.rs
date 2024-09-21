@@ -47,8 +47,6 @@ impl JaqInterestFilter {
                                 .collect::<Vec<_>>()
                                 .join(",")
                         });
-                    // let f = jaq_syn::parse(&filter, |p| p.module(|p| p.term()))
-                    //     .map(|m| m.conv(&filter));
 
                     // compile the filter in the context of the given definitions
                     let filter = ctx.compile(f?.conv(&filter));

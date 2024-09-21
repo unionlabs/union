@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 
 use enumorph::Enumorph;
 use macros::{apply, model};
-use queue_msg::{queue_msg, SubsetOf};
+use queue_msg::SubsetOf;
 use serde_json::Value;
 use tracing::info;
 #[cfg(doc)]
@@ -37,7 +37,7 @@ use crate::{
 };
 
 #[apply(top_level_identifiable_enum)]
-#[queue_msg]
+#[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum Data<D = serde_json::Value> {
     IbcEvent(ChainEvent),
@@ -58,7 +58,7 @@ pub enum Data<D = serde_json::Value> {
     Plugin(PluginMessage<D>),
 }
 
-#[queue_msg]
+#[model]
 pub struct ChainEvent {
     /// The chain where this event was emitted.
     pub chain_id: ChainId<'static>,
@@ -67,7 +67,9 @@ pub struct ChainEvent {
     /// The chain on the other end of this IBC event.
     pub counterparty_chain_id: ChainId<'static>,
     pub tx_hash: H256,
-    /// The 'provable height' of the event. This is the minimum height at which the effect of the IBC action that caused this event is provable in the state root of the chain identified by [`Self::chain_id`].
+    /// The "provable height" of the event. This is the minimum height at which the effect of the
+    /// IBC action that caused this event is provable in the state root of the chain identified by
+    /// [`Self::chain_id`].
     pub provable_height: Height,
     pub event: FullIbcEvent,
 }
@@ -103,9 +105,8 @@ impl ChainEvent {
         }
     }
 
-    /// Returns the counterparty client id of this ibc event, if there is a
-    /// counterparty. This will return `None` for `UpdateClient` and
-    /// `CreateClient`.
+    /// Returns the counterparty client id of this ibc event, if there is a counterparty.
+    /// This will return `None` for `UpdateClient` and `CreateClient`.
     pub fn counterparty_client_id(&self) -> Option<&ClientId> {
         match self.event {
             FullIbcEvent::ConnectionOpenInit(ref event) => Some(&event.counterparty_client_id),
@@ -144,8 +145,8 @@ impl ChainEvent {
     }
 }
 
-#[queue_msg]
-#[derive(Enumorph, Eq)]
+#[model]
+#[derive(Enumorph)]
 pub enum IbcMessage {
     CreateClient(MsgCreateClientData),
     UpdateClient(MsgUpdateClient),
@@ -166,7 +167,8 @@ pub enum IbcMessage {
 }
 
 impl IbcMessage {
-    /// Returns the proof height of the IBC message, if it has one. (ConnectionOpenInit does not contain a proof, for example)
+    /// Returns the proof height of the IBC message, if it has one. (ConnectionOpenInit does not
+    /// contain a proof, for example)
     pub fn proof_height(&self) -> Option<Height> {
         match self {
             IbcMessage::CreateClient(_) => None,
@@ -186,28 +188,28 @@ impl IbcMessage {
     }
 }
 
-#[queue_msg]
+#[model]
 pub struct CreateClient {
     pub client_id: ClientId,
     pub client_type: ClientType<'static>,
     pub consensus_height: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct UpdateClient {
     pub client_id: ClientId,
     pub client_type: ClientType<'static>,
     pub consensus_heights: Vec<Height>,
 }
 
-#[queue_msg]
+#[model]
 pub struct ConnectionOpenInit {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
     pub counterparty_client_id: ClientId,
 }
 
-#[queue_msg]
+#[model]
 pub struct ConnectionOpenTry {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
@@ -215,7 +217,7 @@ pub struct ConnectionOpenTry {
     pub counterparty_connection_id: ConnectionId,
 }
 
-#[queue_msg]
+#[model]
 pub struct ConnectionOpenAck {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
@@ -223,7 +225,7 @@ pub struct ConnectionOpenAck {
     pub counterparty_connection_id: ConnectionId,
 }
 
-#[queue_msg]
+#[model]
 pub struct ConnectionOpenConfirm {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
@@ -231,7 +233,7 @@ pub struct ConnectionOpenConfirm {
     pub counterparty_connection_id: ConnectionId,
 }
 
-#[queue_msg]
+#[model]
 pub struct ChannelOpenInit {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -243,7 +245,7 @@ pub struct ChannelOpenInit {
     pub version: String,
 }
 
-#[queue_msg]
+#[model]
 pub struct ChannelOpenTry {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -256,7 +258,7 @@ pub struct ChannelOpenTry {
     pub version: String,
 }
 
-#[queue_msg]
+#[model]
 pub struct ChannelOpenAck {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -269,7 +271,7 @@ pub struct ChannelOpenAck {
     pub version: String,
 }
 
-#[queue_msg]
+#[model]
 pub struct ChannelOpenConfirm {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -282,7 +284,7 @@ pub struct ChannelOpenConfirm {
     pub version: String,
 }
 
-#[queue_msg]
+#[model]
 pub struct WriteAcknowledgement {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -295,7 +297,7 @@ pub struct WriteAcknowledgement {
     pub packet: PacketMetadata,
 }
 
-#[queue_msg]
+#[model]
 pub struct RecvPacket {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -304,7 +306,7 @@ pub struct RecvPacket {
     pub packet: PacketMetadata,
 }
 
-#[queue_msg]
+#[model]
 pub struct SendPacket {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -313,17 +315,17 @@ pub struct SendPacket {
     pub packet: PacketMetadata,
 }
 
-#[queue_msg]
+#[model]
 pub struct AcknowledgePacket {
     pub packet: PacketMetadata,
 }
 
-#[queue_msg]
+#[model]
 pub struct TimeoutPacket {
     pub packet: PacketMetadata,
 }
 
-#[queue_msg]
+#[model]
 pub struct PacketMetadata {
     pub sequence: NonZeroU64,
 
@@ -336,7 +338,7 @@ pub struct PacketMetadata {
     pub timeout_timestamp: u64,
 }
 
-#[queue_msg]
+#[model]
 pub struct ChannelMetadata {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -345,7 +347,7 @@ pub struct ChannelMetadata {
     pub connection: ConnectionMetadata,
 }
 
-#[queue_msg]
+#[model]
 pub struct ConnectionMetadata {
     pub client_id: ClientId,
     // this is really `Either<ConnectionId, EmptyString>`
@@ -353,9 +355,9 @@ pub struct ConnectionMetadata {
     pub connection_id: ConnectionId,
 }
 
-/// Similar to [`IbcEvent`], but contains more information (counterparty
-/// clients, channel version, etc)
-#[queue_msg]
+/// Similar to [`IbcEvent`], but contains more information (counterparty clients, channel version,
+/// etc)
+#[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum FullIbcEvent {
     CreateClient(CreateClient),
@@ -379,7 +381,7 @@ pub enum FullIbcEvent {
     TimeoutPacket(TimeoutPacket),
 }
 
-#[queue_msg]
+#[model]
 pub struct LatestHeight {
     pub chain_id: ChainId<'static>,
     pub height: Height,
@@ -390,47 +392,45 @@ pub struct LatestHeight {
 ///
 /// # Examples
 ///
-/// - 08-wasm client on union, tracking ethereum mainnet: `(ibc-go-v8/08-wasm,
-///   ethereum_mainnet, {"checksum": "0x..."})`
-/// - 07-tendermint client on stargaze, tracking osmosis: `(ibc-go-v8/native,
-///   tendermint)`
-/// - 08-wasm client on babylon, tracking union: `(ibc-go-v8/08-wasm, cometbls, {"checksum": "0x..."}))`
+/// - 08-wasm client on union, tracking ethereum mainnet: `(ibc-go-v8/08-wasm, ethereum_mainnet,
+///   {"checksum": "0x..."})`
+/// - 07-tendermint client on stargaze, tracking osmosis: `(ibc-go-v8/native, tendermint)`
+/// - 08-wasm client on babylon, tracking union: `(ibc-go-v8/08-wasm, cometbls, {"checksum":
+///   "0x..."}))`
 /// - cometbls client on scroll, tracking union: `(ibc-solidity, cometbls)`
-#[queue_msg]
+#[model]
 pub struct ClientInfo {
     pub client_type: ClientType<'static>,
     pub ibc_interface: IbcInterface<'static>,
     /// Additional metadata about this client.
     ///
-    /// This is currently only used for threading the checksum for ibc-go
-    /// 08-wasm clients, and can likely be removed when support for that IBC
-    /// interface is dropped.
+    /// This is currently only used for threading the checksum for ibc-go 08-wasm clients, and can
+    /// likely be removed when support for that IBC interface is dropped.
     #[serde(default)]
     pub metadata: Value,
 }
 
-#[queue_msg]
+#[model]
 pub struct SelfClientState {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub self_client_state: Vec<u8>,
 }
 
-#[queue_msg]
+#[model]
 pub struct SelfConsensusState {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub self_consensus_state: Vec<u8>,
 }
 
-#[queue_msg]
+#[model]
 pub struct UnfinalizedTrustedClientState {
     pub height: Height,
-    // pub client_state: Hc::StoredClientState<Tr>,
     pub client_state: ClientStateMeta,
 }
 
-#[queue_msg]
+#[model]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct IbcState<P: IbcPath> {
     pub chain_id: ChainId<'static>,
@@ -440,7 +440,7 @@ pub struct IbcState<P: IbcPath> {
     pub state: P::Value,
 }
 
-#[queue_msg]
+#[model]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct IbcProof<P: IbcPath> {
     pub path: P,
@@ -450,16 +450,15 @@ pub struct IbcProof<P: IbcPath> {
     pub proof: Vec<u8>,
 }
 
-#[queue_msg]
+#[model]
 pub struct RawIbcProof {
     pub path: Path,
     pub height: Height,
-    /// The raw proof, encoded as JSON, which will be encoded by the relevant
-    /// client module.
+    /// The raw proof, encoded as JSON, which will be encoded by the relevant client module.
     pub proof: Value,
 }
 
-#[queue_msg]
+#[model]
 pub struct DecodedClientStateMeta {
     pub path: ClientStatePath,
     /// The height that the state was read at. Same as [`IbcState::height`].
@@ -467,51 +466,51 @@ pub struct DecodedClientStateMeta {
     pub state: ClientStateMeta,
 }
 
-#[queue_msg]
+#[model]
 pub struct DecodedConsensusStateMeta {
     pub path: ClientConsensusStatePath,
     pub height: Height,
     pub state: ConsensusStateMeta,
 }
 
-#[queue_msg]
+#[model]
 pub struct DecodedHeaderMeta {
     /// The new trusted height that the header provides a consensus update to.
     pub height: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct OrderedHeaders {
     pub headers: Vec<(DecodedHeaderMeta, Value)>,
 }
 
-#[queue_msg]
+#[model]
 pub struct OrderedMsgUpdateClients {
     pub updates: Vec<(DecodedHeaderMeta, MsgUpdateClient)>,
 }
 
-#[queue_msg]
+#[model]
 pub struct EncodedClientState {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_client_state: Vec<u8>,
 }
 
-#[queue_msg]
+#[model]
 pub struct EncodedConsensusState {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_consensus_state: Vec<u8>,
 }
 
-#[queue_msg]
+#[model]
 pub struct EncodedHeader {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
     pub encoded_header: Vec<u8>,
 }
 
-#[queue_msg]
+#[model]
 pub struct WithChainId<T> {
     pub chain_id: ChainId<'static>,
     pub message: T,

@@ -3,9 +3,12 @@
 use std::{env::VarError, fmt::Debug, marker::PhantomData, time::Duration};
 
 use chain_utils::BoxDynError;
-use jsonrpsee::types::{error::METHOD_NOT_FOUND_CODE, ErrorObject};
-use macros::apply;
-use queue_msg::{aggregation::SubsetOf, queue_msg, QueueError, QueueMessage};
+use jsonrpsee::types::{
+    error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
+    ErrorObject,
+};
+use macros::{apply, model};
+use queue_msg::{aggregation::SubsetOf, QueueError, QueueMessage};
 use reth_ipc::client::IpcClientBuilder;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
@@ -47,9 +50,15 @@ impl<D: Member, C: Member, Cb: Member> QueueMessage for VoyagerMessage<D, C, Cb>
     type Context = Context;
 }
 
-/// Error code for fatal errors. If a plugin responds with this error code, it will be treated as failed and not retried.
+/// Error code for fatal errors. If a plugin or module responds with this error code, it will be
+/// treated as failed and not retried.
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 
+/// Convert a [`jsonrpsee::core::client::Error`] to a `queue-msg` [`QueueError`].
+///
+/// All errors are treated as retryable, unless `error` is a `Call` variant and the contained
+/// [`ErrorObject`] is deemed to be fatal. See [`error_object_to_queue_error`] for more information
+/// on the conversion from [`ErrorObject`] to [`QueueError`].
 pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> QueueError {
     match error {
         jsonrpsee::core::client::Error::Call(error) => error_object_to_queue_error(error),
@@ -57,8 +66,22 @@ pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> Q
     }
 }
 
+/// Convert a `jsonrpsee` [`ErrorObject`] to a `queue-msg` [`QueueError`].
+///
+/// Certain error codes are treated as fatal (i.e. not retryable):
+///
+/// - [`FATAL_JSONRPC_ERROR_CODE`]: Custom error code that can be returned by plugin and modules to
+///   denote that a fatal error has occurred, and this message is not retryable.
+/// - [`METHOD_NOT_FOUND_CODE`]: The plugin or module does not expose the method that was attempted
+///   to be called. This indicates a bug in the plugin or module.
+/// - [`INVALID_PARAMS_CODE`]: The custom message sent to the plugin or module could not be
+///   deserialized. This could either be due a bug in the plugin or module (JSON serialization not
+///   roundtripping correctly) or a message that was manually inserted into the queue via `/msg`.
 pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
-    if error.code() == FATAL_JSONRPC_ERROR_CODE || error.code() == METHOD_NOT_FOUND_CODE {
+    if error.code() == FATAL_JSONRPC_ERROR_CODE
+        || error.code() == METHOD_NOT_FOUND_CODE
+        || error.code() == INVALID_PARAMS_CODE
+    {
         QueueError::Fatal(Box::new(error.into_owned()))
     } else {
         QueueError::Retry(Box::new(error.into_owned()))
@@ -70,6 +93,7 @@ macro_rules! str_newtype {
         $(#[doc = $doc:literal])+
         $vis:vis struct $Struct:ident;
     ) => {
+        $(#[doc = $doc])+
         #[derive(macros::Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
         // I tested this and apparently it's not required (newtype is automatically transparent?) but
         // keeping it here for clarity
@@ -84,26 +108,56 @@ macro_rules! str_newtype {
         }
 
         #[allow(unused)]
-        impl $Struct<'static> {
-            pub const fn new_static(ibc_interface: &'static str) -> Self {
-                Self(::std::borrow::Cow::Borrowed(ibc_interface))
-            }
-        }
-
-
-        #[allow(unused)]
         impl<'a> $Struct<'a> {
+            /// Construct a new [`
+            #[doc = stringify!($Struct)]
+            /// `].
+            ///
+            /// This will capture the lifetime of the passed in value:
+            /// ```
+            #[doc = concat!(
+                "let _: ",
+                stringify!($Struct),
+                "<'static> = ",
+                stringify!($Struct),
+                "::new(\"static string\");"
+            )]
+            /// let owned_string: String = "owned string".into();
+            ///
+            /// // not static
+            #[doc = concat!(
+                "let _: ",
+                stringify!($Struct),
+                "<'_> = ",
+                stringify!($Struct),
+                "::new(&owned_string);"
+            )]
+            #[doc = concat!(
+                "let _: ",
+                stringify!($Struct),
+                "<'static> = ",
+                stringify!($Struct),
+                "::new(owned_string);"
+            )]
             pub fn new(s: impl Into<::std::borrow::Cow<'a, str>>) -> Self {
                 Self(s.into())
             }
 
-            pub fn into_static(self) -> $Struct<'static> {
+            /// Convert this [`
+            #[doc = concat!(stringify!($Struct))]
+            /// `] into an owned version of itself.
+            ///
+            /// This will allocate if the contained value is not already on the heap even if `'a == 'static`.
+            pub fn into_owned(self) -> $Struct<'static> {
+                use std::borrow::Cow;
+
                 $Struct(match self.0 {
-                    ::std::borrow::Cow::Borrowed(x) => ::std::borrow::Cow::Owned(x.to_owned()),
-                    ::std::borrow::Cow::Owned(x) => ::std::borrow::Cow::Owned(x),
+                    Cow::Borrowed(x) => Cow::Owned(x.to_owned()),
+                    Cow::Owned(x) => Cow::Owned(x),
                 })
             }
 
+            /// Extracts a string slice containing the entire contained value.
             pub fn as_str(&self) -> &str {
                 self.0.as_ref()
             }
@@ -131,6 +185,14 @@ macro_rules! str_newtype {
                     Cow::Borrowed(s) => Self(Cow::Borrowed(s)),
                     Cow::Owned(ref s) => Self(Cow::Borrowed(s.as_str())),
                 }
+            }
+        }
+
+        /// `const`-friendly version of [`Self::new`].
+        #[allow(unused)]
+        impl $Struct<'static> {
+            pub const fn new_static(ibc_interface: &'static str) -> Self {
+                Self(::std::borrow::Cow::Borrowed(ibc_interface))
             }
         }
     };
@@ -198,35 +260,48 @@ impl ClientType<'static> {
     /// configuration.
     pub const ETHEREUM_MINIMAL: &'static str = "ethereum-minimal";
 
-    /// A client tracking the state of the Scroll zkevm L2, settling on
+    /// A client tracking the state of the [Scroll] zkevm L2, settling on
     /// Ethereum.
+    ///
+    /// [Scroll]: https://github.com/scroll-tech/scroll
     pub const SCROLL: &'static str = "scroll";
 
     /// A client tracking the state of the Arbitrum optimistic L2, settling on
     /// Ethereum.
+    ///
+    /// [Arbitrum]: https://github.com/OffchainLabs/nitro-contracts
     pub const ARBITRUM: &'static str = "arbitrum";
 
-    /// A client tracking the state of a BeaconKit chain.
+    /// A client tracking the state of a [BeaconKit] chain.
+    ///
+    /// [BeaconKit]: https://github.com/berachain/beacon-kit
     pub const BEACON_KIT: &'static str = "beacon-kit";
 
-    /// A client tracking the state of a Movement chain.
+    /// A client tracking the state of a [Movement] chain.
+    ///
+    /// [Movement]: https://github.com/movementlabsxyz/movement
     pub const MOVEMENT: &'static str = "movement";
 
     // lots more to come - near, linea, polygon - stay tuned
 }
 
-/// Identifier used to uniquely identify the chain, as provided by the chain itself.
+/// Identifier used to uniquely identify a chain, as provided by the chain itself.
 ///
 /// # Examples
 ///
-/// 1 -> ethereum mainnet
-/// 11155111 -> ethereum sepolia testnet
-/// union-testnet-8 -> union testnet
-/// stargaze-1 -> stargaze mainnet
+/// | chain id        | chain                    |
+/// | --------------- | ------------------------ |
+/// | 1               | ethereum mainnet         |
+/// | 11155111        | ethereum sepolia testnet |
+/// | union-testnet-8 | union testnet            |
+/// | stargaze-1      | stargaze mainnet         |
 #[apply(str_newtype)]
 pub struct ChainId;
 
-#[queue_msg]
+/// A message specific to a plugin.
+///
+/// This is used in [`Call`], [`Callback`], and [`Data`] to route messages to plugins.
+#[model]
 pub struct PluginMessage<T = serde_json::Value> {
     pub plugin: String,
     pub message: T,
@@ -262,6 +337,7 @@ macro_rules! top_level_identifiable_enum {
         }
     ) => {
         $(#[$meta])*
+        #[allow(clippy::large_enum_variant)]
         pub enum $Enum$(<$Inner = serde_json::Value>)? {
             $(
                 $(#[$inner_meta])*
@@ -283,11 +359,7 @@ pub(crate) use top_level_identifiable_enum;
 #[derive(clap::Subcommand)]
 pub enum DefaultCmd {}
 
-pub async fn default_subcommand_handler<T>(_: T, cmd: DefaultCmd) -> Result<(), Never> {
-    match cmd {}
-}
-
-pub fn init_log() {
+fn init_log() {
     enum LogFormat {
         Text,
         Json,
