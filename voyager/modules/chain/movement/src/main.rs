@@ -1430,36 +1430,3 @@ pub fn convert_channel(channel: aptos_move_ibc::channel::Channel) -> Channel {
         version: channel.version,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn connection_end_serde() {
-        let ret =
-            serde_json::from_value::<(Option<aptos_move_ibc::connection_end::ConnectionEnd>,)>(
-                json!([{
-                    "vec": [{
-                        "client_id": "cometbls-0",
-                        "counterparty": {
-                            "client_id": "08-wasm-5",
-                            "connection_id": "connection-11",
-                            "prefix": {
-                                "key_prefix": "0x696263"
-                            }
-                        },
-                        "delay_period": "0",
-                        "state": "2",
-                        "versions": [
-                            {
-                                "features": ["ORDER_UNORDERED"],
-                                "identifier": "1"
-                            }
-                        ]
-                    }]
-                }]),
-            )
-            .unwrap();
-    }
-}

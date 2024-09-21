@@ -8,12 +8,12 @@ aptos-crypto              = { workspace = true }
 aptos-move-ibc.workspace  = true
 aptos-rest-client         = { workspace = true }
 aptos-types               = { workspace = true }
-bcs                       = "0.1.6"
+bcs                       = { workspace = true }
 clap                      = { workspace = true, features = ["derive"] }
 enumorph.workspace        = true
 frunk.workspace           = true
 futures.workspace         = true
-hex-literal               = "0.4.1"
+hex-literal               = { workspace = true }
 hex.workspace             = true
 jsonrpsee                 = { workspace = true, features = ["macros", "server", "tracing"] }
 macros.workspace          = true

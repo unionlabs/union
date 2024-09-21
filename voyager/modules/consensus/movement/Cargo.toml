@@ -14,11 +14,11 @@ enumorph.workspace = true
 ethers             = { workspace = true, features = ["rustls", "ws"] }
 frunk.workspace    = true
 futures.workspace  = true
-jsonrpsee          = { version = "0.24.1", features = ["macros", "server", "tracing"] }
-macros.workspace   = true
-num-bigint         = "0.4.6"
-prost.workspace    = true
-protos.workspace   = true
+jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
+macros             = { workspace = true }
+num-bigint         = { workspace = true }
+prost              = { workspace = true }
+protos             = { workspace = true }
 queue-msg          = { workspace = true }
 reqwest            = { workspace = true, features = ["json"] }
 serde              = { workspace = true, features = ["derive"] }

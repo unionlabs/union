@@ -914,6 +914,7 @@ pedersen
 permissioned
 permissionless
 permissionlessly
+persistable
 pflag
 phang
 pingpong

@@ -742,12 +742,12 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "aptos-logger",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bcs 0.1.4",
  "claims",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-types",
 ]
 
 [[package]]
@@ -757,33 +757,24 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "anyhow",
  "aptos-config",
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
  "aptos-framework",
  "aptos-logger",
  "aptos-openapi",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "async-trait",
  "bcs 0.1.4",
  "bytes",
  "hex",
  "indoc",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-core-types",
  "once_cell",
- "poem 3.0.1",
- "poem-openapi 5.0.2",
- "poem-openapi-derive 5.0.2",
+ "poem",
+ "poem-openapi",
+ "poem-openapi-derive",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "aptos-bitvec"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "serde",
- "serde_bytes",
 ]
 
 [[package]]
@@ -801,13 +792,13 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "anyhow",
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
  "aptos-global-constants",
  "aptos-logger",
  "aptos-secure-storage",
  "aptos-short-hex-str",
  "aptos-temppath",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "arr_macro",
  "bcs 0.1.4",
  "byteorder",
@@ -815,7 +806,7 @@ dependencies = [
  "get_if_addrs",
  "maplit",
  "num_cpus",
- "poem-openapi 5.0.2",
+ "poem-openapi",
  "rand 0.7.3",
  "serde",
  "serde_json",
@@ -828,62 +819,11 @@ dependencies = [
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "aes-gcm",
- "anyhow",
- "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "ark-bn254",
- "ark-ec",
- "ark-ff 0.4.2",
- "ark-groth16",
- "ark-std 0.4.0",
- "base64 0.13.1",
- "bcs 0.1.4",
- "blst",
- "bulletproofs",
- "bytes",
- "curve25519-dalek 3.2.0",
- "curve25519-dalek-ng",
- "digest 0.9.0",
- "ed25519-dalek 1.0.1",
- "ff",
- "hex",
- "hkdf 0.10.0",
- "libsecp256k1 0.7.1",
- "merlin",
- "more-asserts",
- "neptune",
- "num-bigint 0.3.3",
- "num-integer",
- "once_cell",
- "p256",
- "poseidon-ark",
- "rand 0.7.3",
- "rand_core 0.5.1",
- "ring 0.16.20",
- "serde",
- "serde-name",
- "serde_bytes",
- "sha2 0.10.8",
- "sha2 0.9.9",
- "sha3 0.9.1",
- "signature 2.2.0",
- "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror",
- "tiny-keccak",
- "typenum",
- "x25519-dalek",
-]
-
-[[package]]
-name = "aptos-crypto"
-version = "0.0.3"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "aes-gcm",
  "anyhow",
- "aptos-crypto-derive 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto-derive",
  "ark-bn254",
  "ark-ec",
  "ark-ff 0.4.2",
@@ -930,16 +870,6 @@ dependencies = [
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "aptos-crypto-derive"
-version = "0.0.3"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "proc-macro2",
@@ -950,43 +880,12 @@ dependencies = [
 [[package]]
 name = "aptos-dkg"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "anyhow",
- "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "bcs 0.1.4",
- "blst",
- "blstrs",
- "criterion",
- "ff",
- "group",
- "hex",
- "merlin",
- "more-asserts",
- "num-bigint 0.3.3",
- "num-integer",
- "num-traits",
- "once_cell",
- "pairing",
- "rand 0.7.3",
- "rand_core 0.5.1",
- "rayon",
- "serde",
- "serde_bytes",
- "sha3 0.9.1",
- "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "aptos-dkg"
-version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "anyhow",
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-crypto-derive 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-runtimes 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
+ "aptos-crypto-derive",
+ "aptos-runtimes",
  "bcs 0.1.4",
  "blst",
  "blstrs",
@@ -1013,22 +912,9 @@ dependencies = [
 [[package]]
 name = "aptos-experimental-runtimes"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "core_affinity",
- "libc",
- "num_cpus",
- "once_cell",
- "rayon",
-]
-
-[[package]]
-name = "aptos-experimental-runtimes"
-version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
- "aptos-runtimes 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-runtimes",
  "core_affinity",
  "libc",
  "num_cpus",
@@ -1043,13 +929,13 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "anyhow",
  "aptos-aggregator",
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
  "aptos-gas-algebra",
  "aptos-gas-schedule",
  "aptos-move-stdlib",
  "aptos-native-interface",
  "aptos-sdk-builder",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "aptos-vm-types",
  "ark-bls12-381",
  "ark-bn254",
@@ -1073,17 +959,17 @@ dependencies = [
  "log",
  "lru 0.7.8",
  "merlin",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
  "move-command-line-common",
  "move-compiler",
  "move-compiler-v2",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-docgen",
  "move-model",
  "move-package",
  "move-stackless-bytecode",
- "move-vm-runtime 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-vm-runtime",
+ "move-vm-types",
  "num-traits",
  "once_cell",
  "rand 0.7.3",
@@ -1107,7 +993,7 @@ version = "0.0.1"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "either",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
 ]
 
 [[package]]
@@ -1117,8 +1003,8 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "aptos-gas-algebra",
  "aptos-global-constants",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
+ "move-vm-types",
  "paste",
  "rand 0.7.3",
 ]
@@ -1127,11 +1013,6 @@ dependencies = [
 name = "aptos-global-constants"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
-
-[[package]]
-name = "aptos-infallible"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
 
 [[package]]
 name = "aptos-infallible"
@@ -1153,7 +1034,7 @@ name = "aptos-logger"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
- "aptos-infallible 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-infallible",
  "aptos-log-derive",
  "backtrace",
  "chrono",
@@ -1186,9 +1067,9 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "aptos-gas-schedule",
  "aptos-native-interface",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-runtime 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
+ "move-vm-runtime",
+ "move-vm-types",
  "sha2 0.9.9",
  "sha3 0.9.1",
  "smallvec",
@@ -1201,13 +1082,13 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bcs 0.1.4",
  "bytes",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-runtime 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-runtime",
+ "move-vm-types",
  "smallvec",
 ]
 
@@ -1217,8 +1098,8 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "percent-encoding",
- "poem 3.0.1",
- "poem-openapi 5.0.2",
+ "poem",
+ "poem-openapi",
  "serde",
  "serde_json",
 ]
@@ -1230,14 +1111,14 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "anyhow",
  "aptos-api-types",
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-infallible 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
+ "aptos-infallible",
  "aptos-logger",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bcs 0.1.4",
  "bytes",
  "hex",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -1245,32 +1126,6 @@ dependencies = [
  "time",
  "tokio",
  "url",
-]
-
-[[package]]
-name = "aptos-rpc"
-version = "0.1.0"
-dependencies = [
- "hex",
- "macros",
- "reqwest 0.11.27",
- "serde",
- "serde-utils",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
-]
-
-[[package]]
-name = "aptos-runtimes"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "rayon",
- "tokio",
 ]
 
 [[package]]
@@ -1288,11 +1143,11 @@ version = "0.2.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "anyhow",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bcs 0.1.4",
  "clap 4.5.4",
  "heck 0.4.1",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "once_cell",
  "serde-generate",
  "serde-reflection",
@@ -1305,8 +1160,8 @@ name = "aptos-secure-storage"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-infallible 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
+ "aptos-infallible",
  "aptos-logger",
  "aptos-temppath",
  "aptos-time-service",
@@ -1346,7 +1201,7 @@ name = "aptos-time-service"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
- "aptos-infallible 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-infallible",
  "enum_dispatch",
  "futures",
  "pin-project",
@@ -1357,70 +1212,15 @@ dependencies = [
 [[package]]
 name = "aptos-types"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "anyhow",
- "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "aptos-dkg 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "ark-bn254",
- "ark-ff 0.4.2",
- "ark-groth16",
- "ark-serialize 0.4.2",
- "arr_macro",
- "base64 0.13.1",
- "bcs 0.1.4",
- "bytes",
- "fixed",
- "fxhash",
- "hashbrown 0.14.3",
- "hex",
- "itertools 0.12.1",
- "jsonwebtoken 8.3.0",
- "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "num-bigint 0.3.3",
- "num-derive",
- "num-traits",
- "once_cell",
- "passkey-types",
- "poem-openapi 2.0.11",
- "poem-openapi-derive 2.0.11",
- "quick_cache",
- "rand 0.7.3",
- "rayon",
- "ring 0.16.20",
- "rsa",
- "serde",
- "serde-big-array",
- "serde_bytes",
- "serde_json",
- "serde_with",
- "serde_yaml 0.8.26",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "thiserror",
-]
-
-[[package]]
-name = "aptos-types"
-version = "0.0.3"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "anyhow",
- "aptos-bitvec 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-crypto-derive 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-dkg 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-experimental-runtimes 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "aptos-infallible 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-bitvec",
+ "aptos-crypto",
+ "aptos-crypto-derive",
+ "aptos-dkg",
+ "aptos-experimental-runtimes",
+ "aptos-infallible",
  "ark-bn254",
  "ark-ff 0.4.2",
  "ark-groth16",
@@ -1435,19 +1235,19 @@ dependencies = [
  "hex",
  "itertools 0.13.0",
  "jsonwebtoken 8.3.0",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "move-table-extension 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-runtime 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-bytecode-verifier",
+ "move-core-types",
+ "move-table-extension",
+ "move-vm-runtime",
+ "move-vm-types",
  "num-bigint 0.3.3",
  "num-derive",
  "num-traits",
  "once_cell",
  "passkey-types",
- "poem-openapi 5.0.2",
- "poem-openapi-derive 5.0.2",
+ "poem-openapi",
+ "poem-openapi-derive",
  "quick_cache",
  "rand 0.7.3",
  "rayon",
@@ -1469,7 +1269,7 @@ name = "aptos-vault-client"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
  "base64 0.13.1",
  "chrono",
  "native-tls",
@@ -1484,7 +1284,7 @@ dependencies = [
 name = "aptos-verifier"
 version = "0.1.0"
 dependencies = [
- "bcs 0.1.4",
+ "bcs 0.1.6",
  "hex-literal",
  "sha3 0.10.8",
  "thiserror",
@@ -1500,15 +1300,15 @@ dependencies = [
  "aptos-aggregator",
  "aptos-gas-algebra",
  "aptos-gas-schedule",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bcs 0.1.4",
  "bytes",
  "claims",
  "either",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-runtime 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-runtime",
+ "move-vm-types",
  "rand 0.7.3",
  "serde",
 ]
@@ -1916,7 +1716,7 @@ dependencies = [
  "http 1.1.0",
  "indexmap 2.2.6",
  "mime",
- "multer 3.1.0",
+ "multer",
  "num-traits",
  "once_cell",
  "pin-project-lite",
@@ -3399,14 +3199,7 @@ version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7efb37c3e1ccb1ff97164ad95ac1606e8ccd35b3fa0a7d99a304c7f4a428cc24"
 dependencies = [
- "aes-gcm",
- "base64 0.21.7",
- "hkdf 0.12.4",
- "hmac 0.12.1",
  "percent-encoding",
- "rand 0.8.5",
- "sha2 0.10.8",
- "subtle 2.5.0",
  "time",
  "version_check",
 ]
@@ -4222,16 +4015,6 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.14.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b750cb3417fd1b327431a470f388520309479ab0bf5e323505daf0290cd3850"
-dependencies = [
- "darling_core 0.14.4",
- "darling_macro 0.14.4",
-]
-
-[[package]]
-name = "darling"
 version = "0.20.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54e36fcd13ed84ffdfda6f5be89b31287cbb80c439841fe69e04841435464391"
@@ -4245,20 +4028,6 @@ name = "darling_core"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "859d65a907b6852c9361e3185c862aae7fafd2887876799fa55f5f99dc40d610"
-dependencies = [
- "fnv",
- "ident_case",
- "proc-macro2",
- "quote",
- "strsim 0.10.0",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "darling_core"
-version = "0.14.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "109c1ca6e6b7f82cc233a97004ea8ed7ca123a9af07a8230878fcfda9b158bf0"
 dependencies = [
  "fnv",
  "ident_case",
@@ -4289,17 +4058,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c972679f83bdf9c42bd905396b6c3588a843a17f0f16dfcfa3e2c5d57441835"
 dependencies = [
  "darling_core 0.13.4",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "darling_macro"
-version = "0.14.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4aab4dbc9f7611d8b55048a3a16d2d010c2c8334e46304b40ac1cc14bf3b48e"
-dependencies = [
- "darling_core 0.14.4",
  "quote",
  "syn 1.0.109",
 ]
@@ -6207,41 +5965,17 @@ dependencies = [
 
 [[package]]
 name = "headers"
-version = "0.3.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06683b93020a07e3dbcf5f8c0f6d40080d725bea7936fc01ad345c01b97dc270"
-dependencies = [
- "base64 0.21.7",
- "bytes",
- "headers-core 0.2.0",
- "http 0.2.12",
- "httpdate",
- "mime",
- "sha1",
-]
-
-[[package]]
-name = "headers"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "322106e6bd0cba2d5ead589ddb8150a13d7c4217cf80d7c4f682ca994ccc6aa9"
 dependencies = [
  "base64 0.21.7",
  "bytes",
- "headers-core 0.3.0",
+ "headers-core",
  "http 1.1.0",
  "httpdate",
  "mime",
  "sha1",
-]
-
-[[package]]
-name = "headers-core"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7f66481bfee273957b1f20485a4ff3362987f85b2c236580d81b4eb7a326429"
-dependencies = [
- "http 0.2.12",
 ]
 
 [[package]]
@@ -6730,10 +6464,10 @@ dependencies = [
 name = "ics08-movement"
 version = "0.1.0"
 dependencies = [
- "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
+ "aptos-crypto",
+ "aptos-types",
  "aptos-verifier",
- "bcs 0.1.4",
+ "bcs 0.1.6",
  "cosmwasm-std 1.5.2",
  "ethereum-verifier",
  "hex",
@@ -7882,27 +7616,12 @@ dependencies = [
  "bcs 0.1.4",
  "heck 0.4.1",
  "log",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-bytecode-verifier",
  "move-command-line-common",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-model",
  "serde",
-]
-
-[[package]]
-name = "move-binary-format"
-version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "anyhow",
- "backtrace",
- "indexmap 1.9.3",
- "move-bytecode-spec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core)",
- "ref-cast",
- "serde",
- "variant_count",
 ]
 
 [[package]]
@@ -7913,8 +7632,8 @@ dependencies = [
  "anyhow",
  "backtrace",
  "indexmap 1.9.3",
- "move-bytecode-spec 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-bytecode-spec",
+ "move-core-types",
  "ref-cast",
  "serde",
  "variant_count",
@@ -7924,13 +7643,13 @@ dependencies = [
 name = "move-bindgen"
 version = "0.0.0"
 dependencies = [
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
  "aptos-rest-client",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bcs 0.1.6",
  "futures",
  "move-bindgen-derive",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -7953,11 +7672,6 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-
-[[package]]
-name = "move-borrow-graph"
-version = "0.0.1"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 
 [[package]]
@@ -7967,22 +7681,12 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
  "move-command-line-common",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-ir-types",
  "move-symbol-pool",
  "serde",
-]
-
-[[package]]
-name = "move-bytecode-spec"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "once_cell",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -8001,24 +7705,10 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "anyhow",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-core-types",
  "petgraph 0.5.1",
  "serde-reflection",
-]
-
-[[package]]
-name = "move-bytecode-verifier"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "fail",
- "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core)",
- "petgraph 0.5.1",
- "serde",
- "typed-arena",
 ]
 
 [[package]]
@@ -8027,9 +7717,9 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "fail",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-borrow-graph 0.0.1 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-borrow-graph",
+ "move-core-types",
  "petgraph 0.5.1",
  "serde",
  "typed-arena",
@@ -8044,7 +7734,7 @@ dependencies = [
  "difference",
  "dirs-next",
  "hex",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "num-bigint 0.3.3",
  "once_cell",
  "serde",
@@ -8062,12 +7752,12 @@ dependencies = [
  "clap 4.5.4",
  "codespan-reporting",
  "hex",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-borrow-graph 0.0.1 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-borrow-graph",
  "move-bytecode-source-map",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-bytecode-verifier",
  "move-command-line-common",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-ir-to-bytecode",
  "move-ir-types",
  "move-symbol-pool",
@@ -8093,13 +7783,13 @@ dependencies = [
  "im",
  "itertools 0.13.0",
  "log",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-borrow-graph 0.0.1 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-borrow-graph",
  "move-bytecode-source-map",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-bytecode-verifier",
  "move-command-line-common",
  "move-compiler",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-disassembler",
  "move-ir-types",
  "move-model",
@@ -8110,28 +7800,6 @@ dependencies = [
  "petgraph 0.5.1",
  "strum 0.24.1",
  "strum_macros 0.24.3",
-]
-
-[[package]]
-name = "move-core-types"
-version = "0.0.4"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "anyhow",
- "bcs 0.1.4",
- "bytes",
- "ethnum",
- "hashbrown 0.14.3",
- "hex",
- "num",
- "once_cell",
- "primitive-types 0.10.1",
- "rand 0.8.5",
- "ref-cast",
- "serde",
- "serde_bytes",
- "thiserror",
- "uint",
 ]
 
 [[package]]
@@ -8166,10 +7834,10 @@ dependencies = [
  "clap 4.5.4",
  "codespan",
  "colored",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
  "move-bytecode-source-map",
  "move-command-line-common",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-ir-types",
  "petgraph 0.5.1",
  "serde",
@@ -8183,11 +7851,11 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "colored",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
  "move-bytecode-source-map",
  "move-command-line-common",
  "move-compiler",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-coverage",
  "move-ir-types",
 ]
@@ -8204,7 +7872,7 @@ dependencies = [
  "itertools 0.13.0",
  "log",
  "move-compiler",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-model",
  "once_cell",
  "regex",
@@ -8219,10 +7887,10 @@ dependencies = [
  "anyhow",
  "codespan-reporting",
  "log",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
  "move-bytecode-source-map",
  "move-command-line-common",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-ir-to-bytecode-syntax",
  "move-ir-types",
  "move-symbol-pool",
@@ -8237,7 +7905,7 @@ dependencies = [
  "anyhow",
  "hex",
  "move-command-line-common",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-ir-types",
  "move-symbol-pool",
 ]
@@ -8249,7 +7917,7 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "hex",
  "move-command-line-common",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-symbol-pool",
  "once_cell",
  "serde",
@@ -8266,11 +7934,11 @@ dependencies = [
  "internment",
  "itertools 0.13.0",
  "log",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
  "move-bytecode-source-map",
  "move-command-line-common",
  "move-compiler",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-disassembler",
  "move-ir-types",
  "move-symbol-pool",
@@ -8291,13 +7959,13 @@ dependencies = [
  "colored",
  "itertools 0.13.0",
  "move-abigen",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
  "move-bytecode-source-map",
  "move-bytecode-utils",
  "move-command-line-common",
  "move-compiler",
  "move-compiler-v2",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "move-docgen",
  "move-model",
  "move-symbol-pool",
@@ -8326,8 +7994,8 @@ dependencies = [
  "im",
  "itertools 0.13.0",
  "log",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-core-types",
  "move-model",
  "num",
  "paste",
@@ -8346,55 +8014,16 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "better_any",
- "bytes",
- "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "sha3 0.9.1",
- "smallvec",
-]
-
-[[package]]
-name = "move-table-extension"
-version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "better_any",
  "bytes",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-runtime 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-core-types",
+ "move-vm-runtime",
+ "move-vm-types",
  "sha3 0.9.1",
  "smallvec",
-]
-
-[[package]]
-name = "move-vm-runtime"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "better_any",
- "bytes",
- "fail",
- "hashbrown 0.14.3",
- "lazy_static",
- "lru 0.7.8",
- "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core)",
- "once_cell",
- "parking_lot",
- "serde",
- "sha3 0.9.1",
- "tracing",
- "triomphe",
- "typed-arena",
 ]
 
 [[package]]
@@ -8408,10 +8037,10 @@ dependencies = [
  "hashbrown 0.14.3",
  "lazy_static",
  "lru 0.7.8",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-bytecode-verifier 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "move-vm-types 0.1.0 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-bytecode-verifier",
+ "move-core-types",
+ "move-vm-types",
  "once_cell",
  "parking_lot",
  "serde",
@@ -8419,22 +8048,6 @@ dependencies = [
  "tracing",
  "triomphe",
  "typed-arena",
-]
-
-[[package]]
-name = "move-vm-types"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core#236182455f91c610f945d9c3f1e01a717cee4f12"
-dependencies = [
- "bcs 0.1.4",
- "derivative",
- "itertools 0.12.1",
- "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core)",
- "serde",
- "smallbitvec",
- "smallvec",
- "triomphe",
 ]
 
 [[package]]
@@ -8446,31 +8059,12 @@ dependencies = [
  "bytes",
  "derivative",
  "itertools 0.13.0",
- "move-binary-format 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-binary-format",
+ "move-core-types",
  "serde",
  "smallbitvec",
  "smallvec",
  "triomphe",
-]
-
-[[package]]
-name = "multer"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01acbdc23469fd8fe07ab135923371d5f5a422fbf9c522158677c8eb15bc51c2"
-dependencies = [
- "bytes",
- "encoding_rs",
- "futures-util",
- "http 0.2.12",
- "httparse",
- "log",
- "memchr",
- "mime",
- "spin 0.9.8",
- "tokio",
- "version_check",
 ]
 
 [[package]]
@@ -8765,17 +8359,6 @@ name = "new_debug_unreachable"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
-
-[[package]]
-name = "nix"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eb04e9c688eff1c89d72b407f168cf79bb9e867a9d3323ed6c01519eb9cc053"
-dependencies = [
- "bitflags 2.5.0",
- "cfg-if 1.0.0",
- "libc",
-]
 
 [[package]]
 name = "nix"
@@ -9672,44 +9255,6 @@ dependencies = [
 
 [[package]]
 name = "poem"
-version = "1.3.59"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "504774c97b0744c1ee108a37e5a65a9745a4725c4c06277521dabc28eb53a904"
-dependencies = [
- "async-trait",
- "bytes",
- "chrono",
- "cookie 0.17.0",
- "futures-util",
- "headers 0.3.9",
- "http 0.2.12",
- "hyper 0.14.28",
- "mime",
- "multer 2.1.0",
- "nix 0.27.1",
- "parking_lot",
- "percent-encoding",
- "pin-project-lite",
- "poem-derive 1.3.59",
- "quick-xml 0.30.0",
- "regex",
- "rfc7239",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "smallvec",
- "tempfile",
- "thiserror",
- "time",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tracing",
- "wildmatch",
-]
-
-[[package]]
-name = "poem"
 version = "3.0.1"
 source = "git+https://github.com/poem-web/poem.git?rev=809b2816d3504beeba140fef3fdfe9432d654c5b#809b2816d3504beeba140fef3fdfe9432d654c5b"
 dependencies = [
@@ -9718,19 +9263,19 @@ dependencies = [
  "chrono",
  "cookie 0.18.1",
  "futures-util",
- "headers 0.4.0",
+ "headers",
  "http 1.1.0",
  "http-body-util",
  "hyper 1.3.1",
  "hyper-util",
  "mime",
- "multer 3.1.0",
- "nix 0.28.0",
+ "multer",
+ "nix",
  "parking_lot",
  "percent-encoding",
  "pin-project-lite",
- "poem-derive 3.0.0",
- "quick-xml 0.32.0",
+ "poem-derive",
+ "quick-xml",
  "regex",
  "rfc7239",
  "rustls-pemfile 2.1.1",
@@ -9753,18 +9298,6 @@ dependencies = [
 
 [[package]]
 name = "poem-derive"
-version = "1.3.59"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42ddcf4680d8d867e1e375116203846acb088483fa2070244f90589f458bbb31"
-dependencies = [
- "proc-macro-crate 2.0.0",
- "proc-macro2",
- "quote",
- "syn 2.0.77",
-]
-
-[[package]]
-name = "poem-derive"
 version = "3.0.0"
 source = "git+https://github.com/poem-web/poem.git?rev=809b2816d3504beeba140fef3fdfe9432d654c5b#809b2816d3504beeba140fef3fdfe9432d654c5b"
 dependencies = [
@@ -9772,31 +9305,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.77",
-]
-
-[[package]]
-name = "poem-openapi"
-version = "2.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e69c569eb0671cc85e65cfb6bd960d0168d24732ff58825227b4d2a10167ba91"
-dependencies = [
- "base64 0.13.1",
- "bytes",
- "derive_more 0.99.17",
- "futures-util",
- "mime",
- "num-traits",
- "poem 1.3.59",
- "poem-openapi-derive 2.0.11",
- "quick-xml 0.23.1",
- "regex",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "serde_yaml 0.9.34+deprecated",
- "thiserror",
- "tokio",
- "url",
 ]
 
 [[package]]
@@ -9811,9 +9319,9 @@ dependencies = [
  "indexmap 2.2.6",
  "mime",
  "num-traits",
- "poem 3.0.1",
- "poem-openapi-derive 5.0.2",
- "quick-xml 0.32.0",
+ "poem",
+ "poem-openapi-derive",
+ "quick-xml",
  "regex",
  "serde",
  "serde_json",
@@ -9822,24 +9330,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "url",
-]
-
-[[package]]
-name = "poem-openapi-derive"
-version = "2.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "274cf13f710999977a3c1e396c2a5000d104075a7127ce6470fbdae4706be621"
-dependencies = [
- "darling 0.14.4",
- "http 0.2.12",
- "indexmap 1.9.3",
- "mime",
- "proc-macro-crate 1.3.1",
- "proc-macro2",
- "quote",
- "regex",
- "syn 1.0.109",
- "thiserror",
 ]
 
 [[package]]
@@ -10325,26 +9815,6 @@ name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
-
-[[package]]
-name = "quick-xml"
-version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11bafc859c6815fbaffbbbf4229ecb767ac913fecb27f9ad4343662e9ef099ea"
-dependencies = [
- "memchr",
- "serde",
-]
-
-[[package]]
-name = "quick-xml"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eff6510e86862b57b210fd8cbe8ed3f0d7d600b9c2863cd4549a2e033c66e956"
-dependencies = [
- "memchr",
- "serde",
-]
 
 [[package]]
 name = "quick-xml"
@@ -13743,7 +13213,7 @@ name = "unionlabs"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
- "bcs 0.1.4",
+ "bcs 0.1.6",
  "bip32",
  "bitvec 1.0.1",
  "borsh",
@@ -14066,10 +13536,10 @@ dependencies = [
 name = "voyager-chain-module-movement"
 version = "0.1.0"
 dependencies = [
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
  "aptos-move-ibc",
  "aptos-rest-client",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bcs 0.1.6",
  "clap 4.5.4",
  "enumorph",
@@ -14080,7 +13550,7 @@ dependencies = [
  "jsonrpsee",
  "macros",
  "move-bindgen",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "prost 0.12.6",
  "protos",
  "queue-msg",
@@ -14233,7 +13703,7 @@ name = "voyager-consensus-module-movement"
 version = "0.1.0"
 dependencies = [
  "aptos-rest-client",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bitvec 1.0.1",
  "chain-utils",
  "enumorph",
@@ -14242,7 +13712,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
@@ -14357,10 +13827,10 @@ dependencies = [
 name = "voyager-transaction-module-aptos"
 version = "0.1.0"
 dependencies = [
- "aptos-crypto 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-crypto",
  "aptos-move-ibc",
  "aptos-rest-client",
- "aptos-types 0.0.3 (git+https://github.com/unionlabs/aptos-core)",
+ "aptos-types",
  "bcs 0.1.6",
  "bip32",
  "chain-utils",
@@ -14370,7 +13840,7 @@ dependencies = [
  "jsonrpsee",
  "macros",
  "move-bindgen",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
+ "move-core-types",
  "queue-msg",
  "serde",
  "serde-utils",
