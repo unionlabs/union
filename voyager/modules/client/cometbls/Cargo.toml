@@ -4,6 +4,8 @@ name    = "voyager-client-module-cometbls"
 version = "0.1.0"
 
 [dependencies]
+ark-bn254          = { version = "0.4", default-features = false, features = ["curve"] }
+ark-serialize      = "0.4.2"
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context"] }
 cometbft-rpc       = { workspace = true }
 dashmap            = { workspace = true }
@@ -12,6 +14,7 @@ frunk              = { workspace = true }
 futures            = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
+num-bigint         = { workspace = true }
 prost              = { workspace = true }
 protos             = { workspace = true }
 queue-msg          = { workspace = true }

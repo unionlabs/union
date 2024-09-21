@@ -20,6 +20,11 @@ macro_rules! required {
                 $field
             ))))
     };
+    ($field:ident) => {
+        $field.ok_or(<Self::Error>::MissingField(MissingField(stringify!(
+            $field
+        ))))
+    };
 }
 
 // https://stackoverflow.com/questions/26731243/how-do-i-use-a-macro-across-module-files

@@ -198,6 +198,12 @@ macro_rules! hex_string_array_wrapper {
                 }
             }
 
+            impl From<&'_ [u8; $N]> for $Struct {
+                fn from(value: &'_ [u8; $N]) -> Self {
+                    Self(value.clone())
+                }
+            }
+
             impl ::core::fmt::Debug for $Struct {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                     write!(f, "{}({self})", stringify!($Struct))
@@ -346,6 +352,12 @@ macro_rules! wrapper_enum {
                     super::$Enum::$Variant as i32 == <$Proto>::$Variant as i32,
                 );
             )+
+        }
+
+        impl $Enum {
+            pub fn from_proto_str(s: &str) -> Option<Self> {
+                <$Proto>::from_str_name(s).map(Into::into)
+            }
         }
 
         impl core::str::FromStr for $Enum {

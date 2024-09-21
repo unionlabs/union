@@ -1053,6 +1053,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-move-ibc"
+version = "0.1.0"
+dependencies = [
+ "move-bindgen",
+ "tracing",
+]
+
+[[package]]
 name = "aptos-move-stdlib"
 version = "0.1.1"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
@@ -1276,7 +1284,7 @@ dependencies = [
 name = "aptos-verifier"
 version = "0.1.0"
 dependencies = [
- "bcs 0.1.4",
+ "bcs 0.1.6",
  "hex-literal",
  "sha3 0.10.8",
  "thiserror",
@@ -6456,8 +6464,10 @@ dependencies = [
 name = "ics08-movement"
 version = "0.1.0"
 dependencies = [
+ "aptos-crypto",
+ "aptos-types",
  "aptos-verifier",
- "bcs 0.1.4",
+ "bcs 0.1.6",
  "cosmwasm-std 1.5.2",
  "ethereum-verifier",
  "hex",
@@ -7636,14 +7646,18 @@ dependencies = [
  "aptos-crypto",
  "aptos-rest-client",
  "aptos-types",
+ "bcs 0.1.6",
  "futures",
  "move-bindgen-derive",
  "move-core-types",
  "prettyplease",
  "proc-macro2",
  "quote",
+ "serde",
+ "serde_json",
  "syn 2.0.77",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -11038,9 +11052,9 @@ dependencies = [
 
 [[package]]
 name = "serde_bytes"
-version = "0.11.14"
+version = "0.11.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b8497c313fd43ab992087548117643f6fcd935cbf36f176ffda0aacf9591734"
+checksum = "387cc504cb06bb40a96c8e04e951fe01854cf6bc921053c954e4a606d9675c6a"
 dependencies = [
  "serde",
 ]
@@ -13199,7 +13213,7 @@ name = "unionlabs"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
- "bcs 0.1.4",
+ "bcs 0.1.6",
  "bip32",
  "bitvec 1.0.1",
  "borsh",
@@ -13523,6 +13537,7 @@ name = "voyager-chain-module-movement"
 version = "0.1.0"
 dependencies = [
  "aptos-crypto",
+ "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
  "bcs 0.1.6",
@@ -13539,9 +13554,11 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "queue-msg",
+ "reqwest 0.11.27",
  "serde",
  "serde-utils",
  "serde_json",
+ "sha2 0.10.8",
  "sha3 0.10.8",
  "thiserror",
  "tokio",
@@ -13555,9 +13572,36 @@ dependencies = [
 name = "voyager-client-module-cometbls"
 version = "0.1.0"
 dependencies = [
+ "ark-bn254",
+ "ark-serialize 0.4.2",
  "clap 4.5.4",
  "cometbft-rpc",
  "dashmap",
+ "enumorph",
+ "frunk",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-client-module-ethereum"
+version = "0.1.0"
+dependencies = [
+ "chain-utils",
  "enumorph",
  "frunk",
  "futures",
@@ -13578,7 +13622,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-module-ethereum"
+name = "voyager-client-module-movement"
 version = "0.1.0"
 dependencies = [
  "chain-utils",
@@ -13644,6 +13688,36 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "queue-msg",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-consensus-module-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-rest-client",
+ "aptos-types",
+ "bitvec 1.0.1",
+ "chain-utils",
+ "enumorph",
+ "ethers",
+ "frunk",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "move-core-types",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "reqwest 0.11.27",
  "serde",
  "serde_json",
  "thiserror",
@@ -13754,8 +13828,10 @@ name = "voyager-transaction-module-aptos"
 version = "0.1.0"
 dependencies = [
  "aptos-crypto",
+ "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
+ "bcs 0.1.6",
  "bip32",
  "chain-utils",
  "enumorph",
@@ -13763,6 +13839,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
+ "move-bindgen",
  "move-core-types",
  "queue-msg",
  "serde",

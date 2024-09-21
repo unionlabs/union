@@ -283,4 +283,9 @@ module IBC::proto_utils {
             i = i + 1;
         };
     }
+
+    #[test]
+    public fun encode_prefix_test() {
+        std::debug::print(&encode_prefix(4, 2));
+    }
 }

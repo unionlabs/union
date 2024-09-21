@@ -1,4 +1,5 @@
 use macros::model;
+use serde::{Deserialize, Serialize};
 
 use super::{
     block_info::{BlockInfo, TryFromBlockInfoError},
@@ -6,15 +7,19 @@ use super::{
 };
 use crate::{
     errors::{required, InvalidLength, MissingField},
-    hash::H256,
+    hash::hash_v2::{Hash, HexUnprefixed},
 };
 
 /// Wrapper to support future upgrades, this is the data being persisted.
-#[model(proto(
-    raw(protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures),
-    into,
-    from
-))]
+#[model(
+    proto(
+        raw(protos::union::ibc::lightclients::movement::v1::LedgerInfoWithSignatures),
+        into,
+        from
+    ),
+    no_serde
+)]
+#[derive(Serialize, Deserialize)]
 pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
 }
@@ -42,7 +47,7 @@ pub struct LedgerInfo {
 
     /// Hash of consensus specific data that is opaque to all parts of the system other than
     /// consensus.
-    pub consensus_data_hash: H256,
+    pub consensus_data_hash: Hash<32, HexUnprefixed>,
 }
 
 impl From<LedgerInfoWithSignatures>
@@ -86,7 +91,7 @@ impl From<LedgerInfo> for protos::union::ibc::lightclients::movement::v1::Ledger
     fn from(value: LedgerInfo) -> Self {
         Self {
             commit_info: Some(value.commit_info.into()),
-            consensus_data_hash: value.consensus_data_hash.0.to_vec(),
+            consensus_data_hash: value.consensus_data_hash.into_bytes(),
         }
     }
 }
@@ -109,7 +114,7 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::LedgerInfo> for Led
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             commit_info: required!(value.commit_info)?.try_into()?,
-            consensus_data_hash: H256::try_from(value.consensus_data_hash)
+            consensus_data_hash: Hash::try_from(value.consensus_data_hash)
                 .map_err(TryFromLedgerInfo::ConsensusDataHash)?,
         })
     }

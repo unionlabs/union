@@ -75,5 +75,6 @@ fbef3d1a-8b84-4eb5-937c-06f78b1a1347
 db.sqlite
 db.sqlite3*
 
+*/.movement
 move/*/build
 .tsup

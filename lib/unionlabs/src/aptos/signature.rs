@@ -8,8 +8,13 @@ use crate::{bls::BlsSignature, errors::InvalidLength};
     from
 ))]
 pub struct AggregateSignature {
-    validator_bitmask: Vec<u8>,
-    sig: BlsSignature,
+    validator_bitmask: ValidatorBitmask,
+    sig: Option<BlsSignature>,
+}
+
+#[model]
+pub struct ValidatorBitmask {
+    pub inner: Vec<u8>,
 }
 
 impl From<AggregateSignature>
@@ -17,8 +22,8 @@ impl From<AggregateSignature>
 {
     fn from(value: AggregateSignature) -> Self {
         Self {
-            validator_bitmask: value.validator_bitmask,
-            sig: value.sig.into(),
+            validator_bitmask: value.validator_bitmask.inner,
+            sig: value.sig.map(Into::into).unwrap_or_default(),
         }
     }
 }
@@ -38,8 +43,14 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::AggregateSignature>
         value: protos::union::ibc::lightclients::movement::v1::AggregateSignature,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            validator_bitmask: value.validator_bitmask,
-            sig: value.sig.try_into()?,
+            validator_bitmask: ValidatorBitmask {
+                inner: value.validator_bitmask,
+            },
+            sig: if value.sig.is_empty() {
+                None
+            } else {
+                Some(value.sig.try_into()?)
+            },
         })
     }
 }

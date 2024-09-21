@@ -3,7 +3,7 @@ use macros::model;
 use crate::{
     aptos::transaction_info::{TransactionInfo, TryFromTransactionInfoError},
     errors::{required, InvalidLength, MissingField},
-    hash::H256,
+    hash::hash_v2::{Hash, HexUnprefixed},
 };
 
 /// `TransactionInfo` and a `TransactionAccumulatorProof` connecting it to the ledger root.
@@ -23,8 +23,13 @@ pub struct TransactionInfoWithProof {
 
 #[model]
 pub struct TransactionAccumulatorProof {
-    pub siblings: Vec<H256>,
+    pub siblings: Vec<Hash<32, HexUnprefixed>>,
+    pub phantom: Null,
 }
+
+// idk man, it's in the json
+#[model]
+pub struct Null;
 
 impl From<TransactionInfoWithProof>
     for protos::union::ibc::lightclients::movement::v1::TransactionInfoWithProof
@@ -67,6 +72,7 @@ impl TryFrom<protos::union::ibc::lightclients::movement::v1::TransactionInfoWith
                     .into_iter()
                     .map(TryInto::try_into)
                     .collect::<Result<Vec<_>, _>>()?,
+                phantom: Null,
             },
             transaction_info: required!(value.transaction_info)?.try_into()?,
         })

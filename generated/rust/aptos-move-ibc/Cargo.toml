@@ -1,0 +1,13 @@
+[package]
+edition.workspace      = true
+license-file.workspace = true
+name                   = "aptos-move-ibc"
+repository.workspace   = true
+version                = "0.1.0"
+
+[dependencies]
+move-bindgen = { workspace = true }
+tracing      = { workspace = true }
+
+[lints]
+workspace = true

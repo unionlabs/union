@@ -13,6 +13,7 @@ members = [
 
   "generated/rust/contracts",
   "generated/rust/protos",
+  "generated/rust/aptos-move-ibc",
 
   "hubble",
 
@@ -80,9 +81,11 @@ members = [
 
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
+  "voyager/modules/client/movement",
 
   "voyager/modules/consensus/cometbls",
   "voyager/modules/consensus/ethereum",
+  "voyager/modules/consensus/movement",
 
   "voyager/modules/transaction/cosmos-sdk",
   "voyager/modules/transaction/ethereum",
@@ -115,6 +118,7 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
+aptos-move-ibc                 = { path = "generated/rust/aptos-move-ibc", default-features = false }
 aptos-verifier                 = { path = "lib/aptos-verifier", default-features = false }
 arbitrum-verifier              = { path = "lib/arbitrum-verifier", default-features = false }
 beacon-api                     = { path = "lib/beacon-api", default-features = false }
@@ -173,6 +177,7 @@ aptos-rest-client        = { git = "https://github.com/unionlabs/aptos-core" }
 aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }
 axum                     = { version = "0.6.20", default-features = false }
 base64                   = { version = "0.21", default-features = false }
+bcs                      = { version = "0.1.6", default-features = false }
 bip32                    = { version = "0.5.0", default-features = false }
 bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.0", default-features = false }

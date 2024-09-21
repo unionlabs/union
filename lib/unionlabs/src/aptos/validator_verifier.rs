@@ -68,7 +68,7 @@ impl From<ValidatorConsensusInfo>
 {
     fn from(value: ValidatorConsensusInfo) -> Self {
         Self {
-            address: value.address.0 .0.to_vec(),
+            address: value.address.0.into_bytes(),
             public_key: Some(value.public_key.into()),
             voting_power: value.voting_power,
         }
