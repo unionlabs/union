@@ -40,13 +40,14 @@ interface IIBCModule {
 
     function onFulfillIntent(
         IBCPacket calldata,
-        address marketMaker,
-        bytes calldata marketMakerMsg
+        address maker,
+        bytes calldata makerMsg
     ) external returns (bytes memory);
 
     function onRecvPacket(
         IBCPacket calldata,
-        address relayer
+        address maker,
+        bytes calldata makerMsg
     ) external returns (bytes memory);
 
     function onAcknowledgementPacket(
