@@ -6,6 +6,7 @@ use aptos_rest_client::{
     error::RestError,
     Transaction,
 };
+use aptos_types::state_store::state_value::PersistedStateValueMetadata;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -17,7 +18,10 @@ use serde_utils::Hex;
 use sha2::{Digest as _, Sha256};
 use tracing::{debug, error, instrument, warn};
 use unionlabs::{
-    aptos::sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
+    aptos::{
+        sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
+        storage_proof::{StateValue, StateValueMetadata, StorageProof},
+    },
     hash::H256,
     ibc::core::{
         channel::{self, channel::Channel, order::Order},
@@ -1256,7 +1260,10 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<
 
         let address = H256(U256::from_be_hex(address_str).unwrap().to_be_bytes());
 
-        let proof: aptos_types::proof::SparseMerkleProof = client
+        let (state_value, proof): (
+            Option<aptos_types::state_store::state_value::StateValue>,
+            aptos_types::proof::SparseMerkleProof,
+        ) = client
             .get(format!(
                 "{base_url}/movement/v1/resource-proof/{key}/{address}/{height}",
                 base_url = self.ctx.movement_rpc_url,
@@ -1271,18 +1278,48 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<
             .await
             .unwrap();
 
-        Ok(into_value(SparseMerkleProof {
-            leaf: proof.leaf().map(|leaf| SparseMerkleLeafNode {
-                key: (*leaf.key().as_ref()).into(),
-                value_hash: (*leaf.value_hash().as_ref()).into(),
+        Ok(into_value(StorageProof {
+            state_value: state_value.map(|s| {
+                let (metadata, data) = s.unpack();
+                match metadata.into_persistable() {
+                    None => StateValue::V0(data.to_vec()),
+                    Some(PersistedStateValueMetadata::V0 {
+                        deposit,
+                        creation_time_usecs,
+                    }) => StateValue::WithMetadata {
+                        data: data.to_vec(),
+                        metadata: StateValueMetadata::V0 {
+                            deposit,
+                            creation_time_usecs,
+                        },
+                    },
+                    Some(PersistedStateValueMetadata::V1 {
+                        slot_deposit,
+                        bytes_deposit,
+                        creation_time_usecs,
+                    }) => StateValue::WithMetadata {
+                        data: data.to_vec(),
+                        metadata: StateValueMetadata::V1 {
+                            slot_deposit,
+                            bytes_deposit,
+                            creation_time_usecs,
+                        },
+                    },
+                }
             }),
-            siblings: proof
-                .siblings()
-                .iter()
-                .map(AsRef::as_ref)
-                .copied()
-                .map(Into::into)
-                .collect(),
+            proof: SparseMerkleProof {
+                leaf: proof.leaf().map(|leaf| SparseMerkleLeafNode {
+                    key: (*leaf.key().as_ref()).into(),
+                    value_hash: (*leaf.value_hash().as_ref()).into(),
+                }),
+                siblings: proof
+                    .siblings()
+                    .iter()
+                    .map(AsRef::as_ref)
+                    .copied()
+                    .map(Into::into)
+                    .collect(),
+            },
         }))
     }
 
