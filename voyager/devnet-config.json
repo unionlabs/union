@@ -2,7 +2,7 @@
   "plugins": [
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-chain-module-cosmos-sdk",
+      "path": "./target/debug/voyager-chain-module-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
         "ws_url": "http://localhost:26757",
@@ -11,7 +11,7 @@
     },
     {
       "enabled": false,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-chain-module-ethereum",
+      "path": "./target/debug/voyager-chain-module-ethereum",
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
@@ -21,7 +21,7 @@
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-chain-module-movement",
+      "path": "./target/debug/voyager-chain-module-movement",
       "config": {
         "chain_id": "27",
         "rpc_url": "http://localhost:30731",
@@ -31,26 +31,26 @@
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-client-module-movement",
+      "path": "./target/debug/voyager-client-module-movement",
       "config": {}
     },
     {
       "enabled": false,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-client-module-cometbls",
+      "path": "./target/debug/voyager-client-module-cometbls",
       "config": {
         "ibc_interface": "ibc-solidity"
       }
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-client-module-cometbls",
+      "path": "./target/debug/voyager-client-module-cometbls",
       "config": {
         "ibc_interface": "ibc-move/aptos"
       }
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-consensus-module-cometbls",
+      "path": "./target/debug/voyager-consensus-module-cometbls",
       "config": {
         "chain_id": "union-devnet-1",
         "ws_url": "http://localhost:26757",
@@ -60,7 +60,7 @@
     },
     {
       "enabled": false,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-consensus-module-ethereum",
+      "path": "./target/debug/voyager-consensus-module-ethereum",
       "config": {
         "chain_id": "32382",
         "chain_spec": "minimal",
@@ -71,7 +71,7 @@
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-consensus-module-movement",
+      "path": "./target/debug/voyager-consensus-module-movement",
       "config": {
         "chain_id": "27",
         "ibc_handler_address": "5b6bbb436d4eb38d43ee2d4ede03e7da2395beac0cea2b32e4dfdb64b8b49a92",
@@ -83,14 +83,14 @@
     },
     {
       "enabled": false,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-client-module-ethereum",
+      "path": "./target/debug/voyager-client-module-ethereum",
       "config": {
         "chain_spec": "minimal"
       }
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-transaction-module-aptos",
+      "path": "./target/debug/voyager-transaction-module-aptos",
       "config": {
         "chain_id": "27",
         "rpc_url": "http://localhost:30731",
@@ -109,7 +109,7 @@
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-transaction-module-cosmos-sdk",
+      "path": "./target/debug/voyager-transaction-module-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
         "keyring": {
@@ -134,7 +134,7 @@
     },
     {
       "enabled": false,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-transaction-module-ethereum",
+      "path": "./target/debug/voyager-transaction-module-ethereum",
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
@@ -174,7 +174,7 @@
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-plugin-packet-filter",
+      "path": "./target/debug/voyager-plugin-packet-filter",
       "config": {
         "connection_event_filters": [{}],
         "channel_event_filters": [{}],
@@ -183,7 +183,7 @@
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-plugin-transaction-batch",
+      "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "union-devnet-1",
         "client_configs": {
@@ -197,7 +197,7 @@
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-plugin-transaction-batch",
+      "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "32382",
         "client_configs": {
@@ -211,7 +211,7 @@
     },
     {
       "enabled": true,
-      "path": "/home/aeryz/dev/union/union/target/debug/voyager-plugin-transaction-batch",
+      "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "27",
         "client_configs": {
