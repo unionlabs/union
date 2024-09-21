@@ -21,6 +21,7 @@ sha2               = { workspace = true, features = ["std"] }
 sha3               = { workspace = true }
 thiserror          = { workspace = true }
 unionlabs          = { workspace = true, features = ["cosmwasm", "stargate"] }
+serde-utils = { workspace = true }
 
 [dev-dependencies]
 aptos-crypto = { workspace = true }

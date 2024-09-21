@@ -12,11 +12,14 @@ use sha2::{Digest, Sha256};
 use sha3::Sha3_256;
 use unionlabs::{
     aptos::{
-        account::AccountAddress, ledger_info::LedgerInfoWithSignatures,
-        sparse_merkle_proof::SparseMerkleProof, transaction_info::TransactionInfo,
+        account::AccountAddress,
+        ledger_info::LedgerInfoWithSignatures,
+        sparse_merkle_proof::SparseMerkleProof,
+        storage_proof::{StateValue, StorageProof},
+        transaction_info::TransactionInfo,
     },
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
-    encoding::{DecodeAs as _, EncodeAs as _, Proto},
+    encoding::{DecodeAs, EncodeAs as _, Proto},
     hash::H256,
     ibc::{
         core::{
@@ -272,14 +275,36 @@ fn do_verify_membership(
     proof: Vec<u8>,
     value: Vec<u8>,
 ) -> Result<(), IbcClientError<MovementLightClient>> {
-    aptos_verifier::verify_membership(
-        &proof,
-        state_root.into(),
+    let proof = StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
+
+    let Some(proof_value) = &proof.state_value else {
+        return Err(Error::MembershipProofWithoutValue.into());
+    };
+
+    // `aptos_std::table` stores the value as bcs encoded
+    let given_value = bcs::to_bytes(&value).expect("cannot fail");
+    if proof_value.data() != &given_value {
+        return Err(Error::ProofValueMismatch(proof_value.data().to_vec(), given_value).into());
+    }
+
+    let Some(proof_leaf) = proof.proof.leaf.as_ref() else {
+        return Err(Error::MembershipProofWithoutValue.into());
+    };
+
+    if aptos_verifier::hash_state_value(proof_value) != *proof_leaf.value_hash.get() {
+        return Err(Error::ProofValueHashMismatch.into());
+    }
+
+    let key = aptos_verifier::hash_table_key(
+        &bcs::to_bytes(path.as_bytes()).expect("cannot fail"),
         &table_handle,
-        &bcs::to_bytes(path.as_bytes()).unwrap(),
-        value.try_into().unwrap(),
-    )
-    .unwrap();
+    );
+
+    if key != *proof_leaf.key.get() {
+        return Err(Error::ProofKeyMismatch.into());
+    }
+
+    aptos_verifier::verify_membership(proof.proof, state_root.into()).unwrap();
 
     Ok(())
 }

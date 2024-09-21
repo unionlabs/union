@@ -1,7 +1,9 @@
 use ics008_wasm_client::IbcClientError;
 use unionlabs::{
+    aptos::storage_proof::TryFromStorageProofError,
     encoding::{DecodeErrorOf, Proto},
     ibc::{core::client::height::Height, lightclients::movement},
+    TryFromProtoBytesError,
 };
 
 use crate::client::MovementLightClient;
@@ -22,6 +24,16 @@ pub enum Error {
     EmptyIbcPath,
     #[error("consensus state not found ({0})")]
     ConsensusStateNotFound(Height),
+    #[error("membership proof with no value")]
+    MembershipProofWithoutValue,
+    #[error("proof value {proof_value} doesn't match the given value {given})", proof_value = serde_utils::to_hex(.0), given = serde_utils::to_hex(.1))]
+    ProofValueMismatch(Vec<u8>, Vec<u8>),
+    #[error("proof value hash doesn't match the calculated one")]
+    ProofValueHashMismatch,
+    #[error("proof key hash doesn't match the calculated one")]
+    ProofKeyMismatch,
+    #[error("storage proof decode: {0}")]
+    StorageProofDecode(#[from] TryFromProtoBytesError<TryFromStorageProofError>),
 }
 
 impl From<Error> for IbcClientError<MovementLightClient> {

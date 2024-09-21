@@ -23,6 +23,15 @@ pub enum StateValue {
     },
 }
 
+impl StateValue {
+    pub fn data(&self) -> &[u8] {
+        match self {
+            StateValue::V0(data) => &data,
+            StateValue::WithMetadata { data, .. } => &data,
+        }
+    }
+}
+
 #[model]
 pub enum StateValueMetadata {
     V0 {
