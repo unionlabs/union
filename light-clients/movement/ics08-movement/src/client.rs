@@ -1,34 +1,22 @@
-use std::io::Write as _;
-
 use cosmwasm_std::Deps;
-use hex_literal::hex;
 use ics008_wasm_client::{
     storage_utils::{
         read_client_state, read_consensus_state, save_client_state, save_consensus_state,
     },
     IbcClient, IbcClientError, StorageState,
 };
-use sha2::{Digest, Sha256};
-use sha3::Sha3_256;
 use unionlabs::{
     aptos::{
-        account::AccountAddress,
-        ledger_info::LedgerInfoWithSignatures,
-        sparse_merkle_proof::SparseMerkleProof,
-        storage_proof::{StateValue, StorageProof},
-        transaction_info::TransactionInfo,
+        account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
     },
-    cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
+    cosmwasm::wasm::union::custom_query::UnionCustomQuery,
     encoding::{Bcs, DecodeAs, EncodeAs as _, Proto},
     google::protobuf::any::Any,
     hash::H256,
     ibc::{
-        core::{
-            client::height::Height, commitment::merkle_path::MerklePath,
-            connection::connection_end::ConnectionEnd,
-        },
+        core::{client::height::Height, commitment::merkle_path::MerklePath},
         lightclients::{
-            cometbls, ethereum,
+            cometbls,
             movement::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
             },
@@ -36,22 +24,21 @@ use unionlabs::{
         },
     },
     ics24::Path,
-    uint::U256,
 };
 
 use crate::errors::Error;
 
 type WasmClientState = wasm::client_state::ClientState<ClientState>;
 type WasmConsensusState = wasm::consensus_state::ConsensusState<ConsensusState>;
-type WasmL1ConsensusState =
-    wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>;
+// type WasmL1ConsensusState =
+//     wasm::consensus_state::ConsensusState<ethereum::consensus_state::ConsensusState>;
 
-#[derive(rlp::RlpEncodable)]
-struct BlockCommitment {
-    pub height: U256,
-    pub commitment: U256,
-    pub block_id: U256,
-}
+// #[derive(rlp::RlpEncodable)]
+// struct BlockCommitment {
+//     pub height: U256,
+//     pub commitment: U256,
+//     pub block_id: U256,
+// }
 
 pub struct MovementLightClient;
 
@@ -334,115 +321,6 @@ fn do_verify_membership(
     )
 }
 
-#[test]
-fn update_test() {
-    use aptos_crypto::hash::CryptoHash;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage};
-    use hex_literal::hex;
-
-    let deps = cosmwasm_std::OwnedDeps::<MockStorage, MockApi, MockQuerier, UnionCustomQuery> {
-        storage: MockStorage::new(),
-        api: MockApi::default(),
-        querier: MockQuerier::default(),
-        custom_query_type: std::marker::PhantomData,
-    };
-
-    // let header = Header::decode_as::<Proto>(&hex!("0a021001120210081ae3010ade010ad9010ab40108011a204d9829ca3b429726929ad13123acd90fb5181d76bf92e9b4aafa04b65402144c2220147f9e2ac6513e6ca45b7561536084d4664af93ef727c33befcc4c7f440a45dd282030e6dfa687f4bf88033a610801125d0a5b0a20d1126ce48bd65fb72190dbd9a6eaa65ba973f1e1664ac0cfba4db1d071fd0c3612320a3086fb211f41a07c6399ccc6ab3a8fe568fb0f574ce1b811896c44c6da4f267d543c6cac9fb8f4e9b92a3b809eefb91cbd1880c2d72f122000000000000000000000000000000000000000000000000000000000000000001200120022f9020a201d646962a8526c7b7a1f38eccea47aea233fa952405d4bbb7a14251d526fb5680a200485a4001d0c4a54e7e3188b9a9f1c4ed0472841210e19e597e0f299e8f92f8d0a20966740644714735eeee65f1d3647e2a6635e580c81acce7cafde1c31f9166eac0a20b01d5a56dace2d05b3b065e753680f810577bc168655c6a17a6f057078eff34b0a20defdb4b8c7eefc2121d2658c4daf07a91a9a3e10b91434da1df90518e796ad5b0a205f863421b1b5692c9b2342c04eee4a592bea3f704fae7697c0fb1658d775843312aa01122007722ac0872c8bb56c3521a45a1df816acfcead14b836215ddb853091b6858a31a20414343554d554c41544f525f504c414345484f4c4445525f48415348000000002220afb6e14fe47d850fd0a7395bcfb997ffacf4715e0f895cc162c218e4a7564bc62a20c09ada319e827f0fe51b0d7c9110f6d751d649ec019e2f9b2c60aa874ed112d7322000000000000000000000000000000000000000000000000000000000000000002a440a2000000000000000000000000000000000000000000000000000000000000000001220000000000000000000000000000000000000000000000000000000000000000032220a200000000000000000000000000000000000000000000000000000000000000000380b")).unwrap();
-
-    // let LedgerInfoWithSignatures::V0(ledger_info) = header.tx_proof.latest_li_w_sigs.clone();
-
-    // let bcs_encoded = bcs::to_bytes(&header.tx_proof).unwrap();
-    // let bcs_encoded_2 = bcs::to_bytes(&header.state_proof).unwrap();
-
-    // let tx_proof: aptos_types::proof::TransactionInfoWithProof =
-    //     bcs::from_bytes(&bcs_encoded).unwrap();
-    // let state_proof: aptos_types::state_proof::StateProof =
-    //     bcs::from_bytes(&bcs_encoded_2).unwrap();
-
-    let state_proof: aptos_types::state_proof::StateProof = serde_json::from_str(
-        r#"{"latest_li_w_sigs":{"V0":{"ledger_info":{"commit_info":{"epoch":1,"round":0,"id":"24a8f5eb283ce35aa9d5cdc6d7274edac99e694612e55422e3918bc04e96e7fd","executed_state_id":"942bf5b28be4893753513176fa8e850f654281be4dfebe60032d435bad3cc14f","version":86,"timestamp_usecs":1726821767444881,"next_epoch_state":{"epoch":1,"verifier":{"validator_infos":[{"address":"d1126ce48bd65fb72190dbd9a6eaa65ba973f1e1664ac0cfba4db1d071fd0c36","public_key":"0x86fb211f41a07c6399ccc6ab3a8fe568fb0f574ce1b811896c44c6da4f267d543c6cac9fb8f4e9b92a3b809eefb91cbd","voting_power":100000000}]}}},"consensus_data_hash":"0000000000000000000000000000000000000000000000000000000000000000"},"signatures":{"validator_bitmask":{"inner":[]},"sig":null}}},"epoch_changes":{"ledger_info_with_sigs":[],"more":false}}"#,
-    ).unwrap();
-    let tx_proof: aptos_types::proof::TransactionInfoWithProof = serde_json::from_str(
-        r#"{"ledger_info_to_transaction_info_proof":{"siblings":["414343554d554c41544f525f504c414345484f4c4445525f4841534800000000","af0f8ad7c7abd9aa78231c74491141392ac75a815b449426b0e70171351a6945","9141f154a62fb34ce7e50a94b8756ed38724fd6d7d8c7248bcfd5fdb2e1ebe6d","414343554d554c41544f525f504c414345484f4c4445525f4841534800000000","a4f543e44132202cdcd4479174ef841c08857349577c71484756b023f0cc8fda","414343554d554c41544f525f504c414345484f4c4445525f4841534800000000","5b2ffcfbd58523fe5edd4f8e07928a758fa52ab815d5d299bc81b10fdc4c0186"],"phantom":null},"transaction_info":{"V0":{"gas_used":0,"status":"Success","transaction_hash":"e61c5d024c2c5392a1b2b4da25092051d8443c7c329221e90c325de0d151cece","event_root_hash":"414343554d554c41544f525f504c414345484f4c4445525f4841534800000000","state_change_hash":"afb6e14fe47d850fd0a7395bcfb997ffacf4715e0f895cc162c218e4a7564bc6","state_checkpoint_hash":"6f2a6adb2c71ebc7c66c35a2a22d1c61cbac3b904bceed84d76fd5647be2d4bc","state_cemetery_hash":null}}}"#,
-    ).unwrap();
-    println!("tx version: {}", state_proof.latest_ledger_info().version());
-
-    // for i in 0..257 {
-    //     let res = tx_proof.ledger_info_to_transaction_info_proof.verify(
-    //         state_proof
-    //             .latest_ledger_info()
-    //             .commit_info()
-    //             .executed_state_id(),
-    //         tx_proof.transaction_info.hash(),
-    //         i,
-    //     );
-    //     if res.is_ok() {
-    //         println!("res: {} {}", res.is_ok(), i);
-    //     }
-    // }
-
-    // let val_info = &header
-    //     .state_proof
-    //     .latest_ledger_info()
-    //     .commit_info
-    //     .next_epoch_state
-    //     .as_ref()
-    //     .cloned()
-    //     .unwrap()
-    //     .verifier
-    //     .validator_infos[0];
-
-    // let validator_info = aptos_types::validator_verifier::ValidatorConsensusInfo {
-    //     address: aptos_types::account_address::AccountAddress::new(val_info.address.0 .0),
-    //     public_key: aptos_crypto::bls12381::PublicKey::try_from(
-    //         val_info.public_key.pubkey.to_vec().as_slice(),
-    //     )
-    //     .unwrap(),
-    //     voting_power: val_info.voting_power,
-    // };
-
-    // panic!(
-    //     "first: {}, second: {}",
-    //     hex::encode(&bcs::to_bytes(&val_info).unwrap()),
-    //     hex::encode(&bcs::to_bytes(&validator_info).unwrap())
-    // );
-
-    // let decoded: aptos_crypto::bls12381::PublicKey = bcs::from_bytes(&bcs_encoded).unwrap();
-
-    // MovementLightClient::verify_header(deps.as_ref(), mock_env(), header).unwrap();
-    let tx_proof: unionlabs::aptos::transaction_proof::TransactionInfoWithProof =
-        bcs::from_bytes(&bcs::to_bytes(&tx_proof).unwrap()).unwrap();
-    let state_proof: unionlabs::aptos::state_proof::StateProof =
-        bcs::from_bytes(&bcs::to_bytes(&state_proof).unwrap()).unwrap();
-
-    let state_proof = unionlabs::aptos::state_proof::StateProof::decode_as::<Proto>(
-        &state_proof.encode_as::<Proto>(),
-    )
-    .unwrap();
-
-    let tx_proof =
-        unionlabs::aptos::transaction_proof::TransactionInfoWithProof::decode_as::<Proto>(
-            &tx_proof.encode_as::<Proto>(),
-        )
-        .unwrap();
-
-    for i in 0..257 {
-        let res = aptos_verifier::verify_tx_state(
-            &tx_proof,
-            state_proof
-                .latest_ledger_info()
-                .commit_info
-                .executed_state_id
-                .get()
-                .clone(),
-            i,
-        );
-        if res.is_ok() {
-            println!("res: {} {}", res.is_ok(), i);
-        }
-    }
-}
-
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename = "StateValue")]
 enum PersistedStateValue {
@@ -465,108 +343,4 @@ pub enum PersistedStateValueMetadata {
         bytes_deposit: u64,
         creation_time_usecs: u64,
     },
-}
-
-#[test]
-fn test_mem_ver() {
-    // "state_key_hash": "0xa0f3409f6d658f56daa8e092107ee81488d7e99d3dcf0aa2fd54857823a39a9b",
-    // "handle": "0x6a95fc19afdc28b79ac96a39151b4cec85b1281d1bc0c246f3d369688439e17a",
-    // "key": "0x18636f6e6e656374696f6e732f636f6e6e656374696f6e2d34",
-    let value = hex!("206c979155ae4fb94adc1be3e5597fef73ec5ec3bfd941e76301b06ad5f3c8bfdb");
-
-    let state_key_hash = hex!("a0f3409f6d658f56daa8e092107ee81488d7e99d3dcf0aa2fd54857823a39a9b");
-    let table_handle = hex!("6a95fc19afdc28b79ac96a39151b4cec85b1281d1bc0c246f3d369688439e17a");
-    let key = hex!("18636f6e6e656374696f6e732f636f6e6e656374696f6e2d34");
-
-    let handle = AccountAddress(unionlabs::hash::hash_v2::Hash::new(hex!(
-        "6a95fc19afdc28b79ac96a39151b4cec85b1281d1bc0c246f3d369688439e17a"
-    )));
-
-    let mut buf = vec![1];
-    bcs::serialize_into(&mut buf, &handle).unwrap();
-    buf.write_all(&key).unwrap();
-    use aptos_crypto::HashValue;
-
-    let hash = Sha3_256::new()
-        .chain_update(Sha3_256::new().chain_update("APTOS::StateKey").finalize())
-        .chain_update(&buf)
-        .finalize()
-        .to_vec();
-
-    println!("state key {state_key_hash:?} vs hash {hash:?}");
-
-    let proof: aptos_types::proof::SparseMerkleProof = serde_json::from_str(
-        r#"{"leaf":{"key":"a0f3409f6d658f56daa8e092107ee81488d7e99d3dcf0aa2fd54857823a39a9b","value_hash":"e0f1455e9aa503607c640ec3a1686d1c880e8c5764e9f8d835546b64967513c6"},"siblings":["5d7706cc7dd8c67b9f7f591df480fac0cb4072b4fb6e0eb174db30f3dd21e0cf","b4d5bcecf9fe8c498fd47534b58bb884db1d3e3aac199a9d7628b322dfe9ad94","cbf6cd565500808d340a730222b7cd010cf6bf15c66d4a1a242a50d0c18e7cc3","09e8788b148cd7c676984da74ed74662081bacd7e626428acb76ef197f84da83","d4966172dff6b30ad1c8831b00a4915aecc30bf69df8c44d068ece0e1022b19b","c975874bf196e43483b134dbe97d00b4108a18fc3322b9807121986f05a6b3ba","5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000","794524a7d7b3d5010a7d124fedbdf5e841da55290a52809d09911c04c71cee49"]}"#,
-    ).unwrap();
-
-    let hash_value = Sha3_256::new()
-        .chain_update(Sha3_256::new().chain_update("APTOS::StateValue").finalize())
-        .chain_update(
-            &bcs::to_bytes(&PersistedStateValue::WithMetadata {
-                data: value.to_vec(),
-                metadata: PersistedStateValueMetadata::V1 {
-                    slot_deposit: 40000,
-                    bytes_deposit: 3600,
-                    creation_time_usecs: 1726830371849456,
-                },
-            })
-            .unwrap(),
-        )
-        .finalize()
-        .to_vec();
-
-    println!("value: {}", hex::encode(&hash_value));
-
-    let storage_proof: (StateValue, SparseMerkleProof)= serde_json::from_str(
-        r#"[{"WithMetadata":{"data":[32,108,151,145,85,174,79,185,74,220,27,227,229,89,127,239,115,236,94,195,191,217,65,231,99,1,176,106,213,243,200,191,219],"metadata":{"V1":{"slot_deposit":40000,"bytes_deposit":3600,"creation_time_usecs":1726830371849456}}}},{"leaf":{"key":"a0f3409f6d658f56daa8e092107ee81488d7e99d3dcf0aa2fd54857823a39a9b","value_hash":"e0f1455e9aa503607c640ec3a1686d1c880e8c5764e9f8d835546b64967513c6"},"siblings":["5d7706cc7dd8c67b9f7f591df480fac0cb4072b4fb6e0eb174db30f3dd21e0cf","b4d5bcecf9fe8c498fd47534b58bb884db1d3e3aac199a9d7628b322dfe9ad94","cbf6cd565500808d340a730222b7cd010cf6bf15c66d4a1a242a50d0c18e7cc3","09e8788b148cd7c676984da74ed74662081bacd7e626428acb76ef197f84da83","d4966172dff6b30ad1c8831b00a4915aecc30bf69df8c44d068ece0e1022b19b","c975874bf196e43483b134dbe97d00b4108a18fc3322b9807121986f05a6b3ba","5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000","794524a7d7b3d5010a7d124fedbdf5e841da55290a52809d09911c04c71cee49"]}]"#,
-    ).unwrap();
-
-    let storage_proof = StorageProof {
-        state_value: Some(storage_proof.0),
-        proof: storage_proof.1,
-    };
-
-    // proof
-    //     .verify_by_hash(
-    //         HashValue::new(hex!(
-    //             "d9c8ce5f6d8eac96858d81325d886a0928ef1680ef430d270a3b69742fe984e6"
-    //         )),
-    //         HashValue::new(hex!(
-    //             "a0f3409f6d658f56daa8e092107ee81488d7e99d3dcf0aa2fd54857823a39a9b"
-    //         )),
-    //         Some(HashValue::new(hex!(
-    //             "e0f1455e9aa503607c640ec3a1686d1c880e8c5764e9f8d835546b64967513c6"
-    //         ))),
-    //     )
-    //     .unwrap();
-
-    do_verify_membership(
-        "connections/connection-4".into(),
-        hex!("6005352b6b211981faf9f500e226c4893354dbae4f6d798ee3c97e961dd250b2").into(),
-        handle,
-        storage_proof.encode_as::<Proto>(),
-        vec![
-            108, 151, 145, 85, 174, 79, 185, 74, 220, 27, 227, 229, 89, 127, 239, 115, 236, 94,
-            195, 191, 217, 65, 231, 99, 1, 176, 106, 213, 243, 200, 191, 219,
-        ],
-    )
-    .unwrap();
-
-    let storage_proof = StorageProof::decode_as::<Proto>(&hex!("125d0a4948202024354ed2f717c0fda67513762e1d3919b9c6f97c943d572c808f531dcd9b59c029b7b42907fc2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d1a1008c0b80210d02d18fce4999dd3d888031ade030a440a200f8364557cc64af1cf321fdddaaf4d3b174c01c77fcc654454e1273836bb4347122056e26719c9c0405738bc0bc2e964dfda6fed244e482c8db0cea62e54a59ab4481220a4e5170aa2a9eda90f06c88a5895d5b6c4f4164d20ec6cd32652d4cadcaf1eba1220e838a4d20859baf8cf6ea90314a13536e1b5c4df3c3537b2c4a28bf47f3cf32112204ba5f2baefda31ef0b59fdf88975417a6b7ca8a71a51f591ac0d333474f475b31220adb7b3122949d591ae680a37ad50e3cc45520accd5a4e526e8b0a6571bdbbb5812202c0afc1ab42ceffef530fd4dd299a12bbf71a879e1e46cad46e9a1a21989f7481220581901f623f049a453cbaccaa2620cc85327bc2f117b1c7bc624a34a4f19563a1220b0bf1d6344ede247d020fc05f2007d7a6c6b960d53adde4acd06bae3c0360fd712202da7bf0ad81668c0b892fe7041337da3a27a7231e1d3e5f2a2132d2f172dc83a1220b3c20c22672baf17ffa17b4cab130729442f4c6525951450c784e4d4cebd0cd812205350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000012205350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000012206b9a4a6456d436c9a2152bdb8d0c5ee84309b4e086cd25d668503f71ecc62cb3")).unwrap();
-
-    // let connection_end = ConnectionEnd::decode_as::<Proto>(&[
-    let bytearr = vec![
-        72, 32, 32, 36, 53, 78, 210, 247, 23, 192, 253, 166, 117, 19, 118, 46, 29, 57, 25, 185,
-        198, 249, 124, 148, 61, 87, 44, 128, 143, 83, 29, 205, 155, 89, 192, 41, 183, 180, 41, 7,
-        252, 47, 73, 117, 171, 126, 117, 166, 119, 244, 62, 254, 191, 83, 224, 236, 5, 70, 13, 44,
-        245, 85, 6, 173, 8, 214, 176, 82, 84, 249, 106, 80, 1,
-    ];
-
-    println!("bytearray: {}", hex::encode(&bytearr));
-    // .unwrap();
-
-    let connection_end_2 = ConnectionEnd::decode_as::<Proto>(&hex!("380a0a636f6d6574626c732d3012140a0131120f4f524445525f554e4f524445524544180122120a0930382d7761736d2d321a050a03696263")).unwrap();
-
-    // println!("connection_end_1: {:?}", connection_end);
-    println!("connection_end_2: {:?}", connection_end_2);
 }

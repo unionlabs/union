@@ -12,11 +12,10 @@ use unionlabs::{
     aptos::{
         account::AccountAddress,
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
-        storage_proof::{StateValue, StorageProof},
+        storage_proof::StateValue,
         transaction_info::TransactionInfo,
         transaction_proof::TransactionInfoWithProof,
     },
-    encoding::{DecodeAs, Proto},
     hash::{BytesBitIterator, H256},
 };
 
@@ -74,7 +73,7 @@ pub fn verify_membership(
     proof: SparseMerkleProof,
     expected_root_hash: [u8; 32],
 ) -> Result<(), Error> {
-    let Some(proof_leaf) = proof.leaf.clone() else {
+    let Some(proof_leaf) = proof.leaf else {
         return Err(StorageVerificationError::ExpectedMembershipVerification.into());
     };
 

@@ -24,10 +24,10 @@ pub enum StateValue {
 }
 
 impl StateValue {
+    #[must_use]
     pub fn data(&self) -> &[u8] {
         match self {
-            StateValue::V0(data) => &data,
-            StateValue::WithMetadata { data, .. } => &data,
+            StateValue::V0(data) | StateValue::WithMetadata { data, .. } => data,
         }
     }
 }
