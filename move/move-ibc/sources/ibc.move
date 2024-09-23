@@ -265,14 +265,14 @@ module IBC::ibc {
         assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Update commitments
-        table::upsert(&mut store.commitments, IBCCommitment::client_state_key(client_id), hash::sha2_256(client_state));
+        table::upsert(&mut store.commitments, IBCCommitment::client_state_key(client_id), client_state);
 
         let latest_height = LightClient::latest_height(client_id);
 
         table::upsert(
             &mut store.commitments,
             IBCCommitment::consensus_state_key(client_id, latest_height),
-            hash::sha2_256(consensus_state)
+            consensus_state
         );
 
         event::emit(
@@ -578,7 +578,7 @@ module IBC::ibc {
             E_INVALID_UPDATE
         );
         
-        table::upsert(&mut store.commitments, IBCCommitment::client_state_key(client_id), hash::sha2_256(client_state));
+        table::upsert(&mut store.commitments, IBCCommitment::client_state_key(client_id), client_state);
 
         let i = 0;
         while (i < heights_len) {
@@ -1583,8 +1583,8 @@ module IBC::ibc {
     public fun update_connection_commitment(store: &mut IBCStore, connection_id: String, connection: ConnectionEnd) {
         let encoded_connection = connection_end::encode_proto(connection);
         let key = IBCCommitment::connection_key(connection_id);
-        let hash = hash::sha2_256(encoded_connection);
-        table::upsert(&mut store.commitments, key, hash);
+        // let hash = hash::sha2_256(encoded_connection);
+        table::upsert(&mut store.commitments, key, encoded_connection);
     }
 
     public fun get_compatible_versions(): vector<connection_end::Version> {
@@ -1739,7 +1739,7 @@ module IBC::ibc {
 
         let encoded = channel::encode_proto(*channel);
         let key = IBCCommitment::channel_key(port_id, channel_id);
-        table::upsert(&mut store.commitments, key, hash::sha2_256(encoded));
+        table::upsert(&mut store.commitments, key, encoded);
     }
 
 

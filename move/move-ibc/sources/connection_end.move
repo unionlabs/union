@@ -388,19 +388,30 @@ module IBC::connection_end {
     }
 
     fun encode_proto_counterparty(value: Counterparty): vector<u8> {
-        let buf = proto_utils::encode_string(1, value.client_id);
-        vector::append(&mut buf, proto_utils::encode_string(2, value.connection_id));
+        let buf = vector::empty();
+
+        if (!string::is_empty(&value.client_id)) {
+            vector::append(&mut buf, proto_utils::encode_string(1, value.client_id));
+        };
+
+        if (!string::is_empty(&value.connection_id)) {
+            vector::append(&mut buf, proto_utils::encode_string(2, value.connection_id));
+        };
+
         let merkle_prefix = encode_merkle_prefix(value.prefix);
-        // nested merkle prefix tag
-        vector::append(&mut buf, proto_utils::encode_prefix(3, 2));
-        // nested merkle prefix total length
-        vector::append(&mut buf, proto_utils::encode_varint(vector::length(&merkle_prefix)));
-        // nested merkle prefix encode
-        vector::append(&mut buf, merkle_prefix);
+        if (!vector::is_empty(&merkle_prefix)) {
+            // nested merkle prefix tag
+            vector::append(&mut buf, proto_utils::encode_prefix(3, 2));
+            // nested merkle prefix total length
+            vector::append(&mut buf, proto_utils::encode_varint(vector::length(&merkle_prefix)));
+            // nested merkle prefix encode
+            vector::append(&mut buf, merkle_prefix);
+        };
         buf
     }
 
     fun encode_merkle_prefix(value: MerklePrefix): vector<u8> {
+        // TODO(aeryz): what if empty?
         proto_utils::encode_bytes(1, value.key_prefix)
     }
 

@@ -12,10 +12,10 @@ use unionlabs::{
     aptos::{
         account::AccountAddress,
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
+        storage_proof::StateValue,
         transaction_info::TransactionInfo,
         transaction_proof::TransactionInfoWithProof,
     },
-    encoding::{DecodeAs, Proto},
     hash::{BytesBitIterator, H256},
 };
 
@@ -70,25 +70,19 @@ pub fn verify_tx_state(
 }
 
 pub fn verify_membership(
-    proof: &[u8],
+    proof: SparseMerkleProof,
     expected_root_hash: [u8; 32],
-    table_handle: &AccountAddress,
-    key: &[u8],
-    value_hash: [u8; 32],
 ) -> Result<(), Error> {
-    let proof = SparseMerkleProof::decode_as::<Proto>(proof).unwrap();
+    let Some(proof_leaf) = proof.leaf else {
+        return Err(StorageVerificationError::ExpectedMembershipVerification.into());
+    };
 
-    let mut buf = vec![1];
-    bcs::serialize_into(&mut buf, &table_handle).unwrap();
-    buf.write_all(&key).unwrap();
-
-    let hash = Sha3_256::new()
-        .chain_update(Sha3_256::new().chain_update("APTOS::StateKey").finalize())
-        .chain_update(&buf)
-        .finalize()
-        .into();
-
-    verify_existence_proof(proof, expected_root_hash, hash, value_hash)
+    verify_existence_proof(
+        proof,
+        expected_root_hash,
+        proof_leaf.key.into(),
+        proof_leaf.value_hash.into(),
+    )
 }
 
 pub fn verify_existence_proof(
@@ -156,6 +150,27 @@ pub fn verify_existence_proof(
     }
 
     Ok(())
+}
+
+pub fn hash_state_value(value: &StateValue) -> [u8; 32] {
+    Sha3_256::new()
+        .chain_update(Sha3_256::new().chain_update("APTOS::StateValue").finalize())
+        .chain_update(bcs::to_bytes(value).expect("cannot fail"))
+        .finalize()
+        .into()
+}
+
+pub fn hash_table_key(key: &[u8], table_handle: &AccountAddress) -> [u8; 32] {
+    // TODO(aeryz): make this a const
+    let mut buf = vec![1];
+    bcs::serialize_into(&mut buf, &table_handle).unwrap();
+    buf.write_all(key).unwrap();
+
+    Sha3_256::new()
+        .chain_update(Sha3_256::new().chain_update("APTOS::StateKey").finalize())
+        .chain_update(&buf)
+        .finalize()
+        .into()
 }
 
 fn hash_tx_info(tx_info: &TransactionInfo) -> [u8; 32] {

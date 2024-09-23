@@ -1,18 +1,19 @@
 use std::collections::VecDeque;
 
+use aptos_move_ibc::ibc::{self, ClientExt as _};
 use aptos_rest_client::error::RestError;
 use call::FetchUpdate;
 use jsonrpsee::core::{async_trait, RpcResult};
 use queue_msg::{call, data, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::instrument;
+use tracing::{debug, instrument, warn};
 use unionlabs::{
     aptos::{
         account::AccountAddress, state_proof::StateProof,
         transaction_proof::TransactionInfoWithProof,
     },
-    hash::H160,
+    hash::{hash_v2::Hash, H160},
     ibc::{
         core::client::height::Height,
         lightclients::{
@@ -21,6 +22,7 @@ use unionlabs::{
         },
     },
     id::ClientId,
+    uint::U256,
     validated::ValidateT,
 };
 use voyager_message::{
@@ -106,6 +108,12 @@ fn plugin_name(chain_id: &ChainId<'_>) -> String {
     format!("{PLUGIN_NAME}/{}", chain_id)
 }
 
+impl aptos_move_ibc::ibc::ClientExt for Module {
+    fn client(&self) -> &aptos_rest_client::Client {
+        &self.aptos_client
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// The identifier of the chain
@@ -131,6 +139,22 @@ impl Module {
     fn plugin_name(&self) -> String {
         plugin_name(&self.chain_id)
     }
+
+    pub async fn ledger_version_of_height(&self, height: u64) -> u64 {
+        let ledger_version = self
+            .aptos_client
+            .get_block_by_height(height, false)
+            .await
+            // .map_err(rest_error_to_rpc_error)?
+            .unwrap()
+            .into_inner()
+            .last_version
+            .0;
+
+        debug!("height {height} is ledger version {ledger_version}");
+
+        ledger_version
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -153,7 +177,7 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
                 let state_proof: StateProofResponse = client
                     .get(format!(
                         "{}/movement/v1/state-proof/{}",
-                        self.ctx.movement_rest_url, from
+                        self.ctx.movement_rest_url, to
                     ))
                     .send()
                     .await
@@ -221,12 +245,45 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
 
     #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
     async fn self_client_state(&self, height: Height) -> RpcResult<Value> {
+        let ledger_version = self
+            .ctx
+            .ledger_version_of_height(height.revision_height)
+            .await;
+
+        let vault_addr = self
+            .ctx
+            .get_vault_addr(
+                self.ctx.ibc_handler_address.0.get().clone().into(),
+                Some(ledger_version),
+            )
+            .await
+            .unwrap();
+
+        let table_handle = self
+            .ctx
+            .aptos_client
+            .get_account_resource(
+                vault_addr.into(),
+                &format!("0x{}::ibc::IBCStore", self.ctx.ibc_handler_address),
+            )
+            .await
+            .unwrap()
+            .into_inner()
+            .unwrap()
+            .data["commitments"]["handle"]
+            .clone()
+            .as_str()
+            .unwrap()
+            .to_owned();
+
         Ok(serde_json::to_value(movement::client_state::ClientState {
             chain_id: self.ctx.chain_id.to_string(),
             l1_client_id: self.ctx.l1_client_id.clone(),
             l1_contract_address: self.ctx.l1_settlement_address,
             l2_contract_address: self.ctx.ibc_handler_address,
-            table_handle: AccountAddress(Default::default()),
+            table_handle: AccountAddress(Hash::new(
+                U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
+            )),
             frozen_height: Height {
                 revision_number: 0,
                 revision_height: 0,

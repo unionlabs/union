@@ -6476,6 +6476,7 @@ dependencies = [
  "protos",
  "rlp",
  "serde",
+ "serde-utils",
  "serde_json",
  "sha2 0.10.8",
  "sha3 0.10.8",
@@ -13702,6 +13703,7 @@ dependencies = [
 name = "voyager-consensus-module-movement"
 version = "0.1.0"
 dependencies = [
+ "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
  "bitvec 1.0.1",

@@ -1260,23 +1260,18 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<
 
         let address = H256(U256::from_be_hex(address_str).unwrap().to_be_bytes());
 
+        let req = format!(
+            "{base_url}/movement/v1/resource-proof/{key}/{address}/{height}",
+            base_url = self.ctx.movement_rpc_url,
+            key = hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
+            address = address,
+            height = at.revision_height,
+        );
+
         let (state_value, proof): (
             Option<aptos_types::state_store::state_value::StateValue>,
             aptos_types::proof::SparseMerkleProof,
-        ) = client
-            .get(format!(
-                "{base_url}/movement/v1/resource-proof/{key}/{address}/{height}",
-                base_url = self.ctx.movement_rpc_url,
-                key = hex::encode(path.to_string()),
-                address = address,
-                height = at.revision_height,
-            ))
-            .send()
-            .await
-            .unwrap()
-            .json()
-            .await
-            .unwrap();
+        ) = client.get(req).send().await.unwrap().json().await.unwrap();
 
         Ok(into_value(StorageProof {
             state_value: state_value.map(|s| {
