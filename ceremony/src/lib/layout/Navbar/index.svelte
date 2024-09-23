@@ -1,7 +1,7 @@
 <script lang="ts">
 import { supabase } from "$lib/supabase/client.ts"
 import { user } from "$lib/stores/user.svelte.ts"
-import { invalidateAll } from "$app/navigation"
+import { beforeNavigate, invalidateAll } from "$app/navigation"
 import Button from "$lib/components/Button.svelte"
 import NavLink from "$lib/layout/Navbar/NavLink.svelte"
 import Badge from "$lib/components/Badge.svelte"
@@ -22,11 +22,15 @@ async function logout() {
   }
 }
 
+beforeNavigate(() => {
+  isOpen = false
+})
+
 let loggedIn = $derived(!!user.session?.user.id)
 </script>
 
 <header class="fixed bg-black top-0 inset-x-0 flex items-center justify-between gap-4 px-2 md:h-16 md:px-4 z-50">
-  <nav class=" w-full p-4">
+  <nav class=" w-full">
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
         {#if loggedIn}
