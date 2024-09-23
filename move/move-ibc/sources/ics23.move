@@ -3,6 +3,7 @@ module IBC::ics23 {
     use std::option::Option;
     use std::hash;
     use IBC::bcs_utils::{Self, BcsBuf};
+    use IBC::connection_end::{Self};
 
     struct MembershipProof has drop {
         sub_proof: ExistenceProof,
