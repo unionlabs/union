@@ -19,7 +19,8 @@ use unionlabs::{
         transaction_info::TransactionInfo,
     },
     cosmwasm::wasm::union::custom_query::{query_consensus_state, UnionCustomQuery},
-    encoding::{DecodeAs, EncodeAs as _, Proto},
+    encoding::{Bcs, DecodeAs, EncodeAs as _, Proto},
+    google::protobuf::any::Any,
     hash::H256,
     ibc::{
         core::{
@@ -27,13 +28,14 @@ use unionlabs::{
             connection::connection_end::ConnectionEnd,
         },
         lightclients::{
-            ethereum,
+            cometbls, ethereum,
             movement::{
                 client_state::ClientState, consensus_state::ConsensusState, header::Header,
             },
             wasm,
         },
     },
+    ics24::Path,
     uint::U256,
 };
 
@@ -277,6 +279,28 @@ fn do_verify_membership(
 ) -> Result<(), IbcClientError<MovementLightClient>> {
     let proof = StorageProof::decode_as::<Proto>(&proof).map_err(Error::StorageProofDecode)?;
 
+    let value = match path
+        .parse::<Path>()
+        .map_err(|_| Error::InvalidIbcPath(path.clone()))?
+    {
+        // proto(any<cometbls>) -> bcs(cometbls)
+        Path::ClientState(_) => {
+            Any::<cometbls::client_state::ClientState>::decode_as::<Proto>(&value)
+                .map_err(Error::CometblsClientStateDecode)?
+                .0
+                .encode_as::<Bcs>()
+        }
+        // proto(any<wasm<cometbls>>) -> bcs(cometbls)
+        Path::ClientConsensusState(_) => Any::<
+            wasm::consensus_state::ConsensusState<cometbls::consensus_state::ConsensusState>,
+        >::decode_as::<Proto>(&value)
+        .map_err(Error::CometblsConsensusStateDecode)?
+        .0
+        .data
+        .encode_as::<Bcs>(),
+        _ => value,
+    };
+
     let Some(proof_value) = &proof.state_value else {
         return Err(Error::MembershipProofWithoutValue.into());
     };
@@ -304,9 +328,10 @@ fn do_verify_membership(
         return Err(Error::ProofKeyMismatch.into());
     }
 
-    aptos_verifier::verify_membership(proof.proof, state_root.into()).unwrap();
-
-    Ok(())
+    Ok(
+        aptos_verifier::verify_membership(proof.proof, state_root.into())
+            .map_err(Into::<Error>::into)?,
+    )
 }
 
 #[test]
@@ -492,25 +517,56 @@ fn test_mem_ver() {
 
     println!("value: {}", hex::encode(&hash_value));
 
-    proof
-        .verify_by_hash(
-            HashValue::new(hex!(
-                "d9c8ce5f6d8eac96858d81325d886a0928ef1680ef430d270a3b69742fe984e6"
-            )),
-            HashValue::new(hex!(
-                "a0f3409f6d658f56daa8e092107ee81488d7e99d3dcf0aa2fd54857823a39a9b"
-            )),
-            Some(HashValue::new(hex!(
-                "e0f1455e9aa503607c640ec3a1686d1c880e8c5764e9f8d835546b64967513c6"
-            ))),
-        )
-        .unwrap();
+    let storage_proof: (StateValue, SparseMerkleProof)= serde_json::from_str(
+        r#"[{"WithMetadata":{"data":[32,108,151,145,85,174,79,185,74,220,27,227,229,89,127,239,115,236,94,195,191,217,65,231,99,1,176,106,213,243,200,191,219],"metadata":{"V1":{"slot_deposit":40000,"bytes_deposit":3600,"creation_time_usecs":1726830371849456}}}},{"leaf":{"key":"a0f3409f6d658f56daa8e092107ee81488d7e99d3dcf0aa2fd54857823a39a9b","value_hash":"e0f1455e9aa503607c640ec3a1686d1c880e8c5764e9f8d835546b64967513c6"},"siblings":["5d7706cc7dd8c67b9f7f591df480fac0cb4072b4fb6e0eb174db30f3dd21e0cf","b4d5bcecf9fe8c498fd47534b58bb884db1d3e3aac199a9d7628b322dfe9ad94","cbf6cd565500808d340a730222b7cd010cf6bf15c66d4a1a242a50d0c18e7cc3","09e8788b148cd7c676984da74ed74662081bacd7e626428acb76ef197f84da83","d4966172dff6b30ad1c8831b00a4915aecc30bf69df8c44d068ece0e1022b19b","c975874bf196e43483b134dbe97d00b4108a18fc3322b9807121986f05a6b3ba","5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000","794524a7d7b3d5010a7d124fedbdf5e841da55290a52809d09911c04c71cee49"]}]"#,
+    ).unwrap();
 
-    // do_verify_membership(
-    //     "connections/connection-4".into(),
-    //     hex!("d9c8ce5f6d8eac96858d81325d886a0928ef1680ef430d270a3b69742fe984e6").into(),
-    //     handle,
-    //     proof.encode_as::<Proto>(),
-    //     hex!("e0f1455e9aa503607c640ec3a1686d1c880e8c5764e9f8d835546b64967513c6").to_vec(),
-    // );
+    let storage_proof = StorageProof {
+        state_value: Some(storage_proof.0),
+        proof: storage_proof.1,
+    };
+
+    // proof
+    //     .verify_by_hash(
+    //         HashValue::new(hex!(
+    //             "d9c8ce5f6d8eac96858d81325d886a0928ef1680ef430d270a3b69742fe984e6"
+    //         )),
+    //         HashValue::new(hex!(
+    //             "a0f3409f6d658f56daa8e092107ee81488d7e99d3dcf0aa2fd54857823a39a9b"
+    //         )),
+    //         Some(HashValue::new(hex!(
+    //             "e0f1455e9aa503607c640ec3a1686d1c880e8c5764e9f8d835546b64967513c6"
+    //         ))),
+    //     )
+    //     .unwrap();
+
+    do_verify_membership(
+        "connections/connection-4".into(),
+        hex!("6005352b6b211981faf9f500e226c4893354dbae4f6d798ee3c97e961dd250b2").into(),
+        handle,
+        storage_proof.encode_as::<Proto>(),
+        vec![
+            108, 151, 145, 85, 174, 79, 185, 74, 220, 27, 227, 229, 89, 127, 239, 115, 236, 94,
+            195, 191, 217, 65, 231, 99, 1, 176, 106, 213, 243, 200, 191, 219,
+        ],
+    )
+    .unwrap();
+
+    let storage_proof = StorageProof::decode_as::<Proto>(&hex!("125d0a4948202024354ed2f717c0fda67513762e1d3919b9c6f97c943d572c808f531dcd9b59c029b7b42907fc2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d1a1008c0b80210d02d18fce4999dd3d888031ade030a440a200f8364557cc64af1cf321fdddaaf4d3b174c01c77fcc654454e1273836bb4347122056e26719c9c0405738bc0bc2e964dfda6fed244e482c8db0cea62e54a59ab4481220a4e5170aa2a9eda90f06c88a5895d5b6c4f4164d20ec6cd32652d4cadcaf1eba1220e838a4d20859baf8cf6ea90314a13536e1b5c4df3c3537b2c4a28bf47f3cf32112204ba5f2baefda31ef0b59fdf88975417a6b7ca8a71a51f591ac0d333474f475b31220adb7b3122949d591ae680a37ad50e3cc45520accd5a4e526e8b0a6571bdbbb5812202c0afc1ab42ceffef530fd4dd299a12bbf71a879e1e46cad46e9a1a21989f7481220581901f623f049a453cbaccaa2620cc85327bc2f117b1c7bc624a34a4f19563a1220b0bf1d6344ede247d020fc05f2007d7a6c6b960d53adde4acd06bae3c0360fd712202da7bf0ad81668c0b892fe7041337da3a27a7231e1d3e5f2a2132d2f172dc83a1220b3c20c22672baf17ffa17b4cab130729442f4c6525951450c784e4d4cebd0cd812205350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000012205350415253455f4d45524b4c455f504c414345484f4c4445525f48415348000012206b9a4a6456d436c9a2152bdb8d0c5ee84309b4e086cd25d668503f71ecc62cb3")).unwrap();
+
+    // let connection_end = ConnectionEnd::decode_as::<Proto>(&[
+    let bytearr = vec![
+        72, 32, 32, 36, 53, 78, 210, 247, 23, 192, 253, 166, 117, 19, 118, 46, 29, 57, 25, 185,
+        198, 249, 124, 148, 61, 87, 44, 128, 143, 83, 29, 205, 155, 89, 192, 41, 183, 180, 41, 7,
+        252, 47, 73, 117, 171, 126, 117, 166, 119, 244, 62, 254, 191, 83, 224, 236, 5, 70, 13, 44,
+        245, 85, 6, 173, 8, 214, 176, 82, 84, 249, 106, 80, 1,
+    ];
+
+    println!("bytearray: {}", hex::encode(&bytearr));
+    // .unwrap();
+
+    let connection_end_2 = ConnectionEnd::decode_as::<Proto>(&hex!("380a0a636f6d6574626c732d3012140a0131120f4f524445525f554e4f524445524544180122120a0930382d7761736d2d321a050a03696263")).unwrap();
+
+    // println!("connection_end_1: {:?}", connection_end);
+    println!("connection_end_2: {:?}", connection_end_2);
 }

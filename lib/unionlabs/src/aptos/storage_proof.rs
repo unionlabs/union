@@ -14,7 +14,7 @@ pub struct StorageProof {
     pub proof: SparseMerkleProof,
 }
 
-#[model]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum StateValue {
     V0(Vec<u8>),
     WithMetadata {
@@ -32,7 +32,7 @@ impl StateValue {
     }
 }
 
-#[model]
+#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum StateValueMetadata {
     V0 {
         deposit: u64,

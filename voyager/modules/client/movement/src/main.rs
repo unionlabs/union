@@ -12,7 +12,7 @@ use serde_utils::Hex;
 use tracing::instrument;
 use unionlabs::{
     self,
-    aptos::sparse_merkle_proof::SparseMerkleProof,
+    aptos::{sparse_merkle_proof::SparseMerkleProof, storage_proof::StorageProof},
     encoding::{Bcs, DecodeAs, EncodeAs, Proto},
     google::protobuf::any::Any,
     ibc::{
@@ -313,7 +313,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
 
     #[instrument]
     async fn encode_proof(&self, proof: Value) -> RpcResult<Hex<Vec<u8>>> {
-        serde_json::from_value::<SparseMerkleProof>(proof)
+        serde_json::from_value::<StorageProof>(proof)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,

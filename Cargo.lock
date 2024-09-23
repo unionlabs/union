@@ -13703,6 +13703,7 @@ dependencies = [
 name = "voyager-consensus-module-movement"
 version = "0.1.0"
 dependencies = [
+ "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
  "bitvec 1.0.1",
