@@ -16,10 +16,10 @@ use voyager_message::{
         MakeMsgConnectionOpenTry, MakeMsgRecvPacket, WaitForTrustedHeight,
     },
     callback::Callback,
+    core::{ChainId, ClientStateMeta},
     data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
-    module::ClientStateMeta,
     rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
-    ChainId, ModuleServer, VoyagerMessage,
+    ModuleServer, VoyagerMessage,
 };
 
 use crate::{

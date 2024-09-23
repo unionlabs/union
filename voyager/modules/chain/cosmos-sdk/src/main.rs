@@ -43,15 +43,14 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
-    data::{ChainEvent, ChannelMetadata, ClientInfo, ConnectionMetadata, Data, PacketMetadata},
+    core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
+    data::{ChainEvent, ChannelMetadata, ConnectionMetadata, Data, PacketMetadata},
     module::{
-        ChainModuleInfo, ChainModuleServer, IbcGo08WasmClientMetadata, ModuleInfo,
-        QueueInteractionsServer, RawClientState,
+        ChainModuleInfo, ChainModuleServer, ModuleInfo, QueueInteractionsServer, RawClientState,
     },
     reconnecting_jsonrpc_ws_client,
     rpc::{json_rpc_error_to_rpc_error, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
-    run_module_server, ChainId, ClientType, IbcInterface, ModuleContext, ModuleServer,
-    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    run_module_server, ModuleContext, ModuleServer, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{

@@ -16,7 +16,7 @@ use unionlabs::{
 };
 
 use crate::{
-    data::ClientInfo, module::ClientStateMeta, ChainId, ClientType, IbcInterface,
+    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface},
     FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -202,7 +202,8 @@ pub fn json_rpc_error_to_rpc_error(value: jsonrpsee::core::client::Error) -> Err
     }
 }
 
-/// Some required state was missing (connection/channel end, packet commitment, ..)
+/// Some required state was missing (connection/channel end, packet commitment,
+/// ..)
 pub fn missing_state(
     message: impl Into<String>,
     data: Option<Value>,

@@ -36,9 +36,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
+    core::{ChainId, ClientInfo, ClientType, IbcInterface},
     data::{
         ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-        ChannelOpenTry, ClientInfo, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
+        ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
         ConnectionOpenInit, ConnectionOpenTry, CreateClient, Data, PacketMetadata, UpdateClient,
     },
     module::{
@@ -46,8 +47,7 @@ use voyager_message::{
     },
     reconnecting_jsonrpc_ws_client,
     rpc::{json_rpc_error_to_rpc_error, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
-    run_module_server, ChainId, ClientType, DefaultCmd, IbcInterface, ModuleContext, ModuleServer,
-    VoyagerMessage,
+    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
 };
 
 use crate::{

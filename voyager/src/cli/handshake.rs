@@ -8,7 +8,7 @@ use unionlabs::{
     ibc::core::channel,
     id::{ClientId, ConnectionId, PortId},
 };
-use voyager_message::ChainId;
+use voyager_message::core::ChainId;
 
 #[derive(Debug)]
 pub struct HandshakeCmd {

@@ -26,13 +26,14 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    data::Data,
-    module::{
-        ClientModuleInfo, ClientModuleServer, ClientStateMeta, ConsensusStateMeta,
-        IbcGo08WasmClientMetadata, ModuleInfo, QueueInteractionsServer,
+    core::{
+        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcGo08WasmClientMetadata,
+        IbcInterface,
     },
-    run_module_server, ChainId, ClientType, DefaultCmd, IbcInterface, ModuleContext, ModuleServer,
-    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    data::Data,
+    module::{ClientModuleInfo, ClientModuleServer, ModuleInfo, QueueInteractionsServer},
+    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
+    FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};

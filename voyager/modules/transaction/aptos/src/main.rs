@@ -18,9 +18,10 @@ use tracing::instrument;
 use unionlabs::hash::H256;
 use voyager_message::{
     call::Call,
+    core::ChainId,
     data::{log_msg, Data, IbcMessage, WithChainId},
     module::{ModuleInfo, PluginModuleInfo, PluginModuleServer, QueueInteractionsServer},
-    run_module_server, ChainId, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
+    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};

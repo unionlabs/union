@@ -13729,6 +13729,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-core"
+version = "0.1.0"
+dependencies = [
+ "enumorph",
+ "hex",
+ "hex-literal",
+ "macros",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "unionlabs",
+]
+
+[[package]]
 name = "voyager-message"
 version = "0.1.0"
 dependencies = [
@@ -13772,6 +13787,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "typenum",
  "unionlabs",
+ "voyager-core",
 ]
 
 [[package]]

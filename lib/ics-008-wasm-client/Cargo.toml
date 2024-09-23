@@ -13,7 +13,7 @@ workspace = true
 cosmwasm-std             = { workspace = true }
 dlmalloc                 = { workspace = true, features = ["global"] }
 frame-support-procedural = { workspace = true }
-macros.workspace         = true
+macros                   = { workspace = true }
 prost                    = { workspace = true }
 protos                   = { workspace = true, features = ["proto_full", "std"] }
 serde                    = { workspace = true, features = ["derive"] }

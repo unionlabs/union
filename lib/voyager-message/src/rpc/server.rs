@@ -17,16 +17,13 @@ use unionlabs::{
 
 use crate::{
     context::Modules,
-    data::ClientInfo,
-    module::{
-        ChainModuleClient, ChainModuleClientExt, ClientModuleClient, ClientStateMeta,
-        ConsensusModuleClient,
-    },
+    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface},
+    module::{ChainModuleClient, ChainModuleClientExt, ClientModuleClient, ConsensusModuleClient},
     rpc::{
         json_rpc_error_to_rpc_error, IbcProof, IbcState, Info, SelfClientState, SelfConsensusState,
         VoyagerRpcServer,
     },
-    ChainId, ClientType, IbcInterface, FATAL_JSONRPC_ERROR_CODE,
+    FATAL_JSONRPC_ERROR_CODE,
 };
 
 #[derive(Debug, Clone)]
@@ -50,8 +47,8 @@ pub struct ServerInner {
 // }
 
 // impl<'a> IbcStateCacheKey<'a> {
-//     pub fn new(chain_id: ChainId<'a>, path: &'a Path, height: Height) -> Self {
-//         Self {
+//     pub fn new(chain_id: ChainId<'a>, path: &'a Path, height: Height) -> Self
+// {         Self {
 //             chain_id,
 //             path: Cow::Borrowed(path),
 //             height,
@@ -60,8 +57,8 @@ pub struct ServerInner {
 // }
 
 // impl IbcStateCacheKey<'static> {
-//     pub fn new_owned(chain_id: ChainId<'static>, path: Path, height: Height) -> Self {
-//         Self {
+//     pub fn new_owned(chain_id: ChainId<'static>, path: Path, height: Height)
+// -> Self {         Self {
 //             chain_id,
 //             path: Cow::Owned(path),
 //             height,
@@ -185,8 +182,8 @@ impl ServerInner {
         //     serde_json::from_value::<P::Value>(state.clone()).map_err(|e| {
         //         ErrorObject::owned(
         //             FATAL_JSONRPC_ERROR_CODE,
-        //             format!("unable to deserialize state: {}", ErrorReporter(e)),
-        //             Some(json!({
+        //             format!("unable to deserialize state: {}",
+        // ErrorReporter(e)),             Some(json!({
         //                 "path": path,
         //                 "state": state
         //             })),
