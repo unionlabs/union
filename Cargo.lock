@@ -13581,6 +13581,7 @@ dependencies = [
  "enumorph",
  "frunk",
  "futures",
+ "hex",
  "jsonrpsee",
  "macros",
  "num-bigint 0.4.6",
@@ -13634,6 +13635,29 @@ dependencies = [
  "macros",
  "prost 0.12.6",
  "protos",
+ "queue-msg",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-client-module-tendermint"
+version = "0.1.0"
+dependencies = [
+ "clap 4.5.4",
+ "cometbft-rpc",
+ "dashmap",
+ "enumorph",
+ "futures",
+ "jsonrpsee",
+ "macros",
  "queue-msg",
  "serde",
  "serde-utils",
@@ -13720,6 +13744,32 @@ dependencies = [
  "protos",
  "queue-msg",
  "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-consensus-module-tendermint"
+version = "0.1.0"
+dependencies = [
+ "cometbft-rpc",
+ "dashmap",
+ "enumorph",
+ "frunk",
+ "futures",
+ "ics23",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
  "serde",
  "serde_json",
  "thiserror",
