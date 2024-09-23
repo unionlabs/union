@@ -73,11 +73,11 @@ impl BatchHeaderV3 {
             batch_index: u64::from_be_bytes(slice.array_slice::<1, 8>()),
             l1_message_popped: u64::from_be_bytes(slice.array_slice::<9, 8>()),
             total_l1_message_popped: u64::from_be_bytes(slice.array_slice::<17, 8>()),
-            data_hash: H256(slice.array_slice::<25, 32>()),
-            blob_versioned_hash: H256(slice.array_slice::<57, 32>()),
-            parent_batch_hash: H256(slice.array_slice::<89, 32>()),
+            data_hash: H256::new(slice.array_slice::<25, 32>()),
+            blob_versioned_hash: H256::new(slice.array_slice::<57, 32>()),
+            parent_batch_hash: H256::new(slice.array_slice::<89, 32>()),
             last_block_timestamp: u64::from_be_bytes(slice.array_slice::<121, 8>()),
-            blob_data_proof: H512(slice.array_slice::<129, 64>()),
+            blob_data_proof: H512::new(slice.array_slice::<129, 64>()),
         })
     }
 

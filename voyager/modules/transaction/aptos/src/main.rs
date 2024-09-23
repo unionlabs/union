@@ -66,13 +66,13 @@ impl ModuleContext for Module {
                     let pk = aptos_crypto::ed25519::Ed25519PrivateKey::try_from(&*config.value())
                         .unwrap();
 
-                    let address = H256::from(
+                    let address = (*<H256>::from(
                         sha3::Sha3_256::new()
                             .chain_update(pk.public_key().to_bytes())
                             .chain_update([0])
                             .finalize(),
                     )
-                    .0
+                    .get())
                     .into();
 
                     KeyringEntry {
@@ -154,13 +154,13 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
                 .with(|pk| {
                     let msgs = msgs.clone();
                     async move {
-                        let sender = H256::from(
+                        let sender = (*<H256>::from(
                             sha3::Sha3_256::new()
                                 .chain_update(pk.public_key().to_bytes())
                                 .chain_update([0])
                                 .finalize(),
                         )
-                        .0
+                        .get())
                         .into();
 
                         let account = self

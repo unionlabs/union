@@ -1,49 +1,44 @@
-use crate::macros::hex_string_array_wrapper;
+pub type H64<E = hash_v2::HexPrefixed> = hash_v2::Hash<8, E>;
+pub type H160<E = hash_v2::HexPrefixed> = hash_v2::Hash<20, E>;
+pub type H256<E = hash_v2::HexPrefixed> = hash_v2::Hash<32, E>;
+pub type H384<E = hash_v2::HexPrefixed> = hash_v2::Hash<48, E>;
+pub type H512<E = hash_v2::HexPrefixed> = hash_v2::Hash<64, E>;
+pub type H2048<E = hash_v2::HexPrefixed> = hash_v2::Hash<256, E>;
 
-hex_string_array_wrapper! {
-    pub struct H64(pub [u8; 8]);
-    pub struct H160(pub [u8; 20]);
-    pub struct H256(pub [u8; 32]);
-    pub struct H384(pub [u8; 48]);
-    pub struct H512(pub [u8; 64]);
-    pub struct H2048(pub [u8; 256]);
-}
-
-// pub type H256 /* <P = unionlabs_hash::Prefixed> */ = unionlabs_hash::Hash<32 /* , P */>;
-
-impl H256 {
-    #[must_use]
-    pub fn into_bytes(self) -> Vec<u8> {
-        // use this if we ever swap out the inner value for primitive_types::H256
-        // self.0.into_iter().flat_map(|n| n.to_le_bytes()).collect()
-        self.0.to_vec()
-    }
-}
+// impl H256 {
+//     #[must_use]
+//     pub fn into_bytes(self) -> Vec<u8> {
+//         // use this if we ever swap out the inner value for primitive_types::H256
+//         // self.0.into_iter().flat_map(|n| n.to_le_bytes()).collect()
+//         self.0.to_vec()
+//     }
+// }
 
 impl From<H256> for primitive_types::H256 {
     fn from(value: H256) -> Self {
-        Self(value.0)
+        Self(*value.get())
     }
 }
 
 impl From<primitive_types::H256> for H256 {
     fn from(value: primitive_types::H256) -> Self {
-        Self(value.0)
+        Self::new(value.0)
     }
 }
 
 impl From<H160> for primitive_types::H160 {
     fn from(value: H160) -> Self {
-        Self(value.0)
+        Self(*value.get())
     }
 }
 
 impl From<primitive_types::H160> for H160 {
     fn from(value: primitive_types::H160) -> Self {
-        Self(value.0)
+        Self::new(value.0)
     }
 }
 
+#[must_use = "constructing an iterator has no effect"]
 pub struct BytesBitIterator<'a> {
     bz: &'a [u8],
     pos: core::ops::Range<usize>,
@@ -85,6 +80,7 @@ impl<'a> core::iter::DoubleEndedIterator for BytesBitIterator<'a> {
     }
 }
 
+#[allow(clippy::inline_always)]
 pub mod hash_v2 {
     use core::{
         cmp::Ordering,
@@ -93,9 +89,13 @@ pub mod hash_v2 {
         str::FromStr,
     };
 
+    use generic_array::{ArrayLength, GenericArray};
     use serde::{ser::SerializeTupleStruct, Deserialize, Deserializer, Serialize, Serializer};
 
-    use crate::errors::{ExpectedLength, InvalidLength};
+    use crate::{
+        errors::{ExpectedLength, InvalidLength},
+        hash::BytesBitIterator,
+    };
 
     trait Sealed {}
 
@@ -216,6 +216,34 @@ pub mod hash_v2 {
         __marker: PhantomData<fn() -> E>,
     }
 
+    impl<const BYTES: usize, E: Encoding> ssz::Ssz for Hash<BYTES, E>
+    where
+        typenum::Const<BYTES>: typenum::ToUInt,
+        typenum::U<BYTES>: typenum::Unsigned + typenum::NonZero,
+    {
+        const SSZ_FIXED_LEN: Option<core::num::NonZeroUsize> =
+            <[u8; BYTES] as ssz::Ssz>::SSZ_FIXED_LEN;
+
+        const TREE_HASH_TYPE: ssz::tree_hash::TreeHashType =
+            <[u8; BYTES] as ssz::Ssz>::TREE_HASH_TYPE;
+
+        fn tree_hash_root(&self) -> ssz::tree_hash::Hash256 {
+            <[u8; BYTES] as ssz::Ssz>::tree_hash_root(self.get())
+        }
+
+        fn ssz_append(&self, buf: &mut Vec<u8>) {
+            <[u8; BYTES] as ssz::Ssz>::ssz_append(self.get(), buf);
+        }
+
+        fn ssz_bytes_len(&self) -> core::num::NonZeroUsize {
+            <[u8; BYTES] as ssz::Ssz>::ssz_bytes_len(self.get())
+        }
+
+        fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, ssz::decode::DecodeError> {
+            <[u8; BYTES] as ssz::Ssz>::from_ssz_bytes(bytes).map(Self::new)
+        }
+    }
+
     impl<const BYTES: usize, E: Encoding> AsRef<[u8]> for Hash<BYTES, E> {
         fn as_ref(&self) -> &[u8] {
             self.get()
@@ -236,14 +264,12 @@ pub mod hash_v2 {
         }
     }
 
-    impl<const BYTES: usize> Hash<BYTES, HexPrefixed> {
-        // this impl can't be on the generic one otherwise type inference shits the bed
-        pub const BYTES_LEN: usize = BYTES;
-    }
-
     impl<const BYTES: usize, E: Encoding> Hash<BYTES, E> {
+        pub const BITS_LEN: usize = BYTES * 8;
+        pub const BYTES_LEN: usize = BYTES;
+
         #[must_use = "constructing a Hash has no effect"]
-        pub fn new(arr: [u8; BYTES]) -> Self {
+        pub const fn new(arr: [u8; BYTES]) -> Self {
             const { assert!(BYTES > 0, "BYTES must be greater than 0") };
 
             #[expect(deprecated)] // this is the (sole) constructor
@@ -254,12 +280,14 @@ pub mod hash_v2 {
         }
 
         #[must_use = "reading the inner value has no effect"]
+        #[inline(always)]
         pub fn get(&self) -> &[u8; BYTES] {
             #[expect(deprecated)] // this is the (sole) immutable accessor
             &self.arr
         }
 
         #[must_use = "reading the inner value has no effect"]
+        #[inline(always)]
         pub fn get_mut(&mut self) -> &mut [u8; BYTES] {
             #[expect(deprecated)] // this is the (sole) mutable accessor
             &mut self.arr
@@ -274,7 +302,12 @@ pub mod hash_v2 {
             <&Self as IntoIterator>::into_iter(self)
         }
 
+        pub fn iter_bits(&self) -> BytesBitIterator<'_> {
+            BytesBitIterator::new(self)
+        }
+
         #[must_use = "converting a hash to a hash with a different encoding has no effect"]
+        #[inline(always)]
         pub fn into_encoding<E2: Encoding>(&self) -> Hash<BYTES, E2> {
             Hash::new(*self.get())
         }
@@ -342,7 +375,7 @@ pub mod hash_v2 {
                 String::deserialize(deserializer)
                     .and_then(|s| s.parse().map_err(::serde::de::Error::custom))
             } else {
-                struct ArrayVisitor<const BYTES: usize>;
+                struct ArrayVisitor<const N: usize>;
 
                 impl<'de, const N: usize> serde::de::Visitor<'de> for ArrayVisitor<N> {
                     type Value = [u8; N];
@@ -481,50 +514,112 @@ pub mod hash_v2 {
         }
     }
 
+    // TODO: Feature gate generic-array across the crate
     // #[cfg(feature = "generic-array")]
-    // impl<P: IsPrefixed, const BYTES: usize> From<GenericArray<u8, typenum::U<BYTES>>> for Hash<BYTES, E>
-    // where
-    //     typenum::Const<BYTES>: typenum::ToUInt<Output: ArrayLength>,
-    // {
-    //     fn from(arr: GenericArray<u8, typenum::U<BYTES>>) -> Self {
-    //         Self::new(
-    //             arr.to_vec()
-    //                 .try_into()
-    //                 .expect("GenericArray has the correct length; qed;"),
-    //         )
-    //     }
-    // }
+    impl<E: Encoding, const BYTES: usize> From<GenericArray<u8, typenum::U<BYTES>>> for Hash<BYTES, E>
+    where
+        typenum::Const<BYTES>: typenum::ToUInt<Output: ArrayLength<u8>>,
+    {
+        fn from(arr: GenericArray<u8, typenum::U<BYTES>>) -> Self {
+            Self::new(
+                arr.to_vec()
+                    .try_into()
+                    .expect("GenericArray has the correct length; qed;"),
+            )
+        }
+    }
 
+    // TODO: Feature gate generic-array across the crate
     // #[cfg(feature = "generic-array")]
-    // impl<P: IsPrefixed, const BYTES: usize> From<Hash<BYTES, E>> for GenericArray<u8, typenum::U<BYTES>>
-    // where
-    //     typenum::Const<BYTES>: typenum::ToUInt<Output: ArrayLength>,
-    // {
-    //     fn from(arr: Hash<BYTES, E>) -> Self {
-    //         GenericArray::<u8, typenum::U<BYTES>>::from_slice(arr.get()).to_owned()
-    //     }
-    // }
+    impl<E: Encoding, const BYTES: usize> From<Hash<BYTES, E>> for GenericArray<u8, typenum::U<BYTES>>
+    where
+        typenum::Const<BYTES>: typenum::ToUInt<Output: ArrayLength<u8>>,
+    {
+        fn from(arr: Hash<BYTES, E>) -> Self {
+            GenericArray::<u8, typenum::U<BYTES>>::from_slice(arr.get()).to_owned()
+        }
+    }
 
+    // TODO: Feature gate rlp across the crate
     // #[cfg(feature = "rlp")]
-    // impl<P: IsPrefixed, const BYTES: usize> rlp::Decodable for Hash<BYTES, E> {
-    //     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-    //         rlp.decoder()
-    //             .decode_value(|bytes| match bytes.len().cmp(&BYTES) {
-    //                 core::cmp::Ordering::Less => Err(::rlp::DecoderError::RlpIsTooShort),
-    //                 core::cmp::Ordering::Greater => Err(::rlp::DecoderError::RlpIsTooBig),
-    //                 core::cmp::Ordering::Equal => {
-    //                     Ok(Self::new(bytes.try_into().expect("size is checked; qed;")))
-    //                 }
-    //             })
-    //     }
-    // }
+    impl<E: Encoding, const BYTES: usize> rlp::Decodable for Hash<BYTES, E> {
+        fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+            rlp.decoder()
+                .decode_value(|bytes| match bytes.len().cmp(&BYTES) {
+                    core::cmp::Ordering::Less => Err(::rlp::DecoderError::RlpIsTooShort),
+                    core::cmp::Ordering::Greater => Err(::rlp::DecoderError::RlpIsTooBig),
+                    core::cmp::Ordering::Equal => {
+                        Ok(Self::new(bytes.try_into().expect("size is checked; qed;")))
+                    }
+                })
+        }
+    }
 
+    // TODO: Feature gate rlp across the crate
     // #[cfg(feature = "rlp")]
-    // impl<P: IsPrefixed, const BYTES: usize> rlp::Encodable for Hash<BYTES, E> {
-    //     fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
-    //         s.encoder().encode_value(self.as_ref());
-    //     }
-    // }
+    impl<E: Encoding, const BYTES: usize> rlp::Encodable for Hash<BYTES, E> {
+        fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
+            s.encoder().encode_value(self.as_ref());
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> TryFrom<::ethers_core::types::Bytes> for Hash<BYTES, E> {
+        type Error = <Self as TryFrom<Vec<u8>>>::Error;
+
+        fn try_from(value: ::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+            Self::try_from(&value.0[..])
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> TryFrom<&'_ ::ethers_core::types::Bytes> for Hash<BYTES, E> {
+        type Error = <Self as TryFrom<Vec<u8>>>::Error;
+
+        fn try_from(value: &::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+            Self::try_from(&value.0[..])
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiType for Hash<BYTES, E> {
+        fn param_type() -> ::ethers_core::abi::ParamType {
+            ::ethers_core::abi::ParamType::FixedBytes(BYTES)
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiArrayType for Hash<BYTES, E> {}
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiEncode for Hash<BYTES, E> {
+        fn encode(self) -> Vec<u8> {
+            self.get().encode()
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiDecode for Hash<BYTES, E> {
+        fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ::ethers_core::abi::AbiError> {
+            <[u8; BYTES]>::decode(bytes).map(Self::new)
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::Tokenizable for Hash<BYTES, E> {
+        fn from_token(
+            token: ::ethers_core::abi::Token,
+        ) -> Result<Self, ::ethers_core::abi::InvalidOutputType> {
+            <[u8; BYTES]>::from_token(token).map(Self::new)
+        }
+
+        fn into_token(self) -> ::ethers_core::abi::Token {
+            self.get().into_token()
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::TokenizableItem for Hash<BYTES, E> {}
 
     #[cfg(test)]
     mod tests {

@@ -112,8 +112,8 @@ fn main() {
                     "{}",
                     hex::encode(
                         &*cosmwasm_std::instantiate2_address(
-                            &checksum.0,
-                            &creator.0.into(),
+                            checksum.as_ref(),
+                            &creator.get().into(),
                             &hex::decode(salt).unwrap(),
                         )
                         .unwrap()

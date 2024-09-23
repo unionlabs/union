@@ -160,7 +160,7 @@ impl IbcClient for MovementLightClient {
         let TransactionInfo::V0(tx_info) = header.tx_proof.transaction_info;
 
         let consensus_state = ConsensusState {
-            state_root: H256(tx_info.state_checkpoint_hash.unwrap().get().clone()), // TODO(aeryz): we always need this, no need to make this not an option
+            state_root: H256::new(tx_info.state_checkpoint_hash.unwrap().get().clone()), // TODO(aeryz): we always need this, no need to make this not an option
             timestamp: header
                 .state_proof
                 .latest_ledger_info()

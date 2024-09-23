@@ -236,7 +236,7 @@ pub fn hash_denom(denom: &str) -> DenomHash {
 }
 
 pub fn encode_denom_hash(denom_hash: DenomHash) -> String {
-    let result = denom_hash.0 .0.to_base58().to_string();
+    let result = denom_hash.0.get().to_base58().to_string();
     // https://en.wikipedia.org/wiki/Binary-to-text_encoding
     // Luckily, base58 encoding has ~0.73 efficiency:
     // (1 / 0.73) * 32 = 43.8356164384
@@ -325,7 +325,7 @@ fn normalize_for_ibc_transfer(
         .and_then(|denom| denom.strip_prefix("/"))
     {
         Some(denom_hash) => {
-            if let Some(normalized_denom) = hash_to_denom(DenomHash(unionlabs::hash::H256(
+            if let Some(normalized_denom) = hash_to_denom(DenomHash(unionlabs::hash::H256::new(
                 denom_hash
                     .from_base58()
                     .expect("impossible")
@@ -534,7 +534,7 @@ impl<'a> OnReceive for StatefulOnReceive<'a> {
                 &ExecuteMsg::RegisterDenom {
                     local_endpoint: local_endpoint.clone(),
                     denom: denom.to_string(),
-                    hash: hash.0 .0.into(),
+                    hash: hash.0.get().into(),
                 },
                 Default::default(),
             )?
@@ -1242,7 +1242,7 @@ mod tests {
                         denom: "wasm.0xDEADC0DE/channel-1/from-counterparty".into(),
                         hash: hash_denom("wasm.0xDEADC0DE/channel-1/from-counterparty")
                             .0
-                             .0
+                            .get()
                             .into(),
                     },
                     Default::default()

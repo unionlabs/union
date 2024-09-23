@@ -92,9 +92,9 @@ impl From<LightHeader> for contracts::glue::UnionIbcLightclientsCometblsV1LightH
         Self {
             height: value.height.into(),
             time: value.time.into(),
-            validators_hash: value.validators_hash.into(),
-            next_validators_hash: value.next_validators_hash.into(),
-            app_hash: value.app_hash.into(),
+            validators_hash: value.validators_hash.get().into(),
+            next_validators_hash: value.next_validators_hash.get().into(),
+            app_hash: value.app_hash.get().into(),
         }
     }
 }

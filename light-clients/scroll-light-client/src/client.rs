@@ -317,7 +317,7 @@ fn do_verify_non_membership(
 
     scroll_verifier::verify_zktrie_storage_absence(
         storage_root,
-        H256(storage_proof.key.to_be_bytes()),
+        H256::new(storage_proof.key.to_be_bytes()),
         &storage_proof.proof,
     )?;
 

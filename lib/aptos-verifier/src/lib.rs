@@ -61,8 +61,8 @@ pub fn verify_tx_state(
 
     if actual_root_hash != expected_root_hash {
         return Err(Error::RootHashMismatch {
-            expected: H256(expected_root_hash),
-            given: H256(actual_root_hash),
+            expected: H256::new(expected_root_hash),
+            given: H256::new(actual_root_hash),
         });
     }
 
@@ -107,16 +107,16 @@ pub fn verify_existence_proof(
     // route from the leaf node to the root.
     if &element_key != leaf.key.get() {
         return Err(StorageVerificationError::LeafKeyMismatch(
-            H256(element_key),
-            H256(*leaf.key.get()),
+            H256::new(element_key),
+            H256::new(*leaf.key.get()),
         )
         .into());
     }
 
     if &element_hash != leaf.value_hash.get() {
         return Err(StorageVerificationError::LeafValueMismatch(
-            H256(element_hash),
-            H256(*leaf.value_hash.get()),
+            H256::new(element_hash),
+            H256::new(*leaf.value_hash.get()),
         )
         .into());
     }
@@ -143,8 +143,8 @@ pub fn verify_existence_proof(
 
     if actual_root_hash != expected_root_hash {
         return Err(StorageVerificationError::RootHashMismatch(
-            H256(actual_root_hash),
-            H256(expected_root_hash),
+            H256::new(actual_root_hash),
+            H256::new(expected_root_hash),
         )
         .into());
     }

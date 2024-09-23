@@ -20,7 +20,9 @@ impl<'a> Slot<'a> {
     pub fn slot(&self) -> U256 {
         match self {
             // keccak256(p)
-            Slot::Array(p, idx) => U256::from_be_bytes(keccak256(p.slot().to_be_bytes()).0) + *idx,
+            Slot::Array(p, idx) => {
+                U256::from_be_bytes(*keccak256(p.slot().to_be_bytes()).get()) + *idx
+            }
             // keccak256(h(k) . p)
             Slot::Mapping(p, k) => {
                 let mut hasher = Keccak256::new();
@@ -28,7 +30,7 @@ impl<'a> Slot<'a> {
                     MappingKey::String(string) => hasher.update(string.as_bytes()),
                     MappingKey::Uint256(k) => hasher.update(k.to_be_bytes()),
                     MappingKey::Uint64(k) => hasher.update(U256::from(*k).to_be_bytes()),
-                    MappingKey::Bytes32(k) => hasher.update(k.0),
+                    MappingKey::Bytes32(k) => hasher.update(k.get()),
                 };
 
                 U256::from_be_bytes(
@@ -65,8 +67,8 @@ fn test() {
     .slot();
 
     assert_eq!(
-        H256(slot.to_be_bytes()),
-        H256(hex_literal::hex!(
+        <H256>::new(slot.to_be_bytes()),
+        <H256>::new(hex_literal::hex!(
             "00a9b48fe93e5d10ebc2d9021d1477088c6292bf047876944343f57fdf3f0467"
         ))
     );

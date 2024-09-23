@@ -857,14 +857,14 @@ mod test {
     #[test]
     fn verify_header_fails_when_finalized_header_execution_branch_merkle_is_invalid() {
         let (deps, mut update, env) = prepare_test_data();
-        update.consensus_update.finalized_header.execution_branch[0].0[0] ^= u8::MAX;
+        update.consensus_update.finalized_header.execution_branch[0].get_mut()[0] ^= u8::MAX;
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
     #[test]
     fn verify_header_fails_when_finality_branch_merkle_is_invalid() {
         let (deps, mut update, env) = prepare_test_data();
-        update.consensus_update.finality_branch[0].0[0] ^= u8::MAX;
+        update.consensus_update.finality_branch[0].get_mut()[0] ^= u8::MAX;
         assert!(EthereumLightClient::verify_header(deps.as_ref(), env, update).is_err());
     }
 
@@ -964,7 +964,7 @@ mod test {
         let (proof, commitment_path, slot, mut storage_root, connection_end) =
             membership_data::<ConnectionEnd>("src/test/memberships/valid_connection_end.json");
 
-        storage_root.0[10] ^= u8::MAX;
+        storage_root.get_mut()[10] ^= u8::MAX;
 
         assert!(do_verify_membership(
             commitment_path,
@@ -1147,7 +1147,7 @@ mod test {
 
         let modifications = modify_fns! { s,
             s.genesis_time ^= u64::MAX,
-            s.genesis_validators_root.0[0] ^= u8::MAX,
+            s.genesis_validators_root.get_mut()[0] ^= u8::MAX,
             s.seconds_per_slot ^= u64::MAX,
             s.slots_per_epoch ^= u64::MAX,
             s.epochs_per_sync_committee_period ^= u64::MAX,

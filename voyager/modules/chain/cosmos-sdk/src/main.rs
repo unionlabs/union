@@ -25,7 +25,7 @@ use unionlabs::{
         ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
         CreateClient, IbcEvent, SubmitEvidence, UpdateClient,
     },
-    hash::{H256, H64},
+    hash::{hash_v2::HexUnprefixed, H256, H64},
     ibc::core::{
         channel::{self, channel::Channel},
         client::height::Height,
@@ -168,7 +168,7 @@ impl Module {
     async fn client_type_of_checksum(&self, checksum: H256) -> RpcResult<Option<WasmClientType>> {
         if let Some(ty) = self.checksum_cache.get(&checksum) {
             debug!(
-                checksum = %checksum.to_string_unprefixed(),
+                %checksum,
                 ty = ?*ty,
                 "cache hit for checksum"
             );
@@ -177,7 +177,7 @@ impl Module {
         };
 
         info!(
-            checksum = %checksum.to_string_unprefixed(),
+            %checksum,
             "cache miss for checksum"
         );
 
@@ -192,7 +192,7 @@ impl Module {
             })),
         ))?
         .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
-            checksum: checksum.to_string_unprefixed(),
+            checksum: checksum.into_encoding::<HexUnprefixed>().to_string(),
         })
         .await
         .map_err(rpc_error(
@@ -208,7 +208,7 @@ impl Module {
         match parse_wasm_client_type(bz) {
             Ok(Some(ty)) => {
                 info!(
-                    checksum = %checksum.to_string_unprefixed(),
+                    %checksum,
                     ?ty,
                     "parsed checksum"
                 );
@@ -220,7 +220,7 @@ impl Module {
             Ok(None) => Ok(None),
             Err(err) => {
                 error!(
-                    checksum = %checksum.to_string_unprefixed(),
+                    %checksum,
                     %err,
                     "unable to parse wasm client type"
                 );
@@ -517,7 +517,7 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
                                 self.ctx.plugin_name(),
                                 MakeChainEvent {
                                     height,
-                                    tx_hash,
+                                    tx_hash: tx_hash.into_encoding(),
                                     event: ibc_event,
                                 },
                             ))
@@ -1282,52 +1282,52 @@ impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<
             // NOTE: For these branches, we use H64 as a mildly hacky way to have a better error message (since `<[T; N] as TryFrom<Vec<T>>>::Error = Vec<T>`)
             Path::NextSequenceSend(_) => {
                 into_value::<ValueOf<NextSequenceSendPath>>(u64::from_be_bytes(
-                    H64::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value)
                         .map_err(fatal_rpc_error(
                             "error decoding next_sequence_send",
                             error_data(),
                         ))?
-                        .0,
+                        .get(),
                 ))
             }
             Path::NextSequenceRecv(_) => {
                 into_value::<ValueOf<NextSequenceRecvPath>>(u64::from_be_bytes(
-                    H64::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value)
                         .map_err(fatal_rpc_error(
                             "error decoding next_sequence_recv",
                             error_data(),
                         ))?
-                        .0,
+                        .get(),
                 ))
             }
             Path::NextSequenceAck(_) => {
                 into_value::<ValueOf<NextSequenceAckPath>>(u64::from_be_bytes(
-                    H64::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value)
                         .map_err(fatal_rpc_error(
                             "error decoding next_sequence_ack",
                             error_data(),
                         ))?
-                        .0,
+                        .get(),
                 ))
             }
             Path::NextConnectionSequence(_) => {
                 into_value::<ValueOf<NextConnectionSequencePath>>(u64::from_be_bytes(
-                    H64::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value)
                         .map_err(fatal_rpc_error(
                             "error decoding next_connection_sequence",
                             error_data(),
                         ))?
-                        .0,
+                        .get(),
                 ))
             }
             Path::NextClientSequence(_) => {
                 into_value::<ValueOf<NextClientSequencePath>>(u64::from_be_bytes(
-                    H64::try_from(query_result.value)
+                    *<H64>::try_from(query_result.value)
                         .map_err(fatal_rpc_error(
                             "error decoding next_client_sequence",
                             error_data(),
                         ))?
-                        .0,
+                        .get(),
                 ))
             }
         })

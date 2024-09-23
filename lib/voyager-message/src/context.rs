@@ -11,7 +11,7 @@ use serde_json::Value;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, warn, Instrument};
-use unionlabs::{ethereum::keccak256, traits::Member, ErrorReporter};
+use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
@@ -94,7 +94,7 @@ impl ModuleRpcClient {
     fn make_socket_path(name: &str) -> String {
         format!(
             "/tmp/voyager-to-module-{}.sock",
-            keccak256(name).to_string_unprefixed()
+            keccak256(name).into_encoding::<HexUnprefixed>()
         )
     }
 
@@ -120,7 +120,7 @@ async fn module_rpc_server(
 fn make_module_rpc_server_socket_path(name: &str) -> String {
     format!(
         "/tmp/module-to-voyager-{}.sock",
-        keccak256(name).to_string_unprefixed()
+        keccak256(name).into_encoding::<HexUnprefixed>()
     )
 }
 

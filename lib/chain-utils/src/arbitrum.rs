@@ -199,7 +199,7 @@ impl EthereumConsensusChain for Arbitrum {
                     .select(
                         ethers::types::BlockNumber::Earliest..ethers::types::BlockNumber::Latest,
                     )
-                    .address(ethers::types::H160(self.l1_contract_address.0))
+                    .address(ethers::types::H160(*self.l1_contract_address.get()))
                     .topic0(NodeCreated::signature())
                     .topic1(ethers::types::H256(U256::from(next_node_num).to_be_bytes())),
             )
@@ -216,7 +216,7 @@ impl EthereumConsensusChain for Arbitrum {
         let block = self
             .provider
             .get_block(ethers::types::H256(
-                event.assertion.after_state.global_state.bytes32_vals[0].0,
+                *event.assertion.after_state.global_state.bytes32_vals[0].get(),
             ))
             .await
             .unwrap()
@@ -379,7 +379,7 @@ impl Arbitrum {
         let storage_root = self
             .provider
             .get_storage_at(
-                ethers::types::H160(self.l1_contract_address.0),
+                ethers::types::H160(*self.l1_contract_address.get()),
                 H256::from(self.ibc_commitment_slot.to_be_bytes()).into(),
                 Some(arbitrum_height),
             )

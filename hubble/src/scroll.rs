@@ -112,7 +112,10 @@ impl Scroll {
             .l1_client
             .get_storage_at(
                 alloy::primitives::Address::new(
-                    (self.rollup_finalization_config.rollup_contract_address).0,
+                    *self
+                        .rollup_finalization_config
+                        .rollup_contract_address
+                        .get(),
                 ),
                 alloy::primitives::Uint::from_be_bytes(
                     self.rollup_finalization_config

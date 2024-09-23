@@ -54,7 +54,7 @@ impl ZkValue for ZkAccount {
 
 impl ZkKey for H256 {
     fn hash(self, constants: &MiMCBls12377Constants) -> Result<H256, gnark_mimc::Error> {
-        mimc_sum_bl12377(constants, MimcSafeBytes::from(self.0).into_bytes())
+        mimc_sum_bl12377(constants, MimcSafeBytes::from(*self.get()).into_bytes())
     }
 }
 
@@ -62,7 +62,7 @@ impl ZkValue for H256 {
     type Key = H256;
 
     fn hash(self, constants: &MiMCBls12377Constants) -> Result<H256, gnark_mimc::Error> {
-        mimc_sum_bl12377(constants, MimcSafeBytes::from(self.0).into_bytes())
+        mimc_sum_bl12377(constants, MimcSafeBytes::from(*self.get()).into_bytes())
     }
 
     fn decode(value: impl AsRef<[u8]>) -> Result<Self, InvalidLength>
@@ -221,7 +221,7 @@ pub fn verify_noninclusion<V: ZkValue + Clone>(
         root,
     )?;
     // N+.Prev == i-
-    if U256::from_be_bytes(right_path.leaf.previous.0)
+    if U256::from_be_bytes(*right_path.leaf.previous.get())
         != U256::from(noninclusion_proof.left_leaf_index)
     {
         return Err(Error::NonAdjacentNode {
@@ -230,7 +230,8 @@ pub fn verify_noninclusion<V: ZkValue + Clone>(
         });
     }
     // N-.Next == i+
-    if U256::from_be_bytes(left_path.leaf.next.0) != U256::from(noninclusion_proof.right_leaf_index)
+    if U256::from_be_bytes(*left_path.leaf.next.get())
+        != U256::from(noninclusion_proof.right_leaf_index)
     {
         return Err(Error::NonAdjacentNode {
             left: left_path.leaf.into(),
@@ -454,10 +455,10 @@ mod tests {
         let account = verify::<ZkAccount>(
             &new_mimc_constants_bls12_377(),
             &proof.account_proof,
-            H256(hex!(
+            H256::new(hex!(
                 "0C76548458CC04A5AA09BFFA092B32C912AEE635C1C44364EBB911286A10263D"
             )),
-            H160(hex!("5ff137d4b0fdcd49dca30c7cf57e578a026d2789")),
+            H160::new(hex!("5ff137d4b0fdcd49dca30c7cf57e578a026d2789")),
         )
         .unwrap()
         .unwrap();
@@ -465,7 +466,7 @@ mod tests {
             &new_mimc_constants_bls12_377(),
             &proof.storage_proofs[0],
             account.storage_root,
-            H256(hex!(
+            H256::new(hex!(
                 "975227e2a924779fb36829b74e9ab66f8d906444c0efb23059aaf437a9254f64"
             )),
         )
@@ -473,7 +474,9 @@ mod tests {
         .unwrap();
         assert_eq!(
             value,
-            hex!("0000000000000000000000000000000000000000000000000000000000000183").into()
+            <H256>::new(hex!(
+                "0000000000000000000000000000000000000000000000000000000000000183"
+            ))
         );
     }
 
@@ -640,10 +643,10 @@ mod tests {
         let account = verify::<ZkAccount>(
             &new_mimc_constants_bls12_377(),
             &proof.account_proof,
-            H256(hex!(
+            H256::new(hex!(
                 "0C76548458CC04A5AA09BFFA092B32C912AEE635C1C44364EBB911286A10263D"
             )),
-            H160(hex!("5ff137d4b0fdcd49dca30c7cf57e578a026d2789")),
+            H160::new(hex!("5ff137d4b0fdcd49dca30c7cf57e578a026d2789")),
         )
         .unwrap()
         .unwrap();
@@ -768,10 +771,10 @@ mod tests {
         let account = verify::<ZkAccount>(
             &new_mimc_constants_bls12_377(),
             &proof.account_proof,
-            H256(hex!(
+            H256::new(hex!(
                 "0C76548458CC04A5AA09BFFA092B32C912AEE635C1C44364EBB911286A10263D"
             )),
-            H160(hex!("5ff137d4b0fdcd49dca30c7cf57e578a026d2780")),
+            H160::new(hex!("5ff137d4b0fdcd49dca30c7cf57e578a026d2780")),
         )
         .unwrap();
         assert_eq!(account, None);
@@ -803,10 +806,10 @@ mod tests {
             .unwrap()
             .finalize();
         assert_eq!(
-            H256(hex!(
+            <H256>::new(hex!(
                 "104a10331d6a854148a10b11c19cf2abae0412c9909ecefca54adc135ee57a95"
             )),
-            hash.try_into().unwrap(),
+            <H256>::try_from(hash).unwrap(),
         );
     }
 }

@@ -99,7 +99,6 @@ macro_rules! hex_string_array_wrapper {
                     (&self).into_iter()
                 }
 
-                #[must_use]
                 pub fn iter_bits(&self) -> $crate::hash::BytesBitIterator<'_> {
                     $crate::hash::BytesBitIterator::new(self)
                 }

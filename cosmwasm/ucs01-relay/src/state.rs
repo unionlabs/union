@@ -139,7 +139,7 @@ impl<'a> PrimaryKey<'a> for DenomHash {
     type SuperSuffix = <[u8; 32] as PrimaryKey<'a>>::SuperSuffix;
 
     fn key(&self) -> Vec<cw_storage_plus::Key> {
-        self.0 .0.key()
+        self.0.get().key()
     }
 }
 

@@ -3,7 +3,7 @@ use unionlabs::hash::H256;
 
 const LEAF_PREFIX: &[u8] = &[0];
 const INNER_PREFIX: &[u8] = &[1];
-const EMPTY_SHA256: H256 = H256(hex_literal::hex!(
+const EMPTY_SHA256: H256 = H256::new(hex_literal::hex!(
     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 ));
 
@@ -61,7 +61,7 @@ fn test_hash() {
 
     assert_eq!(
         calculate_merkle_root(&leaves),
-        H256(hex!(
+        <H256>::new(hex!(
             "f326493eceab4f2d9ffbc78c59432a0a005d6ea98392045c74df5d14a113be18"
         ))
     );

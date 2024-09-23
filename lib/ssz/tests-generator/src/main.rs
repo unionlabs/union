@@ -409,7 +409,7 @@ where
                     <Vector<{type_name}, U<{n}>> as Ssz>::as_ssz_bytes(&expected_value)
                 );
 
-                assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+                assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
             }}
 
             {{
@@ -425,7 +425,7 @@ where
                     <[{type_name}; {n}] as Ssz>::as_ssz_bytes(&expected_value)
                 );
 
-                assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+                assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
             }}
         "#,
         expected_encoding = expected_encoding.as_raw(),
@@ -485,7 +485,7 @@ fn bitlist_valid(
                 <BitList<U<{expected_len}>> as Ssz>::as_ssz_bytes(&expected_value)
             );
 
-            assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+            assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
         "#,
         expected_encoding = expected_encoding.as_raw(),
         expected_value = serde_utils::parse_hex::<Vec<u8>>(expected_value)
@@ -533,7 +533,7 @@ fn bitvector_valid(
                 <BitVector<U<{expected_len}>> as Ssz>::as_ssz_bytes(&expected_value)
             );
 
-            assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+            assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
         "#,
         expected_encoding = expected_encoding.as_raw(),
         expected_root = meta.root.as_raw(),
@@ -576,7 +576,7 @@ fn boolean_valid(
                 <bool as Ssz>::as_ssz_bytes(&expected_value)
             );
 
-            assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+            assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
         "#,
         expected_encoding = expected_encoding.as_raw(),
         expected_value = expected_value.as_raw(),
@@ -616,7 +616,7 @@ where
                 <{type_name} as Ssz>::as_ssz_bytes(&expected_value)
             );
 
-            assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+            assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
         "#,
         expected_encoding = expected_encoding.as_raw(),
         expected_value = expected_value.as_raw(),
@@ -661,7 +661,7 @@ where
                 <{type_name} as Ssz>::as_ssz_bytes(&expected_value)
             );
 
-            assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+            assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
         "#,
         expected_encoding = expected_encoding.as_raw(),
         expected_value = expected_value.as_raw(),
@@ -767,7 +767,7 @@ impl AsRaw for H256 {
     }
 
     fn as_raw(&self) -> String {
-        format!(r#"H256(hex!("{}"))"#, self.encode_hex::<String>())
+        format!(r#"<H256>::new(hex!("{}"))"#, self.encode_hex::<String>())
     }
 }
 

@@ -112,7 +112,7 @@ impl Arb {
                         alloy::eips::BlockNumberOrTag::Earliest..alloy::eips::BlockNumberOrTag::Latest,
                     )
                     .address(alloy::primitives::Address(
-                        FixedBytes::from_slice(&self.rollup_finalization_config.l1_contract_address.0),
+                        FixedBytes::from_slice(self.rollup_finalization_config.l1_contract_address.get()),
                     ))
                     .event_signature(NodeCreated::SIGNATURE_HASH)
                     .topic1(alloy::primitives::FixedBytes(U256::from(next_node_num).to_be_bytes())),
@@ -156,7 +156,7 @@ impl Arb {
             .l1_client
             .get_storage_at(
                 alloy::primitives::Address::new(
-                    (self.rollup_finalization_config.l1_contract_address).0,
+                    *self.rollup_finalization_config.l1_contract_address.get(),
                 ),
                 alloy::primitives::Uint::from_be_bytes(
                     self.rollup_finalization_config

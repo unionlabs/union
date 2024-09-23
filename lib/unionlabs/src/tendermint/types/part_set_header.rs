@@ -41,7 +41,7 @@ impl From<PartSetHeader> for contracts::glue::TendermintTypesPartSetHeaderData {
     fn from(value: PartSetHeader) -> Self {
         Self {
             total: value.total,
-            hash: value.hash.map(Into::into).unwrap_or_default(),
+            hash: value.hash.map(|h| h.get().into()).unwrap_or_default(),
         }
     }
 }

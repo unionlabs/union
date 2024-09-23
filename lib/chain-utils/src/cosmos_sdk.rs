@@ -18,7 +18,7 @@ use unionlabs::{
     },
     encoding::{EncodeAs, Proto},
     google::protobuf::any::Any,
-    hash::H256,
+    hash::{hash_v2::HexUnprefixed, H256},
     id::{ClientId, ConnectionId},
     parse_wasm_client_type,
     signer::CosmosSigner,
@@ -82,7 +82,7 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
     async fn client_type_of_checksum(&self, checksum: H256) -> Option<WasmClientType> {
         if let Some(ty) = self.checksum_cache().get(&checksum) {
             debug!(
-                checksum = %checksum.to_string_unprefixed(),
+                %checksum,
                 ty = ?*ty,
                 "cache hit for checksum"
             );
@@ -91,7 +91,7 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
         };
 
         info!(
-            checksum = %checksum.to_string_unprefixed(),
+            %checksum,
             "cache miss for checksum"
         );
 
@@ -101,7 +101,7 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
         .await
         .unwrap()
         .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
-            checksum: checksum.to_string_unprefixed(),
+            checksum: checksum.into_encoding::<HexUnprefixed>().to_string(),
         })
         .await
         .unwrap()
@@ -111,7 +111,7 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
         match parse_wasm_client_type(bz) {
             Ok(Some(ty)) => {
                 info!(
-                    checksum = %checksum.to_string_unprefixed(),
+                    %checksum,
                     ?ty,
                     "parsed checksum"
                 );
@@ -123,7 +123,7 @@ pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
             Ok(None) => None,
             Err(err) => {
                 error!(
-                    checksum = %checksum.to_string_unprefixed(),
+                    %checksum,
                     %err,
                     "unable to parse wasm client type"
                 );

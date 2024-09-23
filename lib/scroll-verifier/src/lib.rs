@@ -110,7 +110,7 @@ pub fn get_zktrie_node(
             db.update_node(node).map_err(Error::ZkTrie)?;
         }
     }
-    ZkTrie::<PoseidonHash>::new(256, Hash::from(Byte32::from(root.0)))
+    ZkTrie::<PoseidonHash>::new(256, Hash::from(Byte32::from(*root.get())))
         .get_data(&mut db, key.as_ref())
         .map_err(Error::ZkTrie)
 }
@@ -184,17 +184,17 @@ mod tests {
                 revision_number: 0,
                 revision_height: 0,
             },
-            l2_contract_address: H160(hex!("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0")),
+            l2_contract_address: H160::new(hex!("2d567ece699eabe5afcd141edb7a4f2d0d6ce8a0")),
             l2_finalized_state_roots_slot: 158.into(),
             l2_committed_batches_slot: 157.into(),
             // Dummy contract address for the sake of testing
-            ibc_contract_address: H160(hex!("0000000000000000000000000000000000000000")),
+            ibc_contract_address: H160::new(hex!("0000000000000000000000000000000000000000")),
             ibc_commitment_slot: 0.into(),
         };
         let scroll_header: Header =
             serde_json::from_str(&std::fs::read_to_string("tests/scroll_header.json").unwrap())
                 .unwrap();
-        let l1_state_root = H256(hex!(
+        let l1_state_root = H256::new(hex!(
             "40ab3b90af84c30c31eb0fe9fc8cc5260b59f619d770706750ea3e474ca47c59"
         ));
         assert_eq!(
@@ -210,7 +210,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             verify_zktrie_storage_proof(
-                H256(hex!(
+                H256::new(hex!(
                     "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
                 )),
                 proof.key.to_be_bytes().into(),
@@ -228,7 +228,7 @@ mod tests {
                 .unwrap();
         assert_eq!(
             verify_zktrie_storage_absence(
-                H256(hex!(
+                H256::new(hex!(
                     "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
                 )),
                 proof.key.to_be_bytes().into(),

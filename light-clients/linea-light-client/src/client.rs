@@ -257,7 +257,7 @@ fn do_verify_membership(
     let expected_value_hash = keccak256(canonicalize_stored_value(path, raw_value)?);
 
     // TODO: handle error
-    let proof_value = H256(storage_proof.proof.value.clone().try_into().unwrap());
+    let proof_value = H256::new(storage_proof.proof.value.clone().try_into().unwrap());
 
     if expected_value_hash != proof_value {
         return Err(Error::StoredValueMismatch {

@@ -192,7 +192,7 @@ impl Berachain {
             eth_storage_root: self
                 .provider
                 .get_proof(
-                    ethers::types::H160::from(self.ibc_handler_address.0),
+                    ethers::types::H160::from(*self.ibc_handler_address.get()),
                     vec![],
                     Some(execution_header.block_number.into()),
                 )

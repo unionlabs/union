@@ -85,7 +85,7 @@ fn proto_roundtrip() {
 impl From<BlockId> for contracts::glue::TendermintTypesBlockIDData {
     fn from(value: BlockId) -> Self {
         Self {
-            hash: value.hash.map(Into::into).unwrap_or_default(),
+            hash: value.hash.map(|h| h.get().into()).unwrap_or_default(),
             part_set_header: value.part_set_header.into(),
         }
     }

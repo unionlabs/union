@@ -169,7 +169,7 @@ impl Header {
 
         let root = inner_hash(&leaves[0], &leaves[1]);
 
-        Some(H256(root))
+        Some(H256::new(root))
     }
 }
 
@@ -290,15 +290,15 @@ impl From<Header> for contracts::glue::TendermintTypesHeaderData {
             height: value.height.into(),
             time: value.time.into(),
             last_block_id: value.last_block_id.into(),
-            last_commit_hash: value.last_commit_hash.into(),
-            data_hash: value.data_hash.into(),
-            validators_hash: value.validators_hash.into(),
-            next_validators_hash: value.next_validators_hash.into(),
-            consensus_hash: value.consensus_hash.into(),
-            app_hash: value.app_hash.into(),
-            last_results_hash: value.last_results_hash.into(),
-            evidence_hash: value.evidence_hash.into(),
-            proposer_address: value.proposer_address.into(),
+            last_commit_hash: value.last_commit_hash.get().into(),
+            data_hash: value.data_hash.get().into(),
+            validators_hash: value.validators_hash.get().into(),
+            next_validators_hash: value.next_validators_hash.get().into(),
+            consensus_hash: value.consensus_hash.get().into(),
+            app_hash: value.app_hash.get().into(),
+            last_results_hash: value.last_results_hash.get().into(),
+            evidence_hash: value.evidence_hash.get().into(),
+            proposer_address: value.proposer_address.get().into(),
         }
     }
 }

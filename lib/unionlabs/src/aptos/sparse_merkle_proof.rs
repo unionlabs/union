@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::InvalidLength,
-    hash::hash_v2::{Hash, HexUnprefixed},
+    hash::{hash_v2::HexUnprefixed, H256},
 };
 
 /// A proof that can be used to authenticate an element in a Sparse Merkle Tree given trusted root
@@ -27,13 +27,13 @@ pub struct SparseMerkleProof {
 
     /// All siblings in this proof, including the default ones. Siblings are ordered from the root
     /// level to the bottom level.
-    pub siblings: Vec<Hash<32, HexUnprefixed>>,
+    pub siblings: Vec<H256<HexUnprefixed>>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct SparseMerkleLeafNode {
-    pub key: Hash<32, HexUnprefixed>,
-    pub value_hash: Hash<32, HexUnprefixed>,
+    pub key: H256<HexUnprefixed>,
+    pub value_hash: H256<HexUnprefixed>,
 }
 
 impl From<SparseMerkleProof> for protos::union::ibc::lightclients::movement::v1::SparseMerkleProof {

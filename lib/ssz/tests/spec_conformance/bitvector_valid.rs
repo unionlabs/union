@@ -12,7 +12,7 @@ use container_types::*;
 #[test]
 fn valid_bitvec_16_max() {
     const EXPECTED_ENCODING: &[u8] = &[255_u8, 255_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "ffff000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -29,12 +29,12 @@ fn valid_bitvec_16_max() {
         <BitVector<U<16>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_16_random() {
     const EXPECTED_ENCODING: &[u8] = &[46_u8, 236_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "2eec000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -51,12 +51,12 @@ fn valid_bitvec_16_random() {
         <BitVector<U<16>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_16_zero() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8, 0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -73,12 +73,12 @@ fn valid_bitvec_16_zero() {
         <BitVector<U<16>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_1_max() {
     const EXPECTED_ENCODING: &[u8] = &[1_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0100000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -94,12 +94,12 @@ fn valid_bitvec_1_max() {
         <BitVector<U<1>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_1_random() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -115,12 +115,12 @@ fn valid_bitvec_1_random() {
         <BitVector<U<1>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_1_zero() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -136,12 +136,12 @@ fn valid_bitvec_1_zero() {
         <BitVector<U<1>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_2_max() {
     const EXPECTED_ENCODING: &[u8] = &[3_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0300000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -157,12 +157,12 @@ fn valid_bitvec_2_max() {
         <BitVector<U<2>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_2_random() {
     const EXPECTED_ENCODING: &[u8] = &[3_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0300000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -178,12 +178,12 @@ fn valid_bitvec_2_random() {
         <BitVector<U<2>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_2_zero() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -199,12 +199,12 @@ fn valid_bitvec_2_zero() {
         <BitVector<U<2>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_31_max() {
     const EXPECTED_ENCODING: &[u8] = &[255_u8, 255_u8, 255_u8, 127_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "ffffff7f00000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -221,12 +221,12 @@ fn valid_bitvec_31_max() {
         <BitVector<U<31>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_31_random() {
     const EXPECTED_ENCODING: &[u8] = &[114_u8, 223_u8, 100_u8, 21_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "72df641500000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -243,12 +243,12 @@ fn valid_bitvec_31_random() {
         <BitVector<U<31>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_31_zero() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8, 0_u8, 0_u8, 0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -265,12 +265,12 @@ fn valid_bitvec_31_zero() {
         <BitVector<U<31>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_3_max() {
     const EXPECTED_ENCODING: &[u8] = &[7_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0700000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -286,12 +286,12 @@ fn valid_bitvec_3_max() {
         <BitVector<U<3>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_3_random() {
     const EXPECTED_ENCODING: &[u8] = &[7_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0700000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -307,12 +307,12 @@ fn valid_bitvec_3_random() {
         <BitVector<U<3>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_3_zero() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -328,12 +328,12 @@ fn valid_bitvec_3_zero() {
         <BitVector<U<3>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_4_max() {
     const EXPECTED_ENCODING: &[u8] = &[15_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0f00000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -349,12 +349,12 @@ fn valid_bitvec_4_max() {
         <BitVector<U<4>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_4_random() {
     const EXPECTED_ENCODING: &[u8] = &[13_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0d00000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -370,12 +370,12 @@ fn valid_bitvec_4_random() {
         <BitVector<U<4>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_4_zero() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -391,7 +391,7 @@ fn valid_bitvec_4_zero() {
         <BitVector<U<4>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_512_max() {
@@ -403,7 +403,7 @@ fn valid_bitvec_512_max() {
         255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8,
         255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8,
     ];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "8667e718294e9e0df1d30600ba3eeb201f764aad2dad72748643e4a285e1d1f7"
     ));
 
@@ -431,7 +431,7 @@ fn valid_bitvec_512_max() {
         <BitVector<U<512>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_512_random() {
@@ -443,7 +443,7 @@ fn valid_bitvec_512_random() {
         245_u8, 244_u8, 12_u8, 98_u8, 101_u8, 186_u8, 91_u8, 77_u8, 43_u8, 37_u8, 167_u8, 152_u8,
         212_u8, 26_u8, 235_u8, 70_u8, 222_u8,
     ];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "fbdb71e991457c4fd956e16be1ae1dc959bceaf00f692fec9431de3f0175655a"
     ));
 
@@ -471,7 +471,7 @@ fn valid_bitvec_512_random() {
         <BitVector<U<512>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_512_zero() {
@@ -482,7 +482,7 @@ fn valid_bitvec_512_zero() {
         0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
         0_u8, 0_u8, 0_u8, 0_u8,
     ];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b"
     ));
 
@@ -509,7 +509,7 @@ fn valid_bitvec_512_zero() {
         <BitVector<U<512>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_513_max() {
@@ -521,7 +521,7 @@ fn valid_bitvec_513_max() {
         255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8,
         255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 255_u8, 1_u8,
     ];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "222dd9eebc6467de9788eb1c05ce9c2da8ecc89abdd38810925ce061d91236ef"
     ));
 
@@ -549,7 +549,7 @@ fn valid_bitvec_513_max() {
         <BitVector<U<513>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_513_random() {
@@ -561,7 +561,7 @@ fn valid_bitvec_513_random() {
         57_u8, 156_u8, 134_u8, 135_u8, 194_u8, 28_u8, 100_u8, 62_u8, 189_u8, 36_u8, 213_u8, 231_u8,
         15_u8, 225_u8, 31_u8, 196_u8, 0_u8,
     ];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "84f06e5024cc71b8162c3a96f4b743505481722da5a281a6aaa69791b9f79283"
     ));
 
@@ -589,7 +589,7 @@ fn valid_bitvec_513_random() {
         <BitVector<U<513>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_513_zero() {
@@ -600,7 +600,7 @@ fn valid_bitvec_513_zero() {
         0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
         0_u8, 0_u8, 0_u8, 0_u8, 0_u8,
     ];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "db56114e00fdd4c1f85c892bf35ac9a89289aaecb1ebd0a96cde606a748b5d71"
     ));
 
@@ -627,12 +627,12 @@ fn valid_bitvec_513_zero() {
         <BitVector<U<513>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_5_max() {
     const EXPECTED_ENCODING: &[u8] = &[31_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "1f00000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -648,12 +648,12 @@ fn valid_bitvec_5_max() {
         <BitVector<U<5>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_5_random() {
     const EXPECTED_ENCODING: &[u8] = &[3_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0300000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -669,12 +669,12 @@ fn valid_bitvec_5_random() {
         <BitVector<U<5>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_5_zero() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -690,12 +690,12 @@ fn valid_bitvec_5_zero() {
         <BitVector<U<5>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_8_max() {
     const EXPECTED_ENCODING: &[u8] = &[255_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "ff00000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -711,12 +711,12 @@ fn valid_bitvec_8_max() {
         <BitVector<U<8>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_8_random() {
     const EXPECTED_ENCODING: &[u8] = &[223_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "df00000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -732,12 +732,12 @@ fn valid_bitvec_8_random() {
         <BitVector<U<8>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }
 #[test]
 fn valid_bitvec_8_zero() {
     const EXPECTED_ENCODING: &[u8] = &[0_u8];
-    const EXPECTED_ROOT: H256 = H256(hex!(
+    const EXPECTED_ROOT: H256 = <H256>::new(hex!(
         "0000000000000000000000000000000000000000000000000000000000000000"
     ));
 
@@ -753,5 +753,5 @@ fn valid_bitvec_8_zero() {
         <BitVector<U<8>> as Ssz>::as_ssz_bytes(&expected_value)
     );
 
-    assert_eq!(EXPECTED_ROOT, expected_value.tree_hash_root().into());
+    assert_eq!(EXPECTED_ROOT, <H256>::new(expected_value.tree_hash_root()));
 }

@@ -38,7 +38,7 @@ pub struct L2Header {
 impl L2Header {
     #[must_use]
     pub fn hash(&self) -> H256 {
-        H256::from(Keccak256::new().chain_update(self.rlp_bytes()).finalize())
+        <H256>::from(Keccak256::new().chain_update(self.rlp_bytes()).finalize())
     }
 }
 
@@ -169,7 +169,7 @@ mod tests {
 
         let header = L2Header {
             difficulty: U256::try_from_be_bytes(&hex!("01")).unwrap(),
-            extra_data: H256(hex!(
+            extra_data: H256::new(hex!(
                 "327fc6b6bcdc7febddc41453d9f5c3703942ec221da53078a91e0b2dbfc02756"
             )),
             gas_limit: 0x0004_0000_0000_0000,
@@ -188,33 +188,33 @@ mod tests {
                 .into(),
             ),
             miner: hex!("a4b000000000000000000073657175656e636572").into(),
-            mix_hash: H256(hex!(
+            mix_hash: H256::new(hex!(
                 "000000000001cbb600000000012de36600000000000000140000000000000000"
             )),
             nonce: hex!("000000000016eb6d").into(),
             number: U256::try_from_be_bytes(&hex!("0c590339")).unwrap(),
-            parent_hash: H256(hex!(
+            parent_hash: H256::new(hex!(
                 "9ef9a044f15f12bcefd25572fd7600ae4dcc9a90fab9ad98f78abfb221d5731b"
             )),
-            receipts_root: H256(hex!(
+            receipts_root: H256::new(hex!(
                 "e3fcff2e9ddc6b6a38889ad0997b566a6ba2574ae85aebba4205da14659c175d"
             )),
-            sha3_uncles: H256(hex!(
+            sha3_uncles: H256::new(hex!(
                 "1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"
             )),
-            state_root: H256(hex!(
+            state_root: H256::new(hex!(
                 "82467a71088bdab7e89d8fe077710172df602d417a77fc813235bb0ca2d3a6c5"
             )),
             timestamp: 0x6633_eab2,
-            transactions_root: H256(hex!(
+            transactions_root: H256::new(hex!(
                 "9361c0130edfe07e3943d06310c69d5d680d77d571724cd1de0d52f399966107"
             )),
             base_fee_per_gas: U256::try_from_be_bytes(&hex!("989680")).unwrap(),
         };
 
         assert_eq!(
-            H256(keccak256(header.rlp_bytes())),
-            H256(hex!(
+            <H256>::new(keccak256(header.rlp_bytes())),
+            <H256>::new(hex!(
                 "a548151261174cf854534934ca88e68220e328be563c01915fc11c740a543489"
             ))
         );
