@@ -9,6 +9,7 @@ import "../05-port/IIBCModule.sol";
 library IBCChannelLib {
     event ChannelOpenInit(
         address portId,
+        bytes32 normalizedPortId,
         uint32 channelId,
         bytes32 counterpartyPortId,
         uint32 connectionId,
@@ -16,6 +17,7 @@ library IBCChannelLib {
     );
     event ChannelOpenTry(
         address portId,
+        bytes32 normalizedPortId,
         uint32 channelId,
         bytes32 counterpartyPortId,
         uint32 counterpartyChannelId,
@@ -24,6 +26,7 @@ library IBCChannelLib {
     );
     event ChannelOpenAck(
         address portId,
+        bytes32 normalizedPortId,
         uint32 channelId,
         bytes32 counterpartyPortId,
         uint32 counterpartyChannelId,
@@ -31,13 +34,18 @@ library IBCChannelLib {
     );
     event ChannelOpenConfirm(
         address portId,
+        bytes32 normalizedPortId,
         uint32 channelId,
         bytes32 counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
-    event ChannelCloseInit(address portId, uint32 channelId);
-    event ChannelCloseConfirm(address portId, uint32 channelId);
+    event ChannelCloseInit(
+        address portId, bytes32 normalizedPortId, uint32 channelId
+    );
+    event ChannelCloseConfirm(
+        address portId, bytes32 normalizedPortId, uint32 channelId
+    );
 
     error ErrPortIdMustBeLowercase();
     error ErrConnNotSingleHop();
@@ -54,6 +62,10 @@ library IBCChannelLib {
  * @dev IBCChannelHandshake is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
  */
 abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
+    function normalizePortId(address portId) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(portId));
+    }
+
     /**
      * @dev channelOpenInit is called by a module to initiate a channel opening handshake with a module on another chain.
      */
@@ -86,6 +98,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         );
         emit IBCChannelLib.ChannelOpenInit(
             msg_.portId,
+            normalizePortId(msg_.portId),
             channelId,
             msg_.channel.counterparty.portId,
             msg_.channel.connectionId,
@@ -113,7 +126,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         }
         IBCConnection storage connection =
             ensureConnectionState(msg_.channel.connectionId);
-        bytes32 normalizedPortId = keccak256(abi.encodePacked(msg_.portId));
+        bytes32 normalizedPortId = normalizePortId(msg_.portId);
         IBCChannelCounterparty memory expectedCounterparty =
             IBCChannelCounterparty({portId: normalizedPortId, channelId: 0});
         IBCChannel memory expectedChannel = IBCChannel({
@@ -150,6 +163,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         );
         emit IBCChannelLib.ChannelOpenTry(
             msg_.portId,
+            normalizePortId(msg_.portId),
             channelId,
             msg_.channel.counterparty.portId,
             msg_.channel.counterparty.channelId,
@@ -172,7 +186,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         }
         IBCConnection storage connection =
             ensureConnectionState(channel.connectionId);
-        bytes32 normalizedPortId = keccak256(abi.encodePacked(msg_.portId));
+        bytes32 normalizedPortId = normalizePortId(msg_.portId);
         IBCChannelCounterparty memory expectedCounterparty =
         IBCChannelCounterparty({
             portId: normalizedPortId,
@@ -208,6 +222,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         );
         emit IBCChannelLib.ChannelOpenAck(
             msg_.portId,
+            normalizedPortId,
             msg_.channelId,
             channel.counterparty.portId,
             msg_.counterpartyChannelId,
@@ -228,7 +243,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         }
         IBCConnection storage connection =
             ensureConnectionState(channel.connectionId);
-        bytes32 normalizedPortId = keccak256(abi.encodePacked(msg_.portId));
+        bytes32 normalizedPortId = normalizePortId(msg_.portId);
         IBCChannelCounterparty memory expectedCounterparty =
         IBCChannelCounterparty({
             portId: normalizedPortId,
@@ -257,6 +272,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         IIBCModule(msg_.portId).onChanOpenConfirm(msg_.channelId, msg_.relayer);
         emit IBCChannelLib.ChannelOpenConfirm(
             msg_.portId,
+            normalizedPortId,
             msg_.channelId,
             channel.counterparty.portId,
             channel.counterparty.channelId,
@@ -279,7 +295,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         channel.state = IBCChannelState.Closed;
         commitChannel(msg_.channelId, channel);
         IIBCModule(msg_.portId).onChanCloseInit(msg_.channelId, msg_.relayer);
-        emit IBCChannelLib.ChannelCloseInit(msg_.portId, msg_.channelId);
+        emit IBCChannelLib.ChannelCloseInit(
+            msg_.portId, normalizePortId(msg_.portId), msg_.channelId
+        );
     }
 
     /**
@@ -296,7 +314,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         }
         IBCConnection storage connection =
             ensureConnectionState(channel.connectionId);
-        bytes32 normalizedPortId = keccak256(abi.encodePacked(msg_.portId));
+        bytes32 normalizedPortId = normalizePortId(msg_.portId);
         IBCChannelCounterparty memory expectedCounterparty =
         IBCChannelCounterparty({
             portId: normalizedPortId,
@@ -323,7 +341,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         channel.state = IBCChannelState.Closed;
         commitChannel(msg_.channelId, channel);
         IIBCModule(msg_.portId).onChanCloseConfirm(msg_.channelId, msg_.relayer);
-        emit IBCChannelLib.ChannelCloseConfirm(msg_.portId, msg_.channelId);
+        emit IBCChannelLib.ChannelCloseConfirm(
+            msg_.portId, normalizedPortId, msg_.channelId
+        );
     }
 
     function encodeChannel(IBCChannel memory channel)
