@@ -29,6 +29,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr/pedersen"
 	"github.com/consensys/gnark-crypto/utils"
 	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/solidity"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/logger"
 )
@@ -140,6 +141,6 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector, opts ...bac
 }
 
 // ExportSolidity not implemented for BLS24-315
-func (vk *VerifyingKey) ExportSolidity(w io.Writer) error {
+func (vk *VerifyingKey) ExportSolidity(w io.Writer, exportOpts ...solidity.ExportOption) error {
 	return errors.New("not implemented")
 }

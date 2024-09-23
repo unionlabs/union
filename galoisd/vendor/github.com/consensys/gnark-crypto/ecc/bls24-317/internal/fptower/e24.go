@@ -65,14 +65,14 @@ func (z *E24) SetOne() *E24 {
 	return z
 }
 
-// Add set z=x+y in E24 and return z
+// Add sets z=x+y in E24 and return z
 func (z *E24) Add(x, y *E24) *E24 {
 	z.D0.Add(&x.D0, &y.D0)
 	z.D1.Add(&x.D1, &y.D1)
 	return z
 }
 
-// Sub sets z to x sub y and return z
+// Sub sets z to x-y and return z
 func (z *E24) Sub(x, y *E24) *E24 {
 	z.D0.Sub(&x.D0, &y.D0)
 	z.D1.Sub(&x.D1, &y.D1)
@@ -97,16 +97,17 @@ func (z *E24) SetRandom() (*E24, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E24) IsZero() bool {
 	return z.D0.IsZero() && z.D1.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E24) IsOne() bool {
 	return z.D0.IsOne() && z.D1.IsZero()
 }
 
-// Mul set z=x*y in E24 and return z
+// Mul sets z=x*y in E24 and return z
 func (z *E24) Mul(x, y *E24) *E24 {
 	var a, b, c E12
 	a.Add(&x.D0, &x.D1)
@@ -119,7 +120,7 @@ func (z *E24) Mul(x, y *E24) *E24 {
 	return z
 }
 
-// Square set z=x*x in E24 and return z
+// Square sets z=x*x in E24 and return z
 func (z *E24) Square(x *E24) *E24 {
 
 	//Algorithm 22 from https://eprint.iacr.org/2010/354.pdf
@@ -317,7 +318,7 @@ func (z *E24) CyclotomicSquare(x *E24) *E24 {
 	return z
 }
 
-// Inverse set z to the inverse of x in E24 and return z
+// Inverse sets z to the inverse of x in E24 and return z
 //
 // if x == 0, sets and returns z = x
 func (z *E24) Inverse(x *E24) *E24 {
@@ -335,8 +336,8 @@ func (z *E24) Inverse(x *E24) *E24 {
 	return z
 }
 
-// BatchInvertE24 returns a new slice with every element inverted.
-// Uses Montgomery batch inversion trick
+// BatchInvertE24 returns a new slice with every element in a inverted.
+// It uses Montgomery batch inversion trick.
 //
 // if a[i] == 0, returns result[i] = a[i]
 func BatchInvertE24(a []E24) []E24 {
@@ -546,12 +547,12 @@ func (z *E24) ExpGLV(x E24, k *big.Int) *E24 {
 	return z
 }
 
-// InverseUnitary inverse a unitary element
+// InverseUnitary inverses a unitary element
 func (z *E24) InverseUnitary(x *E24) *E24 {
 	return z.Conjugate(x)
 }
 
-// Conjugate set z to x conjugated and return z
+// Conjugate sets z to x conjugated and return z
 func (z *E24) Conjugate(x *E24) *E24 {
 	*z = *x
 	z.D1.Neg(&z.D1)

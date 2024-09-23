@@ -99,6 +99,10 @@ members = [
   "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
+
+  "mpc/shared",
+  "mpc/client",
+  "mpc/coordinator",
 ]
 
 [workspace.package]
@@ -138,6 +142,7 @@ linea-zktrie                   = { path = "lib/linea-zktrie", default-features =
 macros                         = { path = "lib/macros", default-features = false }
 move-bindgen                   = { path = "tools/move-bindgen", default-features = false }
 move-bindgen-derive            = { path = "lib/move-bindgen-derive", default-features = false }
+mpc-shared                     = { path = "mpc/shared", default-features = false }
 pg-queue                       = { path = "lib/pg-queue", default-features = false }
 poseidon-rs                    = { path = "lib/poseidon-rs", default-features = false }
 protos                         = { path = "generated/rust/protos", default-features = false }

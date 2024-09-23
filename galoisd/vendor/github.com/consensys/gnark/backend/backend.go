@@ -60,6 +60,7 @@ type ProverConfig struct {
 	ChallengeHash  hash.Hash
 	KZGFoldingHash hash.Hash
 	Accelerator    string
+	StatisticalZK  bool
 }
 
 // NewProverConfig returns a default ProverConfig with given prover options opts
@@ -129,6 +130,16 @@ func WithProverKZGFoldingHashFunction(hFunc hash.Hash) ProverOption {
 func WithIcicleAcceleration() ProverOption {
 	return func(pc *ProverConfig) error {
 		pc.Accelerator = "icicle"
+		return nil
+	}
+}
+
+// WithStatisticalZeroKnowledge ensures that statistical zero knowledgeness is achieved.
+// This option makes the prover more memory costly, as there are 3 more size n (size of the circuit)
+// allocations.
+func WithStatisticalZeroKnowledge() ProverOption {
+	return func(pc *ProverConfig) error {
+		pc.StatisticalZK = true
 		return nil
 	}
 }

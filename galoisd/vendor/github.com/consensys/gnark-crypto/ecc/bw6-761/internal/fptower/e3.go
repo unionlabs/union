@@ -64,7 +64,7 @@ func (z *E3) SetOne() *E3 {
 	return z
 }
 
-// SetRandom set z to a random elmt
+// SetRandom sets z to a random elmt
 func (z *E3) SetRandom() (*E3, error) {
 	if _, err := z.A0.SetRandom(); err != nil {
 		return nil, err
@@ -78,11 +78,12 @@ func (z *E3) SetRandom() (*E3, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E3) IsZero() bool {
 	return z.A0.IsZero() && z.A1.IsZero() && z.A2.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E3) IsOne() bool {
 	return z.A0.IsOne() && z.A1.IsZero() && z.A2.IsZero()
 }
@@ -103,7 +104,7 @@ func (z *E3) Add(x, y *E3) *E3 {
 	return z
 }
 
-// Sub two elements of E3
+// Sub subtracts two elements of E3
 func (z *E3) Sub(x, y *E3) *E3 {
 	z.A0.Sub(&x.A0, &y.A0)
 	z.A1.Sub(&x.A1, &y.A1)
@@ -122,13 +123,6 @@ func (z *E3) Double(x *E3) *E3 {
 // String puts E3 elmt in string form
 func (z *E3) String() string {
 	return (z.A0.String() + "+(" + z.A1.String() + ")*u+(" + z.A2.String() + ")*u**2")
-}
-
-// Conjugate conjugates an element in E3
-func (z *E3) Conjugate(x *E3) *E3 {
-	*z = *x
-	z.A1.Neg(&z.A1)
-	return z
 }
 
 // MulByElement multiplies an element in E3 by an element in fp
@@ -224,7 +218,8 @@ func (z *E3) MulBy1(c1 *fp.Element) *E3 {
 
 // Mul sets z to the E3-product of x,y, returns z
 func (z *E3) Mul(x, y *E3) *E3 {
-	// Algorithm 13 from https://eprint.iacr.org/2010/354.pdf
+	// Karatsuba method for cubic extensions
+	// https://eprint.iacr.org/2006/471.pdf (section 4)
 	var t0, t1, t2, c0, c1, c2, tmp fp.Element
 	t0.Mul(&x.A0, &y.A0)
 	t1.Mul(&x.A1, &y.A1)
@@ -316,8 +311,8 @@ func (z *E3) Inverse(x *E3) *E3 {
 	return z
 }
 
-// BatchInvertE3 returns a new slice with every element inverted.
-// Uses Montgomery batch inversion trick
+// BatchInvertE3 returns a new slice with every element in a inverted.
+// It uses Montgomery batch inversion trick.
 //
 // if a[i] == 0, returns result[i] = a[i]
 func BatchInvertE3(a []E3) []E3 {

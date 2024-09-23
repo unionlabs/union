@@ -73,3 +73,20 @@ func RoundTripCheck(from any, to func() any) error {
 
 	return nil
 }
+
+func DumpRoundTripCheck(from any, to func() any) error {
+	var buf bytes.Buffer
+
+	if err := from.(BinaryDumper).WriteDump(&buf); err != nil {
+		return err
+	}
+
+	r := to().(BinaryDumper)
+	if err := r.ReadDump(bytes.NewReader(buf.Bytes())); err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(from, r) {
+		return errors.New("reconstructed object don't match original (ReadDump)")
+	}
+	return nil
+}

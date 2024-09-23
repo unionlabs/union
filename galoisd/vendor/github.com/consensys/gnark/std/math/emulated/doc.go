@@ -184,5 +184,17 @@ The package currently does not explicitly differentiate between constant and
 variable elements. The builder may track some elements as being constants. Some
 operations have a fast track path for cases when all inputs are constants. There
 is [Field.MulConst], which provides variable by constant multiplication.
+
+# Variable-modulus operations
+
+The package also exposes methods for performing operations with variable
+modulus. The modulus is represented as an element and is not required to be
+prime. The methods for variable-modulus operations are [Field.ModMul],
+[Field.ModAdd], [Field.ModExp] and [Field.ModAssertIsEqual]. The modulus is
+passed as an argument to the operation.
+
+The type parameter for the [Field] should be sufficiently big to allow to fit
+the inputs and the modulus. Recommended to use predefined [emparams.Mod1e512] or
+[emparams.Mod1e4096].
 */
 package emulated

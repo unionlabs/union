@@ -29,6 +29,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bw6-761/fr/pedersen"
 	"github.com/consensys/gnark-crypto/utils"
 	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/solidity"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/logger"
 )
@@ -140,6 +141,6 @@ func Verify(proof *Proof, vk *VerifyingKey, publicWitness fr.Vector, opts ...bac
 }
 
 // ExportSolidity not implemented for BW6-761
-func (vk *VerifyingKey) ExportSolidity(w io.Writer) error {
+func (vk *VerifyingKey) ExportSolidity(w io.Writer, exportOpts ...solidity.ExportOption) error {
 	return errors.New("not implemented")
 }

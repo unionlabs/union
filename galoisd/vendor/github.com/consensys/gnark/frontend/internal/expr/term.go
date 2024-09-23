@@ -1,6 +1,11 @@
 package expr
 
-import "github.com/consensys/gnark/constraint"
+import (
+	"encoding/binary"
+
+	"github.com/consensys/gnark/constraint"
+	"golang.org/x/crypto/blake2b"
+)
 
 type Term struct {
 	VID   int
@@ -20,6 +25,16 @@ func (t Term) WireID() int {
 	return t.VID
 }
 
-func (t Term) HashCode() uint64 {
-	return t.Coeff[0]*29 + uint64(t.VID<<12)
+// HashCode returns a collision resistant hash code identifier for the term.
+func (t Term) HashCode() [16]byte {
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		panic(err)
+	}
+	h.Write(binary.BigEndian.AppendUint64(nil, uint64(t.VID)))
+	for i := range t.Coeff {
+		h.Write(binary.BigEndian.AppendUint64(nil, uint64(t.Coeff[i])))
+	}
+	crc := h.Sum(nil)
+	return [16]byte(crc[:16])
 }

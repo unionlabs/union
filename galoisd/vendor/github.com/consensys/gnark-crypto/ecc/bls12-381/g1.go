@@ -25,38 +25,40 @@ import (
 	"runtime"
 )
 
-// G1Affine point in affine coordinates
+// G1Affine is a point in affine coordinates (x,y)
 type G1Affine struct {
 	X, Y fp.Element
 }
 
-// G1Jac is a point with fp.Element coordinates
+// G1Jac is a point in Jacobian coordinates (x=X/Z², y=Y/Z³)
 type G1Jac struct {
 	X, Y, Z fp.Element
 }
 
-// g1JacExtended parameterized Jacobian coordinates (x=X/ZZ, y=Y/ZZZ, ZZ³=ZZZ²)
+// g1JacExtended is a point in extended Jacobian coordinates (x=X/ZZ, y=Y/ZZZ, ZZ³=ZZZ²)
 type g1JacExtended struct {
 	X, Y, ZZ, ZZZ fp.Element
 }
 
 // -------------------------------------------------------------------------------------------------
-// Affine
+// Affine coordinates
 
-// Set sets p to the provided point
+// Set sets p to a in affine coordinates.
 func (p *G1Affine) Set(a *G1Affine) *G1Affine {
 	p.X, p.Y = a.X, a.Y
 	return p
 }
 
-// setInfinity sets p to O
+// setInfinity sets p to the infinity point, which is encoded as (0,0).
+// N.B.: (0,0) is never on the curve for j=0 curves (Y²=X³+B).
 func (p *G1Affine) setInfinity() *G1Affine {
 	p.X.SetZero()
 	p.Y.SetZero()
 	return p
 }
 
-// ScalarMultiplication computes and returns p = a ⋅ s
+// ScalarMultiplication computes and returns p = [s]a
+// where p and a are affine points.
 func (p *G1Affine) ScalarMultiplication(a *G1Affine, s *big.Int) *G1Affine {
 	var _p G1Jac
 	_p.FromAffine(a)
@@ -65,20 +67,8 @@ func (p *G1Affine) ScalarMultiplication(a *G1Affine, s *big.Int) *G1Affine {
 	return p
 }
 
-// ScalarMultiplicationAffine computes and returns p = a ⋅ s
-// Takes an affine point and returns a Jacobian point (useful for KZG)
-func (p *G1Jac) ScalarMultiplicationAffine(a *G1Affine, s *big.Int) *G1Jac {
-	p.FromAffine(a)
-	p.mulGLV(p, s)
-	return p
-}
-
-// ScalarMultiplicationBase computes and returns p = g ⋅ s where g is the prime subgroup generator
-func (p *G1Jac) ScalarMultiplicationBase(s *big.Int) *G1Jac {
-	return p.mulGLV(&g1Gen, s)
-}
-
-// ScalarMultiplicationBase computes and returns p = g ⋅ s where g is the prime subgroup generator
+// ScalarMultiplicationBase computes and returns p = [s]g
+// where g is the affine point generating the prime subgroup.
 func (p *G1Affine) ScalarMultiplicationBase(s *big.Int) *G1Affine {
 	var _p G1Jac
 	_p.mulGLV(&g1Gen, s)
@@ -86,51 +76,88 @@ func (p *G1Affine) ScalarMultiplicationBase(s *big.Int) *G1Affine {
 	return p
 }
 
-// Add adds two point in affine coordinates.
-// This should rarely be used as it is very inefficient compared to Jacobian
+// Add adds two points in affine coordinates.
+// It uses the Jacobian addition with a.Z=b.Z=1 and converts the result to affine coordinates.
+//
+// https://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-mmadd-2007-bl
 func (p *G1Affine) Add(a, b *G1Affine) *G1Affine {
-	var p1, p2 G1Jac
-	p1.FromAffine(a)
-	p2.FromAffine(b)
-	p1.AddAssign(&p2)
-	p.FromJacobian(&p1)
-	return p
+	var q G1Jac
+	// a is infinity, return b
+	if a.IsInfinity() {
+		p.Set(b)
+		return p
+	}
+	// b is infinity, return a
+	if b.IsInfinity() {
+		p.Set(a)
+		return p
+	}
+	if a.X.Equal(&b.X) {
+		// if b == a, we double instead
+		if a.Y.Equal(&b.Y) {
+			q.DoubleMixed(a)
+			return p.FromJacobian(&q)
+		} else {
+			// if b == -a, we return 0
+			return p.setInfinity()
+		}
+	}
+	var H, HH, I, J, r, V fp.Element
+	H.Sub(&b.X, &a.X)
+	HH.Square(&H)
+	I.Double(&HH).Double(&I)
+	J.Mul(&H, &I)
+	r.Sub(&b.Y, &a.Y)
+	r.Double(&r)
+	V.Mul(&a.X, &I)
+	q.X.Square(&r).
+		Sub(&q.X, &J).
+		Sub(&q.X, &V).
+		Sub(&q.X, &V)
+	q.Y.Sub(&V, &q.X).
+		Mul(&q.Y, &r)
+	J.Mul(&a.Y, &J).Double(&J)
+	q.Y.Sub(&q.Y, &J)
+	q.Z.Double(&H)
+
+	return p.FromJacobian(&q)
 }
 
 // Double doubles a point in affine coordinates.
-// This should rarely be used as it is very inefficient compared to Jacobian
+// It converts the point to Jacobian coordinates, doubles it using Jacobian
+// addition with a.Z=1, and converts it back to affine coordinates.
+//
+// http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-mdbl-2007-bl
 func (p *G1Affine) Double(a *G1Affine) *G1Affine {
-	var p1 G1Jac
-	p1.FromAffine(a)
-	p1.Double(&p1)
-	p.FromJacobian(&p1)
+	var q G1Jac
+	q.FromAffine(a)
+	q.DoubleMixed(a)
+	p.FromJacobian(&q)
 	return p
 }
 
-// Sub subs two point in affine coordinates.
-// This should rarely be used as it is very inefficient compared to Jacobian
+// Sub subtracts two points in affine coordinates.
+// It uses a similar approach to Add, but negates the second point before adding.
 func (p *G1Affine) Sub(a, b *G1Affine) *G1Affine {
-	var p1, p2 G1Jac
-	p1.FromAffine(a)
-	p2.FromAffine(b)
-	p1.SubAssign(&p2)
-	p.FromJacobian(&p1)
+	var bneg G1Affine
+	bneg.Neg(b)
+	p.Add(a, &bneg)
 	return p
 }
 
-// Equal tests if two points (in Affine coordinates) are equal
+// Equal tests if two points in affine coordinates are equal.
 func (p *G1Affine) Equal(a *G1Affine) bool {
 	return p.X.Equal(&a.X) && p.Y.Equal(&a.Y)
 }
 
-// Neg computes -G
+// Neg sets p to the affine negative point -a = (a.X, -a.Y).
 func (p *G1Affine) Neg(a *G1Affine) *G1Affine {
 	p.X = a.X
 	p.Y.Neg(&a.Y)
 	return p
 }
 
-// FromJacobian rescales a point in Jacobian coord in z=1 plane
+// FromJacobian converts a point p1 from Jacobian to affine coordinates.
 func (p *G1Affine) FromJacobian(p1 *G1Jac) *G1Affine {
 
 	var a, b fp.Element
@@ -149,7 +176,7 @@ func (p *G1Affine) FromJacobian(p1 *G1Jac) *G1Affine {
 	return p
 }
 
-// String returns the string representation of the point or "O" if it is infinity
+// String returns the string representation E(x,y) of the affine point p or "O" if it is infinity.
 func (p *G1Affine) String() string {
 	if p.IsInfinity() {
 		return "O"
@@ -157,21 +184,20 @@ func (p *G1Affine) String() string {
 	return "E([" + p.X.String() + "," + p.Y.String() + "])"
 }
 
-// IsInfinity checks if the point is infinity
-// in affine, it's encoded as (0,0)
-// (0,0) is never on the curve for j=0 curves
+// IsInfinity checks if the affine point p is infinity, which is encoded as (0,0).
+// N.B.: (0,0) is never on the curve for j=0 curves (Y²=X³+B).
 func (p *G1Affine) IsInfinity() bool {
 	return p.X.IsZero() && p.Y.IsZero()
 }
 
-// IsOnCurve returns true if p in on the curve
+// IsOnCurve returns true if the affine point p in on the curve.
 func (p *G1Affine) IsOnCurve() bool {
 	var point G1Jac
 	point.FromAffine(p)
 	return point.IsOnCurve() // call this function to handle infinity point
 }
 
-// IsInSubGroup returns true if p is in the correct subgroup, false otherwise
+// IsInSubGroup returns true if the affine point p is in the correct subgroup, false otherwise.
 func (p *G1Affine) IsInSubGroup() bool {
 	var _p G1Jac
 	_p.FromAffine(p)
@@ -179,84 +205,76 @@ func (p *G1Affine) IsInSubGroup() bool {
 }
 
 // -------------------------------------------------------------------------------------------------
-// Jacobian
+// Jacobian coordinates
 
-// Set sets p to the provided point
-func (p *G1Jac) Set(a *G1Jac) *G1Jac {
-	p.X, p.Y, p.Z = a.X, a.Y, a.Z
+// Set sets p to a in Jacobian coordinates.
+func (p *G1Jac) Set(q *G1Jac) *G1Jac {
+	p.X, p.Y, p.Z = q.X, q.Y, q.Z
 	return p
 }
 
-// Equal tests if two points (in Jacobian coordinates) are equal
-func (p *G1Jac) Equal(a *G1Jac) bool {
+// Equal tests if two points in Jacobian coordinates are equal.
+func (p *G1Jac) Equal(q *G1Jac) bool {
 	// If one point is infinity, the other must also be infinity.
 	if p.Z.IsZero() {
-		return a.Z.IsZero()
+		return q.Z.IsZero()
 	}
 	// If the other point is infinity, return false since we can't
 	// the following checks would be incorrect.
-	if a.Z.IsZero() {
+	if q.Z.IsZero() {
 		return false
 	}
 
 	var pZSquare, aZSquare fp.Element
 	pZSquare.Square(&p.Z)
-	aZSquare.Square(&a.Z)
+	aZSquare.Square(&q.Z)
 
 	var lhs, rhs fp.Element
 	lhs.Mul(&p.X, &aZSquare)
-	rhs.Mul(&a.X, &pZSquare)
+	rhs.Mul(&q.X, &pZSquare)
 	if !lhs.Equal(&rhs) {
 		return false
 	}
-	lhs.Mul(&p.Y, &aZSquare).Mul(&lhs, &a.Z)
-	rhs.Mul(&a.Y, &pZSquare).Mul(&rhs, &p.Z)
+	lhs.Mul(&p.Y, &aZSquare).Mul(&lhs, &q.Z)
+	rhs.Mul(&q.Y, &pZSquare).Mul(&rhs, &p.Z)
 
 	return lhs.Equal(&rhs)
 }
 
-// Neg computes -G
-func (p *G1Jac) Neg(a *G1Jac) *G1Jac {
-	*p = *a
-	p.Y.Neg(&a.Y)
+// Neg sets p to the Jacobian negative point -q = (q.X, -q.Y, q.Z).
+func (p *G1Jac) Neg(q *G1Jac) *G1Jac {
+	*p = *q
+	p.Y.Neg(&q.Y)
 	return p
 }
 
-// SubAssign subtracts two points on the curve
-func (p *G1Jac) SubAssign(a *G1Jac) *G1Jac {
-	var tmp G1Jac
-	tmp.Set(a)
-	tmp.Y.Neg(&tmp.Y)
-	p.AddAssign(&tmp)
-	return p
-}
-
-// AddAssign point addition in montgomery form
+// AddAssign sets p to p+a in Jacobian coordinates.
+//
 // https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#addition-add-2007-bl
-func (p *G1Jac) AddAssign(a *G1Jac) *G1Jac {
+func (p *G1Jac) AddAssign(q *G1Jac) *G1Jac {
 
-	// p is infinity, return a
+	// p is infinity, return q
 	if p.Z.IsZero() {
-		p.Set(a)
+		p.Set(q)
 		return p
 	}
 
-	// a is infinity, return p
-	if a.Z.IsZero() {
+	// q is infinity, return p
+	if q.Z.IsZero() {
 		return p
 	}
 
 	var Z1Z1, Z2Z2, U1, U2, S1, S2, H, I, J, r, V fp.Element
-	Z1Z1.Square(&a.Z)
+	Z1Z1.Square(&q.Z)
 	Z2Z2.Square(&p.Z)
-	U1.Mul(&a.X, &Z2Z2)
+	U1.Mul(&q.X, &Z2Z2)
 	U2.Mul(&p.X, &Z1Z1)
-	S1.Mul(&a.Y, &p.Z).
+	S1.Mul(&q.Y, &p.Z).
 		Mul(&S1, &Z2Z2)
-	S2.Mul(&p.Y, &a.Z).
+	S2.Mul(&p.Y, &q.Z).
 		Mul(&S2, &Z1Z1)
 
-	// if p == a, we double instead
+	// if p == q, we double instead
 	if U1.Equal(&U2) && S1.Equal(&S2) {
 		return p.DoubleAssign()
 	}
@@ -275,7 +293,7 @@ func (p *G1Jac) AddAssign(a *G1Jac) *G1Jac {
 		Mul(&p.Y, &r)
 	S1.Mul(&S1, &J).Double(&S1)
 	p.Y.Sub(&p.Y, &S1)
-	p.Z.Add(&p.Z, &a.Z)
+	p.Z.Add(&p.Z, &q.Z)
 	p.Z.Square(&p.Z).
 		Sub(&p.Z, &Z1Z1).
 		Sub(&p.Z, &Z2Z2).
@@ -284,7 +302,48 @@ func (p *G1Jac) AddAssign(a *G1Jac) *G1Jac {
 	return p
 }
 
-// AddMixed point addition
+// SubAssign sets p to p-a in Jacobian coordinates.
+// It uses a similar approach to AddAssign, but negates the point a before adding.
+func (p *G1Jac) SubAssign(q *G1Jac) *G1Jac {
+	var tmp G1Jac
+	tmp.Set(q)
+	tmp.Y.Neg(&tmp.Y)
+	p.AddAssign(&tmp)
+	return p
+}
+
+// Double sets p to [2]q in Jacobian coordinates.
+//
+// https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#doubling-dbl-2007-bl
+func (p *G1Jac) DoubleMixed(a *G1Affine) *G1Jac {
+	var XX, YY, YYYY, S, M, T fp.Element
+	XX.Square(&a.X)
+	YY.Square(&a.Y)
+	YYYY.Square(&YY)
+	S.Add(&a.X, &YY).
+		Square(&S).
+		Sub(&S, &XX).
+		Sub(&S, &YYYY).
+		Double(&S)
+	M.Double(&XX).
+		Add(&M, &XX) // -> + A, but A=0 here
+	T.Square(&M).
+		Sub(&T, &S).
+		Sub(&T, &S)
+	p.X.Set(&T)
+	p.Y.Sub(&S, &T).
+		Mul(&p.Y, &M)
+	YYYY.Double(&YYYY).
+		Double(&YYYY).
+		Double(&YYYY)
+	p.Y.Sub(&p.Y, &YYYY)
+	p.Z.Double(&a.Y)
+
+	return p
+}
+
+// AddMixed sets p to p+a in Jacobian coordinates, where a.Z = 1.
+//
 // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-madd-2007-bl
 func (p *G1Jac) AddMixed(a *G1Affine) *G1Jac {
 
@@ -308,7 +367,7 @@ func (p *G1Jac) AddMixed(a *G1Affine) *G1Jac {
 
 	// if p == a, we double instead
 	if U2.Equal(&p.X) && S2.Equal(&p.Y) {
-		return p.DoubleAssign()
+		return p.DoubleMixed(a)
 	}
 
 	H.Sub(&U2, &p.X)
@@ -333,7 +392,8 @@ func (p *G1Jac) AddMixed(a *G1Affine) *G1Jac {
 	return p
 }
 
-// Double doubles a point in Jacobian coordinates
+// Double sets p to [2]q in Jacobian coordinates.
+//
 // https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#doubling-dbl-2007-bl
 func (p *G1Jac) Double(q *G1Jac) *G1Jac {
 	p.Set(q)
@@ -341,7 +401,8 @@ func (p *G1Jac) Double(q *G1Jac) *G1Jac {
 	return p
 }
 
-// DoubleAssign doubles a point in Jacobian coordinates
+// DoubleAssign doubles p in Jacobian coordinates.
+//
 // https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#doubling-dbl-2007-bl
 func (p *G1Jac) DoubleAssign() *G1Jac {
 
@@ -373,43 +434,51 @@ func (p *G1Jac) DoubleAssign() *G1Jac {
 	return p
 }
 
-// ScalarMultiplication computes and returns p = a ⋅ s
+// ScalarMultiplication computes and returns p = [s]a
+// where p and a are Jacobian points.
+// using the GLV technique.
 // see https://www.iacr.org/archive/crypto2001/21390189.pdf
-func (p *G1Jac) ScalarMultiplication(a *G1Jac, s *big.Int) *G1Jac {
-	return p.mulGLV(a, s)
+func (p *G1Jac) ScalarMultiplication(q *G1Jac, s *big.Int) *G1Jac {
+	return p.mulGLV(q, s)
 }
 
-// String returns canonical representation of the point in affine coordinates
+// ScalarMultiplicationBase computes and returns p = [s]g
+// where g is the prime subgroup generator.
+func (p *G1Jac) ScalarMultiplicationBase(s *big.Int) *G1Jac {
+	return p.mulGLV(&g1Gen, s)
+
+}
+
+// String converts p to affine coordinates and returns its string representation E(x,y) or "O" if it is infinity.
 func (p *G1Jac) String() string {
 	_p := G1Affine{}
 	_p.FromJacobian(p)
 	return _p.String()
 }
 
-// FromAffine sets p = Q, p in Jacobian, Q in affine
-func (p *G1Jac) FromAffine(Q *G1Affine) *G1Jac {
-	if Q.IsInfinity() {
+// FromAffine converts a point a from affine to Jacobian coordinates.
+func (p *G1Jac) FromAffine(a *G1Affine) *G1Jac {
+	if a.IsInfinity() {
 		p.Z.SetZero()
 		p.X.SetOne()
 		p.Y.SetOne()
 		return p
 	}
 	p.Z.SetOne()
-	p.X.Set(&Q.X)
-	p.Y.Set(&Q.Y)
+	p.X.Set(&a.X)
+	p.Y.Set(&a.Y)
 	return p
 }
 
-// IsOnCurve returns true if p in on the curve
+// IsOnCurve returns true if the Jacobian point p in on the curve.
 func (p *G1Jac) IsOnCurve() bool {
-	var left, right, tmp fp.Element
+	var left, right, tmp, ZZ fp.Element
 	left.Square(&p.Y)
 	right.Square(&p.X).Mul(&right, &p.X)
-	tmp.Square(&p.Z).
-		Square(&tmp).
-		Mul(&tmp, &p.Z).
-		Mul(&tmp, &p.Z).
-		Mul(&tmp, &bCurveCoeff)
+	ZZ.Square(&p.Z)
+	tmp.Square(&ZZ).Mul(&tmp, &ZZ)
+	// Mul tmp by bCurveCoeff=4
+	tmp.Double(&tmp).Double(&tmp)
 	right.Add(&right, &tmp)
 	return left.Equal(&right)
 }
@@ -433,13 +502,14 @@ func (p *G1Jac) IsInSubGroup() bool {
 
 }
 
-// mulWindowed computes a 2-bits windowed scalar multiplication
-func (p *G1Jac) mulWindowed(a *G1Jac, s *big.Int) *G1Jac {
+// mulWindowed computes the 2-bits windowed double-and-add scalar
+// multiplication p=[s]q in Jacobian coordinates.
+func (p *G1Jac) mulWindowed(q *G1Jac, s *big.Int) *G1Jac {
 
 	var res G1Jac
 	var ops [3]G1Jac
 
-	ops[0].Set(a)
+	ops[0].Set(q)
 	if s.Sign() == -1 {
 		ops[0].Neg(&ops[0])
 	}
@@ -466,17 +536,18 @@ func (p *G1Jac) mulWindowed(a *G1Jac, s *big.Int) *G1Jac {
 
 }
 
-// ϕ assigns p to ϕ(a) where ϕ: (x,y) → (w x,y), and returns p
-// where w is a third root of unity in 𝔽p
-func (p *G1Jac) phi(a *G1Jac) *G1Jac {
-	p.Set(a)
+// phi sets p to ϕ(a) where ϕ: (x,y) → (w x,y),
+// where w is a third root of unity.
+func (p *G1Jac) phi(q *G1Jac) *G1Jac {
+	p.Set(q)
 	p.X.Mul(&p.X, &thirdRootOneG1)
 	return p
 }
 
 // mulGLV computes the scalar multiplication using a windowed-GLV method
+//
 // see https://www.iacr.org/archive/crypto2001/21390189.pdf
-func (p *G1Jac) mulGLV(a *G1Jac, s *big.Int) *G1Jac {
+func (p *G1Jac) mulGLV(q *G1Jac, s *big.Int) *G1Jac {
 
 	var table [15]G1Jac
 	var res G1Jac
@@ -484,11 +555,11 @@ func (p *G1Jac) mulGLV(a *G1Jac, s *big.Int) *G1Jac {
 
 	res.Set(&g1Infinity)
 
-	// table[b3b2b1b0-1] = b3b2 ⋅ ϕ(a) + b1b0*a
-	table[0].Set(a)
-	table[3].phi(a)
+	// table[b3b2b1b0-1] = b3b2 ⋅ ϕ(q) + b1b0*q
+	table[0].Set(q)
+	table[3].phi(q)
 
-	// split the scalar, modifies ±a, ϕ(a) accordingly
+	// split the scalar, modifies ±q, ϕ(q) accordingly
 	k := ecc.SplitScalar(s, &glvBasis)
 
 	if k[0].Sign() == -1 {
@@ -501,7 +572,7 @@ func (p *G1Jac) mulGLV(a *G1Jac, s *big.Int) *G1Jac {
 	}
 
 	// precompute table (2 bits sliding window)
-	// table[b3b2b1b0-1] = b3b2 ⋅ ϕ(a) + b1b0 ⋅ a if b3b2b1b0 != 0
+	// table[b3b2b1b0-1] = b3b2 ⋅ ϕ(q) + b1b0 ⋅ q if b3b2b1b0 != 0
 	table[1].Double(&table[0])
 	table[2].Set(&table[1]).AddAssign(&table[0])
 	table[4].Set(&table[3]).AddAssign(&table[0])
@@ -557,23 +628,23 @@ func (p *G1Affine) ClearCofactor(a *G1Affine) *G1Affine {
 }
 
 // ClearCofactor maps a point in E(Fp) to E(Fp)[r]
-func (p *G1Jac) ClearCofactor(a *G1Jac) *G1Jac {
+func (p *G1Jac) ClearCofactor(q *G1Jac) *G1Jac {
 	// cf https://eprint.iacr.org/2019/403.pdf, 5
 	var res G1Jac
-	res.ScalarMultiplication(a, &xGen).AddAssign(a)
+	res.ScalarMultiplication(q, &xGen).AddAssign(q)
 	p.Set(&res)
 	return p
 
 }
 
-// JointScalarMultiplicationBase computes [s1]g+[s2]a using Straus-Shamir technique
-// where g is the prime subgroup generator
-func (p *G1Jac) JointScalarMultiplicationBase(a *G1Affine, s1, s2 *big.Int) *G1Jac {
+// JointScalarMultiplication computes [s1]a1+[s2]a2 using Strauss-Shamir technique
+// where a1 and a2 are affine points.
+func (p *G1Jac) JointScalarMultiplication(a1, a2 *G1Affine, s1, s2 *big.Int) *G1Jac {
 
 	var res, p1, p2 G1Jac
 	res.Set(&g1Infinity)
-	p1.Set(&g1Gen)
-	p2.FromAffine(a)
+	p1.FromAffine(a1)
+	p2.FromAffine(a2)
 
 	var table [15]G1Jac
 
@@ -637,16 +708,23 @@ func (p *G1Jac) JointScalarMultiplicationBase(a *G1Affine, s1, s2 *big.Int) *G1J
 
 }
 
-// -------------------------------------------------------------------------------------------------
-// Jacobian extended
+// JointScalarMultiplicationBase computes [s1]g+[s2]a using Straus-Shamir technique
+// where g is the prime subgroup generator.
+func (p *G1Jac) JointScalarMultiplicationBase(a *G1Affine, s1, s2 *big.Int) *G1Jac {
+	return p.JointScalarMultiplication(&g1GenAff, a, s1, s2)
 
-// Set sets p to the provided point
-func (p *g1JacExtended) Set(a *g1JacExtended) *g1JacExtended {
-	p.X, p.Y, p.ZZ, p.ZZZ = a.X, a.Y, a.ZZ, a.ZZZ
+}
+
+// -------------------------------------------------------------------------------------------------
+// extended Jacobian coordinates
+
+// Set sets p to a in extended Jacobian coordinates.
+func (p *g1JacExtended) Set(q *g1JacExtended) *g1JacExtended {
+	p.X, p.Y, p.ZZ, p.ZZZ = q.X, q.Y, q.ZZ, q.ZZZ
 	return p
 }
 
-// setInfinity sets p to O
+// setInfinity sets p to the infinity point (1,1,0,0).
 func (p *g1JacExtended) setInfinity() *g1JacExtended {
 	p.X.SetOne()
 	p.Y.SetOne()
@@ -655,43 +733,45 @@ func (p *g1JacExtended) setInfinity() *g1JacExtended {
 	return p
 }
 
-func (p *g1JacExtended) IsZero() bool {
+// IsInfinity checks if the p is infinity, i.e. p.ZZ=0.
+func (p *g1JacExtended) IsInfinity() bool {
 	return p.ZZ.IsZero()
 }
 
-// fromJacExtended sets Q in affine coordinates
-func (p *G1Affine) fromJacExtended(Q *g1JacExtended) *G1Affine {
-	if Q.ZZ.IsZero() {
+// fromJacExtended converts an extended Jacobian point to an affine point.
+func (p *G1Affine) fromJacExtended(q *g1JacExtended) *G1Affine {
+	if q.ZZ.IsZero() {
 		p.X = fp.Element{}
 		p.Y = fp.Element{}
 		return p
 	}
-	p.X.Inverse(&Q.ZZ).Mul(&p.X, &Q.X)
-	p.Y.Inverse(&Q.ZZZ).Mul(&p.Y, &Q.Y)
+	p.X.Inverse(&q.ZZ).Mul(&p.X, &q.X)
+	p.Y.Inverse(&q.ZZZ).Mul(&p.Y, &q.Y)
 	return p
 }
 
-// fromJacExtended sets Q in Jacobian coordinates
-func (p *G1Jac) fromJacExtended(Q *g1JacExtended) *G1Jac {
-	if Q.ZZ.IsZero() {
+// fromJacExtended converts an extended Jacobian point to a Jacobian point.
+func (p *G1Jac) fromJacExtended(q *g1JacExtended) *G1Jac {
+	if q.ZZ.IsZero() {
 		p.Set(&g1Infinity)
 		return p
 	}
-	p.X.Mul(&Q.ZZ, &Q.X).Mul(&p.X, &Q.ZZ)
-	p.Y.Mul(&Q.ZZZ, &Q.Y).Mul(&p.Y, &Q.ZZZ)
-	p.Z.Set(&Q.ZZZ)
+	p.X.Mul(&q.ZZ, &q.X).Mul(&p.X, &q.ZZ)
+	p.Y.Mul(&q.ZZZ, &q.Y).Mul(&p.Y, &q.ZZZ)
+	p.Z.Set(&q.ZZZ)
 	return p
 }
 
-// unsafeFromJacExtended sets p in Jacobian coordinates, but don't check for infinity
-func (p *G1Jac) unsafeFromJacExtended(Q *g1JacExtended) *G1Jac {
-	p.X.Square(&Q.ZZ).Mul(&p.X, &Q.X)
-	p.Y.Square(&Q.ZZZ).Mul(&p.Y, &Q.Y)
-	p.Z = Q.ZZZ
+// unsafeFromJacExtended converts an extended Jacobian point, distinct from Infinity, to a Jacobian point.
+func (p *G1Jac) unsafeFromJacExtended(q *g1JacExtended) *G1Jac {
+	p.X.Square(&q.ZZ).Mul(&p.X, &q.X)
+	p.Y.Square(&q.ZZZ).Mul(&p.Y, &q.Y)
+	p.Z = q.ZZZ
 	return p
 }
 
-// add point in Jacobian extended coordinates
+// add sets p to p+q in extended Jacobian coordinates.
+//
 // https://www.hyperelliptic.org/EFD/g1p/auto-shortw-xyzz.html#addition-add-2008-s
 func (p *g1JacExtended) add(q *g1JacExtended) *g1JacExtended {
 	//if q is infinity return p
@@ -747,10 +827,11 @@ func (p *g1JacExtended) add(q *g1JacExtended) *g1JacExtended {
 	return p
 }
 
-// double point in Jacobian extended coordinates
+// double sets p to [2]q in Jacobian extended coordinates.
+//
 // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-xyzz.html#doubling-dbl-2008-s-1
-// since we consider any point on Z=0 as the point at infinity
-// this doubling formula works for infinity points as well
+// N.B.: since we consider any point on Z=0 as the point at infinity
+// this doubling formula works for infinity points as well.
 func (p *g1JacExtended) double(q *g1JacExtended) *g1JacExtended {
 	var U, V, W, S, XX, M fp.Element
 
@@ -760,7 +841,7 @@ func (p *g1JacExtended) double(q *g1JacExtended) *g1JacExtended {
 	S.Mul(&q.X, &V)
 	XX.Square(&q.X)
 	M.Double(&XX).
-		Add(&M, &XX) // -> + a, but a=0 here
+		Add(&M, &XX) // -> + A, but A=0 here
 	U.Mul(&W, &q.Y)
 
 	p.X.Square(&M).
@@ -775,7 +856,64 @@ func (p *g1JacExtended) double(q *g1JacExtended) *g1JacExtended {
 	return p
 }
 
-// subMixed same as addMixed, but will negate a.Y
+// addMixed sets p to p+q in extended Jacobian coordinates, where a.ZZ=1.
+//
+// http://www.hyperelliptic.org/EFD/g1p/auto-shortw-xyzz.html#addition-madd-2008-s
+func (p *g1JacExtended) addMixed(a *G1Affine) *g1JacExtended {
+
+	//if a is infinity return p
+	if a.IsInfinity() {
+		return p
+	}
+	// p is infinity, return a
+	if p.ZZ.IsZero() {
+		p.X = a.X
+		p.Y = a.Y
+		p.ZZ.SetOne()
+		p.ZZZ.SetOne()
+		return p
+	}
+
+	var P, R fp.Element
+
+	// p2: a, p1: p
+	P.Mul(&a.X, &p.ZZ)
+	P.Sub(&P, &p.X)
+
+	R.Mul(&a.Y, &p.ZZZ)
+	R.Sub(&R, &p.Y)
+
+	if P.IsZero() {
+		if R.IsZero() {
+			return p.doubleMixed(a)
+
+		}
+		p.ZZ = fp.Element{}
+		p.ZZZ = fp.Element{}
+		return p
+	}
+
+	var PP, PPP, Q, Q2, RR, X3, Y3 fp.Element
+
+	PP.Square(&P)
+	PPP.Mul(&P, &PP)
+	Q.Mul(&p.X, &PP)
+	RR.Square(&R)
+	X3.Sub(&RR, &PPP)
+	Q2.Double(&Q)
+	p.X.Sub(&X3, &Q2)
+	Y3.Sub(&Q, &p.X).Mul(&Y3, &R)
+	R.Mul(&p.Y, &PPP)
+	p.Y.Sub(&Y3, &R)
+	p.ZZ.Mul(&p.ZZ, &PP)
+	p.ZZZ.Mul(&p.ZZZ, &PPP)
+
+	return p
+
+}
+
+// subMixed works the same as addMixed, but negates a.Y.
+//
 // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-xyzz.html#addition-madd-2008-s
 func (p *g1JacExtended) subMixed(a *G1Affine) *g1JacExtended {
 
@@ -831,76 +969,21 @@ func (p *g1JacExtended) subMixed(a *G1Affine) *g1JacExtended {
 
 }
 
-// addMixed
-// http://www.hyperelliptic.org/EFD/g1p/auto-shortw-xyzz.html#addition-madd-2008-s
-func (p *g1JacExtended) addMixed(a *G1Affine) *g1JacExtended {
-
-	//if a is infinity return p
-	if a.IsInfinity() {
-		return p
-	}
-	// p is infinity, return a
-	if p.ZZ.IsZero() {
-		p.X = a.X
-		p.Y = a.Y
-		p.ZZ.SetOne()
-		p.ZZZ.SetOne()
-		return p
-	}
-
-	var P, R fp.Element
-
-	// p2: a, p1: p
-	P.Mul(&a.X, &p.ZZ)
-	P.Sub(&P, &p.X)
-
-	R.Mul(&a.Y, &p.ZZZ)
-	R.Sub(&R, &p.Y)
-
-	if P.IsZero() {
-		if R.IsZero() {
-			return p.doubleMixed(a)
-
-		}
-		p.ZZ = fp.Element{}
-		p.ZZZ = fp.Element{}
-		return p
-	}
-
-	var PP, PPP, Q, Q2, RR, X3, Y3 fp.Element
-
-	PP.Square(&P)
-	PPP.Mul(&P, &PP)
-	Q.Mul(&p.X, &PP)
-	RR.Square(&R)
-	X3.Sub(&RR, &PPP)
-	Q2.Double(&Q)
-	p.X.Sub(&X3, &Q2)
-	Y3.Sub(&Q, &p.X).Mul(&Y3, &R)
-	R.Mul(&p.Y, &PPP)
-	p.Y.Sub(&Y3, &R)
-	p.ZZ.Mul(&p.ZZ, &PP)
-	p.ZZZ.Mul(&p.ZZZ, &PPP)
-
-	return p
-
-}
-
-// doubleNegMixed same as double, but will negate q.Y
-func (p *g1JacExtended) doubleNegMixed(q *G1Affine) *g1JacExtended {
+// doubleNegMixed works the same as double, but negates q.Y.
+func (p *g1JacExtended) doubleNegMixed(a *G1Affine) *g1JacExtended {
 
 	var U, V, W, S, XX, M, S2, L fp.Element
 
-	U.Double(&q.Y)
+	U.Double(&a.Y)
 	U.Neg(&U)
 	V.Square(&U)
 	W.Mul(&U, &V)
-	S.Mul(&q.X, &V)
-	XX.Square(&q.X)
+	S.Mul(&a.X, &V)
+	XX.Square(&a.X)
 	M.Double(&XX).
-		Add(&M, &XX) // -> + a, but a=0 here
+		Add(&M, &XX) // -> + A, but A=0 here
 	S2.Double(&S)
-	L.Mul(&W, &q.Y)
+	L.Mul(&W, &a.Y)
 
 	p.X.Square(&M).
 		Sub(&p.X, &S2)
@@ -913,21 +996,22 @@ func (p *g1JacExtended) doubleNegMixed(q *G1Affine) *g1JacExtended {
 	return p
 }
 
-// doubleMixed point in Jacobian extended coordinates
+// doubleMixed sets p to [2]a in Jacobian extended coordinates, where a.ZZ=1.
+//
 // http://www.hyperelliptic.org/EFD/g1p/auto-shortw-xyzz.html#doubling-dbl-2008-s-1
-func (p *g1JacExtended) doubleMixed(q *G1Affine) *g1JacExtended {
+func (p *g1JacExtended) doubleMixed(a *G1Affine) *g1JacExtended {
 
 	var U, V, W, S, XX, M, S2, L fp.Element
 
-	U.Double(&q.Y)
+	U.Double(&a.Y)
 	V.Square(&U)
 	W.Mul(&U, &V)
-	S.Mul(&q.X, &V)
-	XX.Square(&q.X)
+	S.Mul(&a.X, &V)
+	XX.Square(&a.X)
 	M.Double(&XX).
-		Add(&M, &XX) // -> + a, but a=0 here
+		Add(&M, &XX) // -> + A, but A=0 here
 	S2.Double(&S)
-	L.Mul(&W, &q.Y)
+	L.Mul(&W, &a.Y)
 
 	p.X.Square(&M).
 		Sub(&p.X, &S2)
@@ -941,7 +1025,7 @@ func (p *g1JacExtended) doubleMixed(q *G1Affine) *g1JacExtended {
 }
 
 // BatchJacobianToAffineG1 converts points in Jacobian coordinates to Affine coordinates
-// performing a single field inversion (Montgomery batch inversion trick).
+// performing a single field inversion using the Montgomery batch inversion trick.
 func BatchJacobianToAffineG1(points []G1Jac) []G1Affine {
 	result := make([]G1Affine, len(points))
 	zeroes := make([]bool, len(points))
@@ -991,7 +1075,7 @@ func BatchJacobianToAffineG1(points []G1Jac) []G1Affine {
 
 // BatchScalarMultiplicationG1 multiplies the same base by all scalars
 // and return resulting points in affine coordinates
-// uses a simple windowed-NAF like exponentiation algorithm
+// uses a simple windowed-NAF-like multiplication algorithm.
 func BatchScalarMultiplicationG1(base *G1Affine, scalars []fr.Element) []G1Affine {
 	// approximate cost in group ops is
 	// cost = 2^{c-1} + n(scalar.nbBits+nbChunks)
@@ -1073,9 +1157,8 @@ func BatchScalarMultiplicationG1(base *G1Affine, scalars []fr.Element) []G1Affin
 	return toReturnAff
 }
 
-// batch add affine coordinates
-// using batch inversion
-// special cases (doubling, infinity) must be filtered out before this call
+// batchAddG1Affine adds affine points using the Montgomery batch inversion trick.
+// Special cases (doubling, infinity) must be filtered out before this call.
 func batchAddG1Affine[TP pG1Affine, TPP ppG1Affine, TC cG1Affine](R *TPP, P *TP, batchSize int) {
 	var lambda, lambdain TC
 

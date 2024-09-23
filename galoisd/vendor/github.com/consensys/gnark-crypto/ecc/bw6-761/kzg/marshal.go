@@ -19,6 +19,8 @@ package kzg
 import (
 	"github.com/consensys/gnark-crypto/ecc/bw6-761"
 	"io"
+
+	"github.com/consensys/gnark-crypto/utils/unsafe"
 )
 
 // WriteTo writes binary encoding of the ProvingKey
@@ -74,6 +76,51 @@ func (vk *VerifyingKey) writeTo(w io.Writer, options ...func(*bw6761.Encoder)) (
 	}
 
 	return enc.BytesWritten(), nil
+}
+
+// WriteDump writes the binary encoding of the entire SRS memory representation
+// It is meant to be use to achieve fast serialization/deserialization and
+// is not compatible with WriteTo / ReadFrom. It does not do any validation
+// and doesn't encode points in a canonical form.
+// @unsafe: this is platform dependent and may not be compatible with other platforms
+// @unstable: the format may change in the future
+// If maxPkPoints is provided, the number of points in the ProvingKey will be limited to maxPkPoints
+func (srs *SRS) WriteDump(w io.Writer, maxPkPoints ...int) error {
+	maxG1 := len(srs.Pk.G1)
+	if len(maxPkPoints) > 0 && maxPkPoints[0] < maxG1 && maxPkPoints[0] > 0 {
+		maxG1 = maxPkPoints[0]
+	}
+	// first we write the VerifyingKey; it is small so we re-use WriteTo
+
+	if _, err := srs.Vk.writeTo(w, bw6761.RawEncoding()); err != nil {
+		return err
+	}
+
+	// write the marker
+	if err := unsafe.WriteMarker(w); err != nil {
+		return err
+	}
+
+	// write the slice
+	return unsafe.WriteSlice(w, srs.Pk.G1[:maxG1])
+}
+
+// ReadDump deserializes the SRS from a reader, as written by WriteDump
+func (srs *SRS) ReadDump(r io.Reader, maxPkPoints ...int) error {
+	// first we read the VerifyingKey; it is small so we re-use ReadFrom
+	_, err := srs.Vk.ReadFrom(r)
+	if err != nil {
+		return err
+	}
+
+	// read the marker
+	if err := unsafe.ReadMarker(r); err != nil {
+		return err
+	}
+
+	// read the slice
+	srs.Pk.G1, _, err = unsafe.ReadSlice[[]bw6761.G1Affine](r, maxPkPoints...)
+	return err
 }
 
 // WriteTo writes binary encoding of the entire SRS

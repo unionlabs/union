@@ -33,6 +33,7 @@ Celestia
 Celestine
 Certus
 Chainer
+Cleartext
 Cleper
 Codehash
 Coeff
@@ -46,6 +47,7 @@ Counterparty
 Cpath
 Cpolygon
 Creds
+Crossterm
 Cryptopunkssvg
 Csvg
 Cypherpunk
@@ -62,7 +64,9 @@ ECTO
 Edgi
 EigenLayer
 Embedder
+Evals
 F1bonacc1
+FFLONK
 FLUSHCOMPLETE
 Fatalf
 Feegrant
@@ -76,6 +80,7 @@ Fsvg
 Fuga
 Fwww
 GOARCH
+GOBIN
 GOPATH
 GOPRIVATE
 Getenv
@@ -150,6 +155,7 @@ PINGPONG
 PRECOMMIT
 PREVOTE
 PROTOC
+PTAU
 Parameterizable
 Paramspace
 Partset
@@ -158,13 +164,16 @@ Pedersen
 Phasellus
 PoisonPhang
 Polkadot
+Postgrest
 Prefixer
 Protobuf
 Proxiable
 Pruijs
+Ptau
 QUMGLDJ
 Quickstart
 Qyby
+ROWTYPE
 RUSTFLAGS
 Recvs
 Redelegate
@@ -199,6 +208,7 @@ Subdemom
 Sublist
 Subo
 Subtrie
+TIMSTAMPTZ
 TOCTOU
 Tada
 Tempdirs
@@ -241,7 +251,9 @@ YMSB
 Yair
 ZFTB
 ZKACCOUNT
+ZKEY
 ZKTRIE
+Zkey
 aarch
 abci
 abidump
@@ -271,6 +283,7 @@ ankr
 antialised
 anypb
 anys
+apikey
 appchain
 appchains
 appetito
@@ -304,6 +317,7 @@ autocapitalize
 autocli
 autocliv
 autocorrect
+autoresize
 autotests
 awkroot
 axelar
@@ -331,6 +345,7 @@ binaryen
 bindgen
 bindingstypes
 bindir
+binutils
 biomejs
 bitarray
 bitcanna
@@ -359,6 +374,7 @@ bools
 bootnode
 borsh
 brainer
+buildmode
 builtins
 bumpp
 bunx
@@ -387,6 +403,7 @@ chevdor
 chrono
 circom
 clazz
+cleartext
 cliclack
 clientkeeper
 clienttx
@@ -405,6 +422,7 @@ codespace
 coeff
 cofactor
 coinbases
+combinators
 comdex
 cometbft
 cometbls
@@ -454,6 +472,7 @@ cratedir
 crisiskeeper
 crisistypes
 crossorigin
+crossterm
 cryptocom
 cryptware
 ctfassets
@@ -531,6 +550,7 @@ ethcall
 etherbase
 ethevent
 ethkey
+evals
 evidencekeeper
 evidencetypes
 evmincosmos
@@ -636,6 +656,7 @@ hlist
 hmac
 holiman
 horcrux
+httpdate
 httpie
 httptemplate
 hubblestatus
@@ -677,6 +698,7 @@ icahostkeeper
 icahosttypes
 icatypes
 iconify
+iden
 identifer
 identifing
 idents
@@ -754,6 +776,7 @@ libcxx
 libdir
 libexec
 libfuzzer
+libgalois
 libgit
 libiconv
 libmuslc
@@ -814,6 +837,7 @@ monniker
 monomorphized
 moreutils
 mosmo
+mpcsetup
 msgservice
 msvc
 muldefs
@@ -933,7 +957,9 @@ popd
 porttypes
 postcss
 postgrespassword
+postgrest
 posthandler
+powersoftau
 precommit
 precommits
 prehash
@@ -964,6 +990,7 @@ prysm
 prysmaticlabs
 prysmctl
 psim
+ptau
 pubkey
 pubkey's
 pubkeys
@@ -986,6 +1013,7 @@ qxrx
 qypy
 rabby
 randao
+ratatui
 ratelimit
 ratelimited
 rawfile
@@ -1090,6 +1118,7 @@ slurpfile
 smallvec
 snapshotter
 snapshottypes
+snarkjs
 soketto
 solomachine
 sonner
@@ -1125,6 +1154,7 @@ statesync
 staticcheck
 staticlib
 stdenv
+stdlib
 storemetrics
 storetypes
 storyblok
@@ -1157,6 +1187,7 @@ substituters
 substores
 subtrie
 sumbitter
+supa
 supabase
 superforms
 supermajority
@@ -1277,6 +1308,7 @@ unionvaloper
 unionvaloperpub
 unionvisor
 unittests
+unixepoch
 unjail
 unjailed
 unloadable
@@ -1379,7 +1411,9 @@ zerion
 zeroize
 zerolog
 zetachain
+zket
 zkevm
+zkey
 zkgm
 zkps
 zktrie

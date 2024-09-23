@@ -39,3 +39,11 @@ type WriterRawTo interface {
 type UnsafeReaderFrom interface {
 	UnsafeReadFrom(r io.Reader) (int64, error)
 }
+
+// BinaryDumper is the interface that wraps the WriteDump and ReadDump methods.
+// WriteDump writes the object to w, ReadDump reads the object from r.
+// The object is serialized in binary format, in a very fast, very unsafe way.
+type BinaryDumper interface {
+	WriteDump(w io.Writer) error
+	ReadDump(r io.Reader) error
+}

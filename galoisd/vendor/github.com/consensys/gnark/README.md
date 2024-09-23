@@ -120,7 +120,7 @@ func main() {
 
 #### Icicle Library
 
-The following schemes and curves support experimental use of Ingomyama's Icicle GPU library for low level zk-SNARK primitives such as MSM, NTT, and polynomial operations:
+The following schemes and curves support experimental use of Ingonyama's Icicle GPU library for low level zk-SNARK primitives such as MSM, NTT, and polynomial operations:
 
 - [x] [Groth16](https://eprint.iacr.org/2016/260)
 

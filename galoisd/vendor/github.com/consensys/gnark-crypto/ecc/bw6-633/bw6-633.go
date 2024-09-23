@@ -13,7 +13,7 @@
 // Extension fields tower:
 //
 //	𝔽p³[u] = 𝔽p/u³-2
-//	𝔽p⁶[v] = 𝔽p²/v²-u
+//	𝔽p⁶[v] = 𝔽p³/v²-u
 //
 // case t % r % u = 0
 //

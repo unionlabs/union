@@ -1,9 +1,11 @@
+// Package bitslice allows partitioning variables.
 package bitslice
 
 import (
 	"math/big"
 
 	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/math/bits"
 	"github.com/consensys/gnark/std/rangecheck"
 )
 
@@ -40,6 +42,19 @@ func Partition(api frontend.API, v frontend.Variable, split uint, opts ...Option
 		}
 		return 0, v
 	}
+	// when nbDigits is not set, then we assume the bound is the field size.
+	// However, in that case the decomposition check is more involved as we need
+	// to avoid the recomposed value to overflow the field. We do not have good
+	// methods for avoiding it when using range checker gadget, so we defer it
+	// to `bits.ToBinary`.
+	if opt.digits == 0 || opt.digits >= api.Compiler().FieldBitLen() {
+		bts := bits.ToBinary(api, v)
+		lowerBts := bts[:split]
+		upperBts := bts[split:]
+		lower = bits.FromBinary(api, lowerBts)
+		upper = bits.FromBinary(api, upperBts)
+		return lower, upper
+	}
 	ret, err := api.Compiler().NewHint(partitionHint, 2, split, v)
 	if err != nil {
 		panic(err)
@@ -58,7 +73,7 @@ func Partition(api frontend.API, v frontend.Variable, split uint, opts ...Option
 	if opt.digits > 0 {
 		upperBound = opt.digits
 	}
-	rh.Check(upper, upperBound)
+	rh.Check(upper, upperBound-int(split))
 	rh.Check(lower, int(split))
 
 	m := big.NewInt(1)

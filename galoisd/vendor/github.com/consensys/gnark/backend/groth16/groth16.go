@@ -24,6 +24,7 @@ import (
 
 	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark/backend"
+	"github.com/consensys/gnark/backend/solidity"
 	"github.com/consensys/gnark/backend/witness"
 	"github.com/consensys/gnark/constraint"
 	cs_bls12377 "github.com/consensys/gnark/constraint/bls12-377"
@@ -74,6 +75,7 @@ type Proof interface {
 type ProvingKey interface {
 	groth16Object
 	gnarkio.UnsafeReaderFrom
+	gnarkio.BinaryDumper
 
 	// NbG1 returns the number of G1 elements in the ProvingKey
 	NbG1() int
@@ -92,6 +94,10 @@ type ProvingKey interface {
 type VerifyingKey interface {
 	groth16Object
 	gnarkio.UnsafeReaderFrom
+	// VerifyingKey are the methods required for generating the Solidity
+	// verifier contract from the VerifyingKey. This will return an error if not
+	// supported on the CurveID().
+	solidity.VerifyingKey
 
 	// NbPublicWitness returns number of elements expected in the public witness
 	NbPublicWitness() int
@@ -101,10 +107,6 @@ type VerifyingKey interface {
 
 	// NbG2 returns the number of G2 elements in the VerifyingKey
 	NbG2() int
-
-	// ExportSolidity writes a solidity Verifier contract from the VerifyingKey
-	// this will return an error if not supported on the CurveID()
-	ExportSolidity(w io.Writer) error
 
 	IsDifferent(interface{}) bool
 }

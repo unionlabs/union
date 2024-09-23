@@ -24,6 +24,7 @@ package uints
 
 import (
 	"fmt"
+	"math/bits"
 
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/std/internal/logderivprecomp"
@@ -173,15 +174,18 @@ func (bf *BinaryField[T]) ValueOf(a frontend.Variable) T {
 	if err != nil {
 		panic(err)
 	}
-	// TODO: add constraint which ensures that map back to
+
 	for i := range bts {
 		r[i] = bf.ByteValueOf(bts[i])
 	}
+	expectedValue := bf.ToValue(r)
+	bf.api.AssertIsEqual(a, expectedValue)
+
 	return r
 }
 
 func (bf *BinaryField[T]) ToValue(a T) frontend.Variable {
-	v := make([]frontend.Variable, len(a))
+	v := make([]frontend.Variable, bf.lenBts())
 	for i := range v {
 		v[i] = bf.api.Mul(a[i].Val, 1<<(i*8))
 	}
@@ -206,8 +210,8 @@ func (bf *BinaryField[T]) PackLSB(a ...U8) T {
 }
 
 func (bf *BinaryField[T]) UnpackMSB(a T) []U8 {
-	ret := make([]U8, len(a))
-	for i := 0; i < len(a); i++ {
+	ret := make([]U8, bf.lenBts())
+	for i := 0; i < len(ret); i++ {
 		ret[len(a)-i-1] = a[i]
 	}
 	return ret
@@ -215,8 +219,8 @@ func (bf *BinaryField[T]) UnpackMSB(a T) []U8 {
 
 func (bf *BinaryField[T]) UnpackLSB(a T) []U8 {
 	// cannot deduce that a can be cast to []U8
-	ret := make([]U8, len(a))
-	for i := 0; i < len(a); i++ {
+	ret := make([]U8, bf.lenBts())
+	for i := 0; i < len(ret); i++ {
 		ret[i] = a[i]
 	}
 	return ret
@@ -255,18 +259,22 @@ func (bf *BinaryField[T]) Not(a T) T {
 }
 
 func (bf *BinaryField[T]) Add(a ...T) T {
-	va := make([]frontend.Variable, len(a))
+	tLen := bf.lenBts() * 8
+	inLen := len(a)
+	va := make([]frontend.Variable, inLen)
 	for i := range a {
 		va[i] = bf.ToValue(a[i])
 	}
 	vres := bf.api.Add(va[0], va[1], va[2:]...)
-	res := bf.ValueOf(vres)
-	// TODO: should also check the that carry we omitted is correct.
+	maxBitlen := bits.Len(uint(inLen)) + tLen
+	// bitslice.Partition below checks that the input is less than 2^maxBitlen and that we have omitted carry correctly
+	vreslow, _ := bitslice.Partition(bf.api, vres, uint(tLen), bitslice.WithNbDigits(maxBitlen), bitslice.WithUnconstrainedOutputs())
+	res := bf.ValueOf(vreslow)
 	return res
 }
 
 func (bf *BinaryField[T]) Lrot(a T, c int) T {
-	l := len(a)
+	l := bf.lenBts()
 	if c < 0 {
 		c = l*8 + c
 	}
@@ -293,23 +301,24 @@ func (bf *BinaryField[T]) Lrot(a T, c int) T {
 }
 
 func (bf *BinaryField[T]) Rshift(a T, c int) T {
+	lenB := bf.lenBts()
 	shiftBl := c / 8
 	shiftBt := c % 8
-	partitioned := make([][2]frontend.Variable, len(a)-shiftBl)
+	partitioned := make([][2]frontend.Variable, lenB-shiftBl)
 	for i := range partitioned {
 		lower, upper := bitslice.Partition(bf.api, a[i+shiftBl].Val, uint(shiftBt), bitslice.WithNbDigits(8))
 		partitioned[i] = [2]frontend.Variable{lower, upper}
 	}
 	var ret T
-	for i := 0; i < len(a)-shiftBl-1; i++ {
+	for i := 0; i < bf.lenBts()-shiftBl-1; i++ {
 		if shiftBt != 0 {
 			ret[i].Val = bf.api.Add(partitioned[i][1], bf.api.Mul(1<<(8-shiftBt), partitioned[i+1][0]))
 		} else {
 			ret[i].Val = partitioned[i][1]
 		}
 	}
-	ret[len(a)-shiftBl-1].Val = partitioned[len(a)-shiftBl-1][1]
-	for i := len(a) - shiftBl; i < len(ret); i++ {
+	ret[lenB-shiftBl-1].Val = partitioned[lenB-shiftBl-1][1]
+	for i := lenB - shiftBl; i < lenB; i++ {
 		ret[i] = NewU8(0)
 	}
 	return ret
@@ -320,9 +329,14 @@ func (bf *BinaryField[T]) ByteAssertEq(a, b U8) {
 }
 
 func (bf *BinaryField[T]) AssertEq(a, b T) {
-	for i := 0; i < len(a); i++ {
+	for i := 0; i < bf.lenBts(); i++ {
 		bf.ByteAssertEq(a[i], b[i])
 	}
+}
+
+func (bf *BinaryField[T]) lenBts() int {
+	var a T
+	return len(a)
 }
 
 func reslice[T U32 | U64](in []T) [][]U8 {

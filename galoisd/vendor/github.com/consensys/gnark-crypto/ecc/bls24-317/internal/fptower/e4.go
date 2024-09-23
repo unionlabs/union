@@ -94,14 +94,14 @@ func (z *E4) MulByElement(x *E4, y *fp.Element) *E4 {
 	return z
 }
 
-// Add set z=x+y in E4 and return z
+// Add sets z=x+y in E4 and returns z
 func (z *E4) Add(x, y *E4) *E4 {
 	z.B0.Add(&x.B0, &y.B0)
 	z.B1.Add(&x.B1, &y.B1)
 	return z
 }
 
-// Sub sets z to x sub y and return z
+// Sub sets z to x-y and returns z
 func (z *E4) Sub(x, y *E4) *E4 {
 	z.B0.Sub(&x.B0, &y.B0)
 	z.B1.Sub(&x.B1, &y.B1)
@@ -133,11 +133,12 @@ func (z *E4) SetRandom() (*E4, error) {
 	return z, nil
 }
 
-// IsZero returns true if the element is zero, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E4) IsZero() bool {
 	return z.B0.IsZero() && z.B1.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E4) IsOne() bool {
 	return z.B0.IsOne() && z.B1.IsZero()
 }
@@ -160,7 +161,7 @@ func (z *E4) MulByNonResidueInv(x *E4) *E4 {
 	return z
 }
 
-// Mul set z=x*y in E4 and return z
+// Mul sets z=x*y in E4 and returns z
 func (z *E4) Mul(x, y *E4) *E4 {
 	var a, b, c E2
 	a.Add(&x.B0, &x.B1)
@@ -173,7 +174,7 @@ func (z *E4) Mul(x, y *E4) *E4 {
 	return z
 }
 
-// Square set z=x*x in E4 and return z
+// Square sets z=x*x in E4 and returns z
 func (z *E4) Square(x *E4) *E4 {
 
 	//Algorithm 22 from https://eprint.iacr.org/2010/354.pdf
@@ -189,7 +190,7 @@ func (z *E4) Square(x *E4) *E4 {
 	return z
 }
 
-// Inverse set z to the inverse of x in E4 and return z
+// Inverse sets z to the inverse of x in E4 and returns z
 //
 // if x == 0, sets and returns z = x
 func (z *E4) Inverse(x *E4) *E4 {
@@ -241,7 +242,7 @@ func (z *E4) Exp(x E4, k *big.Int) *E4 {
 	return z
 }
 
-// Conjugate set z to x conjugated and return z
+// Conjugate sets z to x conjugated and returns z
 func (z *E4) Conjugate(x *E4) *E4 {
 	z.B0 = x.B0
 	z.B1.Neg(&x.B1)
@@ -312,8 +313,8 @@ func (z *E4) Sqrt(x *E4) *E4 {
 	return z
 }
 
-// BatchInvertE4 returns a new slice with every element inverted.
-// Uses Montgomery batch inversion trick
+// BatchInvertE4 returns a new slice with every element in a inverted.
+// It uses Montgomery batch inversion trick.
 //
 // if a[i] == 0, returns result[i] = a[i]
 func BatchInvertE4(a []E4) []E4 {
@@ -348,6 +349,7 @@ func BatchInvertE4(a []E4) []E4 {
 	return res
 }
 
+// Div divides an element in E4 by an element in E4
 func (z *E4) Div(x *E4, y *E4) *E4 {
 	var r E4
 	r.Inverse(y).Mul(x, &r)

@@ -46,7 +46,7 @@ func (f *Field[T]) AssertIsEqual(a, b *Element[T]) {
 	}
 
 	diff := f.Sub(b, a)
-	f.checkZero(diff)
+	f.checkZero(diff, nil)
 }
 
 // AssertIsLessOrEqual ensures that e is less or equal than a. For proper
@@ -111,7 +111,7 @@ func (f *Field[T]) IsZero(a *Element[T]) frontend.Variable {
 	// as ca is already reduced, then every limb overflow is already 0. Only
 	// every addition adds a bit to the overflow
 	totalOverflow := len(ca.Limbs) - 1
-	if totalOverflow < int(f.maxOverflow()) {
+	if totalOverflow > int(f.maxOverflow()) {
 		// the sums of limbs would overflow the native field. Use the first
 		// approach instead.
 		res := f.api.IsZero(ca.Limbs[0])

@@ -22,6 +22,7 @@ func GetHints() []solver.Hint {
 		InverseHint,
 		SqrtHint,
 		mulHint,
+		subPaddingHint,
 	}
 }
 
@@ -152,4 +153,52 @@ func SqrtHint(mod *big.Int, inputs []*big.Int, outputs []*big.Int) error {
 		outputs[0].Set(res)
 		return nil
 	})
+}
+
+// subPaddingHint computes the padding for the subtraction of two numbers. It
+// ensures that the padding is a multiple of the modulus. Can be used to avoid
+// underflow.
+//
+// In case of fixed modulus use subPadding instead.
+func subPaddingHint(mod *big.Int, inputs, outputs []*big.Int) error {
+	if len(inputs) < 4 {
+		return fmt.Errorf("input must be at least four elements")
+	}
+	nbLimbs := int(inputs[0].Int64())
+	bitsPerLimbs := uint(inputs[1].Uint64())
+	overflow := uint(inputs[2].Uint64())
+	retLimbs := int(inputs[3].Int64())
+	if len(inputs[4:]) != nbLimbs {
+		return fmt.Errorf("input length mismatch")
+	}
+	if len(outputs) != retLimbs {
+		return fmt.Errorf("result does not fit into output")
+	}
+	pLimbs := inputs[4 : 4+nbLimbs]
+	p := new(big.Int)
+	if err := recompose(pLimbs, bitsPerLimbs, p); err != nil {
+		return fmt.Errorf("recompose modulus: %w", err)
+	}
+	padLimbs := subPadding(p, bitsPerLimbs, overflow, uint(nbLimbs))
+	for i := range padLimbs {
+		outputs[i].Set(padLimbs[i])
+	}
+
+	return nil
+}
+
+func (f *Field[T]) computeSubPaddingHint(overflow uint, nbLimbs uint, modulus *Element[T]) *Element[T] {
+	var fp T
+	inputs := []frontend.Variable{fp.NbLimbs(), fp.BitsPerLimb(), overflow, nbLimbs}
+	inputs = append(inputs, modulus.Limbs...)
+	res, err := f.api.NewHint(subPaddingHint, int(nbLimbs), inputs...)
+	if err != nil {
+		panic(fmt.Sprintf("sub padding hint: %v", err))
+	}
+	for i := range res {
+		f.checker.Check(res[i], int(fp.BitsPerLimb()+overflow+1))
+	}
+	padding := f.newInternalElement(res, fp.BitsPerLimb()+overflow+1)
+	f.checkZero(padding, modulus)
+	return padding
 }

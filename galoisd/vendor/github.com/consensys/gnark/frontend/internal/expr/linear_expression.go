@@ -2,6 +2,7 @@ package expr
 
 import (
 	"github.com/consensys/gnark/constraint"
+	"golang.org/x/crypto/blake2b"
 )
 
 type LinearExpression []Term
@@ -52,12 +53,16 @@ func (l LinearExpression) Less(i, j int) bool {
 	return iID < jID
 }
 
-// HashCode returns a fast-to-compute but NOT collision resistant hash code identifier for the linear
-// expression
-func (l LinearExpression) HashCode() uint64 {
-	h := uint64(17)
-	for _, val := range l {
-		h = h*23 + val.HashCode() // TODO @gbotrel revisit
+// HashCode returns a collision-resistant identifier of the linear expression. It is constructed from the hash codes of the terms.
+func (l LinearExpression) HashCode() [16]byte {
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		panic(err)
 	}
-	return h
+	for i := range l {
+		termHash := l[i].HashCode()
+		h.Write(termHash[:])
+	}
+	crc := h.Sum(nil)
+	return [16]byte(crc[:16])
 }

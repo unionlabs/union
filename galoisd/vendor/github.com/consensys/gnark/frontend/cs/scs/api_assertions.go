@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/debug"
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/internal/expr"
@@ -165,11 +166,10 @@ func (builder *builder) AssertIsLessOrEqual(v frontend.Variable, bound frontend.
 		}
 	}
 
-	nbBits := builder.cs.FieldBitLen()
-	vBits := bits.ToBinary(builder, v, bits.WithNbDigits(nbBits), bits.WithUnconstrainedOutputs())
-
 	// bound is constant
 	if bConst {
+		nbBits := builder.cs.FieldBitLen()
+		vBits := bits.ToBinary(builder, v, bits.WithNbDigits(nbBits), bits.WithUnconstrainedOutputs())
 		builder.MustBeLessOrEqCst(vBits, builder.cs.ToBigInt(cb), v)
 		return
 	}
@@ -182,8 +182,10 @@ func (builder *builder) AssertIsLessOrEqual(v frontend.Variable, bound frontend.
 }
 
 func (builder *builder) mustBeLessOrEqVar(a frontend.Variable, bound expr.Term) {
-
-	debug := builder.newDebugInfo("mustBeLessOrEq", a, " <= ", bound)
+	var debugInfo []constraint.DebugInfo
+	if debug.Debug {
+		debugInfo = []constraint.DebugInfo{builder.newDebugInfo("mustBeLessOrEq", a, " <= ", bound)}
+	}
 
 	nbBits := builder.cs.FieldBitLen()
 
@@ -219,14 +221,14 @@ func (builder *builder) mustBeLessOrEqVar(a frontend.Variable, bound expr.Term) 
 			builder.addPlonkConstraint(sparseR1C{
 				xa: l.VID,
 				qL: l.Coeff,
-			}, debug)
+			}, debugInfo...)
 		} else {
 			// l * a[i] == 0
 			builder.addPlonkConstraint(sparseR1C{
 				xa: l.VID,
 				xb: aBits[i].(expr.Term).VID,
 				qM: l.Coeff,
-			}, debug)
+			}, debugInfo...)
 		}
 
 	}
@@ -254,8 +256,11 @@ func (builder *builder) MustBeLessOrEqCst(aBits []frontend.Variable, bound *big.
 		panic("AssertIsLessOrEqual: bound is too large, constraint will never be satisfied")
 	}
 
-	// debug info
-	debug := builder.newDebugInfo("mustBeLessOrEq", aForDebug, " <= ", bound)
+	// debugInfo info
+	var debugInfo []constraint.DebugInfo
+	if debug.Debug {
+		debugInfo = []constraint.DebugInfo{builder.newDebugInfo("mustBeLessOrEq", aForDebug, " <= ", bound)}
+	}
 
 	// t trailing bits in the bound
 	t := 0
@@ -289,7 +294,7 @@ func (builder *builder) MustBeLessOrEqCst(aBits []frontend.Variable, bound *big.
 				xa: l.VID,
 				xb: aBits[i].(expr.Term).VID,
 				qM: builder.tOne,
-			}, debug)
+			}, debugInfo...)
 		} else {
 			builder.AssertIsBoolean(aBits[i])
 		}

@@ -8,7 +8,7 @@ require (
 	cosmossdk.io/math v1.2.0
 	github.com/cometbft/cometbft v0.38.2
 	github.com/consensys/gnark v0.7.2-0.20230418172633-f83323bdf138
-	github.com/consensys/gnark-crypto v0.12.2-0.20240215234832-d72fcb379d3e
+	github.com/consensys/gnark-crypto v0.12.2-0.20240703135258-5d8b5fab1afb
 	github.com/cosmos/cosmos-sdk v0.50.2
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/cobra v1.7.0
@@ -97,6 +97,7 @@ require (
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	github.com/ronanh/intcomp v1.1.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -120,9 +121,9 @@ require (
 
 replace (
 	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240310221349-e2d54edc212b
-	github.com/consensys/gnark => github.com/consensys/gnark v0.9.2-0.20240312175655-ce0186ef32c1
+	github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20240723153903-9d859afe4c14
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
-	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240112093739-635c1b6963c6
+	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240720201413-c0383b2a80e9
 	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240206230727-9973b232e832
 	github.com/cosmos/gogoproto => github.com/cosmos/gogoproto v1.4.11
 )

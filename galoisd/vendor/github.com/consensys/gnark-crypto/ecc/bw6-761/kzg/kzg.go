@@ -217,35 +217,27 @@ func Open(p []fr.Element, point fr.Element, pk ProvingKey) (OpeningProof, error)
 // Verify verifies a KZG opening proof at a single point
 func Verify(commitment *Digest, proof *OpeningProof, point fr.Element, vk VerifyingKey) error {
 
-	// [f(a)]G₁
-	var claimedValueG1Aff bw6761.G1Jac
-	var claimedValueBigInt big.Int
-	proof.ClaimedValue.BigInt(&claimedValueBigInt)
-	claimedValueG1Aff.ScalarMultiplicationAffine(&vk.G1, &claimedValueBigInt)
-
-	// [f(α) - f(a)]G₁
-	var fminusfaG1Jac bw6761.G1Jac
-	fminusfaG1Jac.FromAffine(commitment)
-	fminusfaG1Jac.SubAssign(&claimedValueG1Aff)
-
-	// [-H(α)]G₁
-	var negH bw6761.G1Affine
-	negH.Neg(&proof.H)
-
-	// [f(α) - f(a) + a*H(α)]G₁
+	// [f(a)]G₁ + [-a]([H(α)]G₁) = [f(a) - a*H(α)]G₁
 	var totalG1 bw6761.G1Jac
-	var pointBigInt big.Int
-	point.BigInt(&pointBigInt)
-	totalG1.ScalarMultiplicationAffine(&proof.H, &pointBigInt)
-	totalG1.AddAssign(&fminusfaG1Jac)
-	var totalG1Aff bw6761.G1Affine
-	totalG1Aff.FromJacobian(&totalG1)
+	var pointNeg fr.Element
+	var cmInt, pointInt big.Int
+	proof.ClaimedValue.BigInt(&cmInt)
+	pointNeg.Neg(&point).BigInt(&pointInt)
+	totalG1.JointScalarMultiplication(&vk.G1, &proof.H, &cmInt, &pointInt)
+
+	// [f(a) - a*H(α)]G₁ + [-f(α)]G₁  = [f(a) - f(α) - a*H(α)]G₁
+	var commitmentJac bw6761.G1Jac
+	commitmentJac.FromAffine(commitment)
+	totalG1.SubAssign(&commitmentJac)
 
 	// e([f(α)-f(a)+aH(α)]G₁], G₂).e([-H(α)]G₁, [α]G₂) == 1
+	var totalG1Aff bw6761.G1Affine
+	totalG1Aff.FromJacobian(&totalG1)
 	check, err := bw6761.PairingCheckFixedQ(
-		[]bw6761.G1Affine{totalG1Aff, negH},
+		[]bw6761.G1Affine{totalG1Aff, proof.H},
 		vk.Lines[:],
 	)
+
 	if err != nil {
 		return err
 	}

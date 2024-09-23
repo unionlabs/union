@@ -52,11 +52,6 @@ import (
 	"github.com/consensys/gnark/logger"
 )
 
-// TODO in gnark-crypto:
-// * remove everything linked to the blinding
-// * add SetCoeff method
-// * modify GetCoeff -> if the poly is shifted and in canonical form the index is computed differently
-
 const (
 	id_L int = iota
 	id_R
@@ -101,12 +96,12 @@ type Proof struct {
 	// Commitment to Z, the permutation polynomial
 	Z kzg.Digest
 
-	// Commitments to h1, h2, h3 such that h = h1 + Xh2 + X**2h3 is the quotient polynomial
+	// Commitments to h1, h2, h3 such that h = h1 + Xⁿ⁺²*h2 + X²⁽ⁿ⁺²⁾*h3 is the quotient polynomial
 	H [3]kzg.Digest
 
 	Bsb22Commitments []kzg.Digest
 
-	// Batch opening proof of h1 + zeta*h2 + zeta**2h3, linearizedPolynomial, l, r, o, s1, s2, qCPrime
+	// Batch opening proof of linearizedPolynomial, l, r, o, s1, s2, qCPrime
 	BatchedProof kzg.BatchOpeningProof
 
 	// Opening proof of Z at zeta*mu
@@ -151,13 +146,10 @@ func Prove(spr *cs.SparseR1CS, pk *ProvingKey, fullWitness witness.Witness, opts
 	g.Go(instance.buildRatioCopyConstraint)
 
 	// compute h
-	g.Go(instance.evaluateConstraints)
+	g.Go(instance.computeQuotient)
 
 	// open Z (blinded) at ωζ (proof.ZShiftedOpening)
 	g.Go(instance.openZ)
-
-	// fold the commitment to H ([H₀] + ζᵐ⁺²*[H₁] + ζ²⁽ᵐ⁺²⁾[H₂])
-	g.Go(instance.foldH)
 
 	// linearized polynomial
 	g.Go(instance.computeLinearizedPolynomial)
@@ -187,13 +179,11 @@ type instance struct {
 	htfFunc        hash.Hash // hash to field function
 
 	// polynomials
-	x        []*iop.Polynomial // x stores tracks the polynomial we need
-	bp       []*iop.Polynomial // blinding polynomials
-	h        *iop.Polynomial   // h is the quotient polynomial
-	blindedZ []fr.Element      // blindedZ is the blinded version of Z
-
-	foldedH       []fr.Element // foldedH is the folded version of H
-	foldedHDigest kzg.Digest   // foldedHDigest is the kzg commitment of foldedH
+	x                         []*iop.Polynomial // x stores tracks the polynomial we need
+	bp                        []*iop.Polynomial // blinding polynomials
+	h                         *iop.Polynomial   // h is the quotient polynomial
+	blindedZ                  []fr.Element      // blindedZ is the blinded version of Z
+	quotientShardsRandomizers [2]fr.Element     // random elements for blinding the shards of the quotient
 
 	linearizedPolynomial       []fr.Element
 	linearizedPolynomialDigest kzg.Digest
@@ -217,7 +207,6 @@ type instance struct {
 	chRestoreLRO,
 	chZOpening,
 	chLinearizedPolynomial,
-	chFoldedH,
 	chGammaBeta chan struct{}
 
 	domain0, domain1 *fft.Domain
@@ -248,7 +237,6 @@ func newInstance(ctx context.Context, spr *cs.SparseR1CS, pk *ProvingKey, fullWi
 		chH:                    make(chan struct{}, 1),
 		chZOpening:             make(chan struct{}, 1),
 		chLinearizedPolynomial: make(chan struct{}, 1),
-		chFoldedH:              make(chan struct{}, 1),
 		chRestoreLRO:           make(chan struct{}, 1),
 	}
 	s.initBSB22Commitments()
@@ -259,6 +247,12 @@ func newInstance(ctx context.Context, spr *cs.SparseR1CS, pk *ProvingKey, fullWi
 	sizeSystem := uint64(nbConstraints + len(spr.Public)) // len(spr.Public) is for the placeholder constraints
 	s.domain0 = fft.NewDomain(sizeSystem)
 
+	// sampling random numbers for blinding the quotient
+	if opts.StatisticalZK {
+		s.quotientShardsRandomizers[0].SetRandom()
+		s.quotientShardsRandomizers[1].SetRandom()
+	}
+
 	// h, the quotient polynomial is of degree 3(n+1)+2, so it's in a 3(n+2) dim vector space,
 	// the domain is the next power of 2 superior to 3(n+2). 4*domainNum is enough in all cases
 	// except when n<6.
@@ -267,8 +261,6 @@ func newInstance(ctx context.Context, spr *cs.SparseR1CS, pk *ProvingKey, fullWi
 	} else {
 		s.domain1 = fft.NewDomain(4*sizeSystem, fft.WithoutPrecompute())
 	}
-	// TODO @gbotrel domain1 is used for only 1 FFT --> precomputing the twiddles
-	// and storing them in memory is costly given its size. --> do a FFT on the fly
 
 	// build trace
 	s.trace = NewTrace(spr, s.domain0)
@@ -335,7 +327,7 @@ func (s *instance) bsb22Hint(_ *big.Int, ins, outs []*big.Int) error {
 }
 
 // solveConstraints computes the evaluation of the polynomials L, R, O
-// and sets x[id_L], x[id_R], x[id_O] in canonical form
+// and sets x[id_L], x[id_R], x[id_O] in Lagrange form
 func (s *instance) solveConstraints() error {
 	_solution, err := s.spr.Solve(s.fullWitness, s.opt.SolverOpts...)
 	if err != nil {
@@ -490,8 +482,8 @@ func (s *instance) deriveZeta() (err error) {
 	return
 }
 
-// evaluateConstraints computes H
-func (s *instance) evaluateConstraints() (err error) {
+// computeQuotient computes H
+func (s *instance) computeQuotient() (err error) {
 	s.x[id_Ql] = s.trace.Ql
 	s.x[id_Qr] = s.trace.Qr
 	s.x[id_Qm] = s.trace.Qm
@@ -544,7 +536,7 @@ func (s *instance) evaluateConstraints() (err error) {
 		return err
 	}
 
-	s.h, err = divideByXMinusOne(numerator, [2]*fft.Domain{s.domain0, s.domain1})
+	s.h, err = divideByZH(numerator, [2]*fft.Domain{s.domain0, s.domain1})
 	if err != nil {
 		return err
 	}
@@ -625,56 +617,40 @@ func (s *instance) openZ() (err error) {
 }
 
 func (s *instance) h1() []fr.Element {
-	h1 := s.h.Coefficients()[:s.domain0.Cardinality+2]
+	var h1 []fr.Element
+	if !s.opt.StatisticalZK {
+		h1 = s.h.Coefficients()[:s.domain0.Cardinality+2]
+	} else {
+		h1 = make([]fr.Element, s.domain0.Cardinality+3)
+		copy(h1, s.h.Coefficients()[:s.domain0.Cardinality+2])
+		h1[s.domain0.Cardinality+2].Set(&s.quotientShardsRandomizers[0])
+	}
 	return h1
 }
 
 func (s *instance) h2() []fr.Element {
-	h2 := s.h.Coefficients()[s.domain0.Cardinality+2 : 2*(s.domain0.Cardinality+2)]
+	var h2 []fr.Element
+	if !s.opt.StatisticalZK {
+		h2 = s.h.Coefficients()[s.domain0.Cardinality+2 : 2*(s.domain0.Cardinality+2)]
+	} else {
+		h2 = make([]fr.Element, s.domain0.Cardinality+3)
+		copy(h2, s.h.Coefficients()[s.domain0.Cardinality+2:2*(s.domain0.Cardinality+2)])
+		h2[0].Sub(&h2[0], &s.quotientShardsRandomizers[0])
+		h2[s.domain0.Cardinality+2].Set(&s.quotientShardsRandomizers[1])
+	}
 	return h2
 }
 
 func (s *instance) h3() []fr.Element {
-	h3 := s.h.Coefficients()[2*(s.domain0.Cardinality+2) : 3*(s.domain0.Cardinality+2)]
+	var h3 []fr.Element
+	if !s.opt.StatisticalZK {
+		h3 = s.h.Coefficients()[2*(s.domain0.Cardinality+2) : 3*(s.domain0.Cardinality+2)]
+	} else {
+		h3 = make([]fr.Element, s.domain0.Cardinality+2)
+		copy(h3, s.h.Coefficients()[2*(s.domain0.Cardinality+2):3*(s.domain0.Cardinality+2)])
+		h3[0].Sub(&h3[0], &s.quotientShardsRandomizers[1])
+	}
 	return h3
-}
-
-// fold the commitment to H ([H₀] + ζᵐ⁺²*[H₁] + ζ²⁽ᵐ⁺²⁾[H₂])
-func (s *instance) foldH() error {
-	// wait for H to be committed and zeta to be derived (or ctx.Done())
-	select {
-	case <-s.ctx.Done():
-		return errContextDone
-	case <-s.chH:
-	}
-	var n big.Int
-	n.SetUint64(s.domain0.Cardinality + 2)
-
-	var zetaPowerNplusTwo fr.Element
-	zetaPowerNplusTwo.Exp(s.zeta, &n)
-	zetaPowerNplusTwo.BigInt(&n)
-
-	s.foldedHDigest.ScalarMultiplication(&s.proof.H[2], &n)
-	s.foldedHDigest.Add(&s.foldedHDigest, &s.proof.H[1])       // ζᵐ⁺²*Comm(h3)
-	s.foldedHDigest.ScalarMultiplication(&s.foldedHDigest, &n) // ζ²⁽ᵐ⁺²⁾*Comm(h3) + ζᵐ⁺²*Comm(h2)
-	s.foldedHDigest.Add(&s.foldedHDigest, &s.proof.H[0])
-
-	// fold H (H₀ + ζᵐ⁺²*H₁ + ζ²⁽ᵐ⁺²⁾H₂))
-	h1 := s.h1()
-	h2 := s.h2()
-	s.foldedH = s.h3()
-
-	for i := 0; i < int(s.domain0.Cardinality)+2; i++ {
-		s.foldedH[i].
-			Mul(&s.foldedH[i], &zetaPowerNplusTwo).
-			Add(&s.foldedH[i], &h2[i]).
-			Mul(&s.foldedH[i], &zetaPowerNplusTwo).
-			Add(&s.foldedH[i], &h1[i])
-	}
-
-	close(s.chFoldedH)
-
-	return nil
 }
 
 func (s *instance) computeLinearizedPolynomial() error {
@@ -749,20 +725,6 @@ func (s *instance) computeLinearizedPolynomial() error {
 
 func (s *instance) batchOpening() error {
 
-	// wait for LRO to be committed (or ctx.Done())
-	select {
-	case <-s.ctx.Done():
-		return errContextDone
-	case <-s.chLRO:
-	}
-
-	// wait for foldedH to be computed (or ctx.Done())
-	select {
-	case <-s.ctx.Done():
-		return errContextDone
-	case <-s.chFoldedH:
-	}
-
 	// wait for linearizedPolynomial to be computed (or ctx.Done())
 	select {
 	case <-s.ctx.Done():
@@ -771,27 +733,25 @@ func (s *instance) batchOpening() error {
 	}
 
 	polysQcp := coefficients(s.trace.Qcp)
-	polysToOpen := make([][]fr.Element, 7+len(polysQcp))
-	copy(polysToOpen[7:], polysQcp)
+	polysToOpen := make([][]fr.Element, 6+len(polysQcp))
+	copy(polysToOpen[6:], polysQcp)
 
-	polysToOpen[0] = s.foldedH
-	polysToOpen[1] = s.linearizedPolynomial
-	polysToOpen[2] = getBlindedCoefficients(s.x[id_L], s.bp[id_Bl])
-	polysToOpen[3] = getBlindedCoefficients(s.x[id_R], s.bp[id_Br])
-	polysToOpen[4] = getBlindedCoefficients(s.x[id_O], s.bp[id_Bo])
-	polysToOpen[5] = s.trace.S1.Coefficients()
-	polysToOpen[6] = s.trace.S2.Coefficients()
+	polysToOpen[0] = s.linearizedPolynomial
+	polysToOpen[1] = getBlindedCoefficients(s.x[id_L], s.bp[id_Bl])
+	polysToOpen[2] = getBlindedCoefficients(s.x[id_R], s.bp[id_Br])
+	polysToOpen[3] = getBlindedCoefficients(s.x[id_O], s.bp[id_Bo])
+	polysToOpen[4] = s.trace.S1.Coefficients()
+	polysToOpen[5] = s.trace.S2.Coefficients()
 
-	digestsToOpen := make([]curve.G1Affine, len(s.pk.Vk.Qcp)+7)
-	copy(digestsToOpen[7:], s.pk.Vk.Qcp)
+	digestsToOpen := make([]curve.G1Affine, len(s.pk.Vk.Qcp)+6)
+	copy(digestsToOpen[6:], s.pk.Vk.Qcp)
 
-	digestsToOpen[0] = s.foldedHDigest
-	digestsToOpen[1] = s.linearizedPolynomialDigest
-	digestsToOpen[2] = s.proof.LRO[0]
-	digestsToOpen[3] = s.proof.LRO[1]
-	digestsToOpen[4] = s.proof.LRO[2]
-	digestsToOpen[5] = s.pk.Vk.S[0]
-	digestsToOpen[6] = s.pk.Vk.S[1]
+	digestsToOpen[0] = s.linearizedPolynomialDigest
+	digestsToOpen[1] = s.proof.LRO[0]
+	digestsToOpen[2] = s.proof.LRO[1]
+	digestsToOpen[3] = s.proof.LRO[2]
+	digestsToOpen[4] = s.pk.Vk.S[0]
+	digestsToOpen[5] = s.pk.Vk.S[1]
 
 	var err error
 	s.proof.BatchedProof, err = kzg.BatchOpenSinglePoint(
@@ -834,7 +794,7 @@ func (s *instance) computeNumerator() (*iop.Polynomial, error) {
 	case <-s.chQk:
 	}
 
-	nbBsbGates := (len(s.x) - id_Qci + 1) >> 1
+	nbBsbGates := len(s.proof.Bsb22Commitments)
 
 	gateConstraint := func(u ...fr.Element) fr.Element {
 
@@ -1139,7 +1099,7 @@ func evaluateBlinded(p, bp *iop.Polynomial, zeta fr.Element) fr.Element {
 	return pEvaluatedAtZeta
 }
 
-// /!\ modifies p's underlying array of coefficients, in particular the size changes
+// /!\ modifies the size
 func getBlindedCoefficients(p, bp *iop.Polynomial) []fr.Element {
 	cp := p.Coefficients()
 	cbp := bp.Coefficients()
@@ -1212,10 +1172,10 @@ func commitToQuotient(h1, h2, h3 []fr.Element, proof *Proof, kzgPk kzg.ProvingKe
 	return g.Wait()
 }
 
-// divideByXMinusOne
+// divideByZH
 // The input must be in LagrangeCoset.
 // The result is in Canonical Regular. (in place using a)
-func divideByXMinusOne(a *iop.Polynomial, domains [2]*fft.Domain) (*iop.Polynomial, error) {
+func divideByZH(a *iop.Polynomial, domains [2]*fft.Domain) (*iop.Polynomial, error) {
 
 	// check that the basis is LagrangeCoset
 	if a.Basis != iop.LagrangeCoset || a.Layout != iop.BitReverse {
@@ -1255,7 +1215,7 @@ func evaluateXnMinusOneDomainBigCoset(domains [2]*fft.Domain) []fr.Element {
 	res[0].Exp(domains[1].FrMultiplicativeGen, expo)
 
 	var t fr.Element
-	t.Exp(domains[1].Generator, big.NewInt(int64(domains[0].Cardinality)))
+	t.Exp(domains[1].Generator, expo)
 
 	one := fr.One()
 
@@ -1279,16 +1239,24 @@ func evaluateXnMinusOneDomainBigCoset(domains [2]*fft.Domain) []fr.Element {
 // The Linearized polynomial is:
 //
 // α²*L₁(ζ)*Z(X)
-// + α*( (l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*Z(μζ)*s3(X) - Z(X)*(l(ζ)+β*id1(ζ)+γ)*(r(ζ)+β*id2(ζ)+γ)*(o(ζ)+β*id3(ζ)+γ))
-// + l(ζ)*Ql(X) + l(ζ)r(ζ)*Qm(X) + r(ζ)*Qr(X) + o(ζ)*Qo(X) + Qk(X)
+// + α*( (l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*(β*s3(X))*Z(μζ) - Z(X)*(l(ζ)+β*id1(ζ)+γ)*(r(ζ)+β*id2(ζ)+γ)*(o(ζ)+β*id3(ζ)+γ))
+// + l(ζ)*Ql(X) + l(ζ)r(ζ)*Qm(X) + r(ζ)*Qr(X) + o(ζ)*Qo(X) + Qk(X) + ∑ᵢQcp_(ζ)Pi_(X)
+// - Z_{H}(ζ)*((H₀(X) + ζᵐ⁺²*H₁(X) + ζ²⁽ᵐ⁺²⁾*H₂(X))
+//
+// /!\ blindedZCanonical is modified
 func (s *instance) innerComputeLinearizedPoly(lZeta, rZeta, oZeta, alpha, beta, gamma, zeta, zu fr.Element, qcpZeta, blindedZCanonical []fr.Element, pi2Canonical [][]fr.Element, pk *ProvingKey) []fr.Element {
-	// TODO @gbotrel rename
-	// first part: individual constraints
+
+	// l(ζ)r(ζ)
 	var rl fr.Element
 	rl.Mul(&rZeta, &lZeta)
 
-	// second part:
-	// Z(μζ)(l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*β*s3(X)-Z(X)(l(ζ)+β*id1(ζ)+γ)*(r(ζ)+β*id2(ζ)+γ)*(o(ζ)+β*id3(ζ)+γ)
+	// s1 =  α*(l(ζ)+β*s1(β)+γ)*(r(ζ)+β*s2(β)+γ)*β*Z(μζ)
+	// s2 = -α*(l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)*(o(ζ)+β*u²*ζ+γ)
+	// the linearised polynomial is
+	// α²*L₁(ζ)*Z(X) +
+	// s1*s3(X)+s2*Z(X) + l(ζ)*Ql(X) +
+	// l(ζ)r(ζ)*Qm(X) + r(ζ)*Qr(X) + o(ζ)*Qo(X) + Qk(X) + ∑ᵢQcp_(ζ)Pi_(X) -
+	// Z_{H}(ζ)*((H₀(X) + ζᵐ⁺²*H₁(X) + ζ²⁽ᵐ⁺²⁾*H₂(X))
 	var s1, s2 fr.Element
 	chS1 := make(chan struct{}, 1)
 	go func() {
@@ -1296,11 +1264,11 @@ func (s *instance) innerComputeLinearizedPoly(lZeta, rZeta, oZeta, alpha, beta, 
 		s1.Mul(&s1, &beta).Add(&s1, &lZeta).Add(&s1, &gamma) // (l(ζ)+β*s1(ζ)+γ)
 		close(chS1)
 	}()
-	// ps2 := iop.NewPolynomial(&pk.S2Canonical, iop.Form{Basis: iop.Canonical, Layout: iop.Regular})
+
 	tmp := s.trace.S2.Evaluate(zeta)                         // s2(ζ)
 	tmp.Mul(&tmp, &beta).Add(&tmp, &rZeta).Add(&tmp, &gamma) // (r(ζ)+β*s2(ζ)+γ)
 	<-chS1
-	s1.Mul(&s1, &tmp).Mul(&s1, &zu).Mul(&s1, &beta) // (l(ζ)+β*s1(β)+γ)*(r(ζ)+β*s2(β)+γ)*β*Z(μζ)
+	s1.Mul(&s1, &tmp).Mul(&s1, &zu).Mul(&s1, &beta).Mul(&s1, &alpha) // (l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*β*Z(μζ)*α
 
 	var uzeta, uuzeta fr.Element
 	uzeta.Mul(&zeta, &pk.Vk.CosetShift)
@@ -1311,27 +1279,36 @@ func (s *instance) innerComputeLinearizedPoly(lZeta, rZeta, oZeta, alpha, beta, 
 	s2.Mul(&s2, &tmp)                                           // (l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)
 	tmp.Mul(&beta, &uuzeta).Add(&tmp, &oZeta).Add(&tmp, &gamma) // (o(ζ)+β*u²*ζ+γ)
 	s2.Mul(&s2, &tmp)                                           // (l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)*(o(ζ)+β*u²*ζ+γ)
-	s2.Neg(&s2)                                                 // -(l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)*(o(ζ)+β*u²*ζ+γ)
+	s2.Neg(&s2).Mul(&s2, &alpha)
 
-	// third part L₁(ζ)*α²*Z
-	var lagrangeZeta, one, den, frNbElmt fr.Element
+	// Z_h(ζ), ζⁿ⁺², L₁(ζ)*α²*Z
+	var zhZeta, zetaNPlusTwo, alphaSquareLagrangeZero, one, den, frNbElmt fr.Element
 	one.SetOne()
 	nbElmt := int64(s.domain0.Cardinality)
-	lagrangeZeta.Set(&zeta).
-		Exp(lagrangeZeta, big.NewInt(nbElmt)).
-		Sub(&lagrangeZeta, &one)
+	alphaSquareLagrangeZero.Set(&zeta).Exp(alphaSquareLagrangeZero, big.NewInt(nbElmt)) // ζⁿ
+	zetaNPlusTwo.Mul(&alphaSquareLagrangeZero, &zeta).Mul(&zetaNPlusTwo, &zeta)         // ζⁿ⁺²
+	alphaSquareLagrangeZero.Sub(&alphaSquareLagrangeZero, &one)                         // ζⁿ - 1
+	zhZeta.Set(&alphaSquareLagrangeZero)                                                // Z_h(ζ) = ζⁿ - 1
 	frNbElmt.SetUint64(uint64(nbElmt))
-	den.Sub(&zeta, &one).
-		Inverse(&den)
-	lagrangeZeta.Mul(&lagrangeZeta, &den). // L₁ = (ζⁿ⁻¹)/(ζ-1)
-						Mul(&lagrangeZeta, &alpha).
-						Mul(&lagrangeZeta, &alpha).
-						Mul(&lagrangeZeta, &s.domain0.CardinalityInv) // (1/n)*α²*L₁(ζ)
+	den.Sub(&zeta, &one).Inverse(&den)                           // 1/(ζ-1)
+	alphaSquareLagrangeZero.Mul(&alphaSquareLagrangeZero, &den). // L₁ = (ζⁿ - 1)/(ζ-1)
+									Mul(&alphaSquareLagrangeZero, &alpha).
+									Mul(&alphaSquareLagrangeZero, &alpha).
+									Mul(&alphaSquareLagrangeZero, &s.domain0.CardinalityInv) // α²*L₁(ζ)
 
 	s3canonical := s.trace.S3.Coefficients()
 
 	s.trace.Qk.ToCanonical(s.domain0).ToRegular()
 
+	// len(h1)=len(h2)=len(blindedZCanonical)=len(h3)+1 when Statistical ZK is activated
+	// len(h1)=len(h2)=len(h3)=len(blindedZCanonical)-1 when Statistical ZK is deactivated
+	h1 := s.h1()
+	h2 := s.h2()
+	h3 := s.h3()
+
+	// at this stage we have
+	// s1 =  α*(l(ζ)+β*s1(β)+γ)*(r(ζ)+β*s2(β)+γ)*β*Z(μζ)
+	// s2 = -α*(l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)*(o(ζ)+β*u²*ζ+γ)
 	utils.Parallelize(len(blindedZCanonical), func(start, end int) {
 
 		cql := s.trace.Ql.Coefficients()
@@ -1343,45 +1320,50 @@ func (s *instance) innerComputeLinearizedPoly(lZeta, rZeta, oZeta, alpha, beta, 
 		var t, t0, t1 fr.Element
 
 		for i := start; i < end; i++ {
-
-			t.Mul(&blindedZCanonical[i], &s2) // -Z(X)*(l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)*(o(ζ)+β*u²*ζ+γ)
-
+			t.Mul(&blindedZCanonical[i], &s2) // -Z(X)*α*(l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)*(o(ζ)+β*u²*ζ+γ)
 			if i < len(s3canonical) {
-
-				t0.Mul(&s3canonical[i], &s1) // (l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*Z(μζ)*β*s3(X)
-
+				t0.Mul(&s3canonical[i], &s1) // α*(l(ζ)+β*s1(β)+γ)*(r(ζ)+β*s2(β)+γ)*β*Z(μζ)*β*s3(X)
 				t.Add(&t, &t0)
 			}
-
-			t.Mul(&t, &alpha) // α*( (l(ζ)+β*s1(ζ)+γ)*(r(ζ)+β*s2(ζ)+γ)*Z(μζ)*s3(X) - Z(X)*(l(ζ)+β*ζ+γ)*(r(ζ)+β*u*ζ+γ)*(o(ζ)+β*u²*ζ+γ))
-
 			if i < len(cqm) {
-
-				t1.Mul(&cqm[i], &rl) // linPol = linPol + l(ζ)r(ζ)*Qm(X)
-
-				t0.Mul(&cql[i], &lZeta)
-				t0.Add(&t0, &t1)
-
-				t.Add(&t, &t0) // linPol = linPol + l(ζ)*Ql(X)
-
-				t0.Mul(&cqr[i], &rZeta)
-				t.Add(&t, &t0) // linPol = linPol + r(ζ)*Qr(X)
-
-				t0.Mul(&cqo[i], &oZeta)
-				t0.Add(&t0, &cqk[i])
-
-				t.Add(&t, &t0) // linPol = linPol + o(ζ)*Qo(X) + Qk(X)
-
-				for j := range qcpZeta {
+				t1.Mul(&cqm[i], &rl)     // l(ζ)r(ζ)*Qm(X)
+				t.Add(&t, &t1)           // linPol += l(ζ)r(ζ)*Qm(X)
+				t0.Mul(&cql[i], &lZeta)  // l(ζ)Q_l(X)
+				t.Add(&t, &t0)           // linPol += l(ζ)*Ql(X)
+				t0.Mul(&cqr[i], &rZeta)  //r(ζ)*Qr(X)
+				t.Add(&t, &t0)           // linPol += r(ζ)*Qr(X)
+				t0.Mul(&cqo[i], &oZeta)  // o(ζ)*Qo(X)
+				t.Add(&t, &t0)           // linPol += o(ζ)*Qo(X)
+				t.Add(&t, &cqk[i])       // linPol += Qk(X)
+				for j := range qcpZeta { // linPol += ∑ᵢQcp_(ζ)Pi_(X)
 					t0.Mul(&pi2Canonical[j][i], &qcpZeta[j])
 					t.Add(&t, &t0)
 				}
 			}
 
-			t0.Mul(&blindedZCanonical[i], &lagrangeZeta)
-			blindedZCanonical[i].Add(&t, &t0) // finish the computation
+			t0.Mul(&blindedZCanonical[i], &alphaSquareLagrangeZero) // α²L₁(ζ)Z(X)
+			blindedZCanonical[i].Add(&t, &t0)                       // linPol += α²L₁(ζ)Z(X)
+
+			// if statistical zeroknowledge is deactivated, len(h1)=len(h2)=len(h3)=len(blindedZ)-1.
+			// Else len(h1)=len(h2)=len(blindedZCanonical)=len(h3)+1
+			if i < len(h3) {
+				t.Mul(&h3[i], &zetaNPlusTwo).
+					Add(&t, &h2[i]).
+					Mul(&t, &zetaNPlusTwo).
+					Add(&t, &h1[i]).
+					Mul(&t, &zhZeta)
+				blindedZCanonical[i].Sub(&blindedZCanonical[i], &t) // linPol -= Z_h(ζ)*(H₀(X) + ζᵐ⁺²*H₁(X) + ζ²⁽ᵐ⁺²⁾*H₂(X))
+			} else {
+				if s.opt.StatisticalZK {
+					t.Mul(&h2[i], &zetaNPlusTwo).
+						Add(&t, &h1[i]).
+						Mul(&t, &zhZeta)
+					blindedZCanonical[i].Sub(&blindedZCanonical[i], &t) // linPol -= Z_h(ζ)*(H₀(X) + ζᵐ⁺²*H₁(X) + ζ²⁽ᵐ⁺²⁾*H₂(X))
+				}
+			}
 		}
 	})
+
 	return blindedZCanonical
 }
 

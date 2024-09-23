@@ -294,12 +294,14 @@ func (builder *builder) Div(i1, i2 frontend.Variable) frontend.Variable {
 
 	if !v2Constant {
 		res := builder.newInternalVariable()
-		debug := builder.newDebugInfo("div", v1, "/", v2, " == ", res)
 		v2Inv := builder.newInternalVariable()
 		// note that here we ensure that v2 can't be 0, but it costs us one extra constraint
 		c1 := builder.cs.AddR1C(builder.newR1C(v2, v2Inv, builder.cstOne()), builder.genericGate)
 		c2 := builder.cs.AddR1C(builder.newR1C(v1, v2Inv, res), builder.genericGate)
-		builder.cs.AttachDebugInfo(debug, []int{c1, c2})
+		if debug.Debug {
+			debug := builder.newDebugInfo("div", v1, "/", v2, " == ", res)
+			builder.cs.AttachDebugInfo(debug, []int{c1, c2})
+		}
 		return res
 	}
 
@@ -542,8 +544,6 @@ func (builder *builder) IsZero(i1 frontend.Variable) frontend.Variable {
 		return builder.cstZero()
 	}
 
-	debug := builder.newDebugInfo("isZero", a)
-
 	// x = 1/a 				// in a hint (x == 0 if a == 0)
 	// m = -a*x + 1         // constrain m to be 1 if a == 0
 	// a * m = 0            // constrain m to be 0 if a != 0
@@ -563,7 +563,10 @@ func (builder *builder) IsZero(i1 frontend.Variable) frontend.Variable {
 	// a * m = 0            // constrain m to be 0 if a != 0
 	c2 := builder.cs.AddR1C(builder.newR1C(a, m, builder.cstZero()), builder.genericGate)
 
-	builder.cs.AttachDebugInfo(debug, []int{c1, c2})
+	if debug.Debug {
+		debug := builder.newDebugInfo("isZero", a)
+		builder.cs.AttachDebugInfo(debug, []int{c1, c2})
+	}
 
 	builder.MarkBoolean(m)
 

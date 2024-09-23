@@ -437,7 +437,7 @@ func (solver *solver) run() error {
 	// then we check that the constraint is valid
 	// if a[i] * b[i] != c[i]; it means the constraint is not satisfied
 	var wg sync.WaitGroup
-	chTasks := make(chan []int, solver.nbTasks)
+	chTasks := make(chan []uint32, solver.nbTasks)
 	chError := make(chan error, solver.nbTasks)
 
 	// start a worker pool

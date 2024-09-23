@@ -96,6 +96,10 @@ func (w *walker) arraySliceElem(index int, v reflect.Value) error {
 	if v.CanAddr() && v.Addr().CanInterface() {
 		// TODO @gbotrel don't like that hook, undesirable side effects
 		// will be hard to detect; (for example calling Parse multiple times will init multiple times!)
+		//
+		// ivokub: completely agree, I have had to work around quite a lot in
+		// field emulation to "deinitialize" the elements. Maybe we can have a
+		// destructor/deinit hook also?
 		value := v.Addr().Interface()
 		if ih, hasInitHook := value.(InitHook); hasInitHook {
 			ih.GnarkInitHook()
@@ -164,6 +168,10 @@ func (w *walker) StructField(sf reflect.StructField, v reflect.Value) error {
 	if v.CanAddr() && v.Addr().CanInterface() {
 		// TODO @gbotrel don't like that hook, undesirable side effects
 		// will be hard to detect; (for example calling Parse multiple times will init multiple times!)
+		//
+		// ivokub: completely agree, I have had to work around quite a lot in
+		// field emulation to "deinitialize" the elements. Maybe we can have a
+		// destructor/deinit hook also?
 		value := v.Addr().Interface()
 		if ih, hasInitHook := value.(InitHook); hasInitHook {
 			ih.GnarkInitHook()

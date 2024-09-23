@@ -41,7 +41,7 @@ func UnmarshalSolidity(s []byte, nbCommits int) Proof {
 	// uint256 o_at_zeta;
 	// uint256 s1_at_zeta;
 	// uint256 s2_at_zeta;
-	for i := 2; i < 7; i++ {
+	for i := 1; i < 6; i++ {
 		proof.BatchedProof.ClaimedValues[i].SetBytes(s[offset : offset+fr_size])
 		offset += fr_size
 	}
@@ -55,12 +55,8 @@ func UnmarshalSolidity(s []byte, nbCommits int) Proof {
 	proof.ZShiftedOpening.ClaimedValue.SetBytes(s[offset : offset+fr_size])
 	offset += fr_size
 
-	// uint256 quotient_polynomial_at_zeta;
-	// uint256 linearization_polynomial_at_zeta;
-	proof.BatchedProof.ClaimedValues[0].SetBytes(s[offset : offset+fr_size])
-	offset += fr_size
-	proof.BatchedProof.ClaimedValues[1].SetBytes(s[offset : offset+fr_size])
-	offset += fr_size
+	// we skip the claimed value of the linearised polynomial at zeta as
+	// it is not in the marshal solidity proof
 
 	// uint256 opening_at_zeta_proof_x;
 	// uint256 opening_at_zeta_proof_y;
@@ -75,7 +71,7 @@ func UnmarshalSolidity(s []byte, nbCommits int) Proof {
 	// uint256[] selector_commit_api_at_zeta;
 	// uint256[] wire_committed_commitments;
 	for i := 0; i < nbCommits; i++ {
-		proof.BatchedProof.ClaimedValues[7+i].SetBytes(s[offset : offset+fr_size])
+		proof.BatchedProof.ClaimedValues[6+i].SetBytes(s[offset : offset+fr_size])
 		offset += fr_size
 	}
 

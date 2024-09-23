@@ -56,7 +56,7 @@ func processChunkG1Jacobian[B ibg1JacExtended](chunk uint64,
 	runningSum.setInfinity()
 	total.setInfinity()
 	for k := len(buckets) - 1; k >= 0; k-- {
-		if !buckets[k].IsZero() {
+		if !buckets[k].IsInfinity() {
 			runningSum.add(&buckets[k])
 		}
 		total.add(&runningSum)
@@ -145,7 +145,7 @@ func processChunkG2Jacobian[B ibg2JacExtended](chunk uint64,
 	runningSum.setInfinity()
 	total.setInfinity()
 	for k := len(buckets) - 1; k >= 0; k-- {
-		if !buckets[k].IsZero() {
+		if !buckets[k].IsInfinity() {
 			runningSum.add(&buckets[k])
 		}
 		total.add(&runningSum)

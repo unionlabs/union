@@ -63,11 +63,12 @@ func (z *E6) SetRandom() (*E6, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E6) IsZero() bool {
 	return z.B0.IsZero() && z.B1.IsZero() && z.B2.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E6) IsOne() bool {
 	return z.B0.IsOne() && z.B1.IsZero() && z.B2.IsZero()
 }
@@ -88,7 +89,7 @@ func (z *E6) Neg(x *E6) *E6 {
 	return z
 }
 
-// Sub two elements of E6
+// Sub subtracts two elements of E6
 func (z *E6) Sub(x, y *E6) *E6 {
 	z.B0.Sub(&x.B0, &y.B0)
 	z.B1.Sub(&x.B1, &y.B1)
@@ -286,8 +287,8 @@ func (z *E6) Inverse(x *E6) *E6 {
 	return z
 }
 
-// BatchInvertE6 returns a new slice with every element inverted.
-// Uses Montgomery batch inversion trick
+// BatchInvertE6 returns a new slice with every element in a inverted.
+// It uses Montgomery batch inversion trick.
 //
 // if a[i] == 0, returns result[i] = a[i]
 func BatchInvertE6(a []E6) []E6 {
@@ -322,6 +323,8 @@ func BatchInvertE6(a []E6) []E6 {
 	return res
 }
 
+// Select is conditional move.
+// If cond = 0, it sets z to caseZ and returns it. otherwise caseNz.
 func (z *E6) Select(cond int, caseZ *E6, caseNz *E6) *E6 {
 	//Might be able to save a nanosecond or two by an aggregate implementation
 
@@ -332,6 +335,7 @@ func (z *E6) Select(cond int, caseZ *E6, caseNz *E6) *E6 {
 	return z
 }
 
+// Div divides an element in E6 by an element in E6
 func (z *E6) Div(x *E6, y *E6) *E6 {
 	var r E6
 	r.Inverse(y).Mul(x, &r)

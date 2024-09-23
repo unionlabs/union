@@ -17,6 +17,8 @@
 package cs
 
 import (
+	"encoding/binary"
+	"errors"
 	"github.com/consensys/gnark/constraint"
 	"github.com/consensys/gnark/internal/utils"
 	"math/big"
@@ -44,6 +46,42 @@ func newCoeffTable(capacity int) CoeffTable {
 
 	return r
 
+}
+
+func (ct *CoeffTable) toBytes() []byte {
+	buf := make([]byte, 0, 8+len(ct.Coefficients)*fr.Bytes)
+	ctLen := uint64(len(ct.Coefficients))
+
+	buf = binary.LittleEndian.AppendUint64(buf, ctLen)
+	for _, c := range ct.Coefficients {
+		for _, w := range c {
+			buf = binary.LittleEndian.AppendUint64(buf, w)
+		}
+	}
+
+	return buf
+}
+
+func (ct *CoeffTable) fromBytes(buf []byte) error {
+	if len(buf) < 8 {
+		return errors.New("invalid buffer size")
+	}
+	ctLen := binary.LittleEndian.Uint64(buf[:8])
+	buf = buf[8:]
+
+	if uint64(len(buf)) < ctLen*fr.Bytes {
+		return errors.New("invalid buffer size")
+	}
+	ct.Coefficients = make([]fr.Element, ctLen)
+	for i := uint64(0); i < ctLen; i++ {
+		var c fr.Element
+		k := int(i) * fr.Bytes
+		for j := 0; j < fr.Limbs; j++ {
+			c[j] = binary.LittleEndian.Uint64(buf[k+j*8 : k+(j+1)*8])
+		}
+		ct.Coefficients[i] = c
+	}
+	return nil
 }
 
 func (ct *CoeffTable) AddCoeff(coeff constraint.Element) uint32 {

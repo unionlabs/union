@@ -32,7 +32,7 @@ func (sbb *StringBuilder) WriteLinearExpression(l LinearExpression) {
 	}
 }
 
-// WriteLinearExpression appends the term to the current buffer
+// WriteTerm appends the term to the current buffer
 func (sbb *StringBuilder) WriteTerm(t Term) {
 	if t.CoeffID() == CoeffIdZero {
 		sbb.WriteByte('0')

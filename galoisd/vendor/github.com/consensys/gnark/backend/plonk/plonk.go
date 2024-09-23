@@ -27,6 +27,7 @@ import (
 	"github.com/consensys/gnark/backend"
 	"github.com/consensys/gnark/constraint"
 
+	"github.com/consensys/gnark/backend/solidity"
 	"github.com/consensys/gnark/backend/witness"
 	cs_bls12377 "github.com/consensys/gnark/constraint/bls12-377"
 	cs_bls12381 "github.com/consensys/gnark/constraint/bls12-381"
@@ -91,8 +92,10 @@ type VerifyingKey interface {
 	io.ReaderFrom
 	gnarkio.WriterRawTo
 	gnarkio.UnsafeReaderFrom
-	NbPublicWitness() int // number of elements expected in the public witness
-	ExportSolidity(w io.Writer) error
+	// VerifyingKey are the methods required for generating the Solidity
+	// verifier contract from the VerifyingKey. This will return an error if not
+	// supported on the CurveID().
+	solidity.VerifyingKey
 }
 
 // Setup prepares the public data associated to a circuit + public inputs.
@@ -322,7 +325,7 @@ func NewVerifyingKey(curveID ecc.ID) VerifyingKey {
 // SRSSize returns the required size of the kzg SRS for a given constraint system
 // Note that the SRS size in Lagrange form is a power of 2,
 // and the SRS size in canonical form need few extra elements (3) to account for the blinding factors
-func SRSSize(ccs constraint.System) (sizeCanonical, sizeLagrange int) {
+func SRSSize(ccs constraint.ConstraintSystem) (sizeCanonical, sizeLagrange int) {
 	nbConstraints := ccs.GetNbConstraints()
 	sizeSystem := nbConstraints + ccs.GetNbPublicVariables()
 

@@ -97,11 +97,12 @@ func (z *E24) SetRandom() (*E24, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E24) IsZero() bool {
 	return z.D0.IsZero() && z.D1.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E24) IsOne() bool {
 	return z.D0.IsOne() && z.D1.IsZero()
 }

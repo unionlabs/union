@@ -133,11 +133,12 @@ func (z *E4) SetRandom() (*E4, error) {
 	return z, nil
 }
 
-// IsZero returns true if the element is zero, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E4) IsZero() bool {
 	return z.B0.IsZero() && z.B1.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E4) IsOne() bool {
 	return z.B0.IsOne() && z.B1.IsZero()
 }

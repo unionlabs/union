@@ -18,7 +18,6 @@ package plonk
 
 import (
 	"fmt"
-	"github.com/consensys/gnark-crypto/ecc"
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr"
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr/fft"
 	"github.com/consensys/gnark-crypto/ecc/bls24-315/fr/iop"
@@ -96,7 +95,7 @@ func Setup(spr *cs.SparseR1CS, srs, srsLagrange kzg.SRS) (*ProvingKey, *Verifyin
 	// step 0: set the fft domains
 	domain := initFFTDomain(spr)
 	if domain.Cardinality < 2 {
-		return nil, nil, fmt.Errorf("circuit has only %d constraints; unsupported by the current implementation", spr.GetNbConstraints())
+		return nil, nil, fmt.Errorf("circuit has only %d constraints; unsupported by the current implementation", len(spr.Public)+spr.GetNbConstraints())
 	}
 
 	// check the size of the kzg srs.
@@ -154,9 +153,7 @@ func (pk *ProvingKey) VerifyingKey() interface{} {
 func NewTrace(spr *cs.SparseR1CS, domain *fft.Domain) *Trace {
 	var trace Trace
 
-	nbConstraints := spr.GetNbConstraints()
-	sizeSystem := uint64(nbConstraints + len(spr.Public))
-	size := ecc.NextPowerOfTwo(sizeSystem)
+	size := int(domain.Cardinality)
 	commitmentInfo := spr.CommitmentInfo.(constraint.PlonkCommitments)
 
 	ql := make([]fr.Element, size)

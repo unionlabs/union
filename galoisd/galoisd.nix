@@ -28,15 +28,33 @@
         src = ./.;
         vendorHash = null;
         meta = { mainProgram = "galoisd"; };
+        tags = [ "binary" ];
       } // (if pkgs.stdenv.isLinux then {
-        nativeBuildInputs = [ pkgs.musl ];
         CGO_ENABLED = 0;
+      } else
+        { }));
+
+      galoisd-library = goPkgs.pkgsStatic.buildGoModule ({
+        name = "libgalois";
+        src = ./.;
+        vendorHash = null;
+        tags = [ "library" ];
+      } // (if pkgs.stdenv.isLinux then {
+        nativeBuildInputs = [ goPkgs.musl goPkgs.pkgsStatic.binutils ];
+        doCheck = false;
+        CGO_ENABLED = 1;
+        GOBIN = "${placeholder "out"}/lib";
+        postInstall = ''
+          mv $out/lib/galoisd $out/lib/libgalois.a
+        '';
         ldflags = [
-          "-linkmode external"
-          "-extldflags '-static -L${pkgs.musl}/lib -s -w'"
+          "-s"
+          "-w"
+          "-buildmode c-archive"
         ];
       } else
         { }));
+
 
       galoisd-image = pkgs.dockerTools.buildImage {
         name = "${self'.packages.galoisd.name}-image";

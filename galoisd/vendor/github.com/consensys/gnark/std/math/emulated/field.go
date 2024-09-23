@@ -43,7 +43,7 @@ type Field[T FieldParams] struct {
 
 	log zerolog.Logger
 
-	constrainedLimbs map[uint64]struct{}
+	constrainedLimbs map[[16]byte]struct{}
 	checker          frontend.Rangechecker
 
 	mulChecks []mulCheck[T]
@@ -69,7 +69,7 @@ func NewField[T FieldParams](native frontend.API) (*Field[T], error) {
 	f := &Field[T]{
 		api:              native,
 		log:              logger.Logger(),
-		constrainedLimbs: make(map[uint64]struct{}),
+		constrainedLimbs: make(map[[16]byte]struct{}),
 		checker:          rangecheck.New(native),
 	}
 
@@ -216,7 +216,7 @@ func (f *Field[T]) enforceWidthConditional(a *Element[T]) (didConstrain bool) {
 			}
 			continue
 		}
-		if vv, ok := a.Limbs[i].(interface{ HashCode() uint64 }); ok {
+		if vv, ok := a.Limbs[i].(interface{ HashCode() [16]byte }); ok {
 			// okay, this is a canonical variable and it has a hashcode. We use
 			// it to see if the limb is already constrained.
 			h := vv.HashCode()

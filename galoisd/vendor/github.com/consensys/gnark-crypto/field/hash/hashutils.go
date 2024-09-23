@@ -6,8 +6,8 @@ import (
 )
 
 // ExpandMsgXmd expands msg to a slice of lenInBytes bytes.
-// https://tools.ietf.org/html/draft-irtf-cfrg-hash-to-curve-06#section-5
-// https://tools.ietf.org/html/rfc8017#section-4.1 (I2OSP/O2ISP)
+// https://datatracker.ietf.org/doc/html/rfc9380#name-expand_message_xmd
+// https://datatracker.ietf.org/doc/html/rfc9380#name-utility-functions (I2OSP/O2ISP)
 func ExpandMsgXmd(msg, dst []byte, lenInBytes int) ([]byte, error) {
 
 	h := sha256.New()
@@ -22,7 +22,7 @@ func ExpandMsgXmd(msg, dst []byte, lenInBytes int) ([]byte, error) {
 
 	// Z_pad = I2OSP(0, r_in_bytes)
 	// l_i_b_str = I2OSP(len_in_bytes, 2)
-	// DST_prime = I2OSP(len(DST), 1) ∥ DST
+	// DST_prime = DST ∥ I2OSP(len(DST), 1)
 	// b₀ = H(Z_pad ∥ msg ∥ l_i_b_str ∥ I2OSP(0, 1) ∥ DST_prime)
 	h.Reset()
 	if _, err := h.Write(make([]byte, h.BlockSize())); err != nil {

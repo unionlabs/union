@@ -884,10 +884,10 @@ func (g AddGate) Evaluate(x ...fr.Element) (res fr.Element) {
 	// set zero
 	case 1:
 		res.Set(&x[0])
-	case 2:
+	default:
 		res.Add(&x[0], &x[1])
 		for i := 2; i < len(x); i++ {
-			res.Add(&res, &x[2])
+			res.Add(&res, &x[i])
 		}
 	}
 	return
@@ -909,7 +909,7 @@ func (g MulGate) Evaluate(x ...fr.Element) (res fr.Element) {
 	default:
 		res.Mul(&x[0], &x[1])
 		for i := 2; i < len(x); i++ {
-			res.Mul(&res, &x[2])
+			res.Mul(&res, &x[i])
 		}
 	}
 	return

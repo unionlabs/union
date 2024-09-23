@@ -17,16 +17,13 @@
 package cs
 
 import (
-	"github.com/fxamacker/cbor/v2"
 	"io"
 	"time"
 
 	"github.com/consensys/gnark/backend/witness"
 	"github.com/consensys/gnark/constraint"
 	csolver "github.com/consensys/gnark/constraint/solver"
-	"github.com/consensys/gnark/internal/backend/ioutils"
 	"github.com/consensys/gnark/logger"
-	"reflect"
 
 	"github.com/consensys/gnark-crypto/ecc"
 
@@ -147,55 +144,6 @@ func (cs *system) GetNbCoefficients() int {
 // CurveID returns curve ID as defined in gnark-crypto
 func (cs *system) CurveID() ecc.ID {
 	return ecc.BLS12_377
-}
-
-// WriteTo encodes R1CS into provided io.Writer using cbor
-func (cs *system) WriteTo(w io.Writer) (int64, error) {
-	_w := ioutils.WriterCounter{W: w} // wraps writer to count the bytes written
-	ts := getTagSet()
-	enc, err := cbor.CoreDetEncOptions().EncModeWithTags(ts)
-	if err != nil {
-		return 0, err
-	}
-	encoder := enc.NewEncoder(&_w)
-
-	// encode our object
-	err = encoder.Encode(cs)
-	return _w.N, err
-}
-
-// ReadFrom attempts to decode R1CS from io.Reader using cbor
-func (cs *system) ReadFrom(r io.Reader) (int64, error) {
-	ts := getTagSet()
-	dm, err := cbor.DecOptions{
-		MaxArrayElements: 2147483647,
-		MaxMapPairs:      2147483647,
-	}.DecModeWithTags(ts)
-
-	if err != nil {
-		return 0, err
-	}
-	decoder := dm.NewDecoder(r)
-
-	// initialize coeff table
-	cs.CoeffTable = newCoeffTable(0)
-
-	if err := decoder.Decode(&cs); err != nil {
-		return int64(decoder.NumBytesRead()), err
-	}
-
-	if err := cs.CheckSerializationHeader(); err != nil {
-		return int64(decoder.NumBytesRead()), err
-	}
-
-	switch v := cs.CommitmentInfo.(type) {
-	case *constraint.Groth16Commitments:
-		cs.CommitmentInfo = *v
-	case *constraint.PlonkCommitments:
-		cs.CommitmentInfo = *v
-	}
-
-	return int64(decoder.NumBytesRead()), nil
 }
 
 func (cs *system) GetCoefficient(i int) (r constraint.Element) {
@@ -349,36 +297,6 @@ func (t *SparseR1CSSolution) ReadFrom(r io.Reader) (int64, error) {
 	a, err = t.O.ReadFrom(r)
 	n += a
 	return n, err
-}
-
-func getTagSet() cbor.TagSet {
-	// temporary for refactor
-	ts := cbor.NewTagSet()
-	// https://www.iana.org/assignments/cbor-tags/cbor-tags.xhtml
-	// 65536-15309735 Unassigned
-	tagNum := uint64(5309735)
-	addType := func(t reflect.Type) {
-		if err := ts.Add(
-			cbor.TagOptions{EncTag: cbor.EncTagRequired, DecTag: cbor.DecTagRequired},
-			t,
-			tagNum,
-		); err != nil {
-			panic(err)
-		}
-		tagNum++
-	}
-
-	addType(reflect.TypeOf(constraint.BlueprintGenericHint{}))
-	addType(reflect.TypeOf(constraint.BlueprintGenericR1C{}))
-	addType(reflect.TypeOf(constraint.BlueprintGenericSparseR1C{}))
-	addType(reflect.TypeOf(constraint.BlueprintSparseR1CAdd{}))
-	addType(reflect.TypeOf(constraint.BlueprintSparseR1CMul{}))
-	addType(reflect.TypeOf(constraint.BlueprintSparseR1CBool{}))
-	addType(reflect.TypeOf(constraint.BlueprintLookupHint{}))
-	addType(reflect.TypeOf(constraint.Groth16Commitments{}))
-	addType(reflect.TypeOf(constraint.PlonkCommitments{}))
-
-	return ts
 }
 
 func (s *system) AddGkr(gkr constraint.GkrInfo) error {

@@ -7,7 +7,7 @@
     # Track a separate nixpkgs for latest solc
     nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
     # We need the latest nixpkgs for buildGo121Module, remove this once we upgrade nixpkgs
-    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-24.05";
     # Track a separate nixpkgs for unstable nixos
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
@@ -231,6 +231,7 @@
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
+        ./mpc/mpc.nix
         ./lib/ics23/ics23.nix
         ./lib/ssz/ssz.nix
         ./lib/unionlabs/unionlabs.nix
@@ -560,6 +561,8 @@
               self'.packages.tdc
               self'.packages.voy-send-msg
               yq
+              gdb
+              typescript
             ]) ++ (with unstablePkgs; [
               wasm-tools
               bun # for running TypeScript files on the fly

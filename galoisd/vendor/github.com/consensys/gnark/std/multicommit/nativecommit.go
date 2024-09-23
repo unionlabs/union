@@ -89,15 +89,16 @@ func (mct *multicommitter) commitAndCall(api frontend.API) error {
 	if !ok {
 		panic("compiler doesn't implement frontend.Committer")
 	}
-	cmt, err := commiter.Commit(mct.vars...)
+	rootCmt, err := commiter.Commit(mct.vars...)
 	if err != nil {
 		return fmt.Errorf("commit: %w", err)
 	}
+	cmt := rootCmt
 	if err = mct.cbs[0](api, cmt); err != nil {
 		return fmt.Errorf("callback 0: %w", err)
 	}
 	for i := 1; i < len(mct.cbs); i++ {
-		cmt = api.Mul(cmt, cmt)
+		cmt = api.Mul(rootCmt, cmt)
 		if err := mct.cbs[i](api, cmt); err != nil {
 			return fmt.Errorf("callback %d: %w", i, err)
 		}

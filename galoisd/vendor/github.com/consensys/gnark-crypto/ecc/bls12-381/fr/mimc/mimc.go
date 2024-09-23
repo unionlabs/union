@@ -41,8 +41,9 @@ var (
 // digest represents the partial evaluation of the checksum
 // along with the params of the mimc function
 type digest struct {
-	h    fr.Element
-	data []fr.Element // data to hash
+	h         fr.Element
+	data      []fr.Element // data to hash
+	byteOrder fr.ByteOrder
 }
 
 // GetConstants exposed to be used in gnark
@@ -56,9 +57,11 @@ func GetConstants() []big.Int {
 }
 
 // NewMiMC returns a MiMCImpl object, pure-go reference implementation
-func NewMiMC() hash.Hash {
+func NewMiMC(opts ...Option) hash.Hash {
 	d := new(digest)
 	d.Reset()
+	cfg := mimcOptions(opts...)
+	d.byteOrder = cfg.byteOrder
 	return d
 }
 
@@ -111,7 +114,7 @@ func (d *digest) Write(p []byte) (int, error) {
 
 	var start int
 	for start = 0; start < len(p); start += BlockSize {
-		if elem, err := fr.BigEndian.Element((*[BlockSize]byte)(p[start : start+BlockSize])); err == nil {
+		if elem, err := d.byteOrder.Element((*[BlockSize]byte)(p[start : start+BlockSize])); err == nil {
 			d.data = append(d.data, elem)
 		} else {
 			return 0, err

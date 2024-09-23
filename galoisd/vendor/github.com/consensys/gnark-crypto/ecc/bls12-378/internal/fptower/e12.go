@@ -67,14 +67,14 @@ func (z *E12) SetOne() *E12 {
 	return z
 }
 
-// Add set z=x+y in E12 and return z
+// Add sets z=x+y in E12 and returns z
 func (z *E12) Add(x, y *E12) *E12 {
 	z.C0.Add(&x.C0, &y.C0)
 	z.C1.Add(&x.C1, &y.C1)
 	return z
 }
 
-// Sub sets z to x sub y and return z
+// Sub sets z to x-y and returns z
 func (z *E12) Sub(x, y *E12) *E12 {
 	z.C0.Sub(&x.C0, &y.C0)
 	z.C1.Sub(&x.C1, &y.C1)
@@ -99,16 +99,17 @@ func (z *E12) SetRandom() (*E12, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E12) IsZero() bool {
 	return z.C0.IsZero() && z.C1.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E12) IsOne() bool {
 	return z.C0.IsOne() && z.C1.IsZero()
 }
 
-// Mul set z=x*y in E12 and return z
+// Mul sets z=x*y in E12 and returns z
 func (z *E12) Mul(x, y *E12) *E12 {
 	var a, b, c E6
 	a.Add(&x.C0, &x.C1)
@@ -121,7 +122,7 @@ func (z *E12) Mul(x, y *E12) *E12 {
 	return z
 }
 
-// Square set z=x*x in E12 and return z
+// Square sets z=x*x in E12 and returns z
 func (z *E12) Square(x *E12) *E12 {
 
 	//Algorithm 22 from https://eprint.iacr.org/2010/354.pdf
@@ -406,7 +407,7 @@ func (z *E12) CyclotomicSquare(x *E12) *E12 {
 	return z
 }
 
-// Inverse set z to the inverse of x in E12 and return z
+// Inverse sets z to the inverse of x in E12 and returns z
 //
 // if x == 0, sets and returns z = x
 func (z *E12) Inverse(x *E12) *E12 {
@@ -424,8 +425,8 @@ func (z *E12) Inverse(x *E12) *E12 {
 	return z
 }
 
-// BatchInvertE12 returns a new slice with every element inverted.
-// Uses Montgomery batch inversion trick
+// BatchInvertE12 returns a new slice with every element in a inverted.
+// It uses Montgomery batch inversion trick.
 //
 // if a[i] == 0, returns result[i] = a[i]
 func BatchInvertE12(a []E12) []E12 {
@@ -635,12 +636,12 @@ func (z *E12) ExpGLV(x E12, k *big.Int) *E12 {
 	return z
 }
 
-// InverseUnitary inverse a unitary element
+// InverseUnitary inverses a unitary element
 func (z *E12) InverseUnitary(x *E12) *E12 {
 	return z.Conjugate(x)
 }
 
-// Conjugate set z to x conjugated and return z
+// Conjugate sets z to x conjugated and returns z
 func (z *E12) Conjugate(x *E12) *E12 {
 	*z = *x
 	z.C1.Neg(&z.C1)
@@ -846,6 +847,8 @@ func BatchDecompressTorus(x []E6) ([]E12, error) {
 	return res, nil
 }
 
+// Select is conditional move.
+// If cond = 0, it sets z to caseZ and returns it. otherwise caseNz.
 func (z *E12) Select(cond int, caseZ *E12, caseNz *E12) *E12 {
 	//Might be able to save a nanosecond or two by an aggregate implementation
 
@@ -855,6 +858,7 @@ func (z *E12) Select(cond int, caseZ *E12, caseNz *E12) *E12 {
 	return z
 }
 
+// Div divides an element in E12 by an element in E12
 func (z *E12) Div(x *E12, y *E12) *E12 {
 	var r E12
 	r.Inverse(y).Mul(x, &r)

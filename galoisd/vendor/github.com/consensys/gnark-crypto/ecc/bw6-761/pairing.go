@@ -284,7 +284,7 @@ func (p *g2Proj) doubleStep(evaluations *lineEvaluation) {
 	C.Square(&p.z)
 	D.Double(&C).
 		Add(&D, &C)
-	E.Mul(&D, &bTwistCurveCoeff)
+	E.Double(&D).Double(&E)
 	F.Double(&E).
 		Add(&F, &E)
 	G.Add(&B, &F)
@@ -411,31 +411,32 @@ func PrecomputeLines(Q G2Affine) (PrecomputedLines [2][len(LoopCounter) - 1]Line
 	// precomputations
 	var accQ, imQ, imQneg, negQ G2Affine
 	imQ.Y.Neg(&Q.Y)
+	imQ.X.Mul(&Q.X, &thirdRootOneG1)
 	negQ.X.Set(&Q.X)
 	negQ.Y.Set(&imQ.Y)
-	imQ.X.Mul(&Q.X, &thirdRootOneG1)
 	accQ.Set(&imQ)
-	imQneg.Neg(&imQ)
+	imQneg.X.Set(&imQ.X)
+	imQneg.Y.Set(&Q.Y)
 
-	for i := len(LoopCounter) - 2; i >= 0; i-- {
-		accQ.doubleStep(&PrecomputedLines[0][i])
+	for i := len(LoopCounter) - 2; i > 0; i-- {
 
 		switch LoopCounter1[i]*3 + LoopCounter[i] {
 		// cases -4, -2, 2, 4 do not occur, given the static LoopCounters
 		case -3:
-			accQ.addStep(&PrecomputedLines[1][i], &imQneg)
+			accQ.doubleAndAddStep(&PrecomputedLines[0][i], &PrecomputedLines[1][i], &imQneg)
 		case -1:
-			accQ.addStep(&PrecomputedLines[1][i], &negQ)
+			accQ.doubleAndAddStep(&PrecomputedLines[0][i], &PrecomputedLines[1][i], &negQ)
 		case 0:
-			continue
+			accQ.doubleStep(&PrecomputedLines[0][i])
 		case 1:
-			accQ.addStep(&PrecomputedLines[1][i], &Q)
+			accQ.doubleAndAddStep(&PrecomputedLines[0][i], &PrecomputedLines[1][i], &Q)
 		case 3:
-			accQ.addStep(&PrecomputedLines[1][i], &imQ)
+			accQ.doubleAndAddStep(&PrecomputedLines[0][i], &PrecomputedLines[1][i], &imQ)
 		default:
 			return [2][len(LoopCounter) - 1]LineEvaluationAff{}
 		}
 	}
+	accQ.tangentCompute(&PrecomputedLines[0][0])
 
 	return PrecomputedLines
 }
@@ -577,4 +578,65 @@ func (p *G2Affine) addStep(evaluations *LineEvaluationAff, a *G2Affine) {
 
 	p.X.Set(&xr)
 	p.Y.Set(&yr)
+}
+
+func (p *G2Affine) doubleAndAddStep(evaluations1, evaluations2 *LineEvaluationAff, a *G2Affine) {
+	var n, d, l1, x3, l2, x4, y4 fp.Element
+
+	// compute λ1 = (y2-y1)/(x2-x1)
+	n.Sub(&p.Y, &a.Y)
+	d.Sub(&p.X, &a.X)
+	l1.Div(&n, &d)
+
+	// compute x3 =λ1²-x1-x2
+	x3.Square(&l1)
+	x3.Sub(&x3, &p.X)
+	x3.Sub(&x3, &a.X)
+
+	// omit y3 computation
+
+	// compute line1
+	evaluations1.R0.Set(&l1)
+	evaluations1.R1.Mul(&l1, &p.X)
+	evaluations1.R1.Sub(&evaluations1.R1, &p.Y)
+
+	// compute λ2 = -λ1-2y1/(x3-x1)
+	n.Double(&p.Y)
+	d.Sub(&x3, &p.X)
+	l2.Div(&n, &d)
+	l2.Add(&l2, &l1)
+	l2.Neg(&l2)
+
+	// compute x4 = λ2²-x1-x3
+	x4.Square(&l2)
+	x4.Sub(&x4, &p.X)
+	x4.Sub(&x4, &x3)
+
+	// compute y4 = λ2(x1 - x4)-y1
+	y4.Sub(&p.X, &x4)
+	y4.Mul(&l2, &y4)
+	y4.Sub(&y4, &p.Y)
+
+	// compute line2
+	evaluations2.R0.Set(&l2)
+	evaluations2.R1.Mul(&l2, &p.X)
+	evaluations2.R1.Sub(&evaluations2.R1, &p.Y)
+
+	p.X.Set(&x4)
+	p.Y.Set(&y4)
+}
+
+func (p *G2Affine) tangentCompute(evaluations *LineEvaluationAff) {
+
+	var n, d, λ fp.Element
+	// λ = 3x²/2y
+	n.Square(&p.X)
+	λ.Double(&n).
+		Add(&λ, &n)
+	d.Double(&p.Y)
+	λ.Div(&λ, &d)
+
+	evaluations.R0.Set(&λ)
+	evaluations.R1.Mul(&λ, &p.X).
+		Sub(&evaluations.R1, &p.Y)
 }

@@ -81,9 +81,9 @@ type System struct {
 
 	Type SystemType
 
-	Instructions []PackedInstruction
+	Instructions []PackedInstruction `cbor:"-"`
 	Blueprints   []Blueprint
-	CallData     []uint32 // huge slice.
+	CallData     []uint32 `cbor:"-"`
 
 	// can be != than len(instructions)
 	NbConstraints int
@@ -114,7 +114,7 @@ type System struct {
 	// TODO @gbotrel these are currently updated after we add a constraint.
 	// but in case the object is built from a serialized representation
 	// we need to init the level builder lbWireLevel from the existing constraints.
-	Levels [][]int
+	Levels [][]uint32 `cbor:"-"`
 
 	// scalar field
 	q      *big.Int `cbor:"-"`
@@ -143,7 +143,7 @@ func NewSystem(scalarField *big.Int, capacity int, t SystemType) System {
 		Instructions:       make([]PackedInstruction, 0, capacity),
 		CallData:           make([]uint32, 0, capacity*8),
 		lbWireLevel:        make([]Level, 0, capacity),
-		Levels:             make([][]int, 0, capacity/2),
+		Levels:             make([][]uint32, 0, capacity/2),
 		CommitmentInfo:     NewCommitments(t),
 	}
 
@@ -409,11 +409,11 @@ func (cs *System) AddInstruction(bID BlueprintID, calldata []uint32) []uint32 {
 
 	// update the instruction dependency tree
 	level := blueprint.UpdateInstructionTree(inst, cs)
-	iID := len(cs.Instructions) - 1
+	iID := uint32(len(cs.Instructions) - 1)
 
 	// we can't skip levels, so appending is fine.
 	if int(level) >= len(cs.Levels) {
-		cs.Levels = append(cs.Levels, []int{iID})
+		cs.Levels = append(cs.Levels, []uint32{iID})
 	} else {
 		cs.Levels[level] = append(cs.Levels[level], iID)
 	}

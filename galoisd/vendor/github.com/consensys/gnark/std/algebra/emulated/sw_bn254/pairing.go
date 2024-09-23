@@ -245,13 +245,22 @@ func (pr Pairing) Pair(P []*G1Affine, Q []*G2Affine) (*GTEl, error) {
 //
 // This function doesn't check that the inputs are in the correct subgroups. See AssertIsOnG1 and AssertIsOnG2.
 func (pr Pairing) PairingCheck(P []*G1Affine, Q []*G2Affine) error {
-	f, err := pr.Pair(P, Q)
+	f, err := pr.MillerLoop(P, Q)
 	if err != nil {
 		return err
 
 	}
-	one := pr.One()
-	pr.AssertIsEqual(f, one)
+	// We perform the easy part of the final exp to push f to the cyclotomic
+	// subgroup so that FinalExponentiationCheck is carried with optimized
+	// cyclotomic squaring (e.g. Karabina12345).
+	//
+	// f = f^(p⁶-1)(p²+1)
+	buf := pr.Conjugate(f)
+	buf = pr.DivUnchecked(buf, f)
+	f = pr.FrobeniusSquare(buf)
+	f = pr.Mul(f, buf)
+
+	pr.FinalExponentiationCheck(f)
 
 	return nil
 }
@@ -264,7 +273,7 @@ func (pr Pairing) AssertIsOnCurve(P *G1Affine) {
 	pr.curve.AssertIsOnCurve(P)
 }
 
-func (pr Pairing) AssertIsOnTwist(Q *G2Affine) {
+func (pr Pairing) computeTwistEquation(Q *G2Affine) (left, right *fields_bn254.E2) {
 	// Twist: Y² == X³ + aX + b, where a=0 and b=3/(9+u)
 	// (X,Y) ∈ {Y² == X³ + aX + b} U (0,0)
 
@@ -272,11 +281,23 @@ func (pr Pairing) AssertIsOnTwist(Q *G2Affine) {
 	selector := pr.api.And(pr.Ext2.IsZero(&Q.P.X), pr.Ext2.IsZero(&Q.P.Y))
 	b := pr.Ext2.Select(selector, pr.Ext2.Zero(), pr.bTwist)
 
-	left := pr.Ext2.Square(&Q.P.Y)
-	right := pr.Ext2.Square(&Q.P.X)
+	left = pr.Ext2.Square(&Q.P.Y)
+	right = pr.Ext2.Square(&Q.P.X)
 	right = pr.Ext2.Mul(right, &Q.P.X)
 	right = pr.Ext2.Add(right, b)
+	return left, right
+}
+
+func (pr Pairing) AssertIsOnTwist(Q *G2Affine) {
+	left, right := pr.computeTwistEquation(Q)
 	pr.Ext2.AssertIsEqual(left, right)
+}
+
+// IsOnTwist returns a boolean indicating if the G2 point is in the twist.
+func (pr Pairing) IsOnTwist(Q *G2Affine) frontend.Variable {
+	left, right := pr.computeTwistEquation(Q)
+	diff := pr.Ext2.Sub(left, right)
+	return pr.Ext2.IsZero(diff)
 }
 
 func (pr Pairing) AssertIsOnG1(P *G1Affine) {
@@ -285,12 +306,7 @@ func (pr Pairing) AssertIsOnG1(P *G1Affine) {
 	pr.AssertIsOnCurve(P)
 }
 
-func (pr Pairing) AssertIsOnG2(Q *G2Affine) {
-	// 1- Check Q is on the curve
-	pr.AssertIsOnTwist(Q)
-
-	// 2- Check Q has the right subgroup order
-
+func (pr Pairing) computeG2ShortVector(Q *G2Affine) (_Q *G2Affine) {
 	// [x₀]Q
 	xQ := pr.g2.scalarMulBySeed(Q)
 	// ψ([x₀]Q)
@@ -302,12 +318,32 @@ func (pr Pairing) AssertIsOnG2(Q *G2Affine) {
 	psi3xxQ = pr.g2.psi(psi3xxQ)
 
 	// _Q = ψ³([2x₀]Q) - ψ²([x₀]Q) - ψ([x₀]Q) - [x₀]Q
-	_Q := pr.g2.sub(psi2xQ, psi3xxQ)
+	_Q = pr.g2.sub(psi2xQ, psi3xxQ)
 	_Q = pr.g2.sub(_Q, psixQ)
 	_Q = pr.g2.sub(_Q, xQ)
+	return _Q
+}
 
+func (pr Pairing) AssertIsOnG2(Q *G2Affine) {
+	// 1- Check Q is on the curve
+	pr.AssertIsOnTwist(Q)
+
+	// 2- Check Q has the right subgroup order
+	_Q := pr.computeG2ShortVector(Q)
 	// [r]Q == 0 <==>  _Q == Q
 	pr.g2.AssertIsEqual(Q, _Q)
+}
+
+// IsOnG2 returns a boolean indicating if the G2 point is in the subgroup. The
+// method assumes that the point is already on the curve. Call
+// [Pairing.AssertIsOnTwist] before to ensure point is on the curve.
+func (pr Pairing) IsOnG2(Q *G2Affine) frontend.Variable {
+	// 1 - is Q on curve
+	isOnCurve := pr.IsOnTwist(Q)
+	// 2 - is Q in the subgroup
+	_Q := pr.computeG2ShortVector(Q)
+	isInSubgroup := pr.g2.IsEqual(Q, _Q)
+	return pr.api.And(isOnCurve, isInSubgroup)
 }
 
 // loopCounter = 6x₀+2 = 29793968203157093288
@@ -365,7 +401,6 @@ func (pr Pairing) millerLoopLines(P []*G1Affine, lines []lineEvaluations) (*GTEl
 		xNegOverY[k] = pr.curveF.Neg(xNegOverY[k])
 	}
 
-	// f_{x₀+1+λ(x₀³-x₀²-x₀),Q}(P), Q is known in advance
 	var prodLines [5]*fields_bn254.E2
 	res := pr.Ext12.One()
 
@@ -644,12 +679,138 @@ func (pr Pairing) MillerLoopAndMul(P *G1Affine, Q *G2Affine, previous *GTEl) (*G
 	return res, err
 }
 
-// FinalExponentiationIsOne performs the final exponentiation on e
-// and checks that the result in 1 in GT.
+// MillerLoopAndFinalExpCheck computes the Miller loop between P and Q,
+// multiplies it in 𝔽p¹² by previous and checks that the result lies in the
+// same equivalence class as the reduced pairing purported to be 1. This check
+// replaces the final exponentiation step in-circuit and follows Section 4 of
+// [On Proving Pairings] paper by A. Novakovic and L. Eagen.
 //
 // This method is needed for evmprecompiles/ecpair.
-func (pr Pairing) FinalExponentiationIsOne(e *GTEl) {
-	res := pr.finalExponentiation(e, false)
-	one := pr.One()
-	pr.AssertIsEqual(res, one)
+//
+// [On Proving Pairings]: https://eprint.iacr.org/2024/640.pdf
+func (pr Pairing) MillerLoopAndFinalExpCheck(P *G1Affine, Q *G2Affine, previous *GTEl) error {
+
+	// hint the non-residue witness
+	hint, err := pr.curveF.NewHint(millerLoopAndCheckFinalExpHint, 24, &P.X, &P.Y, &Q.P.X.A0, &Q.P.X.A1, &Q.P.Y.A0, &Q.P.Y.A1, &previous.C0.B0.A0, &previous.C0.B0.A1, &previous.C0.B1.A0, &previous.C0.B1.A1, &previous.C0.B2.A0, &previous.C0.B2.A1, &previous.C1.B0.A0, &previous.C1.B0.A1, &previous.C1.B1.A0, &previous.C1.B1.A1, &previous.C1.B2.A0, &previous.C1.B2.A1)
+	if err != nil {
+		// err is non-nil only for invalid number of inputs
+		panic(err)
+	}
+
+	residueWitness := fields_bn254.E12{
+		C0: fields_bn254.E6{
+			B0: fields_bn254.E2{A0: *hint[0], A1: *hint[1]},
+			B1: fields_bn254.E2{A0: *hint[2], A1: *hint[3]},
+			B2: fields_bn254.E2{A0: *hint[4], A1: *hint[5]},
+		},
+		C1: fields_bn254.E6{
+			B0: fields_bn254.E2{A0: *hint[6], A1: *hint[7]},
+			B1: fields_bn254.E2{A0: *hint[8], A1: *hint[9]},
+			B2: fields_bn254.E2{A0: *hint[10], A1: *hint[11]},
+		},
+	}
+	// constrain cubicNonResiduePower to be in Fp6
+	cubicNonResiduePower := fields_bn254.E12{
+		C0: fields_bn254.E6{
+			B0: fields_bn254.E2{A0: *hint[12], A1: *hint[13]},
+			B1: fields_bn254.E2{A0: *hint[14], A1: *hint[15]},
+			B2: fields_bn254.E2{A0: *hint[16], A1: *hint[17]},
+		},
+		C1: (*pr.Ext6.Zero()),
+	}
+
+	// residueWitnessInv = 1 / residueWitness
+	residueWitnessInv := pr.Inverse(&residueWitness)
+
+	if Q.Lines == nil {
+		Qlines := pr.computeLines(&Q.P)
+		Q.Lines = &Qlines
+	}
+	lines := *Q.Lines
+
+	// precomputations
+	yInv := pr.curveF.Inverse(&P.Y)
+	xNegOverY := pr.curveF.MulMod(&P.X, yInv)
+	xNegOverY = pr.curveF.Neg(xNegOverY)
+
+	// init Miller loop accumulator to residueWitnessInv to share the squarings
+	// of residueWitnessInv^{6x₀+2}
+	res := residueWitnessInv
+
+	// Compute f_{6x₀+2,Q}(P)
+	for i := 64; i >= 0; i-- {
+		res = pr.Square(res)
+
+		switch loopCounter[i] {
+		case 0:
+			// ℓ × res
+			res = pr.MulBy034(
+				res,
+				pr.MulByElement(&lines[0][i].R0, xNegOverY),
+				pr.MulByElement(&lines[0][i].R1, yInv),
+			)
+		case 1:
+			// multiply by residueWitnessInv when bit=1
+			res = pr.Mul(res, residueWitnessInv)
+			// lines evaluations at P
+			// and ℓ × ℓ
+			prodLines := pr.Mul034By034(
+				pr.MulByElement(&lines[0][i].R0, xNegOverY),
+				pr.MulByElement(&lines[0][i].R1, yInv),
+				pr.MulByElement(&lines[1][i].R0, xNegOverY),
+				pr.MulByElement(&lines[1][i].R1, yInv),
+			)
+			// (ℓ × ℓ) × res
+			res = pr.MulBy01234(res, prodLines)
+		case -1:
+			// multiply by residueWitness when bit=-1
+			res = pr.Mul(res, &residueWitness)
+			// lines evaluations at P
+			// and ℓ × ℓ
+			prodLines := pr.Mul034By034(
+				pr.MulByElement(&lines[0][i].R0, xNegOverY),
+				pr.MulByElement(&lines[0][i].R1, yInv),
+				pr.MulByElement(&lines[1][i].R0, xNegOverY),
+				pr.MulByElement(&lines[1][i].R1, yInv),
+			)
+			// (ℓ × ℓ) × res
+			res = pr.MulBy01234(res, prodLines)
+		default:
+			return nil
+		}
+	}
+
+	// Compute  ℓ_{[6x₀+2]Q,π(Q)}(P) · ℓ_{[6x₀+2]Q+π(Q),-π²(Q)}(P)
+	// lines evaluations at P
+	// and ℓ × ℓ
+	prodLines := pr.Mul034By034(
+		pr.MulByElement(&lines[0][65].R0, xNegOverY),
+		pr.MulByElement(&lines[0][65].R1, yInv),
+		pr.MulByElement(&lines[1][65].R0, xNegOverY),
+		pr.MulByElement(&lines[1][65].R1, yInv),
+	)
+	// (ℓ × ℓ) × res
+	res = pr.MulBy01234(res, prodLines)
+
+	// multiply by previous multi-Miller function
+	res = pr.Mul(res, previous)
+
+	// Check that  res * cubicNonResiduePower * residueWitnessInv^λ' == 1
+	// where λ' = q^3 - q^2 + q, with u the BN254 seed
+	// and residueWitnessInv, cubicNonResiduePower from the hint.
+	// Note that res is already MillerLoop(P,Q) * residueWitnessInv^{6x₀+2} since
+	// we initialized the Miller loop accumulator with residueWitnessInv.
+	t2 := pr.Mul(&cubicNonResiduePower, res)
+
+	t1 := pr.FrobeniusCube(residueWitnessInv)
+	t0 := pr.FrobeniusSquare(residueWitnessInv)
+	t1 = pr.DivUnchecked(t1, t0)
+	t0 = pr.Frobenius(residueWitnessInv)
+	t1 = pr.Mul(t1, t0)
+
+	t2 = pr.Mul(t2, t1)
+
+	pr.AssertIsEqual(t2, pr.One())
+
+	return nil
 }

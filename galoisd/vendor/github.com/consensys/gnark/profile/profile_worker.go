@@ -71,6 +71,8 @@ func collectSample(pc []uintptr) {
 
 		if strings.HasSuffix(frame.Function, ".func1") {
 			// TODO @gbotrel filter anonymous func better
+			//
+			// ivokub: relevant comment - if we have many anonymous functions in package, then the name of the anonymous function has different suffices.
 			continue
 		}
 

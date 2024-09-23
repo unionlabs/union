@@ -58,21 +58,25 @@ type mulCheck[T FieldParams] struct {
 	r    *Element[T] // reduced value
 	k    *Element[T] // coefficient
 	c    *Element[T] // carry
+	p    *Element[T] // modulus if non-nil
 }
 
 // evalRound1 evaluates first c(X), r(X) and k(X) at a given random point at[0].
 // In the first round we do not assume that any of them is already evaluated as
 // they come directly from hint.
-func (mc *mulCheck[T]) evalRound1(api frontend.API, at []frontend.Variable) {
+func (mc *mulCheck[T]) evalRound1(at []frontend.Variable) {
 	mc.c = mc.f.evalWithChallenge(mc.c, at)
 	mc.r = mc.f.evalWithChallenge(mc.r, at)
 	mc.k = mc.f.evalWithChallenge(mc.k, at)
+	if mc.p != nil {
+		mc.p = mc.f.evalWithChallenge(mc.p, at)
+	}
 }
 
 // evalRound2 now evaluates a and b at a given random point at[0]. However, it
 // may happen that a or b is equal to r from a previous mulcheck. In that case
 // we can reuse the evaluation to save constraints.
-func (mc *mulCheck[T]) evalRound2(api frontend.API, at []frontend.Variable) {
+func (mc *mulCheck[T]) evalRound2(at []frontend.Variable) {
 	mc.a = mc.f.evalWithChallenge(mc.a, at)
 	mc.b = mc.f.evalWithChallenge(mc.b, at)
 }
@@ -81,6 +85,9 @@ func (mc *mulCheck[T]) evalRound2(api frontend.API, at []frontend.Variable) {
 // computation of p(ch) and (2^t-ch) can be shared over all mulCheck instances,
 // then we get them already evaluated as peval and coef.
 func (mc *mulCheck[T]) check(api frontend.API, peval, coef frontend.Variable) {
+	if mc.p != nil {
+		peval = mc.p.evaluation
+	}
 	ls := api.Mul(mc.a.evaluation, mc.b.evaluation)
 	rs := api.Add(mc.r.evaluation, api.Mul(peval, mc.k.evaluation), api.Mul(mc.c.evaluation, coef))
 	api.AssertIsEqual(ls, rs)
@@ -99,14 +106,19 @@ func (mc *mulCheck[T]) cleanEvaluations() {
 	mc.k.isEvaluated = false
 	mc.c.evaluation = 0
 	mc.c.isEvaluated = false
+	if mc.p != nil {
+		mc.p.evaluation = 0
+		mc.p.isEvaluated = false
+	}
 }
 
 // mulMod returns a*b mod r. In practice it computes the result using a hint and
 // defers the actual multiplication check.
-func (f *Field[T]) mulMod(a, b *Element[T], _ uint) *Element[T] {
+func (f *Field[T]) mulMod(a, b *Element[T], _ uint, p *Element[T]) *Element[T] {
 	f.enforceWidthConditional(a)
 	f.enforceWidthConditional(b)
-	k, r, c, err := f.callMulHint(a, b, true)
+	f.enforceWidthConditional(p)
+	k, r, c, err := f.callMulHint(a, b, true, p)
 	if err != nil {
 		panic(err)
 	}
@@ -117,18 +129,20 @@ func (f *Field[T]) mulMod(a, b *Element[T], _ uint) *Element[T] {
 		c: c,
 		k: k,
 		r: r,
+		p: p,
 	}
 	f.mulChecks = append(f.mulChecks, mc)
 	return r
 }
 
 // checkZero creates multiplication check a * 1 = 0 + k*p.
-func (f *Field[T]) checkZero(a *Element[T]) {
+func (f *Field[T]) checkZero(a *Element[T], p *Element[T]) {
 	// the method works similarly to mulMod, but we know that we are multiplying
 	// by one and expected result should be zero.
 	f.enforceWidthConditional(a)
+	f.enforceWidthConditional(p)
 	b := f.shortOne()
-	k, r, c, err := f.callMulHint(a, b, false)
+	k, r, c, err := f.callMulHint(a, b, false, p)
 	if err != nil {
 		panic(err)
 	}
@@ -139,6 +153,7 @@ func (f *Field[T]) checkZero(a *Element[T]) {
 		c: c,
 		k: k,
 		r: r, // expected to be zero on zero limbs.
+		p: p,
 	}
 	f.mulChecks = append(f.mulChecks, mc)
 }
@@ -191,6 +206,9 @@ func (f *Field[T]) performMulChecks(api frontend.API) error {
 		toCommit = append(toCommit, f.mulChecks[i].r.Limbs...)
 		toCommit = append(toCommit, f.mulChecks[i].k.Limbs...)
 		toCommit = append(toCommit, f.mulChecks[i].c.Limbs...)
+		if f.mulChecks[i].p != nil {
+			toCommit = append(toCommit, f.mulChecks[i].p.Limbs...)
+		}
 	}
 	// we give all the inputs as inputs to obtain random verifier challenge.
 	multicommit.WithCommitment(api, func(api frontend.API, commitment frontend.Variable) error {
@@ -207,11 +225,11 @@ func (f *Field[T]) performMulChecks(api frontend.API) error {
 		}
 		// evaluate all r, k, c
 		for i := range f.mulChecks {
-			f.mulChecks[i].evalRound1(api, at)
+			f.mulChecks[i].evalRound1(at)
 		}
 		// assuming r is input to some other multiplication, then is already evaluated
 		for i := range f.mulChecks {
-			f.mulChecks[i].evalRound2(api, at)
+			f.mulChecks[i].evalRound2(at)
 		}
 		// evaluate p(X) at challenge
 		pval := f.evalWithChallenge(f.Modulus(), at)
@@ -234,7 +252,7 @@ func (f *Field[T]) performMulChecks(api frontend.API) error {
 }
 
 // callMulHint uses hint to compute r, k and c.
-func (f *Field[T]) callMulHint(a, b *Element[T], isMulMod bool) (quo, rem, carries *Element[T], err error) {
+func (f *Field[T]) callMulHint(a, b *Element[T], isMulMod bool, customMod *Element[T]) (quo, rem, carries *Element[T], err error) {
 	// compute the expected overflow after the multiplication of a*b to be able
 	// to estimate the number of bits required to represent the result.
 	nextOverflow, _ := f.mulPreCond(a, b)
@@ -249,8 +267,15 @@ func (f *Field[T]) callMulHint(a, b *Element[T], isMulMod bool) (quo, rem, carri
 	// we compute the width of the product of a*b, then we divide it by the
 	// width of the modulus. We add 1 to the result to ensure that we have
 	// enough space for the quotient.
+	modbits := uint(f.fParams.Modulus().BitLen())
+	if customMod != nil {
+		// when we're using custom modulus, then we do not really know its
+		// length ahead of time. We assume worst case scenario and assume that
+		// the quotient can be the total length of the multiplication result.
+		modbits = 0
+	}
 	nbQuoLimbs := (uint(nbMultiplicationResLimbs(len(a.Limbs), len(b.Limbs)))*nbBits + nextOverflow + 1 - //
-		uint(f.fParams.Modulus().BitLen()) + //
+		modbits + //
 		nbBits - 1) /
 		nbBits
 	// the remainder is always less than modulus so can represent on the same
@@ -267,7 +292,11 @@ func (f *Field[T]) callMulHint(a, b *Element[T], isMulMod bool) (quo, rem, carri
 		len(a.Limbs),
 		nbQuoLimbs,
 	}
-	hintInputs = append(hintInputs, f.Modulus().Limbs...)
+	modulusLimbs := f.Modulus().Limbs
+	if customMod != nil {
+		modulusLimbs = customMod.Limbs
+	}
+	hintInputs = append(hintInputs, modulusLimbs...)
 	hintInputs = append(hintInputs, a.Limbs...)
 	hintInputs = append(hintInputs, b.Limbs...)
 	ret, err := f.api.NewHint(mulHint, int(nbQuoLimbs)+int(nbRemLimbs)+int(nbCarryLimbs), hintInputs...)
@@ -328,7 +357,9 @@ func mulHint(field *big.Int, inputs, outputs []*big.Int) error {
 	quo := new(big.Int)
 	rem := new(big.Int)
 	ab := new(big.Int).Mul(a, b)
-	quo.QuoRem(ab, p, rem)
+	if p.Cmp(new(big.Int)) != 0 {
+		quo.QuoRem(ab, p, rem)
+	}
 	if err := decompose(quo, uint(nbBits), quoLimbs); err != nil {
 		return fmt.Errorf("decompose quo: %w", err)
 	}
@@ -380,7 +411,7 @@ func mulHint(field *big.Int, inputs, outputs []*big.Int) error {
 // For multiplying by a constant, use [Field[T].MulConst] method which is more
 // efficient.
 func (f *Field[T]) Mul(a, b *Element[T]) *Element[T] {
-	return f.reduceAndOp(f.mulMod, f.mulPreCond, a, b)
+	return f.reduceAndOp(func(a, b *Element[T], u uint) *Element[T] { return f.mulMod(a, b, u, nil) }, f.mulPreCond, a, b)
 }
 
 // MulMod computes a*b and reduces it modulo the field order. The returned Element
@@ -388,7 +419,7 @@ func (f *Field[T]) Mul(a, b *Element[T]) *Element[T] {
 //
 // Equivalent to [Field[T].Mul], kept for backwards compatibility.
 func (f *Field[T]) MulMod(a, b *Element[T]) *Element[T] {
-	return f.reduceAndOp(f.mulMod, f.mulPreCond, a, b)
+	return f.reduceAndOp(func(a, b *Element[T], u uint) *Element[T] { return f.mulMod(a, b, u, nil) }, f.mulPreCond, a, b)
 }
 
 // MulConst multiplies a by a constant c and returns it. We assume that the
@@ -462,4 +493,19 @@ func (f *Field[T]) mulNoReduce(a, b *Element[T], nextoverflow uint) *Element[T] 
 		}
 	}
 	return f.newInternalElement(resLimbs, nextoverflow)
+}
+
+// Exp computes base^exp modulo the field order. The returned Element has default
+// number of limbs and zero overflow.
+func (f *Field[T]) Exp(base, exp *Element[T]) *Element[T] {
+	expBts := f.ToBits(exp)
+	n := len(expBts)
+	res := f.Select(expBts[0], base, f.One())
+	base = f.Mul(base, base)
+	for i := 1; i < n-1; i++ {
+		res = f.Select(expBts[i], f.Mul(base, res), res)
+		base = f.Mul(base, base)
+	}
+	res = f.Select(expBts[n-1], f.Mul(base, res), res)
+	return res
 }

@@ -101,11 +101,12 @@ func (z *E2) SetRandom() (*E2, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E2) IsZero() bool {
 	return z.A0.IsZero() && z.A1.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E2) IsOne() bool {
 	return z.A0.IsOne() && z.A1.IsZero()
 }
@@ -116,7 +117,7 @@ func (z *E2) Add(x, y *E2) *E2 {
 	return z
 }
 
-// Sub two elements of E2
+// Sub subtracts two elements of E2
 func (z *E2) Sub(x, y *E2) *E2 {
 	subE2(z, x, y)
 	return z
@@ -155,7 +156,7 @@ func (z *E2) Conjugate(x *E2) *E2 {
 	return z
 }
 
-// Halve sets z = z / 2
+// Halve sets z to z / 2
 func (z *E2) Halve() {
 	z.A0.Halve()
 	z.A1.Halve()
@@ -213,7 +214,7 @@ func init() {
 
 var sqrtExp1, sqrtExp2 big.Int
 
-// Sqrt sets z to the square root of and returns z
+// Sqrt sets z to the square root of x and returns z
 // The function does not test whether the square root
 // exists or not, it's up to the caller to call
 // Legendre beforehand.
@@ -243,8 +244,8 @@ func (z *E2) Sqrt(x *E2) *E2 {
 	return z
 }
 
-// BatchInvertE2 returns a new slice with every element inverted.
-// Uses Montgomery batch inversion trick
+// BatchInvertE2 returns a new slice with every element in a inverted.
+// It uses Montgomery batch inversion trick.
 //
 // if a[i] == 0, returns result[i] = a[i]
 func BatchInvertE2(a []E2) []E2 {
@@ -279,6 +280,8 @@ func BatchInvertE2(a []E2) []E2 {
 	return res
 }
 
+// Select is conditional move.
+// If cond = 0, it sets z to caseZ and returns it. otherwise caseNz.
 func (z *E2) Select(cond int, caseZ *E2, caseNz *E2) *E2 {
 	//Might be able to save a nanosecond or two by an aggregate implementation
 
@@ -288,6 +291,7 @@ func (z *E2) Select(cond int, caseZ *E2, caseNz *E2) *E2 {
 	return z
 }
 
+// Div divides an element in E2 by an element in E2
 func (z *E2) Div(x *E2, y *E2) *E2 {
 	var r E2
 	r.Inverse(y).Mul(x, &r)

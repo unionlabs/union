@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package mimc provides a ZKP-circuit function to compute a MiMC hash.
 package mimc
 
 import (
@@ -26,7 +25,9 @@ import (
 	"github.com/consensys/gnark/internal/utils"
 )
 
-// MiMC contains the params of the Mimc hash func and the curves on which it is implemented
+// MiMC contains the params of the MiMC hash func and the curves on which it is implemented.
+//
+// NB! See the package documentation for length extension attack consideration.
 type MiMC struct {
 	params []big.Int           // slice containing constants for the encryption rounds
 	id     ecc.ID              // id needed to know which encryption function to use
@@ -35,7 +36,12 @@ type MiMC struct {
 	api    frontend.API        // underlying constraint system
 }
 
-// NewMiMC returns a MiMC instance, that can be used in a gnark circuit
+// NewMiMC returns a MiMC instance that can be used in a gnark circuit. The
+// out-circuit counterpart of this function is provided in [gnark-crypto].
+//
+// NB! See the package documentation for length extension attack consideration.
+//
+// [gnark-crypto]: https://pkg.go.dev/github.com/consensys/gnark-crypto/hash
 func NewMiMC(api frontend.API) (MiMC, error) {
 	// TODO @gbotrel use field
 	if constructor, ok := newMimc[utils.FieldToCurve(api.Compiler().Field())]; ok {
@@ -55,10 +61,10 @@ func (h *MiMC) Reset() {
 	h.h = 0
 }
 
-// Sum hash (in r1cs form) using Miyaguchi–Preneel:
-// https://en.wikipedia.org/wiki/One-way_compression_function
-// The XOR operation is replaced by field addition.
-// See github.com/consensys/gnark-crypto for reference implementation.
+// Sum hash using [Miyaguchi–Preneel] where the XOR operation is replaced by
+// field addition.
+//
+// [Miyaguchi–Preneel]: https://en.wikipedia.org/wiki/One-way_compression_function
 func (h *MiMC) Sum() frontend.Variable {
 
 	//h.Write(data...)s

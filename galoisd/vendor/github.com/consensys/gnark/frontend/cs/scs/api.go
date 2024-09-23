@@ -351,9 +351,6 @@ func (builder *builder) Or(a, b frontend.Variable) frontend.Variable {
 		return 0
 	}
 
-	res := builder.newInternalVariable()
-	builder.MarkBoolean(res)
-
 	// if one input is constant, ensure we put it in b
 	if aConstant {
 		a, b = b, a
@@ -362,20 +359,14 @@ func (builder *builder) Or(a, b frontend.Variable) frontend.Variable {
 	}
 
 	if bConstant {
-		xa := a.(expr.Term)
-		// b = b - 1
-		qL := _b
-		qL = builder.cs.Sub(qL, builder.tOne)
-		qL = builder.cs.Mul(qL, xa.Coeff)
-		// a * (b-1) + res == 0
-		builder.addPlonkConstraint(sparseR1C{
-			xa: xa.VID,
-			xc: res.VID,
-			qL: qL,
-			qO: builder.tOne,
-		})
-		return res
+		if builder.cs.IsOne(_b) {
+			return 1
+		} else {
+			return a
+		}
 	}
+	res := builder.newInternalVariable()
+	builder.MarkBoolean(res)
 	xa := a.(expr.Term)
 	xb := b.(expr.Term)
 	// -a - b + ab + res == 0

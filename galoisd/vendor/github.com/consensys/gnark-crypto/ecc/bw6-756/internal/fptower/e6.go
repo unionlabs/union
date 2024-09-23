@@ -65,14 +65,14 @@ func (z *E6) SetOne() *E6 {
 	return z
 }
 
-// Add set z=x+y in E6 and return z
+// Add sets z=x+y in E6 and returns z
 func (z *E6) Add(x, y *E6) *E6 {
 	z.B0.Add(&x.B0, &y.B0)
 	z.B1.Add(&x.B1, &y.B1)
 	return z
 }
 
-// Sub sets z to x sub y and return z
+// Sub sets z to x-y and returns z
 func (z *E6) Sub(x, y *E6) *E6 {
 	z.B0.Sub(&x.B0, &y.B0)
 	z.B1.Sub(&x.B1, &y.B1)
@@ -97,16 +97,17 @@ func (z *E6) SetRandom() (*E6, error) {
 	return z, nil
 }
 
-// IsZero returns true if the two elements are equal, false otherwise
+// IsZero returns true if z is zero, false otherwise
 func (z *E6) IsZero() bool {
 	return z.B0.IsZero() && z.B1.IsZero()
 }
 
+// IsOne returns true if z is one, false otherwise
 func (z *E6) IsOne() bool {
 	return z.B0.IsOne() && z.B1.IsZero()
 }
 
-// Mul set z=x*y in E6 and return z
+// Mul sets z=x*y in E6 and returns z
 func (z *E6) Mul(x, y *E6) *E6 {
 	var a, b, c E3
 	a.Add(&x.B0, &x.B1)
@@ -119,7 +120,7 @@ func (z *E6) Mul(x, y *E6) *E6 {
 	return z
 }
 
-// Square set z=x*x in E6 and return z
+// Square sets z=x*x in E6 and returns z
 func (z *E6) Square(x *E6) *E6 {
 
 	//Algorithm 22 from https://eprint.iacr.org/2010/354.pdf
@@ -318,7 +319,7 @@ func (z *E6) CyclotomicSquare(x *E6) *E6 {
 	return z
 }
 
-// Inverse set z to the inverse of x in E6 and return z
+// Inverse sets z to the inverse of x in E6 and returns z
 //
 // if x == 0, sets and returns z = x
 func (z *E6) Inverse(x *E6) *E6 {
@@ -336,8 +337,8 @@ func (z *E6) Inverse(x *E6) *E6 {
 	return z
 }
 
-// BatchInvertE6 returns a new slice with every element inverted.
-// Uses Montgomery batch inversion trick
+// BatchInvertE6 returns a new slice with every element in a inverted.
+// It uses Montgomery batch inversion trick.
 //
 // if a[i] == 0, returns result[i] = a[i]
 func BatchInvertE6(a []E6) []E6 {
@@ -547,12 +548,12 @@ func (z *E6) ExpGLV(x E6, k *big.Int) *E6 {
 	return z
 }
 
-// InverseUnitary inverse a unitary element
+// InverseUnitary inverses a unitary element
 func (z *E6) InverseUnitary(x *E6) *E6 {
 	return z.Conjugate(x)
 }
 
-// Conjugate set z to x conjugated and return z
+// Conjugate sets z to x conjugated and returns z
 func (z *E6) Conjugate(x *E6) *E6 {
 	*z = *x
 	z.B1.Neg(&z.B1)

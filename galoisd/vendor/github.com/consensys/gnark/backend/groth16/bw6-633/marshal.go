@@ -20,6 +20,7 @@ import (
 	curve "github.com/consensys/gnark-crypto/ecc/bw6-633"
 
 	"github.com/consensys/gnark-crypto/ecc/bw6-633/fr/pedersen"
+	"github.com/consensys/gnark-crypto/utils/unsafe"
 	"github.com/consensys/gnark/internal/utils"
 	"io"
 )
@@ -371,4 +372,166 @@ func (pk *ProvingKey) readFrom(r io.Reader, decOptions ...func(*curve.Decoder)) 
 	}
 
 	return n + dec.BytesRead(), nil
+}
+
+// WriteDump behaves like WriteRawTo, excepts, the slices of points are "dumped" using gnark-crypto/utils/unsafe
+// Output is compatible with ReadDump, with the caveat that, not only the points are not checked for
+// correctness, but the raw bytes are platform dependent (endianness, etc.)
+func (pk *ProvingKey) WriteDump(w io.Writer) error {
+	// it behaves like WriteRawTo, excepts, the slices of points are "dumped" using gnark-crypto/utils/unsafe
+
+	// start by writing an unsafe marker to fail early.
+	if err := unsafe.WriteMarker(w); err != nil {
+		return err
+	}
+
+	if _, err := pk.Domain.WriteTo(w); err != nil {
+		return err
+	}
+
+	enc := curve.NewEncoder(w, curve.RawEncoding())
+	nbWires := uint64(len(pk.InfinityA))
+
+	toEncode := []interface{}{
+		&pk.G1.Alpha,
+		&pk.G1.Beta,
+		&pk.G1.Delta,
+		// pk.G1.A,
+		// pk.G1.B,
+		// pk.G1.Z,
+		// pk.G1.K,
+		&pk.G2.Beta,
+		&pk.G2.Delta,
+		// pk.G2.B,
+		nbWires,
+		pk.NbInfinityA,
+		pk.NbInfinityB,
+		pk.InfinityA,
+		pk.InfinityB,
+		uint32(len(pk.CommitmentKeys)),
+	}
+
+	for _, v := range toEncode {
+		if err := enc.Encode(v); err != nil {
+			return err
+		}
+	}
+
+	// dump slices of points
+	if err := unsafe.WriteSlice(w, pk.G1.A); err != nil {
+		return err
+	}
+	if err := unsafe.WriteSlice(w, pk.G1.B); err != nil {
+		return err
+	}
+	if err := unsafe.WriteSlice(w, pk.G1.Z); err != nil {
+		return err
+	}
+	if err := unsafe.WriteSlice(w, pk.G1.K); err != nil {
+		return err
+	}
+	if err := unsafe.WriteSlice(w, pk.G2.B); err != nil {
+		return err
+	}
+
+	for i := range pk.CommitmentKeys {
+		if err := unsafe.WriteSlice(w, pk.CommitmentKeys[i].Basis); err != nil {
+			return err
+		}
+		if err := unsafe.WriteSlice(w, pk.CommitmentKeys[i].BasisExpSigma); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ReadDump reads a ProvingKey from a dump written by WriteDump.
+// This is platform dependent and very unsafe (no checks, no endianness translation, etc.)
+func (pk *ProvingKey) ReadDump(r io.Reader) error {
+	// read the marker to fail early in case of malformed input
+	if err := unsafe.ReadMarker(r); err != nil {
+		return err
+	}
+
+	if _, err := pk.Domain.ReadFrom(r); err != nil {
+		return err
+	}
+
+	dec := curve.NewDecoder(r, curve.NoSubgroupChecks())
+
+	var nbWires uint64
+	var nbCommitments uint32
+
+	toDecode := []interface{}{
+		&pk.G1.Alpha,
+		&pk.G1.Beta,
+		&pk.G1.Delta,
+		// &pk.G1.A,
+		// &pk.G1.B,
+		// &pk.G1.Z,
+		// &pk.G1.K,
+		&pk.G2.Beta,
+		&pk.G2.Delta,
+		// &pk.G2.B,
+		&nbWires,
+		&pk.NbInfinityA,
+		&pk.NbInfinityB,
+	}
+
+	for _, v := range toDecode {
+		if err := dec.Decode(v); err != nil {
+			return err
+		}
+	}
+	pk.InfinityA = make([]bool, nbWires)
+	pk.InfinityB = make([]bool, nbWires)
+
+	if err := dec.Decode(&pk.InfinityA); err != nil {
+		return err
+	}
+	if err := dec.Decode(&pk.InfinityB); err != nil {
+		return err
+	}
+	if err := dec.Decode(&nbCommitments); err != nil {
+		return err
+	}
+
+	// read slices of points
+	var err error
+	pk.G1.A, _, err = unsafe.ReadSlice[[]curve.G1Affine](r)
+	if err != nil {
+		return err
+	}
+	pk.G1.B, _, err = unsafe.ReadSlice[[]curve.G1Affine](r)
+	if err != nil {
+		return err
+	}
+	pk.G1.Z, _, err = unsafe.ReadSlice[[]curve.G1Affine](r)
+	if err != nil {
+		return err
+	}
+	pk.G1.K, _, err = unsafe.ReadSlice[[]curve.G1Affine](r)
+	if err != nil {
+		return err
+	}
+	pk.G2.B, _, err = unsafe.ReadSlice[[]curve.G2Affine](r)
+	if err != nil {
+		return err
+	}
+
+	pk.CommitmentKeys = make([]pedersen.ProvingKey, nbCommitments)
+	for i := range pk.CommitmentKeys {
+		pk.CommitmentKeys[i].Basis, _, err = unsafe.ReadSlice[[]curve.G1Affine](r)
+		if err != nil {
+			return err
+		}
+		pk.CommitmentKeys[i].BasisExpSigma, _, err = unsafe.ReadSlice[[]curve.G1Affine](r)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+
 }
