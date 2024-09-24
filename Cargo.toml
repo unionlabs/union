@@ -83,10 +83,12 @@ members = [
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
   "voyager/modules/client/movement",
+  "voyager/modules/client/tendermint",
 
   "voyager/modules/consensus/cometbls",
   "voyager/modules/consensus/ethereum",
   "voyager/modules/consensus/movement",
+  "voyager/modules/consensus/tendermint",
 
   "voyager/modules/transaction/cosmos-sdk",
   "voyager/modules/transaction/ethereum",

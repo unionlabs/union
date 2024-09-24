@@ -13,15 +13,20 @@ use serde_utils::Hex;
 use tracing::{debug, instrument};
 use unionlabs::{
     self,
-    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi},
-    ibc::lightclients::cometbls::{
-        client_state::ClientState, consensus_state::ConsensusState, header::Header,
+    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi, Proto},
+    google::protobuf::any::Any,
+    ibc::lightclients::{
+        cometbls::{client_state::ClientState, consensus_state::ConsensusState, header::Header},
+        wasm,
     },
     union::ics23,
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
+    core::{
+        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcGo08WasmClientMetadata,
+        IbcInterface,
+    },
     data::Data,
     module::{ClientModuleInfo, ClientModuleServer, ModuleInfo, QueueInteractionsServer},
     run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
@@ -45,6 +50,7 @@ async fn main() {
 pub enum SupportedIbcInterface {
     IbcSolidity,
     IbcMoveAptos,
+    IbcGoV8_08Wasm,
 }
 
 impl TryFrom<String> for SupportedIbcInterface {
@@ -55,6 +61,7 @@ impl TryFrom<String> for SupportedIbcInterface {
         match &*value {
             IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
             IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
+            IbcInterface::IBC_GO_V8_08_WASM => Ok(SupportedIbcInterface::IbcGoV8_08Wasm),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
     }
@@ -65,6 +72,7 @@ impl SupportedIbcInterface {
         match self {
             SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
             SupportedIbcInterface::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
+            SupportedIbcInterface::IbcGoV8_08Wasm => IbcInterface::IBC_GO_V8_08_WASM,
         }
     }
 }
@@ -138,6 +146,19 @@ impl Module {
                     )
                 })
             }
+            SupportedIbcInterface::IbcGoV8_08Wasm => {
+                <Any<wasm::consensus_state::ConsensusState<ConsensusState>>>::decode_as::<Proto>(
+                    consensus_state,
+                )
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode consensus state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                })
+                .map(|any| any.0.data)
+            }
         }
     }
 
@@ -159,6 +180,19 @@ impl Module {
                         None::<()>,
                     )
                 }),
+            SupportedIbcInterface::IbcGoV8_08Wasm => {
+                <Any<wasm::client_state::ClientState<ClientState>>>::decode_as::<Proto>(
+                    client_state,
+                )
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                })
+                .map(|any| any.0.data)
+            }
         }
     }
 }
@@ -234,17 +268,6 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
         client_state: Value,
         metadata: Value,
     ) -> RpcResult<Hex<Vec<u8>>> {
-        if !metadata.is_null() {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "metadata was provided, but this client type does not require metadata for client \
-                state encoding",
-                Some(json!({
-                    "provided_metadata": metadata,
-                })),
-            ));
-        }
-
         serde_json::from_value::<ClientState>(client_state)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -253,9 +276,55 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                     None::<()>,
                 )
             })
-            .map(|cs| match self.ctx.ibc_interface {
-                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
-                SupportedIbcInterface::IbcMoveAptos => cs.encode_as::<Bcs>(),
+            .and_then(|cs| match self.ctx.ibc_interface {
+                SupportedIbcInterface::IbcSolidity => {
+                    if !metadata.is_null() {
+                        return Err(ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "metadata was provided, but this client type does not require \
+                            metadata for client state encoding",
+                            Some(json!({
+                                "provided_metadata": metadata,
+                            })),
+                        ));
+                    }
+
+                    Ok(cs.encode_as::<EthAbi>())
+                }
+                SupportedIbcInterface::IbcMoveAptos => {
+                    if !metadata.is_null() {
+                        return Err(ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "metadata was provided, but this client type does not require \
+                            metadata for client state encoding",
+                            Some(json!({
+                                "provided_metadata": metadata,
+                            })),
+                        ));
+                    }
+
+                    Ok(cs.encode_as::<Bcs>())
+                }
+                SupportedIbcInterface::IbcGoV8_08Wasm => {
+                    let metadata =
+                        serde_json::from_value::<IbcGo08WasmClientMetadata>(metadata.clone())
+                            .map_err(|e| {
+                                ErrorObject::owned(
+                                    FATAL_JSONRPC_ERROR_CODE,
+                                    format!("unable to decode metadata: {}", ErrorReporter(e)),
+                                    Some(json!({
+                                        "provided_metadata": metadata,
+                                    })),
+                                )
+                            })?;
+
+                    Ok(Any(wasm::client_state::ClientState {
+                        latest_height: cs.latest_height,
+                        data: cs,
+                        checksum: metadata.checksum,
+                    })
+                    .encode_as::<Proto>())
+                }
             })
             .map(Hex)
     }
@@ -276,6 +345,9 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
             .map(|cs| match self.ctx.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
                 SupportedIbcInterface::IbcMoveAptos => cs.encode_as::<Bcs>(),
+                SupportedIbcInterface::IbcGoV8_08Wasm => {
+                    Any(wasm::consensus_state::ConsensusState { data: cs }).encode_as::<Proto>()
+                }
             })
             .map(Hex)
     }
@@ -321,6 +393,10 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                         })?;
                     Ok(header.encode_as::<Bcs>())
                 }
+                SupportedIbcInterface::IbcGoV8_08Wasm => {
+                    Ok(Any(wasm::client_message::ClientMessage { data: header })
+                        .encode_as::<Proto>())
+                }
             })?
             .map(Hex)
     }
@@ -349,6 +425,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                     )
                     .unwrap(),
                 ),
+                SupportedIbcInterface::IbcGoV8_08Wasm => cs.encode_as::<Proto>(),
             })
             .map(Hex)
     }
@@ -430,4 +507,19 @@ fn encode_merkle_proof_for_move(proof: ics23::merkle_proof::MerkleProof) -> Vec<
         ics23::merkle_proof::MerkleProof::NonMembership(_, _) => todo!(),
     }
     .encode_as::<Bcs>()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_proto() {
+        let bz = hex::decode("0a272f6962632e6c69676874636c69656e74732e7761736d2e76312e436c69656e744d6573736167651286040a83040a77088907120c0880a8c7b70610fabddce0021a202f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d22202f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d2a20eddaa32275fbbf44c6a21e32b59b097bed5374be715eab22f093399a9700a1e41205080110bf051a80031d530ee22263bc9e7008e3bd982c966b226d1018814e5b4d07597b4d35aea56b2ef63fdddb29fe06ef99cf645201a12e8b98b9ff7a7cec0819f696e17413294b0c638c4f946f4d4af4da8dd0815de2f5af8fd8612d1c98e9846846ea1ec78aac046df852b916de3fd8b3332bc3d23073e11b252b023711c18b19952507428da12e2baf74a03ca7bdc37edd0123e47f0a3a029f6da43a32dc6830e126b4ddf8712f2a0e021ac0f6414f171156f6a9019d6ea53cd30762c1e60d6a0e029778586c0cc1e2e13f7c45347a2a3ba82e43eccdc468fc8a05ba0a95fef26777872c27e42317f2c76c0a5f41e63088b8b394c5a7a3066809952f489718142107bd7b24572074be60bdb7611f1c916061a5ab3dc75a62b953a19650d839027a885801252a1e1cd84f8ba570047c2f1d220f26f7b11e69b7519f092d31ff954e92fd012a931ea2b4d20942376502043ba98e69f351f60b12e5a7ff180e5a1a966697d80696066694fa833420f5db7e3ae1b91dbce06fe2ffa1ea0a503af6a93f61ad7aa4f4").unwrap();
+
+        let header =
+            <Any<wasm::client_message::ClientMessage<Header>>>::decode_as::<Proto>(&bz).unwrap();
+
+        dbg!(serde_json::to_string_pretty(&header).unwrap());
+    }
 }

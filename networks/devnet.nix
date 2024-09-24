@@ -9,22 +9,22 @@
       lnav = inputs'.nixpkgs-lnav.legacyPackages.lnav;
 
       cosmwasmContracts = [
-        {
-          code = self'.packages.ucs00-pingpong;
-          instances = [ ];
-        }
+        # {
+        #   code = self'.packages.ucs00-pingpong;
+        #   instances = [ ];
+        # }
         {
           code = self'.packages.ucs01-relay;
           instances = [ ];
         }
-        {
-          code = self'.packages.ucs02-nft;
-          instances = [ ];
-        }
-        {
-          code = self'.packages.cw721-base;
-          instances = [ ];
-        }
+        # {
+        #   code = self'.packages.ucs02-nft;
+        #   instances = [ ];
+        # }
+        # {
+        #   code = self'.packages.cw721-base;
+        #   instances = [ ];
+        # }
       ];
 
       devnet-union = mkCosmosDevnet {
@@ -57,18 +57,18 @@
           };
         };
         lightClients = [
-          self'.packages.ethereum-light-client-minimal
+          # self'.packages.ethereum-light-client-minimal
           # self'.packages.ethereum-light-client-mainnet
           # self'.packages.scroll-light-client
           # self'.packages.arbitrum-light-client
           # self'.packages.berachain-light-client
-          self'.packages.ics08-movement
+          # self'.packages.ics08-movement
         ];
         cosmwasmContracts = [
-          {
-            code = self'.packages.ucs00-pingpong;
-            instances = [ ];
-          }
+          # {
+          #   code = self'.packages.ucs00-pingpong;
+          #   instances = [ ];
+          # }
           {
             code = self'.packages.ucs01-relay;
             instances = [{
@@ -82,27 +82,27 @@
               label = "ucs01-relay";
             }];
           }
-          {
-            code = self'.packages.ucs02-nft;
-            instances = [{
-              message = {
-                # Must be the index of `cw721-base` within this contracts list
-                cw721_base_code_id = 4;
-                incoming_proxy = null;
-                outgoing_proxy = null;
-                pauser = null;
-                cw721_admin = null;
-              };
-              salt = "00";
-              label = "ucs02-nft";
-            }];
-          }
-          {
-            code = self'.packages.cw721-base;
-            instances = [ ];
-          }
+          # {
+          #   code = self'.packages.ucs02-nft;
+          #   instances = [{
+          #     message = {
+          #       # Must be the index of `cw721-base` within this contracts list
+          #       cw721_base_code_id = 4;
+          #       incoming_proxy = null;
+          #       outgoing_proxy = null;
+          #       pauser = null;
+          #       cw721_admin = null;
+          #     };
+          #     salt = "00";
+          #     label = "ucs02-nft";
+          #   }];
+          # }
+          # {
+          #   code = self'.packages.cw721-base;
+          #   instances = [ ];
+          # }
         ];
-        portIncrease = 100;
+        portIncrease = 0;
         has08Wasm = true;
       };
 

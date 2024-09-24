@@ -5,6 +5,15 @@
       "path": "./target/debug/voyager-chain-module-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-chain-module-cosmos-sdk",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
         "ws_url": "http://localhost:26757",
         "grpc_url": "http://localhost:9190"
       }
@@ -20,7 +29,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "./target/debug/voyager-chain-module-movement",
       "config": {
         "chain_id": "27",
@@ -30,7 +39,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "./target/debug/voyager-client-module-movement",
       "config": {}
     },
@@ -50,12 +59,35 @@
     },
     {
       "enabled": true,
+      "path": "./target/debug/voyager-client-module-cometbls",
+      "config": {
+        "ibc_interface": "ibc-go-v8/08-wasm"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-client-module-tendermint",
+      "config": {
+        "ibc_interface": "ibc-go-v8/native"
+      }
+    },
+    {
+      "enabled": true,
       "path": "./target/debug/voyager-consensus-module-cometbls",
       "config": {
         "chain_id": "union-devnet-1",
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090",
+        "prover_endpoints": ["https://galois.testnet-8.union.build:443"]
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-consensus-module-tendermint",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
         "ws_url": "http://localhost:26757",
-        "grpc_url": "http://localhost:9190",
-        "prover_endpoints": ["http://localhost:9999"]
+        "grpc_url": "http://localhost:9190"
       }
     },
     {
@@ -70,7 +102,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "./target/debug/voyager-consensus-module-movement",
       "config": {
         "chain_id": "27",
@@ -89,7 +121,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "path": "./target/debug/voyager-transaction-module-aptos",
       "config": {
         "chain_id": "27",
@@ -125,6 +157,31 @@
         "gas_config": {
           "gas_price": "1.0",
           "gas_denom": "muno",
+          "gas_multiplier": "1.1",
+          "max_gas": 60000000
+        },
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-transaction-module-cosmos-sdk",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
+        "keyring": {
+          "name": "stargaze-devnet",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "alice",
+              "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+            }
+          ]
+        },
+        "gas_config": {
+          "gas_price": "1.0",
+          "gas_denom": "ustars",
           "gas_multiplier": "1.1",
           "max_gas": 60000000
         },
@@ -214,6 +271,20 @@
       "path": "./target/debug/voyager-plugin-transaction-batch",
       "config": {
         "chain_id": "27",
+        "client_configs": {
+          "*": {
+            "min_batch_size": 1,
+            "max_batch_size": 3,
+            "max_wait_time": { "secs": 10, "nanos": 0 }
+          }
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-plugin-transaction-batch",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
         "client_configs": {
           "*": {
             "min_batch_size": 1,

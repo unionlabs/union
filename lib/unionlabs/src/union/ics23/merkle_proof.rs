@@ -118,7 +118,6 @@ impl crate::encoding::Encode<crate::encoding::EthAbi> for MerkleProof {
 #[cfg(test)]
 mod tests {
     use ethers::abi::{ethabi, AbiType, Token, Tokenizable};
-    use hex_literal::hex;
 
     use super::*;
     use crate::{

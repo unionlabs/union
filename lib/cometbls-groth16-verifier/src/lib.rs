@@ -193,6 +193,7 @@ pub enum Error {
     InvalidPublicInput,
     InvalidPoint,
     InvalidProof,
+    InvalidPok,
     InvalidVerifyingKey,
     InvalidCommitment,
     InvalidRawProof,
@@ -287,7 +288,7 @@ fn verify_generic_zkp_2(
 
     let pok_result = substrate_bn::pairing_batch(&[(pc, g.into()), (pok, g_root_sigma_neg.into())]);
     if pok_result != substrate_bn::Gt::one() {
-        return Err(Error::InvalidProof);
+        return Err(Error::InvalidPok);
     }
 
     let g16_result = substrate_bn::pairing_batch(&[
@@ -435,6 +436,25 @@ mod tests {
                 hex!("294A48A750D5C2CF926516752FF484EEBE55FF26CF8A8A7536D98794CF062DB6214D0C9E5C6B164111927A1630889619DBBB40149D8E2D32898E7ACB765542CD0EB8A8E04CCC254C3BFDC2FCE627D59C3C05E2AC76E03977855DD889C1C9BA432FF7FF4DEFCB5286555D36D22DD073A859140508AF9B977F38EB9A604E99A5F6109D43A4AFA0AB161DA2B261DED80FBC0C36E57DE2001338941C834E3262CF751BC1BFC6EC27BB8E106BAAB976285BAC1D4AC38D1B759C8A2852D65CE239974F1275CC6765B3D174FD1122EFDE86137D19F07483FEF5244B1D74B2D9DC598AC32A5CA10E8837FBC89703F4D0D46912CF4AF82341C30C2A1F3941849CC011A56E18AD2162EEB71289B8821CC01875BC1E35E5FC1EBD9114C0B2C0F0D9A96C394001468C70A1716CA98EBE82B1E614D4D9B07292EBAD5B60E0C76FD1D58B485E7D1FB1E07F51A0C68E4CA59A399FCF0634D9585BE478E37480423681B984E96C0A1698D8FCB1DF51CAE023B045E114EED9CB233A5742D9E60E1097206EB20A5058")
             ),
             Err(Error::InvalidProof)
+        );
+    }
+
+    #[test]
+    fn invalid_vk() {
+        assert_eq!(
+            verify_zkp(
+                "union-devnet-1",
+                hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d").into(),
+                &LightHeader {
+                    height: 905.try_into().unwrap(),
+                    time: Timestamp::from_str("2024-09-23T20:48:00.739712762Z").unwrap(),
+                    validators_hash: hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d").into(),
+                    next_validators_hash: hex!("2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d").into(),
+                    app_hash: hex!("eddaa32275fbbf44c6a21e32b59b097bed5374be715eab22f093399a9700a1e4").into(),
+                },
+                hex!("1d530ee22263bc9e7008e3bd982c966b226d1018814e5b4d07597b4d35aea56b2ef63fdddb29fe06ef99cf645201a12e8b98b9ff7a7cec0819f696e17413294b0c638c4f946f4d4af4da8dd0815de2f5af8fd8612d1c98e9846846ea1ec78aac046df852b916de3fd8b3332bc3d23073e11b252b023711c18b19952507428da12e2baf74a03ca7bdc37edd0123e47f0a3a029f6da43a32dc6830e126b4ddf8712f2a0e021ac0f6414f171156f6a9019d6ea53cd30762c1e60d6a0e029778586c0cc1e2e13f7c45347a2a3ba82e43eccdc468fc8a05ba0a95fef26777872c27e42317f2c76c0a5f41e63088b8b394c5a7a3066809952f489718142107bd7b24572074be60bdb7611f1c916061a5ab3dc75a62b953a19650d839027a885801252a1e1cd84f8ba570047c2f1d220f26f7b11e69b7519f092d31ff954e92fd012a931ea2b4d20942376502043ba98e69f351f60b12e5a7ff180e5a1a966697d80696066694fa833420f5db7e3ae1b91dbce06fe2ffa1ea0a503af6a93f61ad7aa4f4")
+            ),
+            Err(Error::InvalidPok)
         );
     }
 }

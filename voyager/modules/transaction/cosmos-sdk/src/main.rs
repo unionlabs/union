@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use chain_utils::{
     cosmos_sdk::{
-        cosmos_sdk_error::{ChannelError, CosmosSdkError, IbcWasmError, SdkError},
+        cosmos_sdk_error::{ChannelError, ClientError, CosmosSdkError, IbcWasmError, SdkError},
         CosmosKeyring, GasConfig,
     },
     keyring::{KeyringConfig, KeyringEntry},
@@ -615,12 +615,19 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
                 .await
                 .map_err(|err| match &err {
                     BroadcastTxCommitError::Tx(tx_err) => match tx_err {
-                        CosmosSdkError::Capability(capability_error) => ErrorObject::owned(
+                        CosmosSdkError::CapabilityError(capability_error) => ErrorObject::owned(
                             FATAL_JSONRPC_ERROR_CODE,
                             ErrorReporter(capability_error).to_string(),
                             None::<()>,
                         ),
                         CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                ErrorReporter(err).to_string(),
+                                None::<()>,
+                            )
+                        }
+                        CosmosSdkError::ClientError(ClientError::ErrClientNotFound) => {
                             ErrorObject::owned(
                                 FATAL_JSONRPC_ERROR_CODE,
                                 ErrorReporter(err).to_string(),
