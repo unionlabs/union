@@ -9,7 +9,7 @@
     {
       packages = {
         docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-DRmntYxuPlqj/0tL24DHaIAGYQwbc5KnJHpJlEKCkIA=";
+          npmDepsHash = "sha256-w9BqWfAUS+Ll1Im2plzzfQTPWLDCrKpAeJgjEhUEbH0=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "docs";
@@ -52,7 +52,7 @@
             text = ''
               ${ensureAtRepositoryRoot}
               biome check docs --error-on-warnings --write --unsafe
-              
+
               nix fmt
 
               cd docs/

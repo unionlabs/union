@@ -13,7 +13,9 @@ export async function GET(context: APIContext) {
     description:
       "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
     items: blog
+      // @ts-expect-error
       .filter(post => !post.data.hidden)
+      // @ts-expect-error
       .map(post => ({
         title: post.data.title,
         pubDate: post.data.date,

@@ -1,5 +1,5 @@
-import * as contentful from "contentful"
 import { env } from "#/lib/constants/env.ts"
+import { createClient, type Entry } from "contentful"
 import { ContentfulLivePreview } from "@contentful/live-preview"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 import { BLOCKS, INLINES, MARKS, type Document } from "@contentful/rich-text-types"
@@ -19,7 +19,7 @@ export function initializeContentfulLivePreview({
   debugMode,
   subscriptions
 }: ConfigOptions) {
-  const contentfulClient = contentful.createClient({
+  const contentfulClient = createClient({
     space: env.CONTENTFUL_SPACE_ID,
     host: "preview.contentful.com",
     accessToken: env.CONTENTFUL_ACCESS_TOKEN
@@ -48,7 +48,7 @@ export function setupLivePreview({
   fieldId,
   subscriptions
 }: {
-  entry: contentful.Entry
+  entry: Entry
   entryId: string
   fieldId: string
   subscriptions: Array<VoidFunction>
@@ -139,7 +139,7 @@ export function findElementByDataAttribute({
 
 export const imageWithProtocol = (url: string) => `https:${url}`
 
-export function displayFieldData<T extends contentful.Entry>({
+export function displayFieldData<T extends Entry>({
   entry,
   fieldId,
   entryId

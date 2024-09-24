@@ -1,7 +1,7 @@
-import contentful from "contentful"
+import { createClient } from "contentful"
 import { env } from "#/lib/constants/env.ts"
 
-export const contentfulClient = contentful.createClient({
+export const contentfulClient = createClient({
   space: env.CONTENTFUL_SPACE_ID,
   environment: env.CONTENTFUL_ENVIRONMENT,
   host: import.meta.env.DEV ? "preview.contentful.com" : "cdn.contentful.com",
