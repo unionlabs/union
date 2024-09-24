@@ -31,7 +31,6 @@ docker pull ghcr.io/unionlabs/galoisd:<VERSION>
 
 `nix run github:unionlabs/union/<COMMIT_OR_VERSION>#galoisd -- --help`
 
-
 ## Architecture
 
 Galoisd exposes gRPC endpoints to generate and verify CometBLS zero-knowledge proofs.
@@ -88,14 +87,15 @@ let public_input = sha256(
 Where `header` represents the new block header to verify and `trusted_validators_hash` is the `next_validators_hash` of the previously verified header. Furthermore, we truncate the most significant byte to fit the BN254 scalar field.
 
 In the circuit, we proceed as follows:
+
 - Recalculate the public input hash from the private inputs and verify that it matches the public input 31-byte hash.
 - Recalculate the block hash.
 - Hash the block hash to a G2 point on the BN254 curve, using [RFC
-9380](https://www.rfc-editor.org/rfc/rfc9380.html).
+  9380](https://www.rfc-editor.org/rfc/rfc9380.html).
 - Verify that 1/3 of `trusted_validators_hash` have signed (recalculate and verify the validators hash,
-aggregate public keys and verify signature).
+  aggregate public keys and verify signature).
 - Verify that 2/3 of `header.validators_hash` have signed (recalculate and verify the validators hash,
-aggregate public keys and verify signature).
+  aggregate public keys and verify signature).
 
 Note that both signatures verified in-circuit must be computed by the caller.
 
@@ -127,4 +127,3 @@ sequenceDiagram
     Client->>Galois: VerifyRequest
     Galois->>Client: VerifyResponse
 ```
-

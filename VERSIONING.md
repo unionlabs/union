@@ -31,6 +31,7 @@ The Union testnet will track the most recent release candidate. Release candidat
 The Union mono-repo is made up of many different components that are maintained and updated at different rates. We've opted to release components individually rather than in all encompassing versions. To do this, version tags are to now be made in the form of `<component>/v{X}.{Y}.{Z}` (`voyager-v0.2.1`). This will enable us to quickly update and distribute various components without creating monolithic releases.
 
 To create a release:
+
 - Checkout a new branch from main (or desired commit) with a name in the form of `release/<component>/v{X}.{Y}.{Z}`.
 - On this branch, create the first release candidate tag in the form `<component>/v{X}.{Y}.{Z}-rc1`.
 - Continue iterating release candidate tags until a viable release is generated

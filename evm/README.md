@@ -53,6 +53,7 @@ Note that the addresses are different because we often redeploy without upgradin
 Production contracts will get solely upgraded through the proxy and have the same addresses accross networks.
 
 ### Sepolia
+
 - Deployer: [0x12cffF5aAd6Fc340BBE6F1fe674C5Aa78f0d1E0F](https://sepolia.etherscan.io/address/0x12cffF5aAd6Fc340BBE6F1fe674C5Aa78f0d1E0F)
 - Sender: [0x2c077908e1173ff1a6097ca9e2af547c1e5130c4](https://sepolia.etherscan.io/address/0x2c077908e1173ff1a6097ca9e2af547c1e5130c4)
 - IBCHandler: [0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb](https://sepolia.etherscan.io/address/0xa390514f803a3b318b93bf6cd4beeb9f8299a0eb)
@@ -62,6 +63,7 @@ Production contracts will get solely upgraded through the proxy and have the sam
 - Multicall: [0x70BEDecc56C7104e410c1e4c25FcA0bcd29A0bA9](https://sepolia.etherscan.io/address/0x70bedecc56c7104e410c1e4c25fca0bcd29a0ba9)
 
 ### Berachain
+
 - Deployer: [0x17425b7d2d97E613dE2ADa01Dc472F76879E08Fe](https://bartio.beratrail.io/address/0x17425b7d2d97E613dE2ADa01Dc472F76879E08Fe)
 - Sender: [0x27156Eb671984304ae75Da49aD60C4479B490A06](https://bartio.beratrail.io/address/0x27156Eb671984304ae75Da49aD60C4479B490A06)
 - IBCHandler: [0x851c0EB711fe5C7c8fe6dD85d9A0254C8dd11aFD](https://bartio.beratrail.io/address/0x851c0EB711fe5C7c8fe6dD85d9A0254C8dd11aFD)
@@ -71,6 +73,7 @@ Production contracts will get solely upgraded through the proxy and have the sam
 - Multicall: [0x3147CA8f531070DDAC1b93700ef18E4Dd05b86ec](https://bartio.beratrail.io/address/0x3147CA8f531070DDAC1b93700ef18E4Dd05b86ec)
 
 ### Arbitrum
+
 - Deployer: [0x7d00b15A53B8b14a482BF761653532F07b7DcBdE](https://sepolia.arbiscan.io/address/0x7d00b15A53B8b14a482BF761653532F07b7DcBdE)
 - Sender: [0x50C9C35e0197e781e9aD7a3F6baDD8d01E45c377](https://sepolia.arbiscan.io/address/0x50C9C35e0197e781e9aD7a3F6baDD8d01E45c377)
 - IBCHandler: [0xb599bfcfb9D4fCaE9f8aB5D45d9A6F145E6b7573](https://sepolia.arbiscan.io/address/0xb599bfcfb9D4fCaE9f8aB5D45d9A6F145E6b7573)

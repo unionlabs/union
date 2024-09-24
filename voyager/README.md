@@ -4,14 +4,14 @@ Relaying is hard. There are several key properties to a reliable relayer, the mo
 which being:
 
 - **Speed.** IBC Relaying is a race to the bottom, with many relayers fighting to be the first to
-submit a packet, often times submitting a packet that ends up being frontrun.
+  submit a packet, often times submitting a packet that ends up being frontrun.
 - **Data Integrity.** There's no use being the first to submit a packet if the packet is submitted
-incorrectly, and a good relayer will never drop packets. The latter is especially important for
-ordered channels, as a channel will be closed if a packet on it times out.
+  incorrectly, and a good relayer will never drop packets. The latter is especially important for
+  ordered channels, as a channel will be closed if a packet on it times out.
 - **Quick Startup Times.** RPCs are unreliable, and it's incredibly difficult to build around every
-possible failure case - especially when connecting to multiple different chains. Even with proper
-error handling and retry logic, in the event of a crash, startup time should be miniscule (see:
-<https://github.com/clemensgg/xion-relayer-postmortem>)
+  possible failure case - especially when connecting to multiple different chains. Even with proper
+  error handling and retry logic, in the event of a crash, startup time should be miniscule (see:
+  <https://github.com/clemensgg/xion-relayer-postmortem>)
 
 Voyager takes a novel approach to solving these problems. Internally, everything is modeled as a
 finite state machine, which is stored in postgres to ensure transactional integrity. Every chain

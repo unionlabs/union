@@ -9,13 +9,13 @@
 </div>
 
 <br/>
-  
+
 <div align="center">
 
-  [![built with garnix](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fgarnix.io%2Fapi%2Fbadges%2Funionlabs%2Funion%3Fbranch%3Dmain)](https://garnix.io)
-  [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
-  [![Discord badge][]](https://discord.union.build)
-  [![Twitter handle][]][Twitter badge]
+[![built with garnix](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fgarnix.io%2Fapi%2Fbadges%2Funionlabs%2Funion%3Fbranch%3Dmain)](https://garnix.io)
+[![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
+[![Discord badge]](https://discord.union.build)
+[![Twitter handle]][twitter badge]
 
 </div>
 
@@ -82,29 +82,29 @@ Check the `#developers` channel on [Union's discord](https://discord.union.build
 
 The official docs are hosted [here][docs]. Each individual component also has accompanying developer documentation for contributors, which you can find in each `README.md`.
 
-[docs]: https://docs.union.build "Official Union Docs"
-[IBC]: https://github.com/cosmos/ibc "cosmos/ibc"
-[Discord badge]: https://img.shields.io/discord/1158939416870522930?logo=discord
-[Twitter handle]: https://img.shields.io/twitter/follow/union_build.svg?style=social&label=Follow
-[Twitter badge]: https://twitter.com/intent/follow?screen_name=union_build
-[CosmWasm]: https://cosmwasm.com/
-[Arbitrum]: https://github.com/OffchainLabs/arbitrum
-[Ethereum]: https://ethereum.org
-[EVM]: https://ethereum.org/en/developers/docs/evm/
-[Rust]: https://www.rust-lang.org/
-[Solidity]: https://soliditylang.org/
-[Go]: https://go.dev/
-[TypeScript]: https://www.typescriptlang.org/
-[Svelte]: https://svelte.dev
-[Astro]: https://astro.build
-[`CometBLS`]: https://github.com/unionlabs/cometbls
-[Light Clients]: https://a16zcrypto.com/posts/article/an-introduction-to-light-clients/
-[Gnark]: https://github.com/ConsenSys/gnark
-[Nix]: https://zero-to-nix.com/
-[NixOS]: https://nixos.org
-[OrbStack]: https://orbstack.dev/
-[Consensus Verification]: https://union.build/docs/concepts/consensus-verification/
-[union.build]: https://union.build
 [app.union.build]: https://app.union.build
 [app.union.build/faucet]: https://app.union.build/faucet
-[Cosmos]: https://cosmos.network
+[arbitrum]: https://github.com/OffchainLabs/arbitrum
+[astro]: https://astro.build
+[consensus verification]: https://union.build/docs/concepts/consensus-verification/
+[cosmos]: https://cosmos.network
+[cosmwasm]: https://cosmwasm.com/
+[discord badge]: https://img.shields.io/discord/1158939416870522930?logo=discord
+[docs]: https://docs.union.build "Official Union Docs"
+[ethereum]: https://ethereum.org
+[evm]: https://ethereum.org/en/developers/docs/evm/
+[gnark]: https://github.com/ConsenSys/gnark
+[go]: https://go.dev/
+[ibc]: https://github.com/cosmos/ibc "cosmos/ibc"
+[light clients]: https://a16zcrypto.com/posts/article/an-introduction-to-light-clients/
+[nix]: https://zero-to-nix.com/
+[nixos]: https://nixos.org
+[orbstack]: https://orbstack.dev/
+[rust]: https://www.rust-lang.org/
+[solidity]: https://soliditylang.org/
+[svelte]: https://svelte.dev
+[twitter badge]: https://twitter.com/intent/follow?screen_name=union_build
+[twitter handle]: https://img.shields.io/twitter/follow/union_build.svg?style=social&label=Follow
+[typescript]: https://www.typescriptlang.org/
+[union.build]: https://union.build
+[`cometbls`]: https://github.com/unionlabs/cometbls

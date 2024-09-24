@@ -26,7 +26,7 @@ When running `uniond` in production, we recommend using [`unionvisor`](../unionv
 
 ## Architecture
 
-Uniond is a [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) based blockchain consisting of a set of modules. 
+Uniond is a [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) based blockchain consisting of a set of modules.
 
 ```mermaid
 graph LR
@@ -50,7 +50,7 @@ graph LR
     end
 ```
 
-The most notable module is **x/ibc**, as it contains [08-wasm](https://ibc.cosmos.network/main/ibc/light-clients/wasm/overview/). This allows us to write 
+The most notable module is **x/ibc**, as it contains [08-wasm](https://ibc.cosmos.network/main/ibc/light-clients/wasm/overview/). This allows us to write
 **Light Clients** in [Rust](https://www.rust-lang.org/), compile them to [WebAssembly](https://webassembly.org/), and upload them to the `uniond` chain to support many ecosystems.
 
 You can find the light clients [here](../light-clients).

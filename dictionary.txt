@@ -785,6 +785,7 @@ maxdome
 maxp
 maxpeers
 mdast
+mdformat
 mdsvex
 merkle
 merkleize
