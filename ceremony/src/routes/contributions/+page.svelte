@@ -35,13 +35,9 @@ function getFirstLetter(str: string): string | undefined {
       <div class="h-8 w-[2px] bg-white"></div>
       {#each contributions as contribution, index }
         <a href="/contributions/{contribution.public_key_hash}"
-           class="text-white flex gap-2 items-center border-white border p-2 w-full">
-          {#if contribution.avatar_url}
-            <img class="size-7" src={contribution.avatar_url} alt="">
-          {:else}
+           class="text-white flex gap-2 items-center border-white border p-2 pr-3  w-full">
             <div class="flex size-7 bg-union-accent-500 items-center justify-center text-black">{getFirstLetter(contribution.user_name)}</div>
-          {/if}
-          <Text class="uppercase max-w-48 truncate">{contribution.user_name}</Text>
+          <Text class="uppercase text-sm font-mono">{contribution.payload_id}</Text>
         </a>
         {#if index !== contributions.length - 1}
           <div class="h-8 w-[2px] bg-white"></div>

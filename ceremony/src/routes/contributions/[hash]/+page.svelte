@@ -67,7 +67,7 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
     {#if contribution}
       <div class="flex flex-col items-start gap-1 py-2 px-4">
         <div>
-          <H2>Contributor: <span class="!text-union-accent-500">{contribution.user_name}</span></H2>
+          <H2><span class="!text-union-accent-500">{contribution.payload_id}</span></H2>
         </div>
 
         <div class="flex flex-col gap-4">
