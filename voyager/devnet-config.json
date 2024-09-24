@@ -35,7 +35,7 @@
         "chain_id": "27",
         "rpc_url": "http://localhost:30731",
         "movement_rpc_url": "http://localhost:30832",
-        "ibc_handler_address": "dbe4adfbd6d28a9a1c0eb93ff5a0eeb44dfeece7401baf15a83e70076055df86"
+        "ibc_handler_address": "fab42d9bc05b672f3fd7ed856d59f79e3fcd81d98ab5824a533a844abe4d34fd"
       }
     },
     {
@@ -106,7 +106,7 @@
       "path": "./target/debug/voyager-consensus-module-movement",
       "config": {
         "chain_id": "27",
-        "ibc_handler_address": "dbe4adfbd6d28a9a1c0eb93ff5a0eeb44dfeece7401baf15a83e70076055df86",
+        "ibc_handler_address": "fab42d9bc05b672f3fd7ed856d59f79e3fcd81d98ab5824a533a844abe4d34fd",
         "l1_settlement_address": "0x0000000000000000000000000000000000000000",
         "l1_client_id": "cometbls-0",
         "aptos_rest_api": "http://localhost:30731",
@@ -126,7 +126,7 @@
       "config": {
         "chain_id": "27",
         "rpc_url": "http://localhost:30731",
-        "ibc_handler_address": "dbe4adfbd6d28a9a1c0eb93ff5a0eeb44dfeece7401baf15a83e70076055df86",
+        "ibc_handler_address": "fab42d9bc05b672f3fd7ed856d59f79e3fcd81d98ab5824a533a844abe4d34fd",
         "keyring": {
           "name": "aptos-devnet",
           "keys": [

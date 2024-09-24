@@ -344,3 +344,21 @@ pub enum PersistedStateValueMetadata {
         creation_time_usecs: u64,
     },
 }
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+    use unionlabs::{
+        encoding::{DecodeAs, Proto},
+        ibc::core::channel::channel::Channel,
+    };
+
+    #[test]
+    fn test_proto() {
+        let channel_end = hex!("6d080110011a470a457761736d2e756e696f6e3134686a32746176713866706573647778786375343472747933686839307668756a7276636d73746c347a723374786d6676773973336539666532220c636f6e6e656374696f6e2d302a1075637330302d70696e67706f6e672d31");
+        println!(
+            "end 1: {:?}",
+            Channel::decode_as::<Proto>(&channel_end).unwrap()
+        );
+    }
+}

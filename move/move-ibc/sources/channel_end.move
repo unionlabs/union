@@ -1,6 +1,6 @@
 module IBC::channel {
     use std::option::{Self, Option};
-    use std::string::{String, utf8};
+    use std::string::{Self, String, utf8};
     use std::vector;
     use IBC::proto_utils;
 
@@ -145,14 +145,24 @@ module IBC::channel {
             };
         };
 
-        vector::append(&mut buf, proto_utils::encode_string(5, chan.version));
+        if (!string::is_empty(&chan.version)) {
+            vector::append(&mut buf, proto_utils::encode_string(5, chan.version));
+        };
 
         buf
     }
 
     public fun encode_proto_counterparty(value: Counterparty): vector<u8> {
-        let buf = proto_utils::encode_string(1, value.port_id);
-        vector::append(&mut buf, proto_utils::encode_string(2, value.channel_id));
+        let buf = vector::empty();
+        
+        if (!string::is_empty(&value.port_id)) {
+            vector::append(&mut buf, proto_utils::encode_string(1, value.port_id));
+        };
+
+        if (!string::is_empty(&value.channel_id)) {
+            vector::append(&mut buf, proto_utils::encode_string(2, value.channel_id));
+        };
+
         buf
     }
 

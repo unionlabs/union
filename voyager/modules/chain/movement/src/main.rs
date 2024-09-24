@@ -12,7 +12,6 @@ use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
-use sha2::{Digest as _, Sha256};
 use tracing::{debug, error, instrument};
 use unionlabs::{
     aptos::{
@@ -265,11 +264,7 @@ impl ChainModuleServer for Module {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),
-                        (Sha256::new()
-                            .chain_update(path.to_string().into_bytes())
-                            .finalize()
-                            .to_vec()
-                            .into(),),
+                        (path.to_string().into_bytes().into(),),
                         Some(ledger_version),
                     )
                     .await
@@ -277,16 +272,23 @@ impl ChainModuleServer for Module {
 
                 into_value(<H256>::try_from(commitment.0).unwrap())
             }
-            Path::Acknowledgement(_) => todo!(),
+            Path::Acknowledgement(path) => {
+                let commitment = self
+                    .get_commitment(
+                        self.ibc_handler_address.into(),
+                        (path.to_string().into_bytes().into(),),
+                        Some(ledger_version),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?;
+
+                into_value(<H256>::try_from(commitment.0).unwrap())
+            }
             Path::Receipt(path) => {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),
-                        (Sha256::new()
-                            .chain_update(path.to_string().into_bytes())
-                            .finalize()
-                            .to_vec()
-                            .into(),),
+                        (path.to_string().into_bytes().into(),),
                         Some(ledger_version),
                     )
                     .await

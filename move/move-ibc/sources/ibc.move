@@ -699,7 +699,7 @@ module IBC::ibc {
             proof_init,
             *channel::counterparty_port_id(&counterparty),
             *channel::counterparty_channel_id(&counterparty),
-            bcs::to_bytes(&expected_channel)
+            expected_channel
         );
         assert!(err == 0, E_INVALID_PROOF);
 
@@ -773,7 +773,7 @@ module IBC::ibc {
 
         let expected_counterparty = channel::new_counterparty(port_id, channel_id);
         let expected_channel = channel::new(
-            CHAN_STATE_INIT,
+            CHAN_STATE_TRYOPEN,
             channel::ordering(&chan),
             expected_counterparty,
             get_counterparty_hops(*vector::borrow(channel::connection_hops(&chan), 0)),
@@ -786,17 +786,16 @@ module IBC::ibc {
             proof_try,
             *channel::chan_counterparty_port_id(&chan),
             counterparty_channel_id,
-            bcs::to_bytes(&expected_channel)
+            expected_channel
         );
         assert!(err == 0, E_INVALID_PROOF);
-
-        update_channel_commitment(port_id, channel_id);
 
         channel::set_state(&mut chan, CHAN_STATE_OPEN);
         channel::set_version(&mut chan, counterparty_version);
         channel::set_chan_counterparty_channel_id(&mut chan, counterparty_channel_id);
 
         smart_table::upsert(&mut borrow_global_mut<IBCStore>(get_vault_addr()).channels, channel_port, chan);
+        update_channel_commitment(port_id, channel_id);
 
         event::emit(
             ChannelOpenAck {
@@ -847,7 +846,7 @@ module IBC::ibc {
             proof_ack,
             *channel::chan_counterparty_port_id(&channel),
             *channel::chan_counterparty_channel_id(&channel),
-            bcs::to_bytes(&expected_channel)
+            expected_channel
         );
         assert!(err == 0, E_INVALID_PROOF);
 
@@ -907,10 +906,9 @@ module IBC::ibc {
         };
 
         let packet_sequence = from_bcs::to_u64(
-            *table::borrow_with_default(
+            *table::borrow(
                 &store.commitments,
                 IBCCommitment::next_sequence_send_key(source_port, source_channel),
-                &bcs::to_bytes(&0u64)
             )
         );
         table::upsert(
@@ -1749,7 +1747,7 @@ module IBC::ibc {
         proof: vector<u8>,
         port_id: String,
         channel_id: String,
-        channel_bytes: vector<u8>
+        channel: Channel
     ): u64 {
         let path = IBCCommitment::channel_key(port_id, channel_id);
         LightClient::verify_membership(
@@ -1758,7 +1756,7 @@ module IBC::ibc {
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
             path,
-            channel_bytes
+            channel::encode_proto(channel),
         )
     }
 
