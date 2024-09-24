@@ -1,52 +1,70 @@
-{ inputs, ... }: {
-  perSystem = { pkgs, nixpkgs, system, networks, inputs', ... }:
+{ inputs, ... }:
+{
+  perSystem =
+    {
+      pkgs,
+      nixpkgs,
+      system,
+      networks,
+      inputs',
+      ...
+    }:
     let
       mkTest =
         let
           nixos-lib = import "${nixpkgs}/nixos/lib" { };
         in
-        { name, testScript, nodes }:
+        {
+          name,
+          testScript,
+          nodes,
+        }:
         nixos-lib.runTest {
           inherit name testScript nodes;
           hostPkgs = pkgs; # the Nixpkgs package set used outside the VMs
-          passthru = { ci = false; };
+          passthru = {
+            ci = false;
+          };
         };
-
 
       devnetEthNode = {
         wait_for_console_text = "Synced - slot: [1-9][0-9]*";
         wait_for_open_port = 8546;
-        node = { pkgs, ... }: {
-          imports = [
-            inputs.arion.nixosModules.arion
-          ];
-          virtualisation = {
-            diskSize = 16 * 1024;
-            memorySize = 8 * 1024;
-            arion = {
-              backend = "docker";
-              projects.devnet-eth.settings = networks.modules.devnet-eth;
+        node =
+          { pkgs, ... }:
+          {
+            imports = [
+              inputs.arion.nixosModules.arion
+            ];
+            virtualisation = {
+              diskSize = 16 * 1024;
+              memorySize = 8 * 1024;
+              arion = {
+                backend = "docker";
+                projects.devnet-eth.settings = networks.modules.devnet-eth;
+              };
             };
-          };
 
-          environment.systemPackages = with pkgs; [ jq ];
-        };
+            environment.systemPackages = with pkgs; [ jq ];
+          };
       };
 
       unionTestnetGenesisNode = {
-        node = { pkgs, ... }: {
-          imports = [
-            inputs.arion.nixosModules.arion
-          ];
-          virtualisation = {
-            diskSize = 4 * 1024;
-            memorySize = 4 * 1024;
-            arion = {
-              backend = "docker";
-              projects.union-devnet.settings = networks.modules.devnet-union-minimal;
+        node =
+          { pkgs, ... }:
+          {
+            imports = [
+              inputs.arion.nixosModules.arion
+            ];
+            virtualisation = {
+              diskSize = 4 * 1024;
+              memorySize = 4 * 1024;
+              arion = {
+                backend = "docker";
+                projects.union-devnet.settings = networks.modules.devnet-union-minimal;
+              };
             };
           };
-        };
       };
 
       unionNode = {
@@ -69,10 +87,20 @@
     in
     {
       _module.args.e2e = {
-        inherit mkTest unionNode unionTestnetGenesisNode devnetEthNode;
+        inherit
+          mkTest
+          unionNode
+          unionTestnetGenesisNode
+          devnetEthNode
+          ;
 
         # TODO: This is poorly named, it only starts devnet-union and devnet-eth
-        mkTestWithDevnetSetup = { name, testScript, nodes }:
+        mkTestWithDevnetSetup =
+          {
+            name,
+            testScript,
+            nodes,
+          }:
           mkTest {
             inherit name;
 
@@ -93,10 +121,13 @@
             nodes =
               (pkgs.lib.throwIf (builtins.hasAttr "union" nodes) "union node already exists; use a different name")
                 (pkgs.lib.throwIf (builtins.hasAttr "devnetEth" nodes) "devnetEth node already exists; use a different name")
-                ({
-                  union = unionNode.node;
-                  devnetEth = devnetEthNode.node;
-                } // nodes);
+                (
+                  {
+                    union = unionNode.node;
+                    devnetEth = devnetEthNode.node;
+                  }
+                  // nodes
+                );
           };
       };
     };

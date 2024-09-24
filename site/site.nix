@@ -1,5 +1,13 @@
-{ ... }: {
-  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, mkCi, ... }:
+_: {
+  perSystem =
+    {
+      pkgs,
+      unstablePkgs,
+      lib,
+      ensureAtRepositoryRoot,
+      mkCi,
+      ...
+    }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
       nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
@@ -8,23 +16,25 @@
     in
     {
       packages = {
-        site = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-3vbmOiri2LfaCd8HDbG6iC+z9a4r0HgsWULltOA+c5w=";
-          src = ./.;
-          sourceRoot = "site";
-          pname = packageJSON.name;
-          version = packageJSON.version;
-          nativeBuildInputs = combinedDeps;
-          buildInputs = combinedDeps;
-          installPhase = ''
-            mkdir -p $out
-            cp -r ./.vercel/output/* $out
-          '';
-          doDist = false;
-          PUPPETEER_SKIP_DOWNLOAD = 1;
-          ASTRO_TELEMETRY_DISABLED = 1;
-          NODE_OPTIONS = "--no-warnings";
-        });
+        site = mkCi false (
+          unstablePkgs.buildNpmPackage {
+            npmDepsHash = "sha256-3vbmOiri2LfaCd8HDbG6iC+z9a4r0HgsWULltOA+c5w=";
+            src = ./.;
+            sourceRoot = "site";
+            pname = packageJSON.name;
+            inherit (packageJSON) version;
+            nativeBuildInputs = combinedDeps;
+            buildInputs = combinedDeps;
+            installPhase = ''
+              mkdir -p $out
+              cp -r ./.vercel/output/* $out
+            '';
+            doDist = false;
+            PUPPETEER_SKIP_DOWNLOAD = 1;
+            ASTRO_TELEMETRY_DISABLED = 1;
+            NODE_OPTIONS = "--no-warnings";
+          }
+        );
       };
 
       apps = {

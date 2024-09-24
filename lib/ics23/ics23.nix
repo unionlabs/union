@@ -1,5 +1,17 @@
-{ inputs, ... }: {
-  perSystem = { self', inputs', pkgs, system, config, crane, stdenv, dbg, ... }:
+{ inputs, ... }:
+{
+  perSystem =
+    {
+      self',
+      inputs',
+      pkgs,
+      system,
+      config,
+      crane,
+      stdenv,
+      dbg,
+      ...
+    }:
     let
       ics23TestSuite = crane.buildWorkspaceMember {
         crateDirFromRoot = "lib/ics23";
@@ -9,6 +21,6 @@
       };
     in
     {
-      checks = ics23TestSuite.checks;
+      inherit (ics23TestSuite) checks;
     };
 }

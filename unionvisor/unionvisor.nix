@@ -1,5 +1,18 @@
-{ self, inputs, ... }: {
-  perSystem = { self', pkgs, system, config, inputs', crane, stdenv, get-flake, uniondBundleVersions, ... }:
+{ self, inputs, ... }:
+{
+  perSystem =
+    {
+      self',
+      pkgs,
+      system,
+      config,
+      inputs',
+      crane,
+      stdenv,
+      get-flake,
+      uniondBundleVersions,
+      ...
+    }:
     let
       swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
 
@@ -21,48 +34,70 @@
         };
       };
 
-      mkBundle = { name, versions, genesis, meta, nextVersion ? "" }:
-        pkgs.linkFarm "union-bundle-${name}" ([
-          {
-            name = "meta.json";
-            path = pkgs.writeText "meta.json" (builtins.toJSON meta);
-          }
-          {
-            name = "genesis.json";
-            path = genesis;
-          }
-          {
-            name = "unionvisor";
-            path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
-          }
-        ]
-        ++ # add all `versions` to the bundle
-        map
-          (version: {
-            name =
-              "${meta.versions_directory}/${version}/${meta.binary_name}";
+      mkBundle =
+        {
+          name,
+          versions,
+          genesis,
+          meta,
+          nextVersion ? "",
+        }:
+        pkgs.linkFarm "union-bundle-${name}" (
+          [
+            {
+              name = "meta.json";
+              path = pkgs.writeText "meta.json" (builtins.toJSON meta);
+            }
+            {
+              name = "genesis.json";
+              path = genesis;
+            }
+            {
+              name = "unionvisor";
+              path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
+            }
+          ]
+          # add all `versions` to the bundle
+          ++ map (version: {
+            name = "${meta.versions_directory}/${version}/${meta.binary_name}";
             # Dynamically load the flake dependency to avoid having the full tree in the lock file.
-            path = pkgs.lib.getExe (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond-release;
-          })
-          versions
-        ++ # add `nextVersion` to the bundle if supplied
-        pkgs.lib.lists.optional (nextVersion != "") ({
-          name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
-          path = pkgs.lib.getExe self'.packages.uniond-release;
-        }));
+            path =
+              pkgs.lib.getExe
+                (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond-release;
+          }) versions
+          # add `nextVersion` to the bundle if supplied
+          ++ pkgs.lib.lists.optional (nextVersion != "") {
+            name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
+            path = pkgs.lib.getExe self'.packages.uniond-release;
+          }
+        );
 
-      mkUnionvisorImage = unionvisorBundle: pkgs.dockerTools.buildImage {
-        name = "unionvisor";
-        copyToRoot = pkgs.buildEnv {
-          name = "image-root";
-          paths = [ pkgs.coreutils pkgs.cacert unionvisorBundle ];
-          pathsToLink = [ "/bin" "/versions" "/" ];
+      mkUnionvisorImage =
+        unionvisorBundle:
+        pkgs.dockerTools.buildImage {
+          name = "unionvisor";
+          copyToRoot = pkgs.buildEnv {
+            name = "image-root";
+            paths = [
+              pkgs.coreutils
+              pkgs.cacert
+              unionvisorBundle
+            ];
+            pathsToLink = [
+              "/bin"
+              "/versions"
+              "/"
+            ];
+          };
+          config = {
+            Entrypoint = [ "/unionvisor" ];
+            Env = [
+              "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+              "UNIONVISOR_ROOT=/.unionvisor"
+              "UNIONVISOR_BUNDLE=/"
+            ];
+          };
         };
-        config = {
-          Entrypoint = [ "/unionvisor" ];
-          Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" "UNIONVISOR_ROOT=/.unionvisor" "UNIONVISOR_BUNDLE=/" ];
-        };
-      };
     in
     {
       inherit (unionvisorAll) checks;
@@ -71,34 +106,38 @@
 
         bundle-testnet-8-image = mkUnionvisorImage self'.packages.bundle-testnet-8;
 
-        bundle-testnet-8 =
-          mkBundle {
-            name = "testnet-8";
-            versions = uniondBundleVersions.complete;
-            genesis = ../networks/genesis/union-testnet-8/genesis.json;
-            meta = {
-              binary_name = "uniond";
-              versions_directory = "versions";
-              fallback_version = uniondBundleVersions.first;
-            };
+        bundle-testnet-8 = mkBundle {
+          name = "testnet-8";
+          versions = uniondBundleVersions.complete;
+          genesis = ../networks/genesis/union-testnet-8/genesis.json;
+          meta = {
+            binary_name = "uniond";
+            versions_directory = "versions";
+            fallback_version = uniondBundleVersions.first;
           };
+        };
 
-        bundle-testnet-next =
-          mkBundle {
-            name = "testnet-next";
-            versions = uniondBundleVersions.complete;
-            nextVersion = "v0.24.0";
-            genesis = ../networks/genesis/union-testnet-8/genesis.json;
-            meta = {
-              binary_name = "uniond";
-              versions_directory = "versions";
-              fallback_version = uniondBundleVersions.first;
-            };
+        bundle-testnet-next = mkBundle {
+          name = "testnet-next";
+          versions = uniondBundleVersions.complete;
+          nextVersion = "v0.24.0";
+          genesis = ../networks/genesis/union-testnet-8/genesis.json;
+          meta = {
+            binary_name = "uniond";
+            versions_directory = "versions";
+            fallback_version = uniondBundleVersions.first;
           };
+        };
       };
     };
 
-  flake.nixosModules.unionvisor = { lib, pkgs, config, ... }:
+  flake.nixosModules.unionvisor =
+    {
+      lib,
+      pkgs,
+      config,
+      ...
+    }:
     with lib;
     let
       cfg = config.services.unionvisor;
@@ -115,7 +154,10 @@
           default = self.packages.${pkgs.system}.bundle-testnet-8;
         };
         logFormat = mkOption {
-          type = types.enum [ "json" "plain" ];
+          type = types.enum [
+            "json"
+            "plain"
+          ];
           default = "json";
           example = "plain";
         };
@@ -194,26 +236,41 @@
           let
             unionvisor-systemd-script = pkgs.writeShellApplication {
               name = "unionvisor-systemd";
-              runtimeInputs = [ pkgs.coreutils cfg.package ];
+              runtimeInputs = [
+                pkgs.coreutils
+                cfg.package
+              ];
               text =
                 let
                   configSymlinks = [
-                    { name = "node_key.json"; path = cfg.node-key-json; }
-                    { name = "priv_validator_key.json"; path = cfg.priv-validator-key-json; }
-                    { name = "app.toml"; path = cfg.app-toml; }
-                    { name = "client.toml"; path = cfg.client-toml; }
-                    { name = "config.toml"; path = cfg.config-toml; }
+                    {
+                      name = "node_key.json";
+                      path = cfg.node-key-json;
+                    }
+                    {
+                      name = "priv_validator_key.json";
+                      path = cfg.priv-validator-key-json;
+                    }
+                    {
+                      name = "app.toml";
+                      path = cfg.app-toml;
+                    }
+                    {
+                      name = "client.toml";
+                      path = cfg.client-toml;
+                    }
+                    {
+                      name = "config.toml";
+                      path = cfg.config-toml;
+                    }
                   ];
 
-                  configSymLinkCommands = pkgs.lib.concatMapStrings
-                    (l:
-                      ''
+                  configSymLinkCommands = pkgs.lib.concatMapStrings (l: ''
 
-                        rm ./home/config/${l.name}
-                        ln -s ${l.path} ./home/config/${l.name}
+                    rm ./home/config/${l.name}
+                    ln -s ${l.path} ./home/config/${l.name}
 
-                      '')
-                    (builtins.filter (l: l.path != null) configSymlinks);
+                  '') (builtins.filter (l: l.path != null) configSymlinks);
 
                 in
                 ''

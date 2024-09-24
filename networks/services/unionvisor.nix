@@ -1,6 +1,17 @@
-{ pkgs, uniond, unionvisor, devnet-genesis, devnet-validator-keys, devnet-validator-node-ids, id, network, bundle }:
+{
+  pkgs,
+  uniond,
+  unionvisor,
+  devnet-genesis,
+  devnet-validator-keys,
+  devnet-validator-node-ids,
+  id,
+  network,
+  bundle,
+}:
 let
-  getNodeID = nodeFile:
+  getNodeID =
+    nodeFile:
     pkgs.runCommand "get-node-id" { } ''
       export HOME=$(pwd)
       ${uniond}/bin/uniond init testnet bn254 --home .

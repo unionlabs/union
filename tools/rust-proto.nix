@@ -1,5 +1,16 @@
-{ ... }: {
-  perSystem = { self', pkgs, proto, crane, system, config, ensureAtRepositoryRoot, mkCi, ... }:
+_: {
+  perSystem =
+    {
+      self',
+      pkgs,
+      proto,
+      crane,
+      system,
+      config,
+      ensureAtRepositoryRoot,
+      mkCi,
+      ...
+    }:
     let
       protoc-gen-tonic = crane.lib.buildPackage {
         pname = "protoc-gen-tonic";
@@ -16,41 +27,83 @@
         let
           toml = {
             package = {
-              name = name;
+              inherit name;
               version = "0.0.0";
               edition = "2021";
             };
-            lib = { doctest = false; };
+            lib = {
+              doctest = false;
+            };
             dependencies = {
-              prost = { workspace = true; features = [ "prost-derive" ]; };
-              ethers = { workspace = true; optional = true; features = [ "rustls" ]; };
-              serde = { workspace = true; features = [ "derive" ]; optional = true; };
-              tonic = { workspace = true; features = [ "codegen" "prost" "gzip" "transport" ]; optional = true; };
-              schemars = { workspace = true; optional = true; };
-              serde-utils = { workspace = true; };
-              chrono = { workspace = true; features = [ "alloc" ]; };
+              prost = {
+                workspace = true;
+                features = [ "prost-derive" ];
+              };
+              ethers = {
+                workspace = true;
+                optional = true;
+                features = [ "rustls" ];
+              };
+              serde = {
+                workspace = true;
+                features = [ "derive" ];
+                optional = true;
+              };
+              tonic = {
+                workspace = true;
+                features = [
+                  "codegen"
+                  "prost"
+                  "gzip"
+                  "transport"
+                ];
+                optional = true;
+              };
+              schemars = {
+                workspace = true;
+                optional = true;
+              };
+              serde-utils = {
+                workspace = true;
+              };
+              chrono = {
+                workspace = true;
+                features = [ "alloc" ];
+              };
               # https://github.com/influxdata/pbjson/pull/118
-              pbjson-types = { git = "https://github.com/recoord/pbjson"; rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"; };
+              pbjson-types = {
+                git = "https://github.com/recoord/pbjson";
+                rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe";
+              };
             };
             features = {
-              default = [ "proto_full" "std" ];
-              std = [ "prost/std" "serde/std" ];
-              eth-abi = [ "ethers" "std" ];
+              default = [
+                "proto_full"
+                "std"
+              ];
+              std = [
+                "prost/std"
+                "serde/std"
+              ];
+              eth-abi = [
+                "ethers"
+                "std"
+              ];
               client = [ "tonic" ];
               json-schema = [ "schemars" ];
               # nix attrsets don't preserve order, use this to replace with the insertion point (see command below)
               PROTOC_INSERTION_POINT = 1;
             };
-            lints = { workspace = true; };
+            lints = {
+              workspace = true;
+            };
           };
         in
-        pkgs.runCommand "${name}-cargo_toml"
-          { }
-          ''
-            cargotoml='${builtins.toJSON toml}'
-            echo "cargo toml: $cargotoml"
-            echo "$cargotoml" | ${pkgs.lib.meta.getExe pkgs.yj} -jt | sed 's/^PROTOC_INSERTION_POINT = 1$/## @@protoc_insertion_point(features)/' > $out
-          '';
+        pkgs.runCommand "${name}-cargo_toml" { } ''
+          cargotoml='${builtins.toJSON toml}'
+          echo "cargo toml: $cargotoml"
+          echo "$cargotoml" | ${pkgs.lib.meta.getExe pkgs.yj} -jt | sed 's/^PROTOC_INSERTION_POINT = 1$/## @@protoc_insertion_point(features)/' > $out
+        '';
 
       all-protos-to-build = rec {
         wasmd = rec {
@@ -158,19 +211,26 @@
         };
       };
 
-      fold-opts = attrs: with pkgs.lib; escapeShellArg (
-        concatStringsSep "," (
-          flatten (
-            foldlAttrs
-              (acc: opt-name: opt-value: acc ++ (
-                # protoc splits on commas so we have to escape any in the attribute values
-                foldlAttrs (acc: name: values: acc ++ (map (attr: "${opt-name}=${name}=${escape [","] attr}") values)) [ ] opt-value
-              ))
-              [ ]
-              attrs
+      fold-opts =
+        attrs:
+        with pkgs.lib;
+        escapeShellArg (
+          concatStringsSep "," (
+            flatten (
+              foldlAttrs (
+                acc: opt-name: opt-value:
+                acc
+                ++ (
+                  # protoc splits on commas so we have to escape any in the attribute values
+                  foldlAttrs (
+                    acc: name: values:
+                    acc ++ (map (attr: "${opt-name}=${name}=${escape [ "," ] attr}") values)
+                  ) [ ] opt-value
+                )
+              ) [ ] attrs
+            )
           )
-        )
-      );
+        );
 
       prost-opts =
         let
@@ -321,7 +381,9 @@
 
             ".union.ibc.lightclients.ethereum.v1.LightClientHeader.execution_branch" = [ serde_inner_base64 ];
 
-            ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.next_sync_committee_branch" = [ serde_inner_base64 ];
+            ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.next_sync_committee_branch" = [
+              serde_inner_base64
+            ];
             ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.finality_branch" = [ serde_inner_base64 ];
 
             ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_bits" = [ serde_base64 ];
@@ -335,16 +397,28 @@
             ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.prehash_value" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.length" = [ serde_default ];
-            ".cosmos.ics23.v1.LeafOp.prefix" = [ serde_default serde_base64 ];
+            ".cosmos.ics23.v1.LeafOp.prefix" = [
+              serde_default
+              serde_base64
+            ];
 
-            ".cosmos.ics23.v1.InnerOp.prefix" = [ serde_base64 serde_default ];
-            ".cosmos.ics23.v1.InnerOp.suffix" = [ serde_base64 serde_default ];
+            ".cosmos.ics23.v1.InnerOp.prefix" = [
+              serde_base64
+              serde_default
+            ];
+            ".cosmos.ics23.v1.InnerOp.suffix" = [
+              serde_base64
+              serde_default
+            ];
 
             ".cosmos.ics23.v1.ProofSpec.max_depth" = [ serde_default ];
             ".cosmos.ics23.v1.ProofSpec.min_depth" = [ serde_default ];
             ".cosmos.ics23.v1.ProofSpec.prehash_key_before_comparison" = [ serde_default ];
 
-            ".cosmos.ics23.v1.InnerSpec.empty_child" = [ serde_default serde_base64 ];
+            ".cosmos.ics23.v1.InnerSpec.empty_child" = [
+              serde_default
+              serde_base64
+            ];
 
             ".cosmos.ics23.v1.ExistenceProof.key" = [ serde_base64 ];
             ".cosmos.ics23.v1.ExistenceProof.value" = [ serde_base64 ];
@@ -373,10 +447,11 @@
             ".tendermint.types.CommitSig.signature" = [ serde_base64_opt_default ];
             ".tendermint.types.CommitSig.validator_address" = [ serde_hex_upper_unprefixed ];
             ".tendermint.types.CommitSig.timestamp" = [
-              ''#[cfg_attr(
-                  feature = "serde",
-                  serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
-              )]''
+              ''
+                #[cfg_attr(
+                                  feature = "serde",
+                                  serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
+                              )]''
             ];
 
             ".tendermint.version.Consensus.block" = [ serde_string ];
@@ -429,8 +504,14 @@
             #   )]''
             # ];
 
-            ".tendermint.types.DuplicateVoteEvidence.total_voting_power" = [ (serde_alias "TotalVotingPower") serde_string ];
-            ".tendermint.types.DuplicateVoteEvidence.validator_power" = [ (serde_alias "ValidatorPower") serde_string ];
+            ".tendermint.types.DuplicateVoteEvidence.total_voting_power" = [
+              (serde_alias "TotalVotingPower")
+              serde_string
+            ];
+            ".tendermint.types.DuplicateVoteEvidence.validator_power" = [
+              (serde_alias "ValidatorPower")
+              serde_string
+            ];
             ".tendermint.types.DuplicateVoteEvidence.timestamp" = [ (serde_alias "Timestamp") ];
 
             ".tendermint.types.LightClientAttackEvidence.common_height" = [ serde_string ];
@@ -446,53 +527,72 @@
         };
 
       tonic-opts = {
-        client_mod_attribute = { "." = [ ''#[cfg(feature = "client")]'' ]; };
+        client_mod_attribute = {
+          "." = [ ''#[cfg(feature = "client")]'' ];
+        };
         # server_mod_attribute = { "." = [ ''#[cfg(feature = "server")]'' ]; };
       };
 
-      proto-inputs = name: { src, additional-filter ? null, ... }:
+      proto-inputs =
+        name:
+        {
+          src,
+          additional-filter ? null,
+          ...
+        }:
         let
           af = if additional-filter != null then "-and " + additional-filter else "";
         in
-        pkgs.runCommand
-          "${name}-inputs"
-          { }
-          ''
-            find ${src} -type f -name '*.proto' ${af} > $out
-          '';
+        pkgs.runCommand "${name}-inputs" { } ''
+          find ${src} -type f -name '*.proto' ${af} > $out
+        '';
 
-      fixup-scripts = with pkgs.lib; concatStringsSep "\n\n" (
-        flatten (
-          mapAttrsToList
-            (
-              name: { fixup-script ? null, ... }:
-                optionalString
-                  (fixup-script != null)
-                  ''
-                    echo "[FIXUP] ${name}"
+      fixup-scripts =
+        with pkgs.lib;
+        concatStringsSep "\n\n" (
+          flatten (
+            mapAttrsToList (
+              name:
+              {
+                fixup-script ? null,
+                ...
+              }:
+              optionalString (fixup-script != null) ''
+                echo "[FIXUP] ${name}"
 
-                    ${fixup-script}
-                  ''
-            )
-            all-protos-to-build
-        )
-      );
+                ${fixup-script}
+              ''
+            ) all-protos-to-build
+          )
+        );
 
-      includes = with pkgs.lib; concatStringsSep " " (
-        flatten (
-          mapAttrsToList
-            (
-              _: { proto-deps, ... }:
-                map (src: ''-I"${src}"'') proto-deps
-            )
-            all-protos-to-build
-        ));
+      includes =
+        with pkgs.lib;
+        concatStringsSep " " (
+          flatten (
+            mapAttrsToList (_: { proto-deps, ... }: map (src: ''-I"${src}"'') proto-deps) all-protos-to-build
+          )
+        );
 
       rust-proto = pkgs.stdenv.mkDerivation {
         name = "rust-proto";
         pname = "rust-proto";
-        src = pkgs.linkFarm "rust-proto-srcs" (pkgs.lib.mapAttrsToList (name: { src, ... }: { name = name + "-protos"; path = src; }) all-protos-to-build);
-        buildInputs = [ pkgs.protobuf protoc-gen-tonic config.treefmt.build.programs.rustfmt pkgs.taplo ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
+        src = pkgs.linkFarm "rust-proto-srcs" (
+          pkgs.lib.mapAttrsToList (
+            name:
+            { src, ... }:
+            {
+              name = name + "-protos";
+              path = src;
+            }
+          ) all-protos-to-build
+        );
+        buildInputs = [
+          pkgs.protobuf
+          protoc-gen-tonic
+          config.treefmt.build.programs.rustfmt
+          pkgs.taplo
+        ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
         buildPhase = ''
           mkdir $out
 
@@ -539,36 +639,43 @@
     {
       packages.rust-proto = mkCi false rust-proto;
 
-      packages.generate-rust-proto = mkCi false (pkgs.writeShellApplication {
-        name = "generate-rust-proto";
-        runtimeInputs = [ rust-proto pkgs.rsync ];
-        text = ''
-          ${ensureAtRepositoryRoot}
+      packages.generate-rust-proto = mkCi false (
+        pkgs.writeShellApplication {
+          name = "generate-rust-proto";
+          runtimeInputs = [
+            rust-proto
+            pkgs.rsync
+          ];
+          text = ''
+            ${ensureAtRepositoryRoot}
 
-          outdir="generated/rust/protos/"
+            outdir="generated/rust/protos/"
 
-          mkdir -p "$outdir"
+            mkdir -p "$outdir"
 
-          rsync -rL --chmod=ugo=rwX --delete ${rust-proto}/ $outdir
+            rsync -rL --chmod=ugo=rwX --delete ${rust-proto}/ $outdir
 
-          echo "Generation successful!"
-        '';
-      });
+            echo "Generation successful!"
+          '';
+        }
+      );
 
       checks = {
-        rust-proto-check = mkCi false (pkgs.stdenv.mkDerivation {
-          name = "rust-proto-is-committed";
-          description = "check that rust protos in git repo are the same as those that are generated in rust-proto derivation";
-          src = ../.;
-          buildInputs = [ pkgs.git ];
-          doCheck = true;
-          checkPhase = ''
-            rust_protos_in_git_repo=./generated/rust/protos
-            rust_protos_in_derivation=${self'.packages.rust-proto}
-            git --no-pager diff --exit-code --no-index $rust_protos_in_git_repo $rust_protos_in_derivation
-            touch $out
-          '';
-        });
+        rust-proto-check = mkCi false (
+          pkgs.stdenv.mkDerivation {
+            name = "rust-proto-is-committed";
+            description = "check that rust protos in git repo are the same as those that are generated in rust-proto derivation";
+            src = ../.;
+            buildInputs = [ pkgs.git ];
+            doCheck = true;
+            checkPhase = ''
+              rust_protos_in_git_repo=./generated/rust/protos
+              rust_protos_in_derivation=${self'.packages.rust-proto}
+              git --no-pager diff --exit-code --no-index $rust_protos_in_git_repo $rust_protos_in_derivation
+              touch $out
+            '';
+          }
+        );
       };
     };
 }

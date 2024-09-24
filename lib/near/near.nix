@@ -1,5 +1,18 @@
-{ ... }: {
-  perSystem = { self', lib, unstablePkgs, pkgs, system, config, rust, crane, stdenv, dbg, ... }:
+_: {
+  perSystem =
+    {
+      self',
+      lib,
+      unstablePkgs,
+      pkgs,
+      system,
+      config,
+      rust,
+      crane,
+      stdenv,
+      dbg,
+      ...
+    }:
     let
 
       # near-ibc-tests = pkgs.stdenv.mkDerivation {
@@ -32,9 +45,13 @@
         pname = "cargo-near";
         version = "v0.6.2";
 
-        buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake pkgs.systemd ] ++ (
-          lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
-        );
+        buildInputs = [
+          pkgs.pkg-config
+          pkgs.openssl
+          pkgs.perl
+          pkgs.gnumake
+          pkgs.systemd
+        ] ++ (lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]);
 
         nativeBuildInputs = [
           pkgs.clang
@@ -58,7 +75,6 @@
         };
       };
 
-
       rustToolchain = rust.mkNightly {
         channel = "1.78.0";
         targets = [ "wasm32-unknown-unknown" ];
@@ -70,9 +86,12 @@
         pname = "neard";
         version = "326c6098c652c0fe3419067ad0ff839804658b7d";
 
-        buildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ] ++ (
-          lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]
-        );
+        buildInputs = [
+          pkgs.pkg-config
+          pkgs.openssl
+          pkgs.perl
+          pkgs.gnumake
+        ] ++ (lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]);
 
         nativeBuildInputs = [
           # pkgs.llvmPackages_14.libclang
@@ -93,29 +112,48 @@
         };
       };
 
-      near-light-client = (crane.buildWasmContract {
+      near-light-client = crane.buildWasmContract {
         crateDirFromRoot = "lib/near/near-light-client";
-        extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+        extraBuildInputs = [
+          pkgs.pkg-config
+          pkgs.openssl
+          pkgs.perl
+          pkgs.gnumake
+        ];
         extraNativeBuildInputs = [ pkgs.clang ];
-      });
+      };
 
-      dummy-ibc-app = (crane.buildWasmContract {
+      dummy-ibc-app = crane.buildWasmContract {
         crateDirFromRoot = "lib/near/dummy-ibc-app";
-        extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+        extraBuildInputs = [
+          pkgs.pkg-config
+          pkgs.openssl
+          pkgs.perl
+          pkgs.gnumake
+        ];
         extraNativeBuildInputs = [ pkgs.clang ];
-      });
+      };
 
-      near-ibc = (crane.buildWasmContract {
+      near-ibc = crane.buildWasmContract {
         crateDirFromRoot = "lib/near/near-ibc";
-        extraBuildInputs = [ pkgs.pkg-config pkgs.openssl pkgs.perl pkgs.gnumake ];
+        extraBuildInputs = [
+          pkgs.pkg-config
+          pkgs.openssl
+          pkgs.perl
+          pkgs.gnumake
+        ];
         extraNativeBuildInputs = [ pkgs.clang ];
-      });
+      };
     in
     {
-      packages = near-light-client.packages // dummy-ibc-app.packages // near-ibc.packages // {
-        # TODO: Reenable near-ibc-tests
-        inherit near-sandbox cargo-near;
-      };
+      packages =
+        near-light-client.packages
+        // dummy-ibc-app.packages
+        // near-ibc.packages
+        // {
+          # TODO: Reenable near-ibc-tests
+          inherit near-sandbox cargo-near;
+        };
 
       checks = near-light-client.checks // near-ibc.checks;
     };

@@ -1,8 +1,21 @@
-{ ... }: {
-  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
+_: {
+  perSystem =
+    {
+      pkgs,
+      unstablePkgs,
+      lib,
+      ensureAtRepositoryRoot,
+      ...
+    }:
     let
-      pkgsDeps = with pkgs; [ pkg-config python3 ];
-      nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs nodePackages_latest."patch-package" ];
+      pkgsDeps = with pkgs; [
+        pkg-config
+        python3
+      ];
+      nodeDeps = with unstablePkgs; [
+        nodePackages_latest.nodejs
+        nodePackages_latest."patch-package"
+      ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
@@ -14,7 +27,7 @@
           sourceRoot = "app";
           npmFlags = [ "--enable-pre-post-scripts" ];
           pname = packageJSON.name;
-          version = packageJSON.version;
+          inherit (packageJSON) version;
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
           installPhase = ''

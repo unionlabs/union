@@ -1,5 +1,17 @@
-{ self, ... }: {
-  perSystem = { self', pkgs, system, config, crane, stdenv, dbg, mkCi, ... }:
+{ self, ... }:
+{
+  perSystem =
+    {
+      self',
+      pkgs,
+      system,
+      config,
+      crane,
+      stdenv,
+      dbg,
+      mkCi,
+      ...
+    }:
     let
       drip = crane.buildWorkspaceMember {
         crateDirFromRoot = "drip";
@@ -9,10 +21,18 @@
       packages.drip = drip.packages.drip;
     };
 
-  flake.nixosModules.drip = { lib, pkgs, config, ... }:
+  flake.nixosModules.drip =
+    {
+      lib,
+      pkgs,
+      config,
+      ...
+    }:
     with lib;
-    let cfg = config.services.drip;
-    in {
+    let
+      cfg = config.services.drip;
+    in
+    {
       options.services.drip = {
         enable = mkEnableOption "drip service";
         package = mkOption {
@@ -34,7 +54,10 @@
           let
             drip-systemd-script = pkgs.writeShellApplication {
               name = "drip-systemd";
-              runtimeInputs = [ pkgs.coreutils cfg.package ];
+              runtimeInputs = [
+                pkgs.coreutils
+                cfg.package
+              ];
               text = ''
                 ${pkgs.lib.getExe cfg.package} -c '${builtins.toFile "drip-config.json" (builtins.toJSON cfg.config)}'
               '';
@@ -55,4 +78,3 @@
       };
     };
 }
-

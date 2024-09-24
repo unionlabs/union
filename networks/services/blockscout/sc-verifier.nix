@@ -1,4 +1,10 @@
-{ lib, pkgs, env-utils, evm-sources, ... }:
+{
+  lib,
+  pkgs,
+  env-utils,
+  evm-sources,
+  ...
+}:
 let
   sc-verifier = pkgs.dockerTools.pullImage {
     imageName = "ghcr.io/blockscout/smart-contract-verifier";

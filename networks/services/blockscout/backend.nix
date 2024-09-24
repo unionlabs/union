@@ -1,4 +1,9 @@
-{ lib, pkgs, env-utils, ... }:
+{
+  lib,
+  pkgs,
+  env-utils,
+  ...
+}:
 let
   blockscout = pkgs.dockerTools.pullImage {
     imageName = "blockscout/blockscout";

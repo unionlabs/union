@@ -1,12 +1,13 @@
-{ ... }: {
-  perSystem = { pkgs, lib, ... }:
+_: {
+  perSystem =
+    { pkgs, lib, ... }:
     let
       name = "iaviewer";
     in
     {
       packages = {
         iaviewer = pkgs.buildGoModule {
-          name = name;
+          inherit name;
           version = "0.20.1";
           src = pkgs.fetchFromGitHub {
             name = "iaviewer";

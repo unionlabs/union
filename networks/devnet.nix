@@ -1,12 +1,28 @@
-{ inputs, ... }: {
-  perSystem = { devnetConfig, pkgs, lib, self', nix-filter, inputs', system, get-flake, mkCi, mkNodeId, dbg, ensureAtRepositoryRoot, ... }:
+{ inputs, ... }:
+{
+  perSystem =
+    {
+      devnetConfig,
+      pkgs,
+      lib,
+      self',
+      nix-filter,
+      inputs',
+      system,
+      get-flake,
+      mkCi,
+      mkNodeId,
+      dbg,
+      ensureAtRepositoryRoot,
+      ...
+    }:
     let
       arion = inputs'.arion.packages.default;
 
       mkCosmosDevnet = import ./mkCosmosDevnet.nix {
         inherit pkgs dbg;
       };
-      lnav = inputs'.nixpkgs-lnav.legacyPackages.lnav;
+      inherit (inputs'.nixpkgs-lnav.legacyPackages) lnav;
 
       cosmwasmContracts = [
         # {
@@ -45,7 +61,9 @@
               epoch_length = "8";
               jailed_validator_threshold = "10";
             };
-            slashing.params = { signed_blocks_window = "10"; };
+            slashing.params = {
+              signed_blocks_window = "10";
+            };
             tokenfactory.params = {
               denom_creation_fee = [
                 {
@@ -71,16 +89,18 @@
           # }
           {
             code = self'.packages.ucs01-relay;
-            instances = [{
-              message = {
-                default_timeout = 10000;
-                # Todo derive
-                gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
-              };
-              # salt must be non-prefixed hex string
-              salt = "00";
-              label = "ucs01-relay";
-            }];
+            instances = [
+              {
+                message = {
+                  default_timeout = 10000;
+                  # Todo derive
+                  gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
+                };
+                # salt must be non-prefixed hex string
+                salt = "00";
+                label = "ucs01-relay";
+              }
+            ];
           }
           # {
           #   code = self'.packages.ucs02-nft;
@@ -186,34 +206,41 @@
             };
           };
         };
-        extraPackages = [ self'.packages.unionvisor self'.packages.bundle-testnet-next ];
-        startCommandOverwrite =
-          ''
-            mkdir .unionvisor
+        extraPackages = [
+          self'.packages.unionvisor
+          self'.packages.bundle-testnet-next
+        ];
+        startCommandOverwrite = ''
+          mkdir .unionvisor
 
-            export UNIONVISOR_ROOT=$(pwd)/.unionvisor
-            export UNIONVISOR_BUNDLE=${self'.packages.bundle-testnet-next}
+          export UNIONVISOR_ROOT=$(pwd)/.unionvisor
+          export UNIONVISOR_BUNDLE=${self'.packages.bundle-testnet-next}
 
-            ${pkgs.lib.getExe self'.packages.unionvisor} init \
-              --moniker union-devnet-minimal \
-              --network union-minimal-devnet-1 \
-              --seeds "" \
+          ${pkgs.lib.getExe self'.packages.unionvisor} init \
+            --moniker union-devnet-minimal \
+            --network union-minimal-devnet-1 \
+            --seeds "" \
 
-            cp --no-preserve=mode -RL home/* .unionvisor/home
+          cp --no-preserve=mode -RL home/* .unionvisor/home
 
-            ${pkgs.lib.getExe self'.packages.unionvisor} run \
-              --poll-interval 1000 \
-              -- \
-              $$params \
-              --rpc.laddr tcp://0.0.0.0:26657 \
-              --api.enable true \
-              --rpc.unsafe \
-              --api.address tcp://0.0.0.0:1317 \
-              --grpc.address 0.0.0.0:9090
-          '';
+          ${pkgs.lib.getExe self'.packages.unionvisor} run \
+            --poll-interval 1000 \
+            -- \
+            $$params \
+            --rpc.laddr tcp://0.0.0.0:26657 \
+            --api.enable true \
+            --rpc.unsafe \
+            --api.address tcp://0.0.0.0:1317 \
+            --grpc.address 0.0.0.0:9090
+        '';
       };
 
-      allCosmosDevnets = [ devnet-union devnet-osmosis devnet-simd devnet-stargaze ];
+      allCosmosDevnets = [
+        devnet-union
+        devnet-osmosis
+        devnet-simd
+        devnet-stargaze
+      ];
 
       services = {
         devnet-union = devnet-union.services;
@@ -223,58 +250,64 @@
 
         devnet-union-minimal = devnet-union-minimal.services;
 
-        devnet-eth = {
-          geth = import ./services/geth.nix {
-            inherit pkgs;
-            config = self'.packages.devnet-eth-config;
-          };
-          forge = import ./services/forge.nix {
-            inherit pkgs;
-            inherit (self'.packages) forge evm-sources evm-contracts;
-          };
-          lodestar = import ./services/lodestar.nix {
-            inherit pkgs;
-            config = self'.packages.devnet-eth-config;
-            validatorCount = devnetConfig.ethereum.beacon.validatorCount;
-          };
-        }
-        # For some reason, blockscout backend segfault on non-x86 arch
-        // (if pkgs.stdenv.isx86_64 then {
-          blockscout-backend = import ./services/blockscout/backend.nix {
-            inherit lib pkgs;
-            inherit (inputs) env-utils;
-          };
-          blockscout-frontend = import ./services/blockscout/frontend.nix {
-            inherit lib pkgs;
-            inherit (inputs) env-utils;
-          };
-          blockscout-sc-verifier = import ./services/blockscout/sc-verifier.nix {
-            inherit lib pkgs;
-            inherit (inputs) env-utils;
-            inherit (self'.packages) evm-sources;
-          };
-          blockscout-db = import ./services/blockscout/db.nix {
-            inherit lib pkgs;
-          };
-          blockscout-redis = import ./services/blockscout/redis.nix {
-            inherit lib pkgs;
-          };
-          blockscout-sig-provider = import ./services/blockscout/sig-provider.nix {
-            inherit lib pkgs;
-          };
-          blockscout-stats-db = import ./services/blockscout/stats-db.nix {
-            inherit lib pkgs;
-          };
-          blockscout-stats = import ./services/blockscout/stats.nix {
-            inherit lib pkgs;
-          };
-          blockscout-visualizer = import ./services/blockscout/visualizer.nix {
-            inherit lib pkgs;
-          };
-          blockscout-proxy = import ./services/blockscout/proxy.nix {
-            inherit lib pkgs;
-          };
-        } else { });
+        devnet-eth =
+          {
+            geth = import ./services/geth.nix {
+              inherit pkgs;
+              config = self'.packages.devnet-eth-config;
+            };
+            forge = import ./services/forge.nix {
+              inherit pkgs;
+              inherit (self'.packages) forge evm-sources evm-contracts;
+            };
+            lodestar = import ./services/lodestar.nix {
+              inherit pkgs;
+              config = self'.packages.devnet-eth-config;
+              inherit (devnetConfig.ethereum.beacon) validatorCount;
+            };
+          }
+          # For some reason, blockscout backend segfault on non-x86 arch
+          // (
+            if pkgs.stdenv.isx86_64 then
+              {
+                blockscout-backend = import ./services/blockscout/backend.nix {
+                  inherit lib pkgs;
+                  inherit (inputs) env-utils;
+                };
+                blockscout-frontend = import ./services/blockscout/frontend.nix {
+                  inherit lib pkgs;
+                  inherit (inputs) env-utils;
+                };
+                blockscout-sc-verifier = import ./services/blockscout/sc-verifier.nix {
+                  inherit lib pkgs;
+                  inherit (inputs) env-utils;
+                  inherit (self'.packages) evm-sources;
+                };
+                blockscout-db = import ./services/blockscout/db.nix {
+                  inherit lib pkgs;
+                };
+                blockscout-redis = import ./services/blockscout/redis.nix {
+                  inherit lib pkgs;
+                };
+                blockscout-sig-provider = import ./services/blockscout/sig-provider.nix {
+                  inherit lib pkgs;
+                };
+                blockscout-stats-db = import ./services/blockscout/stats-db.nix {
+                  inherit lib pkgs;
+                };
+                blockscout-stats = import ./services/blockscout/stats.nix {
+                  inherit lib pkgs;
+                };
+                blockscout-visualizer = import ./services/blockscout/visualizer.nix {
+                  inherit lib pkgs;
+                };
+                blockscout-proxy = import ./services/blockscout/proxy.nix {
+                  inherit lib pkgs;
+                };
+              }
+            else
+              { }
+          );
 
         postgres = {
           postgres = import ./services/postgres.nix { inherit lib pkgs; };
@@ -293,19 +326,20 @@
         };
       };
 
-      modules = {
-        full-dev-setup = {
-          project.name = "full-dev-setup";
-          services = services.devnet-eth // services.devnet-union // services.postgres;
-        };
-      }
-      // mkNamedModule "postgres"
-      // mkNamedModule "devnet-eth"
-      // mkNamedModule "devnet-stargaze"
-      // mkNamedModule "devnet-osmosis"
-      // mkNamedModule "devnet-simd"
-      // mkNamedModule "devnet-union-minimal"
-      // mkNamedModule "devnet-union";
+      modules =
+        {
+          full-dev-setup = {
+            project.name = "full-dev-setup";
+            services = services.devnet-eth // services.devnet-union // services.postgres;
+          };
+        }
+        // mkNamedModule "postgres"
+        // mkNamedModule "devnet-eth"
+        // mkNamedModule "devnet-stargaze"
+        // mkNamedModule "devnet-osmosis"
+        // mkNamedModule "devnet-simd"
+        // mkNamedModule "devnet-union-minimal"
+        // mkNamedModule "devnet-union";
 
       mkNamedSpec = name: {
         ${name} = {
@@ -313,24 +347,26 @@
         };
       };
 
-      specs = {
-        voyager-queue = {
-          modules = [ modules.postgres ];
-        };
-      }
-      // mkNamedSpec "full-dev-setup"
-      // mkNamedSpec "devnet-eth"
-      // mkNamedSpec "devnet-stargaze"
-      // mkNamedSpec "devnet-osmosis"
-      // mkNamedSpec "devnet-simd"
-      // mkNamedSpec "devnet-union-minimal"
-      // mkNamedSpec "devnet-union";
+      specs =
+        {
+          voyager-queue = {
+            modules = [ modules.postgres ];
+          };
+        }
+        // mkNamedSpec "full-dev-setup"
+        // mkNamedSpec "devnet-eth"
+        // mkNamedSpec "devnet-stargaze"
+        // mkNamedSpec "devnet-osmosis"
+        // mkNamedSpec "devnet-simd"
+        // mkNamedSpec "devnet-union-minimal"
+        // mkNamedSpec "devnet-union";
 
       mkNamedBuild = name: {
         ${name} = arion.build specs.${name};
       };
 
-      build = mkNamedBuild "full-dev-setup"
+      build =
+        mkNamedBuild "full-dev-setup"
         // mkNamedBuild "voyager-queue"
         // mkNamedBuild "devnet-eth"
         // mkNamedBuild "devnet-stargaze"
@@ -340,21 +376,26 @@
         // mkNamedBuild "devnet-union";
 
       mkArionBuild = name: ciCondition: {
-        ${name} = mkCi ciCondition (pkgs.writeShellApplication {
-          inherit name;
-          runtimeInputs = [ arion ];
-          text = ''
-            arion --prebuilt-file ${build.${name}} up --build --force-recreate -V --always-recreate-deps --remove-orphans
-          '';
-        });
+        ${name} = mkCi ciCondition (
+          pkgs.writeShellApplication {
+            inherit name;
+            runtimeInputs = [ arion ];
+            text = ''
+              arion --prebuilt-file ${build.${name}} up --build --force-recreate -V --always-recreate-deps --remove-orphans
+            '';
+          }
+        );
       };
     in
     {
-      packages = {
-        devnet = pkgs.writeShellApplication
-          {
+      packages =
+        {
+          devnet = pkgs.writeShellApplication {
             name = "union-full-devnet";
-            runtimeInputs = [ pkgs.bash inputs'.process-compose.packages.process-compose ];
+            runtimeInputs = [
+              pkgs.bash
+              inputs'.process-compose.packages.process-compose
+            ];
             text = ''
               ${ensureAtRepositoryRoot}
 
@@ -374,8 +415,7 @@
               SHELL=${lib.getExe pkgs.bash} process-compose --theme="One Dark"
             '';
           };
-        devnet-logs = pkgs.writeShellApplication
-          {
+          devnet-logs = pkgs.writeShellApplication {
             name = "union-full-devnet-logs";
             runtimeInputs = [ lnav ];
             text = ''
@@ -383,28 +423,40 @@
               lnav ./.devnet/logs/
             '';
           };
-        devnet-union-home = mkCi false (devnet-union.devnet-home);
-        devnet-simd-home = mkCi false (devnet-simd.devnet-home);
-        devnet-stargaze-home = mkCi false (devnet-stargaze.devnet-home);
-        devnet-osmosis-home = mkCi false (devnet-osmosis.devnet-home);
+          devnet-union-home = mkCi false devnet-union.devnet-home;
+          devnet-simd-home = mkCi false devnet-simd.devnet-home;
+          devnet-stargaze-home = mkCi false devnet-stargaze.devnet-home;
+          devnet-osmosis-home = mkCi false devnet-osmosis.devnet-home;
 
-        # FIXME: This shouldn't be defined in this file
-        devnet-eth-config = pkgs.linkFarm "devnet-eth-config" [
-          { name = "genesis.json"; path = "${./genesis/devnet-eth/genesis.json}"; }
-          { name = "dev-key0.prv"; path = "${./genesis/devnet-eth/dev-key0.prv}"; }
-          { name = "dev-key1.prv"; path = "${./genesis/devnet-eth/dev-key1.prv}"; }
-          { name = "dev-jwt.prv"; path = "${./genesis/devnet-eth/dev-jwt.prv}"; }
-        ];
-      }
-      // (mkArionBuild "full-dev-setup" (system == "x86_64-linux"))
-      // (mkArionBuild "voyager-queue" false)
-      // (mkArionBuild "devnet-union" (system == "x86_64-linux"))
-      // (mkArionBuild "devnet-simd" (system == "x86_64-linux"))
-      // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
-      // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
-      // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
-      // (mkArionBuild "devnet-union-minimal" (system == "x86_64-linux"))
-      // (builtins.foldl' (acc: elem: elem.scripts or { } // acc) { } allCosmosDevnets);
+          # FIXME: This shouldn't be defined in this file
+          devnet-eth-config = pkgs.linkFarm "devnet-eth-config" [
+            {
+              name = "genesis.json";
+              path = "${./genesis/devnet-eth/genesis.json}";
+            }
+            {
+              name = "dev-key0.prv";
+              path = "${./genesis/devnet-eth/dev-key0.prv}";
+            }
+            {
+              name = "dev-key1.prv";
+              path = "${./genesis/devnet-eth/dev-key1.prv}";
+            }
+            {
+              name = "dev-jwt.prv";
+              path = "${./genesis/devnet-eth/dev-jwt.prv}";
+            }
+          ];
+        }
+        // (mkArionBuild "full-dev-setup" (system == "x86_64-linux"))
+        // (mkArionBuild "voyager-queue" false)
+        // (mkArionBuild "devnet-union" (system == "x86_64-linux"))
+        // (mkArionBuild "devnet-simd" (system == "x86_64-linux"))
+        // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
+        // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
+        // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
+        // (mkArionBuild "devnet-union-minimal" (system == "x86_64-linux"))
+        // (builtins.foldl' (acc: elem: elem.scripts or { } // acc) { } allCosmosDevnets);
 
       _module.args.networks.modules = modules;
     };

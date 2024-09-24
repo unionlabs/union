@@ -1,31 +1,49 @@
-{ ... }: {
-  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, mkCi, ... }:
+_: {
+  perSystem =
+    {
+      pkgs,
+      unstablePkgs,
+      lib,
+      ensureAtRepositoryRoot,
+      mkCi,
+      ...
+    }:
     let
       pkgsDeps = with pkgs; [ pkg-config ];
-      nodeDeps = with unstablePkgs; [ vips nodePackages_latest.nodejs ];
+      nodeDeps = with unstablePkgs; [
+        vips
+        nodePackages_latest.nodejs
+      ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
-        docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-w9BqWfAUS+Ll1Im2plzzfQTPWLDCrKpAeJgjEhUEbH0=";
-          src = ./.;
-          srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
-          sourceRoot = "docs";
-          pname = packageJSON.name;
-          version = packageJSON.version;
-          nativeBuildInputs = combinedDeps;
-          buildInputs = combinedDeps;
-          installPhase = ''
-            mkdir -p $out
-            cp -r ./dist/* $out
-          '';
-          doDist = false;
-          PUPPETEER_SKIP_DOWNLOAD = 1;
-          ASTRO_TELEMETRY_DISABLED = 1;
-          NODE_OPTIONS = "--no-warnings";
-        });
+        docs = mkCi false (
+          unstablePkgs.buildNpmPackage {
+            npmDepsHash = "sha256-w9BqWfAUS+Ll1Im2plzzfQTPWLDCrKpAeJgjEhUEbH0=";
+            src = ./.;
+            srcs = [
+              ./.
+              ./../evm/.
+              ./../networks/genesis/.
+              ./../versions/.
+            ];
+            sourceRoot = "docs";
+            pname = packageJSON.name;
+            inherit (packageJSON) version;
+            nativeBuildInputs = combinedDeps;
+            buildInputs = combinedDeps;
+            installPhase = ''
+              mkdir -p $out
+              cp -r ./dist/* $out
+            '';
+            doDist = false;
+            PUPPETEER_SKIP_DOWNLOAD = 1;
+            ASTRO_TELEMETRY_DISABLED = 1;
+            NODE_OPTIONS = "--no-warnings";
+          }
+        );
       };
 
       apps = {

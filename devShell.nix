@@ -1,8 +1,22 @@
-{ ... }: {
-  perSystem = { biome, pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
+_: {
+  perSystem =
+    {
+      biome,
+      pkgs,
+      unstablePkgs,
+      lib,
+      ensureAtRepositoryRoot,
+      ...
+    }:
     let
-      pkgsDeps = with pkgs; [ pkg-config biome ];
-      nodeDeps = with unstablePkgs; [ vips nodePackages_latest.nodejs ];
+      pkgsDeps = with pkgs; [
+        pkg-config
+        biome
+      ];
+      nodeDeps = with unstablePkgs; [
+        vips
+        nodePackages_latest.nodejs
+      ];
       combinedDeps = pkgsDeps ++ nodeDeps;
     in
     {

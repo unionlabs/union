@@ -1,5 +1,12 @@
-{ self, ... }: {
-  perSystem = { self', pkgs, crane, ... }:
+{ self, ... }:
+{
+  perSystem =
+    {
+      self',
+      pkgs,
+      crane,
+      ...
+    }:
     let
       hubble = crane.buildWorkspaceMember {
         crateDirFromRoot = "hubble";
@@ -15,11 +22,15 @@
     {
       inherit (hubble) checks;
       packages = {
-        hubble = hubble.packages.hubble;
+        inherit (hubble.packages) hubble;
 
         hubble-image = pkgs.dockerTools.buildLayeredImage {
           name = "hubble";
-          contents = [ pkgs.coreutils-full pkgs.cacert self'.packages.hubble ];
+          contents = [
+            pkgs.coreutils-full
+            pkgs.cacert
+            self'.packages.hubble
+          ];
           config = {
             Entrypoint = [ (pkgs.lib.getExe self'.packages.hubble) ];
             Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
@@ -28,7 +39,13 @@
       };
     };
 
-  flake.nixosModules.hubble = { lib, pkgs, config, ... }:
+  flake.nixosModules.hubble =
+    {
+      lib,
+      pkgs,
+      config,
+      ...
+    }:
     with lib;
     let
       cfg = config.services.hubble;
@@ -73,7 +90,10 @@
                 example = "false";
                 default = null;
               };
-              options.label = mkOption { type = types.str; example = "something-custom"; };
+              options.label = mkOption {
+                type = types.str;
+                example = "something-custom";
+              };
               options.filter = mkOption {
                 type = types.nullOr types.str;
                 description = "A regex which if matches, removes the event from the insertion";
@@ -113,16 +133,56 @@
                 default = null;
               };
 
-              options.chain_id = mkOption { type = types.nullOr types.str; example = "union-testnet-8"; default = null; };
-              options.grpc_url = mkOption { type = types.nullOr types.str; example = "https://grpc.example.com"; default = null; };
-              options.type = mkOption { type = types.enum [ "tendermint" "ethereum" "beacon" "bera" "ethereum-fork" "arb" "scroll" "eth-fetcher" ]; };
-              options.start_height = mkOption { type = types.int; example = 1; default = 0; };
-              options.chunk_size = mkOption { type = types.int; example = 1; default = 200; };
-              options.until = mkOption { type = types.int; example = 1; default = 1000000000000; };
-              options.harden = mkOption { type = types.bool; example = true; default = true; };
+              options.chain_id = mkOption {
+                type = types.nullOr types.str;
+                example = "union-testnet-8";
+                default = null;
+              };
+              options.grpc_url = mkOption {
+                type = types.nullOr types.str;
+                example = "https://grpc.example.com";
+                default = null;
+              };
+              options.type = mkOption {
+                type = types.enum [
+                  "tendermint"
+                  "ethereum"
+                  "beacon"
+                  "bera"
+                  "ethereum-fork"
+                  "arb"
+                  "scroll"
+                  "eth-fetcher"
+                ];
+              };
+              options.start_height = mkOption {
+                type = types.int;
+                example = 1;
+                default = 0;
+              };
+              options.chunk_size = mkOption {
+                type = types.int;
+                example = 1;
+                default = 200;
+              };
+              options.until = mkOption {
+                type = types.int;
+                example = 1;
+                default = 1000000000000;
+              };
+              options.harden = mkOption {
+                type = types.bool;
+                example = true;
+                default = true;
+              };
               options.interval = mkOption {
-                example = { secs = 1; };
-                default = { secs = 12; nanos = 0; };
+                example = {
+                  secs = 1;
+                };
+                default = {
+                  secs = 12;
+                  nanos = 0;
+                };
                 type = types.submodule {
                   options = {
                     secs = mkOption {
@@ -145,7 +205,10 @@
           example = "hubble=debug";
         };
         log-format = mkOption {
-          type = types.enum [ "json" "plain" ];
+          type = types.enum [
+            "json"
+            "plain"
+          ];
           default = "json";
           example = "plain";
         };
@@ -156,7 +219,10 @@
           let
             hubble-systemd-script = pkgs.writeShellApplication {
               name = "hubble-systemd";
-              runtimeInputs = [ pkgs.coreutils cfg.package ];
+              runtimeInputs = [
+                pkgs.coreutils
+                cfg.package
+              ];
               text =
                 let
                   indexersJson = builtins.toJSON cfg.indexers;

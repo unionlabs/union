@@ -1,5 +1,15 @@
-{ ... }: {
-  perSystem = { self', pkgs, proto, nix-filter, ensureAtRepositoryRoot, system, mkCi, ... }:
+_: {
+  perSystem =
+    {
+      self',
+      pkgs,
+      proto,
+      nix-filter,
+      ensureAtRepositoryRoot,
+      system,
+      mkCi,
+      ...
+    }:
     let
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -76,7 +86,10 @@
       ];
       evmLibs = pkgs.stdenv.mkDerivation {
         name = "evm-libs-src";
-        phases = [ "installPhase" "fixupPhase" ];
+        phases = [
+          "installPhase"
+          "fixupPhase"
+        ];
         src = libraries;
         installPhase = ''
           mkdir -p $out
@@ -102,19 +115,24 @@
       };
       evmSources = pkgs.stdenv.mkDerivation {
         name = "evm-union-src";
-        phases = [ "installPhase" "fixupPhase" ];
+        phases = [
+          "installPhase"
+          "fixupPhase"
+        ];
         src = evmLibs;
         installPhase = ''
           mkdir -p $out/libs
           cp -rL $src/* $out/libs
-          cp -r ${nix-filter {
-            root = ./.;
-            include = [
-              "scripts"
-              "contracts"
-              "tests"
-            ];
-          }}/* $out/
+          cp -r ${
+            nix-filter {
+              root = ./.;
+              include = [
+                "scripts"
+                "contracts"
+                "tests"
+              ];
+            }
+          }/* $out/
         '';
       };
       # Foundry FS permissions must be explicitly set in the config file
@@ -193,283 +211,331 @@
         }
       ];
 
-      eth-deploy-full = { rpc-url, private-key, extra-args ? "", ... }: mkCi false (pkgs.writeShellApplication {
-        name = "eth-deploy-full";
-        runtimeInputs = [ self'.packages.forge ];
-        text = ''
-          ${ensureAtRepositoryRoot}
-          OUT="$(mktemp -d)"
-          pushd "$OUT"
-          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-          cp --no-preserve=mode -r ${evmSources}/* .
+      eth-deploy-full =
+        {
+          rpc-url,
+          private-key,
+          extra-args ? "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-deploy-full";
+            runtimeInputs = [ self'.packages.forge ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
 
-          PRIVATE_KEY=${private-key} \
-          FOUNDRY_PROFILE="script" \
-            forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
-            -vvvv \
-            --rpc-url ${rpc-url} \
-            --broadcast ${extra-args}
+              PRIVATE_KEY=${private-key} \
+              FOUNDRY_PROFILE="script" \
+                forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
+                -vvvv \
+                --rpc-url ${rpc-url} \
+                --broadcast ${extra-args}
 
-          popd
-          rm -rf "$OUT"
-        '';
-      });
-
-      eth-deploy-multicall = { rpc-url, kind, extra-args ? "", ... }: mkCi false (pkgs.writeShellApplicationWithArgs {
-        name = "eth-deploy-multicall";
-        runtimeInputs = [ self'.packages.forge ];
-        arguments = [
-          {
-            arg = "deployer_pk";
-            required = true;
-            help = "The deployer contract address.";
+              popd
+              rm -rf "$OUT"
+            '';
           }
-          {
-            arg = "private_key";
-            required = true;
-            help = "The contract owner private key.";
+        );
+
+      eth-deploy-multicall =
+        {
+          rpc-url,
+          kind,
+          extra-args ? "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplicationWithArgs {
+            name = "eth-deploy-multicall";
+            runtimeInputs = [ self'.packages.forge ];
+            arguments = [
+              {
+                arg = "deployer_pk";
+                required = true;
+                help = "The deployer contract address.";
+              }
+              {
+                arg = "private_key";
+                required = true;
+                help = "The contract owner private key.";
+              }
+            ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
+
+              DEPLOYER="$argc_deployer_pk" \
+              PRIVATE_KEY="$argc_private_key" \
+              FOUNDRY_PROFILE="script" \
+                forge script scripts/Deploy.s.sol:Deploy${kind} \
+                -vvvv \
+                --rpc-url "${rpc-url}" \
+                --broadcast ${extra-args}
+
+              popd
+              rm -rf "$OUT"
+            '';
           }
-        ];
-        text = ''
-          ${ensureAtRepositoryRoot}
-          OUT="$(mktemp -d)"
-          pushd "$OUT"
-          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-          cp --no-preserve=mode -r ${evmSources}/* .
+        );
 
-          DEPLOYER="$argc_deployer_pk" \
-          PRIVATE_KEY="$argc_private_key" \
-          FOUNDRY_PROFILE="script" \
-            forge script scripts/Deploy.s.sol:Deploy${kind} \
-            -vvvv \
-            --rpc-url "${rpc-url}" \
-            --broadcast ${extra-args}
+      eth-upgrade =
+        {
+          dry ? false,
+          rpc-url,
+          protocol,
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplicationWithArgs {
+            name = "evm-${pkgs.lib.optionalString dry "dry"}upgrade-${protocol}";
+            runtimeInputs = [
+              self'.packages.forge
+              pkgs.jq
+            ];
+            arguments =
+              [
+                {
+                  arg = "deployer_pk";
+                  required = true;
+                  help = "The deployer contract address.";
+                }
+                {
+                  arg = "sender_pk";
+                  required = true;
+                  help = "The sender address that created the contract through the deployer.";
+                }
+                {
+                  arg = "owner_pk";
+                  required = true;
+                  help = "The contract owner public key to prank.";
+                }
+              ]
+              ++ pkgs.lib.optional (!dry) {
+                arg = "private_key";
+                required = true;
+                help = "The contract owner private key.";
+              };
+            text = ''
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
 
-          popd
-          rm -rf "$OUT"
-        '';
-      });
+              DEPLOYER="$argc_deployer_pk" \
+              SENDER="$argc_sender_pk" \
+              OWNER="$argc_owner_pk" \
+              PRIVATE_KEY="${pkgs.lib.optionalString (!dry) "$argc_private_key"}" \
+              FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
+                --rpc-url ${rpc-url} \
+                --broadcast
 
-      eth-upgrade = { dry ? false, rpc-url, protocol, ... }: mkCi false (pkgs.writeShellApplicationWithArgs {
-        name = "evm-${pkgs.lib.optionalString dry "dry"}upgrade-${protocol}";
-        runtimeInputs = [ self'.packages.forge pkgs.jq ];
-        arguments = [
-          {
-            arg = "deployer_pk";
-            required = true;
-            help = "The deployer contract address.";
+              rm -rf "$OUT"
+              popd
+            '';
           }
-          {
-            arg = "sender_pk";
-            required = true;
-            help = "The sender address that created the contract through the deployer.";
-          }
-          {
-            arg = "owner_pk";
-            required = true;
-            help = "The contract owner public key to prank.";
-          }
-        ] ++ pkgs.lib.optional (!dry) {
-          arg = "private_key";
-          required = true;
-          help = "The contract owner private key.";
-        };
-        text = ''
-          OUT="$(mktemp -d)"
-          pushd "$OUT"
-          cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-          cp --no-preserve=mode -r ${evmSources}/* .
-
-          DEPLOYER="$argc_deployer_pk" \
-          SENDER="$argc_sender_pk" \
-          OWNER="$argc_owner_pk" \
-          PRIVATE_KEY="${pkgs.lib.optionalString (!dry) "$argc_private_key"}" \
-          FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
-            --rpc-url ${rpc-url} \
-            --broadcast
-
-          rm -rf "$OUT"
-          popd
-        '';
-      });
+        );
     in
     {
-      packages = {
-        # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
-        generate-sol-proto = mkCi false (pkgs.writeShellApplication {
-          name = "generate-sol-proto";
-          runtimeInputs = [ pkgs.protobuf ];
-          text =
-            let
-              solidity-protobuf = pkgs.stdenv.mkDerivation {
-                name = "solidity-protobuf";
-                version = "0.0.1";
-                src = pkgs.fetchFromGitHub {
-                  owner = "CyrusVorwald";
-                  repo = "solidity-protobuf";
-                  rev = "1c323bed92d373d6c4d6c728c8dd9f76cf4b5a0c";
-                  hash = "sha256-1obEhMjaLToaSk920CiJwfhkw+LDgY5Y/b7SpkeuqDE=";
-                };
-                buildInputs =
-                  [ (pkgs.python3.withPackages (ps: with ps; [ protobuf wrapt ])) ];
-                buildPhase = "true";
-                installPhase = ''
-                  mkdir $out
-                  cp -r $src/* $out
+      packages =
+        {
+          # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
+          generate-sol-proto = mkCi false (
+            pkgs.writeShellApplication {
+              name = "generate-sol-proto";
+              runtimeInputs = [ pkgs.protobuf ];
+              text =
+                let
+                  solidity-protobuf = pkgs.stdenv.mkDerivation {
+                    name = "solidity-protobuf";
+                    version = "0.0.1";
+                    src = pkgs.fetchFromGitHub {
+                      owner = "CyrusVorwald";
+                      repo = "solidity-protobuf";
+                      rev = "1c323bed92d373d6c4d6c728c8dd9f76cf4b5a0c";
+                      hash = "sha256-1obEhMjaLToaSk920CiJwfhkw+LDgY5Y/b7SpkeuqDE=";
+                    };
+                    buildInputs = [
+                      (pkgs.python3.withPackages (
+                        ps: with ps; [
+                          protobuf
+                          wrapt
+                        ]
+                      ))
+                    ];
+                    buildPhase = "true";
+                    installPhase = ''
+                      mkdir $out
+                      cp -r $src/* $out
+                    '';
+                  };
+                  protoIncludes = ''-I"${proto.cometbls}/proto" -I"${proto.cosmossdk}/proto" -I"${proto.ibc-go}/proto" -I"${proto.cosmosproto}/proto" -I"${proto.ics23}/proto" -I"${proto.googleapis}" -I"${proto.gogoproto}" -I"${proto.uniond}"'';
+                in
+                ''
+                  plugindir="${solidity-protobuf}/protobuf-solidity/src/protoc"
+                  # find ${proto.ibc-go}/proto -name "$1" |\
+                  # while read -r file; do
+                  #   echo "Generating $file"
+                  #   protoc \
+                  #     ${protoIncludes} \
+                  #    -I"$plugindir/include" \
+                  #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+                  #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
+                  #     "$file"
+                  # done
+                  # find ${proto.cometbls}/proto -type f -regex ".*canonical.proto" |\
+                  # while read -r file; do
+                  #   echo "Generating $file"
+                  #   protoc \
+                  #     ${protoIncludes} \
+                  #    -I"$plugindir/include" \
+                  #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+                  #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
+                  #     "$file"
+                  # done
+
+                  find ${proto.uniond} -type f -regex ".*ibc.*cometbls.*proto" |\
+                  while read -r file; do
+                    echo "Generating $file"
+                    protoc \
+                      ${protoIncludes} \
+                     -I"$plugindir/include" \
+                     --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
+                     --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
+                      "$file"
+                  done
                 '';
-              };
-              protoIncludes = ''
-                -I"${proto.cometbls}/proto" -I"${proto.cosmossdk}/proto" -I"${proto.ibc-go}/proto" -I"${proto.cosmosproto}/proto" -I"${proto.ics23}/proto" -I"${proto.googleapis}" -I"${proto.gogoproto}" -I"${proto.uniond}"'';
+            }
+          );
+
+          evm-contracts = mkCi (system == "x86_64-linux") (
+            pkgs.stdenv.mkDerivation {
+              name = "evm-contracts";
+              src = evmSources;
+              buildInputs = [ wrappedForge ];
+              buildPhase = ''
+                forge --version
+                FOUNDRY_PROFILE=script forge build --sizes
+              '';
+              doCheck = true;
+              checkPhase = ''
+                FOUNDRY_PROFILE=test forge test -vvv --out=tests-out --cache-path=tests-cache
+              '';
+              installPhase = ''
+                mkdir -p $out
+                mv out $out
+                mv cache $out
+              '';
+            }
+          );
+
+          # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
+          # solidity-coverage =
+          #   pkgs.runCommand "solidity-coverage"
+          #     {
+          #       buildInputs = [ self'.packages.forge pkgs.lcov ];
+          #     } ''
+          #     FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
+          #     lcov --remove ./lcov.info -o ./lcov.info.pruned \
+          #       '${evmSources}/contracts/proto/*' \
+          #       '${evmSources}/contracts/clients/MockClient.sol' \
+          #       '${evmSources}/contracts/clients/Verifier.sol' \
+          #       '${evmSources}/contracts/apps/ucs/00-pingpong/*' \
+          #       '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
+          #       '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
+          #       '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
+          #       '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
+          #       '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
+          #       '${evmSources}/tests/*'
+          #     genhtml lcov.info.pruned -o $out --branch-coverage
+          #     mv lcov.info.pruned $out/lcov.info
+          #   '';
+          # show-solidity-coverage = pkgs.writeShellApplication {
+          #   name = "show-solidity-coverage";
+          #   runtimeInputs = [ ];
+          #   text = ''
+          #     xdg-open ${self'.packages.solidity-coverage}/index.html
+          #   '';
+          # };
+
+          hubble-abis =
+            let
+              contracts = self'.packages.evm-contracts;
             in
-            ''
-              plugindir="${solidity-protobuf}/protobuf-solidity/src/protoc"
-              # find ${proto.ibc-go}/proto -name "$1" |\
-              # while read -r file; do
-              #   echo "Generating $file"
-              #   protoc \
-              #     ${protoIncludes} \
-              #    -I"$plugindir/include" \
-              #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-              #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-              #     "$file"
-              # done
-              # find ${proto.cometbls}/proto -type f -regex ".*canonical.proto" |\
-              # while read -r file; do
-              #   echo "Generating $file"
-              #   protoc \
-              #     ${protoIncludes} \
-              #    -I"$plugindir/include" \
-              #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-              #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-              #     "$file"
-              # done
+            mkCi false (
+              pkgs.runCommand "hubble-abis"
+                {
+                  buildInputs = [ pkgs.jq ];
+                }
+                ''
+                  mkdir -p $out
+                  cd $out
 
-              find ${proto.uniond} -type f -regex ".*ibc.*cometbls.*proto" |\
-              while read -r file; do
-                echo "Generating $file"
-                protoc \
-                  ${protoIncludes} \
-                 -I"$plugindir/include" \
-                 --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                 --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-                  "$file"
-              done
+                  jq --compact-output --slurp 'map(.abi) | add' \
+                    ${contracts}/out/IBCClient.sol/IBCClient.json \
+                    ${contracts}/out/IBCPacket.sol/IBCPacket.json \
+                    ${contracts}/out/IBCConnection.sol/IBCConnection.json \
+                    ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
+                    ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json
+
+                  jq --compact-output --slurp 'map(.abi) | add' \
+                    ${contracts}/out/Relay.sol/IRelay.json \
+                    ${contracts}/out/Relay.sol/UCS01Relay.json \
+                    ${contracts}/out/Relay.sol/RelayLib.json \
+                    ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json
+
+                  jq --compact-output --slurp 'map(.abi) | add' \
+                    ${contracts}/out/NFT.sol/NFTLib.json \
+                    ${contracts}/out/NFT.sol/NFTPacketLib.json \
+                    ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
+                ''
+            );
+
+          solidity-build-tests = pkgs.writeShellApplication {
+            name = "run-solidity-build-tests";
+            runtimeInputs = [ self'.packages.forge ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
             '';
-        });
+          };
 
-        evm-contracts = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
-          name = "evm-contracts";
-          src = evmSources;
-          buildInputs = [ wrappedForge ];
-          buildPhase = ''
-            forge --version
-            FOUNDRY_PROFILE=script forge build --sizes
-          '';
-          doCheck = true;
-          checkPhase = ''
-            FOUNDRY_PROFILE=test forge test -vvv --out=tests-out --cache-path=tests-cache
-          '';
-          installPhase = ''
-            mkdir -p $out
-            mv out $out
-            mv cache $out
-          '';
-        });
+          evm-contracts-addresses = mkCi false (
+            pkgs.writeShellApplication {
+              name = "evm-contracts-addresses";
+              runtimeInputs = [
+                self'.packages.forge
+                pkgs.jq
+              ];
+              text = ''
+                ${ensureAtRepositoryRoot}
+                OUT="$(mktemp -d)"
+                pushd "$OUT"
+                cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+                cp --no-preserve=mode -r ${evmSources}/* .
 
-        # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
-        # solidity-coverage =
-        #   pkgs.runCommand "solidity-coverage"
-        #     {
-        #       buildInputs = [ self'.packages.forge pkgs.lcov ];
-        #     } ''
-        #     FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
-        #     lcov --remove ./lcov.info -o ./lcov.info.pruned \
-        #       '${evmSources}/contracts/proto/*' \
-        #       '${evmSources}/contracts/clients/MockClient.sol' \
-        #       '${evmSources}/contracts/clients/Verifier.sol' \
-        #       '${evmSources}/contracts/apps/ucs/00-pingpong/*' \
-        #       '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
-        #       '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
-        #       '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
-        #       '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
-        #       '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
-        #       '${evmSources}/tests/*'
-        #     genhtml lcov.info.pruned -o $out --branch-coverage
-        #     mv lcov.info.pruned $out/lcov.info
-        #   '';
-        # show-solidity-coverage = pkgs.writeShellApplication {
-        #   name = "show-solidity-coverage";
-        #   runtimeInputs = [ ];
-        #   text = ''
-        #     xdg-open ${self'.packages.solidity-coverage}/index.html
-        #   '';
-        # };
+                DEPLOYER="$1" SENDER="$2" FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:GetDeployed -vvv
 
-        hubble-abis =
-          let
-            contracts = self'.packages.evm-contracts;
-          in
-          mkCi false (pkgs.runCommand "hubble-abis"
-            {
-              buildInputs = [ pkgs.jq ];
-            } ''
-            mkdir -p $out
-            cd $out
+                rm -rf "$OUT"
+                popd
+              '';
+            }
+          );
 
-            jq --compact-output --slurp 'map(.abi) | add' \
-              ${contracts}/out/IBCClient.sol/IBCClient.json \
-              ${contracts}/out/IBCPacket.sol/IBCPacket.json \
-              ${contracts}/out/IBCConnection.sol/IBCConnection.json \
-              ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
-              ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json
+          forge = wrappedForge;
 
-            jq --compact-output --slurp 'map(.abi) | add' \
-              ${contracts}/out/Relay.sol/IRelay.json \
-              ${contracts}/out/Relay.sol/UCS01Relay.json \
-              ${contracts}/out/Relay.sol/RelayLib.json \
-              ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json
+          evm-sources = evmSources;
 
-            jq --compact-output --slurp 'map(.abi) | add' \
-              ${contracts}/out/NFT.sol/NFTLib.json \
-              ${contracts}/out/NFT.sol/NFTPacketLib.json \
-              ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
-          '');
-
-
-        solidity-build-tests = pkgs.writeShellApplication {
-          name = "run-solidity-build-tests";
-          runtimeInputs = [ self'.packages.forge ];
-          text = ''
-            ${ensureAtRepositoryRoot}
-            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
-          '';
-        };
-
-        evm-contracts-addresses = mkCi false (pkgs.writeShellApplication {
-          name = "evm-contracts-addresses";
-          runtimeInputs = [ self'.packages.forge pkgs.jq ];
-          text = ''
-            ${ensureAtRepositoryRoot}
-            OUT="$(mktemp -d)"
-            pushd "$OUT"
-            cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-            cp --no-preserve=mode -r ${evmSources}/* .
-
-            DEPLOYER="$1" SENDER="$2" FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:GetDeployed -vvv
-
-            rm -rf "$OUT"
-            popd
-          '';
-        });
-
-        forge = wrappedForge;
-
-        evm-sources = evmSources;
-
-        evm-deployer-image =
-          let
-            forge-deploy =
-              pkgs.writeShellApplication {
+          evm-deployer-image =
+            let
+              forge-deploy = pkgs.writeShellApplication {
                 name = "forge-deploy";
                 runtimeInputs = [ self'.packages.forge ];
                 text = ''
@@ -480,52 +546,72 @@
                   FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:DeployDeployerAndIBC -vvv --rpc-url "$RPC_URL" --broadcast
                 '';
               };
-          in
-          mkCi (system == "x86_64-linux") (pkgs.dockerTools.buildLayeredImage {
-            name = "evm-deployer-image";
-            contents = [
-              pkgs.coreutils
-              pkgs.curl
-              pkgs.jq
-              forge-deploy
-              self'.packages.evm-sources
-              self'.packages.evm-contracts
-            ];
-            config = {
-              Entrypoint = [ (pkgs.lib.getExe forge-deploy) ];
-              Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
-            };
-          });
-      } //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-deploy-${args.network}-full"; value = eth-deploy-full args; })
-          networks
-      ) //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-deploy-${args.network}-multicall"; value = eth-deploy-multicall ({ kind = "Multicall"; } // args); })
-          networks
-      ) //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-dryupgrade-${args.network}-ucs01"; value = eth-upgrade ({ dry = true; protocol = "UCS01"; } // args); })
-          networks
-      ) //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-dryupgrade-${args.network}-ibc"; value = eth-upgrade ({ dry = true; protocol = "IBCHandler"; } // args); })
-          networks
-      ) //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-upgrade-${args.network}-ucs01"; value = eth-upgrade ({ protocol = "UCS01"; } // args); })
-          networks
-      ) //
-      builtins.listToAttrs (
-        builtins.map
-          (args: { name = "eth-upgrade-${args.network}-ibc"; value = eth-upgrade ({ protocol = "IBCHandler"; } // args); })
-          networks
-      );
+            in
+            mkCi (system == "x86_64-linux") (
+              pkgs.dockerTools.buildLayeredImage {
+                name = "evm-deployer-image";
+                contents = [
+                  pkgs.coreutils
+                  pkgs.curl
+                  pkgs.jq
+                  forge-deploy
+                  self'.packages.evm-sources
+                  self'.packages.evm-contracts
+                ];
+                config = {
+                  Entrypoint = [ (pkgs.lib.getExe forge-deploy) ];
+                  Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+                };
+              }
+            );
+        }
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-deploy-${args.network}-full";
+            value = eth-deploy-full args;
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-deploy-${args.network}-multicall";
+            value = eth-deploy-multicall ({ kind = "Multicall"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-dryupgrade-${args.network}-ucs01";
+            value = eth-upgrade (
+              {
+                dry = true;
+                protocol = "UCS01";
+              }
+              // args
+            );
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-dryupgrade-${args.network}-ibc";
+            value = eth-upgrade (
+              {
+                dry = true;
+                protocol = "IBCHandler";
+              }
+              // args
+            );
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-upgrade-${args.network}-ucs01";
+            value = eth-upgrade ({ protocol = "UCS01"; } // args);
+          }) networks
+        )
+        // builtins.listToAttrs (
+          builtins.map (args: {
+            name = "eth-upgrade-${args.network}-ibc";
+            value = eth-upgrade ({ protocol = "IBCHandler"; } // args);
+          }) networks
+        );
     };
 }

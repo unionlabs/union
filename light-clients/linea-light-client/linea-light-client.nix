@@ -1,7 +1,13 @@
-{ ... }: {
-  perSystem = { crane, lib, ensure-wasm-client-type, ... }:
+_: {
+  perSystem =
+    {
+      crane,
+      lib,
+      ensure-wasm-client-type,
+      ...
+    }:
     let
-      workspace = (crane.buildWasmContract {
+      workspace = crane.buildWasmContract {
         crateDirFromRoot = "light-clients/linea-light-client";
         checks = [
           (file_path: ''
@@ -11,7 +17,7 @@
             }}
           '')
         ];
-      });
+      };
     in
     {
       inherit (workspace) packages checks;

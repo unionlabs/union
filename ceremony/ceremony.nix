@@ -1,7 +1,17 @@
-{ ... }: {
-  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, ... }:
+_: {
+  perSystem =
+    {
+      pkgs,
+      unstablePkgs,
+      lib,
+      ensureAtRepositoryRoot,
+      ...
+    }:
     let
-      pkgsDeps = with pkgs; [ pkg-config python3 ];
+      pkgsDeps = with pkgs; [
+        pkg-config
+        python3
+      ];
       nodeDeps = with unstablePkgs; [ nodePackages_latest.nodejs ];
       combinedDeps = pkgsDeps ++ nodeDeps;
       packageJSON = lib.importJSON ./package.json;
@@ -14,7 +24,7 @@
           sourceRoot = "ceremony";
           npmFlags = [ "--legacy-peer-deps" ];
           pname = packageJSON.name;
-          version = packageJSON.version;
+          inherit (packageJSON) version;
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
           installPhase = ''
