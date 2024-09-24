@@ -96,7 +96,7 @@
       flake = false;
     };
     biome = {
-      url = "github:biomejs/biome/cli/v1.9.1";
+      url = "github:biomejs/biome/cli/v1.9.2";
       flake = false;
     };
 

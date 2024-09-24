@@ -26,16 +26,16 @@
     "biome": {
       "flake": false,
       "locked": {
-        "lastModified": 1726419034,
-        "narHash": "sha256-/Kyq2y34b32NOjGkfWjfjM7MLhyhWmM32Ek6zrX5LC0=",
+        "lastModified": 1726750425,
+        "narHash": "sha256-erwGLcE5w/UnjZ1aVF3ZYD2OQGI8xt7lVBvpWkJ56tc=",
         "owner": "biomejs",
         "repo": "biome",
-        "rev": "9bf1e4c7738a8f6fe7cb5f533b1bd9776b3f8452",
+        "rev": "5f2287e005eadb261a4c78e4ec0fdc0d46068551",
         "type": "github"
       },
       "original": {
         "owner": "biomejs",
-        "ref": "cli/v1.9.1",
+        "ref": "cli/v1.9.2",
         "repo": "biome",
         "type": "github"
       }
@@ -465,11 +465,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1725432240,
-        "narHash": "sha256-+yj+xgsfZaErbfYM3T+QvEE2hU7UuE+Jf0fJCJ8uPS0=",
+        "lastModified": 1726937504,
+        "narHash": "sha256-bvGoiQBvponpZh8ClUcmJ6QnsNKw0EMrCQJARK3bI1c=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ad416d066ca1222956472ab7d0555a6946746a80",
+        "rev": "9357f4f23713673f310988025d9dc261c20e70c6",
         "type": "github"
       },
       "original": {
