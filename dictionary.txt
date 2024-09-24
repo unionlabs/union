@@ -481,6 +481,7 @@ datagram
 datas
 datetime
 datypes
+deadnix
 debouncer
 deferredack
 deferredackkeeper
@@ -1147,6 +1148,7 @@ stateroot
 statesync
 staticcheck
 staticlib
+statix
 stdenv
 storemetrics
 storetypes
