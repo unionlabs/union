@@ -47,7 +47,7 @@ _: {
         );
 =======
         docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-yk/I3MvRQFsdIHJ235NF7tmOBFuKTbIFTZ/ksimaUYA=";
+          npmDepsHash = "sha256-4wTaKM2DMv/wtw+lIqpED8bCSiIjAI1MFIarqYPifAw=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "docs";
@@ -55,6 +55,7 @@ _: {
           version = packageJSON.version;
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
+          npmFlags = [];
           installPhase = ''
             mkdir -p $out
             cp -r ./dist/* $out
@@ -116,68 +117,6 @@ _: {
               nix build .#docs
               npm_config_yes=true npx @fleek-platform/cli sites deploy
             '';
-          };
-        };
-        generate-rust-docs = {
-          type = "app";
-          program = pkgs.writeShellApplication {
-            name = "generate-rust-docs";
-            text =
-              let
-                /**
-                 * The list of rust packages that we want to generate docs for.
-                 */
-                rustPackages = [ "hubble" "voyager" ];
-              in
-              ''
-                ${ensureAtRepositoryRoot}
-                
-                rm -rf docs/generated/rust
-                mkdir -p docs/generated/rust
-
-                ${lib.concatMapStrings (pkg: ''
-                  cargo rustdoc \
-                    --release \
-                    --all-features \
-                    --package='${pkg}' \
-                    -- \
-                    --default-theme='ayu' \
-                    --document-private-items
-
-                '') rustPackages}
-                cp -r target/doc/* docs/generated/rust/
-              '';
-          };
-        };
-        generate-rust-docs = {
-          type = "app";
-          program = pkgs.writeShellApplication {
-            name = "generate-rust-docs";
-            text =
-              let
-                /**
-                 * The list of rust packages that we want to generate docs for.
-                 */
-                rustPackages = [ "hubble" "voyager" ];
-              in
-              ''
-                ${ensureAtRepositoryRoot}
-                
-                rm -rf docs/generated/rust
-                mkdir -p docs/generated/rust
-
-                ${lib.concatMapStrings (pkg: ''
-                  cargo rustdoc \
-                    --release \
-                    --all-features \
-                    --package='${pkg}' \
-                    -- \
-                    --default-theme='ayu' \
-                    --document-private-items
-
-                '') rustPackages}
-                cp -r target/doc/* docs/generated/rust/
-              '';
           };
         };
       };
