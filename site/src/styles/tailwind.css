@@ -3,5 +3,5 @@
 @tailwind utilities;
 
 .text-shadow {
-    text-shadow: 0px 0px 10px black;
+  text-shadow: 0px 0px 10px black;
 }

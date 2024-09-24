@@ -619,26 +619,34 @@
                   "-formatter"
                   "retain_line_breaks=true"
                 ];
-                biome.includes = [
-                  "*.ts"
-                  "*.js"
-                  "*.cjs"
-                  "*.cts"
-                  "*.mts"
-                  "*.mjs"
-                  "*.jsx"
-                  "*.tsx"
-                  "*.d.ts"
-                  "*.d.mts"
-                  "*.d.cts"
-                  "*.vue"
-                  "*.css"
-                  "*.json"
-                  "*.jsonc"
-                  "*.astro"
-                  "*.svelte"
-                  "*.graphql"
-                ];
+                biome = {
+                  options = [
+                    "check"
+                    "--config-path"
+                    "./biome.json"
+                  ];
+                  includes = [
+                    "*.ts"
+                    "*.js"
+                    "*.cjs"
+                    "*.cts"
+                    "*.mts"
+                    "*.mjs"
+                    "*.jsx"
+                    "*.tsx"
+                    "*.d.ts"
+                    "*.d.mts"
+                    "*.d.cts"
+                    "*.html"
+                    "*.vue"
+                    "*.css"
+                    "*.json"
+                    "*.jsonc"
+                    "*.astro"
+                    "*.svelte"
+                    "*.graphql"
+                  ];
+                };
                 sort =
                   let
                     filesToSort = [ "dictionary.txt" ];

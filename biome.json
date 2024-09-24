@@ -15,7 +15,10 @@
       "*.jsx",
       "*.tsx",
       "*.d.ts",
+      "*.d.mts",
+      "*.d.cts",
       "*.vue",
+      "*.html",
       "*.css",
       "*.json",
       "*.jsonc",
@@ -49,7 +52,7 @@
       "enabled": true,
       "indentWidth": 2,
       "lineWidth": 100,
-      "quoteStyle": "single",
+      "quoteStyle": "double",
       "indentStyle": "space"
     },
     "parser": {
@@ -64,7 +67,7 @@
       "indentWidth": 2,
       "bracketSpacing": true,
       "indentStyle": "space",
-      "quoteStyle": "single"
+      "quoteStyle": "double"
     },
     "linter": {
       "enabled": true
@@ -85,6 +88,7 @@
       "*.d.mts",
       "*.d.cts",
       "*.vue",
+      "*.html",
       "*.css",
       "*.json",
       "*.jsonc",
@@ -143,6 +147,7 @@
       "*.d.mts",
       "*.d.cts",
       "*.vue",
+      "*.html",
       "*.css",
       "*.json",
       "*.jsonc",
@@ -256,6 +261,7 @@
       "*.d.mts",
       "*.d.cts",
       "*.vue",
+      "*.html",
       "*.css",
       "*.json",
       "*.jsonc",
