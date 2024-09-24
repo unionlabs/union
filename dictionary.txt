@@ -18,6 +18,7 @@ Bitfield
 Bitvector
 Bkpvid
 Blex
+Blockchange
 Blured
 Boiron
 Boneh
@@ -111,6 +112,7 @@ Kaylei
 Keplr
 Keybase
 Kubat
+LEQUAL
 LIBCLANG
 LIBVIPS
 Lahcen
@@ -155,6 +157,7 @@ Paramspace
 Partset
 Patchelf
 Pedersen
+Perlin
 Phasellus
 PoisonPhang
 Polkadot
@@ -347,9 +350,11 @@ bitvec
 bitvector
 blabla
 blcok
+blockchange
 blockid
 blockquote
 blockscout
+blockspace
 blocksync
 blocktime
 blst
@@ -357,6 +362,7 @@ boneh
 bonlulu
 bools
 bootnode
+borderless
 borsh
 brainer
 builtins
@@ -479,6 +485,7 @@ debouncer
 deferredack
 deferredackkeeper
 deferredacktypes
+defi
 delegators
 dels
 denoms
@@ -521,6 +528,7 @@ elit
 endianness
 entrypoints
 enumorph
+ero
 errorsmod
 errortype
 esac
@@ -531,6 +539,7 @@ ethcall
 etherbase
 ethevent
 ethkey
+evenodd
 evidencekeeper
 evidencetypes
 evmincosmos
@@ -616,6 +625,7 @@ groth
 groupkeeper
 groupmodule
 grpclog
+gumi
 hackerman
 haitlahcen
 hasher
@@ -747,6 +757,7 @@ leapwallet
 legendapp
 legendres
 legos
+lerp
 libblst
 libc
 libclang
@@ -764,6 +775,8 @@ lightclient
 lightclients
 lightheader
 linea
+linecap
+linejoin
 linkmode
 livenesses
 ljegnwps
@@ -775,6 +788,8 @@ lockb
 logformat
 logline
 logtostderr
+longhash
+lowp
 lspec
 lucide
 mapstructure
@@ -787,6 +802,7 @@ maxpeers
 mdast
 mdformat
 mdsvex
+mediump
 merkle
 merkleize
 merklize
@@ -815,6 +831,8 @@ monniker
 monomorphized
 moreutils
 mosmo
+mouseleave
+mousemove
 msgservice
 msvc
 muldefs
@@ -850,6 +868,7 @@ nixbuildnet
 nixfmt
 nixos
 nixpkgs
+nocheck
 nodeservice
 nodetime
 nodiscover
@@ -858,11 +877,13 @@ nois
 nolint
 nolus
 nolyfill
+nomos
 nonexist
 noninclusion
 noopener
 noreferrer
 notrunc
+nowledge
 nowrap
 nromalized
 nums
@@ -1089,6 +1110,7 @@ slashingkeeper
 slashingtypes
 slurpfile
 smallvec
+smoothstep
 snapshotter
 snapshottypes
 soketto

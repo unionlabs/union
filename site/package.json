@@ -31,6 +31,7 @@
     "astro-seo": "^0.8.4",
     "contentful": "^10.15.1",
     "echarts": "^5.5.1",
+    "gl-matrix": "^3.4.3",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-katex": "^7.0.1",
     "rehype-mathjax": "^6.0.0",

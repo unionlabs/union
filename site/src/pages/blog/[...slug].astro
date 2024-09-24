@@ -1,11 +1,9 @@
 ---
 import Layout from "#/layouts/Layout.astro"
 import type { BlogPost } from "#/lib/types.ts"
-import LanderSection from "#/components/LanderSection.astro"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import { ContentfulLivePreview } from "@contentful/live-preview"
-import SocialsSection from "#/components/sections/SocialsSection.astro"
 
 export const prerender = false
 
@@ -34,12 +32,6 @@ const {
 // The browser should always check freshness
 Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
 
-// The CDN should cache for a year, but revalidate if the cache tag changes
-Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
-
-// Tag the page with the blog post slug
-if (slug) Astro.response.headers.set("netlify-cache-tag", slug)
-
 const imageWithProtocol = (url: string) => `https:${url}`
 
 const entryId = blogPost.sys.id
@@ -55,21 +47,21 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
   title={blogPost.fields.title}
   description={blogPost.fields.description}
 >
-  <LanderSection gradient="to-t">
+  <div class="flex justify-center pt-8">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
       <div class="text-lg flex gap-x-3 h-min">
         <h1
           data-contentful-field-id="title"
           data-contentful-entry-id={entryId}
-          class="text-3xl sm:text-4xl font-extrabold mb-0"
-          {...ContentfulLivePreview.getProps({ entryId, fieldId: 'title' })}
+          class="text-3xl sm:text-4xl font-extrabold mb-0 font-supermolot uppercase"
+          {...ContentfulLivePreview.getProps({ entryId, fieldId: "title" })}
         >
           {blogPost.fields.title}
         </h1>
       </div>
       <div class="flex gap-x-3 mt-1.5">
         <time
-          class="text-lg text-gray-400"
+          class="text-lg font-mono text-accent-500 font mono"
           data-contentful-field-id="date"
           data-contentful-entry-id={entryId}
           datetime={toISODate(blogPost.fields.date)}
@@ -77,9 +69,8 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
         >
           {saneDateTime(blogPost.fields.date)}
         </time>
-        -
         <p
-          class="m-0"
+          class="m-0 font-lg font-mono uppercase"
           data-contentful-field-id="author"
           data-contentful-entry-id={entryId}
           {...ContentfulLivePreview.getProps({ entryId, fieldId: 'author' })}
@@ -110,14 +101,14 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
         </em>
       </p>
       <article
+        class="font-mono"
         data-contentful-field-id="content"
         data-contentful-entry-id={entryId}
         {...ContentfulLivePreview.getProps({ entryId, fieldId: 'content' })}
       >
       </article>
     </div>
-  </LanderSection>
-  <SocialsSection />
+  </div>
 </Layout>
 
 <script>

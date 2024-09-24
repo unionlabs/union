@@ -1,9 +1,16 @@
 import type { EntryFieldTypes } from "contentful"
+import type { ImageMetadata } from "astro"
 
 export type MaybePromise<T> = T | Promise<T>
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
+}
+
+export type NamedImage = {
+  name: string
+  url: string
+  logo: ImageMetadata
 }
 
 export interface BlogPost {
@@ -14,7 +21,14 @@ export interface BlogPost {
     title: EntryFieldTypes.Text
     author: EntryFieldTypes.Text
     hidden: EntryFieldTypes.Boolean
-    cover: EntryFieldTypes.AssetLink
+    cover: {
+      fields: {
+        title: string
+        file: {
+          url: string
+        }
+      }
+    }
     content: EntryFieldTypes.RichText
     description: EntryFieldTypes.Text
   }

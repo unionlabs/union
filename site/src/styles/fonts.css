@@ -1,4 +1,10 @@
 @font-face {
+  font-family: "Supermolot";
+  font-display: swap;
+  src: url("/fonts/TT-Supermolot-Neue-Variable.ttf") format("truetype");
+}
+
+@font-face {
   font-family: "Inter var";
   font-style: normal;
   font-weight: 100 900;

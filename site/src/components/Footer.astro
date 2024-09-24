@@ -32,9 +32,9 @@ function isInternal(menuItem: { url: string }): boolean {
 ---
 
 <footer
-  class="flex flex-col p-4 sm:items-center text-white py-4 gap-2 justify-center text-lg font-normal bottom-0 bg-[#020306]/50"
+  class="flex flex-col font-normal px-6 items-center text-[8px] sm:text-sm md:text-3xl gap-4 py-8 pt-36"
 >
-  <ul class="list-none p-0 flex flex-col justify-center flex-cols-3 sm:flex-row">
+  <ul class="max-w-5xl w-full p-0 flex justify-between border-b border-white list-none pb-4">
     {
       menuItems.map(menuItem => (
         <li>
@@ -42,7 +42,7 @@ function isInternal(menuItem: { url: string }): boolean {
             href={menuItem.url}
             target={isInternal(menuItem) ? '' : '_blank'}
             rel={isInternal(menuItem) ? '' : 'noopener noreferrer'}
-            class="border-b border-[#1f1f1f] px-4 py-2 !text-md text-normal flex flex-col flex-1"
+            class="text-normal uppercase"
           >
             {menuItem.name}
           </a>
@@ -50,5 +50,5 @@ function isInternal(menuItem: { url: string }): boolean {
       ))
     }
   </ul>
-  <p class="text-center block text-neutral-400 mt-2">&copy; Union Labs</p>
+  <p class="text-center block">&copy;Union Labs</p>
 </footer>

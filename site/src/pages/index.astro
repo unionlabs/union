@@ -1,30 +1,70 @@
 ---
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
+import ConsensusSection from "../components/sections/landing/ConsensusSection.astro"
+import ZkSection from "../components/sections/landing/ZkSection.astro"
+import ExecutionSection from "../components/sections/landing/ExecutionSection.astro"
+import MarqueeSection from "../components/sections/MarqueeSection.astro"
 
-import IntroSection from "#/components/sections/IntroSection.astro"
-import ModularConnectedSection from "#/components/sections/ModularConnectedSection.astro"
-import MostEfficientSection from "#/components/sections/MostEfficientSection.astro"
-import BlogSection from "#/components/sections/BlogSection.astro"
-import CodeSection from "#/components/sections/CodeSection.astro"
-import SocialsSection from "#/components/sections/SocialsSection.astro"
+import pod_polygon from "#/assets/images/marquee/pods/polygon.png"
+import pod_lightshift from "#/assets/images/marquee/pods/lightshift.png"
+import pod_semantic from "#/assets/images/marquee/pods/semantic.png"
+import pod_longhash from "#/assets/images/marquee/pods/longhash.png"
+import pod_galileo from "#/assets/images/marquee/pods/galileo.png"
+import pod_consensys from "#/assets/images/marquee/pods/consensys.png"
+import pod_tioga from "#/assets/images/marquee/pods/tioga.png"
+import pod_borderless from "#/assets/images/marquee/pods/borderless.png"
+import pod_gumi from "#/assets/images/marquee/pods/gumi.png"
+import pod_blockchange from "#/assets/images/marquee/pods/blockchange.png"
+import pod_atom from "#/assets/images/marquee/pods/atom.png"
+
+import partner_stride from "#/assets/images/marquee/partners/stride.png"
+import partner_stargaze from "#/assets/images/marquee/partners/stargaze.png"
+import partner_skip from "#/assets/images/marquee/partners/skip.png"
+import partner_secret from "#/assets/images/marquee/partners/secret.png"
+import partner_scroll from "#/assets/images/marquee/partners/scroll.png"
+import partner_polygon from "#/assets/images/marquee/partners/polygon.png"
+import partner_movement from "#/assets/images/marquee/partners/movement.png"
+import partner_bera from "#/assets/images/marquee/partners/bera.png"
+import partner_arbitrum from "#/assets/images/marquee/partners/arbitrum.png"
+import BorderIntro from "../components/sections/landing/BorderIntro.astro"
 
 export const prerender = false
 
 // The browser should always check freshness
 Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
 
-// The CDN should cache for a year, but revalidate if the cache tag changes
-Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
+const pods = [
+  { name: "Tioga", logo: pod_tioga, url: "" },
+  { name: "Semantic", logo: pod_semantic, url: "" },
+  { name: "Polygon", logo: pod_polygon, url: "" },
+  { name: "Longhash", logo: pod_longhash, url: "" },
+  { name: "Lightshift", logo: pod_lightshift, url: "" },
+  { name: "Gumi", logo: pod_gumi, url: "" },
+  { name: "Galileo", logo: pod_galileo, url: "" },
+  { name: "Consensys", logo: pod_consensys, url: "" },
+  { name: "Borderless", logo: pod_borderless, url: "" },
+  { name: "Blockchange", logo: pod_blockchange, url: "" },
+  { name: "Atom", logo: pod_atom, url: "" }
+]
 
-// Tag the page with the content type
-Astro.response.headers.set("netlify-cache-tag", "blog")
+const partners = [
+  { name: "Stride", logo: partner_stride, url: "" },
+  { name: "Stargaze", logo: partner_stargaze, url: "" },
+  { name: "Skip", logo: partner_skip, url: "" },
+  { name: "Secret", logo: partner_secret, url: "" },
+  { name: "Scroll", logo: partner_scroll, url: "" },
+  { name: "Polygon", logo: partner_polygon, url: "" },
+  { name: "Movement", logo: partner_movement, url: "" },
+  { name: "Bera", logo: partner_bera, url: "" },
+  { name: "Arbitrum", logo: partner_arbitrum, url: "" }
+]
 ---
 
-<SectionsLayout gapless>
-  <IntroSection/>
-  <MostEfficientSection/>
-  <ModularConnectedSection/>
-  <CodeSection/>
-  <BlogSection/>
-  <SocialsSection/>
+<SectionsLayout>
+  <BorderIntro/>
+  <ConsensusSection/>
+  <ZkSection/>
+  <ExecutionSection/>
+  <MarqueeSection title={"Our pod."} reverse={false} data={pods}/>
+  <MarqueeSection title={"Our partners."} reverse={true} data={partners}/>
 </SectionsLayout>
