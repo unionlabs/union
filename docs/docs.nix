@@ -55,7 +55,7 @@ _: {
           version = packageJSON.version;
           nativeBuildInputs = combinedDeps;
           buildInputs = combinedDeps;
-          npmFlags = [];
+          npmFlags = [ ];
           installPhase = ''
             mkdir -p $out
             cp -r ./dist/* $out

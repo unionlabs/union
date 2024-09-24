@@ -21,22 +21,12 @@ let query = dedent(/* GraphQL */ `
 
 const graphiqlProps = {
   fetcher,
-  visiblePlugin: explorerPlugin({
-    hideActions: true,
-    title: "union.build",
-    explorerIsOpen: true,
-    showAttribution: false,
-    styles: {
-      buttonStyle: { color: "white", backgroundColor: "transparent" }
-    }
-  }),
   plugins: [
     explorerPlugin({
       hideActions: true,
       title: "union.build",
       explorerIsOpen: true,
-      showAttribution: false,
-      styles: {}
+      showAttribution: false
     })
   ],
   disableTabs: false,
@@ -62,7 +52,6 @@ const graphiqlProps = {
             window.history.pushState({}, "", `?query=${encoded}`)
             // copy url to clipboard
             navigator.clipboard.writeText(window.location.href)
-            // set q
           }
         },
         React.createElement("img", {
@@ -73,7 +62,6 @@ const graphiqlProps = {
       )
     ]
   },
-  // query,
   defaultQuery: localStorage.getItem("graphiql:query") || query
 } satisfies GraphiQLProps
 
