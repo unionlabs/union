@@ -189,7 +189,7 @@ export default defineConfig({
       ],
       customCss: [
         "./src/styles/index.css",
-        // "./src/styles/fonts.css",
+        "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
         "./src/styles/twoslash.css",
         "./src/styles/starlight.css",

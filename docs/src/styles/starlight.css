@@ -1,17 +1,29 @@
 :root {
   --sl-text-h1: 3.5rem;
-  --dark-blue: #00262f;
+  --sl-accent-color: theme("colors.accent.500");
+  --dark-blue: theme("colors.accent.950");
+  --sl-color-text-accent: theme("colors.accent.500");
+  --sl-color-accent-high: theme("colors.accent.950") !important;
 }
 
 :root[data-theme="light"] {
+  --sl-accent-color: theme("colors.accent.500");
+  --dark-blue: theme("colors.accent.950");
+  --sl-color-text-accent: theme("colors.accent.700");
+  --sl-color-accent-high: theme("colors.accent.950") !important;
+  
   --logo-text-color: #000000;
-  --sl-color-text-accent: #04acd2;
   --sl-color-bg: #f9f9f9;
   --anchor-icon-filter: invert(0);
-  --nav-selected-color: #003845;
+  --nav-selected-color: theme("colors.accent.950");
 }
 
 :root[data-theme="dark"] {
+  --sl-accent-color: theme("colors.accent.500");
+  --dark-blue: theme("colors.accent.950");
+  --sl-color-text-accent: theme("colors.accent.700");
+  --sl-color-accent-high: theme("colors.accent.950") !important;
+
   --logo-text-color: #f9f9f9f9;
   --anchor-icon-filter: invert(1);
   --nav-selected-color: #374151;
