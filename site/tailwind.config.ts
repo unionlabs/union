@@ -46,7 +46,7 @@ export default {
         bg2: "#030711"
       },
       fontFamily: {
-        sans: ["Inter var", ...defaultTheme.fontFamily.sans],
+        supermolot: ["Supermolot", ...defaultTheme.fontFamily.sans],
         display: [
           "Inter var",
           {

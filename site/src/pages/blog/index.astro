@@ -1,14 +1,11 @@
 ---
 import Card from "#/components/Card.astro"
-import TextA from "#/components/TextA.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import H3 from "#/components/typography/h3.astro"
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import { saneDateTime, toISODate } from "#/lib/utilities.ts"
-import LanderSection from "#/components/LanderSection.astro"
 import { contentfulClient } from "#/lib/contentful/client.ts"
-import IntroHeading from "#/components/typography/IntroHeading.astro"
-import SocialsSection from "#/components/sections/SocialsSection.astro"
+import BlogIntroSection from "#/components/sections/blogIntroSection.astro"
 
 export const prerender = false
 
@@ -21,52 +18,65 @@ const blogEntries = await contentfulClient.getEntries<BlogPost>({
 
 const publishedBlogPosts = blogEntries.items.filter(entry =>
   import.meta.env.MODE === "production" ? entry.fields.hidden !== true : true
-)
+) as unknown as Array<BlogPost>
 
 // The browser should always check freshness
 Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
 
-// The CDN should cache for a year, but revalidate if the cache tag changes
-Astro.response.headers.set("netlify-cdn-cache-control", "s-maxage=31536000")
-
-// Tag the page with the content type
-Astro.response.headers.set("netlify-cache-tag", "blog")
+const imageWithProtocol = (url: string) => `https:${url}`
 ---
 
 <SectionsLayout title="Union Blog" gapless>
-  <LanderSection gradient="to-t">
-    <IntroHeading main title="Union Blog">
-      Our latest partnerships, technical deep dives, and announcements.
-    </IntroHeading>
-    <div class="flex flex-col md:grid grid-cols-2 gap-4 md:gap-6 flex-1">
-      {
-        publishedBlogPosts.map((blogPostEntry) => (
-          <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
-            <Card class="size-full" padded>
-              <time
-                class="text-lg text-gray-400"
-                datetime={toISODate(blogPostEntry?.fields?.date)}
-              >
-                {saneDateTime(blogPostEntry?.fields?.date)}
-              </time>
-              <H3>{blogPostEntry.fields.title}</H3>
-              <p class="sm:text-xl text-gray-400">
-                {blogPostEntry.fields.description}
-              </p>
-
-              <TextA fake>Read Post</TextA>
-            </Card>
-          </a>
-        ))
-      }
+  <BlogIntroSection />
+  <div class="flex w-full justify-center pb-24">
+    <div class="max-w-[1440px]">
+      <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
+      <div class="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3">
+        {
+          publishedBlogPosts.map((blogPostEntry: BlogPost) => (
+            <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
+              <Card class="size-full border-none" padded>
+                <div class="border-2 w-full h-[14rem] rounded-tl-[7rem] overflow-hidden mb-2">
+                  <img
+                    class="w-full h-full object-cover border-none"
+                    loading="eager"
+                    alt={blogPostEntry.fields.cover.fields.title}
+                    src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
+                  />
+                </div>
+                <div class="flex flex-col gap-2">
+                  <H3>{blogPostEntry.fields.title}</H3>
+                  <div class="flex items-center justify-between text-xl font-mono font-semibold">
+                    <time
+                      class="text-accent-500"
+                      datetime={toISODate(`${blogPostEntry?.fields?.date}`)}
+                    >
+                      {saneDateTime(`${blogPostEntry?.fields?.date}`)}
+                    </time>
+                    <div class="h-full w-1 bg-white" />
+                    <p class="uppercase font-mono truncate">
+                      <span class="hidden lg:inline-block mr-2">Author: </span>
+                      {blogPostEntry.fields.author}
+                    </p>
+                  </div>
+                  <p class="text-base text-white font-mono">{blogPostEntry.fields.description}</p>
+                </div>
+              </Card>
+            </a>
+          ))
+        }
+      </div>
     </div>
-  </LanderSection>
-  <SocialsSection />
+  </div>
 </SectionsLayout>
 
 <style is:inline>
   *::selection {
     background-color: #a0ecfd;
     color: #000;
+  }
+  .card-rounded {
+    border-top-left-radius: 0 50%;
+    overflow: hidden;
   }
 </style>

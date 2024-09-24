@@ -1,0 +1,30 @@
+---
+import type SplineViewerProps from "@splinetool/viewer"
+/**
+ * Props descriptions can be found here:
+ * {@link https://unpkg.com/browse/@splinetool/viewer/build/spline-viewer.d.ts}
+ * or in node_modules/@splinetool/viewer/build/spline-viewer.d.ts
+ */
+export interface Props {
+  model: string
+  width?: number
+  height?: number
+  unloadable?: boolean
+  backgroundColor?: string
+  hint?: SplineViewerProps.HintType
+  loading?: SplineViewerProps.LoadingType
+  eventsTarget?: SplineViewerProps.EventsTargetType
+  loadingAnimType?: SplineViewerProps.PreloaderAnimType
+  className?: string
+}
+const { model, loading = "auto", eventsTarget = "global", className, ...restProps } = Astro.props
+---
+
+<script src="@splinetool/viewer"></script>
+
+<spline-viewer
+  url="https://prod.spline.design/RjV8ibI6mbX0jkNV/scene.splinecode"
+  eventsTarget={eventsTarget}
+  {...restProps}
+
+></spline-viewer>
