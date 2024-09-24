@@ -9,10 +9,10 @@ export function onThemeChange<T extends (theme: ThemeMode) => void>(callback: T)
   const systemPreference = window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light"
-  const themeToggle = document.querySelector("starlight-theme-select select")
+  const themeToggle = document.querySelector("starlight-rapide-theme-select button")
   if (!themeToggle) return
-  themeToggle.addEventListener("change", _ => {
-    const newTheme = themeToggle.value === "auto" ? systemPreference : themeToggle.value
+  themeToggle.addEventListener("click", _ => {
+    const newTheme = document.documentElement.getAttribute("data-theme")
     callback(newTheme as ThemeMode)
   })
 }
