@@ -1,6 +1,6 @@
 ---
-import "graphiql/graphiql.min.css"
-import "@graphiql/plugin-explorer/dist/style.css"
+import 'graphiql/graphiql.min.css'
+import '@graphiql/plugin-explorer/dist/style.css'
 
 interface Props {}
 ---
@@ -9,7 +9,7 @@ interface Props {}
 
 <script>
   import ReactDOM from 'react-dom/client'
-  import { graphiqlElement } from './index.ts'
+  import { graphiqlElement } from './setup.ts'
 
   const graphqlElement = document.querySelector('article#graphiql')
   if (!graphqlElement) throw new Error('GraphQL element not found')
@@ -31,6 +31,51 @@ interface Props {}
 <style lang="postcss" is:global>
 :root {
   --sl-mobile-toc-height: 0;
+  --color-base: #1f1f1f;
+}
+
+.graphiql-container {
+  --sidebar-width: 45px;
+}
+
+.graphiql-execute-button {
+  background-color: theme(colors.accent.500) !important;
+  & svg {
+    color: #1F1F1F !important;
+  }
+}
+
+.graphiql-container,
+.graphiql-editors,
+.graphiql-editor,
+.graphiql-explorer,
+/* .graphiql-query-editor, */
+.graphiql-session,
+.graphiql-dialog {
+  background-color: #1f1f1f;
+}
+
+.graphiql-toolbar,
+.graphiql-editor-tool,
+.graphiql-editor-tools,
+.CodeMirror-scroll,
+.CodeMirror-gutter,
+.graphiql-query-editor,
+.graphiql-session,
+.graphiql-session-header {
+  background-color: #131313;
+}
+
+.graphiql-query-editor {
+  /* padding: 0px !important; */
+}
+
+.graphiql-session {
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+.graphiql-session-header {
+  border-radius: 0.5rem 0.5rem 0 0;
 }
 
 h1 {
@@ -82,4 +127,15 @@ main[data-pagefind-body] {
 }
 
 .graphiql-sidebar {}
+
+.graphiql-tab-add {
+  visibility: hidden !important;
+  cursor: default !important;
+  color: transparent !important;
+  background: transparent !important;
+  & svg {
+    visibility: hidden !important;
+    color: transparent !important;
+  }
+}
 </style>

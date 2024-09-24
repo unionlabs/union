@@ -1,9 +1,8 @@
 :root {
   --sl-text-h1: 3.5rem;
-  --sl-accent-color: theme("colors.accent.500");
-  --dark-blue: theme("colors.accent.950");
-  --sl-color-text-accent: theme("colors.accent.500");
-  --sl-color-accent-high: theme("colors.accent.950") !important;
+  --sl-white: #F9F9F9;
+  --sl-color-white: #F9F9F9;
+  --bg-gray: #1f1f1f1f;
 }
 
 :root[data-theme="light"] {
@@ -11,7 +10,11 @@
   --dark-blue: theme("colors.accent.950");
   --sl-color-text-accent: theme("colors.accent.700");
   --sl-color-accent-high: theme("colors.accent.950") !important;
-  
+  --sl-color-white: var(--sl-white);
+  --sl-color-bg: var(--bg-gray);
+  --sl-rapide-ui-header-bg-color: var(--bg-gray);
+  --sl-color-bg-sidebar: var(--sl-white);
+  --sl-color-text: var(--sl-gray);
   --logo-text-color: #000000;
   --sl-color-bg: #f9f9f9;
   --anchor-icon-filter: invert(0);
@@ -20,10 +23,14 @@
 
 :root[data-theme="dark"] {
   --sl-accent-color: theme("colors.accent.500");
-  --dark-blue: theme("colors.accent.950");
-  --sl-color-text-accent: theme("colors.accent.700");
-  --sl-color-accent-high: theme("colors.accent.950") !important;
-
+  --dark-blue: theme("colors.accent.500");
+  --sl-color-text-accent: theme("colors.accent.500");
+  --sl-color-accent-high: theme("colors.accent.500") !important;
+  --sl-color-white: var(--sl-white) / 0.8;
+  --sl-color-bg: var(--bg-gray);
+  --sl-rapide-ui-header-bg-color: var(--bg-gray) / 0.8;
+  --sl-color-bg-sidebar: var(--bg-gray) / 0.8;
+  --sl-color-text: var(--sl-white);
   --logo-text-color: #f9f9f9f9;
   --anchor-icon-filter: invert(1);
   --nav-selected-color: #374151;

@@ -72,8 +72,9 @@ export default defineConfig({
       locales: { root: { label: "English", lang: "en" } },
       logo: {
         alt: "Union Logo",
-        dark: "./src/assets/union-logo/union-logo-transparent.svg",
-        light: "./src/assets/union-logo/union-logo-white-transparent.svg"
+        replacesTitle: true,
+        dark: "./src/assets/union-logo/union-logo-white.svg",
+        light: "./src/assets/union-logo/union-logo-black.svg"
       },
       expressiveCode: false,
       head: [
