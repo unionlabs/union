@@ -5,8 +5,10 @@ import { beforeNavigate, invalidateAll } from "$app/navigation"
 import Button from "$lib/components/Button.svelte"
 import NavLink from "$lib/layout/Navbar/NavLink.svelte"
 import Badge from "$lib/components/Badge.svelte"
+import { ContributorState, getContributorState } from "$lib/stores/state.svelte.ts"
 
 let isOpen = $state(false)
+const contributor: ContributorState = getContributorState()
 
 function toggleMenu() {
   isOpen = !isOpen
@@ -17,6 +19,7 @@ async function logout() {
   if (error) {
     console.error("Error logging out:", error.message)
   } else {
+    contributor.loggedIn = false
     user.session = null
     invalidateAll()
   }
@@ -29,8 +32,8 @@ beforeNavigate(() => {
 let loggedIn = $derived(!!user.session?.user.id)
 </script>
 
-<header class="fixed bg-black top-0 inset-x-0 flex items-center justify-between gap-4 px-2 md:h-16 md:px-4 z-50">
-  <nav class=" w-full">
+<header class="fixed top-0 inset-x-0 flex items-center justify-between gap-4 px-4 md:h-16 md:px-8 z-50">
+  <nav class="w-full">
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
         {#if loggedIn}

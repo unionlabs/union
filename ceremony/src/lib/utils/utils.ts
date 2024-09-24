@@ -1,7 +1,7 @@
 import { browser } from "$app/environment"
 
-export function getNumberSuffix(n: number | null): string {
-  if (n == null) return ""
+export function getNumberSuffix(n: number | null | undefined): string {
+  if (n === null || n === undefined) return ""
 
   const lastDigit = n % 10
   const lastTwoDigits = n % 100

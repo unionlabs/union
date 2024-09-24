@@ -12,7 +12,7 @@ type Props = {
 let { contributor }: Props = $props()
 </script>
 <div class="flex flex-col justify-center items-center gap-4 text-center">
-  <H1>  <Blink love={true}/></H1>
+  <H1 class="text-6xl">  <Blink love={true}/></H1>
   <H1>Thank you!</H1>
   <Text>Your contribution is complete. Thank you for securing the Union network. <br> Tweet your cryptographic attestation for extra transparency:</Text>
 

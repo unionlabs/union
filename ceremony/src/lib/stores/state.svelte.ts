@@ -182,6 +182,7 @@ export class ContributorState {
   }
 
   private async pollClientState() {
+    if (this.contributionState === "contributed") return
     const state = await checkState()
     this.updateClientState(state)
   }

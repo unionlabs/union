@@ -10,6 +10,7 @@ import Thanks from "$lib/components/Thanks.svelte"
 import { user } from "$lib/stores/user.svelte.ts"
 import Blink from "$lib/components/Blink.svelte"
 import Warning from "$lib/components/Warning.svelte"
+import Live from "$lib/components/Live.svelte"
 
 type Props = {
   contributor: ContributorState
@@ -84,5 +85,4 @@ $effect(() => {
   {/if}
 
 </div>
-
 <div class="absolute bottom-10 flex flex-col px-8 text-center gap-4"></div>

@@ -8,7 +8,7 @@ import Waitlist from "$lib/components/Waitlist.svelte"
 const contributor: ContributorState = getContributorState()
 </script>
 
-<section class="w-full h-svh flex flex-col justify-center items-center">
+<section class="w-full h-full flex flex-col justify-center items-center">
   {#if contributor.loggedIn}
     {#if !contributor.currentUserState}
       <Spinner class="text-union-accent-500 size-6"/>

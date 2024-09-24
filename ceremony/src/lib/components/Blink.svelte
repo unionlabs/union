@@ -2,16 +2,17 @@
 type Props = {
   loading?: boolean
   sleep?: boolean
+  dead?: boolean
   love?: boolean
 }
 
-let { loading = false, sleep = false, love = false }: Props = $props()
+let { loading = false, sleep = false, dead = false, love = false }: Props = $props()
 
-let eye = $state(sleep ? "-" : love ? "♡" : "0")
+let eye = $state(dead ? "×" : sleep ? "-" : love ? "♡" : "0")
 let blinkInterval: number | NodeJS.Timeout
 
 function blinkEye() {
-  if (!(sleep || love)) {
+  if (!(sleep || love || dead)) {
     eye = "-"
     setTimeout(() => {
       eye = "0"
@@ -21,15 +22,18 @@ function blinkEye() {
 
 function startRandomBlinking() {
   blinkInterval = setInterval(() => {
-    if (!(sleep || love) && Math.random() < 0.05) {
+    if (!(sleep || love || dead) && Math.random() < 0.05) {
       blinkEye()
     }
   }, 200)
 }
 
 $effect(() => {
-  if (sleep) {
+  if (dead) {
     eye = "×"
+    clearInterval(blinkInterval)
+  } else if (sleep) {
+    eye = "-"
     clearInterval(blinkInterval)
   } else if (love) {
     eye = "♡"
@@ -46,7 +50,7 @@ $effect(() => {
 </script>
 
 <span class="!text-union-accent-500">
-  {eye}<span class:wobble={loading && !sleep}><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span></span>{eye}
+  {eye}<span class:wobble={loading && !sleep && !dead}><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span></span>{eye}
 </span>
 
 <style>

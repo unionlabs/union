@@ -6,14 +6,16 @@ import { user } from "$lib/stores/user.svelte.ts"
 import { Toaster } from "svelte-sonner"
 import Navbar from "$lib/layout/Navbar/index.svelte"
 import { setContributorState } from "$lib/stores/state.svelte.ts"
+import { setLiveLogsState } from "$lib/stores/live.svelte.ts"
+import { watch } from "runed"
 
 import "../styles/tailwind.css"
-
-import { watch } from "runed"
+import Live from "$lib/components/Live.svelte"
 
 let { children } = $props()
 
-let contributor = setContributorState()
+const contributor = setContributorState()
+setLiveLogsState()
 
 beforeNavigate(async ({ from, to, cancel }) => {
   const pathname = to?.route?.id
@@ -66,6 +68,10 @@ watch(
 <Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
 <Navbar/>
 
-<main class="w-full h-full overflow-y-scroll">
+<main class="w-full h-svh overflow-y-auto">
   {@render children()}
 </main>
+
+
+<Live/>
+

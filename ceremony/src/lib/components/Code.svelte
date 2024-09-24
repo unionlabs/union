@@ -72,13 +72,15 @@ function handleKeyDown(event: KeyboardEvent, index: number) {
 }
 </script>
 
-<div class="flex gap-2 max-w-4xl flex-wrap justify-center mb-8">
+<div class="flex gap-2 flex-wrap justify-center mb-12">
   {#each words as word, index}
     <input
             bind:value={words[index]}
             onpaste={handlePaste}
             onkeydown={(e) => handleKeyDown(e, index)}
-            class="bg-transparent border-b border-white w-20 text-center text-union-accent-500 outline-none focus:ring-0 focus:border-union-accent-500"
+            class="bg-transparent border-b w-32 text-center text-xs text-union-accent-500 outline-none focus:ring-0 transition-colors duration-300 ease-in-out"
+            class:border-union-accent-500={words[index]}
+            class:border-white={!words[index]}
             style="--tw-ring-color: transparent;"
     />
     {#if index !== words.length - 1}

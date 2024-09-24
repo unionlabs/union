@@ -2,6 +2,6 @@
 let { children, class: className = "", ...props } = $props()
 </script>
 
-<p class={`text-union-text-primary leading-6 font-mono ${className}`} {...props}>
+<p class={`text-union-text-primary font-mono leading-7 ${className}`} {...props}>
   {@render children()}
 </p>
