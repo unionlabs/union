@@ -17,8 +17,8 @@ Bitfield
 Bitvector
 Bkpvid
 Blex
-Blured
 Blockchange
+Blured
 Boiron
 Boneh
 Borsh

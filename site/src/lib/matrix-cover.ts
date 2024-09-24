@@ -135,7 +135,7 @@ function initWebGL() {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource)
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource)
 
-    if (!vertexShader || !fragmentShader) {
+    if (!(vertexShader && fragmentShader)) {
       return null
     }
 
@@ -146,7 +146,7 @@ function initWebGL() {
 
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
       console.error(
-        "Unable to initialize the shader program: " + gl.getProgramInfoLog(shaderProgram)
+        `Unable to initialize the shader program: ${gl.getProgramInfoLog(shaderProgram)}`
       )
       return null
     }
@@ -160,7 +160,7 @@ function initWebGL() {
     gl.compileShader(shader)
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader))
+      console.error(`An error occurred compiling the shaders: ${gl.getShaderInfoLog(shader)}`)
       gl.deleteShader(shader)
       return null
     }

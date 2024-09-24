@@ -23,11 +23,9 @@ export default defineConfig({
     contentIntellisense: true,
     contentCollectionCache: true
   },
-
   trailingSlash: "ignore",
   adapter: vercel({
-    imageService: true,
-    devImageService: "squoosh"
+    imageService: true
   }),
   image: {
     domains: [
