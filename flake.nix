@@ -18,7 +18,8 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
     arion = {
-      url = "github:hercules-ci/arion?rev=6a1f03329c400327b3b2e0ed5e1efff11037ba67";
+      url =
+        "github:hercules-ci/arion?rev=6a1f03329c400327b3b2e0ed5e1efff11037ba67";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix = {
@@ -33,9 +34,7 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    crane = {
-      url = "github:ipetkov/crane";
-    };
+    crane = { url = "github:ipetkov/crane"; };
     env-utils = {
       url = "github:oceanlewis/env-utils";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -43,11 +42,13 @@
 
     # Prysm bls12-381 native for eth LC aggregate/verify custom query
     blst = {
-      url = "github:supranational/blst?rev=3dd0f804b1819e5d03fb22ca2e6fac105932043a";
+      url =
+        "github:supranational/blst?rev=3dd0f804b1819e5d03fb22ca2e6fac105932043a";
       flake = false;
     };
     bls-eth-go = {
-      url = "git+https://github.com/herumi/bls-eth-go-binary?ref=refs/tags/v1.33.0&submodules=1";
+      url =
+        "git+https://github.com/herumi/bls-eth-go-binary?ref=refs/tags/v1.33.0&submodules=1";
       flake = false;
     };
 
@@ -79,7 +80,8 @@
         "github:CosmWasm/wasmd?rev=7b418de3f6cf8fbac1e9cb11c57983fcc17264d0";
       flake = false;
     };
-    nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
+    nix-filter.url =
+      "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
     get-flake.url = "github:ursi/get-flake";
     wasmvm = {
       url = "github:CosmWasm/wasmvm/v1.5.2";
@@ -99,7 +101,8 @@
     };
 
     stargaze = {
-      url = "git+https://github.com/public-awesome/stargaze?ref=main&submodules=1";
+      url =
+        "git+https://github.com/public-awesome/stargaze?ref=main&submodules=1";
       flake = false;
     };
     osmosis = {
@@ -137,7 +140,8 @@
     };
 
     ethereum-consensus-specs = {
-      url = "https://github.com/ethereum/consensus-spec-tests/releases/download/v1.4.0/general.tar.gz";
+      url =
+        "https://github.com/ethereum/consensus-spec-tests/releases/download/v1.4.0/general.tar.gz";
       flake = false;
     };
 
@@ -183,7 +187,7 @@
       flake =
         let
           inherit (inputs.nixpkgs.lib) filterAttrs;
-          isCi = attr: v: (if v?ci then v.ci else true);
+          isCi = attr: v: (if v ? ci then v.ci else true);
         in
         {
           site = {
@@ -204,8 +208,7 @@
                 outputs = {
                   packages.x86_64-linux =
                     filterAttrs isCi self.packages.x86_64-linux;
-                  checks.x86_64-linux =
-                    filterAttrs isCi self.checks.x86_64-linux;
+                  checks.x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
                   devShells.x86_64-linux =
                     filterAttrs isCi self.devShells.x86_64-linux;
                 };
@@ -306,14 +309,14 @@
           mkCi = import ./tools/mkCi.nix { inherit pkgs; };
           dbg = value:
             builtins.trace
-              (
-                if value ? type && value.type == "derivation"
-                then "derivation: ${value}"
-                else pkgs.lib.generators.toPretty { } value
-              )
+              (if value ? type && value.type == "derivation" then
+                "derivation: ${value}"
+              else
+                pkgs.lib.generators.toPretty { } value)
               value;
 
-          versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
+          versions =
+            builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
           uniondBundleVersions = rec {
             complete = versions.union-testnet-8.versions;
@@ -327,7 +330,8 @@
         {
           _module = {
             args = {
-              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs unstablePkgs mkCi;
+              inherit nixpkgs dbg get-flake uniondBundleVersions goPkgs
+                unstablePkgs mkCi;
 
               gitRev =
                 if (builtins.hasAttr "rev" self) then self.rev else "dirty";
@@ -338,30 +342,33 @@
                   foundry.overlay
                   (_: super: {
                     go-ethereum = super.go-ethereum.override {
-                      buildGoModule = args: super.buildGoModule (args // rec {
-                        version = "1.13.12";
-                        src = pkgs.fetchFromGitHub {
-                          owner = "ethereum";
-                          repo = "go-ethereum";
-                          rev = "v${version}";
-                          sha256 = "sha256-2olJV7Z01kuXlUGyI0v4YNW07/RfYiDUhBncCIS4s0A=";
-                        };
-                        vendorHash = "sha256-gcLVQTBpOE0DHz7/p7PENhwghftJKUDm88/4jaQ1VYw=";
-                        subPackages = [
-                          "cmd/abidump"
-                          "cmd/abigen"
-                          "cmd/bootnode"
-                          "cmd/clef"
-                          "cmd/devp2p"
-                          "cmd/era"
-                          "cmd/ethkey"
-                          "cmd/evm"
-                          "cmd/geth"
-                          "cmd/p2psim"
-                          "cmd/rlpdump"
-                          "cmd/utils"
-                        ];
-                      });
+                      buildGoModule = args:
+                        super.buildGoModule (args // rec {
+                          version = "1.13.12";
+                          src = pkgs.fetchFromGitHub {
+                            owner = "ethereum";
+                            repo = "go-ethereum";
+                            rev = "v${version}";
+                            sha256 =
+                              "sha256-2olJV7Z01kuXlUGyI0v4YNW07/RfYiDUhBncCIS4s0A=";
+                          };
+                          vendorHash =
+                            "sha256-gcLVQTBpOE0DHz7/p7PENhwghftJKUDm88/4jaQ1VYw=";
+                          subPackages = [
+                            "cmd/abidump"
+                            "cmd/abigen"
+                            "cmd/bootnode"
+                            "cmd/clef"
+                            "cmd/devp2p"
+                            "cmd/era"
+                            "cmd/ethkey"
+                            "cmd/evm"
+                            "cmd/geth"
+                            "cmd/p2psim"
+                            "cmd/rlpdump"
+                            "cmd/utils"
+                          ];
+                        });
                     };
 
                     writeShellApplicationWithArgs =
@@ -380,14 +387,14 @@
                         owner = "numtide";
                         repo = "treefmt";
                         rev = version;
-                        hash = "sha256-6rfItzuZvorphsIn8z4GRZjb00VSZgQWHLWma3wJ7hg=";
+                        hash =
+                          "sha256-6rfItzuZvorphsIn8z4GRZjb00VSZgQWHLWma3wJ7hg=";
                       };
 
-                      cargoSha256 = "sha256-VXyBoMDFPJBc19uU3P2jOBTb6x5bLXKycdwsHUql09g=";
+                      cargoSha256 =
+                        "sha256-VXyBoMDFPJBc19uU3P2jOBTb6x5bLXKycdwsHUql09g=";
 
-                      meta = {
-                        mainProgram = "treefmt";
-                      };
+                      meta = { mainProgram = "treefmt"; };
                     };
                     solc =
                       if system == "aarch64-linux" then
@@ -441,11 +448,15 @@
                           pname = "solc-static";
                           version = "0.8.23";
                           src = pkgs.fetchurl {
-                            url = "https://github.com/ethereum/solidity/releases/download/v${version}/solc-static-linux";
-                            hash = "sha256-KHJqRSKQxw4ZhPFcU60wiOfZh4PuMHCxGzZk2ndBVzI=";
+                            url =
+                              "https://github.com/ethereum/solidity/releases/download/v${version}/solc-static-linux";
+                            hash =
+                              "sha256-KHJqRSKQxw4ZhPFcU60wiOfZh4PuMHCxGzZk2ndBVzI=";
                           };
                           dontUnpack = true;
-                          nativeBuildInputs = pkgs.lib.optionals (!super.stdenv.isDarwin) [ super.autoPatchelfHook ];
+                          nativeBuildInputs =
+                            pkgs.lib.optionals (!super.stdenv.isDarwin)
+                              [ super.autoPatchelfHook ];
                           installPhase = ''
                             runHook preInstall
                             mkdir -p $out/bin
@@ -454,7 +465,8 @@
                             runHook postInstall
                           '';
                           meta = {
-                            description = "Static binary of compiler for Ethereum smart contract language Solidity";
+                            description =
+                              "Static binary of compiler for Ethereum smart contract language Solidity";
                             homepage = "https://github.com/ethereum/solidity";
                             license = super.lib.licenses.gpl3;
                           };
@@ -481,12 +493,7 @@
               nix-filter = nix-filter.lib;
 
               proto = {
-                inherit wasmd
-                  ibc-go
-                  ics23
-                  cosmosproto
-                  gogoproto
-                  googleapis;
+                inherit wasmd ibc-go ics23 cosmosproto gogoproto googleapis;
                 uniond = ./uniond/proto;
                 galoisd = ./galoisd/proto;
                 cometbls = inputs.cometbls;
@@ -496,8 +503,10 @@
 
               openapi = {
                 uniondOpenApiYml = ./uniond/docs/static/openapi.yml;
-                cometblsOpenApiYml = "${inputs.cometbls}/rpc/openapi/openapi.yaml";
-                ibcGoOpenApiYml = "${inputs.ibc-go}/docs/client/swagger-ui/swagger.yaml";
+                cometblsOpenApiYml =
+                  "${inputs.cometbls}/rpc/openapi/openapi.yaml";
+                ibcGoOpenApiYml =
+                  "${inputs.ibc-go}/docs/client/swagger-ui/swagger.yaml";
               };
 
               # Used as the salt when executing `instantiate2` in CosmWasm.
@@ -525,8 +534,7 @@
               name = "nil";
               dontUnpack = true;
               src = builtins.filterSource
-                (path: type:
-                  type != "directory" || baseNameOf path != "vendor")
+                (path: type: type != "directory" || baseNameOf path != "vendor")
                 ./.;
               buildInputs = [ pkgs.nil ];
               doCheck = true;
@@ -572,30 +580,28 @@
               nodePackages_latest."@tailwindcss/language-server"
               nodePackages_latest.typescript-language-server
               nodePackages_latest.vscode-langservers-extracted
-            ])
-              ++ (with goPkgs; [
-              go
-              gopls
-              go-tools
-              gotools
-            ]) ++ (if pkgs.stdenv.isLinux then [
+            ]) ++ (with goPkgs; [ go gopls go-tools gotools ])
+              ++ (if pkgs.stdenv.isLinux then [
               pkgs.solc
               pkgs.foundry-bin
               goPkgs.sqlx-cli
               self'.packages.hasura-cli
-            ] else [ ]);
+            ] else
+              [ ]);
             nativeBuildInputs = [ config.treefmt.build.wrapper ]
               ++ lib.attrsets.attrValues config.treefmt.build.programs;
 
             GOPRIVATE = "github.com/unionlabs/*";
-            PUPPETEER_SKIP_DOWNLOAD = 1; # avoid npm install downloading chromium
+            PUPPETEER_SKIP_DOWNLOAD =
+              1; # avoid npm install downloading chromium
             NODE_OPTIONS = "--no-warnings"; # avoid useless warnings from nodejs
             ASTRO_TELEMETRY_DISABLED = 1;
 
             ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
             ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
 
-            RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
+            RUST_SRC_PATH =
+              "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
 
             SQLX_OFFLINE = true;
             LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
@@ -628,9 +634,7 @@
               yamlfmt = {
                 enable = true;
                 package = unstablePkgs.yamlfmt;
-                config = {
-                  retain_line_breaks = true;
-                };
+                config = { retain_line_breaks = true; };
               };
               forge = {
                 enable = true;
@@ -655,7 +659,13 @@
             settings = {
               global = {
                 hidden = true;
-                excludes = [ ".git/**" "**/vendor/**" "**/.sqlx/**" "uniond/docs/static/**" ".github/**/*.md" ];
+                excludes = [
+                  ".git/**"
+                  "**/vendor/**"
+                  "**/.sqlx/**"
+                  "uniond/docs/static/**"
+                  ".github/**/*.md"
+                ];
               };
             };
           };
@@ -663,8 +673,11 @@
     };
 
   nixConfig = {
-    extra-substituters = [ "https://union.cachix.org/" "https://cache.garnix.io" ];
-    extra-trusted-public-keys =
-      [ "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=" "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=" ];
+    extra-substituters =
+      [ "https://union.cachix.org/" "https://cache.garnix.io" ];
+    extra-trusted-public-keys = [
+      "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M="
+      "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+    ];
   };
 }

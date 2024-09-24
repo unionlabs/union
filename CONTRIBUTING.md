@@ -13,8 +13,8 @@ For more complex conversations, use the [discussions](https://github.com/unionla
 We evaluate the need for a PR based on:
 
 1. Severity of the issue (bug or feature request),
-1. Maintainability: will this become a burden for little gain, or add value?
-1. Can the core team understand the code additions being made, and maintain them, or will they rely on you in the future?
+2. Maintainability: will this become a burden for little gain, or add value?
+3. Can the core team understand the code additions being made, and maintain them, or will they rely on you in the future?
 
 ## Working on a PR
 
