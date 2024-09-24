@@ -1,11 +1,27 @@
 ---
-import "graphiql/graphiql.min.css"
-import "@graphiql/plugin-explorer/dist/style.css"
+import 'graphiql/graphiql.min.css'
+import '@graphiql/plugin-explorer/dist/style.css'
+import { encodeQuery, decodeUrlQuery, sharableGraphiqlLink } from './index.ts'
+// import { LinkButton, } from '@astrojs/starlight/components'
 
 interface Props {}
 ---
 
-<article id="graphiql">...</article>
+<!-- <section id="graphiql-container">
+  <div>
+    </div>
+    </section> -->
+<article id="graphiql">
+  <!-- <button
+    type="button"
+    class="top-0 right-0 z-10 p-2 text-cyan-500 hover:text-gray-500 focus:outline-none bg-transparent rounded-md focus:ring-2 focus:ring-cyan-500 dark:focus:ring-cyan-600 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:pointer-events-none"
+    aria-label="Close"
+  >
+    SHARE
+  </button> -->
+
+  ...
+</article>
 
 <script>
   import ReactDOM from 'react-dom/client'
@@ -16,6 +32,74 @@ interface Props {}
 
   const root = ReactDOM.createRoot(graphqlElement)
   root.render(graphiqlElement)
+</script>
+
+<script>
+  import { fragmentFromString } from '#/lib/utilities.ts'
+  /**
+   * create a button and place it floaing right under the header on the right side
+   */
+  const siteHeaderElement = document.querySelector('header.header')
+  if (!siteHeaderElement) throw new Error('Site header element not found')
+  const slMarkdownContentElement = document.querySelector('div.sl-markdown-content')
+  if (!slMarkdownContentElement) throw new Error('Site markdown content element not found')
+
+  const fragment = fragmentFromString(/* html */ `
+    <button
+      type="button"
+      class="top-0 !mr-100 right-0 z-10 rounded-md bg-transparent p-2 text-cyan-500 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:pointer-events-none disabled:opacity-50 dark:focus:ring-cyan-600 dark:focus:ring-offset-gray-900"
+    >
+      SHARE
+    </button>
+  `)
+
+  // const buttonElement = document.createElement('button')
+  // Object.assign(buttonElement, {
+  //   type: 'button',
+  //   textContent: 'SHARE',
+  //   style: {
+  //     width: '500px',
+  //     height: '500px',
+  //     position: 'fixed',
+  //     top: siteHeaderElement.offsetHeight + 100 + 'px',
+  //     right: '0',
+  //     zIndex: '9999999',
+  //     'background-color': 'red',
+  //     padding: '0.5rem',
+  //     color: 'cayan',
+  //     border: 'none',
+  //     cursor: 'pointer',
+  //     outline: 'none',
+  //     fontSize: '2.25rem',
+  //     fontWeight: '500',
+  //     lineHeight: '1',
+  //     textDecoration: 'none',
+  //     display: 'flex',
+  //     alignItems: 'center',
+  //     justifyContent: 'center',
+  //     gap: '0.5rem',
+  //     borderRadius: '0.5rem',
+  //     '&:hover': {
+  //       color: 'var(--sl-color-gray-500)',
+  //     },
+  //     '&:focus': {
+  //       outline: '2px solid var(--sl-color-cyan-500)',
+  //       outlineOffset: '2px',
+  //     },
+  //   },
+  // })
+  // const buttonContainer = document.createElement('div')
+  // buttonContainer.setHTMLUnsafe(`
+
+  //   <button
+  //     type="button"
+  //     class="top-0 right-0 z-10 rounded-md bg-transparent p-2 text-cyan-500 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:pointer-events-none disabled:opacity-50 dark:focus:ring-cyan-600 dark:focus:ring-offset-gray-900"
+  //   >
+  //     SHARE
+  //   </button>
+  // `) //appendChild(fragment)
+  // siteHeaderElement.insertAdjacentElement('afterend', buttonContainer)
+  // siteHeaderElement.appendChild(fragment)
 </script>
 
 <script>
@@ -64,6 +148,10 @@ main[data-pagefind-body] {
   height: 100%;
   max-width: 100%;
 }
+
+/* #graphiql {
+  height: calc(95vh - var(--sl-nav-height));
+} */
 
 #graphiql {
   margin-top: calc(15px + var(--sl-nav-height));

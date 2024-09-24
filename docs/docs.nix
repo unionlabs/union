@@ -19,6 +19,7 @@ _: {
     in
     {
       packages = {
+<<<<<<< HEAD
         docs = mkCi false (
           unstablePkgs.buildNpmPackage {
             npmDepsHash = "sha256-w9BqWfAUS+Ll1Im2plzzfQTPWLDCrKpAeJgjEhUEbH0=";
@@ -44,6 +45,26 @@ _: {
             NODE_OPTIONS = "--no-warnings";
           }
         );
+=======
+        docs = mkCi false (unstablePkgs.buildNpmPackage {
+          npmDepsHash = "sha256-yk/I3MvRQFsdIHJ235NF7tmOBFuKTbIFTZ/ksimaUYA=";
+          src = ./.;
+          srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
+          sourceRoot = "docs";
+          pname = packageJSON.name;
+          version = packageJSON.version;
+          nativeBuildInputs = combinedDeps;
+          buildInputs = combinedDeps;
+          installPhase = ''
+            mkdir -p $out
+            cp -r ./dist/* $out
+          '';
+          doDist = false;
+          PUPPETEER_SKIP_DOWNLOAD = 1;
+          ASTRO_TELEMETRY_DISABLED = 1;
+          NODE_OPTIONS = "--no-warnings";
+        });
+>>>>>>> cae1de53d (chore: gql button)
       };
 
       apps = {
