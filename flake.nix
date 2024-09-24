@@ -172,43 +172,20 @@
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      flake =
-        let
-          inherit (inputs.nixpkgs.lib) filterAttrs;
-          isCi = _attr: v: (v.ci or true);
-        in
-        {
-          site = {
-            x86_64-linux = {
-              inherit (self.packages.x86_64-linux) site;
-              inherit (self.packages.x86_64-linux) app;
-              inherit (self.packages.x86_64-linux) ceremony;
-            };
-            aarch64-linux = {
-              inherit (self.packages.aarch64-linux) site;
-              inherit (self.packages.aarch64-linux) app;
-              inherit (self.packages.aarch64-linux) ceremony;
-            };
+      flake = {
+        site = {
+          x86_64-linux = {
+            inherit (self.packages.x86_64-linux) site;
+            inherit (self.packages.x86_64-linux) app;
+            inherit (self.packages.x86_64-linux) ceremony;
           };
-          herculesCI = {
-            onPush = {
-              x86_64 = {
-                outputs = {
-                  packages.x86_64-linux = filterAttrs isCi self.packages.x86_64-linux;
-                  checks.x86_64-linux = filterAttrs isCi self.checks.x86_64-linux;
-                  devShells.x86_64-linux = filterAttrs isCi self.devShells.x86_64-linux;
-                };
-              };
-              aarch64 = {
-                outputs = {
-                  packages.aarch64-linux = filterAttrs isCi self.packages.aarch64-linux;
-                  checks.aarch64-linux = filterAttrs isCi self.checks.aarch64-linux;
-                  devShells.aarch64-linux = filterAttrs isCi self.devShells.aarch64-linux;
-                };
-              };
-            };
+          aarch64-linux = {
+            inherit (self.packages.aarch64-linux) site;
+            inherit (self.packages.aarch64-linux) app;
+            inherit (self.packages.aarch64-linux) ceremony;
           };
         };
+      };
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -642,6 +619,26 @@
                   "-formatter"
                   "retain_line_breaks=true"
                 ];
+                biome.includes = [
+                  "*.ts"
+                  "*.js"
+                  "*.cjs"
+                  "*.cts"
+                  "*.mts"
+                  "*.mjs"
+                  "*.jsx"
+                  "*.tsx"
+                  "*.d.ts"
+                  "*.d.mts"
+                  "*.d.cts"
+                  "*.vue"
+                  "*.css"
+                  "*.json"
+                  "*.jsonc"
+                  "*.astro"
+                  "*.svelte"
+                  "*.graphql"
+                ];
                 sort =
                   let
                     filesToSort = [ "dictionary.txt" ];
@@ -690,11 +687,15 @@
                 hidden = true;
                 excludes = [
                   "_/**"
+                  "*.ttf"
+                  "*.png"
                   ".git/**"
-                  "**/vendor/**"
                   "**/.sqlx/**"
-                  "uniond/docs/static/**"
+                  "**/vendor/**"
+                  "*.splinecode"
+                  "**/generated/**"
                   ".github/**/*.md"
+                  "uniond/docs/static/**"
                 ];
               };
             };
