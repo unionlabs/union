@@ -1,15 +1,10 @@
 ---
 import Card from "#/components/Card.astro"
-import TextA from "#/components/TextA.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import H3 from "#/components/typography/h3.astro"
-import H1 from "#/components/typography/h1.astro"
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import { saneDateTime, toISODate } from "#/lib/utilities.ts"
-import LanderSection from "#/components/LanderSection.astro"
 import { contentfulClient } from "#/lib/contentful/client.ts"
-import IntroHeading from "#/components/typography/IntroHeading.astro"
-import SocialsSection from "../../components/sections/old/SocialsSection.astro"
 import BlogIntroSection from "#/components/sections/blogIntroSection.astro"
 
 export const prerender = false
@@ -23,7 +18,7 @@ const blogEntries = await contentfulClient.getEntries<BlogPost>({
 
 const publishedBlogPosts = blogEntries.items.filter(entry =>
   import.meta.env.MODE === "production" ? entry.fields.hidden !== true : true
-)
+) as unknown as Array<BlogPost>
 
 // The browser should always check freshness
 Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate")
@@ -38,7 +33,7 @@ const imageWithProtocol = (url: string) => `https:${url}`
       <!-- <H1>The <span class="text-accent-500">latest.</span></h1> -->
       <div class="flex flex-col md:grid md:grid-cols-2 xl:grid-cols-3">
         {
-          publishedBlogPosts.map(blogPostEntry => (
+          publishedBlogPosts.map((blogPostEntry: BlogPost) => (
             <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
               <Card class="size-full border-none" padded>
                 <div class="border-2 w-full h-[14rem] rounded-tl-[7rem] overflow-hidden mb-2">
@@ -52,8 +47,11 @@ const imageWithProtocol = (url: string) => `https:${url}`
                 <div class="flex flex-col gap-2">
                   <H3>{blogPostEntry.fields.title}</H3>
                   <div class="flex items-center justify-between text-xl font-mono font-semibold">
-                    <time class="text-accent-500" datetime={toISODate(blogPostEntry?.fields?.date)}>
-                      {saneDateTime(blogPostEntry?.fields?.date)}
+                    <time
+                      class="text-accent-500"
+                      datetime={toISODate(`${blogPostEntry?.fields?.date}`)}
+                    >
+                      {saneDateTime(`${blogPostEntry?.fields?.date}`)}
                     </time>
                     <div class="h-full w-1 bg-white" />
                     <p class="uppercase font-mono truncate">

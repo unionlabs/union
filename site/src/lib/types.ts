@@ -21,7 +21,14 @@ export interface BlogPost {
     title: EntryFieldTypes.Text
     author: EntryFieldTypes.Text
     hidden: EntryFieldTypes.Boolean
-    cover: EntryFieldTypes.AssetLink
+    cover: {
+      fields: {
+        title: string
+        file: {
+          url: string
+        }
+      }
+    }
     content: EntryFieldTypes.RichText
     description: EntryFieldTypes.Text
   }

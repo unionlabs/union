@@ -1,11 +1,9 @@
 ---
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
-import IntroSection from "../components/sections/landing/IntroSection.astro"
 import ConsensusSection from "../components/sections/landing/ConsensusSection.astro"
 import ZkSection from "../components/sections/landing/ZkSection.astro"
 import ExecutionSection from "../components/sections/landing/ExecutionSection.astro"
 import MarqueeSection from "../components/sections/MarqueeSection.astro"
-import ComeSwimSection from "../components/sections/landing/ComeSwimSection.astro"
 
 import pod_polygon from "#/assets/images/marquee/pods/polygon.png"
 import pod_lightshift from "#/assets/images/marquee/pods/lightshift.png"
@@ -64,11 +62,9 @@ const partners = [
 
 <SectionsLayout>
   <BorderIntro/>
-  <!--<IntroSection/>-->
   <ConsensusSection/>
   <ZkSection/>
   <ExecutionSection/>
   <MarqueeSection title={"Our pod."} reverse={false} data={pods}/>
   <MarqueeSection title={"Our partners."} reverse={true} data={partners}/>
-  <!-- <ComeSwimSection/> -->
 </SectionsLayout>

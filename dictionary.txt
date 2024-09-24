@@ -867,6 +867,7 @@ nixbuildnet
 nixfmt
 nixos
 nixpkgs
+nocheck
 nodeservice
 nodetime
 nodiscover

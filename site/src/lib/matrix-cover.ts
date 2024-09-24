@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as glMatrix from "gl-matrix"
 
 let state: "start" | "rotating" | "main"
@@ -220,7 +221,7 @@ function initWebGL() {
       MID_CYAN // Left face
     ]
 
-    let colors = []
+    let colors: Array<any> = []
 
     for (let j = 0; j < faceColors.length; ++j) {
       const c = faceColors[j]

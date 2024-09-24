@@ -1,11 +1,9 @@
 ---
 import Layout from "#/layouts/Layout.astro"
 import type { BlogPost } from "#/lib/types.ts"
-import LanderSection from "#/components/LanderSection.astro"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import { ContentfulLivePreview } from "@contentful/live-preview"
-import SocialsSection from "../../components/sections/old/SocialsSection.astro"
 
 export const prerender = false
 
