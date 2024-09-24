@@ -20,8 +20,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     treefmt-nix = {
-      url = "github:unionlabs/treefmt-nix";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
+      url = "github:numtide/treefmt-nix";
     };
     foundry = {
       url = "github:shazow/foundry.nix/monthly";
@@ -285,7 +284,6 @@
           config,
           self',
           pkgs,
-          treefmt,
           rust,
           system,
           lib,
@@ -372,25 +370,6 @@
                     };
 
                     inherit (self'.packages) devnet-utils;
-                    # this pr (https://github.com/numtide/treefmt/pull/250) was merged one day after v0.6.1 was cut, so in order to use the --hidden flag we need to build latest
-                    # expression taken from here https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/treefmt/default.nix
-                    treefmt = super.rustPlatform.buildRustPackage rec {
-                      pname = "treefmt";
-                      version = "955ae4f3570c4523258c2e1044066f1702339e03";
-
-                      src = super.fetchFromGitHub {
-                        owner = "numtide";
-                        repo = "treefmt";
-                        rev = version;
-                        hash = "sha256-6rfItzuZvorphsIn8z4GRZjb00VSZgQWHLWma3wJ7hg=";
-                      };
-
-                      cargoSha256 = "sha256-VXyBoMDFPJBc19uU3P2jOBTb6x5bLXKycdwsHUql09g=";
-
-                      meta = {
-                        mainProgram = "treefmt";
-                      };
-                    };
                     solc =
                       if system == "aarch64-linux" then
                         let
@@ -557,7 +536,6 @@
                 go-ethereum
                 marksman
                 nil
-                nixfmt
                 nix-tree
                 openssl
                 pkg-config
@@ -615,9 +593,9 @@
             LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
             PROTOC = "${pkgs.protobuf}/bin/protoc";
           };
-
+          # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = {
-            package = pkgs.treefmt;
+            package = unstablePkgs.treefmt;
             projectRootFile = "flake.nix";
             programs = {
               gofmt = {
@@ -628,39 +606,16 @@
                 enable = true;
                 package = rust.toolchains.dev;
               };
-              sort = {
-                enable = true;
-                file = "dictionary.txt";
-              };
               taplo = {
                 enable = true;
               };
               biome = {
                 enable = true;
                 package = biome;
-                config-path = ./biome.json;
               };
               yamlfmt = {
                 enable = true;
                 package = unstablePkgs.yamlfmt;
-                config = {
-                  retain_line_breaks = true;
-                };
-              };
-              forge = {
-                enable = true;
-                package = pkgs.stdenv.mkDerivation {
-                  name = "forge";
-                  buildInputs = [ pkgs.makeWrapper ];
-                  src = pkgs.foundry-bin;
-                  installPhase = ''
-                    mkdir -p $out/bin
-                    cp -r $src/bin/forge $out/bin/forge
-                    wrapProgram $out/bin/forge \
-                      --set FOUNDRY_CONFIG "${./foundry.toml}"
-                  '';
-                  meta.mainProgram = "forge";
-                };
               };
               mdformat = {
                 enable = true;
@@ -683,6 +638,53 @@
               formatter = {
                 mdformat.options = [ "--number" ];
                 deadnix.options = [ "--no-lambda-pattern-names" ];
+                yamlfmt.options = [
+                  "-formatter"
+                  "retain_line_breaks=true"
+                ];
+                sort =
+                  let
+                    filesToSort = [ "dictionary.txt" ];
+                  in
+                  {
+
+                    command =
+                      let
+                        # This sort is consistent across machines because we set the locale.
+                        sort = pkgs.symlinkJoin {
+                          name = "sort";
+                          paths = [ pkgs.coreutils ];
+                          buildInputs = [ pkgs.makeWrapper ];
+                          postBuild = ''
+                            wrapProgram $out/bin/sort \
+                              --set LC_ALL C \
+                              --set LC_COLLATE C
+                          '';
+                        };
+                      in
+                      "${sort}/bin/sort";
+                    options = [
+                      "-uo"
+                    ] ++ filesToSort;
+                    includes = filesToSort;
+                  };
+                forge = {
+                  command =
+                    let
+                      forge = pkgs.symlinkJoin {
+                        name = "forge";
+                        paths = [ pkgs.foundry-bin ];
+                        buildInputs = [ pkgs.makeWrapper ];
+                        postBuild = ''
+                          wrapProgram $out/bin/forge \
+                            --set FOUNDRY_CONFIG "${./foundry.toml}"
+                        '';
+                      };
+                    in
+                    "${forge}/bin/forge";
+                  options = [ "fmt" ];
+                  includes = [ "*.sol" ];
+                };
               };
               global = {
                 hidden = true;

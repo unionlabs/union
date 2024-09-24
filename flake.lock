@@ -495,6 +495,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1726481836,
+        "narHash": "sha256-MWTBH4dd5zIz2iatDb8IkqSjIeFum9jAqkFxgHLdzO4=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "20f9370d5f588fb8c72e844c54511cab054b5f40",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "osmosis": {
       "flake": false,
       "locked": {
@@ -631,20 +647,18 @@
     },
     "treefmt-nix": {
       "inputs": {
-        "nixpkgs": [
-          "nixpkgs-unstable"
-        ]
+        "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1710436395,
-        "narHash": "sha256-+hxio/UwxVzfTOfrCUoFEKLK8kYqQa52V/UL1mqMpNM=",
-        "owner": "unionlabs",
+        "lastModified": 1727098951,
+        "narHash": "sha256-gplorAc0ISAUPemUNOnRUs7jr3WiLiHZb3DJh++IkZs=",
+        "owner": "numtide",
         "repo": "treefmt-nix",
-        "rev": "0ae706d8cde9c937f0b40d47462d84052f6f2d2f",
+        "rev": "35dfece10c642eb52928a48bee7ac06a59f93e9a",
         "type": "github"
       },
       "original": {
-        "owner": "unionlabs",
+        "owner": "numtide",
         "repo": "treefmt-nix",
         "type": "github"
       }
