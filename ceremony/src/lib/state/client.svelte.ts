@@ -1,38 +1,29 @@
 import { checkState, start } from "$lib/client"
+import type {ClientStatus} from "$lib/client/types.ts";
 
-export type ClientState =
-  | "idle"
-  | "initializing"
-  | "downloadStarted"
-  | "downloading"
-  | "downloadEnded"
-  | "contributionStarted"
-  | "contributionEnded"
-  | "uploadStarted"
-  | "uploadEnded"
-  | "failed"
-  | "successful"
-  | "offline"
-  | undefined
+type ClientState = undefined | "contributing" | "error" | "noClient" | "successful" | "idle"
 
 const CLIENT_POLLING_INTERVAL = 1000 // 1 second
 
 export class Client {
+  status = $state<ClientStatus>()
   state = $state<ClientState>(undefined)
   isPolling = $state<boolean>(false)
   private pollingInterval: NodeJS.Timeout | null = null
 
   constructor() {
     console.log("Creating client state")
+    this.startPolling()
   }
 
   async checkStatus(): Promise<void> {
-    const newState = await checkState()
-    this.updateState(newState)
+    const status = await checkState()
+    console.log(status)
+    this.updateState(status)
   }
 
-  private updateState(newState: ClientState): void {
-    this.state = newState
+  private updateStatus(newStatus: ClientStatus): void {
+    this.status = newStatus
   }
 
   contribute() {
@@ -56,4 +47,32 @@ export class Client {
       this.isPolling = false
     }
   }
+
+  updateState(status: ClientStatus) {
+    switch (status) {
+      case "initializing":
+      case "downloadStarted":
+      case "downloading":
+      case "downloadEnded":
+      case "contributionStarted":
+      case "contributionEnded":
+      case "uploadStarted":
+      case "uploadEnded":
+        this.state = "contributing"
+        break
+      case "successful":
+        this.state = "successful"
+        break
+      case "failed":
+        this.state = "error"
+        break
+      case "offline":
+        this.state = "noClient"
+        break
+      default:
+        this.state = "idle"
+        break
+    }
+  }
+
 }

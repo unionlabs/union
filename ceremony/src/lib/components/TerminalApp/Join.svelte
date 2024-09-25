@@ -66,7 +66,7 @@
     if (action === "waitlist") {
       selected = true
       terminal.updateHistory("Adding user to the waitlist...")
-      await sleep(3000)
+      await sleep(1000)
       handleWaitlistJoin()
     } else if (action === "code") {
       terminal.updateHistory("I have an invitation code")

@@ -17,7 +17,6 @@ export type UserSession = {
 export let user = $state<UserSession>({session: null, loading: true})
 
 export async function checkAuth(): Promise<Result<null, SessionError>> {
-  user.loading = true;
   const {
     data: {session},
     error

@@ -36,3 +36,41 @@ export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export async function detectOS(): Promise<DetectedOS> {
+  //@ts-ignore
+  if ("userAgentData" in navigator && "getHighEntropyValues" in navigator.userAgentData) {
+    try {
+      const ua = navigator.userAgentData as any
+      const highEntropyValues = await ua.getHighEntropyValues(["platform", "platformVersion"])
+      const platform = highEntropyValues.platform.toLowerCase()
+
+      if (platform.includes("win")) {
+        return "Windows"
+      }
+      if (platform.includes("mac")) {
+        return "macOS"
+      }
+      if (platform.includes("linux")) {
+        return "Linux"
+      }
+    } catch (error) {
+      console.error("Error getting high entropy values:", error)
+    }
+  }
+
+  const userAgent = navigator.userAgent.toLowerCase()
+
+  if (userAgent.includes("win")) {
+    return "Windows"
+  }
+  if (userAgent.includes("mac")) {
+    return "macOS"
+  }
+  if (userAgent.includes("linux") || userAgent.includes("x11")) {
+    return "Linux"
+  }
+
+  return "Unknown"
+}
+
+export type DetectedOS = "Linux" | "macOS" | "Windows" | "Unknown"

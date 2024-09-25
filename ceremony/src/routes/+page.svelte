@@ -15,6 +15,7 @@
 </script>
 
 {terminal.updateHistory("Welcome to union ceremony")}
+
 {#if user.loading}
   <Print>loading...</Print>
 {:else}

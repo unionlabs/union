@@ -53,6 +53,21 @@
   });
 
   onDestroy(unsubscribe);
+
+  function autoScroll(node: HTMLElement) {
+    const scroll = () => {
+      node.scrollTop = node.scrollHeight;
+    };
+
+    const observer = new MutationObserver(scroll);
+    observer.observe(node, { childList: true, subtree: true });
+
+    return {
+      destroy() {
+        observer.disconnect();
+      }
+    };
+  }
 </script>
 
 <section class="flex flex-col sm:justify-center items-center w-full h-full p-2">
@@ -82,7 +97,7 @@
       <button class="text-black font-mono font-medium" onclick={() => logout(terminal)}>Log out</button>
     </div>
 
-    <div class="border-[4px] border-white/50 px-5 py-4 text-union-accent-50 h-full w-ful overflow-y-auto overflow-hiddenl">
+    <div class="border-[4px] border-white/50 px-5 py-4 text-union-accent-50 h-full w-ful overflow-y-hidden" use:autoScroll>
 
       {#if terminal.tab === 1}
         <div class="flex flex-col">

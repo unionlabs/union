@@ -30,7 +30,7 @@
       showInput = false
       terminal.updateHistory("Checking code...", {duplicate: true})
       console.log(normalizedCode)
-      await sleep(3000)
+      await sleep(1000)
       const codeOk = await callJoinQueue(normalizedCode)
       if (codeOk) {
         contributor.setAllowanceState("hasRedeemed")
