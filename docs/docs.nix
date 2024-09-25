@@ -47,7 +47,7 @@ _: {
         );
 =======
         docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-bAcmdndaUJOwfunxSe+pXQgC2m0mXRkyoQb0ir6GwT8=";
+          npmDepsHash = "sha256-PtRC5HJBcWcxAaFxn75UL8T/FB06yKfy0OgRs9lUwiU=";
           src = ./.;
           srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
           sourceRoot = "docs";

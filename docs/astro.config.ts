@@ -3,14 +3,17 @@ import vue from "@astrojs/vue"
 import react from "@astrojs/react"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
+import AstroPWA from "@vite-pwa/astro"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
+import type { ManifestOptions } from "vite-plugin-pwa"
 import starlightThemeRapide from "starlight-theme-rapide"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
+import manifest from "./public/webmanifest.json" with { type: "json" }
 
 const SITE_URL = "https://docs.union.build"
 
@@ -53,6 +56,26 @@ export default defineConfig({
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   redirects: { "/logo": "/union-logo.zip" },
   integrations: [
+    AstroPWA({
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        // navigateFallback: "/404",
+        ignoreURLParametersMatching: [/./],
+        globPatterns: [
+          "**/*.{html,js,css,png,svg,json,ttf,pf_fragment,pf_index,pf_meta,pagefind,wasm}"
+        ]
+      },
+      experimental: {
+        directoryAndTrailingSlashHandler: true
+      },
+      mode: "production",
+      registerType: "autoUpdate",
+      manifest: manifest as Partial<ManifestOptions>,
+      devOptions: {
+        enabled: true
+      }
+    }),
     starlight({
       title: "Union",
       tagline: "Connecting blockchains trustlessly",
@@ -60,6 +83,7 @@ export default defineConfig({
         "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
       favicon: "/favicon.svg",
       lastUpdated: true,
+      expressiveCode: false,
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
       },
@@ -76,15 +100,10 @@ export default defineConfig({
         dark: "./src/assets/union-logo/union-logo-white.svg",
         light: "./src/assets/union-logo/union-logo-black.svg"
       },
-      expressiveCode: false,
+      components: {
+        Head: "./src/components/overrides/Head.astro"
+      },
       head: [
-        {
-          tag: "meta",
-          attrs: {
-            name: "description",
-            content: "The Modular ZK Interoperability Layer"
-          }
-        },
         {
           tag: "meta",
           attrs: { property: "og:image", content: "/og.png" }
@@ -96,6 +115,35 @@ export default defineConfig({
         {
           tag: "script",
           attrs: { src: "/scripts/anchor-targets.js" }
+        },
+        {
+          tag: "link",
+          attrs: {
+            rel: "apple-touch-icon",
+            href: "/pwa-192x192.png"
+          }
+        },
+        {
+          tag: "link",
+          attrs: {
+            rel: "mask-icon",
+            href: "/favicon.svg",
+            color: "#FFFFFF"
+          }
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "msapplication-TileColor",
+            content: "#131313"
+          }
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "theme-color",
+            content: "#131313"
+          }
         }
       ],
       sidebar: [

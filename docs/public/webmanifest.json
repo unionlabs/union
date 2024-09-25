@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "id": "starlight-pwa",
+  "name": "Union Docs",
+  "short_name": "Union Docs",
+  "description": "Documentation for Union Labs",
+  "orientation": "natural",
+  "display": "fullscreen",
+  "theme_color": "#A0ECFD",
+  "background_color": "#1f1f1f",
+  "icons": [
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Introduction",
+      "url": "/",
+      "description": "Introduction"
+    },
+    {
+      "name": "GraphQL Playground",
+      "url": "/references/graphql",
+      "description": "Union Indexer GraphQL Playground"
+    }
+  ]
+}

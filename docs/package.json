@@ -78,6 +78,7 @@
     "@types/node": "^22.7.0",
     "@types/postcss-import": "^14.0.3",
     "@typescript/twoslash": "^3.2.8",
+    "@vite-pwa/astro": "^0.4.3",
     "autoprefixer": "^10.4.20",
     "patch-package": "^8.0.0",
     "postcss": "^8.4.47",
