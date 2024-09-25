@@ -1,4 +1,4 @@
-module UCS01::Relay {    
+module UCS01::ibc {    
     use IBC::ibc;
     use IBC::channel;
     use IBC::height;
@@ -215,10 +215,8 @@ module UCS01::Relay {
         *current_outstanding = *current_outstanding - amount;
     }
 
-
-
     // Initialize the RelayStore and SignerRef
-    public fun initialize_store(account: &signer) {
+    fun init_module(account: &signer) {
         assert!(signer::address_of(account) == @UCS01, E_UNAUTHORIZED);
 
         let vault_constructor_ref = &object::create_named_object(account, IBC_APP_SEED);
@@ -436,10 +434,10 @@ module UCS01::Relay {
         let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
 
         // Decoding sender address
-        let sender = EthABI::decode_address(buf, &mut index);
+        let sender = EthABI::decode_vector(buf, &mut index);
 
         // Decoding receiver address
-        let receiver = EthABI::decode_address(buf, &mut index);
+        let receiver = EthABI::decode_vector(buf, &mut index);
 
         // Decoding unknown data (128 as u256)
         let _unknown_data_128 = EthABI::decode_uint(buf, &mut index);
@@ -913,6 +911,11 @@ module UCS01::Relay {
         };
         token_address
     }
+
+    #[test]
+    public fun decode_test() {
+        decode_packet(x"000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000000014958a1812ec4586b5639b11f245ffea556bb54e6200000000000000000000000000000000000000000000000000000000000000000000000000000000000000206577b38a9ffef23bfe43ea6345f777e467425a13bfd6f86d255dc89cf062a6640000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    }
     
     #[test]
     public fun test_is_valid_version() {
@@ -965,7 +968,7 @@ module UCS01::Relay {
     #[test(admin = @UCS01)]
     public fun test_get_denom_address(admin: &signer) acquires RelayStore {
         // Initialize the store in the admin's account
-        initialize_store(admin);
+        init_module(admin);
 
         let source_channel = string::utf8(b"channel-1");
         let denom = string::utf8(b"denom-1");
@@ -986,7 +989,7 @@ module UCS01::Relay {
     #[test(admin = @UCS01)]    
     public fun test_get_outstanding(admin: &signer) acquires RelayStore {
         // Initialize the store in the admin's account
-        initialize_store(admin);
+        init_module(admin);
 
         let source_channel = string::utf8(b"channel-1");
         let token = @0x1;
@@ -1014,7 +1017,7 @@ module UCS01::Relay {
         let initial_amount: u64 = 1000;
         
         // Initialize the store in the admin's account
-        initialize_store(admin);
+        init_module(admin);
 
         // Increase outstanding amount
         increase_outstanding(source_channel, token_address, initial_amount);
@@ -1033,7 +1036,7 @@ module UCS01::Relay {
         let decrease_amount: u64 = 400;
 
         // Initialize the store in the admin's account
-        initialize_store(admin);
+        init_module(admin);
 
         // First, increase outstanding amount
         increase_outstanding(source_channel, token_address, initial_amount);
@@ -1058,7 +1061,7 @@ module UCS01::Relay {
     #[test(admin = @UCS01, bob = @0x1235)]
     public fun test_send_token_valid_address(admin: &signer, bob: &signer) acquires RelayStore, SignerRef {
         // Initialize the store
-        initialize_store(admin);
+        init_module(admin);
 
         let source_channel = string::utf8(b"channel-1");
         let denom = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
@@ -1108,7 +1111,7 @@ module UCS01::Relay {
     #[test(admin = @UCS01, bob = @0x1235)]
     public fun test_send_token_burn(admin: &signer, bob: &signer) acquires RelayStore, SignerRef {
         // Initialize the store
-        initialize_store(admin);
+        init_module(admin);
 
         let source_channel = string::utf8(b"channel-1");
         let denom = @0x111111;
@@ -1154,7 +1157,7 @@ module UCS01::Relay {
     #[expected_failure(abort_code = E_INVALID_AMOUNT)]
     public fun test_send_zero_amount(admin: &signer) acquires RelayStore, SignerRef {
         // Initialize the store
-        initialize_store(admin);
+        init_module(admin);
 
         let source_channel = string::utf8(b"channel-1");
         let _denom = @0x111111;
@@ -1226,7 +1229,7 @@ module UCS01::Relay {
 
     #[test(admin = @UCS01, alice = @0x1234)]
     public fun test_refund_tokens(admin: &signer, alice: address) acquires RelayStore, SignerRef {
-        initialize_store(admin);
+        init_module(admin);
 
         let source_channel = string::utf8(b"channel-1");
         let amount: u64 = 1000;
@@ -1283,7 +1286,7 @@ module UCS01::Relay {
     
     #[test(admin = @UCS01, alice = @0x1234)]
     public fun test_refund_tokens_zero_address(admin: &signer, alice: address) acquires RelayStore, SignerRef {
-        initialize_store(admin);
+        init_module(admin);
 
         let source_channel = string::utf8(b"channel-1");
         let amount: u64 = 1000;
@@ -1340,7 +1343,7 @@ module UCS01::Relay {
     #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
     public fun test_on_recv_packet_processing_local_token(admin: &signer, alice: address, bob: address) acquires RelayStore, SignerRef {
         // Step 1: Initialize the store
-        initialize_store(admin);
+        init_module(admin);
         
         // Step 2: Setup the initial mappings for local tokens
         let source_channel = string::utf8(b"channel-1");
@@ -1411,7 +1414,7 @@ module UCS01::Relay {
     #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
     public fun test_on_recv_packet_processing_foreign_token_denom_address_zero(admin: &signer, alice: address, bob: address) acquires RelayStore, SignerRef {
         // Step 1: Initialize the store
-        initialize_store(admin);
+        init_module(admin);
 
         // Step 2: Set up mappings and mint tokens on the counterparty chain
         let source_channel = string::utf8(b"channel-1");
@@ -1468,7 +1471,7 @@ module UCS01::Relay {
     #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235)]
     public fun test_on_recv_packet_processing_foreign_token_existing_denom_address(admin: &signer, alice: address, bob: address) acquires RelayStore, SignerRef {
         // Step 1: Initialize the store
-        initialize_store(admin);
+        init_module(admin);
 
         // Step 2: Set up mappings and mint tokens on the counterparty chain
         let source_channel = string::utf8(b"channel-1");
@@ -1546,7 +1549,7 @@ module UCS01::Relay {
     #[expected_failure(abort_code = E_INVALID_AMOUNT)]
     public fun test_on_recv_packet_processing_local_token_revert_amount_zero(admin: &signer, alice: address, bob: address) acquires RelayStore, SignerRef {
         // Step 1: Initialize the store
-        initialize_store(admin);
+        init_module(admin);
         
         // Step 2: Setup the initial mappings for local tokens
         let source_channel = string::utf8(b"channel-1");

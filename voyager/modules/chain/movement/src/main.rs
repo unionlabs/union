@@ -406,7 +406,7 @@ impl ChainModuleServer for Module {
         let address = <H256>::new(U256::from_be_hex(address_str).unwrap().to_be_bytes());
 
         let req = format!(
-            "{base_url}/movement/v1/resource-proof/{key}/{address}/{height}",
+            "{base_url}/movement/v1/table-item-with-proof/{address}/{key}/{height}",
             base_url = self.movement_rpc_url,
             key = hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
             address = address,
