@@ -10,7 +10,7 @@ import "../Types.sol";
 
 library IBCPacketLib {
     event SendPacket(IBCPacket packet);
-    event RecvPacket(IBCPacket packets, address relayer);
+    event RecvPacket(IBCPacket packets, address relayer, bytes relayerMsg);
     event FillIntentPacket(
         IBCPacket packet, address marketMaker, bytes marketMakerMsg
     );
@@ -108,10 +108,12 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         }
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
+            // If the channel mismatch, the commitment will be zero
             bytes32 commitment = commitments[IBCCommitment
                 .batchPacketsCommitmentKey(
                 msg_.sourceChannel, commitPacketsMemory(batchSingle(packet))
             )];
+            // Every packet must have been previously sent to be batched
             if (commitment != bytes32(uint256(1))) {
                 revert IBCPacketLib.ErrCommittedPacketNotPresent();
             }
@@ -134,10 +136,12 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
             bytes calldata ack = msg_.acks[i];
+            // If the channel mismatch, the commitment will be zero
             bytes32 commitment = commitments[IBCCommitment
                 .batchAcksCommitmentKey(
                 msg_.sourceChannel, commitPacketsMemory(batchSingle(packet))
             )];
+            // Every packet must have been received to be batched
             if (commitment != commitAcksMemory(batchSingleAck(ack))) {
                 revert IBCPacketLib.ErrCommittedAckNotPresent();
             }
@@ -289,7 +293,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 } else {
                     acknowledgement =
                         module.onRecvPacket(packet, maker, makerMsg);
-                    emit IBCPacketLib.RecvPacket(packet, maker);
+                    emit IBCPacketLib.RecvPacket(packet, maker, makerMsg);
                 }
                 if (acknowledgement.length > 0) {
                     _writeAcknowledgement(packet, acknowledgement);
@@ -507,7 +511,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         bytes calldata proof,
         bytes32 path,
         bytes32 commitment
-    ) internal returns (bool) {
+    ) internal virtual returns (bool) {
         uint32 clientId = connection.clientId;
         return getClientInternal(clientId).verifyMembership(
             clientId,
@@ -526,7 +530,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         uint64 height,
         bytes calldata proof,
         bytes32 path
-    ) internal returns (bool) {
+    ) internal virtual returns (bool) {
         uint32 clientId = connection.clientId;
         return getClientInternal(clientId).verifyNonMembership(
             clientId,
