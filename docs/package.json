@@ -75,7 +75,7 @@
     "@tailwindcss/typography": "^0.5.15",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.10",
-    "@types/node": "^22.6.1",
+    "@types/node": "^22.7.0",
     "@types/postcss-import": "^14.0.3",
     "@typescript/twoslash": "^3.2.8",
     "autoprefixer": "^10.4.20",
@@ -93,7 +93,6 @@
     "vite": "^5.4.7"
   },
   "overrides": {
-    "sharp": "$sharp",
     "is-core-module": "npm:@nolyfill/is-core-module@^1",
     "isarray": "npm:@nolyfill/isarray@^1",
     "side-channel": "npm:@nolyfill/side-channel@^1",

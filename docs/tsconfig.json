@@ -1,5 +1,5 @@
 {
-  "extends": ["astro/tsconfigs/strict"],
+  "extends": ["astro/tsconfigs/strict", "astro/tsconfigs/base"],
   "compilerOptions": {
     "verbatimModuleSyntax": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
@@ -13,12 +13,11 @@
     "alwaysStrict": true,
     "strictNullChecks": true,
     "allowImportingTsExtensions": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "skipDefaultLibCheck": true,
     "allowJs": true,
     "checkJs": true,
     "baseUrl": ".",
-    "jsxImportSource": "react",
     "resolvePackageJsonExports": true,
     "resolvePackageJsonImports": true,
     "paths": {

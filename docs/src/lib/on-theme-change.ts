@@ -12,7 +12,7 @@ export function onThemeChange<T extends (theme: ThemeMode) => void>(callback: T)
   const themeToggle = document.querySelector("starlight-rapide-theme-select button")
   if (!themeToggle) return
   themeToggle.addEventListener("click", _ => {
-    const newTheme = document.documentElement.getAttribute("data-theme")
+    const newTheme = document.documentElement.getAttribute("data-theme") || systemPreference
     callback(newTheme as ThemeMode)
   })
 }
