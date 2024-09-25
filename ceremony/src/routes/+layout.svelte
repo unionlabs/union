@@ -6,7 +6,7 @@ import "../styles/tailwind.css"
 import { watch } from "runed"
 import { checkAuth } from "$lib/state/session.svelte.ts"
 import Terminal from "$lib/components/Terminal/index.svelte"
-import Circles from "$lib/components/Circles.svelte";
+import Circles from "$lib/components/Circles.svelte"
 
 let { children } = $props()
 

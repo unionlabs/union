@@ -4,8 +4,7 @@ import {
   getUserQueueInfo,
   getContributionState,
   getUserWallet,
-  getWaitListPosition,
-  checkIfOpen
+  getWaitListPosition
 } from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
@@ -22,6 +21,7 @@ type State =
   | "noClient"
 
 export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
+
 export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
 
 interface UserContext {
@@ -45,6 +45,7 @@ interface QueueInfoError {
 type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 
 const second = 1000
+const CLIENT_POLING_INTERVAL = second
 const CONTRIBUTION_POLLING_INTERVAL = second * 5
 const QUEUE_POLLING_INTERVAL = second * 5
 
@@ -55,12 +56,10 @@ export class Contributor {
   pollingState = $state<"stopped" | "polling">("stopped")
   state = $state<State>("loading")
 
-  openToPublic = $state(false)
   contributionState = $state<ContributionState>("notContributed")
   userWallet = $state("")
   waitListPosition = $state<number | undefined>(undefined)
   downloadedSecret = $state<boolean>(localStorage.getItem("downloaded-secret") === "true")
-
   queueState = $state<UserContext>({
     position: null,
     count: null,
@@ -69,11 +68,9 @@ export class Contributor {
   })
 
   private pollIntervals: {
-    client: IntervalID | null
     queue: IntervalID | null
     contribution: IntervalID | null
   } = {
-    client: null,
     queue: null,
     contribution: null
   }
@@ -83,7 +80,6 @@ export class Contributor {
       this.userId = userId
       this.loggedIn = true
       this.checkCurrentUserState(userId)
-      this.checkIfOpen()
       this.startPolling()
     }
     onDestroy(() => {
@@ -100,10 +96,6 @@ export class Contributor {
       this.checkCurrentUserState(userId)
       this.startPolling()
     }
-  }
-
-  async checkIfOpen() {
-    this.openToPublic = await checkIfOpen()
   }
 
   async checkWaitListPosition(_userId: string | undefined): Promise<number | undefined> {
@@ -155,12 +147,14 @@ export class Contributor {
     this.stopContributionStatePolling()
   }
 
+
   private stopClientStatePolling() {
     if (this.pollIntervals.client) {
       clearInterval(this.pollIntervals.client)
       this.pollIntervals.client = null
     }
   }
+
 
   private startQueueInfoPolling() {
     this.pollQueueInfo()
@@ -212,6 +206,7 @@ export class Contributor {
     }
   }
 
+
   private updateQueueInfo(queueInfo: QueueInfoResult) {
     if (queueInfo.inQueue) {
       this.queueState = {
@@ -228,15 +223,30 @@ export class Contributor {
         estimatedTime: null
       }
     }
+    this.updateState()
   }
 
   private updateContributionState(state: ContributionState) {
     this.contributionState = state
+    this.updateState()
   }
 
   private setError(message: string) {
     this.queueState = { ...this.queueState, error: message }
     this.state = "error"
+  }
+
+  private updateState() {
+    if (this.contributionState === "contribute") {
+    } else if (this.queueState.position !== null) {
+      this.state = "inQueue"
+    } else if (this.contributionState === "contributed") {
+      this.state = "contributed"
+    } else if (this.contributionState === "verifying") {
+      this.state = "verifying"
+    } else {
+      this.state = "loading"
+    }
   }
 }
 
