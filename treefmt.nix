@@ -55,6 +55,23 @@
         options = [ ];
         includes = [ "*.nix" ];
       };
+      taplo = {
+        options = [
+          "format"
+          "--option"
+          "align_entries=true"
+          "--option"
+          "column_width=100"
+          "--option"
+          "inline_table_expand=false"
+          "--option"
+          "reorder_keys=true"
+        ];
+        excludes = [
+          "**/vendor/**"
+          "unionvisor/src/testdata/*"
+        ];
+      };
       statix.options = [ "explain" ];
       mdformat.options = [ "--number" ];
       deadnix.options = [ "--no-lambda-pattern-names" ];
@@ -114,7 +131,10 @@
             };
           in
           "${forge}/bin/forge";
-        options = [ "fmt" ];
+        options = [
+
+          "fmt"
+        ];
         includes = [ "*.sol" ];
       };
     };

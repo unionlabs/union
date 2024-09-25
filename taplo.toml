@@ -1,7 +1,0 @@
-exclude = ["**/vendor/**", "unionvisor/src/testdata/*"]
-
-[formatting]
-align_entries       = true
-column_width        = 100
-inline_table_expand = false
-reorder_keys        = true
