@@ -3,9 +3,6 @@ import Button from "$lib/components/Button.svelte"
 import H1 from "$lib/components/typography/H1.svelte"
 import Text from "$lib/components/typography/Text.svelte"
 import { ContributorState } from "$lib/stores/state.svelte.ts"
-import { onMount } from "svelte"
-import { user } from "$lib/stores/user.svelte.ts"
-import { generateSecret } from "$lib/client"
 
 type Props = {
   contributor: ContributorState

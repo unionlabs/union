@@ -1,4 +1,4 @@
-import { user } from "$lib/stores/user.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
 import {
   getContribution,
   getContributor,

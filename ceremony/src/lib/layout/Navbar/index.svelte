@@ -1,10 +1,10 @@
 <script lang="ts">
 import { supabase } from "$lib/supabase/client.ts"
-import { user } from "$lib/stores/user.svelte.ts"
 import { invalidateAll } from "$app/navigation"
 import Button from "$lib/components/Button.svelte"
 import NavLink from "$lib/layout/Navbar/NavLink.svelte"
 import Badge from "$lib/components/Badge.svelte"
+import { user } from "$lib/state/session.svelte.ts"
 
 let isOpen = $state(false)
 

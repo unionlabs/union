@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { ContributorState } from "$lib/stores/state.svelte.ts"
 import H1 from "$lib/components/typography/H1.svelte"
 import { generateSecret, start } from "$lib/client"
 import Reward from "$lib/components/Reward.svelte"
@@ -7,12 +6,13 @@ import Download from "$lib/components/Download.svelte"
 import Queue from "$lib/components/Queue.svelte"
 import Install from "$lib/components/Install.svelte"
 import Thanks from "$lib/components/Thanks.svelte"
-import { user } from "$lib/stores/user.svelte.ts"
 import Blink from "$lib/components/Blink.svelte"
 import Warning from "$lib/components/Warning.svelte"
+import { Contributor } from "$lib/state/contributor.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 type Props = {
-  contributor: ContributorState
+  contributor: Contributor
 }
 
 let { contributor }: Props = $props()

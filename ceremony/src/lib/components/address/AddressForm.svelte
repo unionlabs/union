@@ -6,8 +6,8 @@ import type { ValidState } from "./index.ts"
 import { isValidBech32Address } from "./validator.ts"
 import type { HTMLInputAttributes } from "svelte/elements"
 import { insertWalletData } from "$lib/supabase"
-import { user } from "$lib/stores/user.svelte.ts"
 import type { ContributorState } from "$lib/stores/state.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 interface Props extends HTMLInputAttributes {
   class?: string
