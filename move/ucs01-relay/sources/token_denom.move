@@ -11,9 +11,9 @@ module UCS01::fa_coin {
     const ENOT_OWNER: u64 = 1;
     /// The FA coin is paused.
     const EPAUSED: u64 = 2;
-
+    
     const ASSET_SYMBOL: vector<u8> = b"FA";
-    const VAULT_SEED: vector<u8> = b"Relay Store Vault";
+    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     /// Hold refs to control the minting, transfer and burning of fungible assets.
@@ -83,7 +83,7 @@ module UCS01::fa_coin {
 
     #[view]
     public fun get_owner_addr(): address {
-        object::create_object_address(&@UCS01, VAULT_SEED)
+        object::create_object_address(&@UCS01, IBC_APP_SEED)
     }
 
     #[view]
