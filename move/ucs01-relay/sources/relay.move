@@ -25,7 +25,7 @@ module UCS01::Relay {
     const ACK_LENGTH: u64 = 1;
 
     // Errors 
-    const VAULT_SEED: vector<u8> = b"Relay Store Vault";
+    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
     const E_INVALID_BYTES_ADDRESS: u64 = 1;
     const E_UNAUTHORIZED: u64 = 2;
     const E_INVALID_ACKNOWLEDGEMENT: u64 = 3;
@@ -188,7 +188,7 @@ module UCS01::Relay {
 
     #[view]
     public fun get_vault_addr(): address {
-        object::create_object_address(&@UCS01, VAULT_SEED)
+        object::create_object_address(&@UCS01, IBC_APP_SEED)
     }
 
     public fun get_signer(): signer acquires SignerRef {
@@ -221,7 +221,7 @@ module UCS01::Relay {
     public fun initialize_store(account: &signer) {
         assert!(signer::address_of(account) == @UCS01, E_UNAUTHORIZED);
 
-        let vault_constructor_ref = &object::create_named_object(account, VAULT_SEED);
+        let vault_constructor_ref = &object::create_named_object(account, IBC_APP_SEED);
         let vault_signer = &object::generate_signer(vault_constructor_ref);
 
         let store = RelayStore {
@@ -724,58 +724,81 @@ module UCS01::Relay {
 
     
     public entry fun recv_packet(
-        sequence: u64,
-        source_port: String,
-        source_channel: String,
-        destination_port: String,
-        destination_channel: String,
-        data: vector<u8>,
-        revision_number: u64,
-        revision_height: u64,
-        timeout_timestamp: u64,
+        packet_sequence: u64,
+        packet_source_port: String,
+        packet_source_channel: String,
+        packet_destination_port: String,
+        packet_destination_channel: String,
+        packet_data: vector<u8>,
+        packet_timeout_revision_num: u64,
+        packet_timeout_revision_height: u64,
+        packet_timeout_timestamp: u64,
+        proof: vector<u8>,
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
     ) acquires RelayStore, SignerRef {
-        let timeout_height = height::new(revision_number, revision_height);
+        let timeout_height = height::new(packet_timeout_revision_num, packet_timeout_revision_height);
         let packet = IBC::packet::new(
-            sequence,
-            source_port,
-            source_channel,
-            destination_port,
-            destination_channel,
-            data,
-            timeout_height,
-            timeout_timestamp,
+            packet_sequence,
+            packet_source_port,
+            packet_source_channel,
+            packet_destination_port,
+            packet_destination_channel,
+            packet_data,
+            height::new(packet_timeout_revision_num, packet_timeout_revision_height),
+            packet_timeout_timestamp,
         );
+
+        ibc::recv_packet(
+            &get_signer(),
+            get_self_address(),
+            packet,
+            proof,
+            height::new(proof_height_revision_num, proof_height_revision_height),
+            vector[1]
+        );
+        
         on_recv_packet_processing(packet);
     }
 
     public entry fun acknowledge_packet(
-        sequence: u64,
-        source_port: String,
-        source_channel: String,
-        destination_port: String,
-        destination_channel: String,
-        data: vector<u8>,
-        revision_number: u64,
-        revision_height: u64,
-        timeout_timestamp: u64,
+        packet_sequence: u64,
+        packet_source_port: String,
+        packet_source_channel: String,
+        packet_destination_port: String,
+        packet_destination_channel: String,
+        packet_data: vector<u8>,
+        packet_timeout_revision_num: u64,
+        packet_timeout_revision_height: u64,
+        packet_timeout_timestamp: u64,
         acknowledgement: vector<u8>,
-        _proof: vector<u8>,
-        proof_revision_number: u64,
-        proof_revision_height: u64,
+        proof: vector<u8>,
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
     ) acquires RelayStore, SignerRef {
-        let timeout_height = height::new(revision_number, revision_height);
-        let _proof_height = height::new(proof_revision_number, proof_revision_height);
+        let timeout_height = height::new(packet_timeout_revision_num, packet_timeout_revision_height);
+        let proof_height = height::new(proof_height_revision_num, proof_height_revision_height);
+
         let packet = IBC::packet::new(
-            sequence,
-            source_port,
-            source_channel,
-            destination_port,
-            destination_channel,
-            data,
+            packet_sequence,
+            packet_source_port,
+            packet_source_channel,
+            packet_destination_port,
+            packet_destination_channel,
+            packet_data,
             timeout_height,
-            timeout_timestamp,
+            packet_timeout_timestamp,
         );
 
+        ibc::acknowledge_packet(
+            &get_signer(),
+            get_self_address(),
+            packet,
+            acknowledgement,
+            proof,
+            proof_height,
+        );
+        
         if (vector::length(&acknowledgement) != ACK_LENGTH || (*vector::borrow(&acknowledgement, 0) != ACK_FAILURE && *vector::borrow(&acknowledgement, 0) != ACK_SUCCESS)) {
             abort E_INVALID_ACKNOWLEDGEMENT
         };
@@ -837,7 +860,7 @@ module UCS01::Relay {
         let timeout_height = height::new(timeout_height_number, timeout_height_height);
 
         let packet_sequence = IBC::ibc::send_packet(
-            sender,
+            &get_signer(),
             get_self_address(),
             source_channel,
             timeout_height,
