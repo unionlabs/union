@@ -8,4 +8,4 @@ type Props = HTMLAttributes<HTMLParagraphElement> & {
 let { children, class: className = "", ...rest }: Props = $props()
 </script>
 
-<p class="w-fit {className}" {...rest}>{@render children()}</p>
+<p class="w-fit text-neutral-200 {className}" {...rest}>{@render children()}</p>
