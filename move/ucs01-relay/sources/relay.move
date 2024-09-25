@@ -1,4 +1,4 @@
-module UCS01::Relay {    
+module UCS01::ibc {    
     use IBC::ibc;
     use IBC::channel;
     use IBC::height;
@@ -812,8 +812,6 @@ module UCS01::Relay {
             refund_tokens(IBC::packet::sequence(&packet), *IBC::packet::source_channel(&packet), &relay_packet);
         };
     }
-
-
 
     public entry fun send(
         sender: &signer,
