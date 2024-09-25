@@ -1,73 +1,73 @@
 <script lang="ts">
-  import Print from "$lib/components/TerminalApp/Print.svelte"
-  import {getState} from "$lib/state/index.svelte.ts"
-  import {logout} from "$lib/state/session.svelte.ts"
-  import Activity from "$lib/components/TerminalApp/Activity.svelte"
-  import Contributions from "./Contributors.svelte"
-  import {goto} from "$app/navigation"
-  import {onDestroy} from "svelte";
+import { getState } from "$lib/state/index.svelte.ts"
+import { logout } from "$lib/state/session.svelte.ts"
+import Contributions from "./Contributors.svelte"
+import { goto } from "$app/navigation"
+import { onDestroy } from "svelte"
+import Print from "$lib/components/Terminal/Print.svelte"
+import Activity from "$lib/components/Terminal/Activity.svelte"
 
-  const {terminal} = getState()
+const { terminal } = getState()
 
-  let {children} = $props()
+let { children } = $props()
 
-  const changeTab = async (tab: number) => {
-    if (tab === 4 && terminal.hash) {
-      console.log("change tab 4", tab)
-      terminal.setTab(tab)
-      await goto(`/0____0/${terminal.hash}`)
-    } else if (tab <= 3) {
-      console.log("change tab 1, 2, 3", tab)
-      terminal.setTab(tab)
-      await goto("/")
-    }
+const changeTab = async (tab: number) => {
+  if (tab === 4 && terminal.hash) {
+    console.log("change tab 4", tab)
+    terminal.setTab(tab)
+    await goto(`/0____0/${terminal.hash}`)
+  } else if (tab <= 3) {
+    console.log("change tab 1, 2, 3", tab)
+    terminal.setTab(tab)
+    await goto("/")
   }
+}
 
-  const unsubscribe = terminal.keys.subscribe((event) => {
-    if (event) {
-      if (event.type === 'keydown' && (event.shiftKey || event.ctrlKey)) {
-        switch (event.key) {
-          case "!": {
-            changeTab(1);
-            break;
-          }
-          case "@": {
-            changeTab(2);
-            break;
-          }
-          case "#": {
-            changeTab(3);
-            break;
-          }
-          case "$": {
-            changeTab(4);
-            break;
-          }
-          case "X": {
-            logout(terminal);
-            break;
-          }
+const unsubscribe = terminal.keys.subscribe(event => {
+  if (event) {
+    if (event.type === "keydown" && (event.shiftKey || event.ctrlKey)) {
+      switch (event.key) {
+        case "!": {
+          changeTab(1)
+          break
+        }
+        case "@": {
+          changeTab(2)
+          break
+        }
+        case "#": {
+          changeTab(3)
+          break
+        }
+        case "$": {
+          changeTab(4)
+          break
+        }
+        case "X": {
+          logout(terminal)
+          break
         }
       }
     }
-  });
-
-  onDestroy(unsubscribe);
-
-  function autoScroll(node: HTMLElement) {
-    const scroll = () => {
-      node.scrollTop = node.scrollHeight;
-    };
-
-    const observer = new MutationObserver(scroll);
-    observer.observe(node, { childList: true, subtree: true });
-
-    return {
-      destroy() {
-        observer.disconnect();
-      }
-    };
   }
+})
+
+onDestroy(unsubscribe)
+
+function autoScroll(node: HTMLElement) {
+  const scroll = () => {
+    node.scrollTop = node.scrollHeight
+  }
+
+  const observer = new MutationObserver(scroll)
+  observer.observe(node, { childList: true, subtree: true })
+
+  return {
+    destroy() {
+      observer.disconnect()
+    }
+  }
+}
 </script>
 
 <section class="flex flex-col sm:justify-center items-center w-full h-full p-2">

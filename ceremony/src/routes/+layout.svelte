@@ -1,15 +1,15 @@
 <script lang="ts">
 import { supabase } from "$lib/supabase/client.ts"
 import { createState } from "$lib/state/index.svelte.ts"
-import TerminalWindow from "$lib/components/TerminalApp/TerminalWindow.svelte";
 
 import "../styles/tailwind.css"
-import {watch} from "runed";
-import {checkAuth} from "$lib/state/session.svelte.ts";
+import { watch } from "runed"
+import { checkAuth } from "$lib/state/session.svelte.ts"
+import Terminal from "$lib/components/Terminal/index.svelte"
 
 let { children } = $props()
 
-let { user, contributor} = createState()
+let { user, contributor } = createState()
 
 $effect(() => {
   const {
@@ -22,14 +22,16 @@ $effect(() => {
   }
 })
 
-watch(() => user.session?.user.id, () => {
-  contributor.setUserId(user.session?.user.id)
-})
-
+watch(
+  () => user.session?.user.id,
+  () => {
+    contributor.setUserId(user.session?.user.id)
+  }
+)
 </script>
 
 <main class="w-full h-full overflow-y-scroll">
-  <TerminalWindow>
+  <Terminal>
     {@render children()}
-  </TerminalWindow>
+  </Terminal>
 </main>

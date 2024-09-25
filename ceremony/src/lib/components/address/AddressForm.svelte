@@ -1,98 +1,97 @@
 <script lang="ts">
-  import type {ValidState} from "./index.ts"
-  import {isValidBech32Address} from "./validator.ts"
-  import type {HTMLInputAttributes} from "svelte/elements"
-  import {insertWalletData} from "$lib/supabase"
-  import {user} from "$lib/state/session.svelte.ts"
-  import {getState} from "$lib/state/index.svelte.ts";
-  import {sleep} from "$lib/utils/utils.ts";
+import type { ValidState } from "./index.ts"
+import { isValidBech32Address } from "./validator.ts"
+import type { HTMLInputAttributes } from "svelte/elements"
+import { insertWalletData } from "$lib/supabase"
+import { user } from "$lib/state/session.svelte.ts"
+import { getState } from "$lib/state/index.svelte.ts"
+import { sleep } from "$lib/utils/utils.ts"
 
-  interface Props extends HTMLInputAttributes {
-    class?: string
-    validation: (state: ValidState) => void
+interface Props extends HTMLInputAttributes {
+  class?: string
+  validation: (state: ValidState) => void
+}
+
+let { validation, class: className = "", ...props }: Props = $props()
+
+const { contributor, terminal } = getState()
+
+let inputText = $state("")
+
+let validState: ValidState = $state(undefined)
+
+const onAddressSubmit = async (event: Event) => {
+  event.preventDefault()
+
+  if (!inputText) return
+
+  if (inputText === "skip" || inputText === "Skip") {
+    skip()
+    return
   }
 
-  let {validation, class: className = "", ...props}: Props = $props()
+  validation("PENDING")
+  terminal.updateHistory("Checking address")
+  await sleep(1000)
+  const addressValidation = isValidBech32Address(inputText)
+  validState = addressValidation ? "VALID" : "INVALID"
+  validation(validState)
 
-  const { contributor, terminal } = getState()
+  const userId = user.session?.user.id
 
-  let inputText = $state("")
-
-  let validState: ValidState = $state(undefined)
-
-
-  const onAddressSubmit = async (event: Event) => {
-    event.preventDefault()
-
-    if (!inputText) return
-
-    if(inputText === "skip" || inputText === "Skip") {
-      skip()
-      return
-    }
-
-    validation("PENDING")
-    terminal.updateHistory("Checking address")
-    await sleep(1000)
-    const addressValidation = isValidBech32Address(inputText)
-    validState = addressValidation ? "VALID" : "INVALID"
-    validation(validState)
-
-    const userId = user.session?.user.id
-
-    if (validState === "VALID") {
-      try {
-        if (!userId) return
-        const result = await insertWalletData({
-          id: userId,
-          wallet: inputText
-        })
-        if (result) {
-          terminal.updateHistory("Saving address...")
-          await sleep(2000)
-          terminal.updateHistory("Wallet address saved successfully")
-          await sleep(2000)
-          contributor.checkUserWallet(user.session?.user.id)
-        } else {
-          terminal.updateHistory("Failed to save wallet address")
-        }
-      } catch (error) {
-        console.error("Error saving wallet address:", error)
-        terminal.updateHistory("An error occurred while saving the wallet address")
-      }
-    } else if (validState === "INVALID") {
-      terminal.updateHistory("Wallet address not valid, try again..", {duplicate: true})
-    }
-  }
-
-  const skip = async () => {
-    terminal.updateHistory("Skipping reward step")
-    validation("SKIPPED")
+  if (validState === "VALID") {
     try {
-      if (!contributor.userId) return
+      if (!userId) return
       const result = await insertWalletData({
-        id: contributor.userId,
-        wallet: "SKIPPED"
+        id: userId,
+        wallet: inputText
       })
       if (result) {
-        terminal.updateHistory("Saving to db...")
+        terminal.updateHistory("Saving address...")
         await sleep(2000)
-        contributor.userWallet = "SKIPPED"
+        terminal.updateHistory("Wallet address saved successfully")
+        await sleep(2000)
+        contributor.checkUserWallet(user.session?.user.id)
       } else {
-        terminal.updateHistory("Failed to save wallet address", {duplicate: true})
+        terminal.updateHistory("Failed to save wallet address")
       }
     } catch (error) {
       console.error("Error saving wallet address:", error)
-      terminal.updateHistory("An error occurred while saving the wallet address", {duplicate: true})
+      terminal.updateHistory("An error occurred while saving the wallet address")
     }
+  } else if (validState === "INVALID") {
+    terminal.updateHistory("Wallet address not valid, try again..", { duplicate: true })
   }
+}
 
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      onAddressSubmit(event);
+const skip = async () => {
+  terminal.updateHistory("Skipping reward step")
+  validation("SKIPPED")
+  try {
+    if (!contributor.userId) return
+    const result = await insertWalletData({
+      id: contributor.userId,
+      wallet: "SKIPPED"
+    })
+    if (result) {
+      terminal.updateHistory("Saving to db...")
+      await sleep(2000)
+      contributor.userWallet = "SKIPPED"
+    } else {
+      terminal.updateHistory("Failed to save wallet address", { duplicate: true })
     }
+  } catch (error) {
+    console.error("Error saving wallet address:", error)
+    terminal.updateHistory("An error occurred while saving the wallet address", { duplicate: true })
   }
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key === "Enter") {
+    event.preventDefault()
+    onAddressSubmit(event)
+  }
+}
 </script>
 
 <form class="w-full">

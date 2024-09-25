@@ -1,22 +1,17 @@
 <script lang="ts">
-  import Print from "$lib/components/TerminalApp/Print.svelte";
-  import {onMount} from "svelte";
-  import {getState} from "$lib/state/index.svelte.ts";
-  import LoadingBar from "$lib/components/SwimLoad.svelte";
+import { onMount } from "svelte"
+import { getState } from "$lib/state/index.svelte.ts"
+import Print from "$lib/components/Terminal/Print.svelte"
+import LoadingBar from "$lib/components/Terminal/LoadingBar.svelte"
 
-  const {contributor, terminal} = getState()
+const { contributor, terminal } = getState()
 
-  window.addEventListener("beforeunload", (e: BeforeUnloadEvent) => {
-    e.preventDefault()
-    e.returnValue = ""
-  })
-
-  onMount(() => {
-    terminal.updateHistory("You are in queue")
-  })
+onMount(() => {
+  terminal.updateHistory("---", { duplicate: true })
+  terminal.updateHistory("You are in queue")
+})
 </script>
 
-<Print>------</Print>
 <Print>Your position:  {contributor.queueState.position ?? 33}</Print>
 <Print>Queue length: {contributor.queueState.count ?? 347}</Print>
 <Print>Estimated waiting time: {contributor.queueState.estimatedTime ?? 990} minutes</Print>

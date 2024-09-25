@@ -1,6 +1,6 @@
 <script lang="ts">
 import { getState } from "$lib/state/index.svelte.ts"
-import Print from "$lib/components/TerminalApp/Print.svelte"
+import Print from "$lib/components/Terminal/Print.svelte"
 
 const { activity } = getState()
 

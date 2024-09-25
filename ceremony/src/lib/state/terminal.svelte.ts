@@ -1,66 +1,67 @@
 import { getContext, setContext } from "svelte"
-import { readable } from 'svelte/store';
+import { readable } from "svelte/store"
 
 export type AuthProviders = "github" | "google"
 export type State = "hasRedeemed" | "inQueue" | "inWaitlist" | "join" | undefined
 
 interface UpdateHistoryOptions {
-  duplicate?: boolean;
-  replace?: boolean;
+  duplicate?: boolean
+  replace?: boolean
 }
 
 export type KeyEvent = {
-  key: string;
-  type: 'keydown' | 'keyup';
-  shiftKey: boolean;
-  ctrlKey: boolean;
-};
+  key: string
+  type: "keydown" | "keyup"
+  shiftKey: boolean
+  ctrlKey: boolean
+}
 
 export class Terminal {
   state = $state<State>(undefined)
   history = $state<Array<string>>([])
   tab = $state<1 | 2 | 3 | number>(1)
   hash = $state<string | undefined>(undefined)
+  contribution = $state(undefined)
 
-  keys = readable<KeyEvent | null>(null, (set) => {
+  keys = readable<KeyEvent | null>(null, set => {
     const handleKeyEvent = (event: KeyboardEvent) => {
       set({
         key: event.key,
-        type: event.type as 'keydown' | 'keyup',
+        type: event.type as "keydown" | "keyup",
         shiftKey: event.shiftKey,
         ctrlKey: event.ctrlKey
-      });
-    };
+      })
+    }
 
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', handleKeyEvent);
-      window.addEventListener('keyup', handleKeyEvent);
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", handleKeyEvent)
+      window.addEventListener("keyup", handleKeyEvent)
     }
 
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('keydown', handleKeyEvent);
-        window.removeEventListener('keyup', handleKeyEvent);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("keydown", handleKeyEvent)
+        window.removeEventListener("keyup", handleKeyEvent)
       }
-    };
-  });
+    }
+  })
 
   constructor() {
     console.log("Creating terminal state")
   }
 
   updateHistory(text: string, options: UpdateHistoryOptions = {}) {
-    const { duplicate = false, replace = false } = options;
+    const { duplicate = false, replace = false } = options
 
-    const index = this.history.indexOf(text);
+    const index = this.history.indexOf(text)
 
     if (duplicate) {
-      this.history.push(text);
+      this.history.push(text)
     } else if (replace && index !== -1) {
-      this.history.splice(index, 1);
-      this.history.push(text);
+      this.history.splice(index, 1)
+      this.history.push(text)
     } else if (!this.history.includes(text)) {
-      this.history.push(text);
+      this.history.push(text)
     }
   }
 
@@ -70,6 +71,10 @@ export class Terminal {
 
   setHash(hash: string | undefined) {
     this.hash = hash
+  }
+
+  setContribution(contribution: any) {
+    this.contribution = contribution
   }
 
   private updateState() {}

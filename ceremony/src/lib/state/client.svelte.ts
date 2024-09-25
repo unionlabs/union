@@ -1,5 +1,5 @@
 import { checkState, start } from "$lib/client"
-import type {ClientStatus} from "$lib/client/types.ts";
+import type { ClientStatus } from "$lib/client/types.ts"
 
 type ClientState = undefined | "contributing" | "error" | "noClient" | "successful" | "idle"
 
@@ -32,10 +32,7 @@ export class Client {
 
   startPolling(): void {
     if (!this.isPolling) {
-      this.pollingInterval = setInterval(
-        () => this.checkStatus(),
-        CLIENT_POLLING_INTERVAL
-      )
+      this.pollingInterval = setInterval(() => this.checkStatus(), CLIENT_POLLING_INTERVAL)
       this.isPolling = true
     }
   }
@@ -74,5 +71,4 @@ export class Client {
         break
     }
   }
-
 }

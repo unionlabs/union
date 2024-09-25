@@ -1,20 +1,19 @@
 <script lang="ts">
-  import Authenticate from "$lib/components/TerminalApp/Authenticate.svelte"
-  import {getState} from "$lib/state/index.svelte.ts"
-  import Print from "$lib/components/TerminalApp/Print.svelte"
-  import {onMount} from "svelte";
-  import Ceremony from "$lib/components/TerminalApp/Ceremony.svelte";
-  import Join from "$lib/components/TerminalApp/Join.svelte";
-  import Waitlist from "$lib/components/TerminalApp/Waitlist.svelte";
+import { getState } from "$lib/state/index.svelte.ts"
+import { onMount } from "svelte"
+import Print from "$lib/components/Terminal/Print.svelte"
+import Ceremony from "$lib/components/Terminal/Ceremony.svelte"
+import Waitlist from "$lib/components/Terminal/Waitlist.svelte"
+import Join from "$lib/components/Terminal/Join.svelte"
+import Authenticate from "$lib/components/Terminal/Authenticate.svelte"
 
-  const {user, terminal, contributor} = getState()
+const { user, terminal, contributor } = getState()
 
-  onMount(() => {
-    terminal.setTab(1)
-  })
+onMount(() => {
+  terminal.setTab(1)
+  terminal.updateHistory("Welcome to union ceremony")
+})
 </script>
-
-{terminal.updateHistory("Welcome to union ceremony")}
 
 {#if user.loading}
   <Print>loading...</Print>

@@ -1,8 +1,8 @@
 <script lang="ts">
 import { getState } from "$lib/state/index.svelte.ts"
-import {onDestroy, onMount} from "svelte"
-import Print from "$lib/components/TerminalApp/Print.svelte"
-import {goto} from "$app/navigation"
+import { onMount } from "svelte"
+import { goto } from "$app/navigation"
+import Print from "$lib/components/Terminal/Print.svelte"
 
 const { contributions, terminal } = getState()
 
@@ -20,16 +20,17 @@ onMount(() => {
   buttons[0].focus()
 })
 
-let unsubscribe: (() => void) | undefined;
-let subscriptionTimeout: NodeJS.Timeout | undefined;
+let unsubscribe: (() => void) | undefined
+let subscriptionTimeout: NodeJS.Timeout | undefined
 onMount(() => {
   subscriptionTimeout = setTimeout(() => {
-    unsubscribe = terminal.keys.subscribe((event) => {
+    unsubscribe = terminal.keys.subscribe(event => {
       if (event) {
-        if(event.type === "keydown") {
+        if (event.type === "keydown") {
           switch (event.key) {
             case "ArrowUp": {
-              selectedIndex = (selectedIndex - 1 + contributions.data.length) % contributions.data.length
+              selectedIndex =
+                (selectedIndex - 1 + contributions.data.length) % contributions.data.length
               buttons[selectedIndex]?.focus()
               break
             }
@@ -47,19 +48,17 @@ onMount(() => {
           }
         }
       }
-    });
-  }, 200);
-  return(() => {
+    })
+  }, 200)
+  return () => {
     if (subscriptionTimeout) {
-      clearTimeout(subscriptionTimeout);
+      clearTimeout(subscriptionTimeout)
     }
     if (unsubscribe) {
-      unsubscribe();
+      unsubscribe()
     }
-  })
-});
-
-
+  }
+})
 </script>
 
 {#if contributions.data}

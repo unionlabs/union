@@ -4,7 +4,8 @@ import {
   getUserQueueInfo,
   getContributionState,
   getUserWallet,
-  getWaitListPosition, checkIfOpen
+  getWaitListPosition,
+  checkIfOpen
 } from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
@@ -161,7 +162,6 @@ export class Contributor {
     }
   }
 
-
   private startQueueInfoPolling() {
     this.pollQueueInfo()
     this.pollIntervals.queue = setInterval(
@@ -211,7 +211,6 @@ export class Contributor {
       this.setError(error instanceof Error ? error.message : "Unknown error occurred")
     }
   }
-
 
   private updateQueueInfo(queueInfo: QueueInfoResult) {
     if (queueInfo.inQueue) {

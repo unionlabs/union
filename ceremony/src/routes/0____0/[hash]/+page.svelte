@@ -1,43 +1,43 @@
 <script lang="ts">
-  import {page} from "$app/stores"
-  import {getState} from "$lib/state/index.svelte.ts"
-  import {onMount} from "svelte"
-  import {toast} from "svelte-sonner"
-  import {getUserContribution} from "$lib/supabase"
-  import Print from "$lib/components/TerminalApp/Print.svelte"
+import { page } from "$app/stores"
+import { getState } from "$lib/state/index.svelte.ts"
+import { onMount } from "svelte"
+import { toast } from "svelte-sonner"
+import { getUserContribution } from "$lib/supabase"
+import Print from "$lib/components/Terminal/Print.svelte"
 
-  const {terminal} = getState()
+const { terminal } = getState()
 
-  let hash = $derived($page.params.hash)
+let hash = $derived($page.params.hash)
 
-  onMount(() => {
-    terminal.setHash(hash)
-    terminal.setTab(4)
-  })
+onMount(async () => {
+  terminal.setTab(4)
+  terminal.setHash(hash)
+})
 
-  function hexToUint8Array(hexString: string) {
-    return new Uint8Array(hexString.match(/.{1,2}/g)?.map(byte => Number.parseInt(byte, 16)) || [])
+function hexToUint8Array(hexString: string) {
+  return new Uint8Array(hexString.match(/.{1,2}/g)?.map(byte => Number.parseInt(byte, 16)) || [])
+}
+
+function uint8ArrayToUtf8(bytes: Uint8Array) {
+  return new TextDecoder().decode(bytes)
+}
+
+function decodeHexString(hexString: string) {
+  return uint8ArrayToUtf8(hexToUint8Array(hexString))
+}
+
+async function copyToClipboard(text: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success(`Copied ${label}!`)
+  } catch (err) {
+    console.error("Failed to copy text: ", err)
+    toast.error(`Failed to copy ${label} to clipboard.`)
   }
+}
 
-  function uint8ArrayToUtf8(bytes: Uint8Array) {
-    return new TextDecoder().decode(bytes)
-  }
-
-  function decodeHexString(hexString: string) {
-    return uint8ArrayToUtf8(hexToUint8Array(hexString))
-  }
-
-  async function copyToClipboard(text: string, label: string) {
-    try {
-      await navigator.clipboard.writeText(text)
-      toast.success(`Copied ${label}!`)
-    } catch (err) {
-      console.error("Failed to copy text: ", err)
-      toast.error(`Failed to copy ${label} to clipboard.`)
-    }
-  }
-
-  const imagePath = "https://ceremony.union.build/images/ceremony.png"
+const imagePath = "https://ceremony.union.build/images/ceremony.png"
 </script>
 
 <svelte:head>
@@ -75,17 +75,13 @@
   <Print>Loading</Print>
 {:then contribution}
   {#if contribution}
-    <Print>{hash}</Print>
-    <Print>Public key</Print>
     <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.public_key)}</pre>
-    <Print>Signature</Print>
     <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.signature)}</pre>
     <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
-      copy public
-      key
+      Copy public key
     </button>
     <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>&gt
-      copy signature
+      Copy signature
     </button>
   {/if}
 {/await}

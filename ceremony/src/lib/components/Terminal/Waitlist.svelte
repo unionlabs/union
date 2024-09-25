@@ -1,10 +1,9 @@
 <script lang="ts">
-  import Code from "$lib/components/Code.svelte"
-  import {getNumberSuffix} from "$lib/utils/utils.ts"
-  import {getState} from "$lib/state/index.svelte.ts";
+import { getNumberSuffix } from "$lib/utils/utils.ts"
+import { getState } from "$lib/state/index.svelte.ts"
+import Code from "$lib/components/Terminal/Code.svelte"
 
-  const {contributor, terminal} = getState()
-
+const { contributor, terminal } = getState()
 </script>
 
 {terminal.updateHistory("You're on the waitlist")}
