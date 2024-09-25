@@ -1,7 +1,7 @@
 ---
-import { pwaInfo } from 'virtual:pwa-info'
-import type { Props } from '@astrojs/starlight/props'
-import StarlightHead from '@astrojs/starlight/components/Head.astro'
+import { pwaInfo } from "virtual:pwa-info"
+import type { Props } from "@astrojs/starlight/props"
+import StarlightHead from "@astrojs/starlight/components/Head.astro"
 ---
 
 {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
