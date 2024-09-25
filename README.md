@@ -9,7 +9,7 @@
 </div>
 
 <br/>
-  
+
 <div align="center">
 
   [![built with garnix](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fgarnix.io%2Fapi%2Fbadges%2Funionlabs%2Funion%3Fbranch%3Dmain)](https://garnix.io)
@@ -60,7 +60,7 @@ nix flake show
 
 The result of whatever you build will be in `result/`
 
-You can now also enter our dev shell, which has all of the dependencies (`cargo`, `rustc`, `node`, `go`, etc.) you need to work on any component: 
+You can now also enter our dev shell, which has all of the dependencies (`cargo`, `rustc`, `node`, `go`, etc.) you need to work on any component:
 _(Don't worry, this will not affect your system outside of this repo)_
 
 ```sh
