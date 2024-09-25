@@ -10,7 +10,7 @@ const { terminal } = getState()
 
 let hash = $derived($page.params.hash)
 
-onMount(async () => {
+onMount(() => {
   terminal.setTab(4)
   terminal.setHash(hash)
 })

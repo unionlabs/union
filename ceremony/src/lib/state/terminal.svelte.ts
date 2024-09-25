@@ -76,8 +76,6 @@ export class Terminal {
   setContribution(contribution: any) {
     this.contribution = contribution
   }
-
-  private updateState() {}
 }
 
 const TERMINAL_KEY = Symbol("TERMINAL")

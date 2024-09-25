@@ -28,16 +28,12 @@ onMount(() => {
     unsubscribe = terminal.keys.subscribe(event => {
       if (event) {
         if (event.type === "keydown" && terminal.tab === 1) {
-          switch (event.key) {
-            case "ArrowUp":
-              selectedButton = (selectedButton - 1 + buttons.length) % buttons.length
-              break
-            case "ArrowDown":
-              selectedButton = (selectedButton + 1) % buttons.length
-              break
-            case "Enter":
-              triggerAction(selectedButton)
-              break
+          if (event.key === "ArrowUp") {
+            selectedButton = (selectedButton - 1 + buttons.length) % buttons.length
+          } else if (event.key === "ArrowDown") {
+            selectedButton = (selectedButton + 1) % buttons.length
+          } else if (event.key === "Enter") {
+            triggerAction(selectedButton)
           }
         }
       }

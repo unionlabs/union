@@ -22,18 +22,13 @@ onMount(() => {
 
 function handleKeyDown(event: KeyEvent) {
   if (event.type === "keydown") {
-    switch (event.key) {
-      case "ArrowUp":
-        currentFocusIndex = (currentFocusIndex - 1 + selections.length) % selections.length
-        break
-      case "ArrowDown":
-        currentFocusIndex = (currentFocusIndex + 1) % selections.length
-        break
-      case "Enter": {
-        showButtons = false
-        select(selections[currentFocusIndex])
-        break
-      }
+    if (event.key === "ArrowUp") {
+      currentFocusIndex = (currentFocusIndex - 1 + selections.length) % selections.length
+    } else if (event.key === "ArrowDown") {
+      currentFocusIndex = (currentFocusIndex + 1) % selections.length
+    } else if (event.key === "Enter") {
+      showButtons = false
+      select(selections[currentFocusIndex])
     }
   }
 }

@@ -142,19 +142,9 @@ export class Contributor {
     }
 
     this.pollingState = "stopped"
-    this.stopClientStatePolling()
     this.stopQueueInfoPolling()
     this.stopContributionStatePolling()
   }
-
-
-  private stopClientStatePolling() {
-    if (this.pollIntervals.client) {
-      clearInterval(this.pollIntervals.client)
-      this.pollIntervals.client = null
-    }
-  }
-
 
   private startQueueInfoPolling() {
     this.pollQueueInfo()
@@ -206,7 +196,6 @@ export class Contributor {
     }
   }
 
-
   private updateQueueInfo(queueInfo: QueueInfoResult) {
     if (queueInfo.inQueue) {
       this.queueState = {
@@ -238,6 +227,7 @@ export class Contributor {
 
   private updateState() {
     if (this.contributionState === "contribute") {
+      this.state = "contribute"
     } else if (this.queueState.position !== null) {
       this.state = "inQueue"
     } else if (this.contributionState === "contributed") {

@@ -27,23 +27,16 @@ onMount(() => {
     unsubscribe = terminal.keys.subscribe(event => {
       if (event) {
         if (event.type === "keydown") {
-          switch (event.key) {
-            case "ArrowUp": {
-              selectedIndex =
-                (selectedIndex - 1 + contributions.data.length) % contributions.data.length
-              buttons[selectedIndex]?.focus()
-              break
-            }
-            case "ArrowDown": {
-              selectedIndex = (selectedIndex + 1) % contributions.data.length
-              buttons[selectedIndex]?.focus()
-              break
-            }
-            case "Enter": {
-              if (buttons[selectedIndex]) {
-                fireEvent(contributions.data[selectedIndex])
-              }
-              break
+          if (event.key === "ArrowUp") {
+            selectedIndex =
+              (selectedIndex - 1 + contributions.data.length) % contributions.data.length
+            buttons[selectedIndex]?.focus()
+          } else if (event.key === "ArrowDown") {
+            selectedIndex = (selectedIndex + 1) % contributions.data.length
+            buttons[selectedIndex]?.focus()
+          } else if (event.key === "Enter") {
+            if (buttons[selectedIndex]) {
+              fireEvent(contributions.data[selectedIndex])
             }
           }
         }

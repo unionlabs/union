@@ -27,27 +27,16 @@ const changeTab = async (tab: number) => {
 const unsubscribe = terminal.keys.subscribe(event => {
   if (event) {
     if (event.type === "keydown" && (event.shiftKey || event.ctrlKey)) {
-      switch (event.key) {
-        case "!": {
-          changeTab(1)
-          break
-        }
-        case "@": {
-          changeTab(2)
-          break
-        }
-        case "#": {
-          changeTab(3)
-          break
-        }
-        case "$": {
-          changeTab(4)
-          break
-        }
-        case "X": {
-          logout(terminal)
-          break
-        }
+      if (event.key === "!") {
+        changeTab(1)
+      } else if (event.key === "@") {
+        changeTab(2)
+      } else if (event.key === "#") {
+        changeTab(3)
+      } else if (event.key === "$") {
+        changeTab(4)
+      } else if (event.key === "X") {
+        logout(terminal)
       }
     }
   }
