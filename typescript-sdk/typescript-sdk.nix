@@ -3,9 +3,7 @@ _: {
     {
       pkgs,
       unstablePkgs,
-      lib,
       ensureAtRepositoryRoot,
-      mkCi,
       ...
     }:
     {

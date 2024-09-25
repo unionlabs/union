@@ -3,7 +3,6 @@ _: {
     {
       pkgs,
       unstablePkgs,
-      self',
       openapi,
       ensureAtRepositoryRoot,
       mkCi,
