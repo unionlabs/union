@@ -1,11 +1,11 @@
 _: {
   perSystem =
     {
-      pkgs,
-      unstablePkgs,
       lib,
-      ensureAtRepositoryRoot,
+      pkgs,
       mkCi,
+      unstablePkgs,
+      ensureAtRepositoryRoot,
       ...
     }:
     let
@@ -19,10 +19,9 @@ _: {
     in
     {
       packages = {
-<<<<<<< HEAD
         docs = mkCi false (
           unstablePkgs.buildNpmPackage {
-            npmDepsHash = "sha256-w9BqWfAUS+Ll1Im2plzzfQTPWLDCrKpAeJgjEhUEbH0=";
+            npmDepsHash = "sha256-lOZlchOiwpLeQxst5iXstKiCqphqGNi1sWWiRY4UCuY=";
             src = ./.;
             srcs = [
               ./.
@@ -45,27 +44,6 @@ _: {
             NODE_OPTIONS = "--no-warnings";
           }
         );
-=======
-        docs = mkCi false (unstablePkgs.buildNpmPackage {
-          npmDepsHash = "sha256-PtRC5HJBcWcxAaFxn75UL8T/FB06yKfy0OgRs9lUwiU=";
-          src = ./.;
-          srcs = [ ./. ./../evm/. ./../networks/genesis/. ./../versions/. ];
-          sourceRoot = "docs";
-          pname = packageJSON.name;
-          version = packageJSON.version;
-          nativeBuildInputs = combinedDeps;
-          buildInputs = combinedDeps;
-          npmFlags = [ ];
-          installPhase = ''
-            mkdir -p $out
-            cp -r ./dist/* $out
-          '';
-          doDist = false;
-          PUPPETEER_SKIP_DOWNLOAD = 1;
-          ASTRO_TELEMETRY_DISABLED = 1;
-          NODE_OPTIONS = "--no-warnings";
-        });
->>>>>>> cae1de53d (chore: gql button)
       };
 
       apps = {

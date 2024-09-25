@@ -238,6 +238,7 @@
       "correctness": {
         "all": true,
         "noNodejsModules": "off",
+        "noUnknownFunction": "off",
         "noUnusedVariables": "off",
         "noUndeclaredVariables": "off",
         "noUndeclaredDependencies": "off"

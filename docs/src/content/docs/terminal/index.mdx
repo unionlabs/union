@@ -4,14 +4,11 @@ description: ""
 ---
 
 import Terminal from '#/components/Terminal.astro'
+import { Editor } from '#/components/react/Editor.tsx'
 import { demoFiles } from '../integrations/typescript/_data/demo-files.ts'
 
-```ts twoslash
-const foo = { a: 1, b: 2, c: 3 }
-//     ^?
-```
+<Editor client:only='react' />
 
-
-<Terminal
+{/* <Terminal
   webcontainerFiles={JSON.stringify(demoFiles)}
-/>
+/> */}

@@ -1,7 +1,7 @@
 :root {
   --sl-text-h1: 3.5rem;
-  --sl-white: #F9F9F9;
-  --sl-color-white: #F9F9F9;
+  --sl-white: #f9f9f9;
+  --sl-color-white: #f9f9f9;
   --bg-gray: #1f1f1f1f;
 }
 
@@ -16,7 +16,6 @@
   --sl-color-bg-sidebar: var(--sl-white);
   --sl-color-text: var(--sl-gray);
   --logo-text-color: #000000;
-  --sl-color-bg: #f9f9f9;
   --anchor-icon-filter: invert(0);
   --nav-selected-color: theme("colors.accent.950");
 }

@@ -1,9 +1,9 @@
 pre.astro-code {
   border-radius: 0.3rem;
-
 }
 
-input, textarea {
+input,
+textarea {
   touch-action: manipulation;
 }
 

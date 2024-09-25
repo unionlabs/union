@@ -1,19 +1,15 @@
 import { loadEnv } from "vite"
-import vue from "@astrojs/vue"
 import react from "@astrojs/react"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
-import AstroPWA from "@vite-pwa/astro"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
-import type { ManifestOptions } from "vite-plugin-pwa"
 import starlightThemeRapide from "starlight-theme-rapide"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
-import manifest from "./public/webmanifest.json" with { type: "json" }
 
 const SITE_URL = "https://docs.union.build"
 
@@ -35,6 +31,9 @@ export default defineConfig({
   trailingSlash: "ignore",
   markdown: markdownConfiguration,
   vite: {
+    ssr: {
+      noExternal: ["@tutorialkit/react", "monaco-editor"]
+    },
     experimental: {},
     optimizeDeps: {
       include: ["@xterm/xterm"],
@@ -56,26 +55,6 @@ export default defineConfig({
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   redirects: { "/logo": "/union-logo.zip" },
   integrations: [
-    AstroPWA({
-      workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
-        // navigateFallback: "/404",
-        ignoreURLParametersMatching: [/./],
-        globPatterns: [
-          "**/*.{html,js,css,png,svg,json,ttf,pf_fragment,pf_index,pf_meta,pagefind,wasm}"
-        ]
-      },
-      experimental: {
-        directoryAndTrailingSlashHandler: true
-      },
-      mode: "production",
-      registerType: "autoUpdate",
-      manifest: manifest as Partial<ManifestOptions>,
-      devOptions: {
-        enabled: true
-      }
-    }),
     starlight({
       title: "Union",
       tagline: "Connecting blockchains trustlessly",
@@ -99,9 +78,6 @@ export default defineConfig({
         replacesTitle: true,
         dark: "./src/assets/union-logo/union-logo-white.svg",
         light: "./src/assets/union-logo/union-logo-black.svg"
-      },
-      components: {
-        Head: "./src/components/overrides/Head.astro"
       },
       head: [
         {
@@ -240,10 +216,10 @@ export default defineConfig({
         "./src/styles/index.css",
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
-        "./src/styles/twoslash.css",
+        // "./src/styles/twoslash.css",
         "./src/styles/starlight.css",
-        "./node_modules/katex/dist/katex.min.css",
-        "./node_modules/@shikijs/twoslash/style-rich.css"
+        "./node_modules/katex/dist/katex.min.css"
+        // "./node_modules/@shikijs/twoslash/style-rich.css"
       ]
     }),
     sitemap(),
@@ -252,7 +228,9 @@ export default defineConfig({
       configFile: "tailwind.config.ts"
     }),
     svelte(),
-    vue({ jsx: true, devtools: true }),
-    react({ experimentalReactChildren: true })
+    react({
+      include: ["**/react/**"],
+      experimentalReactChildren: true
+    })
   ]
 })
