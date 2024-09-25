@@ -1,4 +1,4 @@
-import contentful from "contentful"
+import * as contentful from "contentful"
 import { env } from "#/lib/constants/env.ts"
 
 export const contentfulClient = contentful.createClient({
