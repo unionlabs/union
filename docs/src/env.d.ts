@@ -5,7 +5,7 @@
 /// <reference types="vite-plugin-pwa/vanillajs" />
 /// <reference types="@astrojs/starlight/schema" />
 /// <reference path="@astrojs/starlight/virtual.d.ts" />
-/// <reference path="../node_modules/@astrojs/starlight/virtual.d.ts"/>
+/// <reference path="../node_modules/@astrojs/starlight/virtual.d.ts" />
 
 interface EventTarget {
   value?: string

@@ -80,3 +80,4 @@ move/*/build
 .tsup
 docs/generated
 dev-dist
+.zed

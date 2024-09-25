@@ -572,6 +572,7 @@ founderheads
 fpkmyvw
 frontends
 frunk
+fullscreen
 functionx
 fuzzer
 galois
@@ -741,6 +742,7 @@ keyof
 keypair
 keypairs
 keypreimage
+keyup
 keyval
 kichain
 kujira
@@ -1352,6 +1354,7 @@ valoper
 valoperpub
 vals
 valset
+vanillajs
 varint
 vaul
 vercel
