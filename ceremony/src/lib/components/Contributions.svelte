@@ -1,7 +1,7 @@
 <script lang="ts">
 import Spinner from "$lib/components/Spinner.svelte"
-import Text from "$lib/components/typography/Text.svelte"
 import { getContributions } from "$lib/supabase"
+import Print from "$lib/components/TerminalApp/Print.svelte";
 
 let intervalId: NodeJS.Timeout | number
 let contributions = $state()
@@ -29,10 +29,10 @@ $effect(() => {
       {#each contributions as contribution, index }
         <a href="/contributions?hash={contribution.public_key_hash}" class="flex items-center gap-4 w-full">
 
-          <Text>{(index + 1) * 10}M</Text>
+          <Print>{(index + 1) * 10}M</Print>
           <div class="text-white flex gap-1 items-center border-white border px-3 py-2 w-full">
             <img class="size-7" src={contribution.avatar_url} alt="">
-            <Text class="uppercase max-w-48 truncate">{contribution.user_name}</Text>
+            <Print class="uppercase max-w-48 truncate">{contribution.user_name}</Print>
           </div>
         </a>
         {#if index !== contributions.length - 1}

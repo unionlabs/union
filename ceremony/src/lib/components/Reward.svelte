@@ -1,50 +1,30 @@
 <script lang="ts">
-import { AddressForm, type ValidState } from "$lib/components/address"
-import H4 from "$lib/components/typography/H4.svelte"
-import H2 from "$lib/components/typography/H2.svelte"
-import Button from "$lib/components/Button.svelte"
-import Text from "$lib/components/typography/Text.svelte"
-import type { ContributorState } from "$lib/stores/state.svelte.ts"
-import { insertWalletData } from "$lib/supabase"
-import { toast } from "svelte-sonner"
+  import {AddressForm, type ValidState} from "$lib/components/address"
+  import Print from "$lib/components/TerminalApp/Print.svelte";
+  import {getState} from "$lib/state/index.svelte.ts";
+  import {onMount} from "svelte";
 
-type Props = {
-  contributor: ContributorState
-}
+  let { terminal } = getState()
 
-let { contributor }: Props = $props()
+  let showInput = $state(true)
 
-let addressValidState: ValidState = $state("PENDING")
-
-const skip = async () => {
-  try {
-    if (!contributor.userId) return
-    const result = await insertWalletData({
-      id: contributor.userId,
-      wallet: "SKIPPED"
-    })
-    if (result) {
-      toast.success("Wallet address saved successfully")
-      contributor.userWallet = "SKIPPED"
-    } else {
-      toast.error("Failed to save wallet address")
-    }
-  } catch (error) {
-    console.error("Error saving wallet address:", error)
-    toast.error("An error occurred while saving the wallet address")
+  let validation = (val: ValidState) => {
+    showInput = val === "INVALID";
   }
-}
+
+  onMount(() => {
+    terminal.updateHistory("Add an address, you may receive rewards for successful contributions.")
+    terminal.updateHistory('You can enter your union or any cosmos address, or type "skip".')
+  })
+
+
 </script>
 
-<div class="text-center flex flex-col items-center gap-4">
-  <H2 class="">Add an address</H2>
-  <Text class="">You may receive rewards for successful contributions.</Text>
-  <Text>You can enter your union or any cosmos address.</Text>
-  <AddressForm class="" onValidation={result => (addressValidState = result)} {contributor} />
-  <Text class="py-8">Or</Text>
-  <H4>I don't want rewards</H4>
-  <Text>You can contribute without adding an address.</Text>
-  <Button onclick={skip} variant="secondary">Skip
-    rewards
-  </Button>
-</div>
+{#if showInput}
+  <div class="flex w-full gap-1">
+    <div class="whitespace-nowrap">
+      <Print>Enter address:</Print>
+    </div>
+    <AddressForm {validation} />
+  </div>
+{/if}

@@ -2,4 +2,4 @@
 let { children } = $props()
 </script>
 
-<p>{@render children()}</p>
+<p class="w-fit">{@render children()}</p>

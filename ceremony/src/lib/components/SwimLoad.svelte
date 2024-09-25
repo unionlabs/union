@@ -1,5 +1,7 @@
 <script lang="ts">
-import Text from "$lib/components/typography/Text.svelte"
+
+
+import Print from "$lib/components/TerminalApp/Print.svelte";
 
 type Props = {
   min?: number
@@ -29,8 +31,8 @@ $effect(() => {
 
     </div>
     <div class="w-full flex justify-between px-4 p-1 text-xs">
-      <Text>Start</Text>
-      <Text>Finish</Text>
+      <Print>Start</Print>
+      <Print>Finish</Print>
     </div>
   </div>
 {/if}

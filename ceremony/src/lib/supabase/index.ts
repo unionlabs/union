@@ -15,7 +15,10 @@ import { supabase } from "$lib/supabase/client.ts"
 import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
 
 export const callJoinQueue = async (code: string | null): Promise<boolean> => {
-  const userId = user.session?.user.id
+  if (!user.session) {
+    throw new Error("User is not logged in")
+  }
+  const userId = user.session.user.id
   if (!userId) {
     throw new Error("User is not logged in")
   }
@@ -42,10 +45,10 @@ export const checkIfOpen = async (): Promise<boolean> => {
 }
 
 export const getUserQueueInfo = async () => {
-  const userId = user.session?.user.id
-  if (!userId) {
+  if (!user.session) {
     throw new Error("User is not logged in")
   }
+  const userId = user.session.user.id
 
   const { data, error } = await getUserQueuePosition(userId)
   const { count, error: countError } = await getQueueCount()
@@ -70,7 +73,10 @@ export const getUserQueueInfo = async () => {
 }
 
 export const getContributionState = async (): Promise<ContributionState> => {
-  const userId = user.session?.user.id
+  if (!user.session) {
+    throw new Error("User is not logged in")
+  }
+  const userId = user.session.user.id
   if (!userId) {
     throw new Error("User ID is required")
   }
@@ -114,11 +120,11 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
   const { data, error } = await queryCurrentUserState()
   if (error || !data) return undefined
 
+  return "hasRedeemed"
+
   if (data.has_redeemed) return "hasRedeemed"
   if (data.in_queue) return "inQueue"
   if (data.in_waitlist) return "inWaitlist"
-
-  return "join"
 }
 
 export const getContributions = async () => {
@@ -160,10 +166,10 @@ export const insertWalletData = async (data: WalletData) => {
 }
 
 export const getPublicHash = async () => {
-  const userId = user.session?.user.id
-  if (!userId) {
-    throw new Error("User ID is required")
+  if (!user.session) {
+    throw new Error("User is not logged in")
   }
+  const userId = user.session.user.id
 
   const { data, error } = await queryUserPublicHash(userId)
   if (error || !data) return undefined

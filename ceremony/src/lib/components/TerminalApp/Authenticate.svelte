@@ -1,56 +1,54 @@
 <script lang="ts">
-import { type AuthProviders, Terminal } from "$lib/state/terminal.svelte.ts"
-import Print from "$lib/components/TerminalApp/Print.svelte"
-import { supabase } from "$lib/supabase/client.ts"
-import { onMount } from "svelte"
+  import {type AuthProviders, type KeyEvent, Terminal} from "$lib/state/terminal.svelte.ts"
+  import {supabase} from "$lib/supabase/client.ts"
+  import {onDestroy, onMount} from "svelte"
 
-type Props = {
-  terminal: Terminal
-}
-
-let { terminal }: Props = $props()
-
-const providers: Array<AuthProviders> = ["github", "google"]
-
-let focusedIndex = $state(0)
-let redirecting = $state(false)
-
-onMount(() => {
-  terminal.updateHistory("authentication missing")
-  terminal.updateHistory("please use one of the following")
-  document.addEventListener("keydown", handleKeyDown)
-  return () => {
-    document.removeEventListener("keydown", handleKeyDown)
+  type Props = {
+    terminal: Terminal
   }
-})
 
-function handleKeyDown(event: KeyboardEvent) {
-  if (event.key === "ArrowUp") {
-    event.preventDefault()
-    focusedIndex = (focusedIndex - 1 + providers.length) % providers.length
-  } else if (event.key === "ArrowDown") {
-    event.preventDefault()
-    focusedIndex = (focusedIndex + 1) % providers.length
-  } else if (event.key === "Enter") {
-    event.preventDefault()
-    logIn(providers[focusedIndex])
-  }
-}
+  let {terminal}: Props = $props()
 
-async function logIn(provider: AuthProviders) {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: provider,
-    options: {
-      redirectTo: `/`
-    }
+  const providers: Array<AuthProviders> = ["github", "google"]
+
+  let focusedIndex = $state(0)
+  let redirecting = $state(false)
+
+  onMount(() => {
+    terminal.updateHistory("Please authenticate using one of the following")
   })
-  if (error || !data) {
-    terminal.updateHistory(`Error signing in using ${provider}`)
-  } else {
-    redirecting = true
-    terminal.updateHistory(`Redirecting to ${provider}`)
+
+  async function logIn(provider: AuthProviders) {
+    const {data, error} = await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: {
+        redirectTo: `/`
+      }
+    })
+    if (error || !data) {
+      terminal.updateHistory(`Error signing in using ${provider}`)
+    } else {
+      redirecting = true
+      terminal.updateHistory(`Redirecting to ${provider}`)
+    }
   }
-}
+
+  const unsubscribe = terminal.keys.subscribe((event) => {
+    if(terminal.tab !== 1) return
+    if (event) {
+      if (event.type !== 'keydown') return;
+      if (event.key === "ArrowUp") {
+        focusedIndex = (focusedIndex - 1 + providers.length) % providers.length
+      } else if (event.key === "ArrowDown") {
+        focusedIndex = (focusedIndex + 1) % providers.length
+      } else if (event.key === "Enter") {
+        logIn(providers[focusedIndex])
+      }
+    }
+
+  });
+
+  onDestroy(unsubscribe);
 </script>
 
 {#if !redirecting}

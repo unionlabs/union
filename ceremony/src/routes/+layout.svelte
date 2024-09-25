@@ -1,30 +1,31 @@
 <script lang="ts">
 import { supabase } from "$lib/supabase/client.ts"
-import { Toaster } from "svelte-sonner"
 import { createState } from "$lib/state/index.svelte.ts"
+import TerminalWindow from "$lib/components/TerminalApp/TerminalWindow.svelte";
 
 import "../styles/tailwind.css"
 
 let { children } = $props()
 
-let { user } = createState()
+let { user, contributor} = createState()
 
 $effect(() => {
   const {
     data: { subscription }
   } = supabase.auth.onAuthStateChange((event, session) => {
     user.session = session
+    user.loading = false
+    contributor.setUserId(user.session?.user.id)
   })
   return () => {
     subscription.unsubscribe()
   }
 })
+
 </script>
 
-
-
-<Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
-
 <main class="w-full h-full overflow-y-scroll">
-  {@render children()}
+  <TerminalWindow>
+    {@render children()}
+  </TerminalWindow>
 </main>

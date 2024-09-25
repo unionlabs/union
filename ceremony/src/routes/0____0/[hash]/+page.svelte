@@ -1,44 +1,43 @@
 <script lang="ts">
-import { page } from "$app/stores"
-import TerminalWindow from "$lib/components/TerminalApp/TerminalWindow.svelte"
-import { getState } from "$lib/state/index.svelte.ts"
-import { onMount } from "svelte"
-import { toast } from "svelte-sonner"
-import { getUserContribution } from "$lib/supabase"
-import Print from "$lib/components/TerminalApp/Print.svelte"
+  import {page} from "$app/stores"
+  import {getState} from "$lib/state/index.svelte.ts"
+  import {onMount} from "svelte"
+  import {toast} from "svelte-sonner"
+  import {getUserContribution} from "$lib/supabase"
+  import Print from "$lib/components/TerminalApp/Print.svelte"
 
-const { terminal } = getState()
+  const {terminal} = getState()
 
-let hash = $derived($page.params.hash)
+  let hash = $derived($page.params.hash)
 
-onMount(() => {
-  terminal.setHash(hash)
-  terminal.setTab(4)
-})
+  onMount(() => {
+    terminal.setHash(hash)
+    terminal.setTab(4)
+  })
 
-function hexToUint8Array(hexString: string) {
-  return new Uint8Array(hexString.match(/.{1,2}/g)?.map(byte => Number.parseInt(byte, 16)) || [])
-}
-
-function uint8ArrayToUtf8(bytes: Uint8Array) {
-  return new TextDecoder().decode(bytes)
-}
-
-function decodeHexString(hexString: string) {
-  return uint8ArrayToUtf8(hexToUint8Array(hexString))
-}
-
-async function copyToClipboard(text: string, label: string) {
-  try {
-    await navigator.clipboard.writeText(text)
-    toast.success(`Copied ${label}!`)
-  } catch (err) {
-    console.error("Failed to copy text: ", err)
-    toast.error(`Failed to copy ${label} to clipboard.`)
+  function hexToUint8Array(hexString: string) {
+    return new Uint8Array(hexString.match(/.{1,2}/g)?.map(byte => Number.parseInt(byte, 16)) || [])
   }
-}
 
-const imagePath = "https://ceremony.union.build/images/ceremony.png"
+  function uint8ArrayToUtf8(bytes: Uint8Array) {
+    return new TextDecoder().decode(bytes)
+  }
+
+  function decodeHexString(hexString: string) {
+    return uint8ArrayToUtf8(hexToUint8Array(hexString))
+  }
+
+  async function copyToClipboard(text: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success(`Copied ${label}!`)
+    } catch (err) {
+      console.error("Failed to copy text: ", err)
+      toast.error(`Failed to copy ${label} to clipboard.`)
+    }
+  }
+
+  const imagePath = "https://ceremony.union.build/images/ceremony.png"
 </script>
 
 <svelte:head>
@@ -71,26 +70,26 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
   <meta name="twitter:image:alt" content="Union Ceremony event banner"/>
 </svelte:head>
 
-<TerminalWindow>
-  {#await getUserContribution(hash)}
-    <Print>Loading</Print>
-  {:then contribution}
-    {#if contribution}
-      <Print>{hash}</Print>
-      <Print class="mb-2">Public key</Print>
-      <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.public_key)}</pre>
-      <Print class="mb-2">Signature</Print>
-      <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.signature)}</pre>
-      <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
-        copy public
-        key
-      </button>
-      <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>&gt
-        copy signature
-      </button>
-    {/if}
-  {/await}
-</TerminalWindow>
+
+{#await getUserContribution(hash)}
+  <Print>Loading</Print>
+{:then contribution}
+  {#if contribution}
+    <Print>{hash}</Print>
+    <Print class="mb-2">Public key</Print>
+    <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.public_key)}</pre>
+    <Print class="mb-2">Signature</Print>
+    <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.signature)}</pre>
+    <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
+      copy public
+      key
+    </button>
+    <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>&gt
+      copy signature
+    </button>
+  {/if}
+{/await}
+
 
 <style>
     pre {

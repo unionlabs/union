@@ -1,55 +1,100 @@
 <script lang="ts">
-import H1 from "$lib/components/typography/H1.svelte"
-import Text from "$lib/components/typography/Text.svelte"
-import { callJoinQueue, checkIfOpen } from "$lib/supabase"
-import type { ContributorState } from "$lib/stores/state.svelte.ts"
-import { toast } from "svelte-sonner"
-import Code from "$lib/components/Code.svelte"
-import H2 from "$lib/components/typography/H2.svelte"
+  import {callJoinQueue} from "$lib/supabase"
+  import {toast} from "svelte-sonner"
+  import Code from "$lib/components/Code.svelte"
+  import {getState} from "$lib/state/index.svelte.ts";
+  import {onDestroy} from "svelte";
+  import {sleep} from "$lib/utils/utils.ts";
 
-type Props = {
-  contributor: ContributorState
-}
+  const {contributor, terminal} = getState()
 
-let { contributor }: Props = $props()
-
-let isOpenToPublic = $state(false)
-let waitlistLoading = $state(false)
-
-async function handleWaitlistJoin() {
-  waitlistLoading = true
-  try {
-    await callJoinQueue(null)
-    if (isOpenToPublic) {
-      contributor.setAllowanceState("inQueue")
-      toast.success("Successfully joined the queue")
-    } else {
-      contributor.setAllowanceState("inWaitlist")
-      toast.success("Successfully joined the waitlist")
+  const buttons = [
+    {
+      label: "I have an invitation code",
+      action: "code"
+    },
+    {
+      label: "I want to join the waitlist",
+      action: "waitlist"
     }
-  } catch (error) {
-    console.error("Error joining waitlist:", error)
-    toast.error("An error occurred while joining the waitlist")
-  } finally {
-    waitlistLoading = false
+  ]
+
+  let isOpenToPublic = $state(false)
+  let waitlistLoading = $state(false)
+  let selected = $state(false)
+
+  async function handleWaitlistJoin() {
+    waitlistLoading = true
+    try {
+      await callJoinQueue(null)
+      if (isOpenToPublic) {
+        contributor.setAllowanceState("inQueue")
+        toast.success("Successfully joined the queue")
+      } else {
+        contributor.setAllowanceState("inWaitlist")
+        toast.success("Successfully joined the waitlist")
+      }
+    } catch (error) {
+      console.error("Error joining waitlist:", error)
+      toast.error("An error occurred while joining the waitlist")
+    } finally {
+      waitlistLoading = false
+    }
   }
-}
 
-const checkOpen = async () => {
-  isOpenToPublic = await checkIfOpen()
-}
+  let code = $state(false)
 
-$effect(() => {
-  checkOpen()
-})
+  let focusedIndex = $state(0)
+  const unsubscribe = terminal.keys.subscribe((event) => {
+    if (event) {
+      if (event.type !== 'keydown') return;
+
+      if (event.key === "ArrowUp") {
+        focusedIndex = (focusedIndex - 1 + buttons.length) % buttons.length
+      } else if (event.key === "ArrowDown") {
+        focusedIndex = (focusedIndex + 1) % buttons.length
+      } else if (event.key === "Enter") {
+        handleAction(buttons[focusedIndex].action)
+      }
+    }
+
+  });
+
+  onDestroy(unsubscribe);
+
+  async function handleAction(action: string) {
+    if (action === "waitlist") {
+      selected = true
+      terminal.updateHistory("Adding user to the waitlist...")
+      await sleep(3000)
+      handleWaitlistJoin()
+    } else if (action === "code") {
+      terminal.updateHistory("I have an invitation code")
+      code = true
+    }
+
+  }
 </script>
 
-<H1>Join the ceremony</H1>
-<Text>Have an invite? Enter your code below.</Text>
-<form class="flex flex-col items-center">
-  <Code {contributor}/>
-</form>
-<Text class="py-8">Or</Text>
-<H2>Don't have an invite?</H2>
-<Text>You can join the waitlist now to get priority access when the ceremony opens.</Text>
+{terminal.updateHistory("Access the ceremony")}
+
+{#if !selected}
+
+  {#if code }
+    <Code />
+  {:else }
+    {#each buttons as button, index}
+      <button
+              class="block"
+              onclick={() => handleAction(button.action)}
+              class:text-union-accent-500={index === focusedIndex }
+              tabindex="{index === focusedIndex ? 0 : -1}"
+      >
+        &gt {button.label}
+      </button>
+    {/each}
+  {/if}
+
+{/if}
+
 

@@ -1,42 +1,60 @@
-import type { Session } from "@supabase/supabase-js"
-import { supabase } from "$lib/supabase/client.ts"
-import { err, ok, type Result } from "neverthrow"
-import { goto, invalidateAll } from "$app/navigation"
-import type { Terminal } from "$lib/state/terminal.svelte.ts"
+import type {Session} from "@supabase/supabase-js"
+import {supabase} from "$lib/supabase/client.ts"
+import {err, ok, type Result} from "neverthrow"
+import {invalidateAll} from "$app/navigation"
+import type {Terminal} from "$lib/state/terminal.svelte.ts"
 
-export type UserSession = {
-  session: Session | null | false
-}
 
 export type SessionError = {
   message: string
 }
 
-export let user = $state<UserSession>({ session: false })
+export type UserSession = {
+  session: Session | null
+  loading: boolean
+}
+
+export let user = $state<UserSession>({session: null, loading: true})
 
 export async function checkAuth(): Promise<Result<null, SessionError>> {
+  user.loading = true;
   const {
-    data: { session },
+    data: {session},
     error
   } = await supabase.auth.getSession()
   if (error || !session) {
-    return err({ message: "User not authenticated" })
+    user.session = null;
+    user.loading = false;
+    return err({message: "User not authenticated"})
   }
-  if (session) {
-    user.session = session
-  }
+  user.session = session;
+  user.loading = false;
   return ok(null)
 }
 
-export async function logout(terminal: Terminal) {
-  if (user.session === null || user.session === undefined) return
-  terminal.updateHistory("user logged out")
-  const { error } = await supabase.auth.signOut()
-  if (error) {
-    terminal.updateHistory("error logging out")
-  } else {
-    user.session = null
-    invalidateAll()
-    goto("/")
+export async function logout(terminal: Terminal): Promise<void> {
+  if (!user.session) {
+    console.log('user already logged out');
+    return;
+  }
+
+  terminal.updateHistory("logging out user...");
+
+  try {
+    terminal.setHash(undefined);
+    terminal.setTab(1);
+
+    terminal.updateHistory("user successfully logged out");
+    const {error} = await supabase.auth.signOut();
+
+    user.session = null;
+
+    await invalidateAll();
+  } catch (error) {
+    terminal.updateHistory(`error logging out`);
+
+    terminal.setHash(undefined);
+    terminal.setTab(1);
+    user.session = null;
   }
 }

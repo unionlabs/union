@@ -1,146 +1,252 @@
+import { getContext, onDestroy, setContext } from "svelte"
 import {
   getCurrentUserState,
   getUserQueueInfo,
   getContributionState,
   getUserWallet,
-  getWaitListPosition
+  getWaitListPosition, checkIfOpen
 } from "$lib/supabase"
-import type { Session } from "@supabase/supabase-js"
+
+type IntervalID = NodeJS.Timeout | number
+
+type State =
+  | "loading"
+  | "inQueue"
+  | "contribute"
+  | "contributing"
+  | "verifying"
+  | "contributed"
+  | "error"
+  | "offline"
+  | "noClient"
 
 export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
 export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
 
-interface QueueState {
+interface UserContext {
   position: number | null
   count: number | null
   estimatedTime: number | null
   error: string | null
 }
 
-type UserState = Session | null
+interface QueueInfoSuccess {
+  inQueue: true
+  position: number
+  count: number
+}
 
-const QUEUE_POLLING_INTERVAL = 5000
-const CONTRIBUTION_POLLING_INTERVAL = 5000
+interface QueueInfoError {
+  inQueue: false
+  message: string
+}
+
+type QueueInfoResult = QueueInfoSuccess | QueueInfoError
+
+const second = 1000
+const CONTRIBUTION_POLLING_INTERVAL = second * 5
+const QUEUE_POLLING_INTERVAL = second * 5
 
 export class Contributor {
+  userId = $state<string | undefined>(undefined)
+  loggedIn = $state<boolean>(false)
   currentUserState = $state<AllowanceState>(undefined)
+  pollingState = $state<"stopped" | "polling">("stopped")
+  state = $state<State>("loading")
+
+  openToPublic = $state(false)
   contributionState = $state<ContributionState>("notContributed")
   userWallet = $state("")
-
   waitListPosition = $state<number | undefined>(undefined)
+  downloadedSecret = $state<boolean>(localStorage.getItem("downloaded-secret") === "true")
 
-  queueState = $state<QueueState>({
+  queueState = $state<UserContext>({
     position: null,
     count: null,
     estimatedTime: null,
     error: null
   })
 
-  private queuePollingInterval: number | null = null
-  private contributionPollingInterval: number | null = null
+  private pollIntervals: {
+    client: IntervalID | null
+    queue: IntervalID | null
+    contribution: IntervalID | null
+  } = {
+    client: null,
+    queue: null,
+    contribution: null
+  }
 
-  // if(this.session) {
-  // await Promise.all([
-  //                     this.checkWaitListPosition(),
-  //                     this.checkUserWallet(),
-  //                     this.checkCurrentUserState()
-  //                   ])
-  // this.startPolling()
-  //}
+  constructor(userId?: string) {
+    if (userId) {
+      this.userId = userId
+      this.loggedIn = true
+      this.checkCurrentUserState(userId)
+      this.checkIfOpen()
+      this.startPolling()
+    }
+    onDestroy(() => {
+      this.stopPolling()
+    })
+  }
 
-  private async checkWaitListPosition(): Promise<void> {
+  setUserId(userId: string | undefined) {
+    if (this.userId === undefined && userId) {
+      this.userId = userId
+      this.loggedIn = true
+      this.checkWaitListPosition(userId)
+      this.checkUserWallet(userId)
+      this.checkCurrentUserState(userId)
+      this.startPolling()
+    }
+  }
+
+  async checkIfOpen() {
+    this.openToPublic = await checkIfOpen()
+  }
+
+  async checkWaitListPosition(_userId: string | undefined): Promise<number | undefined> {
     this.waitListPosition = await getWaitListPosition()
+    return this.waitListPosition
   }
 
-  private async checkCurrentUserState(): Promise<void> {
-    this.currentUserState = await getCurrentUserState("")
+  async checkCurrentUserState(userId: string | undefined): Promise<AllowanceState> {
+    this.currentUserState = await getCurrentUserState(userId)
+    return this.currentUserState
   }
 
-  private async checkUserWallet(): Promise<void> {
-    this.userWallet = await getUserWallet("")
+  async checkUserWallet(userId: string | undefined): Promise<string> {
+    this.userWallet = await getUserWallet(userId)
+    return this.userWallet
   }
 
-  startPolling(): void {
-    this.startQueuePolling()
-    this.startContributionPolling()
+  setAllowanceState(state: AllowanceState) {
+    this.currentUserState = state
+    this.pollQueueInfo()
+    this.pollContributionState()
   }
 
-  stopPolling(): void {
-    this.stopQueuePolling()
-    this.stopContributionPolling()
+  startPolling() {
+    if (this.pollingState === "polling") {
+      console.log("Polling is already running.")
+      return
+    }
+
+    if (!this.userId) {
+      console.log("Cannot start polling without userId.")
+      return
+    }
+
+    this.pollingState = "polling"
+    this.startQueueInfoPolling()
+    this.startContributionStatePolling()
   }
 
-  private startQueuePolling(): void {
-    if (this.queuePollingInterval === null) {
-      this.pollQueueInfo()
-      this.queuePollingInterval = setInterval(
-        () => this.pollQueueInfo(),
-        QUEUE_POLLING_INTERVAL
-      ) as unknown as number
+  stopPolling() {
+    if (this.pollingState === "stopped") {
+      console.log("Polling is already stopped.")
+      return
+    }
+
+    this.pollingState = "stopped"
+    this.stopClientStatePolling()
+    this.stopQueueInfoPolling()
+    this.stopContributionStatePolling()
+  }
+
+  private stopClientStatePolling() {
+    if (this.pollIntervals.client) {
+      clearInterval(this.pollIntervals.client)
+      this.pollIntervals.client = null
     }
   }
 
-  private stopQueuePolling(): void {
-    if (this.queuePollingInterval !== null) {
-      clearInterval(this.queuePollingInterval)
-      this.queuePollingInterval = null
+
+  private startQueueInfoPolling() {
+    this.pollQueueInfo()
+    this.pollIntervals.queue = setInterval(
+      () => this.pollQueueInfo(),
+      QUEUE_POLLING_INTERVAL
+    ) as IntervalID
+  }
+
+  private stopQueueInfoPolling() {
+    if (this.pollIntervals.queue) {
+      clearInterval(this.pollIntervals.queue)
+      this.pollIntervals.queue = null
     }
   }
 
-  private async pollQueueInfo(): Promise<void> {
+  private async pollQueueInfo() {
     try {
       const queueInfo = await getUserQueueInfo()
-      if ("inQueue" in queueInfo && queueInfo.inQueue) {
-        this.queueState = {
-          position: queueInfo.position,
-          count: queueInfo.count,
-          estimatedTime: queueInfo.position * 60,
-          error: null
-        }
-      } else {
-        this.queueState = {
-          position: null,
-          count: null,
-          estimatedTime: null,
-          error: null
-        }
-      }
+      this.updateQueueInfo(queueInfo)
     } catch (error) {
-      console.error("Error polling queue info:", error)
+      console.log("Error polling queue info:", error)
+      this.setError(error instanceof Error ? error.message : "Unknown error occurred")
+    }
+  }
+
+  private startContributionStatePolling() {
+    this.pollContributionState()
+    this.pollIntervals.contribution = setInterval(
+      () => this.pollContributionState(),
+      CONTRIBUTION_POLLING_INTERVAL
+    ) as IntervalID
+  }
+
+  private stopContributionStatePolling() {
+    if (this.pollIntervals.contribution) {
+      clearInterval(this.pollIntervals.contribution)
+      this.pollIntervals.contribution = null
+    }
+  }
+
+  private async pollContributionState() {
+    try {
+      const state = await getContributionState()
+      this.updateContributionState(state)
+    } catch (error) {
+      console.log("Error polling contribution state:", error)
+      this.setError(error instanceof Error ? error.message : "Unknown error occurred")
+    }
+  }
+
+
+  private updateQueueInfo(queueInfo: QueueInfoResult) {
+    if (queueInfo.inQueue) {
       this.queueState = {
         ...this.queueState,
-        error: error instanceof Error ? error.message : "Unknown error occurred"
+        position: queueInfo.position,
+        count: queueInfo.count,
+        estimatedTime: queueInfo.position * 60
+      }
+    } else {
+      this.queueState = {
+        ...this.queueState,
+        position: null,
+        count: null,
+        estimatedTime: null
       }
     }
   }
 
-  private startContributionPolling(): void {
-    if (this.contributionPollingInterval === null) {
-      this.pollContributionState()
-      this.contributionPollingInterval = setInterval(
-        () => this.pollContributionState(),
-        CONTRIBUTION_POLLING_INTERVAL
-      ) as unknown as number
-    }
+  private updateContributionState(state: ContributionState) {
+    this.contributionState = state
   }
 
-  private stopContributionPolling(): void {
-    if (this.contributionPollingInterval !== null) {
-      clearInterval(this.contributionPollingInterval)
-      this.contributionPollingInterval = null
-    }
+  private setError(message: string) {
+    this.queueState = { ...this.queueState, error: message }
+    this.state = "error"
   }
+}
 
-  private async pollContributionState(): Promise<void> {
-    try {
-      this.contributionState = await getContributionState()
-    } catch (error) {
-      console.error("Error polling contribution state:", error)
-      // You might want to handle this error differently
-    }
-  }
+const CONTRIBUTOR_KEY = Symbol("CONTRIBUTOR")
 
-  constructor() {
-    console.log("Creating contributor state")
-  }
+export function setContributorState() {
+  return setContext(CONTRIBUTOR_KEY, new Contributor())
+}
+
+export function getContributorState(): Contributor {
+  return getContext<Contributor>(CONTRIBUTOR_KEY)
 }

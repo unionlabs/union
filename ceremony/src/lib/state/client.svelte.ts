@@ -44,13 +44,13 @@ export class Client {
       this.pollingInterval = setInterval(
         () => this.checkStatus(),
         CLIENT_POLLING_INTERVAL
-      ) as unknown as number
+      )
       this.isPolling = true
     }
   }
 
   stopPolling(): void {
-    if (this.isPolling) {
+    if (this.isPolling && this.pollingInterval !== null) {
       clearInterval(this.pollingInterval)
       this.pollingInterval = null
       this.isPolling = false

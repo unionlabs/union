@@ -31,3 +31,8 @@ export function isSafari(): boolean {
   const ua = navigator.userAgent.toLowerCase()
   return ua.indexOf("safari") > -1 && ua.indexOf("chrome") === -1
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+

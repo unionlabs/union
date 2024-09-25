@@ -1,65 +1,58 @@
 <script lang="ts">
-import Print from "$lib/components/TerminalApp/Print.svelte"
-import { getState } from "$lib/state/index.svelte.ts"
-import { logout } from "$lib/state/session.svelte.ts"
-import Activity from "$lib/components/TerminalApp/Activity.svelte"
-import { onMount } from "svelte"
-import Contributions from "./Contributors.svelte"
-import { goto } from "$app/navigation"
+  import Print from "$lib/components/TerminalApp/Print.svelte"
+  import {getState} from "$lib/state/index.svelte.ts"
+  import {logout} from "$lib/state/session.svelte.ts"
+  import Activity from "$lib/components/TerminalApp/Activity.svelte"
+  import Contributions from "./Contributors.svelte"
+  import {goto} from "$app/navigation"
+  import {onDestroy} from "svelte";
 
-const { terminal } = getState()
+  const {terminal} = getState()
 
-let { children } = $props()
+  let {children} = $props()
 
-onMount(() => {
-  window.addEventListener("keydown", handleCommand)
-
-  return () => {
-    window.removeEventListener("keydown", handleCommand)
-  }
-})
-
-function handleCommand(event: KeyboardEvent) {
-  if (event.shiftKey) {
-    switch (event.key) {
-      case "!": {
-        changeTab(1)
-        event.preventDefault()
-        break
-      }
-      case "@": {
-        changeTab(2)
-        event.preventDefault()
-        break
-      }
-      case "#": {
-        changeTab(3)
-        event.preventDefault()
-        break
-      }
-      case "$": {
-        changeTab(4)
-        event.preventDefault()
-        break
-      }
-      case "X": {
-        logout(terminal)
-        event.preventDefault()
-        break
-      }
+  const changeTab = async (tab: number) => {
+    if (tab === 4 && terminal.hash) {
+      console.log("change tab 4", tab)
+      terminal.setTab(tab)
+      await goto(`/0____0/${terminal.hash}`)
+    } else if (tab <= 3) {
+      console.log("change tab 1, 2, 3", tab)
+      terminal.setTab(tab)
+      await goto("/")
     }
   }
-}
 
-const changeTab = async (tab: number) => {
-  if (tab === 4 && terminal.hash) {
-    terminal.setTab(tab)
-    await goto(`/0____0/${terminal.hash}`)
-  } else if (tab <= 3) {
-    terminal.setTab(tab)
-    await goto("/")
-  }
-}
+  const unsubscribe = terminal.keys.subscribe((event) => {
+    if (event) {
+      if (event.type === 'keydown' && (event.shiftKey || event.ctrlKey)) {
+        switch (event.key) {
+          case "!": {
+            changeTab(1);
+            break;
+          }
+          case "@": {
+            changeTab(2);
+            break;
+          }
+          case "#": {
+            changeTab(3);
+            break;
+          }
+          case "$": {
+            changeTab(4);
+            break;
+          }
+          case "X": {
+            logout(terminal);
+            break;
+          }
+        }
+      }
+    }
+  });
+
+  onDestroy(unsubscribe);
 </script>
 
 <section class="flex flex-col sm:justify-center items-center w-full h-full p-2">
@@ -77,31 +70,36 @@ const changeTab = async (tab: number) => {
         </button>
         {#if terminal.hash !== undefined}
           <button class="text-black font-mono font-medium " onclick={() => changeTab(4)}
-                  class:text-white={terminal.tab === 4}>{terminal.hash}</button>
+                  class:text-white={terminal.tab === 4}>
+            {#if terminal.hash}
+              {terminal.hash.slice(0, 5)}...{terminal.hash.slice(-5)}
+            {:else}
+              {terminal.hash}
+            {/if}
+          </button>
         {/if}
       </div>
       <button class="text-black font-mono font-medium" onclick={() => logout(terminal)}>Log out</button>
     </div>
+
     <div class="border-[4px] border-white/50 px-5 py-4 text-union-accent-50 h-full w-ful overflow-y-auto overflow-hiddenl">
 
-      {#if terminal.tab === 1 }
+      {#if terminal.tab === 1}
         <div class="flex flex-col">
           {#each terminal.history as text}
             <Print>{text}</Print>
           {/each}
         </div>
         {@render children()}
-
       {:else if terminal.tab === 2}
         <Activity/>
-
       {:else if terminal.tab === 3}
         <Contributions/>
-
-      {:else if terminal.tab === 4}
+      {:else if terminal.tab === 4 && terminal.hash}
         {@render children()}
-
       {/if}
+
     </div>
   </div>
+
 </section>

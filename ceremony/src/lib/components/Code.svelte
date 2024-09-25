@@ -1,93 +1,71 @@
 <script lang="ts">
-import { callJoinQueue } from "$lib/supabase"
-import { toast } from "svelte-sonner"
-import type { ContributorState } from "$lib/stores/state.svelte.ts"
-import Button from "$lib/components/Button.svelte"
+  import {callJoinQueue} from "$lib/supabase"
+  import {toast} from "svelte-sonner"
+  import type {Contributor} from "$lib/state/contributor.svelte.ts"
+  import Button from "$lib/components/Button.svelte"
+  import Print from "$lib/components/TerminalApp/Print.svelte";
+  import {getState} from "$lib/state/index.svelte.ts";
+  import {onDestroy, onMount} from "svelte";
+  import {sleep} from "$lib/utils/utils.ts";
 
-type Props = {
-  contributor: ContributorState
-  secondary?: boolean
-}
+  const {contributor, terminal} = getState()
 
-let { contributor, secondary = false }: Props = $props()
+  let inputCode: string = $state("")
+  let normalizedCode = $derived(normalizeString(inputCode))
+  let inputElement: HTMLInputElement
+  let showInput = $state(true)
 
-let words: Array<string> = $state(new Array(6).fill(""))
-let code = $derived(normalizeString(words))
-let codeLoading = $state(false)
-
-function handlePaste(e: ClipboardEvent): void {
-  e.preventDefault()
-  const pastedText: string = e.clipboardData?.getData("text") || ""
-  const pastedWords: Array<string> = pastedText.split(/\s+/).slice(0, 6)
-  words = [...pastedWords, ...new Array(6 - pastedWords.length).fill("")]
-}
-
-function normalizeString(words: Array<string>): string {
-  return words
-    .map(word => word.trim().toLowerCase())
-    .join("")
-    .replace(/[^a-z0-9]/gi, "")
-}
-
-async function handleCodeJoin() {
-  codeLoading = true
-  try {
-    console.log(code)
-    const codeOk = await callJoinQueue(code)
-    if (codeOk) {
-      contributor.setAllowanceState("hasRedeemed")
-      toast.success("Code successfully redeemed")
-    } else {
-      toast.error("The code is not valid")
+  onMount(() => {
+    if (inputElement) {
+      inputElement.focus();
     }
-  } catch (error) {
-    console.error("Error redeeming code:", error)
-    toast.error("An error occurred while redeeming the code")
-  } finally {
-    codeLoading = false
-  }
-}
+  });
 
-function handleKeyDown(event: KeyboardEvent, index: number) {
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault()
-    if (index < words.length - 1) {
-      // Move to next input
-      const nextInput = document.querySelector(
-        `input:nth-child(${2 * index + 3})`
-      ) as HTMLInputElement
-      nextInput?.focus()
-    } else if (event.key === "Enter") {
-      // On last input, trigger the USE CODE button only for Enter key
-      handleCodeJoin()
-    }
-  } else if (event.key === "Backspace" && words[index] === "" && index > 0) {
-    event.preventDefault()
-    // Move to previous input
-    const prevInput = document.querySelector(
-      `input:nth-child(${2 * index - 1})`
-    ) as HTMLInputElement
-    prevInput?.focus()
+  function normalizeString(input: string): string {
+    return input.toLowerCase().replace(/[^a-z0-9]/gi, "")
   }
-}
+
+  async function handleCodeJoin() {
+    try {
+      showInput = false
+      terminal.updateHistory("Checking code...", {duplicate: true})
+      console.log(normalizedCode)
+      await sleep(3000)
+      const codeOk = await callJoinQueue(normalizedCode)
+      if (codeOk) {
+        contributor.setAllowanceState("hasRedeemed")
+        terminal.updateHistory("Code successfully redeemed")
+      } else {
+        terminal.updateHistory("The code is not valid", {duplicate: true})
+        showInput = true
+      }
+    } catch (error) {
+      console.error("Error redeeming code:", error)
+      terminal.updateHistory("An error occurred while redeeming the code")
+      showInput = true
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleCodeJoin();
+    }
+  }
 </script>
 
-<div class="flex gap-2 max-w-4xl flex-wrap justify-center mb-8">
-  {#each words as word, index}
+{#if showInput}
+  <div class="flex w-full gap-1">
+    <div class="whitespace-nowrap">
+      <Print>Enter code:</Print>
+    </div>
     <input
-            bind:value={words[index]}
-            onpaste={handlePaste}
-            onkeydown={(e) => handleKeyDown(e, index)}
-            class="bg-transparent border-b border-white w-20 text-center text-union-accent-500 outline-none focus:ring-0 focus:border-union-accent-500"
+            autofocus
+            bind:this={inputElement}
+            bind:value={inputCode}
+            onkeydown={handleKeyDown}
+            class="inline-flex bg-transparent w-full text-union-accent-500 outline-none focus:ring-0 focus:border-none"
             style="--tw-ring-color: transparent;"
     />
-    {#if index !== words.length - 1}
-      <div class="text-union-accent-500"><p>-</p></div>
-    {/if}
-  {/each}
-</div>
-
-
-<Button variant={secondary ? "secondary" : "primary"} loading={codeLoading} type="button" onclick={handleCodeJoin}>
-  Redeem code
-</Button>
+  </div>
+{/if}
