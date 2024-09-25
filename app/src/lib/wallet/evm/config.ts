@@ -23,7 +23,7 @@ import { APP_INFO } from "$lib/constants/app.ts"
 import type { ChainWalletStore } from "$lib/wallet/types"
 import { derived, writable, type Readable } from "svelte/store"
 import { injected, metaMask, coinbaseWallet } from "@wagmi/connectors"
-import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "@wagmi/core/chains"
+import { sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia } from "viem/chains"
 
 export const chains = [sepolia, berachainTestnetbArtio, arbitrumSepolia, scrollSepolia] as const
 export type ConfiguredChainId = (typeof chains)[number]["id"]

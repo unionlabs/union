@@ -13,6 +13,7 @@ import { notifyManager } from "@tanstack/svelte-query"
 import DevTools from "$lib/components/dev-tools.svelte"
 import { createQueryClient } from "$lib/query-client.ts"
 import Header from "$lib/components/header/header.svelte"
+import { reownEventListeners } from '$lib/wallet/reown.ts' 
 import LoadingBar from "$lib/components/loading-bar.svelte"
 import { updateTheme } from "$lib/utilities/update-theme.ts"
 import { SvelteQueryDevtools } from "@tanstack/svelte-query-devtools"
@@ -25,6 +26,8 @@ if (browser) notifyManager.setScheduler(window.requestAnimationFrame)
 onMount(() => {
   checkWebGLSupport()
   disablePinchToZoom()
+
+  reownEventListeners()
 })
 
 $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
