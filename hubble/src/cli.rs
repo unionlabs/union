@@ -84,6 +84,8 @@ pub enum IndexerConfig {
     EthFetcher(crate::indexer::eth::config::Config),
     #[serde(rename = "tm-fetcher")]
     TmFetcher(crate::indexer::tm::config::Config),
+    #[serde(rename = "aptos-fetcher")]
+    AptosFetcher(crate::indexer::aptos::config::Config),
 }
 
 impl IndexerConfig {
@@ -99,6 +101,7 @@ impl IndexerConfig {
             Self::DummyFetcher(cfg) => &cfg.indexer_id,
             Self::EthFetcher(cfg) => &cfg.indexer_id,
             Self::TmFetcher(cfg) => &cfg.indexer_id,
+            Self::AptosFetcher(cfg) => &cfg.indexer_id,
         }
     }
 }
@@ -177,6 +180,14 @@ impl IndexerConfig {
                     .await
             }
             Self::TmFetcher(cfg) => {
+                cfg.build(db)
+                    .instrument(initializer_span)
+                    .await?
+                    .index()
+                    .instrument(indexer_span)
+                    .await
+            }
+            Self::AptosFetcher(cfg) => {
                 cfg.build(db)
                     .instrument(initializer_span)
                     .await?

@@ -1,4 +1,5 @@
 pub mod api;
+pub mod aptos;
 pub mod dummy;
 pub mod eth;
 mod fetcher;
