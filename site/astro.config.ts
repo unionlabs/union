@@ -41,8 +41,7 @@ export default defineConfig({
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   redirects: {
     "/feed": "/rss.xml",
-    "/logo": "/union-logo.zip",
-    "/docs": "https://docs.union.build"
+    "/logo": "/union-logo.zip"
   },
   vite: {
     assetsInclude: ["**/*.splinecode"],
