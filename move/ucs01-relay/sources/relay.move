@@ -373,11 +373,11 @@ module UCS01::Relay {
     public fun encode_packet(packet: &RelayPacket): vector<u8> {
         let buf = vector::empty<u8>();
 
-        // unknown data ??
-        EthABI::encode_uint<u64>(&mut buf, 32);
-        EthABI::encode_uint<u64>(&mut buf, 32);
-        EthABI::encode_uint<u64>(&mut buf, 32);
-        EthABI::encode_uint<u64>(&mut buf, 32);
+        // TODO(aeryz): document
+        EthABI::encode_uint<u64>(&mut buf, 32 * 4);
+        EthABI::encode_uint<u64>(&mut buf, 32 * 6);
+        EthABI::encode_uint<u64>(&mut buf, 32 * 8);
+        EthABI::encode_uint<u64>(&mut buf, 32 * 9 + (32 * 6 * vector::length(&packet.tokens)));
 
 
         // TODO: how to encode senders now?
@@ -392,43 +392,24 @@ module UCS01::Relay {
             EthABI::encode_u8(some_variable, data);
         });
 
-        // unknown data ??
-        EthABI::encode_uint<u64>(&mut buf, 128);
-
         let num_tokens = vector::length(&packet.tokens);
-
-        // unknown data ??
-        EthABI::encode_uint<u64>(&mut buf, (num_tokens * 160 + 160));
-        
         EthABI::encode_uint<u64>(&mut buf, num_tokens);
 
-        if (num_tokens > 0 ){
-        // unknown data ??
-            EthABI::encode_uint<u64>(&mut buf, (num_tokens * 32));
-
-            if (num_tokens > 1) {
-                let starting_point = 192 + (num_tokens - 2) * 32;
-                // unknown data ??
-                EthABI::encode_uint<u64>(&mut buf, starting_point);
-                
-                let idx = 2;
-                while (num_tokens > idx) {
-                    starting_point = starting_point + 128;
-                    // unknown data ??
-                    EthABI::encode_uint<u64>(&mut buf, starting_point);
-                    idx = idx + 1;
-                };
-            };
+        let i = 0;
+        while (i < num_tokens) {
+            let cursor = 32 + (6 * 32 * (num_tokens - 1));
+            EthABI::encode_uint<u64>(&mut buf, cursor);
+            i = i + 1;
         };
 
         let i = 0;
         while (i < num_tokens) {
             let token = vector::borrow(&packet.tokens, i);
             
-            // unknown data ??
-            EthABI::encode_uint<u64>(&mut buf, 64);
-
+            EthABI::encode_uint<u64>(&mut buf, 96);
             EthABI::encode_uint<u64>(&mut buf, token.amount);
+            // TODO(aeryz): handle fee
+            EthABI::encode_uint<u64>(&mut buf, 0);
 
             EthABI::encode_string(&mut buf, token.denom);
 
@@ -441,62 +422,47 @@ module UCS01::Relay {
     }
 
     public fun decode_packet(buf: vector<u8>): RelayPacket {
-        let index = 0;
+        let index = 128;
 
-        let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
-        let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
-        let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
-        let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
+        // let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
+        // let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
+        // let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
+        // let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
 
         // Decoding sender address
         let sender = EthABI::decode_vector<u8>(buf, &mut index, |buf, index| {
             (EthABI::decode_u8(buf, index) as u8)
         });
+        std::debug::print(&sender);
+        std::debug::print(&index);
 
         let receiver_vec = EthABI::decode_vector<u8>(buf, &mut index, |buf, index| {
             (EthABI::decode_u8(buf, index) as u8)
         });
+        std::debug::print(&receiver_vec);
+        std::debug::print(&index);
 
         let receiver = from_bcs::to_address(receiver_vec);
-        // let receiver = EthABI::decode_address(buf, &mut index);
-
-        // Decoding unknown data (128 as u256)
-        let _unknown_data_128 = EthABI::decode_uint(buf, &mut index);
-
-        // Decoding the length of tokens (before length)
-        let _before_length = EthABI::decode_uint(buf, &mut index);
 
         // Decoding the number of tokens
         let num_tokens = (EthABI::decode_uint(buf, &mut index) as u64);
+        std::debug::print(&num_tokens);
 
-        // std::debug::print(&string::utf8(b"num_tokens is: "));
-        // std::debug::print(&num_tokens);
+        index = index + num_tokens * 32;
 
-        // Decoding the token starting point and sequence
-        if (num_tokens > 0) {
-            let _after_length = EthABI::decode_uint(buf, &mut index);
-            if (num_tokens > 1) {
-                let _starting_point = EthABI::decode_uint(buf, &mut index);
-                let idx = 2;
-                while (num_tokens > idx) {
-                    let _next_starting_point = EthABI::decode_uint(buf, &mut index);
-                    idx = idx + 1;
-                };
-            };
-        };
-
-        // Decoding the tokens
         let tokens = vector::empty<Token>();
+        // Decoding the token starting point and sequence
         let i = 0;
         while (i < num_tokens) {
-            // Decoding unknown data (64 as u256)
-            let _unknown_data_64 = EthABI::decode_uint(buf, &mut index);
+            // dynamic data prefix
+            index = index + 32;
 
-            // Decoding the amount of token
             let amount = EthABI::decode_uint(buf, &mut index);
-
-            // Decoding the token denomination string
+            std::debug::print(&amount);
+            let _fee = EthABI::decode_uint(buf, &mut index); 
+            std::debug::print(&_fee);
             let denom = EthABI::decode_string(buf, &mut index);
+            std::debug::print(&denom);
 
             let token = Token {
                 amount: (amount as u64),
@@ -506,6 +472,22 @@ module UCS01::Relay {
 
             i = i + 1;
         };
+
+        // // Decoding the tokens
+        // let i = 0;
+        // while (i < num_tokens) {
+        //     // Decoding unknown data (64 as u256)
+        //     let _unknown_data_64 = EthABI::decode_uint(buf, &mut index);
+
+        //     // Decoding the amount of token
+        //     let amount = EthABI::decode_uint(buf, &mut index);
+
+        //     // Decoding the token denomination string
+        //     let denom = EthABI::decode_string(buf, &mut index);
+
+
+        //     i = i + 1;
+        // };
 
         // Decoding the extension string
         let extension = EthABI::decode_string(buf, &mut index);
@@ -936,10 +918,11 @@ module UCS01::Relay {
         token_address
     }
 
-    // #[test]
-    // public fun decode_test() {
-    //     decode_packet(x"000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000000014958a1812ec4586b5639b11f245ffea556bb54e6200000000000000000000000000000000000000000000000000000000000000000000000000000000000000206577b38a9ffef23bfe43ea6345f777e467425a13bfd6f86d255dc89cf062a6640000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-    // }
+    #[test]
+    public fun decode_test() {
+        let relay = decode_packet(x"000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000000030102030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000bb800000000000000000000000000000000000000000000000000000000000000064141414141410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000007d00000000000000000000000000000000000000000000000000000000000000fa0000000000000000000000000000000000000000000000000000000000000000442424242000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        std::debug::print(&relay);
+    }
     
     #[test]
     public fun test_is_valid_version() {
@@ -1233,6 +1216,7 @@ module UCS01::Relay {
             extension: extension,
         };
         let encoded = encode_packet(&packet);
+        std::debug::print(&encoded);
         let decoded = decode_packet(encoded);
 
         assert!(decoded.sender == sender, 100);
