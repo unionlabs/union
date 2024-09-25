@@ -3,20 +3,20 @@
 @tailwind utilities;
 
 @font-face {
-    font-family: "tt-supermolot-neue";
-    font-display: swap;
-    src: url("/fonts/tt-supermolot-neue/TT-Supermolot-Neue-Variable.ttf") format("truetype");
+  font-family: "tt-supermolot-neue";
+  font-display: swap;
+  src: url("/fonts/tt-supermolot-neue/TT-Supermolot-Neue-Variable.ttf") format("truetype");
 }
 @font-face {
-    font-family: "jetbrains-mono";
-    font-style: normal;
-    font-display: swap;
-    src: url("/fonts/jetbrains-mono/JetBrainsMono.ttf") format("truetype");
+  font-family: "jetbrains-mono";
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono/JetBrainsMono.ttf") format("truetype");
 }
 
 @font-face {
-    font-family: "jetbrains-mono";
-    font-style: italic;
-    font-display: swap;
-    src: url("/fonts/jetbrains-mono/JetBrainsMono-Italic.ttf") format("truetype");
+  font-family: "jetbrains-mono";
+  font-style: italic;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-Italic.ttf") format("truetype");
 }

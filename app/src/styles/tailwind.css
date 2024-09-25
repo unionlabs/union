@@ -15,12 +15,12 @@
     min-width: 100%;
     min-height: 100%;
   }
-  
+
   .min-size-min {
     min-width: min-content;
     min-height: min-content;
   }
-  
+
   .max-size-full {
     max-width: 100%;
     max-height: 100%;
@@ -30,7 +30,7 @@
     max-width: min-content;
     max-height: min-content;
   }
-  
+
   .size-screen {
     width: 100vw;
     height: 100vh;
@@ -55,7 +55,6 @@
     pointer-events: none;
   }
 }
-
 
 @layer base {
   :root {
@@ -91,7 +90,7 @@
     --radius: 0.5rem;
   }
 
-   .dark {
+  .dark {
     --background: 240 3.7% 15%;
     --foreground: 0 0% 98%;
 
@@ -113,7 +112,7 @@
     --secondary: 240 3.7% 18.9%;
     --secondary-foreground: 0 0% 98%;
 
-     --accent: 191 96% 81%;
+    --accent: 191 96% 81%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -166,7 +165,6 @@
 }
 
 @layer utilities {
-
   .font-condensed {
     font-stretch: condensed;
   }
@@ -182,7 +180,7 @@
   .font-ultra-expanded {
     font-stretch: ultra-expanded;
   }
-  
+
   .step {
     counter-increment: step;
   }

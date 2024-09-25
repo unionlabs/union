@@ -1,5 +1,11 @@
-{ ... }: {
-  perSystem = { pkgs, unstablePkgs, lib, ensureAtRepositoryRoot, mkCi, ... }:
+_: {
+  perSystem =
+    {
+      pkgs,
+      unstablePkgs,
+      ensureAtRepositoryRoot,
+      ...
+    }:
     {
       apps = {
         ts-sdk-check = {
@@ -12,7 +18,7 @@
 
               cd typescript-sdk
               bun run typecheck
-              
+
               nix fmt
 
               nix build .\#checks.${pkgs.system}.spellcheck --print-build-logs

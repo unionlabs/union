@@ -1,9 +1,21 @@
-{ ... }: {
-  perSystem = { self', pkgs, system, config, crane, stdenv, ensureAtRepositoryRoot, mkCi, ... }:
+_: {
+  perSystem =
+    {
+      self',
+      pkgs,
+      system,
+      config,
+      crane,
+      stdenv,
+      ensureAtRepositoryRoot,
+      mkCi,
+      ...
+    }:
     let
-      generate-rust-sol-bindings-crate = (crane.buildWorkspaceMember {
-        crateDirFromRoot = "tools/generate-rust-sol-bindings";
-      }).packages.generate-rust-sol-bindings;
+      generate-rust-sol-bindings-crate =
+        (crane.buildWorkspaceMember {
+          crateDirFromRoot = "tools/generate-rust-sol-bindings";
+        }).packages.generate-rust-sol-bindings;
 
       # cargo-toml = crane.lib.writeTOML "Cargo.toml" {
       #   package = {
@@ -60,21 +72,23 @@
     in
     {
       packages = {
-        rust-sol-bindings = mkCi false (rust-sol-bindings);
+        rust-sol-bindings = mkCi false rust-sol-bindings;
 
-        generate-rust-sol-bindings = mkCi false (pkgs.writeShellApplication {
-          name = "generate-rust-sol-bindings";
-          runtimeInputs = [ rust-sol-bindings ];
-          text = ''
-            ${ensureAtRepositoryRoot}
+        generate-rust-sol-bindings = mkCi false (
+          pkgs.writeShellApplication {
+            name = "generate-rust-sol-bindings";
+            runtimeInputs = [ rust-sol-bindings ];
+            text = ''
+              ${ensureAtRepositoryRoot}
 
-            outdir="generated/rust/contracts"
+              outdir="generated/rust/contracts"
 
-            cp -r --no-preserve=mode ${rust-sol-bindings}/* $outdir
+              cp -r --no-preserve=mode ${rust-sol-bindings}/* $outdir
 
-            echo "Generation successful!"
-          '';
-        });
+              echo "Generation successful!"
+            '';
+          }
+        );
       };
     };
 }

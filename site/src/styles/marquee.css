@@ -1,74 +1,74 @@
 :root {
-    --size: clamp(10rem, 1rem + 30vmin, 20rem);
-    --gap: calc(var(--size) / 14);
-    --duration: 60s;
-    --scroll-start: 0;
-    --scroll-end: calc(-100% - var(--gap));
+  --size: clamp(10rem, 1rem + 30vmin, 20rem);
+  --gap: calc(var(--size) / 14);
+  --duration: 60s;
+  --scroll-start: 0;
+  --scroll-end: calc(-100% - var(--gap));
 }
 
 .marquee {
-    display: flex;
-    overflow: hidden;
-    user-select: none;
-    gap: var(--gap);
-    mask-image: linear-gradient(
-            var(--mask-direction, to right),
-            hsl(0 0% 0% / 0),
-            hsl(0 0% 0% / 1) 20%,
-            hsl(0 0% 0% / 1) 80%,
-            hsl(0 0% 0% / 0)
-    );
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+  gap: var(--gap);
+  mask-image: linear-gradient(
+    var(--mask-direction),
+    to right,
+    hsl(0 0% 0% / 0),
+    hsl(0 0% 0% / 1) 20%,
+    hsl(0 0% 0% / 1) 80%,
+    hsl(0 0% 0% / 0)
+  );
 }
 
 .marquee__group {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    gap: var(--gap);
-    min-width: 100%;
-    animation: scroll-x var(--duration) linear infinite;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: var(--gap);
+  min-width: 100%;
+  animation: scroll-x var(--duration) linear infinite;
 }
 
 .marquee--vertical {
-    --mask-direction: to bottom;
+  --mask-direction: to bottom;
 }
 
 .marquee--vertical,
 .marquee--vertical .marquee__group {
-    flex-direction: column;
+  flex-direction: column;
 }
 
 .marquee--vertical .marquee__group {
-    animation-name: scroll-y;
+  animation-name: scroll-y;
 }
 
 .marquee--reverse .marquee__group {
-    animation-direction: reverse;
-    animation-delay: -3s;
+  animation-direction: reverse;
+  animation-delay: -3s;
 }
 
 @keyframes scroll-x {
-    from {
-        transform: translateX(var(--scroll-start));
-    }
-    to {
-        transform: translateX(var(--scroll-end));
-    }
+  from {
+    transform: translateX(var(--scroll-start));
+  }
+  to {
+    transform: translateX(var(--scroll-end));
+  }
 }
 
 .marquee img {
-    display: grid;
-    place-items: center;
-    width: var(--size);
-    padding: calc(var(--size) / 20);
-    max-height: 130px;
+  display: grid;
+  place-items: center;
+  width: var(--size);
+  padding: calc(var(--size) / 20);
+  max-height: 130px;
 }
 
-
 @keyframes fade {
-    to {
-        opacity: 0;
-        visibility: hidden;
-    }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
 }

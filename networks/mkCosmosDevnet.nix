@@ -1,21 +1,23 @@
-{ pkgs
-, dbg
-, ...
+{
+  pkgs,
+  dbg,
+  ...
 }:
-{ node
-, chainId
-, chainName
-, denom
-, keyType
-, validatorCount
-, portIncrease
-, genesisOverwrites ? { }
-, lightClients ? [ ]
-, cosmwasmContracts ? [ ]
-, startCommandOverwrite ? null
-, extraPackages ? [ ]
-, sdkVersion ? 50
-, has08Wasm ? false
+{
+  node,
+  chainId,
+  chainName,
+  denom,
+  keyType,
+  validatorCount,
+  portIncrease,
+  genesisOverwrites ? { },
+  lightClients ? [ ],
+  cosmwasmContracts ? [ ],
+  startCommandOverwrite ? null,
+  extraPackages ? [ ],
+  sdkVersion ? 50,
+  has08Wasm ? false,
 }:
 assert (builtins.isString chainId);
 assert (builtins.isString chainName);
@@ -23,10 +25,12 @@ assert (builtins.isString denom);
 assert (builtins.isString keyType);
 assert (builtins.isInt portIncrease);
 assert (builtins.isInt validatorCount);
-assert (pkgs.lib.assertOneOf
-  "sdkVersion"
-  sdkVersion
-  [ 47 50 ]);
+assert (
+  pkgs.lib.assertOneOf "sdkVersion" sdkVersion [
+    47
+    50
+  ]
+);
 assert (builtins.isBool has08Wasm);
 let
   devKeyMnemonics = {
@@ -40,68 +44,58 @@ let
 
   nodeBin = pkgs.lib.getExe node;
 
-  genScriptForEachVal = f:
-    ''
-      ${builtins.concatStringsSep "\n" (builtins.genList f validatorCount)}
+  genScriptForEachVal = f: ''
+    ${builtins.concatStringsSep "\n" (builtins.genList f validatorCount)}
+  '';
+
+  mkNodeMnemonic =
+    idx:
+    assert (builtins.isInt idx);
+    pkgs.runCommand "${chainName}-mnemonic_${toString idx}" { buildInputs = [ pkgs.devnet-utils ]; } ''
+      devnet-utils keygen mnemonic $(echo ${toString idx} | sha256sum - | cut -d' ' -f1) > $out
+
+      echo "validator ${toString idx} mnemonic: $(cat $out)"
     '';
 
-
-  mkNodeMnemonic = idx:
+  mkNodeKey =
+    idx:
     assert (builtins.isInt idx);
-    pkgs.runCommand
-      "${chainName}-mnemonic_${toString idx}"
-      { buildInputs = [ pkgs.devnet-utils ]; }
-      ''
-        devnet-utils keygen mnemonic $(echo ${toString idx} | sha256sum - | cut -d' ' -f1) > $out
+    pkgs.runCommand "${chainName}-node-key_${toString idx}" { buildInputs = [ pkgs.devnet-utils ]; } ''
+      NODE_KEY=$(devnet-utils keygen key --key-type ed25519 "$(cat ${mkNodeMnemonic idx})" | tr -d '\n')
 
-        echo "validator ${toString idx} mnemonic: $(cat $out)"
-      '';
+      echo "validator ${toString idx} node_key: $NODE_KEY"
 
-  mkNodeKey = idx:
+      echo "{\"priv_key\":{\"type\":\"tendermint/PrivKeyEd25519\",\"value\":\"$NODE_KEY\"}}" > $out
+    '';
+
+  mkNodeId =
+    idx:
     assert (builtins.isInt idx);
-    pkgs.runCommand
-      "${chainName}-node-key_${toString idx}"
-      { buildInputs = [ pkgs.devnet-utils ]; }
-      ''
-        NODE_KEY=$(devnet-utils keygen key --key-type ed25519 "$(cat ${mkNodeMnemonic idx})" | tr -d '\n')
+    pkgs.runCommand "${chainId}-node-id_${toString idx}" { buildInputs = [ ]; } ''
+      export HOME=$(pwd)
 
-        echo "validator ${toString idx} node_key: $NODE_KEY"
+      cp -r --no-preserve=mode ${initHome idx}/* .
 
-        echo "{\"priv_key\":{\"type\":\"tendermint/PrivKeyEd25519\",\"value\":\"$NODE_KEY\"}}" > $out
-      '';
+      cp ${mkNodeKey idx} ./config/node_key.json
+      ${nodeBin} tendermint show-node-id --home . | tr -d '\n' > $out
+    '';
 
-  mkNodeId = idx:
+  mkPrivValidatorKey =
+    idx:
     assert (builtins.isInt idx);
-    pkgs.runCommand
-      "${chainId}-node-id_${toString idx}"
-      { buildInputs = [ ]; }
-      ''
-        export HOME=$(pwd)
+    pkgs.runCommand "${chainName}-priv-validator-key_${toString idx}" { buildInputs = [ ]; } ''
+      export HOME=$(pwd)
 
-        cp -r --no-preserve=mode ${initHome idx}/* .
+      cp -r --no-preserve=mode ${initHome idx}/* .
 
-        cp ${mkNodeKey idx} ./config/node_key.json
-        ${nodeBin} tendermint show-node-id --home . | tr -d '\n' > $out
-      '';
+      mv ./config/priv_validator_key.json $out
+      echo "created valkey-${toString idx}: $(cat $out)"
+    '';
 
-  mkPrivValidatorKey = idx:
+  mkValGentx =
+    idx:
     assert (builtins.isInt idx);
-    pkgs.runCommand
-      "${chainName}-priv-validator-key_${toString idx}"
-      { buildInputs = [ ]; }
-      ''
-        export HOME=$(pwd)
-
-        cp -r --no-preserve=mode ${initHome idx}/* .
-
-        mv ./config/priv_validator_key.json $out
-        echo "created valkey-${toString idx}: $(cat $out)"
-      '';
-
-  mkValGentx = idx:
-    assert (builtins.isInt idx);
-    pkgs.runCommand
-      "${chainName}-valgentx_${toString idx}"
+    pkgs.runCommand "${chainName}-valgentx_${toString idx}"
       {
         buildInputs = [ pkgs.jq ];
         src = addAllKeysToKeyringAndGenesis (initHome idx);
@@ -127,10 +121,9 @@ let
           --output-document $out
       '';
 
-  initHome = idx: pkgs.runCommand
-    "${chainName}-genesis-home"
-    { buildInputs = [ ]; }
-    ''
+  initHome =
+    idx:
+    pkgs.runCommand "${chainName}-genesis-home" { buildInputs = [ ]; } ''
       export HOME=$(pwd)
       mkdir -p $out
 
@@ -141,15 +134,22 @@ let
         --home $out \
         --recover 2>/dev/null
 
-      ${pkgs.lib.optionalString (sdkVersion < 50) ''
-        sed -i 's/: "stake"/: "${denom}"/g' $out/config/genesis.json
-      ''} 2>/dev/null
+      ${
+        pkgs.lib.optionalString (sdkVersion < 50) ''
+          sed -i 's/: "stake"/: "${denom}"/g' $out/config/genesis.json
+        ''
+      } 2>/dev/null
     '';
 
-  addDevKeyToKeyringAndGenesis = name: mnemonic: home:
-    pkgs.runCommand
-      "${chainName}-add-dev-key-${name}"
-      { buildInputs = [ pkgs.jq pkgs.moreutils ]; }
+  addDevKeyToKeyringAndGenesis =
+    name: mnemonic: home:
+    pkgs.runCommand "${chainName}-add-dev-key-${name}"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.moreutils
+        ];
+      }
       ''
         export HOME=$(pwd)
         mkdir -p $out
@@ -172,55 +172,50 @@ let
           --home $out
       '';
 
-  addValoperKeyToKeyringAndGenesis = idx: home:
+  addValoperKeyToKeyringAndGenesis =
+    idx: home:
     assert (builtins.isInt idx);
-    pkgs.runCommand
-      "${chainName}-valkey_${toString idx}"
-      { buildInputs = [ ]; }
-      ''
-        export HOME=$(pwd)
-        mkdir -p $out
-        cp --no-preserve=mode -r ${home}/* $out
+    pkgs.runCommand "${chainName}-valkey_${toString idx}" { buildInputs = [ ]; } ''
+      export HOME=$(pwd)
+      mkdir -p $out
+      cp --no-preserve=mode -r ${home}/* $out
 
-        cat ${mkNodeMnemonic idx} | ${nodeBin} \
-          keys \
-          add \
-          --recover valoper-${toString idx} \
-          --keyring-backend test \
-          --home $out
+      cat ${mkNodeMnemonic idx} | ${nodeBin} \
+        keys \
+        add \
+        --recover valoper-${toString idx} \
+        --keyring-backend test \
+        --home $out
 
-        # add-genesis-account was moved to a subcommand of genesis in sdk v50
-        ${nodeBin} \
-          ${if sdkVersion >= 50 then "genesis" else ""} add-genesis-account \
-          valoper-${toString idx} \
-          10000000000000000000000000${denom} \
-          --keyring-backend test \
-          --home $out
-      '';
+      # add-genesis-account was moved to a subcommand of genesis in sdk v50
+      ${nodeBin} \
+        ${if sdkVersion >= 50 then "genesis" else ""} add-genesis-account \
+        valoper-${toString idx} \
+        10000000000000000000000000${denom} \
+        --keyring-backend test \
+        --home $out
+    '';
 
-  addAllKeysToKeyringAndGenesis = home:
-    pkgs.lib.foldl
-      (home: f: f home)
-      home
-      (
-        pkgs.lib.flatten [
-          (pkgs.lib.mapAttrsToList addDevKeyToKeyringAndGenesis devKeyMnemonics)
-          (builtins.genList addValoperKeyToKeyringAndGenesis validatorCount)
-        ]
-      );
+  addAllKeysToKeyringAndGenesis =
+    home:
+    pkgs.lib.foldl (home: f: f home) home (
+      pkgs.lib.flatten [
+        (pkgs.lib.mapAttrsToList addDevKeyToKeyringAndGenesis devKeyMnemonics)
+        (builtins.genList addValoperKeyToKeyringAndGenesis validatorCount)
+      ]
+    );
 
-  applyGenesisOverwrites = home:
+  applyGenesisOverwrites =
+    home:
     let
       overwrites = builtins.toFile "overwrite.json" (builtins.toJSON genesisOverwrites);
     in
-    pkgs.runCommand "${chainName}-apply-genesis-overwrites"
-      { buildInputs = [ pkgs.jq ]; }
-      ''
-        mkdir -p $out
-        cp --no-preserve=mode -r ${home}/* $out
-        jq -s '.[0] * .[1]' ${home}/config/genesis.json ${overwrites} > merge.json
-        mv merge.json $out/config/genesis.json
-      '';
+    pkgs.runCommand "${chainName}-apply-genesis-overwrites" { buildInputs = [ pkgs.jq ]; } ''
+      mkdir -p $out
+      cp --no-preserve=mode -r ${home}/* $out
+      jq -s '.[0] * .[1]' ${home}/config/genesis.json ${overwrites} > merge.json
+      mv merge.json $out/config/genesis.json
+    '';
 
   # calculateCw20Ics20ContractAddress = home: pkgs.runCommand "calculate-ucs01-relay-contract-address"
   #   {
@@ -306,10 +301,15 @@ let
   #       $out/config/genesis.json | sponge $out/config/genesis.json
   #   '';
 
-  enableAllClients = home:
-    pkgs.runCommand
-      "${chainName}-enable-all-clients"
-      { buildInputs = [ pkgs.jq pkgs.moreutils ]; }
+  enableAllClients =
+    home:
+    pkgs.runCommand "${chainName}-enable-all-clients"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.moreutils
+        ];
+      }
       ''
         export HOME=$(pwd)
         mkdir -p $out
@@ -325,7 +325,6 @@ let
           ]' \
           $out/config/genesis.json | sponge $out/config/genesis.json
       '';
-
 
   # addIbcChannelToGenesis = home: pkgs.runCommand "add-ibc-channel-to-genesis"
   #   {
@@ -467,26 +466,35 @@ let
 
   #   '';
 
-  alicePubkey = home:
-    pkgs.runCommand "alice-pubkey" { buildInputs = [ pkgs.jq pkgs.moreutils ]; } ''
-      export HOME=$(pwd)
-      cp --no-preserve=mode -r ${home}/* .
+  alicePubkey =
+    home:
+    pkgs.runCommand "alice-pubkey"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.moreutils
+        ];
+      }
+      ''
+        export HOME=$(pwd)
+        cp --no-preserve=mode -r ${home}/* .
 
-      ALICE_ADDRESS=$(${nodeBin} keys list \
-        --keyring-backend test \
-        --home . \
-        --output json \
-        | jq '.[] | select(.name == "alice").address' --raw-output)
+        ALICE_ADDRESS=$(${nodeBin} keys list \
+          --keyring-backend test \
+          --home . \
+          --output json \
+          | jq '.[] | select(.name == "alice").address' --raw-output)
 
-      ALICE_CANONICAL_KEY=$(${nodeBin} keys parse $ALICE_ADDRESS \
-        --keyring-backend test \
-        --home . \
-        --output json | jq -r .bytes)
+        ALICE_CANONICAL_KEY=$(${nodeBin} keys parse $ALICE_ADDRESS \
+          --keyring-backend test \
+          --home . \
+          --output json | jq -r .bytes)
 
-      echo -n "$ALICE_CANONICAL_KEY" > $out
-    '';
+        echo -n "$ALICE_CANONICAL_KEY" > $out
+      '';
 
-  contractChecksum = contract:
+  contractChecksum =
+    contract:
     pkgs.runCommand "contract-checksum" { buildInputs = [ pkgs.moreutils ]; } ''
       for wasm in $(find ${contract} -name "*.wasm" -type f); do
         CHECKSUM=$(sha256sum $wasm | cut -f1 -d " ")
@@ -496,29 +504,43 @@ let
       done
     '';
 
-  getContractAddress = creator: checksum: salt:
-    pkgs.runCommand "get-contract-address" { buildInputs = [ pkgs.jq pkgs.devnet-utils ]; } ''
-      export HOME=$(pwd)
-      CANONICAL_ADDR=$(devnet-utils \
-        compute \
-        instantiate2-address \
-        --creator "0x$(cat ${creator})" \
-        --checksum "0x$(cat ${checksum})" \
-        --salt "${salt}")
-      ${nodeBin} \
-        keys \
-        parse "$CANONICAL_ADDR" \
-        --output json | jq -r ".formats[0]" > $out
-    '';
+  getContractAddress =
+    creator: checksum: salt:
+    pkgs.runCommand "get-contract-address"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.devnet-utils
+        ];
+      }
+      ''
+        export HOME=$(pwd)
+        CANONICAL_ADDR=$(devnet-utils \
+          compute \
+          instantiate2-address \
+          --creator "0x$(cat ${creator})" \
+          --checksum "0x$(cat ${checksum})" \
+          --salt "${salt}")
+        ${nodeBin} \
+          keys \
+          parse "$CANONICAL_ADDR" \
+          --output json | jq -r ".formats[0]" > $out
+      '';
 
-  addContractAddresses = { code, instances }: home:
+  addContractAddresses =
+    { code, instances }:
+    home:
     let
       checksum = contractChecksum code;
       creator = alicePubkey home;
     in
-    pkgs.runCommand
-      "${chainName}-add-contract-addresses"
-      { buildInputs = [ pkgs.jq pkgs.moreutils ]; }
+    pkgs.runCommand "${chainName}-add-contract-addresses"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.moreutils
+        ];
+      }
       ''
         export HOME=$(pwd)
         mkdir -p $out
@@ -527,16 +549,31 @@ let
           mkdir -p $out/checksums
           echo -n $(cat "${checksum}") > "$out/checksums/$(basename $wasm .wasm)"
           mkdir -p $out/addresses
-          ${builtins.concatStringsSep "\n" (pkgs.lib.imap0 (idx: { salt, ... }: ''
-            echo -n "$(cat ${getContractAddress creator checksum salt})" > "$out/addresses/$(basename $wasm .wasm)_${builtins.toString idx}"
-          '') instances)}
+          ${
+            builtins.concatStringsSep "\n" (
+              pkgs.lib.imap0 (
+                idx:
+                { salt, ... }:
+                ''
+                  echo -n "$(cat ${
+                    getContractAddress creator checksum salt
+                  })" > "$out/addresses/$(basename $wasm .wasm)_${builtins.toString idx}"
+                ''
+              ) instances
+            )
+          }
         done
       '';
 
-  addLightClientCodeToGenesis = contract: home:
-    pkgs.runCommand
-      "${chainName}-add-light-client-contract-code-to-genesis"
-      { buildInputs = [ pkgs.jq pkgs.moreutils ]; }
+  addLightClientCodeToGenesis =
+    contract: home:
+    pkgs.runCommand "${chainName}-add-light-client-contract-code-to-genesis"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.moreutils
+        ];
+      }
       ''
         export HOME=$(pwd)
         mkdir -p $out
@@ -564,12 +601,20 @@ let
         done
       '';
 
-  addIbcContractCodesToGenesis = contracts: home:
+  addIbcContractCodesToGenesis =
+    contracts: home:
     let
-      addContract = { contract, idx }: home:
-        pkgs.runCommand
-          "${chainName}-add-ibc-contract-code-to-genesis"
-          { buildInputs = [ pkgs.jq pkgs.moreutils pkgs.xxd ]; }
+      addContract =
+        { contract, idx }:
+        home:
+        pkgs.runCommand "${chainName}-add-ibc-contract-code-to-genesis"
+          {
+            buildInputs = [
+              pkgs.jq
+              pkgs.moreutils
+              pkgs.xxd
+            ];
+          }
           ''
             export HOME=$(pwd)
             mkdir -p $out
@@ -608,14 +653,20 @@ let
             done
           '';
 
-      home' = (pkgs.lib.foldl
-        (h: contract: addContract contract h)
-        home
-        (pkgs.lib.imap1 (idx: c: { contract = c; inherit idx; }) contracts));
+      home' = pkgs.lib.foldl (h: contract: addContract contract h) home (
+        pkgs.lib.imap1 (idx: c: {
+          contract = c;
+          inherit idx;
+        }) contracts
+      );
     in
-    pkgs.runCommand
-      "${chainName}-add-ibc-contract-codes-to-genesis"
-      { buildInputs = [ pkgs.jq pkgs.moreutils ]; }
+    pkgs.runCommand "${chainName}-add-ibc-contract-codes-to-genesis"
+      {
+        buildInputs = [
+          pkgs.jq
+          pkgs.moreutils
+        ];
+      }
       ''
         export HOME=$(pwd)
         mkdir -p $out
@@ -630,30 +681,27 @@ let
             $out/config/genesis.json | sponge $out/config/genesis.json
       '';
 
-  genesisHome = pkgs.lib.foldl
-    (home: f: f home)
-    (initHome null)
-    (
-      pkgs.lib.flatten [
-        addAllKeysToKeyringAndGenesis
+  genesisHome = pkgs.lib.foldl (home: f: f home) (initHome null) (
+    pkgs.lib.flatten [
+      addAllKeysToKeyringAndGenesis
 
-        applyGenesisOverwrites
+      applyGenesisOverwrites
 
-        # add light clients
-        (builtins.map addLightClientCodeToGenesis lightClients)
+      # add light clients
+      (builtins.map addLightClientCodeToGenesis lightClients)
 
-        # add ibc contracts
-        enableAllClients
+      # add ibc contracts
+      enableAllClients
 
-        (addIbcContractCodesToGenesis (builtins.map ({ code, ... }: code) cosmwasmContracts))
+      (addIbcContractCodesToGenesis (builtins.map ({ code, ... }: code) cosmwasmContracts))
 
-        (builtins.map addContractAddresses cosmwasmContracts)
+      (builtins.map addContractAddresses cosmwasmContracts)
 
-        # add ibc connection
-        # addIbcConnectionToGenesis
-        # addIbcChannelToGenesis
-      ]
-    );
+      # add ibc connection
+      # addIbcConnectionToGenesis
+      # addIbcChannelToGenesis
+    ]
+  );
 
   devnet-home = pkgs.runCommand "${chainName}-home" { } ''
     mkdir $out
@@ -675,11 +723,16 @@ let
     ${nodeBin} ${if sdkVersion >= 50 then "genesis" else ""} collect-gentxs --home . 2> /dev/null
 
     echo "validating"
-    ${if sdkVersion < 50 then ''
-      ${nodeBin} validate-genesis --home .
-    '' else ''
-      ${nodeBin} genesis validate --home .
-    ''}
+    ${
+      if sdkVersion < 50 then
+        ''
+          ${nodeBin} validate-genesis --home .
+        ''
+      else
+        ''
+          ${nodeBin} genesis validate --home .
+        ''
+    }
 
     sed -i 's/chain-id = ""/chain-id = "${chainId}"/' $out/config/client.toml
 
@@ -687,51 +740,49 @@ let
     sed -i 's/max_tx_bytes = 1048576/max_tx_bytes = 10485760/' $out/config/config.toml
   '';
 
-  mkValidatorHome = idx:
-    pkgs.runCommand
-      "${chainName}-validator_${toString idx}-home"
-      { }
-      ''
-        mkdir $out
-        cd $out
+  mkValidatorHome =
+    idx:
+    pkgs.runCommand "${chainName}-validator_${toString idx}-home" { } ''
+      mkdir $out
+      cd $out
 
 
-        cp --no-preserve=mode -RL ${devnet-home}/* $out
-        cp --no-preserve=mode -L ${mkPrivValidatorKey idx} $out/config/priv_validator_key.json
-        cp --no-preserve=mode -L ${mkNodeKey idx} $out/config/node_key.json
+      cp --no-preserve=mode -RL ${devnet-home}/* $out
+      cp --no-preserve=mode -L ${mkPrivValidatorKey idx} $out/config/priv_validator_key.json
+      cp --no-preserve=mode -L ${mkNodeKey idx} $out/config/node_key.json
 
-        cat ${mkNodeId 0}
+      cat ${mkNodeId 0}
 
-        # all nodes connect to node 0
-        sed -i "s/persistent_peers = \".*\"/persistent_peers = \"$(cat ${mkNodeId 0})@${chainName}-0:26656\"/" $out/config/config.toml
-      '';
+      # all nodes connect to node 0
+      sed -i "s/persistent_peers = \".*\"/persistent_peers = \"$(cat ${mkNodeId 0})@${chainName}-0:26656\"/" $out/config/config.toml
+    '';
 
-  mkNodeService = idx:
-    {
-      image = {
-        enableRecommendedContents = true;
-        contents = [
-          pkgs.coreutils
-          pkgs.curl
-          node
-          (mkValidatorHome idx)
-        ] ++ extraPackages;
-      };
-      service = {
-        tty = true;
-        stop_signal = "SIGINT";
-        ports = [
-          # CometBLS JSONRPC 26657
-          "${toString (26657 + portIncrease + idx)}:26657"
-          # Cosmos SDK GRPC 9090
-          "${toString (9090 + portIncrease + idx)}:9090"
-          # Cosmos SDK REST 1317
-          "${toString (1317 + portIncrease + idx)}:1317"
-        ];
-        command = [
-          "sh"
-          "-c"
-          (''
+  mkNodeService = idx: {
+    image = {
+      enableRecommendedContents = true;
+      contents = [
+        pkgs.coreutils
+        pkgs.curl
+        node
+        (mkValidatorHome idx)
+      ] ++ extraPackages;
+    };
+    service = {
+      tty = true;
+      stop_signal = "SIGINT";
+      ports = [
+        # CometBLS JSONRPC 26657
+        "${toString (26657 + portIncrease + idx)}:26657"
+        # Cosmos SDK GRPC 9090
+        "${toString (9090 + portIncrease + idx)}:9090"
+        # Cosmos SDK REST 1317
+        "${toString (1317 + portIncrease + idx)}:1317"
+      ];
+      command = [
+        "sh"
+        "-c"
+        (
+          ''
             mkdir home
 
             cp --no-preserve=mode -RL ${mkValidatorHome idx}/* home
@@ -739,9 +790,9 @@ let
             mkdir ./tmp
             export TMPDIR=./tmp
 
-          '' + (
-            if startCommandOverwrite == null
-            then
+          ''
+          + (
+            if startCommandOverwrite == null then
               ''
                 ${nodeBin} comet show-node-id --home home
 
@@ -759,21 +810,22 @@ let
               ''
             else
               startCommandOverwrite
-          ))
+          )
+        )
+      ];
+      healthcheck = {
+        interval = "5s";
+        start_period = "20s";
+        retries = 8;
+        test = [
+          "CMD-SHELL"
+          ''
+            curl http://127.0.0.1:26657/block?height=2 --fail || exit 1
+          ''
         ];
-        healthcheck = {
-          interval = "5s";
-          start_period = "20s";
-          retries = 8;
-          test = [
-            "CMD-SHELL"
-            ''
-              curl http://127.0.0.1:26657/block?height=2 --fail || exit 1
-            ''
-          ];
-        };
       };
     };
+  };
 
   upload-wasm-light-client =
     let
@@ -792,52 +844,53 @@ let
           required = true;
         }
       ];
-      text =
-        ''
-          # this value isn't exposed anywhere, so read the abci store directly
-          prop_id=$(("0x$(curl --silent "${rpc_endpoint}"'/abci_query?path="store/gov/key"&data=0x03' | jq '.result.response.value' -r | base64 --decode | hexdump -v -e '/1 "%02x"')"))
+      text = ''
+        # this value isn't exposed anywhere, so read the abci store directly
+        prop_id=$(("0x$(curl --silent "${rpc_endpoint}"'/abci_query?path="store/gov/key"&data=0x03' | jq '.result.response.value' -r | base64 --decode | hexdump -v -e '/1 "%02x"')"))
 
-          echo "prop_id: $prop_id"
+        echo "prop_id: $prop_id"
 
-          ${nodeBin} tx ibc-wasm store-code "$argc_wasm_blob" --title "$argc_wasm_blob" --summary "$argc_wasm_blob" --deposit 100000${denom} --from valoper-0 --home ${devnet-home} --keyring-backend test --gas auto --gas-adjustment 2 -y --node "${rpc_endpoint}"
+        ${nodeBin} tx ibc-wasm store-code "$argc_wasm_blob" --title "$argc_wasm_blob" --summary "$argc_wasm_blob" --deposit 100000${denom} --from valoper-0 --home ${devnet-home} --keyring-backend test --gas auto --gas-adjustment 2 -y --node "${rpc_endpoint}"
 
-          until ${nodeBin} query gov proposal "$prop_id" --node "${rpc_endpoint}"; do echo "prop $prop_id not up yet"; sleep 1; done
+        until ${nodeBin} query gov proposal "$prop_id" --node "${rpc_endpoint}"; do echo "prop $prop_id not up yet"; sleep 1; done
 
-          sleep 7
+        sleep 7
 
-          ${nodeBin} tx gov deposit "$prop_id" 1000000000${denom} --from valoper-0 --home ${devnet-home} --keyring-backend test --gas auto --gas-adjustment 2 -y --node "${rpc_endpoint}"
+        ${nodeBin} tx gov deposit "$prop_id" 1000000000${denom} --from valoper-0 --home ${devnet-home} --keyring-backend test --gas auto --gas-adjustment 2 -y --node "${rpc_endpoint}"
 
-          sleep 7
+        sleep 7
 
-          ${genScriptForEachVal (idx: 
-            ''
-            ${nodeBin} tx gov vote "$prop_id" yes --from valoper-${toString idx} --home ${devnet-home} --keyring-backend test -y --gas auto --gas-adjustment 2 --node "${rpc_endpoint}"
-            ''
-          )}
+        ${genScriptForEachVal (idx: ''
+          ${nodeBin} tx gov vote "$prop_id" yes --from valoper-${toString idx} --home ${devnet-home} --keyring-backend test -y --gas auto --gas-adjustment 2 --node "${rpc_endpoint}"
+        '')}
 
-          echo "contract uploaded, checksum: $(sha256sum "$argc_wasm_blob" | cut -d " " -f 1)"
-        '';
+        echo "contract uploaded, checksum: $(sha256sum "$argc_wasm_blob" | cut -d " " -f 1)"
+      '';
     };
 in
 {
   inherit devnet-home;
   scripts =
-    if has08Wasm then {
-      "devnet-${chainName}-upload-wasm-light-client" = upload-wasm-light-client;
-    } else { };
-  services = builtins.listToAttrs
-    (builtins.genList
-      (id: {
+    if has08Wasm then
+      {
+        "devnet-${chainName}-upload-wasm-light-client" = upload-wasm-light-client;
+      }
+    else
+      { };
+  services =
+    builtins.listToAttrs (
+      builtins.genList (id: {
         name = "${chainName}-${toString id}";
         value = mkNodeService id;
-      })
-      validatorCount) // {
-    "${chainName}-cosmwasm-deployer" = import ./services/cosmwasm-deployer.nix {
-      inherit pkgs;
-      inherit devnet-home;
-      inherit node;
-      inherit cosmwasmContracts;
-      depends-on-node = "${chainName}-${toString 0}";
+      }) validatorCount
+    )
+    // {
+      "${chainName}-cosmwasm-deployer" = import ./services/cosmwasm-deployer.nix {
+        inherit pkgs;
+        inherit devnet-home;
+        inherit node;
+        inherit cosmwasmContracts;
+        depends-on-node = "${chainName}-${toString 0}";
+      };
     };
-  };
 }

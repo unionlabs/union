@@ -1,8 +1,15 @@
-{ e2e, pkgs, crane, ... }:
+{
+  e2e,
+  pkgs,
+  crane,
+  ...
+}:
 let
-  ensure-blocks = pkgs.lib.meta.getExe (crane.buildWorkspaceMember {
-    crateDirFromRoot = "e2e/ensure-blocks";
-  }).packages.ensure-blocks;
+  ensure-blocks =
+    pkgs.lib.meta.getExe
+      (crane.buildWorkspaceMember {
+        crateDirFromRoot = "e2e/ensure-blocks";
+      }).packages.ensure-blocks;
 in
 
 e2e.mkTestWithDevnetSetup {
@@ -21,4 +28,3 @@ e2e.mkTestWithDevnetSetup {
     client = _: { };
   };
 }
-

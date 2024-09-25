@@ -1,5 +1,13 @@
-{ ... }: {
-  perSystem = { devnetConfig, pkgs, self', cw-instantiate2-salt, ... }: { };
+_: {
+  perSystem =
+    {
+      devnetConfig,
+      pkgs,
+      self',
+      cw-instantiate2-salt,
+      ...
+    }:
+    { };
   # let
   #   uniond = pkgs.lib.getExe self'.packages.uniond;
 
@@ -254,7 +262,6 @@
   #           exit 1
   #         fi
 
-
   #         if [[ -z "$VOYAGER_CONFIG_FILE" ]] && [[ -n "$NO_DEPLOY_CONTRACTS" ]]; then
   #           echo "--voyager-config-file must be specified when --no-deploy-evm is enabled."
   #           printHelp
@@ -329,7 +336,6 @@
 
   #           EVM_CONTRACTS_ARG=$(tail -1 < "$EVM_CONTRACTS_OUTFILE")
   #           rm "$EVM_CONTRACTS_OUTFILE"
-
 
   #           COMETBLS_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .cometbls_client_address -r)
   #           IBC_HANDLER_ADDRESS=$(echo "$EVM_CONTRACTS_ARG" | jq .ibc_handler_address -r)
@@ -487,7 +493,6 @@
   #           shift
   #           echo "      - Port:        $9"
   #         }
-
 
   #         downloadGaloisCircuits
   #         ethAliveTest

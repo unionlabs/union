@@ -1,10 +1,19 @@
-{ self, ... }: {
-  perSystem = { pkgs, rust, crane, mkCi, ... }:
+{ self, ... }:
+{
+  perSystem =
+    {
+      pkgs,
+      rust,
+      crane,
+      mkCi,
+      ...
+    }:
     let
-      tidy = (crane.buildWorkspaceMember {
-        crateDirFromRoot = "tools/tidy";
-        dev = true;
-      }).packages.tidy-dev;
+      tidy =
+        (crane.buildWorkspaceMember {
+          crateDirFromRoot = "tools/tidy";
+          dev = true;
+        }).packages.tidy-dev;
     in
     {
       checks.cargo-tidy = pkgs.stdenv.mkDerivation {
@@ -13,9 +22,12 @@
         src = pkgs.lib.cleanSourceWith {
           name = "cargo-tidy-source";
           src = self.outPath;
-          filter = path: type: crane.lib.filterCargoSources path type;
+          filter = crane.lib.filterCargoSources;
         };
-        buildInputs = [ rust.toolchains.dev tidy ];
+        buildInputs = [
+          rust.toolchains.dev
+          tidy
+        ];
         doCheck = true;
         checkPhase = ''
           cd $src/.

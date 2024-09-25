@@ -1,5 +1,6 @@
-{ ... }: {
-  perSystem = { pkgs, ... }:
+_: {
+  perSystem =
+    { pkgs, ... }:
     {
       packages = {
         hasura-cli =
@@ -18,7 +19,10 @@
                 sha256 = cli-ext-hashes."${pkgs.go.GOOS}-${pkgs.go.GOARCH}";
               };
               dontUnpack = true;
-              phases = [ "installPhase" "fixupPhase" ];
+              phases = [
+                "installPhase"
+                "fixupPhase"
+              ];
               installPhase = ''
                 mkdir -p $out/bin
                 cp $src $out/bin/cli-ext

@@ -1,5 +1,6 @@
-{ ... }: {
-  perSystem = { pkgs, crane, ... }:
+_: {
+  perSystem =
+    { pkgs, crane, ... }:
     let
       name = "tera";
     in

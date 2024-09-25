@@ -1,6 +1,6 @@
-@import url('./fonts.css');
-@import url('./tailwind.css');
-@import url('./crt.css');
+@import url("./fonts.css");
+@import url("./tailwind.css");
+@import url("./crt.css");
 
 *,
 *:before,
@@ -14,30 +14,32 @@ body {
   box-sizing: border-box;
 }
 
-
-html[data-theme='dark'], body[data-theme='dark'] {
+html[data-theme="dark"],
+body[data-theme="dark"] {
   color-scheme: dark;
   background-color: var(--background-color);
   background-image: var(--background-image);
 }
 
-html[data-theme='light'], body[data-theme='light'] {
+html[data-theme="light"],
+body[data-theme="light"] {
   color-scheme: light;
   background-color: var(--background-color);
   background-image: var(--background-image);
 }
 
 @media (prefers-color-scheme: dark) {
-  html, body {
+  html,
+  body {
     color-scheme: dark;
     background-color: var(--background-color);
     background-image: var(--background-image);
   }
 }
 
-
 @media (prefers-color-scheme: light) {
-  html, body {
+  html,
+  body {
     color-scheme: light;
     background-color: var(--background-color);
     background-image: var(--background-image);
@@ -49,10 +51,10 @@ html[data-theme='light'], body[data-theme='light'] {
   background-color: #a0ecfd;
 }
 
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    margin: 0; 
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  margin: 0;
 }

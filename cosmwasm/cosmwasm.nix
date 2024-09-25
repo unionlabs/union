@@ -1,5 +1,7 @@
-{ inputs, ... }: {
-  perSystem = { crane, ... }:
+{ inputs, ... }:
+{
+  perSystem =
+    { crane, ... }:
     let
       ucs02-nft = crane.buildWasmContract {
         crateDirFromRoot = "cosmwasm/ucs02-nft";
@@ -21,7 +23,9 @@
       };
     in
     {
-      packages = { inherit cw721-base; } // ucs02-nft.packages // ucs01-relay.packages // ucs00-pingpong.packages;
+      packages = {
+        inherit cw721-base;
+      } // ucs02-nft.packages // ucs01-relay.packages // ucs00-pingpong.packages;
       checks = ucs02-nft.checks // ucs01-relay.checks // ucs01-relay-api.checks // ucs00-pingpong.checks;
     };
 }

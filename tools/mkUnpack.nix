@@ -1,6 +1,7 @@
 { pkgs }:
-{ name
-, package
+{
+  name,
+  package,
 }:
 pkgs.stdenv.mkDerivation {
   inherit name;

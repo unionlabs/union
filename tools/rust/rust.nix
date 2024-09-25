@@ -1,5 +1,13 @@
-{ ... }: {
-  perSystem = { pkgs, system, dbg, ensureAtRepositoryRoot, mkCi, ... }:
+_: {
+  perSystem =
+    {
+      pkgs,
+      system,
+      dbg,
+      ensureAtRepositoryRoot,
+      mkCi,
+      ...
+    }:
     let
       # https://rust-lang.github.io/rustup-components-history/
       nightlyVersion = "2024-09-17";
@@ -42,15 +50,16 @@
       #     sha256 = content.xz_hash;
       #   });
 
-      rustSrc = (dbg (mkToolchain {
-        components = [ availableComponents.rust-src ];
-      })).passthru.availableComponents.rust-src;
+      rustSrc =
+        (dbg (mkToolchain {
+          components = [ availableComponents.rust-src ];
+        })).passthru.availableComponents.rust-src;
 
       mkToolchain =
-        { targets ? [ ]
-        , components ? [ ]
-        , channel ? defaultChannel
-        ,
+        {
+          targets ? [ ],
+          components ? [ ],
+          channel ? defaultChannel,
         }:
         pkgs.rust-bin.fromRustupToolchain {
           inherit channel targets;
@@ -59,46 +68,57 @@
           #
           # it should be possible to construct the toolchains manually, but this works for now
           profile = "minimal";
-          components = pkgs.lib.checkListOfEnum
-            "rustup components"
-            (builtins.attrValues availableComponents)
-            components
-            components;
+          components =
+            pkgs.lib.checkListOfEnum "rustup components" (builtins.attrValues availableComponents) components
+              components;
         };
 
       mkBuildStdToolchain =
-        { targets ? [ ]
-        , channel ? defaultChannel
+        {
+          targets ? [ ],
+          channel ? defaultChannel,
         }:
         mkToolchain {
           inherit targets;
-          components = with availableComponents; [ rustc cargo rust-src ];
+          components = with availableComponents; [
+            rustc
+            cargo
+            rust-src
+          ];
         };
 
       mkNightly =
-        { targets ? [ ]
-        , channel ? defaultChannel
+        {
+          targets ? [ ],
+          channel ? defaultChannel,
         }:
         mkToolchain {
           inherit targets channel;
-          components = with availableComponents; [ rustc cargo rust-std clippy ];
+          components = with availableComponents; [
+            rustc
+            cargo
+            rust-std
+            clippy
+          ];
         };
     in
     rec {
       packages.rust-home = _module.args.rust.toolchains.dev;
 
-      packages.fetchRustStdCargoLock = mkCi false (pkgs.writeShellApplication {
-        name = "fetchRustStdCargoLock";
-        runtimeInputs = [ pkgs.xz ];
-        text = ''
-          ${ensureAtRepositoryRoot}
+      packages.fetchRustStdCargoLock = mkCi false (
+        pkgs.writeShellApplication {
+          name = "fetchRustStdCargoLock";
+          runtimeInputs = [ pkgs.xz ];
+          text = ''
+            ${ensureAtRepositoryRoot}
 
-          # echo ${rustSrc}
-          # ls -al ${rustSrc}
+            # echo ${rustSrc}
+            # ls -al ${rustSrc}
 
-          cp ${rustSrc}/lib/rustlib/src/rust/library/Cargo.lock tools/rust/rust-std-Cargo.lock
-        '';
-      });
+            cp ${rustSrc}/lib/rustlib/src/rust/library/Cargo.lock tools/rust/rust-std-Cargo.lock
+          '';
+        }
+      );
 
       _module.args.rust = {
         inherit mkBuildStdToolchain mkNightly rustSrc;
@@ -107,10 +127,10 @@
           nightly = mkNightly { };
 
           # for use in the devShell
-          dev = (pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
+          dev = pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
             extensions = builtins.attrValues availableComponents;
             targets = [ "wasm32-unknown-unknown" ];
-          });
+          };
         };
       };
     };

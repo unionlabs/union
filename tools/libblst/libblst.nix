@@ -1,18 +1,23 @@
-{ inputs, ... }: {
-  perSystem = { pkgs, ... }:
+{ inputs, ... }:
+{
+  perSystem =
+    { pkgs, ... }:
     let
       enableShared = !pkgs.stdenv.hostPlatform.isStatic;
     in
-    with pkgs; {
+    with pkgs;
+    {
       packages.libblst = stdenv.mkDerivation rec {
         pname = "blst";
         version = inputs.blst.shortRev;
         src = inputs.blst;
-        buildPhase = ''
-          ./build.sh
-        '' + lib.optionalString enableShared ''
-          ./build.sh -shared
-        '';
+        buildPhase =
+          ''
+            ./build.sh
+          ''
+          + lib.optionalString enableShared ''
+            ./build.sh -shared
+          '';
         installPhase = ''
           mkdir -p $out/{lib,include}
           for lib in libblst.{a,so,dylib}; do

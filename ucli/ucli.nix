@@ -1,5 +1,11 @@
-{ ... }: {
-  perSystem = { self', pkgs, crane, ... }:
+_: {
+  perSystem =
+    {
+      self',
+      pkgs,
+      crane,
+      ...
+    }:
     let
       ucli = crane.buildWorkspaceMember {
         crateDirFromRoot = "ucli";
@@ -13,7 +19,7 @@
       };
     in
     {
-      packages = ucli.packages;
-      checks = ucli.checks;
+      inherit (ucli) packages;
+      inherit (ucli) checks;
     };
 }

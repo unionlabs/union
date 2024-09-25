@@ -1,6 +1,17 @@
-{ inputs, ... }: {
+{ inputs, ... }:
+{
   perSystem =
-    { pkgs, unstablePkgs, crane, dbg, system, rust, mkCi, nix-filter, ... }:
+    {
+      pkgs,
+      unstablePkgs,
+      crane,
+      dbg,
+      system,
+      rust,
+      mkCi,
+      nix-filter,
+      ...
+    }:
     let
       throwBadSystem = throw "libwasmvm cannot be built on system `${system}`";
 
@@ -29,9 +40,11 @@
 
         nativeBuildInputs = [ pkgs.pkg-config ];
 
-        buildInputs = [ pkgs.libgit2 unstablePkgs.rust-jemalloc-sys pkgs.zlib ]
-          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin
-          [ pkgs.darwin.apple_sdk.frameworks.Security ];
+        buildInputs = [
+          pkgs.libgit2
+          unstablePkgs.rust-jemalloc-sys
+          pkgs.zlib
+        ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ];
 
         nativeCheckInputs = [ pkgs.git ];
 
@@ -44,49 +57,65 @@
     in
     {
       _module.args.biome = biome;
-      checks.biome-lint = mkCi (system == "x86_64-linux") (pkgs.stdenv.mkDerivation {
-        name = "biome-lint";
-        description = "Lint js,ts,jsx,tsx,d.ts,json,jsonc,astro,svelte,vue,css,graphql,html files";
-        src = with unstablePkgs.lib.fileset; toSource {
-          root = ../../.;
-          fileset = intersection
-            (difference ../../. (unions [ ../../galoisd/vendor ../../uniond/vendor ../../app/src/generated ../../networks/genesis ../../lib/ethereum-verifier/src/test ]))
-            (fileFilter
-              (file: (file.name != "package-lock.json") && (builtins.any file.hasExt [
-                "js"
-                "ts"
-                "mts"
-                "cjs"
-                "mjs"
-                "jsx"
-                "tsx"
-                "vue"
-                "d.ts"
-                "css"
-                "astro"
-                "svelte"
-                "json"
-                "jsonc"
-                "css"
-                "graphql"
-                "html"
-              ])) ../../.);
-        };
-        buildInputs = [ biome ];
-        doCheck = true;
-        checkPhase = ''
-          cd $src
+      checks.biome-lint = mkCi (system == "x86_64-linux") (
+        pkgs.stdenv.mkDerivation {
+          name = "biome-lint";
+          description = "Lint js,ts,jsx,tsx,d.ts,json,jsonc,astro,svelte,vue,css,graphql,html files";
+          src =
+            with unstablePkgs.lib.fileset;
+            toSource {
+              root = ../../.;
+              fileset =
+                intersection
+                  (difference ../../. (unions [
+                    ../../galoisd/vendor
+                    ../../uniond/vendor
+                    ../../app/src/generated
+                    ../../networks/genesis
+                    ../../lib/ethereum-verifier/src/test
+                  ]))
+                  (
+                    fileFilter (
+                      file:
+                      (file.name != "package-lock.json")
+                      && (builtins.any file.hasExt [
+                        "js"
+                        "ts"
+                        "mts"
+                        "cjs"
+                        "mjs"
+                        "jsx"
+                        "tsx"
+                        "vue"
+                        "d.ts"
+                        "css"
+                        "astro"
+                        "svelte"
+                        "json"
+                        "jsonc"
+                        "css"
+                        "graphql"
+                        "html"
+                      ])
+                    ) ../../.
+                  );
+            };
+          buildInputs = [ biome ];
+          doCheck = true;
+          checkPhase = ''
+            cd $src
 
-          biome check . \
-            --verbose \
-            --error-on-warnings \
-            --log-level="info" \
-            --log-kind="pretty" \
-            --diagnostic-level="info"
+            biome check . \
+              --verbose \
+              --error-on-warnings \
+              --log-level="info" \
+              --log-kind="pretty" \
+              --diagnostic-level="info"
 
-          echo "biome-lint: OK"
-          touch $out
-        '';
-      });
+            echo "biome-lint: OK"
+            touch $out
+          '';
+        }
+      );
     };
 }

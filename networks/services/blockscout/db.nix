@@ -22,7 +22,10 @@ in
       timeout = "5s";
       retries = 5;
       start_period = "10s";
-      test = [ "CMD-SHELL" "pg_isready -U blockscout -d blockscout" ];
+      test = [
+        "CMD-SHELL"
+        "pg_isready -U blockscout -d blockscout"
+      ];
     };
   };
 }

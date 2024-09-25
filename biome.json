@@ -11,17 +11,20 @@
       "*.ts",
       "*.mts",
       "*.js",
-      "*.mjs",
       "*.cjs",
       "*.jsx",
       "*.tsx",
-      "*.vue",
-      "*.css",
       "*.d.ts",
+      "*.d.mts",
+      "*.d.cts",
+      "*.vue",
+      "*.html",
+      "*.css",
       "*.json",
       "*.jsonc",
       "*.astro",
-      "*.svelte"
+      "*.svelte",
+      "*.graphql"
     ],
     "ignore": [
       "_",
@@ -35,6 +38,7 @@
       "generated",
       ".svelte-kit",
       "node_modules",
+      "**/generated/**",
       "package-lock.json",
       "./app/src/generated",
       "./lib/poseidon-rs/constants.json"
@@ -48,11 +52,25 @@
       "enabled": true,
       "indentWidth": 2,
       "lineWidth": 100,
-      "quoteStyle": "single",
+      "quoteStyle": "double",
       "indentStyle": "space"
     },
     "parser": {
+      "cssModules": true,
       "allowWrongLineComments": true
+    }
+  },
+  "graphql": {
+    "formatter": {
+      "enabled": true,
+      "lineWidth": 100,
+      "indentWidth": 2,
+      "bracketSpacing": true,
+      "indentStyle": "space",
+      "quoteStyle": "double"
+    },
+    "linter": {
+      "enabled": true
     }
   },
   "files": {
@@ -60,12 +78,17 @@
     "include": [
       "*.ts",
       "*.mts",
+      "*.cts",
       "*.js",
+      "*.mjs",
       "*.cjs",
       "*.jsx",
       "*.tsx",
       "*.d.ts",
+      "*.d.mts",
+      "*.d.cts",
       "*.vue",
+      "*.html",
       "*.css",
       "*.json",
       "*.jsonc",
@@ -86,6 +109,7 @@
       "generated",
       ".svelte-kit",
       "node_modules",
+      "**/generated/**",
       "package-lock.json",
       "./app/src/generated",
       "./lib/poseidon-rs/constants.json"
@@ -113,13 +137,18 @@
     "include": [
       "*.ts",
       "*.mts",
+      "*.cts",
       "*.js",
       "*.mjs",
       "*.cjs",
       "*.jsx",
       "*.tsx",
       "*.d.ts",
+      "*.d.mts",
+      "*.d.cts",
       "*.vue",
+      "*.html",
+      "*.css",
       "*.json",
       "*.jsonc",
       "*.astro",
@@ -138,6 +167,7 @@
       "generated",
       ".svelte-kit",
       "node_modules",
+      "**/generated/**",
       "package-lock.json",
       "./app/src/generated",
       "./lib/poseidon-rs/constants.json"
@@ -221,13 +251,18 @@
     "include": [
       "*.ts",
       "*.mts",
+      "*.cts",
       "*.js",
       "*.mjs",
       "*.cjs",
       "*.jsx",
       "*.tsx",
       "*.d.ts",
+      "*.d.mts",
+      "*.d.cts",
       "*.vue",
+      "*.html",
+      "*.css",
       "*.json",
       "*.jsonc",
       "*.astro",
@@ -247,6 +282,7 @@
       "*-env.d.ts",
       ".svelte-kit",
       "node_modules",
+      "**/generated/**",
       "package-lock.json",
       "./app/src/generated",
       "./lib/poseidon-rs/constants.json"
@@ -279,7 +315,11 @@
   "overrides": [
     {
       "include": ["*.astro"],
+      "formatter": {
+        "enabled": true
+      },
       "linter": {
+        "enabled": true,
         "rules": {
           "correctness": {
             "noUnusedImports": "off",
@@ -293,7 +333,11 @@
     },
     {
       "include": ["*.svelte"],
+      "formatter": {
+        "enabled": true
+      },
       "linter": {
+        "enabled": true,
         "rules": {
           "correctness": {
             "noUnusedLabels": "off",

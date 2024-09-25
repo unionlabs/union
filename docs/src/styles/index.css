@@ -1,5 +1,10 @@
-input, textarea {
+input,
+textarea {
   touch-action: manipulation;
+}
+
+.x {
+  color: red;
 }
 
 g {
@@ -95,8 +100,8 @@ code[data-line-numbers] > [data-line]::before {
 }
 
 [data-chars-id] {
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),
-    var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
+    var(--tw-shadow) !important;
   padding: 0.25rem;
   border-bottom-width: 2px;
 }
@@ -155,8 +160,6 @@ figcaption + pre {
 }
 
 .rehype-pretty-copy {
-  position: absolute;
-
   opacity: 1;
   height: 18px;
   /*  make stick to top right corner */
@@ -197,20 +200,15 @@ pre:has(code) {
 
 pre button.copy {
   position: sticky;
-  right: 16px;
-  top: 16px !important;
-  height: 28px;
   float: right;
   margin-right: -60px;
   width: 28px;
-  padding: 0;
   display: flex;
   cursor: pointer;
   color: white;
   border-radius: 0.25rem;
   backdrop-filter: blur(5px);
   background: transparent;
-
   top: 1px;
   right: 1px;
   padding: 0;
@@ -247,7 +245,6 @@ pre button.copy {
 
 .copy-code {
   border: none;
-  padding: 0;
   cursor: pointer;
   outline: inherit;
   position: absolute;

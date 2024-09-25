@@ -1,4 +1,9 @@
-{ lib, pkgs, env-utils, ... }:
+{
+  lib,
+  pkgs,
+  env-utils,
+  ...
+}:
 let
   frontend = pkgs.dockerTools.pullImage {
     imageName = "ghcr.io/blockscout/frontend";

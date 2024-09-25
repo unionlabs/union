@@ -3,7 +3,13 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     union.url = "git+ssh://git@github.com/unionlabs/union";
   };
-  outputs = { self, nixpkgs, union, ... }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      union,
+      ...
+    }:
     {
       nixosConfigurations.testnet-validator =
         let
@@ -20,7 +26,12 @@
               imports = [ "${nixpkgs}/nixos/modules/virtualisation/openstack-config.nix" ];
 
               # Allow other validators to reach you
-              networking.firewall.allowedTCPPorts = [ 80 443 26656 26657 ];
+              networking.firewall.allowedTCPPorts = [
+                80
+                443
+                26656
+                26657
+              ];
 
               # Unionvisor module configuration
               services.unionvisor = {

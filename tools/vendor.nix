@@ -1,22 +1,24 @@
-{ ... }: {
+_: {
   perSystem =
-    { pkgs
-    , self'
-    , crane
-    , rust
-    , system
-    , ensureAtRepositoryRoot
-    , libwasmvmCargoToml_1_3_0
-    , libwasmvmCargoToml_1_5_0
-    , sqlxCliCargoToml
-    , mkCi
-    , ...
+    {
+      pkgs,
+      self',
+      crane,
+      rust,
+      system,
+      ensureAtRepositoryRoot,
+      libwasmvmCargoToml_1_3_0,
+      libwasmvmCargoToml_1_5_0,
+      sqlxCliCargoToml,
+      mkCi,
+      ...
     }:
     let
       vendorDir = "tools/vendor/";
       vendorDirPath = ./vendor;
 
-      srcWithVendoredSources = { name, originalSrc }:
+      srcWithVendoredSources =
+        { name, originalSrc }:
         let
           configToml = ''
             [source.crates-io]
@@ -39,12 +41,15 @@
         pkgs.stdenv.mkDerivation {
           name = "${name}-vendored-sources-cargo-config-toml";
           src = originalSrc;
-          buildInputs = [ pkgs.moreutils pkgs.jq ];
+          buildInputs = [
+            pkgs.moreutils
+            pkgs.jq
+          ];
           buildPhase = ''
             cp -r . $out
 
             mkdir -p $out/${vendorDir}
-          
+
             cp -r --no-preserve=mode ${vendorDirPath}/. $out/${vendorDir}/
 
             # FIXME: This is necessary due to git-lfs issues, likely not required once we go open source
@@ -64,29 +69,25 @@
 
       packages.vendor-tools =
         let
-          args = pkgs.lib.concatStringsSep
-            " "
-            (pkgs.lib.lists.imap0
-              (i: tool:
-                if i == 0
-                then
-                  "--manifest-path ${tool}"
-                else
-                  "--sync ${tool}"
-              )
-              [ libwasmvmCargoToml_1_3_0 libwasmvmCargoToml_1_5_0 sqlxCliCargoToml ]
-            );
+          args = pkgs.lib.concatStringsSep " " (
+            pkgs.lib.lists.imap0 (i: tool: if i == 0 then "--manifest-path ${tool}" else "--sync ${tool}") [
+              libwasmvmCargoToml_1_3_0
+              libwasmvmCargoToml_1_5_0
+              sqlxCliCargoToml
+            ]
+          );
         in
-        mkCi false (pkgs.writeShellApplication {
-          name = "vendor-tools";
-          text =
-            ''
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "vendor-tools";
+            text = ''
               ${ensureAtRepositoryRoot}
 
               cargo --version
 
               CARGO_NET_GIT_FETCH_WITH_CLI=true cargo vendor --locked ${args} ${vendorDir}
             '';
-        });
+          }
+        );
     };
 }
