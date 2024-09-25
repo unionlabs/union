@@ -71,6 +71,19 @@ module UCS01::EthABI {
         let result = from_bcs::to_u256(reversed_bytes);
         
         result
+    }
+
+    public fun encode_u8(buf: &mut vector<u8>, data: u8) {
+        let u8_data = bcs::to_bytes(&(data as u8));
+        vector::append(buf, u8_data);
+    }
+
+    public fun decode_u8(buf: vector<u8>, index: &mut u64): u8 {
+        let padded_bytes = vector::slice(&buf, *index, *index + 1);
+        
+        *index = *index + 1;
+
+        from_bcs::to_u8(padded_bytes)
     }    
 
     public inline fun encode_vector<T: copy>(buf: &mut vector<u8>, vec: vector<T>, encode_fn: |&mut vector<u8>, T|) {
@@ -82,12 +95,27 @@ module UCS01::EthABI {
             let item = *vector::borrow(&vec, i);
             encode_fn(buf, item); 
             i = i + 1;
+        };
+
+
+
+        // Calculate padding to align to 32 bytes
+        let padding_len = (32 - (len % 32)) % 32;
+        if (padding_len > 0 ){
+            let padding = vector::empty<u8>();
+            let j = 0;
+            while (j < padding_len) {
+                vector::push_back(&mut padding, 0);
+                j = j + 1;
+            };
+            // Append the padding
+            vector::append(buf, padding);
         }
     }
 
     public inline fun decode_vector<T>(buf: vector<u8>, index: &mut u64, decode_fn: |vector<u8>, &mut u64|T): vector<T> {
         let vec_len = (decode_uint(buf, index) as u64); // Decode the length of the vector
-
+        
         let result = vector::empty<T>();
         let i = 0;
         while (i < vec_len) {
@@ -95,6 +123,10 @@ module UCS01::EthABI {
             vector::push_back(&mut result, item);
             i = i + 1;
         };
+
+        // Calculate padding length and adjust the index to skip padding bytes
+        let padding_len = (32 - (vec_len % 32)) % 32;
+        *index = *index + padding_len; // Skip the padding bytes
         result
     }
 

@@ -375,14 +375,23 @@ module UCS01::Relay {
 
         // unknown data ??
         EthABI::encode_uint<u64>(&mut buf, 32);
+        EthABI::encode_uint<u64>(&mut buf, 32);
+        EthABI::encode_uint<u64>(&mut buf, 32);
+        EthABI::encode_uint<u64>(&mut buf, 32);
+
 
         // TODO: how to encode senders now?
         EthABI::encode_vector<u8>(&mut buf, packet.sender, |some_variable, data| {
-            EthABI::encode_uint<u8>(some_variable, data);
+            EthABI::encode_u8(some_variable, data);
+        });
+        
+        let receiver_bytes = bcs::to_bytes(&packet.receiver);
+        
+        // TODO: how to encode senders now?
+        EthABI::encode_vector<u8>(&mut buf, receiver_bytes, |some_variable, data| {
+            EthABI::encode_u8(some_variable, data);
         });
 
-        EthABI::encode_address(&mut buf, packet.receiver);
-        
         // unknown data ??
         EthABI::encode_uint<u64>(&mut buf, 128);
 
@@ -435,14 +444,21 @@ module UCS01::Relay {
         let index = 0;
 
         let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
+        let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
+        let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
+        let _unknown_data_32 = EthABI::decode_uint(buf, &mut index);
 
         // Decoding sender address
         let sender = EthABI::decode_vector<u8>(buf, &mut index, |buf, index| {
-            (EthABI::decode_uint(buf, index) as u8)
+            (EthABI::decode_u8(buf, index) as u8)
         });
 
-        // Decoding receiver address
-        let receiver = EthABI::decode_address(buf, &mut index);
+        let receiver_vec = EthABI::decode_vector<u8>(buf, &mut index, |buf, index| {
+            (EthABI::decode_u8(buf, index) as u8)
+        });
+
+        let receiver = from_bcs::to_address(receiver_vec);
+        // let receiver = EthABI::decode_address(buf, &mut index);
 
         // Decoding unknown data (128 as u256)
         let _unknown_data_128 = EthABI::decode_uint(buf, &mut index);
@@ -452,6 +468,9 @@ module UCS01::Relay {
 
         // Decoding the number of tokens
         let num_tokens = (EthABI::decode_uint(buf, &mut index) as u64);
+
+        // std::debug::print(&string::utf8(b"num_tokens is: "));
+        // std::debug::print(&num_tokens);
 
         // Decoding the token starting point and sequence
         if (num_tokens > 0) {
@@ -1204,7 +1223,7 @@ module UCS01::Relay {
         vector::push_back(&mut tokens, token2);
         vector::push_back(&mut tokens, token3);
 
-        let sender = bcs::to_bytes(&@0x1111111111111111111111111111111111111111);
+        let sender = bcs::to_bytes(&@0x111111111111111111111);
         let receiver = @0x0000000000000000000000000000000000000033;
         let extension = string::utf8(b"extension");
         let packet = RelayPacket {
