@@ -36,4 +36,3 @@ watch(
     {@render children()}
   </Terminal>
 </main>
-<Circles />

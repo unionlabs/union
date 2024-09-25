@@ -71,9 +71,11 @@
   }
 </script>
 
-<section class="flex flex-col sm:justify-center items-center w-full h-full p-2 z-10">
-  <div class="w-full h-full max-h-[600px] border bg-black max-w-4xl relative">
-    <div class="w-full flex justify-between bg-neutral-700 px-3 py-2">
+<section class="flex flex-col sm:justify-center items-center w-full h-full z-10">
+
+  <div class="w-full h-full bg-black relative">
+
+    <div class="w-full flex justify-between bg-neutral-800 px-4 py-2">
       <div class="flex items-center gap-2">
         <svg class="size-5" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" clip-rule="evenodd"
@@ -117,8 +119,7 @@
       <button class="font-mono font-medium text-white" onclick={() => logout(terminal)}>Log out</button>
     </div>
 
-    <div class="px-5 py-4 text-union-accent-50 w-full overflow-y-hidden" use:autoScroll>
-
+    <div class="px-5 py-4 text-union-accent-50 w-full" use:autoScroll>
       {#if terminal.tab === 1}
         <div class="flex flex-col">
           {#each terminal.history as text}
@@ -133,8 +134,8 @@
       {:else if terminal.tab === 4 && terminal.hash}
         {@render children()}
       {/if}
-
     </div>
+
   </div>
 
 </section>
