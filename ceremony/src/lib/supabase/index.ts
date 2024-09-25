@@ -120,7 +120,7 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
   const { data, error } = await queryCurrentUserState()
   if (error || !data) return undefined
 
-  console.log("hasRedeemed")
+  console.log("inQueue")
   return "hasRedeemed"
 
   if (data.has_redeemed) return "hasRedeemed"

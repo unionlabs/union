@@ -76,9 +76,9 @@
 {:then contribution}
   {#if contribution}
     <Print>{hash}</Print>
-    <Print class="mb-2">Public key</Print>
+    <Print>Public key</Print>
     <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.public_key)}</pre>
-    <Print class="mb-2">Signature</Print>
+    <Print>Signature</Print>
     <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.signature)}</pre>
     <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
       copy public

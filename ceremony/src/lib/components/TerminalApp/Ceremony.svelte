@@ -37,13 +37,13 @@
 {#if !contributor.userWallet}
   <Reward />
 
-{:else if contributor.state !== 'contributed'}
+{:else if contributor.state === 'contributed'}
   <Thanks />
 
 {:else if contributor.state === 'verifying'}
   {terminal.updateHistory("Verifying your contribution...")}
 
-{:else if contributor.state === "inQueue"}
+{:else if contributor.state !== "inQueue"}
   <Queue {contributor}/>
 
 {:else if contributor.state === 'contribute'}
