@@ -17,6 +17,7 @@ pub trait ChainType {
 }
 
 /// DTO corresponding to the v0.blocks table.
+#[derive(Clone)]
 pub struct Block<Chain: ChainType> {
     pub chain_id: ChainId,
     pub hash: Chain::BlockHash,
@@ -26,6 +27,7 @@ pub struct Block<Chain: ChainType> {
 }
 
 /// DTO corresponding to the v0.transactions table.
+#[derive(Clone)]
 pub struct Transaction<Chain: ChainType> {
     pub chain_id: ChainId,
     pub block_hash: Chain::BlockHash,
@@ -38,6 +40,7 @@ pub struct Transaction<Chain: ChainType> {
 }
 
 /// DTO corresponding to the v0.events table.
+#[derive(Clone)]
 pub struct Event<Chain: ChainType> {
     pub chain_id: ChainId,
     pub block_hash: Chain::BlockHash,
@@ -576,4 +579,29 @@ pub async fn get_max_consensus_height<'a, A: Acquire<'a, Database = Postgres>>(
     .unwrap_or(0);
 
     Ok(height)
+}
+
+pub async fn insert_client_mapping<'a, A: Acquire<'a, Database = Postgres>>(
+    db: A,
+    chain_id: i32,
+    client_id: String,
+    counterparty_chain_id: String,
+) -> sqlx::Result<()> {
+    let mut conn = db.acquire().await?;
+    sqlx::query!(
+        r#"
+        INSERT INTO
+            v0.clients (chain_id, client_id, counterparty_chain_id)
+        VALUES
+            ($1, $2, $3)
+        ON CONFLICT DO NOTHING
+        "#,
+        chain_id,
+        client_id,
+        counterparty_chain_id,
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(())
 }

@@ -47,6 +47,7 @@ pub struct Config {
 }
 
 /// Unit struct describing parametrization of associated types for CosmosSDK based chains.
+#[derive(Clone)]
 pub struct CosmosSDK;
 
 impl postgres::ChainType for CosmosSDK {

@@ -1,5 +1,3 @@
-use core::fmt::Debug;
-
 use sqlx::Postgres;
 use time::OffsetDateTime;
 

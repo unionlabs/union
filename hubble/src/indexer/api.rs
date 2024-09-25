@@ -156,6 +156,10 @@ impl BlockReference {
     }
 }
 
+pub trait BlockReferenceProvider {
+    fn block_reference(&self) -> Result<BlockReference, Report>;
+}
+
 impl Display for BlockReference {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.height)
@@ -169,7 +173,7 @@ pub trait BlockHandle: Send + Sync + Sized {
         &self,
         range: BlockRange,
         mode: FetchMode,
-    ) -> Result<impl Stream<Item = Result<Self, IndexerError>> + Send + Unpin, IndexerError>;
+    ) -> Result<impl Stream<Item = Result<Self, IndexerError>> + Send, IndexerError>;
     async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError>;
     async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError>;
 }

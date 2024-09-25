@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                        SELECT MAX(height) + 1 as height\n                        FROM v0.blocks\n                        WHERE chain_id = $1\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "height",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "4d5ac1030fd012c75d22ee8f92acff0bebacec92ea41d0a532c660d384a50ae3"
+}

@@ -5,7 +5,7 @@ use tendermint_rpc::{
 
 use crate::race_client::RaceClient;
 
-impl<C: TendermintRpcClient + std::marker::Sync> RaceClient<C> {
+impl<C: TendermintRpcClient + std::marker::Sync + Clone> RaceClient<C> {
     pub async fn status(
         &self,
     ) -> Result<tendermint_rpc::endpoint::status::Response, TendermintRpcError> {

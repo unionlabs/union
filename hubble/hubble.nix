@@ -105,7 +105,18 @@
                 example = [ "https://rpc.example.com" ];
                 default = null;
               };
-
+              options.rpc_urls = mkOption {
+                type = types.nullOr (types.listOf types.str);
+                description = "List of rpc urls";
+                example = [ "https://rpc.example.com" ];
+                default = null;
+              };
+              options.grpc_urls = mkOption {
+                type = types.nullOr (types.listOf types.str);
+                description = "List of grpc urls";
+                example = [ "https://grpc.example.com" ];
+                default = null;
+              };
               # arb consensus height indexer
               options.l1_url = mkOption {
                 type = types.nullOr types.str;
@@ -164,6 +175,12 @@
                 type = types.int;
                 example = 1;
                 default = 200;
+              };
+              options.tx_search_max_page_size = mkOption {
+                type = types.int;
+                description = "Maximum number of transactions to fetch in one page";
+                example = 1;
+                default = 100;
               };
               options.until = mkOption {
                 type = types.int;

@@ -43,6 +43,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
         match indexer {
             IndexerConfig::DummyFetcher(_) => {}
             IndexerConfig::EthFetcher(_) => {}
+            IndexerConfig::TmFetcher(_) => {}
             IndexerConfig::Scroll(_) => {}
             IndexerConfig::Arb(_) => {}
             IndexerConfig::Beacon(_) => {}
