@@ -1,4 +1,4 @@
-module UCS01::Relay{    
+module UCS01::ibc{    
     use IBC::ibc;
     use IBC::channel;
     use IBC::height;
@@ -47,7 +47,7 @@ module UCS01::Relay{
 
     struct RelayPacket has copy, drop, store {
         sender: vector<u8>,
-        receiver: address,
+        receiver: vector<u8>,
         tokens: vector<Token>,
         extension: String,
     }
@@ -94,7 +94,7 @@ module UCS01::Relay{
         packet_sequence: u64,
         channel_id: String,
         sender: vector<u8>,
-        receiver: address,
+        receiver: vector<u8>,
         denom: String,
         token: address,
         amount: u64,
@@ -105,7 +105,7 @@ module UCS01::Relay{
         packet_sequence: u64,
         channel_id: String,
         sender: vector<u8>,
-        receiver: address,
+        receiver: vector<u8>,
         denom: String,
         token: address,
         amount: u64,
@@ -115,8 +115,8 @@ module UCS01::Relay{
     struct Refunded has copy, drop, store {
         packet_sequence: u64,
         channel_id: String,
-        sender: address,
-        receiver: address,
+        sender: vector<u8>,
+        receiver: vector<u8>,
         denom: String,
         token: address,
         amount: u64,
@@ -384,10 +384,10 @@ module UCS01::Relay{
             EthABI::encode_u8(some_variable, data);
         });
         
-        let receiver_bytes = bcs::to_bytes(&packet.receiver);
+        // let receiver_bytes = bcs::to_bytes(&packet.receiver);
         
         // TODO: how to encode senders now?
-        EthABI::encode_vector<u8>(&mut buf, receiver_bytes, |some_variable, data| {
+        EthABI::encode_vector<u8>(&mut buf, packet.receiver, |some_variable, data| {
             EthABI::encode_u8(some_variable, data);
         });
 
@@ -435,17 +435,16 @@ module UCS01::Relay{
         std::debug::print(&sender);
         std::debug::print(&index);
 
-        let receiver_vec = EthABI::decode_vector<u8>(buf, &mut index, |buf, index| {
+        let receiver = EthABI::decode_vector<u8>(buf, &mut index, |buf, index| {
             (EthABI::decode_u8(buf, index) as u8)
         });
-        std::debug::print(&receiver_vec);
-        std::debug::print(&index);
+        // std::debug::print(&receiver_vec);
+        // std::debug::print(&index);
 
-        let receiver = from_bcs::to_address(receiver_vec);
+        // let receiver = from_bcs::to_address(receiver_vec);
 
         // Decoding the number of tokens
         let num_tokens = (EthABI::decode_uint(buf, &mut index) as u64);
-        std::debug::print(&num_tokens);
 
         index = index + num_tokens * 32;
 
@@ -457,11 +456,8 @@ module UCS01::Relay{
             index = index + 32;
 
             let amount = EthABI::decode_uint(buf, &mut index);
-            std::debug::print(&amount);
             let _fee = EthABI::decode_uint(buf, &mut index); 
-            std::debug::print(&_fee);
             let denom = EthABI::decode_string(buf, &mut index);
-            std::debug::print(&denom);
 
             let token = Token {
                 amount: (amount as u64),
@@ -472,22 +468,7 @@ module UCS01::Relay{
             i = i + 1;
         };
 
-        // // Decoding the tokens
-        // let i = 0;
-        // while (i < num_tokens) {
-        //     // Decoding unknown data (64 as u256)
-        //     let _unknown_data_64 = EthABI::decode_uint(buf, &mut index);
-
-        //     // Decoding the amount of token
-        //     let amount = EthABI::decode_uint(buf, &mut index);
-
-        //     // Decoding the token denomination string
-        //     let denom = EthABI::decode_string(buf, &mut index);
-
-
-        //     i = i + 1;
-        // };
-
+       
         // Decoding the extension string
         let extension = EthABI::decode_string(buf, &mut index);
 
@@ -533,7 +514,7 @@ module UCS01::Relay{
         let prefix = make_denom_prefix(*IBC::packet::source_port(&ibc_packet), source_channel);
 
         // Get the receiver's address from the packet
-        let receiver = packet.receiver;//from_bcs::to_address(*string::bytes(packet.receiver));
+        let receiver = from_bcs::to_address(packet.receiver);
 
         let i = 0;
         let packet_tokens_length = vector::length(&packet.tokens);
@@ -636,7 +617,7 @@ module UCS01::Relay{
                 packet_sequence: IBC::packet::sequence(&ibc_packet),
                 channel_id: destination_channel,
                 sender: packet.sender,
-                receiver: receiver,
+                receiver: packet.receiver,
                 denom: token.denom,
                 token: denom_address,
                 amount: token.amount
@@ -714,7 +695,7 @@ module UCS01::Relay{
             event::emit(Refunded {
                 packet_sequence: sequence,
                 channel_id: channel_id,
-                sender: user_to_refund,
+                sender: packet.sender,
                 receiver: receiver,
                 denom: token_from_vec.denom,
                 token: denom_address,
@@ -815,7 +796,7 @@ module UCS01::Relay{
     public entry fun send(
         sender: &signer,
         source_channel: String,
-        receiver: address,
+        receiver: vector<u8>,
         denom_list: vector<address>, 
         amount_list: vector<u64>, 
         extension: String,
@@ -1204,7 +1185,7 @@ module UCS01::Relay{
         vector::push_back(&mut tokens, token3);
 
         let sender = bcs::to_bytes(&@0x111111111111111111111);
-        let receiver = @0x0000000000000000000000000000000000000033;
+        let receiver = bcs::to_bytes(&@0x0000000000000000000000000000000000000033);
         let extension = string::utf8(b"extension");
         let packet = RelayPacket {
             sender: sender,
@@ -1265,7 +1246,7 @@ module UCS01::Relay{
 
         let relay_packet = RelayPacket {
             sender: bcs::to_bytes(&alice),
-            receiver: @0x0000000000000000000000000000000000000022,
+            receiver: bcs::to_bytes(&@0x0000000000000000000000000000000000000022),
             tokens: tokens,
             extension: string::utf8(b"extension"),
         };
@@ -1325,7 +1306,7 @@ module UCS01::Relay{
 
         let relay_packet = RelayPacket {
             sender: bcs::to_bytes(&alice),
-            receiver: @0x0000000000000000000000000000000000000022,
+            receiver: bcs::to_bytes(&@0x0000000000000000000000000000000000000022),
             tokens: tokens,
             extension: string::utf8(b"extension"),
         };
@@ -1388,7 +1369,7 @@ module UCS01::Relay{
 
         let relay_packet = RelayPacket {
             sender: bcs::to_bytes(&alice),
-            receiver: bob,
+            receiver: bcs::to_bytes(&bob),
             tokens: tokens,
             extension: string::utf8(b""),
         };
@@ -1437,7 +1418,7 @@ module UCS01::Relay{
 
         let relay_packet = RelayPacket {
             sender: bcs::to_bytes(&alice),
-            receiver: bob,
+            receiver: bcs::to_bytes(&bob),
             tokens: tokens,
             extension: string::utf8(b""),
         };
@@ -1519,7 +1500,7 @@ module UCS01::Relay{
 
         let relay_packet = RelayPacket {
             sender: bcs::to_bytes(&alice),
-            receiver: bob,
+            receiver: bcs::to_bytes(&bob),
             tokens: tokens,
             extension: string::utf8(b""),
         };
@@ -1591,7 +1572,7 @@ module UCS01::Relay{
 
         let relay_packet = RelayPacket {
             sender: bcs::to_bytes(&alice), 
-            receiver: bob,
+            receiver: bcs::to_bytes(&bob),
             tokens: tokens,
             extension: string::utf8(b""),
         };
