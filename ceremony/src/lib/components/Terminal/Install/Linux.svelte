@@ -22,22 +22,9 @@ let command =
 onMount(() => {
   const messages = [
     { text: "---", options: { duplicate: true } },
-    { text: "Run the MPC client on Linux", options: { duplicate: true } },
     {
-      text: "You must have docker installed in order to contribute. On linux, install docker through your package manager, and skip to step 5. On macOS, we highly recommend OrbStack because Docker Desktop is too slow. If you use Docker Desktop it is extremely likely that you will lose your contribution slot.",
+      text: "You must have docker installed and running in order to contribute. Once you have docker running, copy the following command in your terminal:",
       options: {}
-    },
-    { text: "---", options: { duplicate: true } },
-    { text: "1. Install OrbStack", options: { duplicate: true } },
-    { text: "2. Open OrbStack from the Applications/ folder", options: { duplicate: true } },
-    { text: "3. Click allow on the OrbStack popups", options: { duplicate: true } },
-    {
-      text: "4. Open Terminal from the Applications/Utilities/ folder",
-      options: { duplicate: true }
-    },
-    {
-      text: "5. Paste the following command in Terminal to start the MPC client:",
-      options: { duplicate: true }
     },
     { text: "---", options: { duplicate: true } },
     { text: command, options: { duplicate: true } },
