@@ -1083,26 +1083,30 @@ module IBC::ibc {
             abort E_UNAUTHORIZED
         };
 
+        let source_port_id = *packet::source_port(&packet);
+        let source_channel_id = *packet::source_channel(&packet);       
+
         let port_id = address_to_string(port_id);
         if (port_id != *packet::source_port(&packet)) {
             abort E_UNAUTHORIZED
         };
 
-        let port_id = *packet::source_port(&packet);
-        let channel_id = *packet::source_channel(&packet);
-        
-        let channel = ensure_channel_state(port_id, channel_id);
+        let destination_port_id = *packet::destination_port(&packet);
+        let destination_channel_id = *packet::destination_channel(&packet);       
 
-        if (port_id != *channel::chan_counterparty_port_id(&channel)) {
+        let channel = ensure_channel_state(source_port_id, source_channel_id);
+
+        if (destination_port_id != *channel::chan_counterparty_port_id(&channel)) {
             abort E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH
         };
-        if (channel_id != *channel::chan_counterparty_channel_id(&channel)) {
+
+        if (destination_channel_id != *channel::chan_counterparty_channel_id(&channel)) {
             abort E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH
         };
 
         let connection = ensure_connection_state(*vector::borrow(channel::connection_hops(&channel), 0));
 
-        let packet_commitment_key = IBCCommitment::packet_key(port_id, channel_id, packet::sequence(&packet));
+        let packet_commitment_key = IBCCommitment::packet_key(source_port_id, source_channel_id, packet::sequence(&packet));
         let expected_packet_commitment = get_commitment(packet_commitment_key);
 
         if (vector::length(&expected_packet_commitment) == 0) {
@@ -1118,8 +1122,8 @@ module IBC::ibc {
             proof_height,
             proof,
             IBCCommitment::packet_acknowledgement_key(
-                *packet::destination_port(&packet),
-                *packet::destination_channel(&packet),
+                destination_port_id,
+                destination_channel_id,
                 packet::sequence(&packet)
             ),
             hash::sha2_256(acknowledgement)
@@ -1133,7 +1137,7 @@ module IBC::ibc {
             let expected_ack_sequence = from_bcs::to_u64(
                 *table::borrow_with_default(
                     &borrow_global<IBCStore>(get_vault_addr()).commitments,
-                    IBCCommitment::next_sequence_ack_key(port_id, channel_id),
+                    IBCCommitment::next_sequence_ack_key(source_port_id, source_channel_id),
                     &bcs::to_bytes(&0u64)
                 )
             );
@@ -1144,7 +1148,7 @@ module IBC::ibc {
 
             table::upsert(
                 &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
-                IBCCommitment::next_sequence_ack_key(port_id, channel_id),
+                IBCCommitment::next_sequence_ack_key(source_port_id, source_channel_id),
                 bcs::to_bytes(&(expected_ack_sequence + 1))
             );
         };
