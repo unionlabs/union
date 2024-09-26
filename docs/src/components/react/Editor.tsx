@@ -120,7 +120,7 @@ export function Editor({
         padding: { top: 14 },
         scrollBeyondLastColumn: 0,
         minimap: { enabled: false },
-        // fontFamily: "IBM Plex Mono",
+        // fontFamily: "",
         scrollBeyondLastLine: false,
         scrollbar: { vertical: "hidden" }
       }}
@@ -164,9 +164,7 @@ function handleEditorDidMount(
         )
       )
     ).then(responses => {
-      const libraries = responses.map(({ content, name, url }) => {
-        // const filePath = url.replace("https://unpkg.com/", "")
-        // console.info("File path", filePath)
+      const libraries = responses.map(({ content, name }) => {
         return {
           content,
           filePath:
@@ -175,7 +173,6 @@ function handleEditorDidMount(
               : `file:///node_modules/@types/${name.startsWith("@") ? name.slice(1).replace("/", "__") : name}/index.d.ts`
         }
       })
-      // console.info("Libraries", libraries)
       console.info(monaco.languages.typescript.typescriptDefaults.getExtraLibs())
       libraries.map(library =>
         monaco.languages.typescript.typescriptDefaults.addExtraLib(
@@ -186,16 +183,5 @@ function handleEditorDidMount(
     })
   }
   const model = monaco.editor.createModel(code, "typescript", monaco.Uri.file("mod.ts"))
-  // AutoTypings.create(editor, {
-  //   monaco,
-  //   sourceCache: new LocalStorageCache()
-  // })
-  //   .then(autoTypings => {
-  //     console.info("Auto Typings", autoTypings)
-  //   })
-  //   .catch(err => {
-  //     console.info("Auto Typings failed", err)
-  //   })
-
   editor.setModel(model)
 }
