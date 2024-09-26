@@ -8,6 +8,8 @@ import { start } from "$lib/client"
 import Timer from "$lib/components/Terminal/Timer.svelte"
 
 import "../styles/tailwind.css"
+import {onMount} from "svelte";
+import {getAverageTimes} from "$lib/supabase";
 
 let { children } = $props()
 

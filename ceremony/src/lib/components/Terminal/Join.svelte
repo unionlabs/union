@@ -23,6 +23,8 @@ const buttons = [
 let isOpenToPublic = $state(false)
 let waitlistLoading = $state(false)
 let selected = $state(false)
+let code = $state(false)
+let focusedIndex = $state(0)
 
 onMount(() => terminal.setStep(2))
 
@@ -32,32 +34,44 @@ async function handleWaitlistJoin() {
     await callJoinQueue(null)
     if (isOpenToPublic) {
       contributor.setAllowanceState("inQueue")
-      toast.success("Successfully joined the queue")
     } else {
       contributor.setAllowanceState("inWaitlist")
-      toast.success("Successfully joined the waitlist")
     }
   } catch (error) {
     console.error("Error joining waitlist:", error)
-    toast.error("An error occurred while joining the waitlist")
   } finally {
     waitlistLoading = false
   }
 }
 
-let code = $state(false)
+let unsubscribe: (() => void) | undefined
+let subscriptionTimeout: NodeJS.Timeout | undefined
+onMount(() => {
+  terminal.setStep(1)
+  terminal.updateHistory("Please authenticate using one of the following")
+  subscriptionTimeout = setTimeout(() => {
+    unsubscribe = terminal.keys.subscribe(event => {
+      if (event) {
+        if(code) return
+        if (event.type === "keydown") {
+          if (event.key === "ArrowUp") {
+            focusedIndex = (focusedIndex - 1 + buttons.length) % buttons.length
+          } else if (event.key === "ArrowDown") {
+            focusedIndex = (focusedIndex + 1) % buttons.length
+          } else if (event.key === "Enter") {
+            handleAction(buttons[focusedIndex].action)
+          }
+        }
 
-let focusedIndex = $state(0)
-const unsubscribe = terminal.keys.subscribe(event => {
-  if (event) {
-    if (event.type !== "keydown") return
-
-    if (event.key === "ArrowUp") {
-      focusedIndex = (focusedIndex - 1 + buttons.length) % buttons.length
-    } else if (event.key === "ArrowDown") {
-      focusedIndex = (focusedIndex + 1) % buttons.length
-    } else if (event.key === "Enter") {
-      handleAction(buttons[focusedIndex].action)
+      }
+    })
+  }, 200)
+  return () => {
+    if (subscriptionTimeout) {
+      clearTimeout(subscriptionTimeout)
+    }
+    if (unsubscribe) {
+      unsubscribe()
     }
   }
 })
@@ -69,13 +83,11 @@ async function handleAction(action: string) {
     await sleep(1000)
     handleWaitlistJoin()
   } else if (action === "code") {
-    terminal.updateHistory("I have an invitation code")
     code = true
   }
 }
 
 onDestroy(() => {
-  unsubscribe()
   terminal.clearHistory()
 })
 </script>
@@ -83,7 +95,6 @@ onDestroy(() => {
 {terminal.updateHistory("Access the ceremony")}
 
 {#if !selected}
-
   {#if code }
     <Code />
   {:else }

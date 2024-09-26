@@ -77,3 +77,18 @@ export async function detectOS(): Promise<DetectedOS> {
 }
 
 export type DetectedOS = "Linux" | "macOS" | "Windows" | "Unknown"
+
+export function timeToMs(timeStr: string | null): number {
+  if (!timeStr) return 0;
+  const [time, milliseconds] = timeStr.split('.');
+  const [hours, minutes, seconds] = time.split(':').map(Number);
+  return (hours * 3600000) + (minutes * 60000) + (seconds * 1000) + Number(milliseconds || 0);
+}
+
+export function msToTimeString(ms: number): string {
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  const milliseconds = ms % 1000;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+}

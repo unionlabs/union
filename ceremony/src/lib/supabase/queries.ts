@@ -97,3 +97,25 @@ export const queryUserWallet = async (id: string) => {
 
   return { data, error }
 }
+
+export const queryVerificationTime = async () => {
+  const { data, error } = await supabase
+    .from("current_verification_average")
+    .select("*")
+    .single()
+
+  console.log(data)
+
+  return { data, error }
+}
+
+export const queryContributionTime = async () => {
+  const { data, error } = await supabase
+    .from("current_contribution_average")
+    .select("*")
+    .single()
+
+  console.log(data)
+
+  return { data, error }
+}
