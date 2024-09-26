@@ -114,6 +114,7 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
       <Print>{print}</Print>
     {/each}
     {#if showButtons}
+      <Print><br></Print>
       <Button bind:value={buttons[0]}
               onmouseenter={() => focusedIndex = 0}
               class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}

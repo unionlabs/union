@@ -102,6 +102,7 @@ function autoScroll(node: HTMLElement) {
               <Print>{text}</Print>
             {/each}
           </div>
+          <Print><br></Print>
           {@render children()}
         {:else if terminal.tab === 2}
           <Activity/>
