@@ -390,6 +390,16 @@
       }
     },
     {
+      "include": ["*.jsx", "*.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noReactSpecificProps": "off"
+          }
+        }
+      }
+    },
+    {
       "include": ["./app/src/lib/polyfill.ts"],
       "linter": {
         "rules": {

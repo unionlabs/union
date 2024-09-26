@@ -2,12 +2,15 @@
 title: "Terminal"
 description: ""
 ---
-
-import Terminal from '#/components/Terminal.astro'
 import { Editor } from '#/components/react/Editor.tsx'
-import { demoFiles } from '../integrations/typescript/_data/demo-files.ts'
 
-<Editor client:only='react' />
+
+<Editor 
+  fontSize={16}
+  width='100%'
+  height='300px'
+  client:only='react'
+/>
 
 {/* <Terminal
   webcontainerFiles={JSON.stringify(demoFiles)}

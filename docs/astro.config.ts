@@ -32,12 +32,16 @@ export default defineConfig({
   markdown: markdownConfiguration,
   vite: {
     ssr: {
-      noExternal: ["@tutorialkit/react", "monaco-editor"]
+      noExternal: ["monaco-editor"]
     },
-    experimental: {},
     optimizeDeps: {
       include: ["@xterm/xterm"],
       esbuildOptions: { target: "es2022" }
+    },
+    resolve: {
+      alias: {
+        path: "rollup-plugin-node-polyfills/polyfills/path"
+      }
     }
   },
   server: _ => ({

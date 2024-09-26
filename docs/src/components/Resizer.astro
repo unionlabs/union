@@ -1,0 +1,364 @@
+---
+interface Props {}
+---
+
+<button
+  data-resizer=""
+  class="cursor-row-resize md:cursor-col-resize w-full md:w-[0px] bg-transparent border-none text-center h-6"
+>
+  <svg
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    viewBox="0 0 251.247 251.247"
+    class="mx-auto text-center rotate-90 md:rotate-360 w-[20px] fill-current relative md:right-2.6 text-yellow-500 top-3"
+    xml:space="preserve"
+  >
+    <path
+      d="M248.611,119.259l-51.005-51.005c-3.516-3.515-9.213-3.515-12.729,0c-3.515,3.515-3.515,9.213,0,12.728l35.642,35.641
+	H30.728l35.642-35.641c3.515-3.515,3.515-9.213,0-12.728c-3.516-3.515-9.213-3.515-12.729,0L2.636,119.259
+	c-3.515,3.515-3.515,9.213,0,12.728l51.005,51.005c1.758,1.757,4.061,2.636,6.364,2.636s4.606-0.879,6.364-2.636
+	c3.515-3.515,3.515-9.213,0-12.728l-35.642-35.641h189.791l-35.642,35.641c-3.515,3.515-3.515,9.213,0,12.728
+	c1.758,1.757,4.061,2.636,6.364,2.636s4.606-0.879,6.364-2.636l51.005-51.005C252.125,128.472,252.125,122.774,248.611,119.259z"
+    >
+    </path>
+  </svg>
+</button>
+
+<script>
+  const element = document.querySelector('code[data-textarea]')
+
+  window.onload = event => element?.focus()
+  const resizeButtonElement = document.querySelector('button[data-resizer]')
+
+  function resize(event: MouseEvent) {
+    event.preventDefault()
+    const leftPanel = document.querySelector('section[data-left-panel]')
+    const rightPanel = document.querySelector('section[data-right-panel]')
+    if (!leftPanel || !rightPanel) return
+    console.info(leftPanel.getBoundingClientRect().width)
+    if (window.innerWidth > 768) {
+      const leftPanelWidth = leftPanel.getBoundingClientRect().width
+      const rightPanelWidth = rightPanel.getBoundingClientRect().width
+      const totalWidth = leftPanelWidth + rightPanelWidth
+      const newWidth = event.clientX
+
+      const newLeftPanelWidth = totalWidth * (newWidth / totalWidth)
+      const newRightPanelWidth = totalWidth - newLeftPanelWidth
+      leftPanel.style.width = `${newLeftPanelWidth}px`
+      rightPanel.style.width = `${newRightPanelWidth}px`
+    } else {
+      const leftPanelHeight = leftPanel.getBoundingClientRect().height
+      const rightPanelHeight = rightPanel.getBoundingClientRect().height
+      const totalHeight = leftPanelHeight + rightPanelHeight
+      const newHeight = event.clientY
+
+      const newLeftPanelHeight = totalHeight * (newHeight / totalHeight)
+      const newRightPanelHeight = totalHeight - newLeftPanelHeight
+      leftPanel.style.height = `${newLeftPanelHeight}px`
+      rightPanel.style.height = `${newRightPanelHeight}px`
+    }
+  }
+
+  resizeButtonElement?.addEventListener('mousedown', event => {
+    window.addEventListener('mousemove', resize)
+  })
+  resizeButtonElement?.addEventListener('mouseup', event => {
+    window.removeEventListener('mousemove', resize)
+  })
+  // remove
+  window.addEventListener('mouseup', event => {
+    window.removeEventListener('mousemove', resize)
+  })
+  // window.addEventListener('resize', () => {
+  //   const leftPanel = document.querySelector('section[data-left-panel]')
+  //   const rightPanel = document.querySelector('section[data-right-panel]')
+  //   if (!leftPanel || !rightPanel) return
+  //   leftPanel.style.width = `${leftPanel.getBoundingClientRect().width}px`
+  //   rightPanel.style.width = `${rightPanel.getBoundingClientRect().width}px`
+  // })
+</script>
+
+<style is:global>
+  button[data-resizer] {
+    all: unset;
+  }
+  *::-webkit-resizer {
+    border: 9px solid rgba(0, 0, 0, 0.1);
+    border-bottom-color: rgba(0, 0, 0, 0.5);
+    border-right-color: rgba(0, 0, 0, 0.5);
+    outline: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 5px 3px rgba(0, 0, 0, 0.1);
+    height: 100px;
+  }
+
+  [data-slider] {
+    cursor: ew-resize;
+  }
+  [data-textarea] {
+    font-family: var(--code-font);
+    font-size: 16px;
+    /* cursor: crosshair; */
+    caret-color: pink;
+    vertical-align: top;
+    text-align: left;
+  }
+
+  code,
+  pre {
+    font-family: var(--code-font);
+  }
+  code {
+    white-space: pre;
+  }
+
+  [data-app] {
+    font-family: var(--base-font);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  [data-app] {
+    scroll-behavior: smooth;
+    @apply w-full max-w-full overflow-x-hidden m-0;
+    overflow-anchor: unset !important;
+  }
+
+  html,
+  body,
+  [data-app] {
+    width: 100%;
+    height: 100vh;
+    max-width: 100%;
+    max-height: 100vh;
+    /*   background: linear-gradient(90deg, #1d1f20 50%, #1a1b26 50%); */
+  }
+
+  body,
+  [data-app] {
+    overflow: hidden;
+
+    min-height: 100%;
+    min-width: 100%;
+  }
+
+  body::-webkit-scrollbar {
+    width: 0.3em;
+  }
+
+  body::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+
+  body::-webkit-scrollbar-thumb {
+    background-color: rgb(70, 70, 75);
+    outline: 1px solid rgb(58, 62, 67);
+  }
+
+  p {
+    @apply leading-6;
+  }
+  [data-font='ibm-plex-sans'] {
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  body {
+    overflow-x: hidden;
+    @apply dark:bg-[rgb(01,01,01,01)] w-full h-full m-0;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  main {
+    font-family:
+      IBM Plex Sans,
+      sans-serif;
+    @apply mt-12;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: black !important;
+    -webkit-box-shadow: 0 0 0 999px var(--color-gray-100) inset !important;
+    box-shadow: 0 0 0 999px var(--color-gray-100) inset !important;
+    background-clip: content-box !important;
+  }
+
+  .dark input:-webkit-autofill,
+  .dark input:-webkit-autofill:hover,
+  .dark input:-webkit-autofill:focus,
+  .dark input:-webkit-autofill:active {
+    -webkit-text-fill-color: white !important;
+    -webkit-box-shadow: 0 0 0 999px var(--color-gray-800) inset !important;
+    box-shadow: 0 0 0 999px var(--color-gray-800) inset !important;
+    background-clip: content-box !important;
+  }
+
+  input:-webkit-autofill::first-line {
+    font-size: 1.125rem;
+    font-weight: 500;
+    font-family:
+      IBM Plex Sans,
+      sans-serif;
+  }
+
+  /* I kinda feel like this should be the default... 🤷‍♂️ */
+  [hidden] {
+    pointer-events: none;
+  }
+
+  /* These elements get removed before hydration but they can look funny before hydrating */
+  dark-mode,
+  light-mode {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :focus {
+      transition: outline-offset 0.1s ease;
+      outline-offset: 4px;
+    }
+  }
+
+  ::selection {
+    background-color: rgba(231, 189, 243, 0.913);
+    color: rgb(36, 3, 16);
+  }
+
+  li::marker {
+    @apply text-transparent;
+  }
+
+  a {
+    position: relative;
+    transition: all 0.1s;
+    text-decoration: none;
+    @apply dark:text-blue-400;
+  }
+
+  p {
+    @apply dark:text-white;
+  }
+
+  a:before,
+  a:after {
+    transition: all 0.1s;
+  }
+
+  .social:before,
+  .social:after {
+    position: absolute;
+    top: 3px;
+    color: transparent;
+  }
+
+  .social:hover::before,
+  .social:hover::after {
+    font-size: 1.2em;
+    font-weight: 900;
+    color: rgb(243, 189, 211);
+  }
+
+  .social:before {
+    content: '\007B';
+    left: -12px;
+  }
+
+  .social:hover::before {
+    left: -7px;
+  }
+
+  .social:after {
+    content: '\007D';
+    right: -12px;
+  }
+
+  .social:hover::after {
+    right: -7px;
+  }
+
+  .capsize::before {
+    content: '';
+    margin-bottom: -0.098em;
+    display: table;
+  }
+
+  .capsize::after {
+    content: '';
+    margin-top: -0.219em;
+    display: table;
+  }
+
+  .skip-nav {
+    @apply absolute px-4 py-3 transition-transform duration-200 transform -translate-y-12 -left-1/4 focus:top-4 focus:translate-y-3 -top-8;
+  }
+
+  #skip {
+    scroll-margin-top: 1.125rem;
+  }
+
+  * {
+    scrollbar-width: 0px;
+    scrollbar-color: var(--dark-background);
+    scrollbar-width: 0px;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  *::-webkit-scrollbar,
+  textarea::-webkit-scrollbar {
+    display: none !important;
+  }
+  *::-webkit-scrollbar-corner {
+    display: none !important;
+  }
+  .dark *::-webkit-scrollbar-thumb {
+    display: none !important;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    display: none !important;
+  }
+
+  *::-webkit-scrollbar-track {
+    display: none !important;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    display: none !important;
+  }
+
+  @supports (font-variation-settings: normal;) {
+    html {
+      font-family: sans-serif;
+    }
+  }
+
+  @supports (scrollbar-gutter: stable) {
+    html {
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+  }
+
+  @media (prefers-color-scheme: light) {
+    .shiki.dark-plus {
+      display: none;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .shiki.light-plus {
+      display: none;
+    }
+  }
+</style>
