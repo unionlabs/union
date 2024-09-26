@@ -26,10 +26,6 @@ let select = async (value: DetectedOS) => {
   await sleep(500)
   selectedOs = value
 }
-
-$effect(() => {
-  console.log(selectedOs)
-})
 </script>
 
 {#if !selectedOs}

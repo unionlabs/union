@@ -44,7 +44,6 @@ const unsubscribe = terminal.keys.subscribe(event => {
     } else if (event.key === "ArrowDown") {
       focusedIndex = (focusedIndex + 1) % providers.length
     } else if (event.key === "Enter") {
-      console.log("xx hehehehehhe")
       logIn(providers[focusedIndex])
     }
   }

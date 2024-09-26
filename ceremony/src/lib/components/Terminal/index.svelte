@@ -15,11 +15,9 @@ let { children } = $props()
 
 const changeTab = async (tab: number) => {
   if (tab === 4 && terminal.hash) {
-    console.log("change tab 4", tab)
     terminal.setTab(tab)
     await goto(`/0____0/${terminal.hash}`)
   } else if (tab <= 3) {
-    console.log("change tab 1, 2, 3", tab)
     terminal.setTab(tab)
     await goto("/")
   }
