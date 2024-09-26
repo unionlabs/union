@@ -4,7 +4,6 @@ import { shikiToMonaco } from "@shikijs/monaco"
 import { createHighlighterCoreSync } from "shiki"
 import tokyoNight from "shiki/themes/tokyo-night.mjs"
 import type { FileSystemTree } from "@webcontainer/api"
-import type * as monaco from "monaco-editor/esm/vs/editor/editor.api"
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript"
 import { default as MonacoEditor, type OnMount, useMonaco } from "@monaco-editor/react"
 

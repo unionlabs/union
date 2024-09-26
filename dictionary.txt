@@ -558,6 +558,7 @@ feegrants
 fetchurl
 fetchzip
 fields
+file
 fileset
 finalizer
 flamegraph
@@ -622,6 +623,7 @@ gowork
 graphcache
 graphqlsp
 graphqurl
+grayscale
 grecaptcha
 groomlake
 groth
@@ -836,8 +838,10 @@ monniker
 monomorphized
 moreutils
 mosmo
+mousedown
 mouseleave
 mousemove
+mouseup
 msgservice
 msvc
 muldefs
@@ -1045,6 +1049,7 @@ relpath
 repellendus
 repr
 reqwest
+resizer
 restaking
 retryable
 rgba
@@ -1217,6 +1222,7 @@ testificate
 testkeeper
 testkey
 testutil
+textbox
 textclip
 tfbindings
 tfkeeper
@@ -1381,6 +1387,7 @@ wasmtypes
 wasmvm
 wasmvmstatic
 wasmvmtypes
+weakref
 webcontainer
 webgl
 webkit
@@ -1396,6 +1403,7 @@ xbonlulu
 xion
 xkaiserkarel
 xkown
+xlink
 xlpa
 xnever
 xpla

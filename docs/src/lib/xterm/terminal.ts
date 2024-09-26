@@ -36,7 +36,7 @@ export function initiateTerminal(
     fontFamily: "IBM Plex Mono",
     fontSize: options.fontSize,
     disableStdin: options.readonly,
-    drawBoldTextInBrightColors: true,
+    drawBoldTextInBrightColors: true
   })
   const fitAddon = new FitAddon()
   terminal.loadAddon(fitAddon)
