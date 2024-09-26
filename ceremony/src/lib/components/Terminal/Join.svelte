@@ -60,8 +60,6 @@ const unsubscribe = terminal.keys.subscribe(event => {
   }
 })
 
-onDestroy(unsubscribe)
-
 async function handleAction(action: string) {
   if (action === "waitlist") {
     selected = true
@@ -73,6 +71,11 @@ async function handleAction(action: string) {
     code = true
   }
 }
+
+onDestroy(() => {
+  unsubscribe()
+  terminal.clearHistory()
+})
 </script>
 
 {terminal.updateHistory("Access the ceremony")}
@@ -84,9 +87,9 @@ async function handleAction(action: string) {
   {:else }
     {#each buttons as button, index}
       <Button
-              class={cn(index === focusedIndex ? "text-union-accent-500" : "")}
+              onmouseenter={() => focusedIndex = index}
+              class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "")}
               onclick={() => handleAction(button.action)}
-              tabindex={index === focusedIndex ? 0 : -1}
       >
         &gt {button.label}
       </Button>

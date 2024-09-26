@@ -1,7 +1,7 @@
 <script lang="ts">
 import { AddressForm, type ValidState } from "$lib/components/address"
 import { getState } from "$lib/state/index.svelte.ts"
-import { onMount } from "svelte"
+import { onDestroy, onMount } from "svelte"
 import Print from "$lib/components/Terminal/Print.svelte"
 
 let { terminal } = getState()
@@ -15,6 +15,10 @@ let validation = (val: ValidState) => {
 onMount(() => {
   terminal.updateHistory("Add an address, you may receive rewards for successful contributions.")
   terminal.updateHistory('You can enter your union or any cosmos address, or type "skip".')
+})
+
+onDestroy(() => {
+  terminal.clearHistory()
 })
 </script>
 

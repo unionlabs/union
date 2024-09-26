@@ -14,7 +14,7 @@ let { change }: Props = $props()
 
 let showButtons = $state(true)
 let buttons = $state<Array<HTMLButtonElement>>([])
-let currentFocusIndex = $state(0)
+let focusedIndex = $state(0)
 
 let command =
   "mkdir -p ceremony && docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -v $(pwd)/ceremony:/ceremony -w /ceremony -p 4919:4919 --rm -it ghcr.io/unionlabs/union/mpc-client:latest"
@@ -80,8 +80,8 @@ const handleKeydown = (event: KeyEvent) => {
   if (event.type === "keydown") {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       const direction = event.key === "ArrowDown" ? 1 : -1
-      currentFocusIndex = (currentFocusIndex + direction + buttons.length) % buttons.length
-      buttons[currentFocusIndex].focus()
+      focusedIndex = (focusedIndex + direction + buttons.length) % buttons.length
+      buttons[focusedIndex].focus()
     }
   }
 }
@@ -92,20 +92,25 @@ const unsubscribe = terminal.keys.subscribe(event => {
   }
 })
 
-onDestroy(unsubscribe)
+onDestroy(() => {
+  unsubscribe()
+  terminal.clearHistory()
+})
 </script>
 
 {#if showButtons}
   <Button
           bind:value={buttons[0]}
-          class={cn(currentFocusIndex === 0 ? "text-union-accent-500" : "")}
+          onmouseenter={() => focusedIndex = 0}
+          class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "", "whitespace-nowrap text-start w-full max-w-5xl truncate")}
           onclick={copy}
   >
     &gt; Copy command
   </Button>
   <Button
           bind:value={buttons[1]}
-          class={cn(currentFocusIndex === 1 ? "text-union-accent-500" : "")}
+          onmouseenter={() => focusedIndex = 1}
+          class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "", "whitespace-nowrap text-start w-full max-w-5xl truncate")}
           onclick={selectDifferentOs}
   >
     &gt; Select different OS

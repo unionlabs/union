@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from "svelte"
+import { onDestroy, onMount } from "svelte"
 import { type DetectedOS, detectOS, sleep } from "$lib/utils/utils.ts"
 import { getState } from "$lib/state/index.svelte.ts"
 import SelectOS from "$lib/components/Terminal/Install/SelectOS.svelte"
@@ -26,13 +26,17 @@ let select = async (value: DetectedOS) => {
   await sleep(500)
   selectedOs = value
 }
+
+onDestroy(() => {
+  terminal.clearHistory()
+})
 </script>
 
 {#if !selectedOs}
   <SelectOS {select}/>
-  {:else if selectedOs === "macOS"}
+{:else if selectedOs === "macOS"}
   <MacOS {change}/>
-  {:else if selectedOs === "Linux"}
+{:else if selectedOs === "Linux"}
   <Linux {change}/>
 {/if}
 

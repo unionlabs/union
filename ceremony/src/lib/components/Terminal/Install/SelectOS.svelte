@@ -15,7 +15,7 @@ let { select }: Props = $props()
 let showButtons = $state(true)
 
 const selections: Array<DetectedOS> = ["Linux", "macOS"]
-let currentFocusIndex = $state(0)
+let focusedIndex = $state(0)
 
 onMount(() => {
   terminal.updateHistory("Select your OS", { duplicate: true })
@@ -24,12 +24,12 @@ onMount(() => {
 function handleKeyDown(event: KeyEvent) {
   if (event.type === "keydown") {
     if (event.key === "ArrowUp") {
-      currentFocusIndex = (currentFocusIndex - 1 + selections.length) % selections.length
+      focusedIndex = (focusedIndex - 1 + selections.length) % selections.length
     } else if (event.key === "ArrowDown") {
-      currentFocusIndex = (currentFocusIndex + 1) % selections.length
+      focusedIndex = (focusedIndex + 1) % selections.length
     } else if (event.key === "Enter") {
       showButtons = false
-      select(selections[currentFocusIndex])
+      select(selections[focusedIndex])
     }
   }
 }
@@ -47,7 +47,8 @@ onDestroy(unsubscribe)
 {#if showButtons}
   {#each selections as os, index}
     <Button
-            class={cn(currentFocusIndex === 0 ? "text-union-accent-500" : "")}
+            onmouseenter={() => focusedIndex = index}
+            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "")}
             onclick={() => select(os)}
     >
       &gt {os}

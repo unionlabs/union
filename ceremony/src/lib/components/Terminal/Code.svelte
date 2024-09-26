@@ -1,7 +1,7 @@
 <script lang="ts">
 import { callJoinQueue } from "$lib/supabase"
 import { getState } from "$lib/state/index.svelte.ts"
-import { onMount } from "svelte"
+import { onDestroy, onMount } from "svelte"
 import { sleep } from "$lib/utils/utils.ts"
 import Print from "$lib/components/Terminal/Print.svelte"
 
@@ -49,6 +49,10 @@ function handleKeyDown(event: KeyboardEvent) {
     handleCodeJoin()
   }
 }
+
+onDestroy(() => {
+  terminal.clearHistory()
+})
 </script>
 
 {#if showInput}

@@ -59,15 +59,19 @@ onMount(() => {
     }
   }
 })
+
+onDestroy(() => {
+  terminal.clearHistory()
+})
 </script>
 
 {#if !redirecting}
 
   {#each providers as provider, index}
     <Button
-            class={cn(index === focusedIndex ? "text-union-accent-500" : "")}
+            onmouseenter={() => focusedIndex = index}
+            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "")}
             onclick={() => logIn(provider)}
-            tabindex={index === focusedIndex ? 0 : -1}
     >
       &gt {provider}
     </Button>

@@ -2,13 +2,13 @@
 import { getPublicHash } from "$lib/supabase"
 import { getState } from "$lib/state/index.svelte.ts"
 import { cn, sleep } from "$lib/utils/utils.ts"
-import { onMount } from "svelte"
+import { onDestroy, onMount } from "svelte"
 import Button from "$lib/components/Terminal/Button.svelte"
 import { beforeNavigate } from "$app/navigation"
 
 const { terminal } = getState()
 
-let selectedButton = $state(0)
+let focusedIndex = $state(0)
 let showButtons = $state(true)
 
 const buttons = $state([
@@ -36,11 +36,11 @@ onMount(() => {
       if (event) {
         if (event.type === "keydown" && terminal.tab === 1) {
           if (event.key === "ArrowUp") {
-            selectedButton = (selectedButton - 1 + buttons.length) % buttons.length
+            focusedIndex = (focusedIndex - 1 + buttons.length) % buttons.length
           } else if (event.key === "ArrowDown") {
-            selectedButton = (selectedButton + 1) % buttons.length
+            focusedIndex = (focusedIndex + 1) % buttons.length
           } else if (event.key === "Enter") {
-            triggerAction(selectedButton)
+            triggerAction(focusedIndex)
           }
         }
       }
@@ -78,12 +78,17 @@ function triggerAction(index: number) {
     terminal.setTab(3)
   }
 }
+
+onDestroy(() => {
+  terminal.clearHistory()
+})
 </script>
 
 {#if showButtons}
   {#each buttons as btn, index}
     <Button
-            class={cn(selectedButton === index ? "text-union-accent-500" : "")}
+            onmouseenter={() => focusedIndex = index}
+            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "")}
             onclick={() => triggerAction(index)}
     >
       &gt; {btn.text}

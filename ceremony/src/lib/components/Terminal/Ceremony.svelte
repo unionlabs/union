@@ -6,9 +6,13 @@ import Queue from "$lib/components/Terminal/Queue.svelte"
 import Install from "$lib/components/Terminal/Install/index.svelte"
 import Print from "$lib/components/Terminal/Print.svelte"
 import Secret from "$lib/components/Terminal/Secret.svelte"
-import { start } from "$lib/client"
+import { onDestroy } from "svelte"
 
 const { contributor, terminal } = getState()
+
+onDestroy(() => {
+  terminal.clearHistory()
+})
 </script>
 
 {#if !contributor.userWallet}
@@ -36,6 +40,6 @@ const { contributor, terminal } = getState()
   {terminal.updateHistory("Contributing...", {replace: true})}
 
 {:else}
-  <Print>Loading...</Print>
+ <Print>Not able to contribute at this time</Print>
 
 {/if}

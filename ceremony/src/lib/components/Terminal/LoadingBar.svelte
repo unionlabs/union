@@ -23,7 +23,7 @@ function generateQueueBar(progress: number): string {
   const filledSymbols = Math.round((progress / 100) * TOTAL_SYMBOLS)
   const emptySymbols = TOTAL_SYMBOLS - filledSymbols
 
-  return `[${"=".repeat(filledSymbols)}${"-".repeat(emptySymbols)}]`
+  return `[${"#".repeat(filledSymbols)}${"-".repeat(emptySymbols)}]`
 }
 
 let queueBar = $derived(generateQueueBar(progress))

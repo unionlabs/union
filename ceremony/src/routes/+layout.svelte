@@ -1,16 +1,16 @@
 <script lang="ts">
 import { supabase } from "$lib/supabase/client.ts"
 import { createState } from "$lib/state/index.svelte.ts"
-
-import "../styles/tailwind.css"
 import { watch } from "runed"
 import { checkAuth } from "$lib/state/session.svelte.ts"
 import Terminal from "$lib/components/Terminal/index.svelte"
 import { start } from "$lib/client"
 
+import "../styles/tailwind.css"
+
 let { children } = $props()
 
-let { user, contributor } = createState()
+let { user, contributor, terminal } = createState()
 
 $effect(() => {
   const {

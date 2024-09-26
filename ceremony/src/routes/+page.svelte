@@ -11,7 +11,6 @@ const { user, terminal, contributor } = getState()
 
 onMount(() => {
   terminal.setTab(1)
-  terminal.updateHistory("Welcome to union ceremony")
 })
 </script>
 
@@ -19,7 +18,6 @@ onMount(() => {
   <Print>loading...</Print>
 {:else}
   {#if user.session}
-    {terminal.updateHistory(`Authenticated user: ${user.session.user.email}`)}
     {#if contributor.currentUserState === "hasRedeemed" || contributor.currentUserState === "inQueue"}
       <Ceremony/>
     {:else if contributor.currentUserState === "inWaitlist"}
@@ -27,7 +25,6 @@ onMount(() => {
     {:else if contributor.currentUserState === "join"}
       <Join/>
     {/if}
-
   {:else if user.session === null && terminal.tab === 1}
     <Authenticate {terminal} />
   {/if}

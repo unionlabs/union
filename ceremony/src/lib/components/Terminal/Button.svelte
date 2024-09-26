@@ -4,7 +4,11 @@ let { children, class: className = "", value = $bindable(), ...rest } = $props()
 
 <button
         bind:this={value}
-        class="block outline-none focus:ring-transparent focus:border-none hover:text-union-accent-500 focus:text-union-accent-500 text-sm sm:text-base {className}"
+        class="px-2 focus:blink block outline-none focus:ring-transparent focus:border-none text-sm sm:text-base {className}"
         {...rest}>
   {@render children()}
 </button>
+
+<style>
+
+</style>

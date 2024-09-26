@@ -10,7 +10,7 @@ const { terminal } = getState()
 
 let hash = $derived($page.params.hash)
 
-let selectedIndex = $state(0)
+let focusedIndex = $state(0)
 let buttons: Array<HTMLButtonElement> = []
 let prints = $state<Array<string>>([])
 let showButtons = $state(true)
@@ -25,14 +25,14 @@ $effect(() => {
       if (event) {
         if (event.type === "keydown") {
           if (event.key === "ArrowUp") {
-            selectedIndex -= 1
-            buttons[selectedIndex]?.focus()
+            focusedIndex -= 1
+            buttons[focusedIndex]?.focus()
           } else if (event.key === "ArrowDown") {
-            selectedIndex += 1
-            buttons[selectedIndex]?.focus()
+            focusedIndex += 1
+            buttons[focusedIndex]?.focus()
           } else if (event.key === "Enter") {
-            if (buttons[selectedIndex]) {
-              buttons[selectedIndex].click()
+            if (buttons[focusedIndex]) {
+              buttons[focusedIndex].click()
             }
           }
         }
@@ -115,12 +115,14 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
     {/each}
     {#if showButtons}
       <Button bind:value={buttons[0]}
-              class={cn(selectedIndex === 0 ? "text-union-accent-500" : "")}
+              onmouseenter={() => focusedIndex = 0}
+              class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
               onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
         Copy public key
       </Button>
       <Button bind:value={buttons[1]}
-              class={cn(selectedIndex === 1 ? "text-union-accent-500" : "")}
+              onmouseenter={() => focusedIndex = 1}
+              class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "")}
               onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>&gt
         Copy signature
       </Button>

@@ -1,13 +1,16 @@
 <script lang="ts">
 import { getState } from "$lib/state/index.svelte.ts"
-import { sleep } from "$lib/utils/utils.ts"
+import { cn, sleep } from "$lib/utils/utils.ts"
 import { generateSecret } from "$lib/client"
 import Button from "$lib/components/Terminal/Button.svelte"
+import { onDestroy, onMount } from "svelte"
 
 const { contributor, terminal, user } = getState()
 
 let generated = $state(false)
 let generating = $state(false)
+let buttons = $state<Array<HTMLButtonElement>>([])
+let focusedIndex = $state(0)
 
 function handleDownload() {
   const newUrl = "http://localhost:4919/secret_key"
@@ -47,15 +50,57 @@ $effect(() => {
     terminal.updateHistory("Your secret is locally generated through the MPC client.")
   }
 })
+
+onDestroy(() => {
+  terminal.clearHistory()
+})
+
+let unsubscribe: (() => void) | undefined
+let subscriptionTimeout: NodeJS.Timeout | undefined
+onMount(() => {
+  subscriptionTimeout = setTimeout(() => {
+    unsubscribe = terminal.keys.subscribe(event => {
+      if (event) {
+        if (event.type === "keydown") {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            const direction = event.key === "ArrowDown" ? 1 : -1
+            focusedIndex = (focusedIndex + direction + buttons.length) % buttons.length
+            buttons[focusedIndex].focus()
+          }
+        }
+      }
+    })
+  }, 200)
+  return () => {
+    if (subscriptionTimeout) {
+      clearTimeout(subscriptionTimeout)
+    }
+    if (unsubscribe) {
+      unsubscribe()
+    }
+  }
+})
 </script>
 
 {#if !generating}
   {#if !generated}
-    <Button
-            onclick={generate} autofocus>&gt Generate secret
+    <Button bind:value={buttons[0]}
+            onmouseenter={() => focusedIndex = 0}
+            class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
+            onclick={generate}>&gt Generate secret
     </Button>
   {:else}
-    <Button autofocus onclick={setDownloadedSecret}>&gt I've generated and stored my secret</Button>
-    <Button onclick={generate}>&gt Generate again</Button>
+    <Button
+            bind:value={buttons[0]}
+            onmouseenter={() => focusedIndex = 0}
+            class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
+            onclick={setDownloadedSecret}>&gt I've generated and stored my secret
+    </Button>
+    <Button
+            bind:value={buttons[1]}
+            onmouseenter={() => focusedIndex = 1}
+            class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "")}
+            onclick={generate}>&gt Generate again
+    </Button>
   {/if}
 {/if}

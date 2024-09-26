@@ -65,6 +65,10 @@ export class Terminal {
     }
   }
 
+  clearHistory() {
+    this.history = []
+  }
+
   setTab(tab: 1 | 2 | 3 | number) {
     this.tab = tab
   }

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from "svelte"
+import { onDestroy, onMount } from "svelte"
 import { getState } from "$lib/state/index.svelte.ts"
 import Print from "$lib/components/Terminal/Print.svelte"
 import LoadingBar from "$lib/components/Terminal/LoadingBar.svelte"
@@ -8,6 +8,10 @@ const { contributor, terminal } = getState()
 
 onMount(() => {
   terminal.updateHistory("You are in queue")
+})
+
+onDestroy(() => {
+  terminal.clearHistory()
 })
 </script>
 

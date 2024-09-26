@@ -4,10 +4,11 @@ import { goto } from "$app/navigation"
 import Print from "$lib/components/Terminal/Print.svelte"
 import { cn } from "$lib/utils/utils.ts"
 import Button from "$lib/components/Terminal/Button.svelte"
+import { onMount } from "svelte"
 
 const { contributions, terminal } = getState()
 
-let selectedIndex = $state(0)
+let focusedIndex = $state(0)
 let buttons: Array<HTMLButtonElement> = []
 
 function handleClick(contributor: any) {
@@ -18,21 +19,21 @@ function handleClick(contributor: any) {
 
 let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
-$effect(() => {
+onMount(() => {
   subscriptionTimeout = setTimeout(() => {
     unsubscribe = terminal.keys.subscribe(event => {
       if (event) {
         if (event.type === "keydown") {
           if (event.key === "ArrowUp") {
-            selectedIndex =
-              (selectedIndex - 1 + contributions.data.length) % contributions.data.length
-            buttons[selectedIndex]?.focus()
+            focusedIndex =
+              (focusedIndex - 1 + contributions.data.length) % contributions.data.length
+            buttons[focusedIndex]?.focus()
           } else if (event.key === "ArrowDown") {
-            selectedIndex = (selectedIndex + 1) % contributions.data.length
-            buttons[selectedIndex]?.focus()
+            focusedIndex = (focusedIndex + 1) % contributions.data.length
+            buttons[focusedIndex]?.focus()
           } else if (event.key === "Enter") {
-            if (buttons[selectedIndex]) {
-              handleClick(contributions.data[selectedIndex])
+            if (buttons[focusedIndex]) {
+              handleClick(contributions.data[focusedIndex])
             }
           }
         }
@@ -54,7 +55,8 @@ $effect(() => {
   {#each contributions.data as contributor, index}
     <Button
             bind:value={buttons[index]}
-            class={cn(index === selectedIndex ? "text-union-accent-500" : "", "whitespace-nowrap text-start w-full max-w-5xl truncate")}
+            onmouseenter={() => focusedIndex = index}
+            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "", "whitespace-nowrap text-start w-full max-w-5xl truncate")}
             onclick={() => handleClick(contributor)}
     >
       &gt {contributor.payload_id}
