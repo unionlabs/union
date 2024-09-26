@@ -26,8 +26,6 @@ let selected = $state(false)
 let code = $state(false)
 let focusedIndex = $state(0)
 
-onMount(() => terminal.setStep(2))
-
 async function handleWaitlistJoin() {
   waitlistLoading = true
   try {
@@ -47,7 +45,7 @@ async function handleWaitlistJoin() {
 let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
 onMount(() => {
-  terminal.setStep(1)
+  terminal.setStep(2)
   terminal.updateHistory("Please authenticate using one of the following")
   subscriptionTimeout = setTimeout(() => {
     unsubscribe = terminal.keys.subscribe(event => {
@@ -88,8 +86,12 @@ async function handleAction(action: string) {
 }
 
 onDestroy(() => {
+  if (unsubscribe) {
+    unsubscribe()
+  }
   terminal.clearHistory()
 })
+
 </script>
 
 {terminal.updateHistory("Access the ceremony")}

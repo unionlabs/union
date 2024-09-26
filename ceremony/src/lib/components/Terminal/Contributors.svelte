@@ -51,7 +51,6 @@ onMount(() => {
 })
 </script>
 
-  <Print>Ceremony contributors</Print>
   {#each contributions.data as contributor, index}
     <Button
             bind:value={buttons[index]}

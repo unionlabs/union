@@ -10,7 +10,7 @@
   import Button from "$lib/components/Terminal/Button.svelte"
   import TaskBar from "$lib/components/Terminal/TaskBar.svelte"
 
-  const {terminal, contributor} = getState()
+  const { terminal, contributor } = getState()
 
   let {children} = $props()
 

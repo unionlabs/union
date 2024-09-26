@@ -67,10 +67,11 @@ onDestroy(() => {
 </script>
 
 {#if !redirecting}
+
   {#each providers as provider, index}
     <Button
             onmouseenter={() => focusedIndex = index}
-            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "")}
+            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "", "capitalize")}
             onclick={() => logIn(provider)}
     >
       &gt {provider}
