@@ -22,11 +22,6 @@ use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, Instrument};
 
-use super::{
-    block_handle::{BlockHeader, TmBlockHandle},
-    context::TmContext,
-    provider::RpcProviderId,
-};
 use crate::{
     indexer::{
         api::{
@@ -34,8 +29,10 @@ use crate::{
             FetcherClient, IndexerError,
         },
         tm::{
-            block_handle::BlockDetails, create_client_tracker::schedule_create_client_checker,
-            provider::Provider,
+            block_handle::{BlockDetails, BlockHeader, TmBlockHandle},
+            context::TmContext,
+            create_client_tracker::schedule_create_client_checker,
+            provider::{Provider, RpcProviderId},
         },
     },
     postgres::{fetch_or_insert_chain_id_tx, ChainId},

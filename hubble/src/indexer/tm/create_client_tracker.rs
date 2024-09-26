@@ -11,9 +11,11 @@ use unionlabs::{
     parse_wasm_client_type, WasmClientType,
 };
 
-use super::provider::Provider;
 use crate::{
-    indexer::{api::IndexerError, tm::postgres::unmapped_client_ids},
+    indexer::{
+        api::IndexerError,
+        tm::{postgres::unmapped_client_ids, provider::Provider},
+    },
     postgres::insert_client_mapping,
 };
 

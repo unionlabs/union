@@ -1,7 +1,7 @@
 use color_eyre::eyre::Report;
 use tendermint_rpc::Error;
 
-use super::api::IndexerError;
+use crate::indexer::api::IndexerError;
 
 mod block_handle;
 pub mod config;

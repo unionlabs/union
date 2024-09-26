@@ -5,14 +5,16 @@ use sqlx::Postgres;
 use tendermint::block::Meta;
 use tracing::debug;
 
-use super::{fetcher_client::TmFetcherClient, provider::RpcProviderId};
 use crate::{
     indexer::{
         api::{
             BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, FetchMode,
             IndexerError,
         },
-        tm::postgres::delete_tm_block_transactions_events,
+        tm::{
+            fetcher_client::TmFetcherClient, postgres::delete_tm_block_transactions_events,
+            provider::RpcProviderId,
+        },
     },
     postgres,
     tm::{PgBlock, PgEvent, PgTransaction},

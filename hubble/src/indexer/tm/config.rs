@@ -3,9 +3,9 @@ use regex::Regex;
 use sqlx::PgPool;
 use url::Url;
 
-use super::{context::TmContext, fetcher_client::TmFetcherClient};
 use crate::indexer::{
     api::{BlockHeight, IndexerId},
+    tm::{context::TmContext, fetcher_client::TmFetcherClient},
     Indexer,
 };
 
