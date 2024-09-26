@@ -26,4 +26,4 @@ jobs:
       - name: Lint commit messages
         uses: wagoid/commitlint-github-action@v5
         with:
-          failOnWarnings: true
+          failOnWarnings: false

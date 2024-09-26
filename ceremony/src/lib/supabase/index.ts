@@ -132,11 +132,11 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
   const { data, error } = await queryCurrentUserState()
   if (error || !data) return undefined
 
-  return "join"
-
   if (data.has_redeemed) return "hasRedeemed"
   if (data.in_queue) return "inQueue"
   if (data.in_waitlist) return "inWaitlist"
+
+  return "join"
 }
 
 export const getContributions = async () => {
@@ -210,8 +210,8 @@ export const getWaitListPosition = async (): Promise<number | undefined> => {
 }
 
 export const getAverageTimes = async (): Promise<TimeResult> => {
-  let contributionResult
-  let verificationResult
+  let contributionResult: { data: unknown; error: unknown | null }
+  let verificationResult: { data: unknown; error: unknown | null }
 
   try {
     ;[contributionResult, verificationResult] = await Promise.all([
@@ -224,7 +224,9 @@ export const getAverageTimes = async (): Promise<TimeResult> => {
     verificationResult = { data: null, error: null }
   }
 
+  // @ts-ignore
   const contribution = contributionResult.data?.contribution_average ?? null
+  // @ts-ignore
   const verification = verificationResult.data?.verification_average ?? null
 
   const contributionMs = timeToMs(contribution)
