@@ -40,8 +40,23 @@ watch(
 )
 </script>
 
-<video autoplay muted loop data-video="">
-  <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.mov" type="video/mp4" />
+<video 
+  loop
+  muted
+  autoplay
+  playsinline
+  oncanplay={function() {
+    this.autoplay = true
+  }}
+  onloadeddata={function() {
+    this.autoplay = true
+  }}
+  onloadedmetadata={function() {
+    this.muted = true
+  }}
+  data-video=""
+>
+  <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.webm" type="video/webm" />
 </video>
 
 <main class="flex w-full h-full overflow-hidden content flex-col items-center justify-center gap-4">
