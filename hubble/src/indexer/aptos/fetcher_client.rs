@@ -88,6 +88,7 @@ impl AptosFetcherClient {
         trace!("fetched block at height {height} using {:?}: {}-{}", provider_id, block.first_version, block.last_version);
 
         Ok(AptosBlockHandle {
+            internal_chain_id: self.chain_id.db,
             reference: block.block_reference()?,
             details: match mode {
                 FetchMode::Lazy => BlockDetails::Lazy(block.clone()),
@@ -98,7 +99,7 @@ impl AptosFetcherClient {
         })
     }
 
-    async fn fetch_transactions(
+    pub async fn fetch_transactions(
         &self,
         block: &Block,
         provider_id: RpcProviderId,
@@ -115,7 +116,7 @@ impl AptosFetcherClient {
 
             let chunk_limit = (chunk_end_exclusive - chunk_start_inclusive) as u16;
 
-            trace!("fetching chunk for block {} - versions: [{},{}]", block.block_height, complete_start_inclusive, chunk_end_exclusive - 1);
+            trace!("fetching chunk for block {} - versions: [{},{}]", block.block_height, chunk_start_inclusive, chunk_end_exclusive - 1);
 
             let chunk_transactions = self.provider.get_transactions(chunk_start_inclusive, chunk_limit, Some(provider_id))
                 .await?

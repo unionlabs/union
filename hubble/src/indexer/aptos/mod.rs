@@ -8,7 +8,7 @@ pub mod config;
 mod context;
 mod create_client_tracker;
 mod fetcher_client;
-// mod postgres;
+mod postgres;
 mod provider;
 
 impl From<RestError> for IndexerError {

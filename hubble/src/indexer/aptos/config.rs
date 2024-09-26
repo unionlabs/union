@@ -19,7 +19,6 @@ pub struct Config {
     pub chunk_size: Option<usize>,
     pub rpc_urls: Vec<Url>,
     pub filter: Option<String>,
-    pub internal_chain_id: Option<i32>,
     pub tx_search_max_page_size: Option<u16>,
 }
 
