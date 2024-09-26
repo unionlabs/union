@@ -67,7 +67,6 @@ onDestroy(() => {
 </script>
 
 {#if !redirecting}
-
   {#each providers as provider, index}
     <Button
             onmouseenter={() => focusedIndex = index}

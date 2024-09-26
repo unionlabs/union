@@ -21,7 +21,7 @@ function formatTimestamp(timestamp: string): string {
 </script>
 
 {#if activity.data}
-  <Print>ceremony activity</Print>
+  <Print>Ceremony activity</Print>
   {#each activity.data as item, i (item)}
     {@const type = item.message.type}
     {@const user = item.message.user}

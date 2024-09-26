@@ -2,7 +2,7 @@
 import { callJoinQueue } from "$lib/supabase"
 import { toast } from "svelte-sonner"
 import { getState } from "$lib/state/index.svelte.ts"
-import {onDestroy, onMount} from "svelte"
+import { onDestroy, onMount } from "svelte"
 import { cn, sleep } from "$lib/utils/utils.ts"
 import Code from "$lib/components/Terminal/Code.svelte"
 import Button from "$lib/components/Terminal/Button.svelte"

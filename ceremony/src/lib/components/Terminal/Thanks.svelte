@@ -5,6 +5,7 @@ import { cn, sleep } from "$lib/utils/utils.ts"
 import { onDestroy, onMount } from "svelte"
 import Button from "$lib/components/Terminal/Button.svelte"
 import { beforeNavigate } from "$app/navigation"
+import Print from "$lib/components/Terminal/Print.svelte"
 
 const { terminal } = getState()
 
@@ -26,8 +27,8 @@ let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
 
 onMount(() => {
-
   terminal.updateHistory("Thank you!", { replace: true })
+  terminal.updateHistory("-------------")
   terminal.updateHistory(
     "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency.",
     { replace: true }

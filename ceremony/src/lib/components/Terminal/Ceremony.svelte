@@ -13,7 +13,6 @@ const { contributor, terminal } = getState()
 onDestroy(() => {
   terminal.clearHistory()
 })
-
 </script>
 
 {#if !contributor.userWallet}

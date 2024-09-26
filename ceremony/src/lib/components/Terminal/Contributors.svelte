@@ -51,12 +51,12 @@ onMount(() => {
 })
 </script>
 
-  <Print>ceremony contributors</Print>
+  <Print>Ceremony contributors</Print>
   {#each contributions.data as contributor, index}
     <Button
             bind:value={buttons[index]}
             onmouseenter={() => focusedIndex = index}
-            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "", "whitespace-nowrap text-start w-full max-w-5xl truncate")}
+            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "", "whitespace-nowrap text-start w-fit max-w-5xl truncate")}
             onclick={() => handleClick(contributor)}
     >
       &gt {contributor.payload_id}

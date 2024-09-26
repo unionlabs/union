@@ -5,6 +5,7 @@ import { watch } from "runed"
 import { checkAuth } from "$lib/state/session.svelte.ts"
 import Terminal from "$lib/components/Terminal/index.svelte"
 import { start } from "$lib/client"
+import Timer from "$lib/components/Terminal/Timer.svelte"
 
 import "../styles/tailwind.css"
 
@@ -41,11 +42,13 @@ watch(
   <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.mov" type="video/mp4" />
 </video>
 
-<main class="flex w-full h-full overflow-hidden content flex-col items-center justify-center">
+<main class="flex w-full h-full overflow-hidden content flex-col items-center justify-center gap-4">
   <Terminal>
     {@render children()}
   </Terminal>
+  <Timer />
 </main>
+
 
 <style lang="postcss">
 video[data-video] {
