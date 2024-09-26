@@ -1,9 +1,10 @@
 <script lang="ts">
 import { type AuthProviders, Terminal } from "$lib/state/terminal.svelte.ts"
 import { supabase } from "$lib/supabase/client.ts"
-import { onDestroy } from "svelte"
+import { onDestroy, onMount } from "svelte"
 import Button from "$lib/components/Terminal/Button.svelte"
 import { cn } from "$lib/utils/utils.ts"
+import { on } from "svelte/events"
 
 type Props = {
   terminal: Terminal
@@ -15,10 +16,6 @@ const providers: Array<AuthProviders> = ["github", "google"]
 
 let focusedIndex = $state(0)
 let redirecting = $state(false)
-
-$effect(() => {
-  terminal.updateHistory("Please authenticate using one of the following")
-})
 
 async function logIn(provider: AuthProviders) {
   const { data, error } = await supabase.auth.signInWithOAuth({
@@ -37,12 +34,8 @@ async function logIn(provider: AuthProviders) {
 
 let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
-$effect(() => {
-  terminal.updateHistory("Thank you!")
-  terminal.updateHistory(
-    "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency."
-  )
-
+onMount(() => {
+  terminal.updateHistory("Please authenticate using one of the following")
   subscriptionTimeout = setTimeout(() => {
     unsubscribe = terminal.keys.subscribe(event => {
       if (event) {

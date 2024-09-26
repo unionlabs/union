@@ -24,10 +24,11 @@ beforeNavigate(() => {
 
 let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
-$effect(() => {
-  terminal.updateHistory("Thank you!")
+onMount(() => {
+  terminal.updateHistory("Thank you!", { replace: true })
   terminal.updateHistory(
-    "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency."
+    "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency.",
+    { replace: true }
   )
 
   subscriptionTimeout = setTimeout(() => {

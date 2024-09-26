@@ -1,4 +1,5 @@
 import { getContext, onDestroy, setContext } from "svelte"
+import { checkState } from "$lib/client"
 import {
   getCurrentUserState,
   getUserQueueInfo,
@@ -23,6 +24,21 @@ type State =
 export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
 
 export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
+
+export type ClientState =
+  | "idle"
+  | "initializing"
+  | "downloadStarted"
+  | "downloading"
+  | "downloadEnded"
+  | "contributionStarted"
+  | "contributionEnded"
+  | "uploadStarted"
+  | "uploadEnded"
+  | "failed"
+  | "successful"
+  | "offline"
+  | undefined
 
 interface UserContext {
   position: number | null
@@ -55,7 +71,7 @@ export class Contributor {
   currentUserState = $state<AllowanceState>(undefined)
   pollingState = $state<"stopped" | "polling">("stopped")
   state = $state<State>("loading")
-
+  clientState = $state<ClientState>("offline")
   contributionState = $state<ContributionState>("notContributed")
   userWallet = $state("")
   waitListPosition = $state<number | undefined>(undefined)
@@ -68,9 +84,11 @@ export class Contributor {
   })
 
   private pollIntervals: {
+    client: IntervalID | null
     queue: IntervalID | null
     contribution: IntervalID | null
   } = {
+    client: null,
     queue: null,
     contribution: null
   }
@@ -131,6 +149,7 @@ export class Contributor {
     }
 
     this.pollingState = "polling"
+    this.startClientStatePolling()
     this.startQueueInfoPolling()
     this.startContributionStatePolling()
   }
@@ -142,8 +161,29 @@ export class Contributor {
     }
 
     this.pollingState = "stopped"
+    this.stopClientStatePolling()
     this.stopQueueInfoPolling()
     this.stopContributionStatePolling()
+  }
+
+  private startClientStatePolling() {
+    this.pollClientState()
+    this.pollIntervals.client = setInterval(
+      () => this.pollClientState(),
+      CLIENT_POLING_INTERVAL
+    ) as IntervalID
+  }
+
+  private stopClientStatePolling() {
+    if (this.pollIntervals.client) {
+      clearInterval(this.pollIntervals.client)
+      this.pollIntervals.client = null
+    }
+  }
+
+  private async pollClientState() {
+    const state = await checkState()
+    this.updateClientState(state)
   }
 
   private startQueueInfoPolling() {
@@ -196,6 +236,11 @@ export class Contributor {
     }
   }
 
+  private updateClientState(state: ClientState) {
+    this.clientState = state
+    this.updateState()
+  }
+
   private updateQueueInfo(queueInfo: QueueInfoResult) {
     if (queueInfo.inQueue) {
       this.queueState = {
@@ -227,13 +272,36 @@ export class Contributor {
 
   private updateState() {
     if (this.contributionState === "contribute") {
-      this.state = "contribute"
+      switch (this.clientState) {
+        case "initializing":
+        case "downloadStarted":
+        case "downloading":
+        case "downloadEnded":
+        case "contributionStarted":
+        case "contributionEnded":
+        case "uploadStarted":
+        case "uploadEnded":
+        case "successful":
+          this.state = "contributing"
+          break
+        case "failed":
+          this.state = "error"
+          break
+        case "offline":
+          this.state = "noClient"
+          break
+        default:
+          this.state = "contribute"
+          break
+      }
     } else if (this.queueState.position !== null) {
       this.state = "inQueue"
     } else if (this.contributionState === "contributed") {
       this.state = "contributed"
     } else if (this.contributionState === "verifying") {
       this.state = "verifying"
+    } else if (this.clientState === "offline") {
+      this.state = "offline"
     } else {
       this.state = "loading"
     }

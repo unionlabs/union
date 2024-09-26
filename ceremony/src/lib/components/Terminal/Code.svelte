@@ -26,7 +26,7 @@ async function handleCodeJoin() {
   try {
     showInput = false
     terminal.updateHistory("Checking code...", { duplicate: true })
-    console.log(normalizedCode)
+    console.log("code: ", normalizedCode)
     await sleep(1000)
     const codeOk = await callJoinQueue(normalizedCode)
     if (codeOk) {

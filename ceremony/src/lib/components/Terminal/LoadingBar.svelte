@@ -9,7 +9,13 @@ type Props = {
 
 let { min = 1, max, current }: Props = $props()
 
-let progress = $derived(current != null && max != null ? ((max - current) / (max - min)) * 100 : 0)
+let progress = $derived(
+  current != null && max != null
+    ? max === min
+      ? 99.99
+      : Math.min(((max - current) / (max - min)) * 100, 99.99)
+    : 0
+)
 
 const TOTAL_SYMBOLS = 30
 
@@ -22,9 +28,7 @@ function generateQueueBar(progress: number): string {
 
 let queueBar = $derived(generateQueueBar(progress))
 
-let percentageText = $derived(`${progress.toFixed(1)}%`)
+let percentageText = $derived(`${progress.toFixed(2)}%`)
 </script>
 
-
 <Print>{queueBar} - {percentageText}</Print>
-

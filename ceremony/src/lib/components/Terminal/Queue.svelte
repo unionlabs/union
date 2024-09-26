@@ -7,15 +7,14 @@ import LoadingBar from "$lib/components/Terminal/LoadingBar.svelte"
 const { contributor, terminal } = getState()
 
 onMount(() => {
-  terminal.updateHistory("---", { duplicate: true })
   terminal.updateHistory("You are in queue")
 })
 </script>
 
-<Print>Your position:  {contributor.queueState.position ?? 33}</Print>
-<Print>Queue length: {contributor.queueState.count ?? 347}</Print>
-<Print>Estimated waiting time: {contributor.queueState.estimatedTime ?? 990} minutes</Print>
-<LoadingBar max={contributor.queueState.count ?? 347} current={contributor.queueState.position ?? 33}/>
+<Print>Your position:  {contributor.queueState.position}</Print>
+<Print>Queue length: {contributor.queueState.count}</Print>
+<Print>Estimated waiting time: {contributor.queueState.estimatedTime} minutes</Print>
+<LoadingBar max={contributor.queueState.count} current={contributor.queueState.position}/>
 <Print>Your MPC Client is connected.</Print>
 <Print>Do not close this tab or your Terminal.</Print>
 <Print>Ensure you have a reliable internet connection and that your computer does not go to sleep.</Print>

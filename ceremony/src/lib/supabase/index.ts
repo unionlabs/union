@@ -12,8 +12,8 @@ import {
   queryUserWallet
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
-import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
+import type { AllowanceState, ContributionState } from "$lib/state/contributor.svelte.ts"
 
 export const callJoinQueue = async (code: string | null): Promise<boolean> => {
   if (!user.session) {
@@ -121,11 +121,10 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
   const { data, error } = await queryCurrentUserState()
   if (error || !data) return undefined
 
+  return "join"
   if (data.has_redeemed) return "hasRedeemed"
   if (data.in_queue) return "inQueue"
   if (data.in_waitlist) return "inWaitlist"
-
-  return "join"
 }
 
 export const getContributions = async () => {

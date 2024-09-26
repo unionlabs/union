@@ -4,7 +4,7 @@ import { sleep } from "$lib/utils/utils.ts"
 import { generateSecret } from "$lib/client"
 import Button from "$lib/components/Terminal/Button.svelte"
 
-const { client, contributor, terminal, user } = getState()
+const { contributor, terminal, user } = getState()
 
 let generated = $state(false)
 let generating = $state(false)
@@ -20,7 +20,7 @@ function setDownloadedSecret() {
 }
 
 async function generate() {
-  if (client.state !== "noClient") {
+  if (contributor.state !== "noClient") {
     generating = true
     terminal.updateHistory("Generating secret...")
     await sleep(3000)
@@ -55,7 +55,7 @@ $effect(() => {
             onclick={generate} autofocus>&gt Generate secret
     </Button>
   {:else}
-    <Button onclick={setDownloadedSecret} autofocus>&gt I've generated and stored my secret</Button>
-    <button onclick={generate}>&gt Generate again</button>
+    <Button autofocus onclick={setDownloadedSecret}>&gt I've generated and stored my secret</Button>
+    <Button onclick={generate}>&gt Generate again</Button>
   {/if}
 {/if}

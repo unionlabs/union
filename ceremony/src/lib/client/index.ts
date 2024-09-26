@@ -1,7 +1,8 @@
 import { get, post } from "$lib/client/http.ts"
 import { getQueuePayloadId } from "$lib/supabase/queries.ts"
-import type { ClientState, ContributeBody } from "$lib/client/types.ts"
+import type { ContributeBody } from "$lib/client/types.ts"
 import { supabase } from "$lib/supabase/client.ts"
+import type { ClientState } from "$lib/state/contributor.svelte.ts"
 
 export const start = async (): Promise<ClientState | undefined> => {
   const { data: session, error: sessionError } = await supabase.auth.refreshSession()
