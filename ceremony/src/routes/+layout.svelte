@@ -43,8 +43,14 @@ watch(
   muted
   autoplay
   playsinline
+  oncanplay={function() {
+    this.autoplay = true
+  }}
   onloadeddata={function() {
-    this.autoplay
+    this.autoplay = true
+  }}
+  onloadedmetadata={function() {
+    this.muted = true
   }}
   data-video=""
 >
