@@ -7,6 +7,7 @@ import { onDestroy, onMount } from "svelte"
 const { contributor, terminal } = getState()
 
 onMount(() => {
+  terminal.setStep(3)
   terminal.updateHistory("You're on the waitlist")
   terminal.updateHistory(
     `When the ceremony opens to the public, you will be ${contributor.waitListPosition}${getNumberSuffix(contributor.waitListPosition)} in the public queue.`

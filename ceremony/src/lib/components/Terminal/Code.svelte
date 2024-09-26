@@ -13,6 +13,7 @@ let inputElement: HTMLInputElement
 let showInput = $state(true)
 
 onMount(() => {
+  terminal.setStep(3)
   if (inputElement) {
     inputElement.focus()
   }

@@ -21,7 +21,7 @@ onMount(() => {
     {#if contributor.currentUserState === "hasRedeemed" || contributor.currentUserState === "inQueue"}
       <Ceremony/>
     {:else if contributor.currentUserState === "inWaitlist"}
-      <Waitlist />
+      <Waitlist/>
     {:else if contributor.currentUserState === "join"}
       <Join/>
     {/if}

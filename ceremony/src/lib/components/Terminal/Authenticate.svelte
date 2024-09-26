@@ -35,6 +35,7 @@ async function logIn(provider: AuthProviders) {
 let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
 onMount(() => {
+  terminal.setStep(1)
   terminal.updateHistory("Please authenticate using one of the following")
   subscriptionTimeout = setTimeout(() => {
     unsubscribe = terminal.keys.subscribe(event => {

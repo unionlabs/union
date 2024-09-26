@@ -21,7 +21,8 @@ export class Terminal {
   history = $state<Array<string>>([])
   tab = $state<1 | 2 | 3 | number>(1)
   hash = $state<string | undefined>(undefined)
-  contribution = $state(undefined)
+  currentStep = $state<number>(0)
+  maxStep = $state<number>(10)
 
   keys = readable<KeyEvent | null>(null, set => {
     const handleKeyEvent = (event: KeyboardEvent) => {
@@ -77,8 +78,8 @@ export class Terminal {
     this.hash = hash
   }
 
-  setContribution(contribution: any) {
-    this.contribution = contribution
+  setStep(step: number) {
+    this.currentStep = step
   }
 }
 

@@ -13,33 +13,41 @@ const { contributor, terminal } = getState()
 onDestroy(() => {
   terminal.clearHistory()
 })
+
 </script>
 
 {#if !contributor.userWallet}
-  <Reward/>
+  {terminal.setStep(4)}
+  <Reward />
 
 {:else if contributor.state === "contributed"}
+  {terminal.setStep(10)}
   <Thanks/>
 
 {:else if !contributor.downloadedSecret && contributor.clientState === "idle"}
+  {terminal.setStep(6)}
   <Secret/>
 
 {:else if contributor.state === "verifying"}
+  {terminal.setStep(9)}
   {terminal.updateHistory("Verifying your contribution...", {replace: true})}
 
 {:else if contributor.clientState === "offline" || contributor.clientState === undefined}
+  {terminal.setStep(5)}
   <Install/>
 
 {:else if contributor.state === "inQueue"}
-  <Queue/>
+  {terminal.setStep(7)}
+  <Queue />
 
 {:else if contributor.state === 'contribute'}
+  {terminal.setStep(8)}
   {terminal.updateHistory("Starting contribution...", {replace: true})}
 
 {:else if contributor.state === "contributing"}
+  {terminal.setStep(9)}
   {terminal.updateHistory("Contributing...", {replace: true})}
 
 {:else}
  <Print>Not able to contribute at this time</Print>
-
 {/if}
