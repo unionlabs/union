@@ -1,4 +1,4 @@
-module UCS01::ibc {    
+module UCS01::Relay{    
     use IBC::ibc;
     use IBC::channel;
     use IBC::height;
@@ -17,7 +17,6 @@ module UCS01::ibc {
     use std::vector;
     use UCS01::EthABI;
 
-    const ASSET_SYMBOL: vector<u8> = b"FA";
     // Constants
     const ORDER_UNORDERED: u8 = 1;
     const VERSION: vector<u8> = b"ucs01-relay-1";
@@ -560,7 +559,7 @@ module UCS01::ibc {
                 if(starts_with(trimmed_denom, string::utf8(b"@"))) {
                     trimmed_denom = string::sub_string(&trimmed_denom, 1, 65);
                 };
-                let denom_address = from_bcs::to_address(hex_to_bytes(trimmed_denom));
+                denom_address = from_bcs::to_address(hex_to_bytes(trimmed_denom));
 
                 // Decrease the outstanding amount of the token
                 decrease_outstanding(source_channel, denom_address, token.amount);
@@ -587,7 +586,7 @@ module UCS01::ibc {
                                 
                 // Check if the denomination address exists in the store
                 let store = borrow_global_mut<RelayStore>(get_vault_addr());
-                let denom_address = *smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0);
+                denom_address = *smart_table::borrow_with_default(&store.denom_to_address, pair, &@0x0);
 
 
                 if (denom_address == @0x0) {
@@ -885,7 +884,7 @@ module UCS01::ibc {
                 token: local_token_denom,
                 amount: local_token_amount
             });
-
+            i = i + 1;
         }
     }
 
@@ -1069,7 +1068,7 @@ module UCS01::ibc {
         init_module(admin);
 
         let source_channel = string::utf8(b"channel-1");
-        let denom = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let denom = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         let amount: u64 = 1000;
 
         // Upsert denom to address pair
@@ -1091,10 +1090,10 @@ module UCS01::ibc {
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
             string::utf8(TEST_PROJECT),
-            TEST_SYMBOL
+            IBC_APP_SEED
         );
 
-        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         let asset = get_metadata(asset_addr);
         let bob_addr = signer::address_of(bob);
         UCS01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
@@ -1135,11 +1134,11 @@ module UCS01::ibc {
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
             string::utf8(TEST_PROJECT),
-            TEST_SYMBOL
+            IBC_APP_SEED
         );
 
         
-        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         let asset = get_metadata(asset_addr);
         let bob_addr = signer::address_of(bob);
         UCS01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
@@ -1174,11 +1173,11 @@ module UCS01::ibc {
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
             string::utf8(TEST_PROJECT),
-            TEST_SYMBOL
+            IBC_APP_SEED
         );
 
         
-        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         let _asset = get_metadata(asset_addr);
 
         // Attempt to send zero amount
@@ -1250,10 +1249,10 @@ module UCS01::ibc {
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
             string::utf8(TEST_PROJECT),
-            TEST_SYMBOL
+            IBC_APP_SEED
         );
 
-        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         let asset = get_metadata(asset_addr);
 
         // Step 3: Simulate sending tokens (for refund purposes)
@@ -1306,9 +1305,9 @@ module UCS01::ibc {
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
             string::utf8(TEST_PROJECT),
-            TEST_SYMBOL
+            IBC_APP_SEED
         );
-        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
 
         let asset = get_metadata(asset_addr);
 
@@ -1355,7 +1354,7 @@ module UCS01::ibc {
         let source_channel = string::utf8(b"channel-1");
         let destination_channel = string::utf8(b"dest-channel");
         let port_id = string::utf8(b"port-1");
-        let local_token_address = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let local_token_address = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         
         let token_owner = &get_signer();
 
@@ -1367,10 +1366,10 @@ module UCS01::ibc {
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
             string::utf8(TEST_PROJECT),
-            TEST_SYMBOL
+            IBC_APP_SEED
         );
 
-        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
 
         let asset = get_metadata(asset_addr);
         // Step 3: Mint tokens to the relay module's account (escrow)
@@ -1493,9 +1492,9 @@ module UCS01::ibc {
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
             string::utf8(TEST_PROJECT),
-            TEST_SYMBOL
+            IBC_APP_SEED
         );
-        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         let _asset = get_metadata(asset_addr);
 
         let new_denom = make_denom_prefix(port_id, destination_channel);
@@ -1561,7 +1560,7 @@ module UCS01::ibc {
         let source_channel = string::utf8(b"channel-1");
         let destination_channel = string::utf8(b"dest-channel");
         let port_id = string::utf8(b"port-1");
-        let local_token_address = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let local_token_address = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         
         // Mint some tokens to simulate the token creation on this chain
         UCS01::fa_coin::initialize(
@@ -1571,10 +1570,10 @@ module UCS01::ibc {
             TEST_DECIMALS,
             string::utf8(TEST_ICON),
             string::utf8(TEST_PROJECT),
-            TEST_SYMBOL
+            IBC_APP_SEED
         );
 
-        let asset_addr = UCS01::fa_coin::get_metadata_address(TEST_SYMBOL);
+        let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
         let asset = get_metadata(asset_addr);
         // Step 3: Mint tokens to the relay module's account (escrow)
         UCS01::fa_coin::mint_with_metadata(&get_signer(), @UCS01, 1000, asset);
@@ -1619,5 +1618,67 @@ module UCS01::ibc {
         // Step 8: Verify the outstanding amount was decreased
         let outstanding_balance = get_outstanding(source_channel, local_token_address);
         assert!(outstanding_balance == 500, 101); // Outstanding should be reduced by 500
-    }
+    }    
+    
+    // #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235, ibc_admin = @IBC)]
+    // public fun test_send_valid(admin: &signer, ibc_admin: &signer, alice: &signer, bob: address) acquires RelayStore, SignerRef {
+    //     // Initialize the store
+    //     init_module(admin);
+    //     ibc::init_module_public(ibc_admin);
+
+    //     let port_id = string::utf8(b"0x0000000000000000000000000000000000000000000000000004444444444444");
+    //     let channel_id = string::utf8(b"channel-1");
+    //     let connection_id = string::utf8(b"connection-1");
+    //     let client_id = string::utf8(b"client-1");
+
+    //     ibc::test_fill_all_states(port_id, channel_id, connection_id, client_id);
+
+    //     let source_channel = string::utf8(b"channel-1");
+    //     let denom_list = vector::empty<address>();
+    //     let amount_list = vector::empty<u64>();
+
+    //     UCS01::fa_coin::initialize(
+    //         &get_signer(),
+    //         string::utf8(TEST_NAME),
+    //         string::utf8(TEST_SYMBOL),
+    //         TEST_DECIMALS,
+    //         string::utf8(TEST_ICON),
+    //         string::utf8(TEST_PROJECT),
+    //         IBC_APP_SEED
+    //     );
+        
+    //     let asset_addr = UCS01::fa_coin::get_metadata_address(IBC_APP_SEED);
+
+    //     UCS01::fa_coin::mint_with_metadata(&get_signer(), signer::address_of(alice), 1000, get_metadata(asset_addr));
+
+    //     vector::push_back(&mut denom_list, asset_addr);
+    //     vector::push_back(&mut amount_list, 500);  // Send half of the minted amount
+
+    //     let extension = string::utf8(b"optional-extension");
+    //     let timeout_height_number = 1;
+    //     let timeout_height_height = 100;
+    //     let timeout_timestamp = 100000;
+
+    //     send(
+    //         alice,
+    //         source_channel,
+    //         bob,
+    //         denom_list,
+    //         amount_list,
+    //         extension,
+    //         timeout_height_number,
+    //         timeout_height_height,
+    //         timeout_timestamp
+    //     );
+
+    //     let outstanding_balance = get_outstanding(source_channel, asset_addr);
+    //     assert!(outstanding_balance == 500, 100);  // Only 500 tokens were sent
+
+    //     let ucs01_balance = primary_fungible_store::balance(@UCS01, get_metadata(asset_addr));
+    //     assert!(ucs01_balance == 500, 101);  // 500 tokens should be transferred to UCS01
+
+    //     let alice_balance = primary_fungible_store::balance(signer::address_of(alice), get_metadata(asset_addr));
+    //     assert!(alice_balance == 500, 102);  // Alice should have 500 tokens left after sending
+    // }
+
 }
