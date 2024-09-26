@@ -7,7 +7,6 @@ import Terminal from "$lib/components/Terminal/index.svelte"
 import { start } from "$lib/client"
 
 import "../styles/tailwind.css"
-import Print from "$lib/components/Terminal/Print.svelte";
 
 let { children } = $props()
 
@@ -38,9 +37,26 @@ watch(
 )
 </script>
 
-<main class="flex flex-col w-full h-full items-center justify-center">
+<video autoplay muted loop data-video="">
+  <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.mov" type="video/mp4" />
+</video>
+
+<main class="flex w-full h-full overflow-hidden content flex-col items-center justify-center">
   <Terminal>
     {@render children()}
   </Terminal>
-  <Print>1:00:00</Print>
 </main>
+
+<style lang="postcss">
+video[data-video] {
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  width: 100vw;
+  height: 100vh;
+  min-width: 100%;
+  position: fixed;
+  min-height: 100%;
+  object-fit: cover;
+}
+</style>
