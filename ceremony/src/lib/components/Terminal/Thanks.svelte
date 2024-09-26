@@ -2,9 +2,10 @@
 import { getPublicHash } from "$lib/supabase"
 import { getState } from "$lib/state/index.svelte.ts"
 import type { KeyEvent } from "$lib/state/terminal.svelte.ts"
-import { sleep } from "$lib/utils/utils.ts"
+import {cn, sleep} from "$lib/utils/utils.ts"
 import { onMount } from "svelte"
 import { beforeNavigate } from "$app/navigation"
+import Button from "$lib/components/Terminal/Button.svelte";
 
 const { terminal } = getState()
 
@@ -75,12 +76,11 @@ function triggerAction(index: number) {
 
 {#if showButtons}
   {#each buttons as btn, index}
-    <button
-            class="block outline-none focus:ring-2 focus:ring-transparent focus:border-none"
-            class:text-union-accent-500={selectedButton === index}
+    <Button
+            class={cn(selectedButton === index ? "text-union-accent-500" : "")}
             onclick={() => triggerAction(index)}
     >
       &gt; {btn.text}
-    </button>
+    </Button>
   {/each}
 {/if}

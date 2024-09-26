@@ -1,7 +1,8 @@
 <script lang="ts">
 import { onDestroy, onMount } from "svelte"
 import { getState } from "$lib/state/index.svelte.ts"
-import { sleep } from "$lib/utils/utils.ts"
+import {cn, sleep} from "$lib/utils/utils.ts"
+import Button from "$lib/components/Terminal/Button.svelte";
 
 type Props = {
   change: () => void
@@ -94,21 +95,19 @@ onDestroy(unsubscribe)
 </script>
 
 {#if showButtons}
-  <button
-          bind:this={buttons[0]}
-          class="block outline-none focus:ring-2 focus:ring-transparent focus:border-none"
-          class:text-union-accent-500={currentFocusIndex === 0}
+  <Button
+          bind:value={buttons[0]}
+          class={cn(currentFocusIndex === 0 ? "text-union-accent-500" : "")}
           onclick={copy}
   >
     &gt; Copy command
-  </button>
-  <button
-          bind:this={buttons[1]}
-          class="block outline-none focus:ring-2 focus:ring-transparent focus:border-none"
-          class:text-union-accent-500={currentFocusIndex === 1}
+  </Button>
+  <Button
+          bind:value={buttons[0]}
+          class={cn(currentFocusIndex === 0 ? "text-union-accent-500" : "")}
           onclick={selectDifferentOs}
   >
     &gt; Select different OS
-  </button>
+  </Button>
 
 {/if}

@@ -2,6 +2,9 @@
 import { type AuthProviders, type KeyEvent, Terminal } from "$lib/state/terminal.svelte.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import { onDestroy, onMount } from "svelte"
+import Button from "$lib/components/Terminal/Button.svelte";
+import clsx from "clsx";
+import {cn} from "$lib/utils/utils.ts";
 
 type Props = {
   terminal: Terminal
@@ -53,14 +56,13 @@ onDestroy(unsubscribe)
 {#if !redirecting}
 
   {#each providers as provider, index}
-    <button
-            class="block"
+    <Button
+            class={cn(index === focusedIndex ? "text-union-accent-500" : "")}
             onclick={() => logIn(provider)}
-            class:text-union-accent-500={index === focusedIndex }
-            tabindex="{index === focusedIndex ? 0 : -1}"
+            tabindex={index === focusedIndex ? 0 : -1}
     >
       &gt {provider}
-    </button>
+    </Button>
   {/each}
 
 {/if}

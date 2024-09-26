@@ -75,8 +75,8 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
   <Print>Loading</Print>
 {:then contribution}
   {#if contribution}
-    <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.public_key)}</pre>
-    <pre class="text-white whitespace-pre-wrap">{decodeHexString(contribution.signature)}</pre>
+    <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution.public_key)}</pre>
+    <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution.signature)}</pre>
     <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
       Copy public key
     </button>

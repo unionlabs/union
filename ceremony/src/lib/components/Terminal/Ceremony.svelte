@@ -35,6 +35,8 @@ $effect(() => {
 
 {:else if contributor.contributionState === 'contribute'}
   {terminal.updateHistory("Starting contribution...")}
+  <Print>Not starting?</Print>
+  <button>&gt Start</button>
 
 {:else if contributor.contributionState === "contribute"}
   {terminal.updateHistory("Contributing...")}

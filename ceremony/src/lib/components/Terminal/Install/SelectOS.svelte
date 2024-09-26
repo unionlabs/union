@@ -1,8 +1,9 @@
 <script lang="ts">
-import type { DetectedOS } from "$lib/utils/utils.ts"
+  import {cn, type DetectedOS} from "$lib/utils/utils.ts"
 import { getState } from "$lib/state/index.svelte.ts"
 import { onDestroy, onMount } from "svelte"
 import type { KeyEvent } from "$lib/state/terminal.svelte.ts"
+  import Button from "$lib/components/Terminal/Button.svelte";
 
 type Props = {
   select: (os: DetectedOS) => void
@@ -45,12 +46,11 @@ onDestroy(unsubscribe)
 
 {#if showButtons}
   {#each selections as os, index}
-    <button
-            class="block outline-none focus:ring-2 focus:ring-transparent focus:border-none"
-            class:text-union-accent-500={currentFocusIndex === index}
+    <Button
+            class={cn(currentFocusIndex === 0 ? "text-union-accent-500" : "")}
             onclick={() => select(os)}
     >
       &gt {os}
-    </button>
+    </Button>
   {/each}
 {/if}

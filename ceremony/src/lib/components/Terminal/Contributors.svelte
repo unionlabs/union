@@ -3,20 +3,22 @@ import { getState } from "$lib/state/index.svelte.ts"
 import { onMount } from "svelte"
 import { goto } from "$app/navigation"
 import Print from "$lib/components/Terminal/Print.svelte"
+import {cn} from "$lib/utils/utils.ts";
+import Button from "$lib/components/Terminal/Button.svelte";
 
 const { contributions, terminal } = getState()
 
 let selectedIndex = $state(0)
 let buttons: Array<HTMLButtonElement> = []
 
-function fireEvent(contributor: any) {
+function handleClick(contributor: any) {
   console.log("selected contributor:", contributor)
   goto(`/0____0/${contributor.public_key_hash}`)
   terminal.setTab(4)
   terminal.setHash(contributor.public_key_hash)
 }
 
-onMount(() => {
+$effect(() => {
   buttons[0].focus()
 })
 
@@ -36,7 +38,7 @@ onMount(() => {
             buttons[selectedIndex]?.focus()
           } else if (event.key === "Enter") {
             if (buttons[selectedIndex]) {
-              fireEvent(contributions.data[selectedIndex])
+              handleClick(contributions.data[selectedIndex])
             }
           }
         }
@@ -57,12 +59,12 @@ onMount(() => {
 {#if contributions.data}
   <Print>ceremony contributors</Print>
   {#each contributions.data as contributor, index}
-    <button
-            bind:this={buttons[index]}
-            class="text-start w-full max-w-5xl whitespace-nowrap truncate focus:outline-none"
-            class:text-union-accent-500={index === selectedIndex}
+    <Button
+            bind:value={buttons[index]}
+            class={cn(index === selectedIndex ? "text-union-accent-500" : "", "whitespace-nowrap text-start w-full max-w-5xl truncate")}
+            onclick={() => handleClick(contributor)}
     >
       &gt {contributor.payload_id}
-    </button>
+    </Button>
   {/each}
 {/if}

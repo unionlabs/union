@@ -1,5 +1,8 @@
 import { browser } from "$app/environment"
+import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx"
 
+export const cn = (...inputs: Array<ClassValue>) => twMerge(clsx(inputs))
 export function getNumberSuffix(n: number | null): string {
   if (n == null) return ""
 

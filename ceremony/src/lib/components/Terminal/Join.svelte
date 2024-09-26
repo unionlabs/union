@@ -3,8 +3,9 @@ import { callJoinQueue } from "$lib/supabase"
 import { toast } from "svelte-sonner"
 import { getState } from "$lib/state/index.svelte.ts"
 import { onDestroy } from "svelte"
-import { sleep } from "$lib/utils/utils.ts"
+import {cn, sleep} from "$lib/utils/utils.ts"
 import Code from "$lib/components/Terminal/Code.svelte"
+import Button from "$lib/components/Terminal/Button.svelte";
 
 const { contributor, terminal } = getState()
 
@@ -82,14 +83,13 @@ async function handleAction(action: string) {
     <Code />
   {:else }
     {#each buttons as button, index}
-      <button
-              class="block"
+      <Button
+              class={cn(index === focusedIndex ? "text-union-accent-500" : "")}
               onclick={() => handleAction(button.action)}
-              class:text-union-accent-500={index === focusedIndex }
-              tabindex="{index === focusedIndex ? 0 : -1}"
+              tabindex={index === focusedIndex ? 0 : -1}
       >
         &gt {button.label}
-      </button>
+      </Button>
     {/each}
   {/if}
 
