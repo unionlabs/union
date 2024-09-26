@@ -8,8 +8,8 @@ import { start } from "$lib/client"
 import Timer from "$lib/components/Terminal/Timer.svelte"
 
 import "../styles/tailwind.css"
-import { onMount } from "svelte";
-import { getAverageTimes } from "$lib/supabase";
+import { onMount } from "svelte"
+import { getAverageTimes } from "$lib/supabase"
 
 let { children } = $props()
 
@@ -39,11 +39,11 @@ watch(
   }
 )
 let showBootSequence = $state(true)
-let bootSeuenceVideoElement = $state<HTMLVideoElement | null>(null)
+let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
 
-onMount(() => bootSeuenceVideoElement?.play())
+onMount(() => bootSequenceVideoElement?.play())
 
-const hideBootSequenceVideo= () => showBootSequence = false
+const hideBootSequenceVideo = () => (showBootSequence = false)
 </script>
 
 {#if showBootSequence}
@@ -53,7 +53,7 @@ const hideBootSequenceVideo= () => showBootSequence = false
     playsinline
     data-video="bootsequence"
     onended={hideBootSequenceVideo}
-    bind:this={bootSeuenceVideoElement}
+    bind:this={bootSequenceVideoElement}
     oncanplay={function() {
       this.autoplay = true
     }}

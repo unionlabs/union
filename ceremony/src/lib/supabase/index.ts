@@ -5,25 +5,26 @@ import {
   getQueueCount,
   getSubmittedContribution,
   getUserQueuePosition,
-  queryContributions, queryContributionTime,
+  queryContributions,
+  queryContributionTime,
   queryCurrentUserState,
   queryUserContribution,
   queryUserPublicHash,
-  queryUserWallet, queryVerificationTime
+  queryUserWallet,
+  queryVerificationTime
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
-import {msToTimeString, sleep, timeToMs} from "$lib/utils/utils.ts"
+import { msToTimeString, sleep, timeToMs } from "$lib/utils/utils.ts"
 import type { AllowanceState, ContributionState } from "$lib/state/contributor.svelte.ts"
 
 interface TimeResult {
-  verification: string | null;
-  contribution: string | null;
-  total: string;
-  verificationMs: number;
-  contributionMs: number;
-  totalMs: number;
+  verification: string | null
+  contribution: string | null
+  total: string
+  verificationMs: number
+  contributionMs: number
+  totalMs: number
 }
-
 
 export const callJoinQueue = async (code: string | null): Promise<boolean> => {
   if (!user.session) {
@@ -136,7 +137,6 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
   if (data.has_redeemed) return "hasRedeemed"
   if (data.in_queue) return "inQueue"
   if (data.in_waitlist) return "inWaitlist"
-
 }
 
 export const getContributions = async () => {
@@ -214,22 +214,22 @@ export const getAverageTimes = async (): Promise<TimeResult> => {
   let verificationResult
 
   try {
-    [contributionResult, verificationResult] = await Promise.all([
+    ;[contributionResult, verificationResult] = await Promise.all([
       queryContributionTime(),
       queryVerificationTime()
-    ]);
+    ])
   } catch (error) {
-    console.error("Error fetching times:", error);
-    contributionResult = { data: null, error: null };
-    verificationResult = { data: null, error: null };
+    console.error("Error fetching times:", error)
+    contributionResult = { data: null, error: null }
+    verificationResult = { data: null, error: null }
   }
 
-  const contribution = contributionResult.data?.contribution_average ?? null;
-  const verification = verificationResult.data?.verification_average ?? null;
+  const contribution = contributionResult.data?.contribution_average ?? null
+  const verification = verificationResult.data?.verification_average ?? null
 
-  const contributionMs = timeToMs(contribution);
-  const verificationMs = timeToMs(verification);
-  const totalMs = contributionMs + verificationMs;
+  const contributionMs = timeToMs(contribution)
+  const verificationMs = timeToMs(verification)
+  const totalMs = contributionMs + verificationMs
 
   return {
     verification,
@@ -238,5 +238,5 @@ export const getAverageTimes = async (): Promise<TimeResult> => {
     verificationMs,
     contributionMs,
     totalMs
-  };
+  }
 }

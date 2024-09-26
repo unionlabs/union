@@ -50,7 +50,7 @@ onMount(() => {
   subscriptionTimeout = setTimeout(() => {
     unsubscribe = terminal.keys.subscribe(event => {
       if (event) {
-        if(code) return
+        if (code) return
         if (event.type === "keydown") {
           if (event.key === "ArrowUp") {
             focusedIndex = (focusedIndex - 1 + buttons.length) % buttons.length
@@ -60,7 +60,6 @@ onMount(() => {
             handleAction(buttons[focusedIndex].action)
           }
         }
-
       }
     })
   }, 200)
@@ -91,7 +90,6 @@ onDestroy(() => {
   }
   terminal.clearHistory()
 })
-
 </script>
 
 {terminal.updateHistory("Access the ceremony")}

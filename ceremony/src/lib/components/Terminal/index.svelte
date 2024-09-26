@@ -1,63 +1,63 @@
 <script lang="ts">
-  import {getState} from "$lib/state/index.svelte.ts"
-  import {logout, user} from "$lib/state/session.svelte.ts"
-  import Contributions from "./Contributors.svelte"
-  import {goto} from "$app/navigation"
-  import {onDestroy} from "svelte"
-  import Print from "$lib/components/Terminal/Print.svelte"
-  import Activity from "$lib/components/Terminal/Activity.svelte"
-  import {cn} from "$lib/utils/utils.ts"
-  import Button from "$lib/components/Terminal/Button.svelte"
-  import TaskBar from "$lib/components/Terminal/TaskBar.svelte"
+import { getState } from "$lib/state/index.svelte.ts"
+import { logout, user } from "$lib/state/session.svelte.ts"
+import Contributions from "./Contributors.svelte"
+import { goto } from "$app/navigation"
+import { onDestroy } from "svelte"
+import Print from "$lib/components/Terminal/Print.svelte"
+import Activity from "$lib/components/Terminal/Activity.svelte"
+import { cn } from "$lib/utils/utils.ts"
+import Button from "$lib/components/Terminal/Button.svelte"
+import TaskBar from "$lib/components/Terminal/TaskBar.svelte"
 
-  const { terminal, contributor } = getState()
+const { terminal, contributor } = getState()
 
-  let {children} = $props()
+let { children } = $props()
 
-  const changeTab = async (tab: number) => {
-    if (tab === 4 && terminal.hash) {
-      terminal.setTab(tab)
-      await goto(`/0____0/${terminal.hash}`)
-    } else if (tab <= 3) {
-      terminal.setTab(tab)
-      await goto("/")
-    }
+const changeTab = async (tab: number) => {
+  if (tab === 4 && terminal.hash) {
+    terminal.setTab(tab)
+    await goto(`/0____0/${terminal.hash}`)
+  } else if (tab <= 3) {
+    terminal.setTab(tab)
+    await goto("/")
   }
+}
 
-  const unsubscribe = terminal.keys.subscribe(event => {
-    if (event) {
-      if (event.type === "keydown" && (event.shiftKey || event.ctrlKey)) {
-        if (event.key === "!") {
-          changeTab(1)
-        } else if (event.key === "@") {
-          changeTab(2)
-        } else if (event.key === "#") {
-          changeTab(3)
-        } else if (event.key === "$") {
-          changeTab(4)
-        } else if (event.key === "X") {
-          logout(terminal)
-        }
-      }
-    }
-  })
-
-  onDestroy(unsubscribe)
-
-  function autoScroll(node: HTMLElement) {
-    const scroll = () => {
-      node.scrollTop = node.scrollHeight
-    }
-
-    const observer = new MutationObserver(scroll)
-    observer.observe(node, {childList: true, subtree: true})
-
-    return {
-      destroy() {
-        observer.disconnect()
+const unsubscribe = terminal.keys.subscribe(event => {
+  if (event) {
+    if (event.type === "keydown" && (event.shiftKey || event.ctrlKey)) {
+      if (event.key === "!") {
+        changeTab(1)
+      } else if (event.key === "@") {
+        changeTab(2)
+      } else if (event.key === "#") {
+        changeTab(3)
+      } else if (event.key === "$") {
+        changeTab(4)
+      } else if (event.key === "X") {
+        logout(terminal)
       }
     }
   }
+})
+
+onDestroy(unsubscribe)
+
+function autoScroll(node: HTMLElement) {
+  const scroll = () => {
+    node.scrollTop = node.scrollHeight
+  }
+
+  const observer = new MutationObserver(scroll)
+  observer.observe(node, { childList: true, subtree: true })
+
+  return {
+    destroy() {
+      observer.disconnect()
+    }
+  }
+}
 </script>
 
 
