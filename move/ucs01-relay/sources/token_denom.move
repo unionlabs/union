@@ -157,9 +157,14 @@ module UCS01::fa_coin {
         deposit(to_wallet, fa, transfer_ref);
     }
 
-    /// Burn fungible assets as the owner of metadata object.
     public entry fun burn(admin: &signer, from: address, amount: u64, asset_seed: vector<u8>) acquires ManagedFungibleAsset {
         let asset = get_metadata(asset_seed);
+        let burn_ref = &authorized_borrow_refs(admin, asset).burn_ref;
+        let from_wallet = primary_fungible_store::primary_store(from, asset);
+        fungible_asset::burn_from(burn_ref, from_wallet, amount);
+    }
+
+    public entry fun burn_with_metadata(admin: &signer, from: address, amount: u64, asset: Object<Metadata>) acquires ManagedFungibleAsset {
         let burn_ref = &authorized_borrow_refs(admin, asset).burn_ref;
         let from_wallet = primary_fungible_store::primary_store(from, asset);
         fungible_asset::burn_from(burn_ref, from_wallet, amount);
@@ -195,7 +200,33 @@ module UCS01::fa_coin {
     const TEST_ICON: vector<u8> = b"https://example.com/icon.png";
     const TEST_PROJECT: vector<u8> = b"Test Project";
 
-    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3)]
+     #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
+    public fun test_burn_with_metadata(creator: &signer) acquires ManagedFungibleAsset{
+        initialize(
+            creator,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT),
+            ASSET_SYMBOL
+        );
+
+        let asset_metadata = get_metadata(ASSET_SYMBOL);
+
+        let balance_of_face_before = primary_fungible_store::balance(@0xface, asset_metadata);
+        assert!(balance_of_face_before == 0, 101);
+        mint_with_metadata(creator, @0xface, 1000, asset_metadata);
+        let balance_of_face = primary_fungible_store::balance(@0xface, asset_metadata);
+        assert!(balance_of_face == 1000, 102);
+        
+        burn_with_metadata(creator, @0xface, 500, asset_metadata);
+        let balance_of_face_after = primary_fungible_store::balance(@0xface, asset_metadata);
+        assert!(balance_of_face_after == 500, 103);
+        
+
+    }
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
     public fun test_initialize(creator: &signer) {
         initialize(
             creator,
@@ -217,7 +248,7 @@ module UCS01::fa_coin {
         assert!(decimals == TEST_DECIMALS, 103);
     }
 
-    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3)]
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
     public fun test_mint_with_authorized_user(creator: &signer) acquires ManagedFungibleAsset {
         initialize(
             creator,
@@ -241,7 +272,7 @@ module UCS01::fa_coin {
         assert!(recipient_balance == 1000, 201);
     }
 
-    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3, aaron = @0xface)]
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57, aaron = @0xface)]
     #[expected_failure(abort_code = 0x50001, location = Self)]
     fun test_mint_with_unauthorized_user(
         creator: &signer,
@@ -263,7 +294,7 @@ module UCS01::fa_coin {
         mint(aaron, recipient, 1000, ASSET_SYMBOL);
     }
 
-    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3)]
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
     public fun test_burn_with_authorized_user(creator: &signer) acquires ManagedFungibleAsset {
         initialize(
             creator,
@@ -287,7 +318,7 @@ module UCS01::fa_coin {
         assert!(recipient_balance == 500, 301);
     }
 
-    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3)]
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
     public fun test_transfer_with_authorized_user(creator: &signer) acquires ManagedFungibleAsset {
         initialize(
             creator,
@@ -314,7 +345,7 @@ module UCS01::fa_coin {
         assert!(recipient_balance == 500, 402);
     }
 
-    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3, aaron = @0xface)]
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57, aaron = @0xface)]
     #[expected_failure(abort_code = 0x50001, location = Self)]
     public fun test_transfer_with_unauthorized_user(
         creator: &signer,
@@ -341,9 +372,8 @@ module UCS01::fa_coin {
     }
 
 
-    #[test(creator = @0x873203ac183d88c3ad70ced45c4bcf703ec81575e28776e28914d6542e8243b3, alice=@0x1234, bob=@0x5678)]
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57, alice=@0x1234, bob=@0x5678)]
     public fun test_to_relay(creator: &signer, alice: &signer, bob: address) acquires ManagedFungibleAsset {
-        
         initialize(
             creator,
             string::utf8(TEST_NAME),

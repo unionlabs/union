@@ -15,6 +15,7 @@ module UCS01::ibc {
     use aptos_framework::signer;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::vector;
+    use std::option::{Self, Option};
     use UCS01::EthABI;
 
     // Constants
@@ -442,14 +443,11 @@ module UCS01::ibc {
         let sender = EthABI::decode_vector<u8>(buf, &mut index, |buf, index| {
             (EthABI::decode_u8(buf, index) as u8)
         });
-        std::debug::print(&sender);
-        std::debug::print(&index);
 
         let receiver = EthABI::decode_vector<u8>(buf, &mut index, |buf, index| {
             (EthABI::decode_u8(buf, index) as u8)
         });
-        // std::debug::print(&receiver_vec);
-        // std::debug::print(&index);
+        
 
         // let receiver = from_bcs::to_address(receiver_vec);
 
@@ -885,7 +883,7 @@ module UCS01::ibc {
         source_channel: String,
         denom: address,
         amount: u64,
-    ): String acquires RelayStore {
+    ): String acquires RelayStore, SignerRef {
         if (amount == 0) {
             abort E_INVALID_AMOUNT
         };
@@ -897,10 +895,9 @@ module UCS01::ibc {
 
         let token = get_metadata(denom);
         if (!string::is_empty(&token_address)) {
-            // transferring to the zero address is basically burning
-            primary_fungible_store::transfer(sender, token, @zero_account, amount);
+            UCS01::fa_coin::burn_with_metadata(&get_signer(), signer::address_of(sender), amount, token);
         } else {
-            primary_fungible_store::transfer(sender, token, get_self_address(), amount);
+            primary_fungible_store::transfer(sender, token, signer::address_of(&get_signer()), amount);
             increase_outstanding(source_channel, denom, amount);
             token_address = string_utils::to_string_with_canonical_addresses(&denom);
         };
@@ -912,7 +909,6 @@ module UCS01::ibc {
         // let relay = decode_packet(x"000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000000000000000000000000000000000000000000030102030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000bb800000000000000000000000000000000000000000000000000000000000000064141414141410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000007d00000000000000000000000000000000000000000000000000000000000000fa0000000000000000000000000000000000000000000000000000000000000000442424242000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 
         let relay = decode_packet(x"000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000201363462745291c711144011c1305e737dd74ace69a5576612745e29a2e4fa1b500000000000000000000000000000000000000000000000000000000000000144bde1d877da529ce4f78810b4b746bcc301c93800000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000085000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000414038616365626263323666303631373437383661623637376166323438353033333365646163303663633938633137363535353439666134393862383139393030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-        std::debug::print(&relay);
     }
     
     #[test]
@@ -1071,10 +1067,10 @@ module UCS01::ibc {
             denom,
         };
 
-        let new_denom = string::utf8(b"new-denom");
+        // let new_denom = string::utf8(b"new-denom");
         let denom_str = string_utils::to_string_with_canonical_addresses(&denom);
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
+        // let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        // smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
         let admin = &get_signer();
 
         UCS01::fa_coin::initialize(
@@ -1101,10 +1097,11 @@ module UCS01::ibc {
         assert!(outstanding_balance == amount, 101);
 
         let bob_balance = primary_fungible_store::balance(bob_addr, asset);
-        let ucs01_balance = primary_fungible_store::balance(@UCS01, asset);
+        let ucs01_balance = primary_fungible_store::balance(signer::address_of(&get_signer()), asset);
         assert!(bob_balance == 0, 102);
         assert!(ucs01_balance == 1000, 102);
     }
+
 
     #[test(admin = @UCS01, bob = @0x1235)]
     public fun test_send_token_burn(admin: &signer, bob: &signer) acquires RelayStore, SignerRef {
@@ -1115,11 +1112,7 @@ module UCS01::ibc {
         let denom = @0x111111;
         let amount: u64 = 1000;
 
-        // Upsert denom to address pair
-        let _pair = AddressToDenomPair {
-            source_channel,
-            denom,
-        };
+
         let admin = &get_signer();
         UCS01::fa_coin::initialize(
             admin,
@@ -1137,18 +1130,33 @@ module UCS01::ibc {
         let bob_addr = signer::address_of(bob);
         UCS01::fa_coin::mint_with_metadata(admin, bob_addr, amount, asset);
 
+        // Upsert denom to address pair
+        let pair = AddressToDenomPair {
+            source_channel,
+            denom: asset_addr,
+        };
+        let new_denom = string::utf8(b"new-denom");
+        let denom_str = string_utils::to_string_with_canonical_addresses(&denom);
+        let store = borrow_global_mut<RelayStore>(get_vault_addr());
+        smart_table::upsert(&mut store.address_to_denom, pair, new_denom);
+
         // Send tokens
+
+        let supply_before = option::extract(&mut fungible_asset::supply(asset));
+        assert!(supply_before == 1000, 102);
+
         let result_address = send_token(bob, source_channel, asset_addr, amount);
 
         // Verify the result and outstanding balance
-        assert!(string::length(&result_address) == 0, 100); 
+        assert!(string::length(&result_address) != 0, 100); 
         let outstanding_balance = get_outstanding(source_channel, denom);
         assert!(outstanding_balance == 0, 101);
 
         let bob_balance = primary_fungible_store::balance(bob_addr, asset);
-        let ucs01_balance = primary_fungible_store::balance(@UCS01, asset);
         assert!(bob_balance == 0, 102);
-        assert!(ucs01_balance == 0, 102);
+
+        let supply_after = option::extract(&mut fungible_asset::supply(asset));
+        assert!(supply_after == 0, 102);
     }
 
     #[test(admin = @UCS01)]
@@ -1192,7 +1200,6 @@ module UCS01::ibc {
         };
 
         let encoded = encode_packet(&packet);
-        std::debug::print(&encoded);
     }
 
     #[test]
@@ -1224,7 +1231,6 @@ module UCS01::ibc {
             extension: extension,
         };
         let encoded = encode_packet(&packet);
-        std::debug::print(&encoded);
         let decoded = decode_packet(encoded);
 
         assert!(decoded.sender == sender, 100);
@@ -1630,6 +1636,7 @@ module UCS01::ibc {
         let outstanding_balance = get_outstanding(source_channel, local_token_address);
         assert!(outstanding_balance == 500, 101); // Outstanding should be reduced by 500
     }
+
    
     // #[test(admin = @UCS01, alice = @0x1234, bob = @0x1235, ibc_admin = @IBC)]
     // public fun test_send_valid(admin: &signer, ibc_admin: &signer, alice: &signer, bob: address) acquires RelayStore, SignerRef {
