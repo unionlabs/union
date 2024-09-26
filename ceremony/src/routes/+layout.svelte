@@ -7,6 +7,7 @@ import Terminal from "$lib/components/Terminal/index.svelte"
 import { start } from "$lib/client"
 
 import "../styles/tailwind.css"
+import Print from "$lib/components/Terminal/Print.svelte";
 
 let { children } = $props()
 
@@ -37,8 +38,9 @@ watch(
 )
 </script>
 
-<main class="flex w-full h-full overflow-hidden">
+<main class="flex flex-col w-full h-full items-center justify-center">
   <Terminal>
     {@render children()}
   </Terminal>
+  <Print>1:00:00</Print>
 </main>
