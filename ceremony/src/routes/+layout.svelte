@@ -39,7 +39,7 @@ watch(
 </script>
 
 <video autoplay muted loop data-video="">
-  <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.mov" type="video/mp4" />
+  <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.webm" type="video/mp4" />
 </video>
 
 <main class="flex w-full h-full overflow-hidden content flex-col items-center justify-center gap-4">
