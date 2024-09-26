@@ -1,12 +1,10 @@
 use std::fmt::Display;
 
-use regex::Regex;
 use url::Url;
 
 #[derive(Clone)]
 pub struct AptosContext {
     pub rpc_urls: Vec<Url>,
-    pub filter: Option<Regex>,
     pub tx_search_max_page_size: u16,
 }
 
@@ -14,12 +12,8 @@ impl Display for AptosContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "rpcs: {}, filter: {}, tx_search_max_page_size: {}",
+            "rpcs: {}, tx_search_max_page_size: {}",
             to_indexed_url_string(&self.rpc_urls),
-            match &self.filter {
-                Some(regex) => regex.as_str(),
-                None => "-",
-            },
             self.tx_search_max_page_size,
         )
     }

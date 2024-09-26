@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde_json::Value;
 use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
@@ -85,7 +87,15 @@ pub async fn insert_aptos_block(
         .await?;
 
         for event in transaction.events {
-            trace!("insert: {}/{}/{} ({}) {}#{}", block.height, transaction.version, event.creation_number, event.account_address, event.typ, event.sequence_number);
+            trace!(
+                "insert: {}/{}/{} ({}) {}#{}",
+                block.height,
+                transaction.version,
+                event.creation_number,
+                event.account_address,
+                event.typ,
+                event.sequence_number
+            );
             sqlx::query!(
                 "
                 INSERT INTO v1_aptos.events (
@@ -116,17 +126,6 @@ pub async fn insert_aptos_block(
             .await?;
         }
     }
-    // sqlx::query!(
-    //     "
-    //     DELETE FROM v1_aptos.events WHERE internal_chain_id = $1 AND height = $2
-    //     ",
-    //     chain_id,
-    //     height as i32
-    // )
-    // .execute(tx.as_mut())
-    // .await?;
-
-    schedule_replication_reset(tx, block.internal_chain_id, block.height, "block reorg (delete)").await?;
 
     Ok(())
 }
@@ -146,50 +145,52 @@ pub async fn delete_aptos_block_transactions_events(
     .execute(tx.as_mut())
     .await?;
 
-    // sqlx::query!(
-    //     "
-    //     DELETE FROM v1_aptos.transactions WHERE internal_chain_id = $1 AND height = $2
-    //     ",
-    //     chain_id,
-    //     height as i32
-    // )
-    // .execute(tx.as_mut())
-    // .await?;
+    sqlx::query!(
+        "
+        DELETE FROM v1_aptos.transactions WHERE internal_chain_id = $1 AND height = $2
+        ",
+        internal_chain_id,
+        height as i32
+    )
+    .execute(tx.as_mut())
+    .await?;
 
-    // sqlx::query!(
-    //     "
-    //     DELETE FROM v1_aptos.events WHERE internal_chain_id = $1 AND height = $2
-    //     ",
-    //     chain_id,
-    //     height as i32
-    // )
-    // .execute(tx.as_mut())
-    // .await?;
+    sqlx::query!(
+        "
+        DELETE FROM v1_aptos.events WHERE internal_chain_id = $1 AND height = $2
+        ",
+        internal_chain_id,
+        height as i32
+    )
+    .execute(tx.as_mut())
+    .await?;
 
-    schedule_replication_reset(tx, internal_chain_id, height as i64, "block reorg (delete)").await?;
+    schedule_replication_reset(tx, internal_chain_id, height as i64, "block reorg (delete)")
+        .await?;
 
     Ok(())
 }
 
-// pub async fn unmapped_client_ids(
-//     pg_pool: &PgPool,
-//     internal_chain_id: i32,
-// ) -> sqlx::Result<Vec<String>> {
-//     let result = sqlx::query!(
-//         r#"
-//         SELECT    cc.client_id
-//         FROM      v1_cosmos.create_client cc
-//         LEFT JOIN v0.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id
-//         WHERE     cc.internal_chain_id = $1
-//         AND       cl.chain_id IS NULL
-//         "#,
-//         internal_chain_id,
-//     )
-//     .fetch_all(pg_pool)
-//     .await?
-//     .into_iter()
-//     .map(|record| record.client_id.expect("each record to have a client_id"))
-//     .collect_vec();
+pub async fn active_contracts(
+    tx: &mut Transaction<'_, Postgres>,
+    internal_chain_id: i32,
+    height: BlockHeight,
+) -> sqlx::Result<HashSet<String>> {
+    let result = sqlx::query!(
+        r#"
+        SELECT    address
+        FROM      v1_aptos.contracts
+        WHERE     internal_chain_id = $1
+        AND       $2 between start_height and end_height
+        "#,
+        internal_chain_id,
+        height as i64,
+    )
+    .fetch_all(tx.as_mut())
+    .await?
+    .into_iter()
+    .map(|record| record.address)
+    .collect();
 
-//     Ok(result)
-// }
+    Ok(result)
+}

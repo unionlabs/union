@@ -2,20 +2,25 @@ use std::fmt::Display;
 
 use aptos_rest_client::{aptos_api_types::Block, Transaction};
 use axum::async_trait;
-use color_eyre::
-    Result
-;
-use regex::Regex;
+use color_eyre::Result;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, Instrument};
 
 use super::{
-    block_handle::AptosBlockHandle, context::AptosContext, provider::{Provider, RpcProviderId}
+    block_handle::AptosBlockHandle,
+    context::AptosContext,
+    provider::{Provider, RpcProviderId},
 };
 use crate::{
-    indexer::{api::{
-            BlockHeight, BlockReferenceProvider, BlockSelection, FetchMode, FetcherClient, IndexerError
-        }, aptos::{block_handle::BlockDetails, create_client_tracker::schedule_create_client_checker}},
+    indexer::{
+        api::{
+            BlockHeight, BlockReferenceProvider, BlockSelection, FetchMode, FetcherClient,
+            IndexerError,
+        },
+        aptos::{
+            block_handle::BlockDetails, create_client_tracker::schedule_create_client_checker,
+        },
+    },
     postgres::{fetch_or_insert_chain_id_tx, ChainId},
 };
 
@@ -23,7 +28,6 @@ use crate::{
 pub struct AptosFetcherClient {
     pub chain_id: ChainId,
     pub provider: Provider,
-    pub filter: Option<Regex>,
     pub tx_search_max_page_size: u16,
 }
 
@@ -34,18 +38,6 @@ impl Display for AptosFetcherClient {
 }
 
 impl AptosFetcherClient {
-    // pub fn fetch_range_with_provider(
-    //     &self,
-    //     block_range: BlockRange,
-    //     fetch_mode: FetchMode,
-    //     provider_id: Option<RpcProviderId>,
-    // ) -> Result<impl Stream<Item = Result<AptosBlockHandle, IndexerError>> + use<'_>, IndexerError>
-    // {
-    //     debug!("{}: fetching", block_range);
-
-    //     panic!("not yet implemented");
-    // }
-
     pub async fn fetch_single_with_provider(
         &self,
         selection: BlockSelection,
@@ -63,15 +55,23 @@ impl AptosFetcherClient {
     async fn fetch_last_finalized(
         &self,
         mode: FetchMode,
-        provider_id: Option<RpcProviderId>
+        provider_id: Option<RpcProviderId>,
     ) -> Result<AptosBlockHandle, IndexerError> {
         trace!("fetch block height");
 
-        let (provider_id, height) = self.provider.get_index(provider_id).await.map(|result| (result.provider_id, result.response.inner().block_height))?;
+        let (provider_id, height) = self
+            .provider
+            .get_index(provider_id)
+            .await
+            .map(|result| (result.provider_id, result.response.inner().block_height))?;
 
-        trace!("current height: {height} using {:?} to fetch block", provider_id);
+        trace!(
+            "current height: {height} using {:?} to fetch block",
+            provider_id
+        );
 
-        self.fetch_at_height(mode, Some(provider_id), height.into()).await
+        self.fetch_at_height(mode, Some(provider_id), height.into())
+            .await
     }
 
     async fn fetch_at_height(
@@ -82,17 +82,28 @@ impl AptosFetcherClient {
     ) -> Result<AptosBlockHandle, IndexerError> {
         trace!("fetching block at height {height}");
 
-        let result = self.provider.get_block_by_height(height, provider_id).await?;
+        let result = self
+            .provider
+            .get_block_by_height(height, provider_id)
+            .await?;
         let block = result.response.inner();
 
-        trace!("fetched block at height {height} using {:?}: {}-{}", provider_id, block.first_version, block.last_version);
+        trace!(
+            "fetched block at height {height} using {:?}: {}-{}",
+            provider_id,
+            block.first_version,
+            block.last_version
+        );
 
         Ok(AptosBlockHandle {
             internal_chain_id: self.chain_id.db,
             reference: block.block_reference()?,
             details: match mode {
                 FetchMode::Lazy => BlockDetails::Lazy(block.clone()),
-                FetchMode::Eager => BlockDetails::Eager(block.clone(), self.fetch_transactions(block, result.provider_id).await?),
+                FetchMode::Eager => BlockDetails::Eager(
+                    block.clone(),
+                    self.fetch_transactions(block, result.provider_id).await?,
+                ),
             },
             aptos_client: self.clone(),
             provider_id: result.provider_id,
@@ -104,21 +115,37 @@ impl AptosFetcherClient {
         block: &Block,
         provider_id: RpcProviderId,
     ) -> Result<Vec<Transaction>, IndexerError> {
-        trace!("fetching transactions for block {} - versions: [{},{}]", block.block_height, block.first_version, block.last_version);
+        trace!(
+            "fetching transactions for block {} - versions: [{},{}]",
+            block.block_height,
+            block.first_version,
+            block.last_version
+        );
 
         let complete_start_inclusive: BlockHeight = block.first_version.into();
         let complete_end_inclusive: BlockHeight = block.last_version.into();
-        
-        let mut result = Vec::with_capacity((complete_end_inclusive + 1 - complete_start_inclusive) as usize);
 
-        for chunk_start_inclusive in (complete_start_inclusive..=complete_end_inclusive).step_by(self.tx_search_max_page_size as usize) {
-            let chunk_end_exclusive = (chunk_start_inclusive + self.tx_search_max_page_size as u64).min(complete_end_inclusive + 1); // +1, because end is inclusive
+        let mut result =
+            Vec::with_capacity((complete_end_inclusive + 1 - complete_start_inclusive) as usize);
+
+        for chunk_start_inclusive in (complete_start_inclusive..=complete_end_inclusive)
+            .step_by(self.tx_search_max_page_size as usize)
+        {
+            let chunk_end_exclusive = (chunk_start_inclusive + self.tx_search_max_page_size as u64)
+                .min(complete_end_inclusive + 1); // +1, because end is inclusive
 
             let chunk_limit = (chunk_end_exclusive - chunk_start_inclusive) as u16;
 
-            trace!("fetching chunk for block {} - versions: [{},{}]", block.block_height, chunk_start_inclusive, chunk_end_exclusive - 1);
+            trace!(
+                "fetching chunk for block {} - versions: [{},{}]",
+                block.block_height,
+                chunk_start_inclusive,
+                chunk_end_exclusive - 1
+            );
 
-            let chunk_transactions = self.provider.get_transactions(chunk_start_inclusive, chunk_limit, Some(provider_id))
+            let chunk_transactions = self
+                .provider
+                .get_transactions(chunk_start_inclusive, chunk_limit, Some(provider_id))
                 .await?
                 .response
                 .inner()
@@ -127,11 +154,16 @@ impl AptosFetcherClient {
             result.extend(chunk_transactions);
         }
 
-        trace!("fetched transactions for block {} - versions: [{},{}] - transactions: {}", block.block_height, block.first_version, block.last_version, result.len());
+        trace!(
+            "fetched transactions for block {} - versions: [{},{}] - transactions: {}",
+            block.block_height,
+            block.first_version,
+            block.last_version,
+            result.len()
+        );
 
         Ok(result)
     }
-    
 }
 
 #[async_trait]
@@ -173,7 +205,6 @@ impl FetcherClient for AptosFetcherClient {
             Ok(AptosFetcherClient {
                 chain_id,
                 provider,
-                filter: context.filter,
                 tx_search_max_page_size: context.tx_search_max_page_size,
             })
         }

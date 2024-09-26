@@ -1,6 +1,10 @@
 use std::result::Result;
 
-use aptos_rest_client::{aptos_api_types::{Block, IndexResponse}, error::RestError, Client, Response, Transaction};
+use aptos_rest_client::{
+    aptos_api_types::{Block, IndexResponse},
+    error::RestError,
+    Client, Response, Transaction,
+};
 use url::Url;
 
 use crate::{indexer::api::BlockHeight, race_client::RaceClient};
@@ -38,9 +42,7 @@ impl Provider {
             rpc_client: RaceClient::new(
                 rpc_urls
                     .into_iter()
-                    .map(|rpc_url| {
-                        aptos_rest_client::Client::new(rpc_url)
-                    })
+                    .map(|rpc_url| aptos_rest_client::Client::new(rpc_url))
                     .collect(),
             ),
         }
@@ -64,8 +66,7 @@ impl Provider {
     pub async fn get_index(
         &self,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<Response<IndexResponse>>, RestError>
-    {
+    ) -> Result<RpcResult<Response<IndexResponse>>, RestError> {
         let result = self.rpc_client(provider_id).get_index().await?;
 
         // TODO: improve race client to return index with result
@@ -82,9 +83,11 @@ impl Provider {
         &self,
         height: BlockHeight,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<Response<Block>>, RestError>
-    {
-        let result = self.rpc_client(provider_id).get_block_by_height(height).await?;
+    ) -> Result<RpcResult<Response<Block>>, RestError> {
+        let result = self
+            .rpc_client(provider_id)
+            .get_block_by_height(height)
+            .await?;
 
         // TODO: improve race client to return index with result
         Ok(RpcResult::new(
@@ -101,9 +104,11 @@ impl Provider {
         start: BlockHeight,
         limit: u16,
         provider_id: Option<RpcProviderId>,
-    ) -> Result<RpcResult<Response<Vec<Transaction>>>, RestError>
-    {
-        let result = self.rpc_client(provider_id).get_transactions(start, limit).await?;
+    ) -> Result<RpcResult<Response<Vec<Transaction>>>, RestError> {
+        let result = self
+            .rpc_client(provider_id)
+            .get_transactions(start, limit)
+            .await?;
 
         // TODO: improve race client to return index with result
         Ok(RpcResult::new(
@@ -117,9 +122,7 @@ impl Provider {
 }
 
 impl RaceClient<Client> {
-    pub async fn get_index(
-        &self,
-    ) -> Result<Response<IndexResponse>, RestError> {
+    pub async fn get_index(&self) -> Result<Response<IndexResponse>, RestError> {
         self.race(|c| c.get_index()).await
     }
 
@@ -135,6 +138,7 @@ impl RaceClient<Client> {
         start: BlockHeight,
         limit: u16,
     ) -> Result<Response<Vec<Transaction>>, RestError> {
-        self.race(|c| c.get_transactions(Some(start), Some(limit))).await
+        self.race(|c| c.get_transactions(Some(start), Some(limit)))
+            .await
     }
 }

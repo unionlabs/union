@@ -7,19 +7,29 @@ use futures::{stream::FuturesOrdered, Stream};
 use itertools::Itertools;
 use sqlx::Postgres;
 use time::OffsetDateTime;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use super::{fetcher_client::AptosFetcherClient, provider::RpcProviderId};
-use crate::indexer::{api::{
-            BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, BlockSelection, FetchMode, IndexerError
-        }, aptos::postgres::{delete_aptos_block_transactions_events, insert_aptos_block, PgBlock, PgEvent, PgTransaction}};
+use crate::indexer::{
+    api::{
+        BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, BlockSelection, FetchMode,
+        IndexerError,
+    },
+    aptos::postgres::{
+        active_contracts, delete_aptos_block_transactions_events, insert_aptos_block, PgBlock,
+        PgEvent, PgTransaction,
+    },
+};
 
 impl BlockReferenceProvider for Block {
     fn block_reference(&self) -> Result<BlockReference, Report> {
         Ok(BlockReference {
             height: self.block_height.into(),
             hash: self.block_hash.to_string(),
-            timestamp: OffsetDateTime::from_unix_timestamp_nanos((self.block_timestamp.0 as i128) * 1000).map_err(Report::from)?
+            timestamp: OffsetDateTime::from_unix_timestamp_nanos(
+                (self.block_timestamp.0 as i128) * 1000,
+            )
+            .map_err(Report::from)?,
         })
     }
 }
@@ -70,56 +80,104 @@ impl BlockHandle for AptosBlockHandle {
         debug!("{}: updating", reference);
 
         let (block, transactions) = match &self.details {
-            BlockDetails::Lazy(block) => (block, self.aptos_client.fetch_transactions(block, self.provider_id).await?),
+            BlockDetails::Lazy(block) => (
+                block,
+                self.aptos_client
+                    .fetch_transactions(block, self.provider_id)
+                    .await?,
+            ),
             BlockDetails::Eager(block, transactions) => (block, transactions.clone()),
         };
 
+        let active_contracts =
+            active_contracts(tx, self.internal_chain_id, block.block_height.into()).await?;
+        trace!(
+            "{}: active contracts: {}",
+            reference,
+            active_contracts.len()
+        );
+
         let mut event_index = 0;
 
-        // block
-        insert_aptos_block(
-            tx, 
-            PgBlock { 
-                internal_chain_id: self.internal_chain_id, 
-                height: self.reference.height as i64, 
-                block_hash: self.reference.hash.clone(), 
-                timestamp: self.reference.timestamp, 
-                first_version: block.first_version.0 as i64, // TODO: check if .0 is ok
-                last_version: block.last_version.0 as i64, 
-                transactions: transactions.into_iter().enumerate().filter_map(|(transaction_index, transaction)| match transaction {
-                    Transaction::UserTransaction(transaction) => Some(
-                        PgTransaction { 
-                            internal_chain_id: self.internal_chain_id, 
-                            height: self.reference.height as i64, 
-                            version: transaction.info.version.0 as i64, 
-                            transaction_hash: transaction.info.hash.to_string(), 
-                            transaction_index: transaction_index as i64,
-                            events: transaction.events.into_iter().enumerate().map(|(transaction_event_index, event)| { 
-                                let event = PgEvent { 
-                                    internal_chain_id: self.internal_chain_id, 
-                                    height: self.reference.height as i64, 
-                                    version: transaction.info.version.0 as i64, 
-                                    index: event_index as i64,
-                                    transaction_event_index: transaction_event_index as i64,
-                                    sequence_number: event.sequence_number.0 as i64, 
-                                    creation_number: event.guid.creation_number.0 as i64, 
-                                    account_address: event.guid.account_address.to_standard_string(), 
-                                    typ: event.typ.to_string(), 
-                                    data: event.data 
-                                };
+        let transactions = transactions
+            .into_iter()
+            .enumerate()
+            .filter_map(|(transaction_index, transaction)| match transaction {
+                Transaction::UserTransaction(transaction) => {
+                    let events = transaction
+                        .events
+                        .into_iter()
+                        .enumerate()
+                        .filter_map(|(transaction_event_index, event)| {
+                            match active_contracts
+                                .contains(&event.guid.account_address.to_standard_string())
+                            {
+                                true => {
+                                    let event = PgEvent {
+                                        internal_chain_id: self.internal_chain_id,
+                                        height: self.reference.height as i64,
+                                        version: transaction.info.version.0 as i64,
+                                        index: event_index as i64,
+                                        transaction_event_index: transaction_event_index as i64,
+                                        sequence_number: event.sequence_number.0 as i64,
+                                        creation_number: event.guid.creation_number.0 as i64,
+                                        account_address: event
+                                            .guid
+                                            .account_address
+                                            .to_standard_string(),
+                                        typ: event.typ.to_string(),
+                                        data: event.data,
+                                    };
 
-                                // TODO: can this be less verbose?
-                                event_index += 1;
+                                    // TODO: can this be less verbose?
+                                    event_index += 1;
 
-                                event
+                                    Some(event)
+                                }
+                                false => None,
                             }
-                            ).collect_vec()
-                        }
-                    ),
-                    _ => None,
-                }).collect_vec()
-            },
-        ).await?;
+                        })
+                        .collect_vec();
+
+                    match events.is_empty() {
+                        true => None,
+                        false => Some(PgTransaction {
+                            internal_chain_id: self.internal_chain_id,
+                            height: self.reference.height as i64,
+                            version: transaction.info.version.0 as i64,
+                            transaction_hash: transaction.info.hash.to_string(),
+                            transaction_index: transaction_index as i64,
+                            events,
+                        }),
+                    }
+                }
+                _ => None,
+            })
+            .collect_vec();
+
+        if !transactions.is_empty() {
+            trace!(
+                "{}: transactions with matching events: {}",
+                reference,
+                transactions.len()
+            );
+
+            insert_aptos_block(
+                tx,
+                PgBlock {
+                    internal_chain_id: self.internal_chain_id,
+                    height: self.reference.height as i64,
+                    block_hash: self.reference.hash.clone(),
+                    timestamp: self.reference.timestamp,
+                    first_version: block.first_version.0 as i64, // TODO: check if .0 is ok
+                    last_version: block.last_version.0 as i64,
+                    transactions,
+                },
+            )
+            .await?;
+        } else {
+            trace!("{}: no matching events: ignore", reference);
+        }
 
         debug!("{}: done", reference);
         Ok(())
@@ -129,7 +187,8 @@ impl BlockHandle for AptosBlockHandle {
         let reference = self.reference();
         debug!("{}: updating", reference);
 
-        delete_aptos_block_transactions_events(tx, self.internal_chain_id, self.reference.height).await?;
+        delete_aptos_block_transactions_events(tx, self.internal_chain_id, self.reference.height)
+            .await?;
         self.insert(tx).await?;
 
         debug!("{}: done", reference);

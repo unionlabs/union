@@ -4,9 +4,7 @@ use tokio::{task::JoinSet, time::interval};
 use tracing::{info, info_span, Instrument};
 
 use super::provider::Provider;
-use crate::
-    indexer::api::IndexerError
-;
+use crate::indexer::api::IndexerError;
 
 pub fn schedule_create_client_checker(
     _pg_pool: sqlx::PgPool,
