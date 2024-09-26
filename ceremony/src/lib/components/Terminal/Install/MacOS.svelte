@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onDestroy, onMount } from "svelte"
 import { getState } from "$lib/state/index.svelte.ts"
-import {cn, sleep} from "$lib/utils/utils.ts"
-import Button from "$lib/components/Terminal/Button.svelte";
+import { cn, sleep } from "$lib/utils/utils.ts"
+import Button from "$lib/components/Terminal/Button.svelte"
 
 type Props = {
   change: () => void

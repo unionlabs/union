@@ -1,10 +1,9 @@
 <script lang="ts">
-import { type AuthProviders, type KeyEvent, Terminal } from "$lib/state/terminal.svelte.ts"
+import { type AuthProviders, Terminal } from "$lib/state/terminal.svelte.ts"
 import { supabase } from "$lib/supabase/client.ts"
-import { onDestroy, onMount } from "svelte"
-import Button from "$lib/components/Terminal/Button.svelte";
-import clsx from "clsx";
-import {cn} from "$lib/utils/utils.ts";
+import { onDestroy } from "svelte"
+import Button from "$lib/components/Terminal/Button.svelte"
+import { cn } from "$lib/utils/utils.ts"
 
 type Props = {
   terminal: Terminal
@@ -17,7 +16,7 @@ const providers: Array<AuthProviders> = ["github", "google"]
 let focusedIndex = $state(0)
 let redirecting = $state(false)
 
-onMount(() => {
+$effect(() => {
   terminal.updateHistory("Please authenticate using one of the following")
 })
 
@@ -45,6 +44,7 @@ const unsubscribe = terminal.keys.subscribe(event => {
     } else if (event.key === "ArrowDown") {
       focusedIndex = (focusedIndex + 1) % providers.length
     } else if (event.key === "Enter") {
+      console.log("xx hehehehehhe")
       logIn(providers[focusedIndex])
     }
   }

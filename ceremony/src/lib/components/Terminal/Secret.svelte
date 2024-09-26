@@ -1,8 +1,8 @@
 <script lang="ts">
 import { getState } from "$lib/state/index.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
-import { generateSecret, start } from "$lib/client"
-import Button from "$lib/components/Terminal/Button.svelte";
+import { generateSecret } from "$lib/client"
+import Button from "$lib/components/Terminal/Button.svelte"
 
 const { client, contributor, terminal, user } = getState()
 

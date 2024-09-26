@@ -1,9 +1,9 @@
 <script lang="ts">
-  import {cn, type DetectedOS} from "$lib/utils/utils.ts"
+import { cn, type DetectedOS } from "$lib/utils/utils.ts"
 import { getState } from "$lib/state/index.svelte.ts"
 import { onDestroy, onMount } from "svelte"
 import type { KeyEvent } from "$lib/state/terminal.svelte.ts"
-  import Button from "$lib/components/Terminal/Button.svelte";
+import Button from "$lib/components/Terminal/Button.svelte"
 
 type Props = {
   select: (os: DetectedOS) => void

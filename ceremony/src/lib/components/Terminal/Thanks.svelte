@@ -1,11 +1,10 @@
 <script lang="ts">
 import { getPublicHash } from "$lib/supabase"
 import { getState } from "$lib/state/index.svelte.ts"
-import type { KeyEvent } from "$lib/state/terminal.svelte.ts"
-import {cn, sleep} from "$lib/utils/utils.ts"
+import { cn, sleep } from "$lib/utils/utils.ts"
 import { onMount } from "svelte"
+import Button from "$lib/components/Terminal/Button.svelte"
 import { beforeNavigate } from "$app/navigation"
-import Button from "$lib/components/Terminal/Button.svelte";
 
 const { terminal } = getState()
 
@@ -19,6 +18,11 @@ const buttons = $state([
 
 let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
+beforeNavigate(() => {
+  if (unsubscribe) {
+    unsubscribe()
+  }
+})
 onMount(() => {
   terminal.updateHistory("Thank you!")
   terminal.updateHistory(

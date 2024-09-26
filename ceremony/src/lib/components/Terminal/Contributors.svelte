@@ -3,8 +3,8 @@ import { getState } from "$lib/state/index.svelte.ts"
 import { onMount } from "svelte"
 import { goto } from "$app/navigation"
 import Print from "$lib/components/Terminal/Print.svelte"
-import {cn} from "$lib/utils/utils.ts";
-import Button from "$lib/components/Terminal/Button.svelte";
+import { cn } from "$lib/utils/utils.ts"
+import Button from "$lib/components/Terminal/Button.svelte"
 
 const { contributions, terminal } = getState()
 
