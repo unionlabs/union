@@ -1,18 +1,52 @@
 <script lang="ts">
 import { page } from "$app/stores"
 import { getState } from "$lib/state/index.svelte.ts"
-import { onMount } from "svelte"
-import { toast } from "svelte-sonner"
 import { getUserContribution } from "$lib/supabase"
 import Print from "$lib/components/Terminal/Print.svelte"
+import Button from "$lib/components/Terminal/Button.svelte"
+import { cn, sleep } from "$lib/utils/utils.ts"
 
 const { terminal } = getState()
 
 let hash = $derived($page.params.hash)
 
-onMount(() => {
+let selectedIndex = $state(0)
+let buttons: Array<HTMLButtonElement> = []
+let prints = $state<Array<string>>([])
+let showButtons = $state(true)
+
+let unsubscribe: (() => void) | undefined
+let subscriptionTimeout: NodeJS.Timeout | undefined
+$effect(() => {
   terminal.setTab(4)
   terminal.setHash(hash)
+  subscriptionTimeout = setTimeout(() => {
+    unsubscribe = terminal.keys.subscribe(event => {
+      if (event) {
+        if (event.type === "keydown") {
+          if (event.key === "ArrowUp") {
+            selectedIndex -= 1
+            buttons[selectedIndex]?.focus()
+          } else if (event.key === "ArrowDown") {
+            selectedIndex += 1
+            buttons[selectedIndex]?.focus()
+          } else if (event.key === "Enter") {
+            if (buttons[selectedIndex]) {
+              buttons[selectedIndex].click()
+            }
+          }
+        }
+      }
+    })
+  }, 200)
+  return () => {
+    if (subscriptionTimeout) {
+      clearTimeout(subscriptionTimeout)
+    }
+    if (unsubscribe) {
+      unsubscribe()
+    }
+  }
 })
 
 function hexToUint8Array(hexString: string) {
@@ -27,14 +61,13 @@ function decodeHexString(hexString: string) {
   return uint8ArrayToUtf8(hexToUint8Array(hexString))
 }
 
-async function copyToClipboard(text: string, label: string) {
-  try {
-    await navigator.clipboard.writeText(text)
-    toast.success(`Copied ${label}!`)
-  } catch (err) {
-    console.error("Failed to copy text: ", err)
-    toast.error(`Failed to copy ${label} to clipboard.`)
-  }
+async function copyToClipboard(text: string, type: string) {
+  showButtons = false
+  prints.push(`Copying ${type}..`)
+  await sleep(1000)
+  await navigator.clipboard.writeText(text)
+  prints.push(`Successfully copied ${type}`)
+  showButtons = true
 }
 
 const imagePath = "https://ceremony.union.build/images/ceremony.png"
@@ -77,12 +110,21 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
   {#if contribution}
     <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution.public_key)}</pre>
     <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution.signature)}</pre>
-    <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
-      Copy public key
-    </button>
-    <button class="block" onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>&gt
-      Copy signature
-    </button>
+    {#each prints as print}
+      <Print>{print}</Print>
+    {/each}
+    {#if showButtons}
+      <Button bind:value={buttons[0]}
+              class={cn(selectedIndex === 0 ? "text-union-accent-500" : "")}
+              onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
+        Copy public key
+      </Button>
+      <Button bind:value={buttons[1]}
+              class={cn(selectedIndex === 1 ? "text-union-accent-500" : "")}
+              onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>&gt
+        Copy signature
+      </Button>
+    {/if}
   {/if}
 {/await}
 

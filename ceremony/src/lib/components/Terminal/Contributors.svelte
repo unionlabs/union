@@ -1,6 +1,5 @@
 <script lang="ts">
 import { getState } from "$lib/state/index.svelte.ts"
-import { onMount } from "svelte"
 import { goto } from "$app/navigation"
 import Print from "$lib/components/Terminal/Print.svelte"
 import { cn } from "$lib/utils/utils.ts"
@@ -17,13 +16,9 @@ function handleClick(contributor: any) {
   terminal.setHash(contributor.public_key_hash)
 }
 
-$effect(() => {
-  buttons[0].focus()
-})
-
 let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
-onMount(() => {
+$effect(() => {
   subscriptionTimeout = setTimeout(() => {
     unsubscribe = terminal.keys.subscribe(event => {
       if (event) {
@@ -55,7 +50,6 @@ onMount(() => {
 })
 </script>
 
-{#if contributions.data}
   <Print>ceremony contributors</Print>
   {#each contributions.data as contributor, index}
     <Button
@@ -66,4 +60,3 @@ onMount(() => {
       &gt {contributor.payload_id}
     </Button>
   {/each}
-{/if}
