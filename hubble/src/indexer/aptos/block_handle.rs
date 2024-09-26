@@ -9,15 +9,18 @@ use sqlx::Postgres;
 use time::OffsetDateTime;
 use tracing::{debug, trace};
 
-use super::{fetcher_client::AptosFetcherClient, provider::RpcProviderId};
 use crate::indexer::{
     api::{
         BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, BlockSelection, FetchMode,
         IndexerError,
     },
-    aptos::postgres::{
-        active_contracts, delete_aptos_block_transactions_events, insert_aptos_block, PgBlock,
-        PgEvent, PgTransaction,
+    aptos::{
+        fetcher_client::AptosFetcherClient,
+        postgres::{
+            active_contracts, delete_aptos_block_transactions_events, insert_aptos_block, PgBlock,
+            PgEvent, PgTransaction,
+        },
+        provider::RpcProviderId,
     },
 };
 

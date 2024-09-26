@@ -3,8 +3,7 @@ use std::time::Duration;
 use tokio::{task::JoinSet, time::interval};
 use tracing::{info, info_span, Instrument};
 
-use super::provider::Provider;
-use crate::indexer::api::IndexerError;
+use crate::indexer::{api::IndexerError, aptos::provider::Provider};
 
 pub fn schedule_create_client_checker(
     _pg_pool: sqlx::PgPool,

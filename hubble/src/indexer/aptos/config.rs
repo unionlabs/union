@@ -2,9 +2,9 @@ use color_eyre::eyre::Report;
 use sqlx::PgPool;
 use url::Url;
 
-use super::{context::AptosContext, fetcher_client::AptosFetcherClient};
 use crate::indexer::{
     api::{BlockHeight, IndexerId},
+    aptos::{context::AptosContext, fetcher_client::AptosFetcherClient},
     Indexer,
 };
 

@@ -6,11 +6,6 @@ use color_eyre::Result;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, Instrument};
 
-use super::{
-    block_handle::AptosBlockHandle,
-    context::AptosContext,
-    provider::{Provider, RpcProviderId},
-};
 use crate::{
     indexer::{
         api::{
@@ -18,7 +13,10 @@ use crate::{
             IndexerError,
         },
         aptos::{
-            block_handle::BlockDetails, create_client_tracker::schedule_create_client_checker,
+            block_handle::{AptosBlockHandle, BlockDetails},
+            context::AptosContext,
+            create_client_tracker::schedule_create_client_checker,
+            provider::{Provider, RpcProviderId},
         },
     },
     postgres::{fetch_or_insert_chain_id_tx, ChainId},
