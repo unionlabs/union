@@ -674,6 +674,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anes"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
+
+[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -889,7 +895,7 @@ dependencies = [
  "bcs 0.1.4",
  "blst",
  "blstrs",
- "criterion",
+ "criterion 0.3.6",
  "ff",
  "group",
  "hex",
@@ -3474,7 +3480,7 @@ dependencies = [
  "atty",
  "cast",
  "clap 2.34.0",
- "criterion-plot",
+ "criterion-plot 0.4.5",
  "csv",
  "itertools 0.10.5",
  "lazy_static",
@@ -3492,10 +3498,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "criterion"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2b12d017a929603d80db1831cd3a24082f8137ce19c69e6447f54f5fc8d692f"
+dependencies = [
+ "anes",
+ "cast",
+ "ciborium",
+ "clap 4.5.4",
+ "criterion-plot 0.5.0",
+ "is-terminal",
+ "itertools 0.10.5",
+ "num-traits",
+ "once_cell",
+ "oorandom",
+ "plotters",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tinytemplate",
+ "walkdir",
+]
+
+[[package]]
 name = "criterion-plot"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2673cc8207403546f45f5fd319a974b1e6983ad1a3ee7e6041650013be041876"
+dependencies = [
+ "cast",
+ "itertools 0.10.5",
+]
+
+[[package]]
+name = "criterion-plot"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
 dependencies = [
  "cast",
  "itertools 0.10.5",
@@ -9382,7 +9424,7 @@ dependencies = [
 name = "poseidon-rs"
 version = "0.0.10"
 dependencies = [
- "criterion",
+ "criterion 0.3.6",
  "ethereum-types",
  "ff_ce",
  "primitive-types 0.12.2",
@@ -9780,6 +9822,7 @@ dependencies = [
 name = "queue-msg"
 version = "0.1.0"
 dependencies = [
+ "criterion 0.5.1",
  "either",
  "enumorph",
  "frame-support-procedural",
@@ -9795,6 +9838,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",
+ "voyager-message",
 ]
 
 [[package]]

@@ -23,9 +23,15 @@ tracing                  = { workspace = true }
 unionlabs                = { workspace = true }
 
 [dev-dependencies]
-enumorph           = "0.1.2"
-tokio              = { workspace = true, features = ["time", "rt", "macros"] }
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
+criterion                 = { version = "0.5.1", features = ["html_reports"] }
+enumorph                  = "0.1.2"
+tokio                     = { workspace = true, features = ["time", "rt", "macros"] }
+tracing-subscriber        = { workspace = true, features = ["env-filter"] }
+voyager-message.workspace = true
 
 [features]
 default = []
+
+[[bench]]
+harness = false
+name    = "normalize"

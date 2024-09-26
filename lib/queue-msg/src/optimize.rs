@@ -149,7 +149,7 @@ mod tests {
     use crate::{
         call, conc, data, defer, noop,
         normalize::normalize,
-        now, promise, race, repeat, seq,
+        now, promise, seq,
         test_utils::{BuildPrintAbc, DataA, DataB, DataC, FetchA, FetchB, PrintAbc, SimpleMessage},
     };
 
@@ -168,7 +168,6 @@ mod tests {
                         c: DataC {},
                     }),
                     data(DataC {}),
-                    repeat(None, noop()),
                 ]),
                 call(FetchA {}),
             ]),
@@ -220,8 +219,8 @@ mod tests {
                 promise([], [], BuildPrintAbc {}),
             ]),
             conc([
-                repeat(None, seq([call(FetchA {}), defer(now() + 10)])),
-                repeat(None, seq([call(FetchB {}), defer(now() + 10)])),
+                seq([call(FetchA {}), defer(now() + 10)]),
+                seq([call(FetchB {}), defer(now() + 10)]),
                 // this seq is the only message that should be flattened
                 seq([
                     call(PrintAbc {
@@ -250,8 +249,8 @@ mod tests {
                     promise([], [], BuildPrintAbc {}),
                 ]),
                 conc([
-                    repeat(None, seq([call(FetchA {}), defer(now() + 10)])),
-                    repeat(None, seq([call(FetchB {}), defer(now() + 10)])),
+                    seq([call(FetchA {}), defer(now() + 10)]),
+                    seq([call(FetchB {}), defer(now() + 10)]),
                     seq([
                         call(PrintAbc {
                             a: DataA {},
@@ -268,37 +267,6 @@ mod tests {
 
         let optimized = normalize(msgs.clone());
         assert_eq!(optimized, expected_output);
-
-        let optimized = normalize(msgs);
-        assert_eq!(optimized, expected_output);
-    }
-
-    #[test]
-    fn race_opt() {
-        let msgs = vec![race::<SimpleMessage>([
-            seq([call(FetchA {}), call(FetchB {})]),
-            conc([call(FetchA {}), conc([call(FetchA {}), call(FetchA {})])]),
-        ])];
-
-        let expected_output = vec![(
-            vec![0],
-            race::<SimpleMessage>([
-                seq([call(FetchA {}), call(FetchB {})]),
-                conc([call(FetchA {}), call(FetchA {}), call(FetchA {})]),
-            ]),
-        )];
-
-        let optimized = normalize(msgs);
-        assert_eq!(optimized, expected_output);
-    }
-
-    #[test]
-    fn race_opt_noop() {
-        let msgs = vec![race::<SimpleMessage>([seq([]), conc([])])];
-
-        // an empty seq optimizes to an empty seq, but an empty conc optimizes to noop
-        // REVIEW: Why?
-        let expected_output = vec![(vec![0], race::<SimpleMessage>([seq([]), noop()]))];
 
         let optimized = normalize(msgs);
         assert_eq!(optimized, expected_output);

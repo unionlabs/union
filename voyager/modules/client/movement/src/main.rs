@@ -12,7 +12,7 @@ use serde_utils::Hex;
 use tracing::instrument;
 use unionlabs::{
     self,
-    aptos::{sparse_merkle_proof::SparseMerkleProof, storage_proof::StorageProof},
+    aptos::storage_proof::StorageProof,
     encoding::{Bcs, DecodeAs, EncodeAs, Proto},
     google::protobuf::any::Any,
     ibc::{

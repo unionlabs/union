@@ -6,7 +6,7 @@ use std::{
     error::Error,
     fmt::Debug,
     future::Future,
-    num::{NonZeroU64, NonZeroU8},
+    num::NonZeroU8,
     pin::Pin,
     sync::{
         atomic::{AtomicU32, Ordering},
@@ -100,12 +100,6 @@ pub enum Op<T: QueueMessage> {
     Defer {
         until: u64,
     },
-    /// Repeats the contained message `times` times. If `times` is `None`, will repeat infinitely.
-    Repeat {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        times: Option<NonZeroU64>,
-        msg: Box<Self>,
-    },
     /// Executes the contained message only if `timeout_timestamp` has not been hit.
     Timeout {
         timeout_timestamp: u64,
@@ -133,16 +127,6 @@ pub enum Op<T: QueueMessage> {
     /// Note that this is similar to `Sequence`, except that the new messages are queued at the
     /// *back* of the list, allowing for uniform progress across all nested messages.
     Conc(VecDeque<Self>),
-    /// Race a list of messages. The head of the list is handled, and if it returns no new messages,
-    /// then the rest of the list is dropped; otherwise, the new message is pushed to the back of the
-    /// list (similar to [`Self::Conc`]).
-    ///
-    /// ```txt
-    /// [A B C]
-    /// D = handle(A)
-    /// if D.is_none() noop else race([B C D])
-    /// ```
-    Race(VecDeque<Self>),
     /// Handle `msg`, retrying on failure. If `msg` fails, this will requeue itself with `remaining - 1`.
     Retry {
         remaining: NonZeroU8,
@@ -167,16 +151,6 @@ pub enum Op<T: QueueMessage> {
 pub fn retry<T: QueueMessage>(count: NonZeroU8, t: impl Into<Op<T>>) -> Op<T> {
     Op::Retry {
         remaining: count,
-        msg: Box::new(t.into()),
-    }
-}
-
-/// Convenience constructor for [`Op::Repeat`]
-#[inline]
-#[must_use = "constructing an instruction has no effect"]
-pub fn repeat<T: QueueMessage>(times: impl Into<Option<NonZeroU64>>, t: impl Into<Op<T>>) -> Op<T> {
-    Op::Repeat {
-        times: times.into(),
         msg: Box::new(t.into()),
     }
 }
@@ -235,12 +209,6 @@ pub fn promise<T: QueueMessage>(
 #[must_use = "constructing an instruction has no effect"]
 pub fn void<T: QueueMessage>(t: impl Into<Op<T>>) -> Op<T> {
     Op::Void(Box::new(t.into()))
-}
-
-#[inline]
-#[must_use = "constructing an instruction has no effect"]
-pub fn race<T: QueueMessage>(ts: impl IntoIterator<Item = Op<T>>) -> Op<T> {
-    Op::Race(ts.into_iter().collect())
 }
 
 #[inline]
@@ -408,16 +376,6 @@ impl<T: QueueMessage> Op<T> {
                         receiver.handle(store, data).await.map(Some)
                     }
                 }
-                Op::Repeat { times: None, msg } => {
-                    Ok(Some(seq([*msg.clone(), repeat(None, *msg)])))
-                }
-                Op::Repeat {
-                    times: Some(times),
-                    msg,
-                } => Ok(Some(seq([*msg.clone()].into_iter().chain(
-                    // if times - 1 > 0, queue repeat with times - 1
-                    NonZeroU64::new(times.get() - 1_u64).map(|times| repeat(Some(times), *msg)),
-                )))),
                 Op::Void(msg) => {
                     // TODO: distribute across seq/conc
                     Ok(msg.handle(store, depth + 1).await?.map(|msg| match msg {
@@ -428,22 +386,6 @@ impl<T: QueueMessage> Op<T> {
                         msg => void(msg),
                     }))
                 }
-                Op::Race(mut msgs) => match msgs.pop_front() {
-                    Some(msg) => {
-                        match msg.handle(store, depth + 1).await? {
-                            Some(msg) => {
-                                msgs.push_back(msg);
-                                Ok(Some(race(msgs)))
-                            }
-                            // head won, drop the rest of the messages
-                            None => {
-                                info!("race won, dropping other messages");
-                                Ok(None)
-                            }
-                        }
-                    }
-                    None => Ok(None),
-                },
                 Op::Noop => Ok(None),
             }
         };
@@ -455,7 +397,7 @@ impl<T: QueueMessage> Op<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::normalize::{flatten_seq, normalize};
+    use crate::normalize::normalize;
 
     enum UnitMessage {}
 
@@ -521,7 +463,7 @@ mod tests {
             defer(5),
         ]);
         assert_eq!(
-            flatten_seq(vec![msg]),
+            normalize(vec![msg]),
             vec![(
                 vec![0],
                 seq([defer(1), defer(2), defer(3), defer(4), defer(5)])
@@ -549,8 +491,7 @@ mod tests {
 
     #[test]
     fn nested_seq_conc_single() {
-        // any nesting level of seq and conc should be handled in a single pass of (seq, conc) or
-        // (conc, seq)
+        // any nesting level of seq and conc should be handled in a single pass
 
         let msg = conc::<UnitMessage>([seq([conc([noop()])])]);
         assert_eq!(normalize(vec![msg]), vec![]);
