@@ -35,21 +35,37 @@ async function logIn(provider: AuthProviders) {
   }
 }
 
-const unsubscribe = terminal.keys.subscribe(event => {
-  if (terminal.tab !== 1) return
-  if (event) {
-    if (event.type !== "keydown") return
-    if (event.key === "ArrowUp") {
-      focusedIndex = (focusedIndex - 1 + providers.length) % providers.length
-    } else if (event.key === "ArrowDown") {
-      focusedIndex = (focusedIndex + 1) % providers.length
-    } else if (event.key === "Enter") {
-      logIn(providers[focusedIndex])
+let unsubscribe: (() => void) | undefined
+let subscriptionTimeout: NodeJS.Timeout | undefined
+$effect(() => {
+  terminal.updateHistory("Thank you!")
+  terminal.updateHistory(
+    "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency."
+  )
+
+  subscriptionTimeout = setTimeout(() => {
+    unsubscribe = terminal.keys.subscribe(event => {
+      if (event) {
+        if (event.type !== "keydown") return
+        if (event.key === "ArrowUp") {
+          focusedIndex = (focusedIndex - 1 + providers.length) % providers.length
+        } else if (event.key === "ArrowDown") {
+          focusedIndex = (focusedIndex + 1) % providers.length
+        } else if (event.key === "Enter") {
+          logIn(providers[focusedIndex])
+        }
+      }
+    })
+  }, 200)
+  return () => {
+    if (subscriptionTimeout) {
+      clearTimeout(subscriptionTimeout)
+    }
+    if (unsubscribe) {
+      unsubscribe()
     }
   }
 })
-
-onDestroy(unsubscribe)
 </script>
 
 {#if !redirecting}

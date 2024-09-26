@@ -16,14 +16,15 @@ const buttons = $state([
   { text: "View contributions", action: "view" }
 ])
 
-let unsubscribe: (() => void) | undefined
-let subscriptionTimeout: NodeJS.Timeout | undefined
 beforeNavigate(() => {
   if (unsubscribe) {
     unsubscribe()
   }
 })
-onMount(() => {
+
+let unsubscribe: (() => void) | undefined
+let subscriptionTimeout: NodeJS.Timeout | undefined
+$effect(() => {
   terminal.updateHistory("Thank you!")
   terminal.updateHistory(
     "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency."
