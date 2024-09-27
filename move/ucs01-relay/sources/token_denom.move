@@ -423,9 +423,6 @@ module UCS01::fa_coin {
         transfer(aaron, sender, recipient, 500, ASSET_SYMBOL);
     }
 
-
-
-
     #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57, alice=@0x1234, bob=@0x5678)]
     public fun test_to_relay(creator: &signer, alice: &signer, bob: address) acquires ManagedFungibleAsset {
         initialize(
