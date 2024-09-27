@@ -1,10 +1,7 @@
 use std::{collections::HashMap, process::Stdio, sync::Arc, time::Duration};
 
 use futures::{stream::FuturesUnordered, Future, StreamExt, TryStreamExt};
-use jsonrpsee::{
-    core::RpcResult,
-    types::{ErrorObject, ErrorObjectOwned},
-};
+use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
 use macros::model;
 use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
@@ -49,6 +46,8 @@ pub struct Modules {
 
     /// map of client type to ibc interface to client module.
     client_modules: HashMap<ClientType<'static>, HashMap<IbcInterface<'static>, ModuleRpcClient>>,
+
+    chain_consensus_types: HashMap<ChainId<'static>, ClientType<'static>>,
 }
 
 impl queue_msg::Context for Context {
@@ -146,9 +145,11 @@ impl Context {
             chain_modules: Default::default(),
             client_modules: Default::default(),
             consensus_modules: Default::default(),
+            chain_consensus_types: Default::default(),
         };
+
         let mut plugin_modules = HashMap::default();
-        // let mut module_servers = Vec::default();
+
         let mut interest_filters = HashMap::default();
 
         let main_rpc_server = Server::new();
@@ -265,6 +266,13 @@ impl Context {
                         .into());
                     }
 
+                    let None = modules
+                        .chain_consensus_types
+                        .insert(chain_id.clone(), client_type.clone())
+                    else {
+                        unreachable!()
+                    };
+
                     info!(
                         %name,
                         %chain_id,
@@ -347,35 +355,6 @@ impl Context {
     pub fn interest_filters(&self) -> &HashMap<String, String> {
         &self.interest_filters
     }
-
-    pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
-        &'a self,
-        chain_id: &'b ChainId<'c>,
-    ) -> RpcResult<&'a (impl ChainModuleClient<D, C, Cb> + 'a)> {
-        Ok(self.rpc_server.modules()?.chain_module(chain_id)?)
-    }
-
-    pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
-        &'a self,
-        chain_id: &'b ChainId<'c>,
-    ) -> RpcResult<&'a (impl ConsensusModuleClient<D, C, Cb> + 'a)> {
-        Ok(self.rpc_server.modules()?.consensus_module(chain_id)?)
-    }
-
-    pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
-        &'a self,
-        client_type: &'b ClientType<'c>,
-        ibc_interface: &'b IbcInterface<'c>,
-    ) -> RpcResult<&'a (impl ClientModuleClient<D, C, Cb> + 'a)> {
-        Ok(self
-            .rpc_server
-            .modules()?
-            .client_module(client_type, ibc_interface)?)
-    }
-
-    // pub fn modules(&self) -> Arc<Modules> {
-    //     self.modules.clone()
-    // }
 }
 
 impl Modules {
@@ -400,7 +379,16 @@ impl Modules {
             .map(|(client_type, ibc_interfaces)| (client_type, ibc_interfaces.keys()))
     }
 
-    pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+    pub fn chain_consensus_type<'a, 'b, 'c: 'a>(
+        &'a self,
+        chain_id: &'b ChainId<'c>,
+    ) -> Result<&'a ClientType<'static>, ConsensusModuleNotFound> {
+        self.chain_consensus_types
+            .get(chain_id)
+            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_owned()))
+    }
+
+    pub fn chain_module<'a, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,
     ) -> Result<&'a (impl ChainModuleClient<D, C, Cb> + 'a), ChainModuleNotFound> {
@@ -411,7 +399,7 @@ impl Modules {
             .client())
     }
 
-    pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+    pub fn consensus_module<'a, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         chain_id: &'b ChainId<'c>,
     ) -> Result<&'a (impl ConsensusModuleClient<D, C, Cb> + 'a), ConsensusModuleNotFound> {
@@ -422,7 +410,7 @@ impl Modules {
             .client())
     }
 
-    pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+    pub fn client_module<'a, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
         &'a self,
         client_type: &'b ClientType<'c>,
         ibc_interface: &'b IbcInterface<'c>,

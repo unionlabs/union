@@ -13940,7 +13940,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-transaction-module-aptos"
+name = "voyager-transaction-plugin-aptos"
 version = "0.1.0"
 dependencies = [
  "aptos-crypto",
@@ -13971,7 +13971,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-transaction-module-cosmos-sdk"
+name = "voyager-transaction-plugin-cosmos-sdk"
 version = "0.1.0"
 dependencies = [
  "bip32",
@@ -14001,7 +14001,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-transaction-module-ethereum"
+name = "voyager-transaction-plugin-ethereum"
 version = "0.1.0"
 dependencies = [
  "beacon-api",

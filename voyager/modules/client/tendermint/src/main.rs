@@ -170,14 +170,6 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
 #[async_trait]
 impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
     #[instrument(skip_all)]
-    async fn supported_interface(&self) -> RpcResult<ClientModuleInfo> {
-        Ok(ClientModuleInfo {
-            client_type: ClientType::new(ClientType::TENDERMINT),
-            ibc_interface: IbcInterface::new(self.ctx.ibc_interface.as_str()),
-        })
-    }
-
-    #[instrument(skip_all)]
     async fn decode_client_state_meta(
         &self,
         client_state: Hex<Vec<u8>>,

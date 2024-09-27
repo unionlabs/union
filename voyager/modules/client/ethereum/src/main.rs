@@ -154,17 +154,6 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
 #[async_trait]
 impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
     #[instrument]
-    async fn supported_interface(&self) -> RpcResult<ClientModuleInfo> {
-        Ok(ClientModuleInfo {
-            client_type: ClientType::new_static(match self.ctx.chain_spec {
-                PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
-                PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
-            }),
-            ibc_interface: SUPPORTED_IBC_INTERFACE,
-        })
-    }
-
-    #[instrument]
     async fn decode_client_state_meta(
         &self,
         client_state: Hex<Vec<u8>>,

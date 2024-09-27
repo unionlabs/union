@@ -73,8 +73,8 @@ impl IModuleKindInfo for ClientModuleInfo {}
 pub struct PluginModuleInfo {
     /// A jaq filter to run on every message before pushing them to the queue.
     /// This ***MUST*** return a bool. If this returns `true`, the message will
-    /// be pushed to the optimization queue with this plugin's name as the
-    /// tag, else it will be passed on to the next plugin to be filtered.
+    /// be pushed to the optimization queue with this plugin's name as the tag,
+    /// otherwise it will be passed on to the next plugin to be filtered.
     pub interest_filter: String,
 }
 
@@ -190,12 +190,6 @@ pub trait PluginModule<D: Member, C: Member, Cb: Member> {
     namespace = "chain"
 )]
 pub trait ChainModule<D: Member, C: Member, Cb: Member> {
-    /// Register this chain module with Voyager, returning the chain id of the
-    /// chain this module tracks.
-    // TODO: This can probably be removed
-    #[method(name = "chainId")]
-    fn chain_id(&self) -> RpcResult<ChainId<'static>>;
-
     /// Query the latest finalized height of this chain.
     #[method(name = "queryLatestHeight")]
     async fn query_latest_height(&self) -> RpcResult<Height>;
@@ -224,10 +218,6 @@ pub trait ChainModule<D: Member, C: Member, Cb: Member> {
         &self,
         client_id: ClientId,
     ) -> RpcResult<RawClientState<'static>>;
-
-    // TODO: For the state and proof query functions, it would be best if they
-    // weren't concerned with the encoding of them; this should be handed off to a
-    // different module
 
     /// Fetch the client info of a client on this chain.
     #[method(name = "clientInfo")]
@@ -295,11 +285,6 @@ impl<T> ChainModuleClientExt for T where T: ChainModuleClient<Value, Value, Valu
 )]
 // TODO: Rename to client codec module
 pub trait ClientModule<D: Member, C: Member, Cb: Member> {
-    /// Register this module with Voyager.
-    // TODO: This can probably be removed
-    #[method(name = "supportedInterface")]
-    async fn supported_interface(&self) -> RpcResult<ClientModuleInfo>;
-
     /// Decode the raw client state, returning the decoded metadata common
     /// between all client state types.
     #[method(name = "decodeClientStateMeta")]
@@ -379,11 +364,6 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     namespace = "consensus"
 )]
 pub trait ConsensusModule<D: Member, C: Member, Cb: Member> {
-    /// Register this module with Voyager.
-    // TODO: This can probably be removed
-    #[method(name = "info")]
-    async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo>;
-
     /// The client state of this chain at the specified [`Height`].
     ///
     /// Returns the client state value as JSON, which will then be encoded to

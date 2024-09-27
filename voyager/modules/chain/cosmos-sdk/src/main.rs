@@ -1051,11 +1051,6 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
 
 #[async_trait]
 impl ChainModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    fn chain_id(&self) -> RpcResult<ChainId<'static>> {
-        Ok(self.ctx.chain_id.clone())
-    }
-
     /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
     async fn query_latest_height(&self) -> RpcResult<Height> {

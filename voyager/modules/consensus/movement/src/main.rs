@@ -236,14 +236,6 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
 #[async_trait]
 impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
     #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo> {
-        Ok(ConsensusModuleInfo {
-            chain_id: self.ctx.chain_id.clone(),
-            client_type: ClientType::new(ClientType::MOVEMENT),
-        })
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
     async fn self_client_state(&self, height: Height) -> RpcResult<Value> {
         let ledger_version = self
             .ctx

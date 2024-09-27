@@ -353,8 +353,9 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
             let chain = voyager
                 .context
-                .chain_module::<Value, Value, Value>(&ChainId::new(&chain_id))
-                .unwrap();
+                .rpc_server
+                .modules()?
+                .chain_module::<Value, Value, Value>(&ChainId::new(&chain_id))?;
 
             let height = chain.query_latest_height().await.unwrap();
 

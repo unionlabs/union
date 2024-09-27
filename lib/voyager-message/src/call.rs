@@ -274,8 +274,10 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 info!(%from_height, %to_height, "fetch_block_range");
 
                 Ok(conc([
-                    ctx.chain_module(&chain_id)
+                    ctx.rpc_server
+                        .modules()
                         .map_err(error_object_to_queue_error)?
+                        .chain_module(&chain_id)?
                         .fetch_block_range(from_height, to_height)
                         .await
                         .map_err(json_rpc_error_to_queue_error)?,
@@ -645,8 +647,10 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                         .into(),
                     ))
                 } else {
-                    ctx.consensus_module(&chain_id)
+                    ctx.rpc_server
+                        .modules()
                         .map_err(error_object_to_queue_error)?
+                        .consensus_module(&chain_id)?
                         .fetch_update_headers(update_from, update_to, counterparty_chain_id)
                         .await
                         .map_err(json_rpc_error_to_queue_error)
@@ -753,8 +757,10 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 height,
             }) => {
                 let client_state = ctx
-                    .chain_module::<D, C, Cb>(&chain_id)
+                    .rpc_server
+                    .modules()
                     .map_err(error_object_to_queue_error)?
+                    .chain_module::<D, C, Cb>(&chain_id)?
                     .query_raw_unfinalized_trusted_client_state(client_id.clone())
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -1062,8 +1068,10 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
         .map_err(error_object_to_queue_error)?;
 
     let counterparty_consensus_module = ctx
-        .consensus_module::<Value, Value, Value>(&counterparty_chain_id)
-        .map_err(error_object_to_queue_error)?;
+        .rpc_server
+        .modules()
+        .map_err(error_object_to_queue_error)?
+        .consensus_module::<Value, Value, Value>(&counterparty_chain_id)?;
 
     let self_client_state = counterparty_consensus_module
         .self_client_state(height)
@@ -1077,15 +1085,17 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
         .map_err(json_rpc_error_to_queue_error)?;
     trace!(%self_consensus_state);
 
-    let client_type = counterparty_consensus_module
-        .consensus_info()
-        .await
-        .map_err(json_rpc_error_to_queue_error)?
-        .client_type;
+    let client_type = ctx
+        .rpc_server
+        .modules()
+        .map_err(error_object_to_queue_error)?
+        .chain_consensus_type(&chain_id)?;
 
     let client_module = ctx
-        .client_module::<Value, Value, Value>(&client_type, &ibc_interface)
-        .map_err(error_object_to_queue_error)?;
+        .rpc_server
+        .modules()
+        .map_err(error_object_to_queue_error)?
+        .client_module::<Value, Value, Value>(client_type, &ibc_interface)?;
 
     Ok(data(WithChainId {
         chain_id,
@@ -1102,7 +1112,7 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
                     .map_err(json_rpc_error_to_queue_error)?
                     .0,
             },
-            client_type,
+            client_type: client_type.clone(),
         }),
     }))
 }
@@ -1194,6 +1204,8 @@ async fn mk_connection_handshake_state_and_proofs(
     );
 
     let reencoded_client_state = ctx
+        .rpc_server
+        .modules()?
         .client_module::<Value, Value, Value>(
             &target_client_info.client_type,
             &target_client_info.ibc_interface,

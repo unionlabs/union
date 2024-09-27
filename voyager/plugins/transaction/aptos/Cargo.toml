@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "voyager-transaction-module-aptos"
+name    = "voyager-transaction-plugin-aptos"
 version = "0.1.0"
 
 [dependencies]

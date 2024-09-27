@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name    = "voyager-transaction-module-cosmos-sdk"
+name    = "voyager-transaction-plugin-cosmos-sdk"
 version = "0.1.0"
 
 [dependencies]

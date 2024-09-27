@@ -70,8 +70,10 @@ impl<D: Member, C: Member, Cb: Member> HandleCallback<VoyagerMessage<D, C, Cb>> 
                     .map_err(error_object_to_queue_error)?;
 
                 let client_module = ctx
-                    .client_module::<Value, Value, Value>(&client_type, &ibc_interface)
-                    .map_err(error_object_to_queue_error)?;
+                    .rpc_server
+                    .modules()
+                    .map_err(error_object_to_queue_error)?
+                    .client_module::<Value, Value, Value>(&client_type, &ibc_interface)?;
 
                 Ok(queue_msg::data(OrderedMsgUpdateClients {
                     // REVIEW: Use FuturesOrdered here?

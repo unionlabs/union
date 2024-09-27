@@ -122,7 +122,7 @@
     },
     {
       "enabled": false,
-      "path": "./target/debug/voyager-transaction-module-aptos",
+      "path": "./target/debug/voyager-transaction-plugin-aptos",
       "config": {
         "chain_id": "27",
         "rpc_url": "http://localhost:30731",
@@ -141,7 +141,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-transaction-module-cosmos-sdk",
+      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
         "keyring": {
@@ -166,7 +166,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-transaction-module-cosmos-sdk",
+      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         "chain_id": "stargaze-devnet-1",
         "keyring": {
@@ -191,7 +191,7 @@
     },
     {
       "enabled": false,
-      "path": "./target/debug/voyager-transaction-module-ethereum",
+      "path": "./target/debug/voyager-transaction-plugin-ethereum",
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",

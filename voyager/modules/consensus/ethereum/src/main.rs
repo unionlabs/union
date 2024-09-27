@@ -362,17 +362,6 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
 #[async_trait]
 impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
     #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo> {
-        Ok(ConsensusModuleInfo {
-            chain_id: self.ctx.chain_id.clone(),
-            client_type: ClientType::new(match self.ctx.chain_spec {
-                PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
-                PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
-            }),
-        })
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
     async fn self_client_state(&self, height: Height) -> RpcResult<Value> {
         let genesis = self.ctx.beacon_api_client.genesis().await.unwrap().data;
 
