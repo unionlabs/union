@@ -87,6 +87,7 @@ onDestroy(() => {
 
 {#if showButtons}
   <Button
+          autofocus
           bind:value={buttons[0]}
           onmouseenter={() => focusedIndex = 0}
           class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
