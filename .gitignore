@@ -77,3 +77,4 @@ db.sqlite3*
 
 move/*/build
 .tsup
+.vercel

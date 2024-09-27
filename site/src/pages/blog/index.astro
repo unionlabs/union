@@ -10,8 +10,6 @@ import { contentfulClient } from "#/lib/contentful/client.ts"
 import IntroHeading from "#/components/typography/IntroHeading.astro"
 import SocialsSection from "#/components/sections/SocialsSection.astro"
 
-export const prerender = false
-
 const blogEntries = await contentfulClient.getEntries<BlogPost>({
   content_type: "blog",
   // @ts-expect-error
