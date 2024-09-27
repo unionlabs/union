@@ -11,6 +11,7 @@ use chain_utils::{
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
+    Extensions,
 };
 use prost::Message;
 use queue_msg::{call, noop, optimize::OptimizationResult, Op};
@@ -39,9 +40,8 @@ use voyager_message::{
     call::Call,
     core::ChainId,
     data::{Data, IbcMessage, WithChainId},
-    module::{ModuleInfo, PluginModuleInfo, PluginModuleServer, QueueInteractionsServer},
-    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
+    run_module_server, DefaultCmd, ModuleContext, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
@@ -52,7 +52,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module, _, _, _>().await
+    run_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -77,7 +77,7 @@ pub struct Config {
 impl ModuleContext for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginModuleInfo;
+    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
@@ -124,8 +124,8 @@ impl ModuleContext for Module {
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: plugin_name(&config.chain_id),
-            kind: PluginModuleInfo {
+            kind: PluginInfo {
+                name: plugin_name(&config.chain_id),
                 interest_filter: format!(
                     r#"
 if ."@type" == "data" then
@@ -600,62 +600,18 @@ pub enum BroadcastTxCommitError {
     OutOfGas,
 }
 
-#[async_trait]
-impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    #[allow(clippy::collapsible_match)]
-    async fn call(
-        &self,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match msg {
-            ModuleCall::SubmitTransaction(msgs) => self
-                .ctx
-                .do_send_transaction(msgs)
-                .await
-                .map_err(|err| match &err {
-                    BroadcastTxCommitError::Tx(tx_err) => match tx_err {
-                        CosmosSdkError::CapabilityError(capability_error) => ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            ErrorReporter(capability_error).to_string(),
-                            None::<()>,
-                        ),
-                        CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
-                            ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                ErrorReporter(err).to_string(),
-                                None::<()>,
-                            )
-                        }
-                        CosmosSdkError::ClientError(ClientError::ErrClientNotFound) => {
-                            ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                ErrorReporter(err).to_string(),
-                                None::<()>,
-                            )
-                        }
-                        _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
-                    },
-                    _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
-                }),
-        }
-    }
-
-    #[instrument(skip_all)]
-    async fn callback(
-        &self,
-        cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match cb {}
-    }
+impl PluginTypes for Module {
+    type D = ModuleData;
+    type C = ModuleCall;
+    type Cb = ModuleCallback;
 }
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
+impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all)]
     async fn run_pass(
         &self,
+        _: &Extensions,
         msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
     ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(OptimizationResult {
@@ -671,10 +627,10 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                                 chain_id,
                                 message,
                             })) => {
-                                assert_eq!(chain_id, self.ctx.chain_id);
+                                assert_eq!(chain_id, self.chain_id);
 
                                 call(Call::plugin(
-                                    self.ctx.plugin_name(),
+                                    self.plugin_name(),
                                     ModuleCall::SubmitTransaction(vec![message]),
                                 ))
                             }
@@ -682,10 +638,10 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                                 chain_id,
                                 message,
                             })) => {
-                                assert_eq!(chain_id, self.ctx.chain_id);
+                                assert_eq!(chain_id, self.chain_id);
 
                                 call(Call::plugin(
-                                    self.ctx.plugin_name(),
+                                    self.plugin_name(),
                                     ModuleCall::SubmitTransaction(message),
                                 ))
                             }
@@ -695,6 +651,58 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                 })
                 .collect(),
         })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    #[allow(clippy::collapsible_match)]
+    async fn call(
+        &self,
+        _: &Extensions,
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match msg {
+            ModuleCall::SubmitTransaction(msgs) => {
+                self.do_send_transaction(msgs)
+                    .await
+                    .map_err(|err| match &err {
+                        BroadcastTxCommitError::Tx(tx_err) => match tx_err {
+                            CosmosSdkError::CapabilityError(capability_error) => {
+                                ErrorObject::owned(
+                                    FATAL_JSONRPC_ERROR_CODE,
+                                    ErrorReporter(capability_error).to_string(),
+                                    None::<()>,
+                                )
+                            }
+                            CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
+                                ErrorObject::owned(
+                                    FATAL_JSONRPC_ERROR_CODE,
+                                    ErrorReporter(err).to_string(),
+                                    None::<()>,
+                                )
+                            }
+                            CosmosSdkError::ClientError(ClientError::ErrClientNotFound) => {
+                                ErrorObject::owned(
+                                    FATAL_JSONRPC_ERROR_CODE,
+                                    ErrorReporter(err).to_string(),
+                                    None::<()>,
+                                )
+                            }
+                            _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
+                        },
+                        _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
+                    })
+            }
+        }
+    }
+
+    #[instrument(skip_all)]
+    async fn callback(
+        &self,
+        _: &Extensions,
+        cb: ModuleCallback,
+        _data: VecDeque<Data<ModuleData>>,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match cb {}
     }
 }
 

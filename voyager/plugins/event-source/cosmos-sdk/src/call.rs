@@ -7,15 +7,15 @@ use unionlabs::{events::IbcEvent, hash::H256, ibc::core::client::height::Height}
 #[queue_msg]
 #[derive(Enumorph)]
 pub enum ModuleCall {
-    FetchBlocks(FetchBlocks),
+    FetchBlocks(FetchBlock),
     FetchTransactions(FetchTransactions),
     MakeChainEvent(MakeChainEvent),
 }
 
+/// Fetch a block at the specified height, requeueing a seq(wait(H+1), fetch(H+1)).
 #[queue_msg]
-pub struct FetchBlocks {
-    pub from_height: Height,
-    pub to_height: Height,
+pub struct FetchBlock {
+    pub height: Height,
 }
 
 #[queue_msg]

@@ -30,7 +30,7 @@ use tracing::{debug, error, info, info_span, trace, trace_span};
 use tracing_futures::Instrument;
 use unionlabs::ErrorReporter;
 use voyager_message::{
-    context::Context, module::PluginModuleClient, pass::JaqInterestFilter, rpc::VoyagerRpcServer,
+    context::Context, module::PluginClient, pass::JaqInterestFilter, rpc::VoyagerRpcServer,
     VoyagerMessage,
 };
 
@@ -407,7 +407,7 @@ impl Voyager {
                 client: T,
             }
 
-            impl<T: PluginModuleClient<Value, Value, Value> + Send + Sync> Pass<VoyagerMessage>
+            impl<T: PluginClient<Value, Value, Value> + Send + Sync> Pass<VoyagerMessage>
                 for PluginOptPass<&'_ T>
             {
                 type Error = jsonrpsee::core::client::Error;

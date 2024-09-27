@@ -1,51 +1,32 @@
 use std::{
-    collections::VecDeque,
     fmt::Debug,
     num::{NonZeroU64, ParseIntError},
 };
 
-use jsonrpsee::core::{async_trait, RpcResult};
-use protos::union::galois::api::v3::union_prover_api_client;
-use queue_msg::{call, data, defer, now, promise, seq, void, BoxDynError, Op};
+use jsonrpsee::{
+    core::{async_trait, RpcResult},
+    Extensions,
+};
+use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, error, info, instrument};
+use tracing::{error, instrument};
 use unionlabs::{
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::cometbls::{client_state::ClientState, consensus_state::ConsensusState},
     },
     traits::Member,
-    union::galois::{
-        poll_request::PollRequest,
-        poll_response::{PollResponse, ProveRequestDone, ProveRequestFailed},
-    },
 };
 use voyager_message::{
-    call::{Call, WaitForHeight},
-    callback::Callback,
     core::{ChainId, ClientType},
-    data::Data,
-    module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo, QueueInteractionsServer},
-    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
+    module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo},
+    run_module_server, DefaultCmd, ModuleContext,
 };
-
-use crate::{
-    call::{
-        FetchProveRequest, FetchTrustedValidators, FetchUntrustedCommit, FetchUntrustedValidators,
-        ModuleCall,
-    },
-    callback::{AggregateProveRequest, ModuleCallback},
-    data::{ModuleData, ProveResponse, TrustedValidators, UntrustedCommit, UntrustedValidators},
-};
-
-pub mod call;
-pub mod callback;
-pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module, _, _, _>().await
+    run_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -111,7 +92,6 @@ impl ModuleContext for Module {
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: plugin_name(&config.chain_id),
             kind: ConsensusModuleInfo {
                 chain_id: config.chain_id,
                 client_type: ClientType::new(ClientType::COMETBLS),
@@ -124,18 +104,6 @@ impl ModuleContext for Module {
     }
 }
 
-fn plugin_name(chain_id: &ChainId<'_>) -> String {
-    pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
-
-    format!("{PLUGIN_NAME}/{}", chain_id)
-}
-
-impl Module {
-    fn plugin_name(&self) -> String {
-        plugin_name(&self.chain_id)
-    }
-}
-
 #[derive(Debug, thiserror::Error)]
 #[error("unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`")]
 pub struct ChainIdParseError {
@@ -145,138 +113,11 @@ pub struct ChainIdParseError {
 }
 
 #[async_trait]
-impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn call(
-        &self,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match msg {
-            ModuleCall::FetchUntrustedCommit(FetchUntrustedCommit { height }) => {
-                let commit = self
-                    .ctx
-                    .tm_client
-                    .commit(Some(height.revision_height.try_into().unwrap()))
-                    .await
-                    .unwrap();
-
-                Ok(data(Data::plugin(
-                    self.ctx.plugin_name(),
-                    UntrustedCommit {
-                        height,
-                        signed_header: commit.signed_header,
-                    },
-                )))
-            }
-            ModuleCall::FetchTrustedValidators(FetchTrustedValidators { height }) => {
-                let validators = self
-                    .ctx
-                    .tm_client
-                    .all_validators(Some(height.revision_height.try_into().unwrap()))
-                    .await
-                    .unwrap()
-                    .validators;
-
-                Ok(data(Data::plugin(
-                    self.ctx.plugin_name(),
-                    TrustedValidators { height, validators },
-                )))
-            }
-            ModuleCall::FetchUntrustedValidators(FetchUntrustedValidators { height }) => {
-                let validators = self
-                    .ctx
-                    .tm_client
-                    .all_validators(Some(height.revision_height.try_into().unwrap()))
-                    .await
-                    .unwrap()
-                    .validators;
-
-                Ok(data(Data::plugin(
-                    self.ctx.plugin_name(),
-                    UntrustedValidators { height, validators },
-                )))
-            }
-            ModuleCall::FetchProveRequest(FetchProveRequest { request }) => {
-                debug!("submitting prove request");
-
-                let prover_endpoint = &self.ctx.prover_endpoints[usize::try_from(
-                    request.untrusted_header.height.inner(),
-                )
-                .expect("never going to happen bro")
-                    % self.ctx.prover_endpoints.len()];
-
-                let response =
-                    union_prover_api_client::UnionProverApiClient::connect(prover_endpoint.clone())
-                        .await
-                        .unwrap()
-                        .poll(protos::union::galois::api::v3::PollRequest::from(
-                            PollRequest {
-                                request: request.clone(),
-                            },
-                        ))
-                        .await
-                        .map(|x| x.into_inner().try_into().unwrap());
-
-                debug!("submitted prove request");
-
-                let retry = || {
-                    debug!("proof pending");
-
-                    seq([
-                        // REVIEW: How long should we wait between polls?
-                        defer(now() + 1),
-                        call(Call::plugin(
-                            self.ctx.plugin_name(),
-                            FetchProveRequest { request },
-                        )),
-                    ])
-                };
-                match response {
-                    Ok(PollResponse::Pending) => Ok(retry()),
-                    Err(status) if status.message() == "busy_building" => Ok(retry()),
-                    Err(err) => panic!("prove request failed: {:?}", err),
-                    Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
-                        error!(%message, "prove request failed");
-                        panic!()
-                    }
-                    Ok(PollResponse::Done(ProveRequestDone { response })) => {
-                        info!(prover = %prover_endpoint, "proof generated");
-
-                        Ok(data(Data::plugin(
-                            self.ctx.plugin_name(),
-                            ProveResponse {
-                                prove_response: response,
-                            },
-                        )))
-                    }
-                }
-            }
-        }
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn callback(
-        &self,
-        callback: ModuleCallback,
-        data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        Ok(match callback {
-            ModuleCallback::AggregateProveRequest(aggregate) => {
-                queue_msg::aggregation::do_callback(aggregate, data)
-            }
-            ModuleCallback::AggregateHeader(aggregate) => {
-                queue_msg::aggregation::do_callback(aggregate, data)
-            }
-        })
-    }
-}
-
-#[async_trait]
-impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn self_client_state(&self, height: Height) -> RpcResult<Value> {
+impl ConsensusModuleServer for Module {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-            self.ctx.grpc_url.clone(),
+            self.grpc_url.clone(),
         )
         .await
         .unwrap()
@@ -288,7 +129,6 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
         .unwrap();
 
         let commit = self
-            .ctx
             .tm_client
             .commit(Some(NonZeroU64::new(height.revision_height).unwrap()))
             .await
@@ -301,7 +141,7 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
             u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap() * 1_000_000_000;
 
         Ok(serde_json::to_value(ClientState {
-            chain_id: self.ctx.chain_id.to_string(),
+            chain_id: self.chain_id.to_string(),
             trusting_period: unbonding_period * 85 / 100,
             unbonding_period,
             max_clock_drift: (60 * 20) * 1_000_000_000,
@@ -311,7 +151,6 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
             },
             latest_height: Height {
                 revision_number: self
-                    .ctx
                     .chain_id
                     .as_str()
                     .split('-')
@@ -326,10 +165,9 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
     }
 
     /// The consensus state on this chain at the specified `Height`.
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn self_consensus_state(&self, height: Height) -> RpcResult<Value> {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let commit = self
-            .ctx
             .tm_client
             .commit(Some(NonZeroU64::new(height.revision_height).unwrap()))
             .await
@@ -343,47 +181,5 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
             next_validators_hash: commit.signed_header.header.next_validators_hash,
         })
         .unwrap())
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn fetch_update_headers(
-        &self,
-        update_from: Height,
-        update_to: Height,
-        _counterparty_chain_id: ChainId<'static>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        Ok(seq([
-            void(call(WaitForHeight {
-                chain_id: self.ctx.chain_id.clone(),
-                height: update_to,
-            })),
-            promise(
-                [
-                    call(Call::plugin(
-                        self.ctx.plugin_name(),
-                        FetchUntrustedCommit { height: update_to },
-                    )),
-                    call(Call::plugin(
-                        self.ctx.plugin_name(),
-                        FetchUntrustedValidators { height: update_to },
-                    )),
-                    call(Call::plugin(
-                        self.ctx.plugin_name(),
-                        FetchTrustedValidators {
-                            height: update_from.increment(),
-                        },
-                    )),
-                ],
-                [],
-                Callback::plugin(
-                    self.ctx.plugin_name(),
-                    AggregateProveRequest {
-                        chain_id: self.ctx.chain_id.clone(),
-                        update_from,
-                        update_to,
-                    },
-                ),
-            ),
-        ]))
     }
 }

@@ -1,37 +1,44 @@
 use enumorph::Enumorph;
-use queue_msg::queue_msg;
+use macros::model;
 use unionlabs::{ibc::core::client::height::Height, union::galois::prove_request::ProveRequest};
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
 pub enum ModuleCall {
+    FetchUpdate(FetchUpdate),
     FetchUntrustedCommit(FetchUntrustedCommit),
     FetchTrustedValidators(FetchTrustedValidators),
     FetchUntrustedValidators(FetchUntrustedValidators),
     FetchProveRequest(FetchProveRequest),
 }
 
-#[queue_msg]
+#[model]
+pub struct FetchUpdate {
+    pub update_from: Height,
+    pub update_to: Height,
+}
+
+#[model]
 pub struct FetchTrustedCommit {
     pub height: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct FetchUntrustedCommit {
     pub height: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct FetchTrustedValidators {
     pub height: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct FetchUntrustedValidators {
     pub height: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct FetchProveRequest {
     pub request: ProveRequest,
 }

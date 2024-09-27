@@ -1,4 +1,5 @@
 #![allow(
+    clippy::type_complexity,
     async_fn_in_trait,
     non_snake_case,
     clippy::useless_conversion,

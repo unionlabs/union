@@ -76,6 +76,7 @@ members = [
   "unionvisor",
 
   "voyager",
+
   "voyager/modules/chain/cosmos-sdk",
   "voyager/modules/chain/ethereum",
   "voyager/modules/chain/movement",
@@ -89,6 +90,15 @@ members = [
   "voyager/modules/consensus/ethereum",
   "voyager/modules/consensus/movement",
   "voyager/modules/consensus/tendermint",
+
+  "voyager/plugins/client-update/cometbls",
+  "voyager/plugins/client-update/ethereum",
+  "voyager/plugins/client-update/movement",
+  "voyager/plugins/client-update/tendermint",
+
+  "voyager/plugins/event-source/cosmos-sdk",
+  "voyager/plugins/event-source/ethereum",
+  "voyager/plugins/event-source/movement",
 
   "voyager/plugins/transaction/cosmos-sdk",
   "voyager/plugins/transaction/ethereum",

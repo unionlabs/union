@@ -1,6 +1,9 @@
 use std::collections::VecDeque;
 
-use jsonrpsee::core::{async_trait, RpcResult};
+use jsonrpsee::{
+    core::{async_trait, RpcResult},
+    Extensions,
+};
 use queue_msg::{optimize::OptimizationResult, BoxDynError, Op};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -8,8 +11,8 @@ use serde_with::{serde_as, DisplayFromStr};
 use tracing::{instrument, trace};
 use voyager_message::{
     data::Data,
-    module::{ModuleInfo, PluginModuleInfo, PluginModuleServer, QueueInteractionsServer},
-    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
+    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
+    run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
@@ -20,7 +23,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module, _, _, _>().await
+    run_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -40,7 +43,7 @@ pub struct Config {
 impl ModuleContext for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginModuleInfo;
+    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         Ok(Module::new(config))
@@ -50,8 +53,8 @@ impl ModuleContext for Module {
         let module = Module::new(config);
 
         ModuleInfo {
-            name: module.plugin_name(),
-            kind: PluginModuleInfo {
+            kind: PluginInfo {
+                name: module.plugin_name(),
                 interest_filter: module.make_filter(),
             },
         }
@@ -295,11 +298,29 @@ end
     }
 }
 
+impl PluginTypes for Module {
+    type D = ModuleData;
+    type C = ModuleCall;
+    type Cb = ModuleCallback;
+}
+
 #[async_trait]
-impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
+impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+    #[instrument]
+    async fn run_pass(
+        &self,
+        _: &Extensions,
+        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        trace!("dropping {} messages", msgs.len());
+
+        Ok(OptimizationResult::default())
+    }
+
     #[instrument]
     async fn call(
         &self,
+        _: &Extensions,
         msg: ModuleCall,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {}
@@ -308,22 +329,10 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
     #[instrument]
     async fn callback(
         &self,
+        _: &Extensions,
         cb: ModuleCallback,
         _data: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match cb {}
-    }
-}
-
-#[async_trait]
-impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument]
-    async fn run_pass(
-        &self,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        trace!("dropping {} messages", msgs.len());
-
-        Ok(OptimizationResult::default())
     }
 }

@@ -10,7 +10,10 @@ use chain_utils::{
     keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
     BoxDynError,
 };
-use jsonrpsee::core::{async_trait, RpcResult};
+use jsonrpsee::{
+    core::{async_trait, RpcResult},
+    Extensions,
+};
 use queue_msg::{call, noop, optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
@@ -20,8 +23,8 @@ use voyager_message::{
     call::Call,
     core::ChainId,
     data::{log_msg, Data, IbcMessage, WithChainId},
-    module::{ModuleInfo, PluginModuleInfo, PluginModuleServer, QueueInteractionsServer},
-    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
+    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
+    run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
@@ -32,7 +35,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module, _, _, _>().await
+    run_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -49,7 +52,7 @@ pub struct Module {
 impl ModuleContext for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginModuleInfo;
+    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse().unwrap());
@@ -87,8 +90,8 @@ impl ModuleContext for Module {
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: plugin_name(&config.chain_id),
-            kind: PluginModuleInfo {
+            kind: PluginInfo {
+                name: plugin_name(&config.chain_id),
                 interest_filter: format!(
                     r#"
 if ."@type" == "data" then
@@ -140,103 +143,17 @@ impl Module {
     }
 }
 
-#[async_trait]
-impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn call(
-        &self,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match msg {
-            ModuleCall::SubmitTransaction(msgs) => self
-                .ctx
-                .keyring
-                .with(|pk| {
-                    let msgs = msgs.clone();
-                    async move {
-                        let sender = (*<H256>::from(
-                            sha3::Sha3_256::new()
-                                .chain_update(pk.public_key().to_bytes())
-                                .chain_update([0])
-                                .finalize(),
-                        )
-                        .get())
-                        .into();
-
-                        let account = self
-                            .ctx
-                            .aptos_client
-                            .get_account(sender)
-                            .await
-                            .unwrap()
-                            .into_inner();
-
-                        dbg!(&account);
-
-                        let msgs = process_msgs(
-                            self.ctx.ibc_handler_address.into(),
-                            &self.ctx,
-                            msgs.clone(),
-                        );
-
-                        let mut txs = vec![];
-
-                        for (i, (msg, entry_fn)) in msgs.into_iter().enumerate() {
-                            log_msg(&self.ctx.chain_id.to_string(), &msg);
-                            // dbg!(msg);
-
-                            let raw = RawTransaction::new_entry_function(
-                                sender,
-                                account.sequence_number + i as u64,
-                                entry_fn,
-                                400000,
-                                100,
-                                queue_msg::now() + 100,
-                                self.ctx.chain_id.as_str().parse().unwrap(),
-                            );
-
-                            let signed_tx = raw.sign(pk, pk.public_key()).unwrap();
-
-                            dbg!(&signed_tx);
-
-                            txs.push(signed_tx.into_inner());
-                        }
-
-                        dbg!(&txs);
-
-                        let res = self.ctx.aptos_client.submit_batch(&txs).await.unwrap();
-
-                        dbg!(&res);
-
-                        // res.into_inner().transaction_failures
-
-                        Ok(noop())
-                    }
-                })
-                .await
-                .unwrap_or_else(|| {
-                    Ok(call(Call::plugin(
-                        self.ctx.plugin_name(),
-                        ModuleCall::SubmitTransaction(msgs),
-                    )))
-                }),
-        }
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn callback(
-        &self,
-        cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match cb {}
-    }
+impl PluginTypes for Module {
+    type D = ModuleData;
+    type C = ModuleCall;
+    type Cb = ModuleCallback;
 }
 
 #[async_trait]
-impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
+impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     async fn run_pass(
         &self,
+        _: &Extensions,
         msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
     ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(OptimizationResult {
@@ -252,10 +169,10 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                                 chain_id,
                                 message,
                             })) => {
-                                assert_eq!(chain_id, self.ctx.chain_id);
+                                assert_eq!(chain_id, self.chain_id);
 
                                 call(Call::plugin(
-                                    self.ctx.plugin_name(),
+                                    self.plugin_name(),
                                     ModuleCall::SubmitTransaction(vec![message]),
                                 ))
                             }
@@ -263,10 +180,10 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                                 chain_id,
                                 message,
                             })) => {
-                                assert_eq!(chain_id, self.ctx.chain_id);
+                                assert_eq!(chain_id, self.chain_id);
 
                                 call(Call::plugin(
-                                    self.ctx.plugin_name(),
+                                    self.plugin_name(),
                                     ModuleCall::SubmitTransaction(message),
                                 ))
                             }
@@ -276,6 +193,93 @@ impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                 })
                 .collect(),
         })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn call(
+        &self,
+        _: &Extensions,
+        msg: ModuleCall,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match msg {
+            ModuleCall::SubmitTransaction(msgs) => self
+                .keyring
+                .with(|pk| {
+                    let msgs = msgs.clone();
+                    async move {
+                        let sender = (*<H256>::from(
+                            sha3::Sha3_256::new()
+                                .chain_update(pk.public_key().to_bytes())
+                                .chain_update([0])
+                                .finalize(),
+                        )
+                        .get())
+                        .into();
+
+                        let account = self
+                            .aptos_client
+                            .get_account(sender)
+                            .await
+                            .unwrap()
+                            .into_inner();
+
+                        dbg!(&account);
+
+                        let msgs =
+                            process_msgs(self.ibc_handler_address.into(), self, msgs.clone());
+
+                        let mut txs = vec![];
+
+                        for (i, (msg, entry_fn)) in msgs.into_iter().enumerate() {
+                            log_msg(&self.chain_id.to_string(), &msg);
+                            // dbg!(msg);
+
+                            let raw = RawTransaction::new_entry_function(
+                                sender,
+                                account.sequence_number + i as u64,
+                                entry_fn,
+                                400000,
+                                100,
+                                queue_msg::now() + 100,
+                                self.chain_id.as_str().parse().unwrap(),
+                            );
+
+                            let signed_tx = raw.sign(pk, pk.public_key()).unwrap();
+
+                            dbg!(&signed_tx);
+
+                            txs.push(signed_tx.into_inner());
+                        }
+
+                        dbg!(&txs);
+
+                        let res = self.aptos_client.submit_batch(&txs).await.unwrap();
+
+                        dbg!(&res);
+
+                        // res.into_inner().transaction_failures
+
+                        Ok(noop())
+                    }
+                })
+                .await
+                .unwrap_or_else(|| {
+                    Ok(call(Call::plugin(
+                        self.plugin_name(),
+                        ModuleCall::SubmitTransaction(msgs),
+                    )))
+                }),
+        }
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn callback(
+        &self,
+        _: &Extensions,
+        cb: ModuleCallback,
+        _data: VecDeque<Data<ModuleData>>,
+    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        match cb {}
     }
 }
 

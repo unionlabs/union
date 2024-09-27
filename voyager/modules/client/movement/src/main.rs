@@ -1,11 +1,9 @@
-use std::collections::VecDeque;
-
 use chain_utils::BoxDynError;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
+    Extensions,
 };
-use queue_msg::Op;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -30,24 +28,16 @@ use voyager_message::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcGo08WasmClientMetadata,
         IbcInterface,
     },
-    data::Data,
-    module::{ClientModuleInfo, ClientModuleServer, ModuleInfo, QueueInteractionsServer},
-    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    module::{ClientModuleInfo, ClientModuleServer, ModuleInfo},
+    run_module_server, DefaultCmd, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
 };
-
-use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
-
-pub mod call;
-pub mod callback;
-pub mod data;
 
 const SUPPORTED_IBC_INTERFACE: IbcInterface<'static> =
     IbcInterface::new_static(IbcInterface::IBC_GO_V8_08_WASM);
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module, _, _, _>().await
+    run_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -73,7 +63,6 @@ impl ModuleContext for Module {
 
     fn info(_config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: plugin_name(),
             kind: ClientModuleInfo {
                 client_type: ClientType::new(ClientType::MOVEMENT),
                 ibc_interface: SUPPORTED_IBC_INTERFACE,
@@ -84,12 +73,6 @@ impl ModuleContext for Module {
     async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
         match cmd {}
     }
-}
-
-fn plugin_name() -> String {
-    pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
-
-    format!("{PLUGIN_NAME}/{SUPPORTED_IBC_INTERFACE}",)
 }
 
 impl Module {
@@ -129,30 +112,11 @@ impl Module {
 pub enum ModuleInitError {}
 
 #[async_trait]
-impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument]
-    async fn call(
-        &self,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match msg {}
-    }
-
-    #[instrument]
-    async fn callback(
-        &self,
-        callback: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match callback {}
-    }
-}
-
-#[async_trait]
-impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
+impl ClientModuleServer for Module {
     #[instrument]
     async fn decode_client_state_meta(
         &self,
+        _: &Extensions,
         client_state: Hex<Vec<u8>>,
     ) -> RpcResult<ClientStateMeta> {
         let cs = Module::decode_client_state(&client_state.0)?;
@@ -166,6 +130,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     #[instrument]
     async fn decode_consensus_state_meta(
         &self,
+        _: &Extensions,
         consensus_state: Hex<Vec<u8>>,
     ) -> RpcResult<ConsensusStateMeta> {
         let cs = Module::decode_consensus_state(&consensus_state.0)?;
@@ -176,18 +141,27 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     }
 
     #[instrument]
-    async fn decode_client_state(&self, client_state: Hex<Vec<u8>>) -> RpcResult<Value> {
+    async fn decode_client_state(
+        &self,
+        _: &Extensions,
+        client_state: Hex<Vec<u8>>,
+    ) -> RpcResult<Value> {
         Ok(serde_json::to_value(Module::decode_client_state(&client_state.0)?).unwrap())
     }
 
     #[instrument]
-    async fn decode_consensus_state(&self, consensus_state: Hex<Vec<u8>>) -> RpcResult<Value> {
+    async fn decode_consensus_state(
+        &self,
+        _: &Extensions,
+        consensus_state: Hex<Vec<u8>>,
+    ) -> RpcResult<Value> {
         Ok(serde_json::to_value(Module::decode_consensus_state(&consensus_state.0)?).unwrap())
     }
 
     #[instrument]
     async fn encode_client_state(
         &self,
+        _: &Extensions,
         client_state: Value,
         metadata: Value,
     ) -> RpcResult<Hex<Vec<u8>>> {
@@ -220,7 +194,11 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     }
 
     #[instrument]
-    async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Hex<Vec<u8>>> {
+    async fn encode_consensus_state(
+        &self,
+        _: &Extensions,
+        consensus_state: Value,
+    ) -> RpcResult<Hex<Vec<u8>>> {
         serde_json::from_value::<movement::consensus_state::ConsensusState>(consensus_state)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -239,6 +217,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     #[instrument(skip_all)]
     async fn reencode_counterparty_client_state(
         &self,
+        _: &Extensions,
         client_state: Hex<Vec<u8>>,
         client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
@@ -263,6 +242,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     #[instrument(skip_all)]
     async fn reencode_counterparty_consensus_state(
         &self,
+        _: &Extensions,
         consensus_state: Hex<Vec<u8>>,
         _client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
@@ -288,7 +268,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     }
 
     #[instrument]
-    async fn encode_header(&self, header: Value) -> RpcResult<Hex<Vec<u8>>> {
+    async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Hex<Vec<u8>>> {
         serde_json::from_value::<Header>(header)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -304,7 +284,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     }
 
     #[instrument]
-    async fn encode_proof(&self, proof: Value) -> RpcResult<Hex<Vec<u8>>> {
+    async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Hex<Vec<u8>>> {
         serde_json::from_value::<StorageProof>(proof)
             .map_err(|err| {
                 ErrorObject::owned(

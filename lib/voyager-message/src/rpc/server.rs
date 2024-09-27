@@ -20,8 +20,8 @@ use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface},
     module::{ChainModuleClient, ChainModuleClientExt, ClientModuleClient, ConsensusModuleClient},
     rpc::{
-        json_rpc_error_to_rpc_error, IbcProof, IbcState, Info, SelfClientState, SelfConsensusState,
-        VoyagerRpcServer,
+        json_rpc_error_to_error_object, IbcProof, IbcState, Info, SelfClientState,
+        SelfConsensusState, VoyagerRpcServer,
     },
     FATAL_JSONRPC_ERROR_CODE,
 };
@@ -119,11 +119,11 @@ impl Server {
             QueryHeight::Latest => {
                 let latest_height = self
                     .modules()?
-                    .chain_module::<Value, Value, Value>(chain_id)
+                    .chain_module(chain_id)
                     .map_err(fatal_error)?
                     .query_latest_height()
                     .await
-                    .map_err(json_rpc_error_to_rpc_error)?;
+                    .map_err(json_rpc_error_to_error_object)?;
 
                 debug!(%latest_height, "queried latest height");
 
@@ -160,11 +160,11 @@ impl ServerInner {
 
                     let state = self
                         .modules()?
-                        .chain_module::<Value, Value, Value>(chain_id)
+                        .chain_module(chain_id)
                         .map_err(fatal_error)?
                         .query_ibc_state(at, path)
                         .await
-                        .map_err(json_rpc_error_to_rpc_error)?;
+                        .map_err(json_rpc_error_to_error_object)?;
 
                     RpcResult::Ok(state)
                 }
@@ -216,11 +216,11 @@ impl Server {
         let latest_height = self
             .inner
             .modules()?
-            .chain_module::<Value, Value, Value>(chain_id)
+            .chain_module(chain_id)
             .map_err(fatal_error)?
             .query_latest_height()
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         debug!(%latest_height, "queried latest height");
 
@@ -234,11 +234,11 @@ impl Server {
         let latest_timestamp = self
             .inner
             .modules()?
-            .chain_module::<Value, Value, Value>(chain_id)
+            .chain_module(chain_id)
             .map_err(fatal_error)?
             .query_latest_timestamp()
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         debug!(%latest_timestamp, "queried latest timestamp");
 
@@ -256,11 +256,11 @@ impl Server {
         let client_info = self
             .inner
             .modules()?
-            .chain_module::<Value, Value, Value>(chain_id)
+            .chain_module(chain_id)
             .map_err(fatal_error)?
             .client_info(client_id)
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         debug!(
             %client_info.ibc_interface,
@@ -285,32 +285,29 @@ impl Server {
         let client_info = self
             .inner
             .modules()?
-            .chain_module::<Value, Value, Value>(&chain_id)
+            .chain_module(&chain_id)
             .map_err(fatal_error)?
             .client_info(client_id.clone())
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         let client_state = self
             .inner
             .modules()?
-            .chain_module::<Value, Value, Value>(&chain_id)
+            .chain_module(&chain_id)
             .map_err(fatal_error)?
             .query_ibc_state_typed(height, ClientStatePath { client_id })
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         let meta = self
             .inner
             .modules()?
-            .client_module::<Value, Value, Value>(
-                &client_info.client_type,
-                &client_info.ibc_interface,
-            )
+            .client_module(&client_info.client_type, &client_info.ibc_interface)
             .map_err(fatal_error)?
             .decode_client_state_meta(client_state)
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         debug!(
             client_state_meta.height = %meta.height,
@@ -338,7 +335,7 @@ impl Server {
             .inner
             .query_ibc_state_cached(chain_id, height, path.clone())
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
         debug!(state = %state.state, "fetched ibc state");
@@ -358,7 +355,7 @@ impl Server {
         let chain_module = self
             .inner
             .modules()?
-            .chain_module::<Value, Value, Value>(chain_id)
+            .chain_module(chain_id)
             .map_err(fatal_error)?;
 
         // let height = self.inner.query_height(&chain_id, height).await?;
@@ -366,7 +363,7 @@ impl Server {
         let proof = chain_module
             .query_ibc_proof(height, path.clone())
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
         debug!(%proof, "fetched ibc proof");
@@ -389,13 +386,13 @@ impl Server {
         let chain_module = self
             .inner
             .modules()?
-            .consensus_module::<Value, Value, Value>(&chain_id)
+            .consensus_module(&chain_id)
             .map_err(fatal_error)?;
 
         let state = chain_module
             .self_client_state(height)
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
         debug!(%state, "fetched self client state");
@@ -414,7 +411,7 @@ impl Server {
         let chain_module = self
             .inner
             .modules()?
-            .consensus_module::<Value, Value, Value>(&chain_id)
+            .consensus_module(&chain_id)
             .map_err(fatal_error)?;
 
         let height = self.query_height(&chain_id, height).await?;
@@ -422,7 +419,7 @@ impl Server {
         let state = chain_module
             .self_consensus_state(height)
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         // TODO: Use valuable here
         debug!(%state, "fetched self consensus state");
@@ -443,13 +440,13 @@ impl Server {
         let client_module = self
             .inner
             .modules()?
-            .client_module::<Value, Value, Value>(client_type, ibc_interface)
+            .client_module(client_type, ibc_interface)
             .map_err(fatal_error)?;
 
         let proof = client_module
             .encode_proof(proof)
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         debug!(%proof, "encoded proof");
 
@@ -469,13 +466,13 @@ impl Server {
         let client_module = self
             .inner
             .modules()?
-            .client_module::<Value, Value, Value>(client_type, ibc_interface)
+            .client_module(client_type, ibc_interface)
             .map_err(fatal_error)?;
 
         let meta = client_module
             .decode_client_state_meta(Hex(client_state))
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         debug!(
             height = %meta.height,
@@ -495,11 +492,11 @@ impl Server {
     ) -> RpcResult<Value> {
         self.inner
             .modules()?
-            .client_module::<Value, Value, Value>(client_type, ibc_interface)
+            .client_module(client_type, ibc_interface)
             .map_err(fatal_error)?
             .decode_client_state(Hex(client_state))
             .await
-            .map_err(json_rpc_error_to_rpc_error)
+            .map_err(json_rpc_error_to_error_object)
     }
 
     #[instrument(skip_all, fields(%client_type, %ibc_interface))]
@@ -511,11 +508,11 @@ impl Server {
     ) -> RpcResult<Value> {
         self.inner
             .modules()?
-            .client_module::<Value, Value, Value>(client_type, ibc_interface)
+            .client_module(client_type, ibc_interface)
             .map_err(fatal_error)?
             .decode_consensus_state(Hex(consensus_state))
             .await
-            .map_err(json_rpc_error_to_rpc_error)
+            .map_err(json_rpc_error_to_error_object)
     }
 
     pub async fn query_ibc_state_typed<P: IbcPath>(

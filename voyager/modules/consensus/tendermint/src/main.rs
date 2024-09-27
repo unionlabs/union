@@ -1,5 +1,4 @@
 use std::{
-    collections::VecDeque,
     fmt::Debug,
     num::{NonZeroU64, ParseIntError},
 };
@@ -8,41 +7,30 @@ use ics23::ibc_api::SDK_SPECS;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
+    Extensions,
 };
-use queue_msg::{data, BoxDynError, Op};
+use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;
 use unionlabs::{
-    hash::H160,
     ibc::{
         core::{client::height::Height, commitment::merkle_root::MerkleRoot},
         lightclients::tendermint::{
             client_state::ClientState, consensus_state::ConsensusState, fraction::Fraction,
-            header::Header,
         },
     },
-    option_unwrap, result_unwrap,
-    tendermint::types::{validator::Validator, validator_set::ValidatorSet},
-    traits::Member,
-    ErrorReporter,
+    option_unwrap, result_unwrap, ErrorReporter,
 };
 use voyager_message::{
     core::{ChainId, ClientType},
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
-    module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo, QueueInteractionsServer},
-    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
+    module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo},
+    run_module_server, DefaultCmd, ModuleContext,
 };
-
-use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
-
-pub mod call;
-pub mod callback;
-pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module, _, _, _>().await
+    run_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -103,7 +91,6 @@ impl ModuleContext for Module {
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: plugin_name(&config.chain_id),
             kind: ConsensusModuleInfo {
                 chain_id: config.chain_id,
                 client_type: ClientType::new(ClientType::TENDERMINT),
@@ -116,18 +103,6 @@ impl ModuleContext for Module {
     }
 }
 
-fn plugin_name(chain_id: &ChainId<'_>) -> String {
-    pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
-
-    format!("{PLUGIN_NAME}/{}", chain_id)
-}
-
-impl Module {
-    fn plugin_name(&self) -> String {
-        plugin_name(&self.chain_id)
-    }
-}
-
 #[derive(Debug, thiserror::Error)]
 #[error("unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`")]
 pub struct ChainIdParseError {
@@ -137,31 +112,11 @@ pub struct ChainIdParseError {
 }
 
 #[async_trait]
-impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn call(
-        &self,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match msg {}
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn callback(
-        &self,
-        callback: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match callback {}
-    }
-}
-
-#[async_trait]
-impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn self_client_state(&self, height: Height) -> RpcResult<Value> {
+impl ConsensusModuleServer for Module {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-            self.ctx.grpc_url.clone(),
+            self.grpc_url.clone(),
         )
         .await
         .unwrap()
@@ -173,7 +128,6 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
         .unwrap();
 
         let commit = self
-            .ctx
             .tm_client
             .commit(Some(height.revision_height.try_into().unwrap()))
             .await
@@ -199,7 +153,7 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
         );
 
         Ok(serde_json::to_value(ClientState {
-            chain_id: self.ctx.chain_id.to_string(),
+            chain_id: self.chain_id.to_string(),
             // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
             trust_level: Fraction {
                 numerator: 1,
@@ -228,7 +182,7 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
             },
             frozen_height: None,
             latest_height: Height {
-                revision_number: self.ctx.chain_revision,
+                revision_number: self.chain_revision,
                 revision_height: height.inner().try_into().expect("is within bounds; qed;"),
             },
             proof_specs: SDK_SPECS.into(),
@@ -238,10 +192,9 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
     }
 
     /// The consensus state on this chain at the specified `Height`.
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn self_consensus_state(&self, height: Height) -> RpcResult<Value> {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
         let commit = self
-            .ctx
             .tm_client
             .commit(Some(height.revision_height.try_into().unwrap()))
             .await
@@ -261,80 +214,5 @@ impl ConsensusModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleSer
             timestamp: commit.signed_header.header.time,
         })
         .unwrap())
-    }
-
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn fetch_update_headers(
-        &self,
-        update_from: Height,
-        update_to: Height,
-        _counterparty_chain_id: ChainId<'static>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        let trusted_commit = self
-            .ctx
-            .tm_client
-            .commit(Some(update_from.revision_height.try_into().unwrap()))
-            .await
-            .unwrap();
-
-        let untrusted_commit = self
-            .ctx
-            .tm_client
-            .commit(Some(update_to.revision_height.try_into().unwrap()))
-            .await
-            .unwrap();
-
-        let trusted_validators = self
-            .ctx
-            .tm_client
-            .all_validators(Some(update_from.revision_height.try_into().unwrap()))
-            .await
-            .unwrap();
-
-        let untrusted_validators = self
-            .ctx
-            .tm_client
-            .all_validators(Some(update_to.revision_height.try_into().unwrap()))
-            .await
-            .unwrap();
-
-        let header = Header {
-            validator_set: mk_validator_set(
-                untrusted_validators.validators,
-                untrusted_commit.signed_header.header.proposer_address,
-            ),
-            signed_header: untrusted_commit.signed_header,
-            trusted_height: update_from,
-            trusted_validators: mk_validator_set(
-                trusted_validators.validators,
-                trusted_commit.signed_header.header.proposer_address,
-            ),
-        };
-
-        Ok(data(OrderedHeaders {
-            headers: vec![(
-                DecodedHeaderMeta { height: update_to },
-                serde_json::to_value(header).unwrap(),
-            )],
-        }))
-    }
-}
-
-fn mk_validator_set(validators: Vec<Validator>, proposer_address: H160) -> ValidatorSet {
-    let proposer = validators
-        .iter()
-        .find(|val| val.address == proposer_address)
-        .unwrap()
-        .clone();
-
-    let total_voting_power = validators
-        .iter()
-        .map(|v| v.voting_power.inner())
-        .sum::<i64>();
-
-    ValidatorSet {
-        validators,
-        proposer,
-        total_voting_power,
     }
 }
