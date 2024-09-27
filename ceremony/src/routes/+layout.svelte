@@ -7,8 +7,8 @@ import { checkAuth } from "$lib/state/session.svelte.ts"
 import Terminal from "$lib/components/Terminal/index.svelte"
 import { start } from "$lib/client"
 import Timer from "$lib/components/Terminal/Timer.svelte"
-import { onMount } from "svelte";
-import { getAverageTimes } from "$lib/supabase";
+import { onMount } from "svelte"
+import { getAverageTimes } from "$lib/supabase"
 
 let { children } = $props()
 
@@ -38,17 +38,17 @@ watch(
   }
 )
 
-let enabledVideo = $state<'INTRO' | 'MAIN' | 'OUTRO'>('INTRO')
+let enabledVideo = $state<"INTRO" | "MAIN" | "OUTRO">("INTRO")
 
 let introVideoElement = $state<HTMLVideoElement | null>(null)
 
 onMount(() => introVideoElement?.play())
 
-const hideIntroVideo = () => enabledVideo = 'MAIN'
+const hideIntroVideo = () => (enabledVideo = "MAIN")
 
 let outroVideoElement = $state<HTMLVideoElement | null>(null)
 
-let deleteOutroVideo = () => outroVideoElement = null
+let deleteOutroVideo = () => (outroVideoElement = null)
 </script>
 
 {#if enabledVideo === 'INTRO'}
