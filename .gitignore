@@ -78,3 +78,6 @@ db.sqlite3*
 */.movement
 move/*/build
 .tsup
+docs/generated
+dev-dist
+.zed

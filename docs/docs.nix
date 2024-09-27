@@ -1,11 +1,11 @@
 _: {
   perSystem =
     {
-      pkgs,
-      unstablePkgs,
       lib,
-      ensureAtRepositoryRoot,
+      pkgs,
       mkCi,
+      unstablePkgs,
+      ensureAtRepositoryRoot,
       ...
     }:
     let
@@ -21,7 +21,7 @@ _: {
       packages = {
         docs = mkCi false (
           unstablePkgs.buildNpmPackage {
-            npmDepsHash = "sha256-w9BqWfAUS+Ll1Im2plzzfQTPWLDCrKpAeJgjEhUEbH0=";
+            npmDepsHash = "sha256-bUGt5KeXa7O82cbG7XHYdmuMW/2YXMq3KcGp6HF2z9w=";
             src = ./.;
             srcs = [
               ./.

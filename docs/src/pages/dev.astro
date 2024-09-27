@@ -1,0 +1,50 @@
+---
+import "#/styles/tailwind.css"
+import Terminal from "#/components/Terminal.astro"
+import { Editor, type Packages } from "#/components/react/Editor.tsx"
+import { demoFiles } from "../content/docs/integrations/typescript/_data/demo-files.ts"
+
+interface Props {}
+
+const dependencies: Array<Packages> = [
+  {
+    name: "@types/node",
+    url: "https://unpkg.com/@types/node@22.7.2/index.d.ts"
+  },
+  {
+    name: "viem",
+    url: "https://unpkg.com/viem@2.21.14/_types/index.d.ts"
+  },
+  {
+    name: "viem/chains",
+    url: "https://unpkg.com/viem@2.21.14/_types/chains/index.d.ts"
+  },
+  {
+    name: "viem/accounts",
+    url: "https://unpkg.com/viem@2.21.14/_types/accounts/index.d.ts"
+  },
+  {
+    name: "@unionlabs/client",
+    url: "https://unpkg.com/@unionlabs/client@0.0.26/dist/index.d.ts"
+  }
+]
+---
+
+<Editor
+  {dependencies}
+  options={{
+    width: '100%',
+    fontSize: 16,
+    height: '450px',
+    className: 'mb-1',
+    lineNumbers: 'off',
+  }}
+  client:only="react"
+/>
+<Terminal webcontainerFiles={JSON.stringify(demoFiles)} />
+
+<style lang="postcss" is:global>
+  textarea {
+    color: #131313 !important;
+  }
+</style>

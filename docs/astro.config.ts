@@ -1,11 +1,11 @@
 import { loadEnv } from "vite"
-import vue from "@astrojs/vue"
 import react from "@astrojs/react"
 import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
 import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
+import starlightThemeRapide from "starlight-theme-rapide"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import { markdownConfiguration } from "./markdown.config.ts"
 import starlightHeadingBadges from "starlight-heading-badges"
@@ -31,10 +31,17 @@ export default defineConfig({
   trailingSlash: "ignore",
   markdown: markdownConfiguration,
   vite: {
-    experimental: {},
+    ssr: {
+      noExternal: ["monaco-editor"]
+    },
     optimizeDeps: {
       include: ["@xterm/xterm"],
       esbuildOptions: { target: "es2022" }
+    },
+    resolve: {
+      alias: {
+        path: "rollup-plugin-node-polyfills/polyfills/path"
+      }
     }
   },
   server: _ => ({
@@ -59,6 +66,7 @@ export default defineConfig({
         "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
       favicon: "/favicon.svg",
       lastUpdated: true,
+      expressiveCode: false,
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
       },
@@ -71,18 +79,11 @@ export default defineConfig({
       locales: { root: { label: "English", lang: "en" } },
       logo: {
         alt: "Union Logo",
-        dark: "./src/assets/union-logo/union-logo-transparent.svg",
-        light: "./src/assets/union-logo/union-logo-white-transparent.svg"
+        replacesTitle: true,
+        dark: "./src/assets/union-logo/union-logo-white.svg",
+        light: "./src/assets/union-logo/union-logo-black.svg"
       },
-      expressiveCode: false,
       head: [
-        {
-          tag: "meta",
-          attrs: {
-            name: "description",
-            content: "The Modular ZK Interoperability Layer"
-          }
-        },
         {
           tag: "meta",
           attrs: { property: "og:image", content: "/og.png" }
@@ -94,6 +95,35 @@ export default defineConfig({
         {
           tag: "script",
           attrs: { src: "/scripts/anchor-targets.js" }
+        },
+        {
+          tag: "link",
+          attrs: {
+            rel: "apple-touch-icon",
+            href: "/pwa-192x192.png"
+          }
+        },
+        {
+          tag: "link",
+          attrs: {
+            rel: "mask-icon",
+            href: "/favicon.svg",
+            color: "#FFFFFF"
+          }
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "msapplication-TileColor",
+            content: "#131313"
+          }
+        },
+        {
+          tag: "meta",
+          attrs: {
+            name: "theme-color",
+            content: "#131313"
+          }
         }
       ],
       sidebar: [
@@ -177,6 +207,7 @@ export default defineConfig({
         }
       ],
       plugins: [
+        starlightThemeRapide(),
         starlightUtils({
           multiSidebar: {
             switcherStyle: "horizontalList"
@@ -189,10 +220,10 @@ export default defineConfig({
         "./src/styles/index.css",
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
-        "./src/styles/twoslash.css",
+        // "./src/styles/twoslash.css",
         "./src/styles/starlight.css",
-        "./node_modules/katex/dist/katex.min.css",
-        "./node_modules/@shikijs/twoslash/style-rich.css"
+        "./node_modules/katex/dist/katex.min.css"
+        // "./node_modules/@shikijs/twoslash/style-rich.css"
       ]
     }),
     sitemap(),
@@ -201,7 +232,9 @@ export default defineConfig({
       configFile: "tailwind.config.ts"
     }),
     svelte(),
-    vue({ jsx: true, devtools: true }),
-    react({ experimentalReactChildren: true })
+    react({
+      include: ["**/react/**"],
+      experimentalReactChildren: true
+    })
   ]
 })

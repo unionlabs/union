@@ -34,13 +34,18 @@
       ".sqlx",
       "result",
       "vendor",
+      ".vercel",
       "testdata",
       "generated",
       ".svelte-kit",
       "node_modules",
-      "**/generated/**",
+      "light-clients/**",
       "package-lock.json",
+      "networks/genesis/**",
       "./app/src/generated",
+      "lib/scroll-verifier/**",
+      "lib/ethereum-verifier/**",
+      "lib/tendermint-verifier/**",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -105,13 +110,19 @@
       ".sqlx",
       "result",
       "vendor",
+      ".vercel",
+
       "testdata",
       "generated",
       ".svelte-kit",
       "node_modules",
-      "**/generated/**",
+      "light-clients/**",
       "package-lock.json",
+      "networks/genesis/**",
       "./app/src/generated",
+      "lib/scroll-verifier/**",
+      "lib/ethereum-verifier/**",
+      "lib/tendermint-verifier/**",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -163,13 +174,19 @@
       ".sqlx",
       "result",
       "vendor",
+      ".vercel",
+
       "testdata",
       "generated",
       ".svelte-kit",
       "node_modules",
-      "**/generated/**",
+      "light-clients/**",
       "package-lock.json",
+      "networks/genesis/**",
       "./app/src/generated",
+      "lib/scroll-verifier/**",
+      "lib/ethereum-verifier/**",
+      "lib/tendermint-verifier/**",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -221,6 +238,7 @@
       "correctness": {
         "all": true,
         "noNodejsModules": "off",
+        "noUnknownFunction": "off",
         "noUnusedVariables": "off",
         "noUndeclaredVariables": "off",
         "noUndeclaredDependencies": "off"
@@ -277,14 +295,19 @@
       ".sqlx",
       "result",
       "vendor",
+      ".vercel",
+
       "testdata",
       "generated",
-      "*-env.d.ts",
       ".svelte-kit",
       "node_modules",
-      "**/generated/**",
+      "light-clients/**",
       "package-lock.json",
+      "networks/genesis/**",
       "./app/src/generated",
+      "lib/scroll-verifier/**",
+      "lib/ethereum-verifier/**",
+      "lib/tendermint-verifier/**",
       "./lib/poseidon-rs/constants.json"
     ]
   },
@@ -363,6 +386,16 @@
       "linter": {
         "rules": {
           "nursery": {}
+        }
+      }
+    },
+    {
+      "include": ["*.jsx", "*.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noReactSpecificProps": "off"
+          }
         }
       }
     },

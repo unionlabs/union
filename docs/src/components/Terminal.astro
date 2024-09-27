@@ -16,6 +16,7 @@ const { webcontainerFiles } = Astro.props
 </pre>
 
 <textarea
+  role="textbox"
   required={true}
   readonly={false}
   autocorrect="off"
@@ -23,14 +24,15 @@ const { webcontainerFiles } = Astro.props
   spellcheck="false"
   id="terminal-input"
   autocapitalize="none"
-  class="focus:ring-0 focus-visible:ring-0 outline-none"
+  class="focus:ring-0 focus-visible:ring-0 outline-none hidden"
 >
   loading...
 </textarea>
+
 <div
   class="terminal-container px-3 bg-[rgb(22_24_29)] border border-solid border-[#221e2b] rounded-md my-0"
 >
-  <article id="terminal" data-terminal="" class="" class="size-full bg-[rgb(22_24_29)]"></article>
+  <article id="terminal" data-terminal="" class="bg-[rgb(22_24_29)] h-auto"></article>
 </div>
 <iframe class="hidden" allow="cross-origin-isolated"></iframe>
 
@@ -59,6 +61,8 @@ const { webcontainerFiles } = Astro.props
       installProcess.output.pipeTo(
         new WritableStream({
           write: (chunk, _controller) => console.info(chunk),
+          close: () => console.info('[stdout][starShell] Terminal closed'),
+          start: () => console.info('[stdout][starShell] Terminal started'),
         }),
       )
       // Wait for install command to exit
@@ -74,11 +78,15 @@ const { webcontainerFiles } = Astro.props
     shellProcess.output.pipeTo(
       new WritableStream({
         write: (chunk, _controller) => terminal.write(chunk),
+        close: () => console.info('[stdout][starShell] Terminal closed'),
+        start: () => console.info('[stdout][starShell] Terminal started'),
       }),
     )
 
     const input = shellProcess.input.getWriter()
-    terminal.onData(data => input.write(data))
+    terminal.onData(async data => await input.write(data))
+    // terminal.textarea?.style =
+    //   'field-sizing: content !important; min-height: 3llh !important; height: auto !important;'
 
     return shellProcess
   }
@@ -92,6 +100,8 @@ const { webcontainerFiles } = Astro.props
     if (webcontainerFilesElement && webcontainerFilesElement.textContent) {
       files = JSON.parse(webcontainerFilesElement.textContent) as FileSystemTree
     }
+    // set files to localStorage
+    localStorage.setItem('webcontainer:files', JSON.stringify(files))
 
     textareaElement.value = (files['mod.ts'] as FileNode).file.contents.toString()
     textareaElement.addEventListener('input', event => {
@@ -102,7 +112,7 @@ const { webcontainerFiles } = Astro.props
     const {
       terminal,
       addons: { fitAddon },
-    } = await initiateTerminal(terminalElement)
+    } = initiateTerminal(terminalElement, { fontSize: 20 })
 
     webcontainerInstance = await WebContainer.boot({
       workdirName: 'union',
@@ -113,9 +123,14 @@ const { webcontainerFiles } = Astro.props
 
     const shellProcess = await startShell(terminal)
     await installDependencies()
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', event => {
       fitAddon.fit()
       shellProcess.resize({ cols: terminal.cols, rows: terminal.rows })
+    })
+
+    terminal.onResize(event => {
+      console.info('Resized terminal', event)
+      fitAddon.fit()
     })
 
     const xtermViewport = document.querySelector('div.xterm-viewport')
@@ -129,6 +144,25 @@ const { webcontainerFiles } = Astro.props
 </script>
 
 <style is:inline>
+  .xterm-rows {
+    margin-top: 10px !important;
+  }
+  .terminal,
+  .terminal-container,
+  .xterm-viewport,
+  .xterm-rows,
+  textarea {
+    line-height: 1.5 !important;
+    field-sizing: content !important;
+    min-height: 3llh !important;
+    height: auto !important;
+  }
+  /* .xterm-rows {
+    margin-top: 15px !important;
+  }
+  canvas {
+    margin-top: 50px !important;
+  } */
   .rehype-pretty-copy {
     background-color: red;
   }
@@ -156,8 +190,8 @@ const { webcontainerFiles } = Astro.props
   .terminal,
   .terminal-wrapper,
   .xterm-viewport {
-    width: 100%;
-    height: 100%;
+    /* width: 100%; */
+    /* height: 100%; */
     /* background-color: #17181c !important; */
     /* border: var(--ec-brdWd) solid var(--ec-brdCol); */
     border-radius: calc(var(--ec-brdRad) + var(--ec-brdWd));
@@ -167,14 +201,14 @@ const { webcontainerFiles } = Astro.props
     border-radius: 3px;
   }
   iframe {
-    height: 20rem;
+    /* height: 20rem; */
     width: 100%;
     border: solid 2px #ccc;
   }
   textarea {
     width: 100%;
     resize: none;
-    height: 48rem;
+    /* height: 48rem; */
     color: white;
     padding: 0.5rem 1rem;
     margin-bottom: 10px;
@@ -188,7 +222,7 @@ const { webcontainerFiles } = Astro.props
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
-    height: 100%;
+    /* height: 100%; */
     width: 100%;
   }
   .wc {

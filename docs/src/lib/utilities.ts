@@ -1,3 +1,7 @@
+export function fragmentFromString(stringifiedHTML: string) {
+  return document.createRange().createContextualFragment(stringifiedHTML.trim())
+}
+
 export const toISODate = (date?: string | Date) => (date ? new Date(date).toISOString() : "")
 
 export const saneDateTime = (date?: string | Date) =>

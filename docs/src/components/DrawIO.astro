@@ -10,7 +10,7 @@ const { src } = Astro.props
 
 <script>
   const htmlElement = document.querySelector('html')
-  const selectThemeElement = document.querySelector('select')
+  const selectThemeElement = document.querySelector('starlight-rapide-theme-select button')
   const currentTheme = htmlElement?.getAttribute('data-theme')
   const drawIOElement = document.querySelector('div[data-draw-io]')
 
@@ -22,8 +22,8 @@ const { src } = Astro.props
     ? 'dark'
     : 'light'
 
-  function onThemeChange(event: Event) {
-    const selectedTheme = event?.target?.value
+  function onThemeChange(_event: Event) {
+    const selectedTheme = document.documentElement.getAttribute('data-theme')
     filter =
       selectedTheme === 'dark'
         ? 'invert(1)'
@@ -34,9 +34,9 @@ const { src } = Astro.props
   }
 
   document.addEventListener('DOMContentLoaded', _event => {
-    selectThemeElement?.addEventListener('change', onThemeChange)
+    selectThemeElement?.addEventListener('click', onThemeChange)
     return () => {
-      selectThemeElement?.removeEventListener('change', onThemeChange)
+      selectThemeElement?.removeEventListener('click', onThemeChange)
     }
   })
 </script>

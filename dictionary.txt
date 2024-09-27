@@ -168,6 +168,7 @@ QUMGLDJ
 Quickstart
 Qyby
 RUSTFLAGS
+Rapide
 Recvs
 Redelegate
 Redelegates
@@ -557,6 +558,7 @@ feegrants
 fetchurl
 fetchzip
 fields
+file
 fileset
 finalizer
 flamegraph
@@ -571,6 +573,7 @@ founderheads
 fpkmyvw
 frontends
 frunk
+fullscreen
 functionx
 fuzzer
 galois
@@ -620,6 +623,7 @@ gowork
 graphcache
 graphqlsp
 graphqurl
+grayscale
 grecaptcha
 groomlake
 groth
@@ -740,6 +744,7 @@ keyof
 keypair
 keypairs
 keypreimage
+keyup
 keyval
 kichain
 kujira
@@ -794,6 +799,7 @@ lowp
 lspec
 lucide
 mapstructure
+matchall
 mathjax
 maxage
 maxdepth
@@ -832,8 +838,10 @@ monniker
 monomorphized
 moreutils
 mosmo
+mousedown
 mouseleave
 mousemove
+mouseup
 msgservice
 msvc
 muldefs
@@ -1009,6 +1017,7 @@ qxrx
 qypy
 rabby
 randao
+rapide
 ratelimit
 ratelimited
 rawfile
@@ -1040,6 +1049,7 @@ relpath
 repellendus
 repr
 reqwest
+resizer
 restaking
 retryable
 rgba
@@ -1212,6 +1222,7 @@ testificate
 testkeeper
 testkey
 testutil
+textbox
 textclip
 tfbindings
 tfkeeper
@@ -1255,6 +1266,7 @@ tsdbadmin
 tsqd
 tsup
 ttpfu
+tutorialkit
 twoslash
 txes
 txfees
@@ -1350,6 +1362,7 @@ valoper
 valoperpub
 vals
 valset
+vanillajs
 varint
 vaul
 vercel
@@ -1374,6 +1387,7 @@ wasmtypes
 wasmvm
 wasmvmstatic
 wasmvmtypes
+weakref
 webcontainer
 webgl
 webkit
@@ -1389,6 +1403,7 @@ xbonlulu
 xion
 xkaiserkarel
 xkown
+xlink
 xlpa
 xnever
 xpla
