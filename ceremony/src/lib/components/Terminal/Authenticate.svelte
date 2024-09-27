@@ -5,6 +5,7 @@ import { onDestroy, onMount } from "svelte"
 import Button from "$lib/components/Terminal/Button.svelte"
 import { cn } from "$lib/utils/utils.ts"
 import { on } from "svelte/events"
+import Print from "$lib/components/Terminal/Print.svelte"
 
 type Props = {
   terminal: Terminal
@@ -12,14 +13,16 @@ type Props = {
 
 let { terminal }: Props = $props()
 
-const providers: Array<AuthProviders> = ["github", "google"]
+const providers: Array<AuthProviders> = ["GitHub", "Google"]
 
 let focusedIndex = $state(0)
 let redirecting = $state(false)
 
 async function logIn(provider: AuthProviders) {
+  //@ts-ignore
+  const thisProvider: "github" | "google" = provider.toLowerCase()
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: provider,
+    provider: thisProvider,
     options: {
       redirectTo: `/`
     }
@@ -77,5 +80,7 @@ onDestroy(() => {
       &gt {provider}
     </Button>
   {/each}
+  <Print><br></Print>
+  <Print class="uppercase text-[#FD6363]">By logging in, I acknowledge that my name, email address, and optional wallet address will be part of the publicly viewable MPC ceremony data. I agree that this data will never be deleted as it is encoded in my contribution.</Print>
 
 {/if}

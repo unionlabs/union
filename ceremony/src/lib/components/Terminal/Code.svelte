@@ -13,7 +13,7 @@ let normalizedCode = $derived(normalizeString(inputCode))
 let inputElement: HTMLInputElement
 let showInput = $state(true)
 let showedConfirm = $state(false)
-let buttons = $state<Array<HTMLButtonElement>>([])
+let buttons = [{ text: "Enter the queue" }, { text: "Cancel" }]
 let focusedIndex = $state(0)
 
 $effect(() => {
@@ -24,8 +24,11 @@ function normalizeString(input: string): string {
   return input.toLowerCase().replace(/[^a-z0-9]/gi, "")
 }
 
-async function handleCodeJoin() {
-  console.log("xx")
+async function handleCodeJoin(i: number) {
+  if (i === 1) {
+    cancel()
+    return
+  }
   if (!showedConfirm) {
     terminal.updateHistory(`Your code: ${inputCode}`, { duplicate: true })
     showInput = false
@@ -63,13 +66,6 @@ function cancel() {
   focusedIndex = 0
 }
 
-function handleKeyDown(event: KeyboardEvent) {
-  if (event.key === "Enter") {
-    event.preventDefault()
-    handleCodeJoin()
-  }
-}
-
 let unsubscribe: (() => void) | undefined
 let subscriptionTimeout: NodeJS.Timeout | undefined
 onMount(() => {
@@ -83,11 +79,12 @@ onMount(() => {
     unsubscribe = terminal.keys.subscribe(event => {
       if (event) {
         if (event.type === "keydown") {
-          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-            console.log("xx")
-            const direction = event.key === "ArrowDown" ? 1 : -1
-            focusedIndex = (focusedIndex + direction + buttons.length) % buttons.length
-            buttons[focusedIndex].focus()
+          if (event.key === "ArrowUp") {
+            focusedIndex = (focusedIndex - 1 + buttons.length) % buttons.length
+          } else if (event.key === "ArrowDown") {
+            focusedIndex = (focusedIndex + 1) % buttons.length
+          } else if (event.key === "Enter") {
+            handleCodeJoin(focusedIndex)
           }
         }
       }
@@ -102,6 +99,13 @@ onMount(() => {
     }
   }
 })
+
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key === "Enter") {
+    event.preventDefault()
+    showedConfirm = true
+  }
+}
 
 onDestroy(() => {
   terminal.clearHistory()
@@ -124,20 +128,19 @@ onDestroy(() => {
   </div>
 {/if}
 
+
 {#if showedConfirm}
-  <Print class="text-[#FD6363]">IF YOU ENTER THE QUEUE THEN YOU MUST HAVE YOUR BROWSER AND TERMINAL OPEN WHEN IT IS YOUR TURN.
-    YOU CANNOT LEAVE THE QUEUE, AND WHEN IT IS YOUR TURN YOU NEED TO CONTRIBUTE</Print>
+  <Print class="text-[#FD6363]">IF YOU ENTER THE QUEUE THEN YOU MUST HAVE YOUR BROWSER AND TERMINAL OPEN WHEN IT IS YOUR
+    TURN.
+    YOU CANNOT LEAVE THE QUEUE, AND WHEN IT IS YOUR TURN YOU NEED TO CONTRIBUTE
+  </Print>
   <Print><br></Print>
-  <Button bind:value={buttons[0]}
-          onmouseenter={() => focusedIndex = 0}
-          class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
-          onclick={handleCodeJoin}
-  >&gt Enter the queue
-  </Button>
-  <Button bind:value={buttons[1]}
-          onmouseenter={() => focusedIndex = 1}
-          class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "")}
-          onclick={cancel}
-  >&gt Cancel
-  </Button>
+  {#each buttons as btn, i}
+    <Button bind:value={buttons[i]}
+            onmouseenter={() => focusedIndex = i}
+            class={cn(focusedIndex === i ? "bg-union-accent-500 text-black" : "")}
+            onclick={() => handleCodeJoin(i)}
+    >&gt {btn.text}
+    </Button>
+  {/each}
 {/if}

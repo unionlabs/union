@@ -1,7 +1,7 @@
 import { getContext, setContext } from "svelte"
 import { readable } from "svelte/store"
 
-export type AuthProviders = "github" | "google"
+export type AuthProviders = "GitHub" | "Google"
 export type State = "hasRedeemed" | "inQueue" | "inWaitlist" | "join" | undefined
 
 interface UpdateHistoryOptions {

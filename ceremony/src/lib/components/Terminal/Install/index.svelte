@@ -22,7 +22,7 @@ let change = async () => {
 }
 
 let select = async (value: DetectedOS) => {
-  terminal.updateHistory(`Loading instructions..`, { duplicate: true })
+  terminal.updateHistory(`Loading ${value} instructions..`, { duplicate: true })
   await sleep(500)
   selectedOs = value
 }

@@ -5,7 +5,6 @@ import { cn, sleep } from "$lib/utils/utils.ts"
 import { onDestroy, onMount } from "svelte"
 import Button from "$lib/components/Terminal/Button.svelte"
 import { beforeNavigate } from "$app/navigation"
-import Print from "$lib/components/Terminal/Print.svelte"
 
 const { terminal } = getState()
 

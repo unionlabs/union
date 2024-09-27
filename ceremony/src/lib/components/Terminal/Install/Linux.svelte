@@ -89,7 +89,7 @@ onDestroy(() => {
   <Button
           bind:value={buttons[0]}
           onmouseenter={() => focusedIndex = 0}
-          class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "", "whitespace-nowrap text-start w-full max-w-5xl truncate")}
+          class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
           onclick={copy}
   >
     &gt; Copy command
@@ -97,7 +97,7 @@ onDestroy(() => {
   <Button
           bind:value={buttons[1]}
           onmouseenter={() => focusedIndex = 1}
-          class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "", "whitespace-nowrap text-start w-full max-w-5xl truncate")}
+          class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "")}
           onclick={selectDifferentOs}
   >
     &gt; Select different OS

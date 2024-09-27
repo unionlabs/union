@@ -18,7 +18,8 @@ const selections: Array<DetectedOS> = ["Linux", "macOS"]
 let focusedIndex = $state(0)
 
 onMount(() => {
-  terminal.updateHistory("Select your OS", { duplicate: true })
+  terminal.updateHistory("No MPC client detected", { duplicate: true })
+  terminal.updateHistory("Select your OS for instructions", { duplicate: true })
 })
 
 function handleKeyDown(event: KeyEvent) {

@@ -15,11 +15,13 @@ onDestroy(() => {
 })
 </script>
 
-<Print>Your position:  {contributor.queueState.position}</Print>
-<Print>Queue length: {contributor.queueState.count}</Print>
+<Print>Your position:  {contributor.queueState.position ?? 1}</Print>
+<Print>Queue length: {contributor.queueState.count ?? 2}</Print>
 <Print>Estimated waiting time: {contributor.queueState.estimatedTime} minutes</Print>
+<Print><br></Print>
 <LoadingBar max={contributor.queueState.count} current={contributor.queueState.position}/>
-<Print>Your MPC Client is connected.</Print>
-<Print>Do not close this tab or your Terminal.</Print>
-<Print>Ensure you have a reliable internet connection and that your computer does not go to sleep.</Print>
+<Print><br></Print>
+<Print class="text-union-accent-500">Your MPC Client is connected.</Print>
+<Print class="text-[#FD6363] uppercase">Do not close this tab or your Terminal.</Print>
+<Print class="text-[#FD6363] uppercase">Ensure you have a reliable internet connection and that your computer does not go to sleep.</Print>
 
