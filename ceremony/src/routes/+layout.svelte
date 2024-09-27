@@ -1,5 +1,4 @@
 <script lang="ts">
-import "../styles/tailwind.css"
 import { supabase } from "$lib/supabase/client.ts"
 import { createState } from "$lib/state/index.svelte.ts"
 import { watch } from "runed"
@@ -7,6 +6,8 @@ import { checkAuth } from "$lib/state/session.svelte.ts"
 import Terminal from "$lib/components/Terminal/index.svelte"
 import { start } from "$lib/client"
 import Timer from "$lib/components/Terminal/Timer.svelte"
+
+import "../styles/tailwind.css"
 import { onMount } from "svelte"
 import { getAverageTimes } from "$lib/supabase"
 
@@ -37,28 +38,22 @@ watch(
     contributor.setUserId(user.session?.user.id)
   }
 )
+let showBootSequence = $state(true)
+let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
 
-let enabledVideo = $state<"INTRO" | "MAIN" | "OUTRO">("INTRO")
+onMount(() => bootSequenceVideoElement?.play())
 
-let introVideoElement = $state<HTMLVideoElement | null>(null)
-
-onMount(() => introVideoElement?.play())
-
-const hideIntroVideo = () => (enabledVideo = "MAIN")
-
-let outroVideoElement = $state<HTMLVideoElement | null>(null)
-
-let deleteOutroVideo = () => (outroVideoElement = null)
+const hideBootSequenceVideo = () => (showBootSequence = false)
 </script>
 
-{#if enabledVideo === 'INTRO'}
+{#if showBootSequence}
   <video
     muted
     autoplay
     playsinline
-    data-video="intro"
-    onended={hideIntroVideo}
-    bind:this={introVideoElement}
+    data-video="bootsequence"
+    onended={hideBootSequenceVideo}
+    bind:this={bootSequenceVideoElement}
     oncanplay={function() {
       this.autoplay = true
     }}
@@ -71,13 +66,13 @@ let deleteOutroVideo = () => (outroVideoElement = null)
   >
     <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitchboot.webm" type="video/webm" />
   </video>
-{:else if contributor.clientState !== 'successful'}
+{:else}
   <video
     loop
     muted
     autoplay
     playsinline
-    data-video="main"
+    data-video="glitch"
     oncanplay={function() {
       this.autoplay = true
     }}
@@ -96,27 +91,6 @@ let deleteOutroVideo = () => (outroVideoElement = null)
     </Terminal>
     <Timer />
   </main>
-{:else}
-  {enabledVideo = 'OUTRO'}
-  <video
-    muted
-    autoplay
-    playsinline
-    data-video="outro"
-    onended={deleteOutroVideo}
-    bind:this={outroVideoElement}
-    oncanplay={function() {
-      this.autoplay = true
-    }}
-    onloadeddata={function() {
-      this.autoplay = true
-    }}
-    onloadedmetadata={function() {
-      this.muted = true
-    }}
-  >
-    <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitchboot.webm" type="video/webm" />
-  </video>
 {/if}
 
 <style lang="postcss">
