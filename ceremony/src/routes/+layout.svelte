@@ -9,11 +9,10 @@ import Timer from "$lib/components/Terminal/Timer.svelte"
 
 import "../styles/tailwind.css"
 import { onMount } from "svelte"
-import { getAverageTimes } from "$lib/supabase"
 
 let { children } = $props()
 
-let { user, contributor, terminal } = createState()
+let { user, contributor } = createState()
 
 $effect(() => {
   const {
@@ -52,12 +51,26 @@ $effect(() => {
 let showBootSequence = $state(true)
 let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
 
-onMount(() => bootSequenceVideoElement?.play())
+let isBootSequenceReady = $state(false)
+
+onMount(() => {
+  const lastShownTimestamp = localStorage.getItem("bootSequenceLastShown")
+  const currentTime = Date.now()
+  const oneHour = 30 * 60 * 1000
+
+  if (!lastShownTimestamp || currentTime - Number.parseInt(lastShownTimestamp) > oneHour) {
+    isBootSequenceReady = true
+    localStorage.setItem("bootSequenceLastShown", currentTime.toString())
+    bootSequenceVideoElement?.play()
+  } else {
+    isBootSequenceReady = false
+  }
+})
 
 const hideBootSequenceVideo = () => (showBootSequence = false)
 </script>
 
-{#if showBootSequence}
+{#if showBootSequence && isBootSequenceReady}
   <video
     muted
     autoplay

@@ -6,28 +6,24 @@ import { onDestroy, onMount } from "svelte"
 import { cn, sleep } from "$lib/utils/utils.ts"
 import Code from "$lib/components/Terminal/Code.svelte"
 import Button from "$lib/components/Terminal/Button.svelte"
+import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
 
 const { contributor, terminal } = getState()
 
-const buttons = [
-  {
-    label: "I have an invitation code",
-    action: "code"
-  },
-  {
-    label: "I want to join the waitlist",
-    action: "waitlist"
-  }
-]
-
 let isOpenToPublic = $state(false)
-let waitlistLoading = $state(false)
 let selected = $state(false)
 let code = $state(false)
-let focusedIndex = $state(0)
+
+onMount(() => {
+  terminal.updateHistory({ text: "Access the ceremony", replace: true })
+  terminal.setStep(2)
+})
+
+onDestroy(() => {
+  terminal.clearHistory()
+})
 
 async function handleWaitlistJoin() {
-  waitlistLoading = true
   try {
     await callJoinQueue(null)
     if (isOpenToPublic) {
@@ -38,77 +34,38 @@ async function handleWaitlistJoin() {
   } catch (error) {
     console.error("Error joining waitlist:", error)
   } finally {
-    waitlistLoading = false
   }
 }
 
-let unsubscribe: (() => void) | undefined
-let subscriptionTimeout: NodeJS.Timeout | undefined
-onMount(() => {
-  terminal.setStep(2)
-  terminal.updateHistory("Please authenticate using one of the following")
-  subscriptionTimeout = setTimeout(() => {
-    unsubscribe = terminal.keys.subscribe(event => {
-      if (event) {
-        if (code) return
-        if (event.type === "keydown") {
-          if (event.key === "ArrowUp") {
-            focusedIndex = (focusedIndex - 1 + buttons.length) % buttons.length
-          } else if (event.key === "ArrowDown") {
-            focusedIndex = (focusedIndex + 1) % buttons.length
-          } else if (event.key === "Enter") {
-            handleAction(buttons[focusedIndex].action)
-          }
-        }
-      }
-    })
-  }, 200)
-  return () => {
-    if (subscriptionTimeout) {
-      clearTimeout(subscriptionTimeout)
-    }
-    if (unsubscribe) {
-      unsubscribe()
-    }
-  }
-})
-
-async function handleAction(action: string) {
-  if (action === "waitlist") {
+async function trigger(value: string) {
+  if (value === "waitlist") {
     selected = true
-    terminal.updateHistory("Adding user to the waitlist...")
+    terminal.updateHistory({ text: "Adding user to the waitlist..." })
     await sleep(1000)
     handleWaitlistJoin()
-  } else if (action === "code") {
+  } else if (value === "code") {
     code = true
   }
 }
 
-onDestroy(() => {
-  if (unsubscribe) {
-    unsubscribe()
+const buttons = [
+  {
+    text: "I have an invitation code",
+    action: "code"
+  },
+  {
+    text: "I want to join the waitlist",
+    action: "waitlist"
   }
-  terminal.clearHistory()
-})
+]
 </script>
-
-{terminal.updateHistory("Access the ceremony")}
 
 {#if !selected}
   {#if code }
     <Code />
   {:else }
-    {#each buttons as button, index}
-      <Button
-              onmouseenter={() => focusedIndex = index}
-              class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "")}
-              onclick={() => handleAction(button.action)}
-      >
-        &gt {button.label}
-      </Button>
-    {/each}
+    <Buttons data={buttons} trigger={(value: 'code' | 'waitlist') => trigger(value)}/>
   {/if}
-
 {/if}
 
 

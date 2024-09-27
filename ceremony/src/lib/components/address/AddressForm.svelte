@@ -31,7 +31,7 @@ const onAddressSubmit = async (event: Event) => {
   }
 
   validation("PENDING")
-  terminal.updateHistory("Checking address")
+  terminal.updateHistory({ text: "Checking address" })
   await sleep(1000)
   const addressValidation = isValidBech32Address(inputText)
   validState = addressValidation ? "VALID" : "INVALID"
@@ -47,25 +47,25 @@ const onAddressSubmit = async (event: Event) => {
         wallet: inputText
       })
       if (result) {
-        terminal.updateHistory("Saving address...")
+        terminal.updateHistory({ text: "Saving address..." })
         await sleep(2000)
-        terminal.updateHistory("Wallet address saved successfully")
+        terminal.updateHistory({ text: "Wallet address saved successfully" })
         await sleep(2000)
         contributor.checkUserWallet(user.session?.user.id)
       } else {
-        terminal.updateHistory("Failed to save wallet address")
+        terminal.updateHistory({ text: "Failed to save wallet address" })
       }
     } catch (error) {
       console.error("Error saving wallet address:", error)
-      terminal.updateHistory("An error occurred while saving the wallet address")
+      terminal.updateHistory({ text: "An error occurred while saving the wallet address" })
     }
   } else if (validState === "INVALID") {
-    terminal.updateHistory("Wallet address not valid, try again..", { duplicate: true })
+    terminal.updateHistory({ text: "Wallet address not valid, try again..", duplicate: true })
   }
 }
 
 const skip = async () => {
-  terminal.updateHistory("Skipping reward step")
+  terminal.updateHistory({ text: "Skipping reward step" })
   validation("SKIPPED")
   try {
     if (!contributor.userId) return
@@ -74,15 +74,18 @@ const skip = async () => {
       wallet: "SKIPPED"
     })
     if (result) {
-      terminal.updateHistory("Saving to db...")
+      terminal.updateHistory({ text: "Saving to db..." })
       await sleep(2000)
       contributor.userWallet = "SKIPPED"
     } else {
-      terminal.updateHistory("Failed to save wallet address", { duplicate: true })
+      terminal.updateHistory({ text: "Failed to save wallet address", duplicate: true })
     }
   } catch (error) {
     console.error("Error saving wallet address:", error)
-    terminal.updateHistory("An error occurred while saving the wallet address", { duplicate: true })
+    terminal.updateHistory({
+      text: "An error occurred while saving the wallet address",
+      duplicate: true
+    })
   }
 }
 

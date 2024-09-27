@@ -1,9 +1,9 @@
 <script lang="ts">
 import { getState } from "$lib/state/index.svelte.ts"
-import { cn, sleep } from "$lib/utils/utils.ts"
+import { sleep } from "$lib/utils/utils.ts"
 import { generateSecret } from "$lib/client"
-import Button from "$lib/components/Terminal/Button.svelte"
-import { onDestroy, onMount } from "svelte"
+import { onDestroy } from "svelte"
+import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
 
 const { contributor, terminal, user } = getState()
 
@@ -17,7 +17,7 @@ function handleDownload() {
   window.open(newUrl, "_blank")
 }
 
-function setDownloadedSecret() {
+function stored() {
   localStorage.setItem("downloaded-secret", "true")
   contributor.downloadedSecret = true
 }
@@ -25,10 +25,10 @@ function setDownloadedSecret() {
 async function generate() {
   if (contributor.state !== "noClient") {
     generating = true
-    terminal.updateHistory("Generating secret...")
+    terminal.updateHistory({ text: "Generating secret..." })
     await sleep(3000)
     generateSecret(user.session?.user.email)
-    terminal.updateHistory("Initialize saving...")
+    terminal.updateHistory({ text: "Initialize saving..." })
     await sleep(1000)
     handleDownload()
     generating = false
@@ -38,16 +38,16 @@ async function generate() {
 
 $effect(() => {
   if (generated) {
-    terminal.updateHistory(
-      "Please store your secret somewhere safe, such as in your password manager. There's no need to open the file and remember to never share a secret. This secret key is the only way to prove that you have contributed."
-    )
+    terminal.updateHistory({
+      text: "Please store your secret somewhere safe, such as in your password manager. There's no need to open the file and remember to never share a secret. This secret key is the only way to prove that you have contributed."
+    })
   } else {
-    terminal.updateHistory("Client detected")
-    terminal.updateHistory("Generate your PGP secret")
-    terminal.updateHistory(
-      "The MPC client automatically uses this secret to sign your contribution."
-    )
-    terminal.updateHistory("Your secret is locally generated through the MPC client.")
+    terminal.updateHistory({ text: "Client detected" })
+    terminal.updateHistory({ text: "Generate your PGP secret" })
+    terminal.updateHistory({
+      text: "The MPC client automatically uses this secret to sign your contribution."
+    })
+    terminal.updateHistory({ text: "Your secret is locally generated through the MPC client." })
   }
 })
 
@@ -55,52 +55,21 @@ onDestroy(() => {
   terminal.clearHistory()
 })
 
-let unsubscribe: (() => void) | undefined
-let subscriptionTimeout: NodeJS.Timeout | undefined
-onMount(() => {
-  subscriptionTimeout = setTimeout(() => {
-    unsubscribe = terminal.keys.subscribe(event => {
-      if (event) {
-        if (event.type === "keydown") {
-          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-            const direction = event.key === "ArrowDown" ? 1 : -1
-            focusedIndex = (focusedIndex + direction + buttons.length) % buttons.length
-            buttons[focusedIndex].focus()
-          }
-        }
-      }
-    })
-  }, 200)
-  return () => {
-    if (subscriptionTimeout) {
-      clearTimeout(subscriptionTimeout)
-    }
-    if (unsubscribe) {
-      unsubscribe()
-    }
+function trigger(value: "generate" | "stored") {
+  if (value === "generate") {
+    generate()
+  } else if (value === "stored") {
+    stored()
   }
-})
+}
 </script>
 
 {#if !generating}
   {#if !generated}
-    <Button bind:value={buttons[0]}
-            onmouseenter={() => focusedIndex = 0}
-            class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
-            onclick={generate}>&gt Generate secret
-    </Button>
+    <Buttons data={[{text: "Generate secret", action: "generate"}]} trigger={(value) => trigger(value)}/>
   {:else}
-    <Button
-            bind:value={buttons[0]}
-            onmouseenter={() => focusedIndex = 0}
-            class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
-            onclick={setDownloadedSecret}>&gt I've generated and stored my secret
-    </Button>
-    <Button
-            bind:value={buttons[1]}
-            onmouseenter={() => focusedIndex = 1}
-            class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "")}
-            onclick={generate}>&gt Generate again
-    </Button>
+    <Buttons
+            data={[{text: "Generate secret again", action: "generate"}, {text: "I've stored my secret", action: "stored"}]}
+            trigger={(value) => trigger(value)}/>
   {/if}
 {/if}

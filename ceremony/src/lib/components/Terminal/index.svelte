@@ -3,14 +3,14 @@ import { getState } from "$lib/state/index.svelte.ts"
 import { logout, user } from "$lib/state/session.svelte.ts"
 import Contributions from "./Contributors.svelte"
 import { goto } from "$app/navigation"
-import { onDestroy } from "svelte"
 import Print from "$lib/components/Terminal/Print.svelte"
 import Activity from "$lib/components/Terminal/Activity.svelte"
 import { cn } from "$lib/utils/utils.ts"
 import Button from "$lib/components/Terminal/Button.svelte"
 import TaskBar from "$lib/components/Terminal/TaskBar.svelte"
+import Printer from "$lib/components/Terminal/Printer.svelte"
 
-const { terminal, contributor } = getState()
+const { terminal } = getState()
 
 let { children } = $props()
 
@@ -23,26 +23,6 @@ const changeTab = async (tab: number) => {
     await goto("/")
   }
 }
-
-// const unsubscribe = terminal.keys.subscribe(event => {
-//   if (event) {
-//     if (event.type === "keydown" && (event.shiftKey || event.ctrlKey)) {
-//       if (event.key === "!") {
-//         changeTab(1)
-//       } else if (event.key === "@") {
-//         changeTab(2)
-//       } else if (event.key === "#") {
-//         changeTab(3)
-//       } else if (event.key === "$") {
-//         changeTab(4)
-//       } else if (event.key === "X") {
-//         logout(terminal)
-//       }
-//     }
-//   }
-// })
-//
-// onDestroy(unsubscribe)
 
 function autoScroll(node: HTMLElement) {
   const scroll = () => {
@@ -103,11 +83,7 @@ function autoScroll(node: HTMLElement) {
   <div class="overflow-y-scroll h-full p-4" use:autoScroll>
     <div class="text-union-accent-50 w-full">
       {#if terminal.tab === 1}
-        <div class="flex flex-col">
-          {#each terminal.history as text}
-            <Print>{text}</Print>
-          {/each}
-        </div>
+        <Printer />
         <Print><br></Print>
         {@render children()}
       {:else if terminal.tab === 2}

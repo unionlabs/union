@@ -26,6 +26,6 @@ onMount(() => {
       <Join/>
     {/if}
   {:else if user.session === null && terminal.tab === 1}
-    <Authenticate {terminal} />
+    <Authenticate />
   {/if}
 {/if}
