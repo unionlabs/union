@@ -71,9 +71,12 @@ jobs:
         with:
           lfs: true
       - uses: nixbuild/nix-quick-install-action@v28
+        with:
+          nix_conf: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
       - name: Fetch from Cache
         run: |
-          nix develop
           nix build .#ceremony
       - name: '[preview] 🔶 Publish to Cloudflare Pages'
         env:
