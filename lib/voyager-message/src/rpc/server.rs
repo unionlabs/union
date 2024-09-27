@@ -66,6 +66,21 @@ pub struct ServerInner {
 //     }
 // }
 
+// enum CacheKey {
+//     IbcState {
+//         chain_id: ChainId<'static>,
+//         path: Path,
+//         height: Height,
+//     },
+//     ClientMeta {
+//         chain_id: ChainId<'static>,
+//         height: Height,
+//     },
+//     ClientInfo {
+//         chain_id: ChainId<'static>,
+//     },
+// }
+
 impl Server {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
@@ -84,9 +99,9 @@ impl Server {
     }
 
     pub fn start(&self, modules: Arc<Modules>) {
-        let was_already_started = self.inner.modules.set(modules).is_ok();
+        let was_not_already_started = self.inner.modules.set(modules).is_ok();
 
-        assert!(was_already_started, "server has already been started");
+        assert!(was_not_already_started, "server has already been started");
     }
 
     /// Returns the contained modules, if they have been loaded.
@@ -540,8 +555,6 @@ impl Server {
 #[async_trait]
 impl VoyagerRpcServer for Server {
     async fn info(&self) -> RpcResult<Info> {
-        dbg!(self.inner.ibc_state_cache.iter().collect::<Vec<_>>());
-
         let chain = self
             .inner
             .modules()?
