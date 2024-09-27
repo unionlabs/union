@@ -33,7 +33,6 @@ async function handleWaitlistJoin() {
     }
   } catch (error) {
     console.error("Error joining waitlist:", error)
-  } finally {
   }
 }
 
