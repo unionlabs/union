@@ -81,6 +81,6 @@ onDestroy(() => {
     </Button>
   {/each}
   <Print><br></Print>
-  <Print class="uppercase text-[#FD6363]">By logging in, I acknowledge that my name, email address, and optional wallet address will be part of the publicly viewable MPC ceremony data. I agree that this data will never be deleted as it is encoded in my contribution.</Print>
+  <Print class="uppercase !text-[#FD6363]">By logging in, I acknowledge that my name, email address, and optional wallet address will be part of the publicly viewable MPC ceremony data. I agree that this data will never be deleted as it is encoded in my contribution.</Print>
 
 {/if}
