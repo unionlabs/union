@@ -24,25 +24,25 @@ const changeTab = async (tab: number) => {
   }
 }
 
-const unsubscribe = terminal.keys.subscribe(event => {
-  if (event) {
-    if (event.type === "keydown" && (event.shiftKey || event.ctrlKey)) {
-      if (event.key === "!") {
-        changeTab(1)
-      } else if (event.key === "@") {
-        changeTab(2)
-      } else if (event.key === "#") {
-        changeTab(3)
-      } else if (event.key === "$") {
-        changeTab(4)
-      } else if (event.key === "X") {
-        logout(terminal)
-      }
-    }
-  }
-})
-
-onDestroy(unsubscribe)
+// const unsubscribe = terminal.keys.subscribe(event => {
+//   if (event) {
+//     if (event.type === "keydown" && (event.shiftKey || event.ctrlKey)) {
+//       if (event.key === "!") {
+//         changeTab(1)
+//       } else if (event.key === "@") {
+//         changeTab(2)
+//       } else if (event.key === "#") {
+//         changeTab(3)
+//       } else if (event.key === "$") {
+//         changeTab(4)
+//       } else if (event.key === "X") {
+//         logout(terminal)
+//       }
+//     }
+//   }
+// })
+//
+// onDestroy(unsubscribe)
 
 function autoScroll(node: HTMLElement) {
   const scroll = () => {

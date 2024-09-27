@@ -15,8 +15,7 @@ async function fetchData() {
   try {
     const time = await getAverageTimes()
     const queueLength = contributor.queueState.count
-    averageTimeSeconds = Math.round((time.totalMs / 1000) * (queueLength ?? 137))
-    console.log("xx Average time:", formatTime(averageTimeSeconds))
+    averageTimeSeconds = Math.round((time.totalMs / 1000) * queueLength ?? 0)
   } catch (error) {
     console.error("Error fetching data:", error)
   }
