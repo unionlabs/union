@@ -45,5 +45,5 @@ onDestroy(() => {
           data={[{text: "GitHub", action: "github"}, {text: "Google", action: "google"}]}
           trigger={(value: 'github' | 'google') => trigger(value)} />
   <Print><br></Print>
-  <Print class="uppercase !text-[#FD6363]">By signing in, I acknowledge that my public GPG key and signature will be permanently publicly available as it is cryptographically part of the MPC ceremony data. I am aware that my public GPG key contains the email address I use to sign in.</Print>
+  <Print class="uppercase !text-[#FD6363]">By signing in, I acknowledge that my public GPG key and signature will be permanently publicly available as it is cryptographically part of the MPC ceremony data. I am aware that my GPG key contains the email address I use to sign in.</Print>
 {/if}
