@@ -17,7 +17,7 @@ let { children } = $props()
 const changeTab = async (tab: number) => {
   if (tab === 4 && terminal.hash) {
     terminal.setTab(tab)
-    await goto(`/0____0/${terminal.hash}`)
+    await goto(`/contributions/${terminal.hash}`)
   } else if (tab <= 3) {
     terminal.setTab(tab)
     await goto("/")

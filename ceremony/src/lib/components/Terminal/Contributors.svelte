@@ -12,7 +12,7 @@ let focusedIndex = $state(0)
 let buttons: Array<HTMLButtonElement> = []
 
 function handleClick(contributor: any) {
-  goto(`/0____0/${contributor.public_key_hash}`)
+  goto(`/contributions/${contributor.public_key_hash}`)
   terminal.setTab(4)
   terminal.setHash(contributor.public_key_hash)
 }

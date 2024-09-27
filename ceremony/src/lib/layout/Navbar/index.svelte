@@ -30,7 +30,7 @@ let loggedIn = $derived(!!user.session?.user.id)
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
         {#if loggedIn}
-          <a href="/0____0" class="inline-flex flex-shrink-0 items-center text-white">
+          <a href="/contributions" class="inline-flex flex-shrink-0 items-center text-white">
             <img
                     src="/union-logo-supermolot.svg"
                     alt="Union Logo"
