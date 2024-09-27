@@ -12,7 +12,7 @@ let { children, class: className = "", focus = undefined, value = $bindable(), .
 
 <style>
     .terminal-blink {
-        animation: blink 1s step-end infinite;
+        animation: blink 1.35s step-end infinite;
     }
 
     @keyframes blink {
