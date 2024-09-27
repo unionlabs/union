@@ -27,7 +27,11 @@ $effect(() => {
 })
 
 $effect(() => {
-  if (contributor.contributionState === "contribute" && contributor.state !== "contributing") {
+  if (
+    contributor.contributionState === "contribute" &&
+    contributor.state !== "contributing" &&
+    contributor.downloadedSecret
+  ) {
     start()
   }
 })
