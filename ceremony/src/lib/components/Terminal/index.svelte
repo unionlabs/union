@@ -41,7 +41,7 @@ function autoScroll(node: HTMLElement) {
 </script>
 
 
-<div class="flex flex-col w-full h-full sm:max-h-[700px] bg-black/50 backdrop-blur-lg max-w-4xl sm:border border-[#48494C] rounded-lg overflow-hidden drop-shadow-2xl shadow-black">
+<div class="flex flex-col w-full h-full sm:max-h-[700px] bg-black/50 backdrop-blur-lg max-w-4xl sm:border border-[#48494C] sm:rounded-lg overflow-hidden drop-shadow-2xl shadow-black">
 
   <!--TOP BAR-->
   <div class="w-full flex justify-between bg-neutral-800/80 px-4 py-2">
