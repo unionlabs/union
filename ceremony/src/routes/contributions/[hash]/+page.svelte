@@ -1,12 +1,53 @@
 <script lang="ts">
-import { getUserContribution } from "$lib/supabase"
-import Spinner from "$lib/components/Spinner.svelte"
-import H2 from "$lib/components/typography/H2.svelte"
-import Button from "$lib/components/Button.svelte"
-import { toast } from "svelte-sonner"
 import { page } from "$app/stores"
+import { getState } from "$lib/state/index.svelte.ts"
+import { getUserContribution } from "$lib/supabase"
+import Print from "$lib/components/Terminal/Print.svelte"
+import Button from "$lib/components/Terminal/Button.svelte"
+import { cn, sleep } from "$lib/utils/utils.ts"
+
+const { terminal } = getState()
 
 let hash = $derived($page.params.hash)
+
+let focusedIndex = $state(0)
+let buttons: Array<HTMLButtonElement> = []
+let prints = $state<Array<string>>([])
+let showButtons = $state(true)
+
+let unsubscribe: (() => void) | undefined
+let subscriptionTimeout: NodeJS.Timeout | undefined
+$effect(() => {
+  terminal.setTab(4)
+  terminal.setHash(hash)
+  subscriptionTimeout = setTimeout(() => {
+    unsubscribe = terminal.keys.subscribe(event => {
+      if (event) {
+        if (event.type === "keydown") {
+          if (event.key === "ArrowUp") {
+            focusedIndex -= 1
+            buttons[focusedIndex]?.focus()
+          } else if (event.key === "ArrowDown") {
+            focusedIndex += 1
+            buttons[focusedIndex]?.focus()
+          } else if (event.key === "Enter") {
+            if (buttons[focusedIndex]) {
+              buttons[focusedIndex].click()
+            }
+          }
+        }
+      }
+    })
+  }, 200)
+  return () => {
+    if (subscriptionTimeout) {
+      clearTimeout(subscriptionTimeout)
+    }
+    if (unsubscribe) {
+      unsubscribe()
+    }
+  }
+})
 
 function hexToUint8Array(hexString: string) {
   return new Uint8Array(hexString.match(/.{1,2}/g)?.map(byte => Number.parseInt(byte, 16)) || [])
@@ -20,14 +61,13 @@ function decodeHexString(hexString: string) {
   return uint8ArrayToUtf8(hexToUint8Array(hexString))
 }
 
-async function copyToClipboard(text: string, label: string) {
-  try {
-    await navigator.clipboard.writeText(text)
-    toast.success(`Copied ${label}!`)
-  } catch (err) {
-    console.error("Failed to copy text: ", err)
-    toast.error(`Failed to copy ${label} to clipboard.`)
-  }
+async function copyToClipboard(text: string, type: string) {
+  showButtons = false
+  prints.push(`Copying ${type}..`)
+  await sleep(1000)
+  await navigator.clipboard.writeText(text)
+  prints.push(`Successfully copied ${type}`)
+  showButtons = true
 }
 
 const imagePath = "https://ceremony.union.build/images/ceremony.png"
@@ -35,10 +75,12 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
 
 <svelte:head>
   <title>Union Ceremony</title>
-  <meta name="description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
+  <meta name="description"
+        content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
 
   <meta property="og:title" content="Union Ceremony "/>
-  <meta property="og:description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
+  <meta property="og:description"
+        content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://ceremony.union.build"/>
   <meta property="og:site_name" content="Union Ceremony"/>
@@ -50,8 +92,10 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
   <meta property="og:image:height" content="675"/>
   <meta property="og:image:alt" content="Union Ceremony event banner"/>
 
-  <meta name="twitter:title" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
-  <meta name="twitter:description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
+  <meta name="twitter:title"
+        content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
+  <meta name="twitter:description"
+        content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:site" content="@union_build"/>
   <meta name="twitter:creator" content="@union_build"/>
@@ -60,38 +104,33 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
 </svelte:head>
 
 
-<div class="w-full flex justify-center mt-[80px] pb-16">
-  {#await getUserContribution(hash)}
-    <Spinner class="size-5 text-union-accent-500"/>
-  {:then contribution}
-    {#if contribution}
-      <div class="flex flex-col items-start gap-1 py-2 px-4">
-        <div>
-          <H2><span class="!text-union-accent-500">{contribution.payload_id}</span></H2>
-        </div>
-
-        <div class="flex flex-col gap-4">
-          <div>
-            <H2 class="mb-2">Public key</H2>
-            <pre class="text-white whitespace-pre-wrap bg-neutral-800 p-4 mb-4">{decodeHexString(contribution.public_key)}</pre>
-            <Button onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>Copy
-              Public
-              key
-            </Button>
-          </div>
-
-          <div>
-            <H2 class="mb-2">Signature</H2>
-            <pre class="text-white whitespace-pre-wrap bg-neutral-800 p-4 mb-4">{decodeHexString(contribution.signature)}</pre>
-            <Button onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>Copy
-              Signature
-            </Button>
-          </div>
-        </div>
-      </div>
+{#await getUserContribution(hash)}
+  <Print>Loading</Print>
+{:then contribution}
+  {#if contribution}
+    <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution.public_key)}</pre>
+    <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution.signature)}</pre>
+    {#each prints as print}
+      <Print>{print}</Print>
+    {/each}
+    {#if showButtons}
+      <Print><br></Print>
+      <Button bind:value={buttons[0]}
+              onmouseenter={() => focusedIndex = 0}
+              class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
+              onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
+        Copy public key
+      </Button>
+      <Button bind:value={buttons[1]}
+              onmouseenter={() => focusedIndex = 1}
+              class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "")}
+              onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>&gt
+        Copy signature
+      </Button>
     {/if}
-  {/await}
-</div>
+  {/if}
+{/await}
+
 
 <style>
     pre {

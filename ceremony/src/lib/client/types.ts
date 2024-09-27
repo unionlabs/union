@@ -1,4 +1,4 @@
-export type ClientState =
+export type ClientStatus =
   | "idle"
   | "initializing"
   | "downloadStarted"

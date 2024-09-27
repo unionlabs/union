@@ -32,12 +32,12 @@ _: {
               echo "Applying nix fmt"
               nix fmt
 
-
-              echo "Applying biome fmt"
-              ${lib.getExe biome} check . --write --unsafe \
-                --log-level="info" \
-                --log-kind="pretty" \
-                --diagnostic-level="info"
+              # seems deprecated
+              # echo "Applying biome fmt"
+              # ${lib.getExe biome} check . --write --unsafe \
+              #   --log-level="info" \
+              #   --log-kind="pretty" \
+              #   --diagnostic-level="info"
 
               echo "Checking spelling"
               nix build .\#checks.${pkgs.system}.spellcheck -L

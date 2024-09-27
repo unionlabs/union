@@ -1,4 +1,4 @@
-import { user } from "$lib/stores/user.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
 import {
   getContribution,
   getContributor,
@@ -6,16 +6,31 @@ import {
   getSubmittedContribution,
   getUserQueuePosition,
   queryContributions,
+  queryContributionTime,
   queryCurrentUserState,
   queryUserContribution,
   queryUserPublicHash,
-  queryUserWallet
+  queryUserWallet,
+  queryVerificationTime
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
-import type { AllowanceState, ContributionState } from "$lib/stores/state.svelte.ts"
+import { msToTimeString, sleep, timeToMs } from "$lib/utils/utils.ts"
+import type { AllowanceState, ContributionState } from "$lib/state/contributor.svelte.ts"
+
+interface TimeResult {
+  verification: string | null
+  contribution: string | null
+  total: string
+  verificationMs: number
+  contributionMs: number
+  totalMs: number
+}
 
 export const callJoinQueue = async (code: string | null): Promise<boolean> => {
-  const userId = user.session?.user.id
+  if (!user.session) {
+    throw new Error("User is not logged in")
+  }
+  const userId = user.session.user.id
   if (!userId) {
     throw new Error("User is not logged in")
   }
@@ -42,10 +57,10 @@ export const checkIfOpen = async (): Promise<boolean> => {
 }
 
 export const getUserQueueInfo = async () => {
-  const userId = user.session?.user.id
-  if (!userId) {
+  if (!user.session) {
     throw new Error("User is not logged in")
   }
+  const userId = user.session.user.id
 
   const { data, error } = await getUserQueuePosition(userId)
   const { count, error: countError } = await getQueueCount()
@@ -70,7 +85,10 @@ export const getUserQueueInfo = async () => {
 }
 
 export const getContributionState = async (): Promise<ContributionState> => {
-  const userId = user.session?.user.id
+  if (!user.session) {
+    throw new Error("User is not logged in")
+  }
+  const userId = user.session.user.id
   if (!userId) {
     throw new Error("User ID is required")
   }
@@ -129,6 +147,7 @@ export const getContributions = async () => {
 }
 
 export const getUserContribution = async (hash: string) => {
+  await sleep(500)
   const { data, error } = await queryUserContribution(hash)
   if (error || !data) return undefined
 
@@ -160,10 +179,10 @@ export const insertWalletData = async (data: WalletData) => {
 }
 
 export const getPublicHash = async () => {
-  const userId = user.session?.user.id
-  if (!userId) {
-    throw new Error("User ID is required")
+  if (!user.session) {
+    throw new Error("User is not logged in")
   }
+  const userId = user.session.user.id
 
   const { data, error } = await queryUserPublicHash(userId)
   if (error || !data) return undefined
@@ -188,4 +207,38 @@ export const getWaitListPosition = async (): Promise<number | undefined> => {
   if (error || !data) return undefined
 
   return data.waitlist_position
+}
+
+export const getAverageTimes = async (): Promise<TimeResult> => {
+  let contributionResult: { data: unknown; error: unknown | null }
+  let verificationResult: { data: unknown; error: unknown | null }
+
+  try {
+    ;[contributionResult, verificationResult] = await Promise.all([
+      queryContributionTime(),
+      queryVerificationTime()
+    ])
+  } catch (error) {
+    console.error("Error fetching times:", error)
+    contributionResult = { data: null, error: null }
+    verificationResult = { data: null, error: null }
+  }
+
+  // @ts-ignore
+  const contribution = contributionResult.data?.contribution_average ?? null
+  // @ts-ignore
+  const verification = verificationResult.data?.verification_average ?? null
+
+  const contributionMs = timeToMs(contribution)
+  const verificationMs = timeToMs(verification)
+  const totalMs = contributionMs + verificationMs
+
+  return {
+    verification,
+    contribution,
+    total: msToTimeString(totalMs),
+    verificationMs,
+    contributionMs,
+    totalMs
+  }
 }

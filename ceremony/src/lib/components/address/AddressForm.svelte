@@ -1,97 +1,112 @@
 <script lang="ts">
-import clsx from "clsx"
-import { toast } from "svelte-sonner"
-import { watch, Debounced } from "runed"
 import type { ValidState } from "./index.ts"
 import { isValidBech32Address } from "./validator.ts"
 import type { HTMLInputAttributes } from "svelte/elements"
 import { insertWalletData } from "$lib/supabase"
-import { user } from "$lib/stores/user.svelte.ts"
-import type { ContributorState } from "$lib/stores/state.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
+import { getState } from "$lib/state/index.svelte.ts"
+import { sleep } from "$lib/utils/utils.ts"
 
 interface Props extends HTMLInputAttributes {
   class?: string
-  onValidation: (valid: ValidState) => ValidState
-  contributor: ContributorState
+  validation: (state: ValidState) => void
 }
 
-let { onValidation, class: className = "", contributor, ...props }: Props = $props()
+let { validation, class: className = "", ...props }: Props = $props()
+
+const { contributor, terminal } = getState()
 
 let inputText = $state("")
-const debouncedInputText = new Debounced(
-  () => inputText,
-  /**
-   * TODO: change this to 1s and during debounce, show a loading state
-   */
-  0
-)
 
-let validState: ValidState = $state("PENDING")
-
-$effect(() => {
-  if (validState === "INVALID") toast.error(`Address is not valid`)
-})
+let validState: ValidState = $state(undefined)
 
 const onAddressSubmit = async (event: Event) => {
   event.preventDefault()
-  if (!debouncedInputText.current) return
-  const addressValidation = isValidBech32Address(debouncedInputText.current)
+
+  if (!inputText) return
+
+  if (inputText === "skip" || inputText === "Skip") {
+    skip()
+    return
+  }
+
+  validation("PENDING")
+  terminal.updateHistory("Checking address")
+  await sleep(1000)
+  const addressValidation = isValidBech32Address(inputText)
   validState = addressValidation ? "VALID" : "INVALID"
-  onValidation(validState)
+  validation(validState)
 
   const userId = user.session?.user.id
+
   if (validState === "VALID") {
     try {
       if (!userId) return
       const result = await insertWalletData({
         id: userId,
-        wallet: debouncedInputText.current
+        wallet: inputText
       })
       if (result) {
-        toast.success("Wallet address saved successfully")
+        terminal.updateHistory("Saving address...")
+        await sleep(2000)
+        terminal.updateHistory("Wallet address saved successfully")
+        await sleep(2000)
         contributor.checkUserWallet(user.session?.user.id)
       } else {
-        toast.error("Failed to save wallet address")
+        terminal.updateHistory("Failed to save wallet address")
       }
     } catch (error) {
       console.error("Error saving wallet address:", error)
-      toast.error("An error occurred while saving the wallet address")
+      terminal.updateHistory("An error occurred while saving the wallet address")
     }
+  } else if (validState === "INVALID") {
+    terminal.updateHistory("Wallet address not valid, try again..", { duplicate: true })
+  }
+}
+
+const skip = async () => {
+  terminal.updateHistory("Skipping reward step")
+  validation("SKIPPED")
+  try {
+    if (!contributor.userId) return
+    const result = await insertWalletData({
+      id: contributor.userId,
+      wallet: "SKIPPED"
+    })
+    if (result) {
+      terminal.updateHistory("Saving to db...")
+      await sleep(2000)
+      contributor.userWallet = "SKIPPED"
+    } else {
+      terminal.updateHistory("Failed to save wallet address", { duplicate: true })
+    }
+  } catch (error) {
+    console.error("Error saving wallet address:", error)
+    terminal.updateHistory("An error occurred while saving the wallet address", { duplicate: true })
+  }
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+  if (event.key === "Enter") {
+    event.preventDefault()
+    onAddressSubmit(event)
   }
 }
 </script>
 
-<form class="flex flex-col gap-2 min-w-[355px]">
+<form class="w-full">
   <input
-    {...props}
-    type="text"
-    autocorrect="off"
-    autocomplete="off"
-    spellcheck="false"
-    autocapitalize="none"
-    bind:value={inputText}
-    placeholder="union1ab…."
-    class={clsx([
-      className,
-      'text-md font-supermolot h-9 px-2 outline-none border-2',
-      validState === 'VALID'
-        ? 'border-2 border-green-500'
-        : validState === 'INVALID'
-          ? 'border-2 border-red-500'
-          : 'border-transparent',
-    ])}
+          autofocus
+          {...props}
+          type="text"
+          autocorrect="off"
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="none"
+          bind:value={inputText}
+          onkeydown={handleKeyDown}
+          class="inline-flex bg-transparent w-full text-union-accent-500 outline-none focus:ring-0 focus:border-none"
   />
-  <button
-    type="button"
-    onclick={onAddressSubmit}
-    disabled={inputText.length === 0}
-    class={clsx([
-      'hover:font-bold hover:bg-[#5FDFFC]',
-      'uppercase text-black w-full bg-[#A0ECFD] text-md font-supermolot h-9 px-2 font-semibold',
-    ])}
-  >
-    submit
-  </button>
 </form>
 
 <style lang="postcss"></style>

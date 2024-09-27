@@ -62,7 +62,7 @@ export const queryCurrentUserState = async () => {
 export const queryContributions = async () => {
   const { data, error } = await supabase
     .from("users_contribution")
-    .select("public_key_hash, user_name, avatar_url, payload_id")
+    .select("public_key_hash, payload_id")
     .order("time_verified", { ascending: false })
 
   return { data, error }
@@ -94,6 +94,22 @@ export const queryUserWallet = async (id: string) => {
     .select("wallet")
     .eq("id", id)
     .single()
+
+  return { data, error }
+}
+
+export const queryVerificationTime = async () => {
+  const { data, error } = await supabase.from("current_verification_average").select("*").single()
+
+  console.log(data)
+
+  return { data, error }
+}
+
+export const queryContributionTime = async () => {
+  const { data, error } = await supabase.from("current_contribution_average").select("*").single()
+
+  console.log(data)
 
   return { data, error }
 }

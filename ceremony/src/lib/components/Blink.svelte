@@ -21,7 +21,7 @@ function blinkEye() {
 
 function startRandomBlinking() {
   blinkInterval = setInterval(() => {
-    if (!(sleep || love) && Math.random() < 0.05) {
+    if (!(sleep || love) && Math.random() < 0.08) {
       blinkEye()
     }
   }, 200)
@@ -45,7 +45,7 @@ $effect(() => {
 })
 </script>
 
-<span class="!text-union-accent-500">
+<span>
   {eye}<span class:wobble={loading && !sleep}><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span></span>{eye}
 </span>
 

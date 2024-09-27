@@ -1,57 +1,34 @@
 <script lang="ts">
-import { afterNavigate, beforeNavigate, goto } from "$app/navigation"
-import { checkAuth, type SessionError } from "$lib/utils/auth.ts"
 import { supabase } from "$lib/supabase/client.ts"
-import { user } from "$lib/stores/user.svelte.ts"
-import { Toaster } from "svelte-sonner"
-import Navbar from "$lib/layout/Navbar/index.svelte"
-import { setContributorState } from "$lib/stores/state.svelte.ts"
+import { createState } from "$lib/state/index.svelte.ts"
+import { watch } from "runed"
+import { checkAuth } from "$lib/state/session.svelte.ts"
+import Terminal from "$lib/components/Terminal/index.svelte"
+import { start } from "$lib/client"
+import Timer from "$lib/components/Terminal/Timer.svelte"
 
 import "../styles/tailwind.css"
-
-import { watch } from "runed"
+import { onMount } from "svelte"
+import { getAverageTimes } from "$lib/supabase"
 
 let { children } = $props()
 
-let contributor = setContributorState()
-
-beforeNavigate(async ({ from, to, cancel }) => {
-  const pathname = to?.route?.id
-  if (pathname) {
-    const segments = pathname.split("/").filter(Boolean)
-    if (segments[0] === "0____0") {
-      const authCheck = await checkAuth()
-
-      authCheck.match(
-        () => {
-          console.log("User authenticated")
-        },
-        (error: SessionError) => {
-          console.error(error.message)
-          cancel()
-          goto("/")
-        }
-      )
-    }
-  }
-})
-
-afterNavigate(() => {
-  const url = new URL(window.location.href)
-  if (url.hash) {
-    url.hash = ""
-    history.replaceState(null, "", url.toString())
-  }
-})
+let { user, contributor, terminal } = createState()
 
 $effect(() => {
   const {
     data: { subscription }
   } = supabase.auth.onAuthStateChange((event, session) => {
-    user.session = session
+    checkAuth()
   })
   return () => {
     subscription.unsubscribe()
+  }
+})
+
+$effect(() => {
+  if (contributor.contributionState === "contribute" && contributor.state !== "contributing") {
+    start()
   }
 })
 
@@ -61,11 +38,71 @@ watch(
     contributor.setUserId(user.session?.user.id)
   }
 )
+let showBootSequence = $state(true)
+let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
+
+onMount(() => bootSequenceVideoElement?.play())
+
+const hideBootSequenceVideo = () => (showBootSequence = false)
 </script>
 
-<Toaster position="bottom-right" toastOptions={{ class: 'rounded-none border border-black',}}/>
-<Navbar/>
+{#if showBootSequence}
+  <video
+    muted
+    autoplay
+    playsinline
+    data-video="bootsequence"
+    onended={hideBootSequenceVideo}
+    bind:this={bootSequenceVideoElement}
+    oncanplay={function() {
+      this.autoplay = true
+    }}
+    onloadeddata={function() {
+      this.autoplay = true
+    }}
+    onloadedmetadata={function() {
+      this.muted = true
+    }}
+  >
+    <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitchboot.webm" type="video/webm" />
+  </video>
+{:else}
+  <video
+    loop
+    muted
+    autoplay
+    playsinline
+    data-video="glitch"
+    oncanplay={function() {
+      this.autoplay = true
+    }}
+    onloadeddata={function() {
+      this.autoplay = true
+    }}
+    onloadedmetadata={function() {
+      this.muted = true
+    }}
+  >
+    <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.webm" type="video/webm" />
+  </video>
+  <main class="flex w-full h-full overflow-hidden content flex-col items-center justify-center gap-4">
+    <Terminal>
+      {@render children()}
+    </Terminal>
+    <Timer />
+  </main>
+{/if}
 
-<main class="w-full h-full overflow-y-scroll">
-  {@render children()}
-</main>
+<style lang="postcss">
+  video[data-video] {
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    width: 100vw;
+    height: 100vh;
+    min-width: 100%;
+    position: fixed;
+    min-height: 100%;
+    object-fit: cover;
+  }
+</style>

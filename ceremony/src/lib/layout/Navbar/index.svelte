@@ -1,10 +1,10 @@
 <script lang="ts">
 import { supabase } from "$lib/supabase/client.ts"
-import { user } from "$lib/stores/user.svelte.ts"
 import { invalidateAll } from "$app/navigation"
 import Button from "$lib/components/Button.svelte"
 import NavLink from "$lib/layout/Navbar/NavLink.svelte"
 import Badge from "$lib/components/Badge.svelte"
+import { user } from "$lib/state/session.svelte.ts"
 
 let isOpen = $state(false)
 
@@ -30,7 +30,7 @@ let loggedIn = $derived(!!user.session?.user.id)
     <div class="flex justify-between items-center">
       <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
         {#if loggedIn}
-          <a href="/0____0" class="inline-flex flex-shrink-0 items-center text-white">
+          <a href="/contributions" class="inline-flex flex-shrink-0 items-center text-white">
             <img
                     src="/union-logo-supermolot.svg"
                     alt="Union Logo"

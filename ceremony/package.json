@@ -32,6 +32,7 @@
     "@tanstack/svelte-query": "^5.54.1",
     "neverthrow": "^7.1.0",
     "runed": "^0.15.2",
-    "svelte-sonner": "^0.3.27"
+    "svelte-sonner": "^0.3.27",
+    "tailwind-merge": "^2.5.2"
   }
 }
