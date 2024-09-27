@@ -90,9 +90,9 @@ members = [
   "voyager/modules/consensus/movement",
   "voyager/modules/consensus/tendermint",
 
-  "voyager/modules/transaction/cosmos-sdk",
-  "voyager/modules/transaction/ethereum",
-  "voyager/modules/transaction/aptos",
+  "voyager/plugins/transaction/cosmos-sdk",
+  "voyager/plugins/transaction/ethereum",
+  "voyager/plugins/transaction/aptos",
 
   "voyager/plugins/packet-filter",
   "voyager/plugins/transaction-batch",
