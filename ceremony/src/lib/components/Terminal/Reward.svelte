@@ -13,8 +13,12 @@ let validation = (val: ValidState) => {
 }
 
 onMount(() => {
-  terminal.updateHistory("Add an address, you may receive rewards for successful contributions.")
-  terminal.updateHistory('You can enter your union or any cosmos address, or type "skip".')
+  terminal.updateHistory({
+    text: "Add an address, you may receive rewards for successful contributions."
+  })
+  terminal.updateHistory({
+    text: 'You can enter your union or any cosmos address, or type "skip".'
+  })
 })
 
 onDestroy(() => {

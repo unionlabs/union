@@ -7,7 +7,7 @@ import LoadingBar from "$lib/components/Terminal/LoadingBar.svelte"
 const { contributor, terminal } = getState()
 
 onMount(() => {
-  terminal.updateHistory("You are in queue")
+  terminal.updateHistory({ text: "You are in queue" })
 })
 
 onDestroy(() => {

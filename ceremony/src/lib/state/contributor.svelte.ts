@@ -109,14 +109,14 @@ export class Contributor {
     if (this.userId === undefined && userId) {
       this.userId = userId
       this.loggedIn = true
-      this.checkWaitListPosition(userId)
+      this.checkWaitListPosition()
       this.checkUserWallet(userId)
       this.checkCurrentUserState(userId)
       this.startPolling()
     }
   }
 
-  async checkWaitListPosition(_userId: string | undefined): Promise<number | undefined> {
+  async checkWaitListPosition(): Promise<number | undefined> {
     this.waitListPosition = await getWaitListPosition()
     return this.waitListPosition
   }

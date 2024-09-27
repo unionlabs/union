@@ -1,68 +1,39 @@
 <script lang="ts">
-import { type AuthProviders, Terminal } from "$lib/state/terminal.svelte.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import { onDestroy, onMount } from "svelte"
-import Button from "$lib/components/Terminal/Button.svelte"
-import { cn } from "$lib/utils/utils.ts"
-import { on } from "svelte/events"
+import { sleep } from "$lib/utils/utils.ts"
 import Print from "$lib/components/Terminal/Print.svelte"
+import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import { getState } from "$lib/state/index.svelte.ts"
 
-type Props = {
-  terminal: Terminal
-}
-
-let { terminal }: Props = $props()
-
-const providers: Array<AuthProviders> = ["GitHub", "Google"]
-
-let focusedIndex = $state(0)
 let redirecting = $state(false)
+const { terminal } = getState()
 
-async function logIn(provider: AuthProviders) {
-  //@ts-ignore
-  const thisProvider: "github" | "google" = provider.toLowerCase()
+onMount(() => {
+  terminal.updateHistory({ text: "Unauthenticated user", replace: true })
+  terminal.updateHistory({ text: "Please authenticate with one of the following", replace: true })
+})
+
+async function logIn(provider: "github" | "google") {
+  terminal.updateHistory({ text: `Signing in with ${provider}`, replace: true })
+  await sleep(2000)
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: thisProvider,
+    provider: provider,
     options: {
       redirectTo: `/`
     }
   })
   if (error || !data) {
-    terminal.updateHistory(`Error signing in using ${provider}`)
+    terminal.updateHistory({ text: `Error signing in using ${provider}`, type: "warning" })
   } else {
     redirecting = true
-    terminal.updateHistory(`Redirecting to ${provider}`)
+    terminal.updateHistory({ text: `Redirecting to ${provider}` })
   }
 }
 
-let unsubscribe: (() => void) | undefined
-let subscriptionTimeout: NodeJS.Timeout | undefined
-onMount(() => {
-  terminal.setStep(1)
-  terminal.updateHistory("Please authenticate using one of the following")
-  subscriptionTimeout = setTimeout(() => {
-    unsubscribe = terminal.keys.subscribe(event => {
-      if (event) {
-        if (event.type !== "keydown") return
-        if (event.key === "ArrowUp") {
-          focusedIndex = (focusedIndex - 1 + providers.length) % providers.length
-        } else if (event.key === "ArrowDown") {
-          focusedIndex = (focusedIndex + 1) % providers.length
-        } else if (event.key === "Enter") {
-          logIn(providers[focusedIndex])
-        }
-      }
-    })
-  }, 200)
-  return () => {
-    if (subscriptionTimeout) {
-      clearTimeout(subscriptionTimeout)
-    }
-    if (unsubscribe) {
-      unsubscribe()
-    }
-  }
-})
+function trigger(value: "github" | "google") {
+  logIn(value)
+}
 
 onDestroy(() => {
   terminal.clearHistory()
@@ -70,17 +41,9 @@ onDestroy(() => {
 </script>
 
 {#if !redirecting}
-
-  {#each providers as provider, index}
-    <Button
-            onmouseenter={() => focusedIndex = index}
-            class={cn(index === focusedIndex ? "bg-union-accent-500 text-black" : "", "capitalize")}
-            onclick={() => logIn(provider)}
-    >
-      &gt {provider}
-    </Button>
-  {/each}
+  <Buttons
+          data={[{text: "GitHub", action: "github"}, {text: "Google", action: "google"}]}
+          trigger={(value: 'github' | 'google') => trigger(value)} />
   <Print><br></Print>
-  <Print class="uppercase !text-[#FD6363]">By logging in, I acknowledge that my name, email address, and optional wallet address will be part of the publicly viewable MPC ceremony data. I agree that this data will never be deleted as it is encoded in my contribution.</Print>
-
+  <Print class="uppercase !text-[#FD6363]">By signing in, I acknowledge that my public GPG key and signature will be permanently publicly available as it is cryptographically part of the MPC ceremony data. I am aware that my GPG key contains the email address I use to sign in.</Print>
 {/if}

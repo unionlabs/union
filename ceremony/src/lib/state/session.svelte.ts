@@ -36,11 +36,11 @@ export async function logout(terminal: Terminal): Promise<void> {
   await goto("/")
 
   if (!user.session) {
-    terminal.updateHistory("User already logged out", { duplicate: true })
+    terminal.updateHistory({ text: "User already logged out", duplicate: true })
     return
   }
 
-  terminal.updateHistory("Logging out user...")
+  terminal.updateHistory({ text: "Logging out user..." })
   await sleep(1000)
 
   try {
@@ -49,7 +49,7 @@ export async function logout(terminal: Terminal): Promise<void> {
     terminal.setHash(undefined)
     await invalidateAll()
   } catch (error) {
-    terminal.updateHistory(`error logging out`)
+    terminal.updateHistory({ text: "Error logging out" })
 
     terminal.setHash(undefined)
     terminal.setTab(1)

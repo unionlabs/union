@@ -9,16 +9,15 @@ import Timer from "$lib/components/Terminal/Timer.svelte"
 
 import "../styles/tailwind.css"
 import { onMount } from "svelte"
-import { getAverageTimes } from "$lib/supabase"
 
 let { children } = $props()
 
-let { user, contributor, terminal } = createState()
+let { user, contributor } = createState()
 
 $effect(() => {
   const {
     data: { subscription }
-  } = supabase.auth.onAuthStateChange((event, session) => {
+  } = supabase.auth.onAuthStateChange(() => {
     checkAuth()
   })
   return () => {
@@ -49,12 +48,15 @@ $effect(() => {
     document.getElementById("glitch-video").play()
   }
 })
-let showBootSequence = $state(true)
+let showBootSequence = $state(localStorage?.getItem("ceremony:show-boot-sequence") !== "false")
 let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
 
 onMount(() => bootSequenceVideoElement?.play())
 
-const hideBootSequenceVideo = () => (showBootSequence = false)
+const hideBootSequenceVideo = () => {
+  showBootSequence = false
+  localStorage?.setItem("ceremony:show-boot-sequence", "false")
+}
 </script>
 
 {#if showBootSequence}
@@ -106,15 +108,15 @@ const hideBootSequenceVideo = () => (showBootSequence = false)
 {/if}
 
 <style lang="postcss">
-  video[data-video] {
-    right: 0;
-    bottom: 0;
-    z-index: -1;
-    width: 100vw;
-    height: 100vh;
-    min-width: 100%;
-    position: fixed;
-    min-height: 100%;
-    object-fit: cover;
-  }
+    video[data-video] {
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+        width: 100vw;
+        height: 100vh;
+        min-width: 100%;
+        position: fixed;
+        min-height: 100%;
+        object-fit: cover;
+    }
 </style>

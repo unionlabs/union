@@ -4,9 +4,13 @@ import { readable } from "svelte/store"
 export type AuthProviders = "GitHub" | "Google"
 export type State = "hasRedeemed" | "inQueue" | "inWaitlist" | "join" | undefined
 
-interface UpdateHistoryOptions {
-  duplicate?: boolean
-  replace?: boolean
+interface UpdateHistory {
+  text: string
+  type?: "warning" | "info" | undefined
+  uppercase?: boolean | undefined
+  lineBreak?: boolean | undefined
+  duplicate?: boolean | undefined
+  replace?: boolean | undefined
 }
 
 export type KeyEvent = {
@@ -18,7 +22,7 @@ export type KeyEvent = {
 
 export class Terminal {
   state = $state<State>(undefined)
-  history = $state<Array<string>>([])
+  history = $state<Array<UpdateHistory>>([])
   tab = $state<1 | 2 | 3 | number>(1)
   hash = $state<string | undefined>(undefined)
   currentStep = $state<number>(0)
@@ -51,18 +55,15 @@ export class Terminal {
     console.log("Creating terminal state")
   }
 
-  updateHistory(text: string, options: UpdateHistoryOptions = {}) {
-    const { duplicate = false, replace = false } = options
+  updateHistory(content: UpdateHistory) {
+    const index = this.history.findIndex(item => item.text === content.text)
 
-    const index = this.history.indexOf(text)
-
-    if (duplicate) {
-      this.history.push(text)
-    } else if (replace && index !== -1) {
-      this.history.splice(index, 1)
-      this.history.push(text)
-    } else if (!this.history.includes(text)) {
-      this.history.push(text)
+    if (content.duplicate) {
+      this.history.push(content)
+    } else if (content.replace && index !== -1) {
+      this.history[index] = content
+    } else if (index === -1) {
+      this.history.push(content)
     }
   }
 

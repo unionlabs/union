@@ -29,7 +29,7 @@ onDestroy(() => {
 
 {:else if contributor.state === "verifying"}
   {terminal.setStep(9)}
-  {terminal.updateHistory("Verifying your contribution...", {replace: true})}
+  {terminal.updateHistory({text:"Verifying your contribution...", replace: true})}
 
 {:else if contributor.clientState === "offline" || contributor.clientState === undefined}
   {terminal.setStep(5)}
@@ -41,11 +41,11 @@ onDestroy(() => {
 
 {:else if contributor.state === 'contribute'}
   {terminal.setStep(8)}
-  {terminal.updateHistory("Starting contribution...", {replace: true})}
+  {terminal.updateHistory({text: "Starting contribution...", replace: true})}
 
 {:else if contributor.state === "contributing"}
   {terminal.setStep(9)}
-  {terminal.updateHistory("Contributing...", {replace: true})}
+  {terminal.updateHistory({text: "Contributing...", replace: true})}
 
 {:else}
  <Print>Not able to contribute at this time</Print>

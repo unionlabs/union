@@ -1,52 +1,23 @@
 <script lang="ts">
 import { page } from "$app/stores"
-import { getState } from "$lib/state/index.svelte.ts"
 import { getUserContribution } from "$lib/supabase"
 import Print from "$lib/components/Terminal/Print.svelte"
-import Button from "$lib/components/Terminal/Button.svelte"
-import { cn, sleep } from "$lib/utils/utils.ts"
-
-const { terminal } = getState()
+import { sleep } from "$lib/utils/utils.ts"
+import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import { onMount } from "svelte"
+import { getState } from "$lib/state/index.svelte.ts"
 
 let hash = $derived($page.params.hash)
-
-let focusedIndex = $state(0)
-let buttons: Array<HTMLButtonElement> = []
 let prints = $state<Array<string>>([])
-let showButtons = $state(true)
 
-let unsubscribe: (() => void) | undefined
-let subscriptionTimeout: NodeJS.Timeout | undefined
-$effect(() => {
+const { terminal } = getState()
+let contribution = $state()
+
+onMount(async () => {
+  terminal.clearHistory()
+  contribution = await getUserContribution(hash)
   terminal.setTab(4)
   terminal.setHash(hash)
-  subscriptionTimeout = setTimeout(() => {
-    unsubscribe = terminal.keys.subscribe(event => {
-      if (event) {
-        if (event.type === "keydown") {
-          if (event.key === "ArrowUp") {
-            focusedIndex -= 1
-            buttons[focusedIndex]?.focus()
-          } else if (event.key === "ArrowDown") {
-            focusedIndex += 1
-            buttons[focusedIndex]?.focus()
-          } else if (event.key === "Enter") {
-            if (buttons[focusedIndex]) {
-              buttons[focusedIndex].click()
-            }
-          }
-        }
-      }
-    })
-  }, 200)
-  return () => {
-    if (subscriptionTimeout) {
-      clearTimeout(subscriptionTimeout)
-    }
-    if (unsubscribe) {
-      unsubscribe()
-    }
-  }
 })
 
 function hexToUint8Array(hexString: string) {
@@ -62,15 +33,21 @@ function decodeHexString(hexString: string) {
 }
 
 async function copyToClipboard(text: string, type: string) {
-  showButtons = false
   prints.push(`Copying ${type}..`)
   await sleep(1000)
   await navigator.clipboard.writeText(text)
   prints.push(`Successfully copied ${type}`)
-  showButtons = true
 }
 
 const imagePath = "https://ceremony.union.build/images/ceremony.png"
+
+function trigger(value: "key" | "signature") {
+  if (value === "key") {
+    copyToClipboard(decodeHexString(contribution.public_key), "public key")
+  } else if (value === "signature") {
+    copyToClipboard(decodeHexString(contribution.signature), "signature")
+  }
+}
 </script>
 
 <svelte:head>
@@ -104,33 +81,20 @@ const imagePath = "https://ceremony.union.build/images/ceremony.png"
 </svelte:head>
 
 
-{#await getUserContribution(hash)}
+{#if contribution}
+  <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution?.public_key)}</pre>
+  <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution?.signature)}</pre>
+  {#each prints as print}
+    <Print>{print}</Print>
+  {/each}
+  <Print><br></Print>
+  <Buttons
+          data={[{text: "Copy public key", action: 'key'}, {text: "Copy signature", action: 'signature'}]}
+          trigger={(value: 'key' | 'signature') => trigger(value)}
+  />
+{:else}
   <Print>Loading</Print>
-{:then contribution}
-  {#if contribution}
-    <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution.public_key)}</pre>
-    <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution.signature)}</pre>
-    {#each prints as print}
-      <Print>{print}</Print>
-    {/each}
-    {#if showButtons}
-      <Print><br></Print>
-      <Button bind:value={buttons[0]}
-              onmouseenter={() => focusedIndex = 0}
-              class={cn(focusedIndex === 0 ? "bg-union-accent-500 text-black" : "")}
-              onclick={() => copyToClipboard(decodeHexString(contribution.public_key), "public key")}>&gt
-        Copy public key
-      </Button>
-      <Button bind:value={buttons[1]}
-              onmouseenter={() => focusedIndex = 1}
-              class={cn(focusedIndex === 1 ? "bg-union-accent-500 text-black" : "")}
-              onclick={() => copyToClipboard(decodeHexString(contribution.signature), "signature")}>&gt
-        Copy signature
-      </Button>
-    {/if}
-  {/if}
-{/await}
-
+{/if}
 
 <style>
     pre {
