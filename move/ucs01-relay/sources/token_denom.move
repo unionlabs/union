@@ -1,5 +1,5 @@
 module UCS01::fa_coin {
-    use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset};
+    use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, MutateMetadataRef, BurnRef, Metadata, FungibleAsset};
     use aptos_framework::object::{Self, Object};
     use aptos_framework::primary_fungible_store;
     use std::error;
@@ -21,6 +21,7 @@ module UCS01::fa_coin {
         mint_ref: MintRef,
         transfer_ref: TransferRef,
         burn_ref: BurnRef,
+        mutate_metadata_ref: MutateMetadataRef
     }
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
@@ -55,10 +56,11 @@ module UCS01::fa_coin {
         let mint_ref = fungible_asset::generate_mint_ref(constructor_ref);
         let burn_ref = fungible_asset::generate_burn_ref(constructor_ref);
         let transfer_ref = fungible_asset::generate_transfer_ref(constructor_ref);
+        let mutate_metadata_ref = fungible_asset::generate_mutate_metadata_ref(constructor_ref);
         let metadata_object_signer = object::generate_signer(constructor_ref);
         move_to(
             &metadata_object_signer,
-            ManagedFungibleAsset { mint_ref, transfer_ref, burn_ref}
+            ManagedFungibleAsset { mint_ref, transfer_ref, burn_ref, mutate_metadata_ref}
         );
 
         // Create a global state to pause the FA coin and move to Metadata object.
@@ -139,6 +141,12 @@ module UCS01::fa_coin {
         let to_wallet = primary_fungible_store::ensure_primary_store_exists(to, asset);
         let fa = fungible_asset::mint(&managed_fungible_asset.mint_ref, amount);
         fungible_asset::deposit_with_ref(&managed_fungible_asset.transfer_ref, to_wallet, fa);
+    }
+
+    public entry fun update_with_metadata(admin: &signer, name: option::Option<string::String>, symbol: option::Option<string::String>, decimals: option::Option<u8>, 
+                        icon_uri: option::Option<string::String>, project_uri: option::Option<string::String>, asset: Object<Metadata>) acquires ManagedFungibleAsset {
+        let managed_fungible_asset = authorized_borrow_refs(admin, asset);
+        fungible_asset::mutate_metadata(&managed_fungible_asset.mutate_metadata_ref, name, symbol, decimals, icon_uri, project_uri);
     }
 
     /// Transfer as the owner of metadata object.
@@ -246,6 +254,50 @@ module UCS01::fa_coin {
         assert!(name == string::utf8(TEST_NAME), 101);
         assert!(symbol == string::utf8(TEST_SYMBOL), 102);
         assert!(decimals == TEST_DECIMALS, 103);
+    }
+
+    #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
+    public fun test_update_metadata(creator: &signer) acquires ManagedFungibleAsset {
+        initialize(
+            creator,
+            string::utf8(TEST_NAME),
+            string::utf8(TEST_SYMBOL),
+            TEST_DECIMALS,
+            string::utf8(TEST_ICON),
+            string::utf8(TEST_PROJECT),
+            ASSET_SYMBOL
+        );
+
+        let asset_metadata = get_metadata(ASSET_SYMBOL);
+        let name = fungible_asset::name<Metadata>(asset_metadata);
+        let symbol = fungible_asset::symbol<Metadata>(asset_metadata);
+        let decimals = fungible_asset::decimals<Metadata>(asset_metadata);
+
+        assert!(name == string::utf8(TEST_NAME), 101);
+        assert!(symbol == string::utf8(TEST_SYMBOL), 102);
+        assert!(decimals == TEST_DECIMALS, 103);
+
+        let updated_name = string::utf8(b"Updated Name");
+        let updated_symbol = string::utf8(b"UPD");
+        let updated_decimals = 4;
+
+        update_with_metadata(
+            creator,
+            option::some(updated_name),
+            option::some(updated_symbol),
+            option::some(updated_decimals),
+            option::none(),
+            option::none(),
+            asset_metadata
+        );
+
+        let name = fungible_asset::name<Metadata>(asset_metadata);
+        let symbol = fungible_asset::symbol<Metadata>(asset_metadata);
+        let decimals = fungible_asset::decimals<Metadata>(asset_metadata);
+
+        assert!(name == updated_name, 101);
+        assert!(symbol == updated_symbol, 102);
+        assert!(decimals == updated_decimals, 103);
     }
 
     #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
@@ -370,6 +422,8 @@ module UCS01::fa_coin {
         // Attempt to transfer tokens from sender to recipient with unauthorized user
         transfer(aaron, sender, recipient, 500, ASSET_SYMBOL);
     }
+
+
 
 
     #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57, alice=@0x1234, bob=@0x5678)]

@@ -74,8 +74,6 @@ module UCS01::ibc {
         outstanding: SmartTable<OutstandingPair, u64>,
     }
 
-
-
     struct SignerRef has key {
         self_ref: object::ExtendRef,
         self_address: address
@@ -922,7 +920,6 @@ module UCS01::ibc {
         // Test with invalid version
         assert!(!is_valid_version(invalid_version), 101);
     }
-
 
     #[test]
     public fun test_is_from_channel() {
