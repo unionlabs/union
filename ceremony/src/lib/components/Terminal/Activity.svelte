@@ -30,15 +30,15 @@ function formatTimestamp(timestamp: string): string {
         {#if type === "join_waitlist"}
           {user} joined the waitlist
         {:else if type === "redeem"}
-          {user} have redeemed a code
+          {user} has redeemed a code
         {:else if type === "join_queue"}
           {user} joined the queue
         {:else if type === "contribution_started"}
-          {user} have started their contribution
+          {user} has started their contribution
         {:else if type === "contribution_submitted"}
           {user} has submitted their contribution
         {:else if type === "contribution_verified"}
-          {user} contribution just verified
+          {user}'s contribution has just been verified
         {/if}
       </Print>
     {/each}
