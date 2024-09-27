@@ -15,7 +15,7 @@ const { terminal } = getState()
         content.type === "warning" ? "!text-[#FD6363]" : "",
         content.type === "info" ? "!text-union-accent-500" : "",
         content.uppercase ? "uppercase" : "",
-        )}>{content.text}</Print>
+        )}>{@html content.text}</Print>
     {/if}
   {/each}
 </div>
