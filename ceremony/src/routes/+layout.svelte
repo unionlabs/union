@@ -48,29 +48,32 @@ $effect(() => {
     document.getElementById("glitch-video").play()
   }
 })
-let showBootSequence = $state(true)
+let showBootSequence = $state(localStorage?.getItem("ceremony:show-boot-sequence") !== "false")
 let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
 
 onMount(() => bootSequenceVideoElement?.play())
 
-const hideBootSequenceVideo = () => (showBootSequence = false)
+const hideBootSequenceVideo = () => {
+  showBootSequence = false
+  localStorage?.setItem("ceremony:show-boot-sequence", "false")
+}
 </script>
 
 {#if showBootSequence}
   <video
-          muted
-          autoplay
-          playsinline
-          data-video="bootsequence"
-          onended={hideBootSequenceVideo}
-          bind:this={bootSequenceVideoElement}
-          oncanplay={function() {
+    muted
+    autoplay
+    playsinline
+    data-video="bootsequence"
+    onended={hideBootSequenceVideo}
+    bind:this={bootSequenceVideoElement}
+    oncanplay={function() {
       this.autoplay = true
     }}
-          onloadeddata={function() {
+    onloadeddata={function() {
       this.autoplay = true
     }}
-          onloadedmetadata={function() {
+    onloadedmetadata={function() {
       this.muted = true
     }}
   >
@@ -78,19 +81,19 @@ const hideBootSequenceVideo = () => (showBootSequence = false)
   </video>
 {:else}
   <video
-          id="glitch-video"
-          loop
-          muted
-          autoplay
-          playsinline
-          data-video="glitch"
-          oncanplay={function() {
+    id="glitch-video"
+    loop
+    muted
+    autoplay
+    playsinline
+    data-video="glitch"
+    oncanplay={function() {
       this.autoplay = true
     }}
-          onloadeddata={function() {
+    onloadeddata={function() {
       this.autoplay = true
     }}
-          onloadedmetadata={function() {
+    onloadedmetadata={function() {
       this.muted = true
     }}
   >
