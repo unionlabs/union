@@ -16,7 +16,7 @@ export interface AppState {
 const STATE_KEY = Symbol("STATE")
 
 export function createState() {
-  console.log("Creating state rebuild")
+  console.log("Creating state")
   const state: AppState = {
     contributor: new Contributor(),
     terminal: new Terminal(),
