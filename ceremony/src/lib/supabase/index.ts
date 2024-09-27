@@ -39,7 +39,7 @@ export const callJoinQueue = async (code: string | null): Promise<boolean> => {
     const { error } = await supabase.rpc("join_queue", { code_id: code })
 
     if (error) {
-      console.log("oof:", error)
+      console.log("Error joining queue:", error)
       return false
     }
 
