@@ -42,6 +42,13 @@ watch(
     contributor.setUserId(user.session?.user.id)
   }
 )
+
+$effect(() => {
+  if (!showBootSequence) {
+    // @ts-ignore
+    document.getElementById("glitch-video").play()
+  }
+})
 let showBootSequence = $state(true)
 let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
 
@@ -72,6 +79,7 @@ const hideBootSequenceVideo = () => (showBootSequence = false)
   </video>
 {:else}
   <video
+    id="glitch-video"
     loop
     muted
     autoplay
