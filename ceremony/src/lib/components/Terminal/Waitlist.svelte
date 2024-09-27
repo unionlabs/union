@@ -1,12 +1,12 @@
 <script lang="ts">
-import { getNumberSuffix } from "$lib/utils/utils.ts"
+import { getNumberSuffix, sleep } from "$lib/utils/utils.ts"
 import { getState } from "$lib/state/index.svelte.ts"
 import Code from "$lib/components/Terminal/Code.svelte"
 import { onDestroy, onMount } from "svelte"
 
 const { contributor, terminal } = getState()
 
-onMount(() => {
+onMount(async () => {
   terminal.setStep(3)
   terminal.updateHistory({ text: "You're on the waitlist" })
   terminal.updateHistory({
@@ -16,6 +16,8 @@ onMount(() => {
     text: "You will receive an email 12-18 hours before the public phase begins."
   })
   terminal.updateHistory({ text: "Received an invite? You can skip the waitlist and join now." })
+  await sleep(500)
+  await contributor.checkWaitListPosition()
 })
 
 onDestroy(() => {

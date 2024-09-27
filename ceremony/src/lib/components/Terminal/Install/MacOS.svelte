@@ -23,7 +23,9 @@ onMount(() => {
       text: "You must have OrbStack installed in order to contribute, because Docker Desktop is too slow. If you use Docker Desktop it is extremely likely that you will lose your contribution slot."
     },
     { text: "---" },
-    { text: "1. Install OrbStack" },
+    {
+      text: '1. <a class="underline-offset-4 decoration-union-accent-500 underline" href="https://orbstack.dev/ ">Install OrbStack</a>'
+    },
     { text: "2. Open OrbStack from the Applications/ folder" },
     { text: "3. Click allow on the OrbStack popups" },
     {
@@ -32,9 +34,9 @@ onMount(() => {
     {
       text: "5. Paste the following command in Terminal to start the MPC client:"
     },
-    { text: "---" },
+    { text: "---", duplicate: true },
     { text: command },
-    { text: "---" },
+    { text: "---", duplicate: true },
     {
       text: "Once the MPC client is running you can return to this page."
     },

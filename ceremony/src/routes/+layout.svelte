@@ -17,7 +17,7 @@ let { user, contributor } = createState()
 $effect(() => {
   const {
     data: { subscription }
-  } = supabase.auth.onAuthStateChange((event, session) => {
+  } = supabase.auth.onAuthStateChange(() => {
     checkAuth()
   })
   return () => {
@@ -51,40 +51,26 @@ $effect(() => {
 let showBootSequence = $state(true)
 let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
 
-let isBootSequenceReady = $state(false)
-
-onMount(() => {
-  const lastShownTimestamp = localStorage.getItem("bootSequenceLastShown")
-  const currentTime = Date.now()
-  const oneHour = 30 * 60 * 1000
-
-  if (!lastShownTimestamp || currentTime - Number.parseInt(lastShownTimestamp) > oneHour) {
-    isBootSequenceReady = true
-    localStorage.setItem("bootSequenceLastShown", currentTime.toString())
-    bootSequenceVideoElement?.play()
-  } else {
-    isBootSequenceReady = false
-  }
-})
+onMount(() => bootSequenceVideoElement?.play())
 
 const hideBootSequenceVideo = () => (showBootSequence = false)
 </script>
 
-{#if showBootSequence && isBootSequenceReady}
+{#if showBootSequence}
   <video
-    muted
-    autoplay
-    playsinline
-    data-video="bootsequence"
-    onended={hideBootSequenceVideo}
-    bind:this={bootSequenceVideoElement}
-    oncanplay={function() {
+          muted
+          autoplay
+          playsinline
+          data-video="bootsequence"
+          onended={hideBootSequenceVideo}
+          bind:this={bootSequenceVideoElement}
+          oncanplay={function() {
       this.autoplay = true
     }}
-    onloadeddata={function() {
+          onloadeddata={function() {
       this.autoplay = true
     }}
-    onloadedmetadata={function() {
+          onloadedmetadata={function() {
       this.muted = true
     }}
   >
@@ -92,19 +78,19 @@ const hideBootSequenceVideo = () => (showBootSequence = false)
   </video>
 {:else}
   <video
-    id="glitch-video"
-    loop
-    muted
-    autoplay
-    playsinline
-    data-video="glitch"
-    oncanplay={function() {
+          id="glitch-video"
+          loop
+          muted
+          autoplay
+          playsinline
+          data-video="glitch"
+          oncanplay={function() {
       this.autoplay = true
     }}
-    onloadeddata={function() {
+          onloadeddata={function() {
       this.autoplay = true
     }}
-    onloadedmetadata={function() {
+          onloadedmetadata={function() {
       this.muted = true
     }}
   >
@@ -119,15 +105,15 @@ const hideBootSequenceVideo = () => (showBootSequence = false)
 {/if}
 
 <style lang="postcss">
-  video[data-video] {
-    right: 0;
-    bottom: 0;
-    z-index: -1;
-    width: 100vw;
-    height: 100vh;
-    min-width: 100%;
-    position: fixed;
-    min-height: 100%;
-    object-fit: cover;
-  }
+    video[data-video] {
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+        width: 100vw;
+        height: 100vh;
+        min-width: 100%;
+        position: fixed;
+        min-height: 100%;
+        object-fit: cover;
+    }
 </style>
