@@ -10,7 +10,7 @@ onMount(async () => {
   terminal.setStep(3)
   terminal.updateHistory({ text: "You're on the waitlist" })
   terminal.updateHistory({
-    text: `When the ceremony opens to the public, you will be ${contributor.waitListPosition}${getNumberSuffix(contributor.waitListPosition)} in the public queue.`
+    text: `When the ceremony opens to the public, you will get priority in the queue.`
   })
   terminal.updateHistory({
     text: "You will receive an email 12-18 hours before the public phase begins."

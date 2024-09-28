@@ -109,7 +109,6 @@ export class Contributor {
     if (this.userId === undefined && userId) {
       this.userId = userId
       this.loggedIn = true
-      this.checkWaitListPosition()
       this.checkUserWallet(userId)
       this.checkCurrentUserState(userId)
       this.startPolling()
