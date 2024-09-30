@@ -4,6 +4,7 @@ import "../core/05-port/IIBCModule.sol";
 
 library IBCAppLib {
     error ErrNotIBC();
+    error ErrNotImplemented();
 }
 
 /**
@@ -125,7 +126,7 @@ abstract contract IBCAppBase is IIBCModule {
         address,
         bytes calldata
     ) external virtual override onlyIBC returns (bytes memory) {
-        revert("unsupported");
+        revert IBCAppLib.ErrNotImplemented();
     }
 
     /**
