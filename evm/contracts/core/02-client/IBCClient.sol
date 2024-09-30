@@ -12,7 +12,6 @@ library IBCClientLib {
     event ClientUpdated(uint32 clientId, uint64 height);
 
     error ErrClientTypeAlreadyExists();
-    error ErrClientMustNotBeSelf();
     error ErrClientTypeNotFound();
 }
 
@@ -29,9 +28,6 @@ abstract contract IBCClient is IBCStore, IIBCClient {
     ) external override {
         if (address(clientRegistry[clientType]) != address(0)) {
             revert IBCClientLib.ErrClientTypeAlreadyExists();
-        }
-        if (address(client) == address(this)) {
-            revert IBCClientLib.ErrClientMustNotBeSelf();
         }
         clientRegistry[clientType] = address(client);
         emit IBCClientLib.ClientRegistered(clientType, address(client));
@@ -54,7 +50,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         clientImpls[clientId] = clientImpl;
         ConsensusStateUpdate memory update = ILightClient(clientImpl)
             .createClient(clientId, msg_.clientStateBytes, msg_.consensusStateBytes);
-        commitments[keccak256(IBCCommitment.clientStatePath(clientId))] =
+        commitments[IBCCommitment.clientStateCommitmentKey(clientId)] =
             update.clientStateCommitment;
         commitments[IBCCommitment.consensusStateCommitmentKey(
             clientId, update.height
@@ -72,7 +68,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
     {
         ConsensusStateUpdate memory update = getClientInternal(msg_.clientId)
             .updateClient(msg_.clientId, msg_.clientMessage);
-        commitments[keccak256(IBCCommitment.clientStatePath(msg_.clientId))] =
+        commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] =
             update.clientStateCommitment;
         commitments[IBCCommitment.consensusStateCommitmentKey(
             msg_.clientId, update.height
