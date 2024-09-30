@@ -22,6 +22,14 @@ interface IIBCPacket {
     function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external;
 
     /**
+     * @dev recvIntentPacket is called by a module in order to receive & process an IBC intent packet
+     * for an IBC packet sent on the corresponding channel end on the counterparty chain.
+     * Note that no verification is done by the handler, the protocol must ensure that the market maker fullfilling the intent executes the expected effects.
+     */
+    function recvIntentPacket(IBCMsgs.MsgIntentPacketRecv calldata msg_)
+        external;
+
+    /**
      * @dev writeAcknowledgement writes the packet execution acknowledgement to the state,
      * which will be verified by the counterparty chain using AcknowledgePacket.
      */
@@ -46,12 +54,6 @@ interface IIBCPacket {
      * sent on the corresponding channel end on the counterparty chain.
      */
     function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_) external;
-
-    /**
-     * @dev fulfillIntent is called by a module in order to receive & process an intent fulfillement
-     * for an IBC packet sent on the corresponding channel end on the counterparty chain.
-     */
-    function fulfillIntent(IBCMsgs.MsgFulfillIntent calldata msg_) external;
 
     /**
      * @dev batchSend is called by a module in order to commit multiple IBC packets that have been previously sent.

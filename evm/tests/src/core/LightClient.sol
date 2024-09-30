@@ -87,7 +87,7 @@ contract TestLightClient is ILightClient {
         bytes calldata
     ) external returns (bool) {
         bool valid = validMembership > 0;
-        if(validMembership > 0) {
+        if (validMembership > 0) {
             validMembership -= 1;
         }
         return valid;
@@ -101,7 +101,7 @@ contract TestLightClient is ILightClient {
         bytes calldata
     ) external returns (bool) {
         bool valid = validNonMembership > 0;
-        if(validNonMembership > 0) {
+        if (validNonMembership > 0) {
             validNonMembership -= 1;
         }
         return valid;

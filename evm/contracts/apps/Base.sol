@@ -119,7 +119,7 @@ abstract contract IBCAppBase is IIBCModule {
         returns (bytes memory acknowledgement)
     {}
 
-    function onFulfillIntent(
+    function onRecvIntentPacket(
         IBCPacket calldata,
         address,
         bytes calldata

@@ -14,7 +14,7 @@ library IBCPacketLib {
 
     event SendPacket(IBCPacket packet);
     event RecvPacket(IBCPacket packets, address relayer, bytes relayerMsg);
-    event FillIntentPacket(
+    event RecvIntentPacket(
         IBCPacket packet, address marketMaker, bytes marketMakerMsg
     );
     event WriteAcknowledgement(IBCPacket packet, bytes acknowledgement);
@@ -297,8 +297,8 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 bytes calldata makerMsg = makerMsgs[i];
                 if (intent) {
                     acknowledgement =
-                        module.onFulfillIntent(packet, maker, makerMsg);
-                    emit IBCPacketLib.FillIntentPacket(packet, maker, makerMsg);
+                        module.onRecvIntentPacket(packet, maker, makerMsg);
+                    emit IBCPacketLib.RecvIntentPacket(packet, maker, makerMsg);
                 } else {
                     acknowledgement =
                         module.onRecvPacket(packet, maker, makerMsg);
@@ -322,7 +322,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         );
     }
 
-    function fulfillIntent(IBCMsgs.MsgFulfillIntent calldata msg_)
+    function recvIntentPacket(IBCMsgs.MsgIntentPacketRecv calldata msg_)
         external
         override
     {
