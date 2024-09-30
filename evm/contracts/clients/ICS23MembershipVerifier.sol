@@ -2,8 +2,6 @@ pragma solidity ^0.8.23;
 
 import "../lib/ICS23.sol";
 import "../lib/UnionICS23.sol";
-import "../proto/cosmos/ics23/v1/proofs.sol";
-import "../proto/ibc/core/commitment/v1/commitment.sol";
 
 library ICS23MembershipVerifier {
     function verifyMembership(

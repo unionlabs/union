@@ -79,7 +79,8 @@ contract PingPong is IBCAppBase {
 
     function onRecvPacket(
         IBCPacket calldata packet,
-        address
+        address,
+        bytes calldata
     )
         external
         virtual

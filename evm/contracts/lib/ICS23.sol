@@ -1,10 +1,8 @@
 pragma solidity ^0.8.23;
 
-import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
 import {Math} from "@openzeppelin/utils/math/Math.sol";
-import "../proto/ibc/core/commitment/v1/commitment.sol";
-import "../proto/cosmos/ics23/v1/proofs.sol";
 import "./UnionICS23.sol";
+import "./Protobuf.sol";
 
 library Ics23 {
     enum VerifyChainedNonMembershipError {
