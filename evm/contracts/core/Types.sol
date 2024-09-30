@@ -14,10 +14,10 @@ struct IBCConnectionCounterparty {
 }
 
 struct IBCConnection {
+    // We often read clientId/state
     uint32 clientId;
     IBCConnectionState state;
     IBCConnectionCounterparty counterparty;
-    uint64 delayPeriod;
 }
 
 enum IBCChannelState {
@@ -40,10 +40,11 @@ struct IBCChannelCounterparty {
 }
 
 struct IBCChannel {
+    // We often read state/connectionId
     IBCChannelState state;
+    uint32 connectionId;
     IBCChannelOrder ordering;
     IBCChannelCounterparty counterparty;
-    uint32 connectionId;
     bytes32 version;
 }
 

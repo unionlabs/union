@@ -49,7 +49,6 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         IBCConnection storage connection = connections[connectionId];
         connection.clientId = msg_.clientId;
         connection.state = IBCConnectionState.Init;
-        connection.delayPeriod = msg_.delayPeriod;
         connection.counterparty = msg_.counterparty;
         commitConnection(connectionId, connection);
         emit IBCConnectionLib.ConnectionOpenInit(
@@ -71,12 +70,10 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         IBCConnection storage connection = connections[connectionId];
         connection.clientId = msg_.clientId;
         connection.state = IBCConnectionState.TryOpen;
-        connection.delayPeriod = msg_.delayPeriod;
         connection.counterparty = msg_.counterparty;
         IBCConnection memory expectedConnection = IBCConnection({
             clientId: msg_.counterparty.clientId,
             state: IBCConnectionState.Init,
-            delayPeriod: msg_.delayPeriod,
             counterparty: IBCConnectionCounterparty({
                 clientId: msg_.clientId,
                 connectionId: 0,
@@ -125,7 +122,6 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         IBCConnection memory expectedConnection = IBCConnection({
             clientId: connection.counterparty.clientId,
             state: IBCConnectionState.TryOpen,
-            delayPeriod: connection.delayPeriod,
             counterparty: expectedCounterparty
         });
         if (
@@ -170,7 +166,6 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         IBCConnection memory expectedConnection = IBCConnection({
             clientId: connection.counterparty.clientId,
             state: IBCConnectionState.Open,
-            delayPeriod: connection.delayPeriod,
             counterparty: expectedCounterparty
         });
         if (
@@ -228,8 +223,6 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         return getClientInternal(connection.clientId).verifyMembership(
             connection.clientId,
             height,
-            0,
-            0,
             proof,
             abi.encodePacked(connection.counterparty.merklePrefix),
             abi.encodePacked(

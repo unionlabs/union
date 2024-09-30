@@ -54,7 +54,7 @@ interface IIBCPacket {
     function fulfillIntent(IBCMsgs.MsgFulfillIntent calldata msg_) external;
 
     /**
-     * @dev batchSend is called by a module in order to commit multiple IBC packets.
+     * @dev batchSend is called by a module in order to commit multiple IBC packets that have been previously sent.
      * An error occur if any of the packets wasn't sent.
      * If successful, a new commitment is registered for the batch.
      */

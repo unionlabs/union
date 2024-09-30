@@ -41,7 +41,6 @@ struct ConsensusState {
 library CosmosInCosmosLib {
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
-    error ErrDelayPeriodNotExpired();
     error ErrClientFrozen();
     error ErrInvalidL1Proof();
     error ErrInvalidInitialConsensusState();
@@ -162,8 +161,6 @@ contract CosmosInCosmosClient is
             !l1Client.verifyMembership(
                 clientState.l1ClientId,
                 header.l1Height,
-                0,
-                0,
                 header.l2InclusionProof,
                 abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
                 IBCCommitment.consensusStatePath(
@@ -209,8 +206,6 @@ contract CosmosInCosmosClient is
     function verifyMembership(
         uint32 clientId,
         uint64 height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path,
@@ -219,9 +214,7 @@ contract CosmosInCosmosClient is
         if (isFrozenImpl(clientId)) {
             revert CosmosInCosmosLib.ErrClientFrozen();
         }
-        bytes32 appHash = validateDelayPeriod(
-            clientId, height, delayPeriodTime, delayPeriodBlocks
-        );
+        bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyMembership(
             appHash, proof, prefix, path, value
         );
@@ -230,8 +223,6 @@ contract CosmosInCosmosClient is
     function verifyNonMembership(
         uint32 clientId,
         uint64 height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
@@ -239,37 +230,10 @@ contract CosmosInCosmosClient is
         if (isFrozenImpl(clientId)) {
             revert CosmosInCosmosLib.ErrClientFrozen();
         }
-        bytes32 appHash = validateDelayPeriod(
-            clientId, height, delayPeriodTime, delayPeriodBlocks
-        );
+        bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyNonMembership(
             appHash, proof, prefix, path
         );
-    }
-
-    function validateDelayPeriod(
-        uint32 clientId,
-        uint64 height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks
-    ) internal view returns (bytes32) {
-        ConsensusState storage consensusState =
-            consensusStates[clientId][height];
-        if (consensusState.timestamp == 0) {
-            revert CosmosInCosmosLib.ErrTrustedConsensusStateNotFound();
-        }
-        ProcessedMoment storage moment = processedMoments[clientId][height];
-        uint64 currentTime = uint64(block.timestamp * 1e9);
-        uint64 validTime = uint64(moment.timestamp) + delayPeriodTime;
-        if (delayPeriodTime != 0 && currentTime < validTime) {
-            revert CosmosInCosmosLib.ErrDelayPeriodNotExpired();
-        }
-        uint64 currentHeight = uint64(block.number);
-        uint64 validHeight = uint64(moment.height) + delayPeriodBlocks;
-        if (delayPeriodBlocks != 0 && currentHeight < validHeight) {
-            revert CosmosInCosmosLib.ErrDelayPeriodNotExpired();
-        }
-        return consensusState.appHash;
     }
 
     function getClientState(uint32 clientId)

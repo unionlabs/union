@@ -388,8 +388,6 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         return getClientInternal(connection.clientId).verifyMembership(
             connection.clientId,
             height,
-            0,
-            0,
             proof,
             abi.encodePacked(connection.counterparty.merklePrefix),
             abi.encodePacked(IBCCommitment.channelCommitmentKey(channelId)),

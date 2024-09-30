@@ -48,7 +48,6 @@ library CometblsClientLib {
     error ErrHeaderExpired();
     error ErrMaxClockDriftExceeded();
     error ErrInvalidZKP();
-    error ErrDelayPeriodNotExpired();
     error ErrInvalidUntrustedValidatorsHash();
     error ErrInvalidMisbehaviorHeadersSequence();
     error ErrInvalidMisbehavior();
@@ -393,8 +392,6 @@ contract CometblsClient is
     function verifyMembership(
         uint32 clientId,
         uint64 height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path,
@@ -403,9 +400,7 @@ contract CometblsClient is
         if (isFrozenImpl(clientId)) {
             revert CometblsClientLib.ErrClientFrozen();
         }
-        bytes32 appHash = validateDelayPeriod(
-            clientId, height, delayPeriodTime, delayPeriodBlocks
-        );
+        bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyMembership(
             appHash, proof, prefix, path, value
         );
@@ -414,8 +409,6 @@ contract CometblsClient is
     function verifyNonMembership(
         uint32 clientId,
         uint64 height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
@@ -423,37 +416,10 @@ contract CometblsClient is
         if (isFrozenImpl(clientId)) {
             revert CometblsClientLib.ErrClientFrozen();
         }
-        bytes32 appHash = validateDelayPeriod(
-            clientId, height, delayPeriodTime, delayPeriodBlocks
-        );
+        bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyNonMembership(
             appHash, proof, prefix, path
         );
-    }
-
-    function validateDelayPeriod(
-        uint32 clientId,
-        uint64 height,
-        uint64 delayPeriodTime,
-        uint64 delayPeriodBlocks
-    ) internal view returns (bytes32) {
-        ConsensusState storage consensusState =
-            consensusStates[clientId][height];
-        if (consensusState.timestamp == 0) {
-            revert CometblsClientLib.ErrTrustedConsensusStateNotFound();
-        }
-        ProcessedMoment storage moment = processedMoments[clientId][height];
-        uint64 currentTime = uint64(block.timestamp * 1e9);
-        uint64 validTime = uint64(moment.timestamp) + delayPeriodTime;
-        if (delayPeriodTime != 0 && currentTime < validTime) {
-            revert CometblsClientLib.ErrDelayPeriodNotExpired();
-        }
-        uint64 currentHeight = uint64(block.number);
-        uint64 validHeight = uint64(moment.height) + delayPeriodBlocks;
-        if (delayPeriodBlocks != 0 && currentHeight < validHeight) {
-            revert CometblsClientLib.ErrDelayPeriodNotExpired();
-        }
-        return consensusState.appHash;
     }
 
     function getClientState(uint32 clientId)
