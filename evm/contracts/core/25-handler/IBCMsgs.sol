@@ -22,13 +22,11 @@ library IBCMsgs {
     struct MsgConnectionOpenInit {
         uint32 clientId;
         IBCConnectionCounterparty counterparty;
-        uint64 delayPeriod;
         address relayer;
     }
 
     struct MsgConnectionOpenTry {
         IBCConnectionCounterparty counterparty;
-        uint64 delayPeriod;
         uint32 clientId;
         bytes proofInit;
         uint64 proofHeight;

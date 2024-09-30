@@ -63,8 +63,6 @@ interface ILightClient {
     function verifyMembership(
         uint32 clientId,
         uint64 height,
-        uint64 delayTimePeriod,
-        uint64 delayBlockPeriod,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path,
@@ -78,8 +76,6 @@ interface ILightClient {
     function verifyNonMembership(
         uint32 clientId,
         uint64 height,
-        uint64 delayTimePeriod,
-        uint64 delayBlockPeriod,
         bytes calldata proof,
         bytes calldata prefix,
         bytes calldata path
