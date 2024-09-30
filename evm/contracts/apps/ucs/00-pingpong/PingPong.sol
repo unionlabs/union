@@ -46,9 +46,9 @@ library PingPongLib {
 contract PingPong is IBCAppBase {
     using PingPongLib for *;
 
-    IBCHandler private ibcHandler;
+    IBCHandler private immutable ibcHandler;
     uint32 private srcChannelId;
-    uint64 private timeout;
+    uint64 private immutable timeout;
 
     constructor(IBCHandler _ibcHandler, uint64 _timeout) {
         ibcHandler = _ibcHandler;
@@ -63,11 +63,12 @@ contract PingPong is IBCAppBase {
         PingPongPacket memory packet,
         uint64 localTimeout
     ) public {
-        if (srcChannelId == 0) {
+        let sourceChannelId = srcChannelId;
+        if (sourceChannelId == 0) {
             revert PingPongLib.ErrNoChannel();
         }
         ibcHandler.sendPacket(
-            srcChannelId,
+            sourceChannelId,
             // No height timeout
             0,
             // Timestamp timeout

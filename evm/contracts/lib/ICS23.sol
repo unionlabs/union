@@ -268,13 +268,17 @@ library Ops {
         bytes calldata b
     ) internal pure returns (int256) {
         uint256 minLen = Math.min(a.length, b.length);
-        for (uint256 i; i < minLen; i++) {
+        for (uint256 i; i < minLen; ) {
             bytes1 ai = a[i];
             bytes1 bi = b[i];
             if (ai < bi) {
                 return -1;
             } else if (ai > bi) {
                 return 1;
+            }
+
+            unchecked {
+                ++i;
             }
         }
         if (a.length > minLen) {
@@ -288,8 +292,6 @@ library Ops {
 }
 
 library Proof {
-    bytes constant empty = new bytes(0);
-
     enum VerifyExistenceError {
         None,
         KeyNotMatching,
@@ -376,11 +378,15 @@ library Proof {
             return ("", CalculateRootError.LeafOp);
         }
         uint256 proofPathLength = proof.path.length;
-        for (uint256 i; i < proofPathLength; i++) {
+        for (uint256 i; i < proofPathLength; ) {
             Ops.ApplyInnerOpError iCode;
             (root, iCode) = Ops.applyOp(proof.path[i], root);
             if (iCode != Ops.ApplyInnerOpError.None) {
                 return ("", CalculateRootError.PathOp);
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
@@ -415,7 +421,7 @@ library Proof {
 
         uint256 max = spec.maxPrefixLength + spec.childSize;
         uint256 proofPathLength = proof.path.length;
-        for (uint256 i; i < proofPathLength; i++) {
+        for (uint256 i; i < proofPathLength; ) {
             UnionIcs23.InnerOp calldata innerOp = proof.path[i];
 
             // innerOp.prefix is hardcoded to be 0 in both specs
@@ -424,6 +430,10 @@ library Proof {
                     || innerOp.prefix[0] == 0 || innerOp.prefix.length > max
             ) {
                 return CheckAgainstSpecError.OpsCheckAgainstSpec;
+            }
+
+            unchecked {
+                ++i;
             }
         }
         return CheckAgainstSpecError.None;
@@ -535,9 +545,13 @@ library Proof {
     ) private pure returns (bool) {
         (uint256 minPrefix, uint256 maxPrefix, uint256 suffix) =
             getPadding(spec, 0);
-        for (uint256 i; i < length; i++) {
+        for (uint256 i; i < length; ) {
             if (!hasPadding(path[i], minPrefix, maxPrefix, suffix)) {
                 return false;
+            }
+
+            unchecked {
+                ++i;
             }
         }
         return true;
@@ -619,11 +633,15 @@ library Proof {
         UnionIcs23.ProofSpec memory spec,
         UnionIcs23.InnerOp calldata op
     ) private pure returns (uint256, OrderFromPaddingError) {
-        for (uint256 branch; branch < 2; branch++) {
+        for (uint256 branch; branch < 2; ) {
             (uint256 minp, uint256 maxp, uint256 suffix) =
                 getPadding(spec, branch);
-            if (hasPadding(op, minp, maxp, suffix) == true) {
+            if (hasPadding(op, minp, maxp, suffix)) {
                 return (branch, OrderFromPaddingError.None);
+            }
+
+            unchecked {
+                ++i;
             }
         }
         //revert(); // dev: Cannot find any valid spacing for this node

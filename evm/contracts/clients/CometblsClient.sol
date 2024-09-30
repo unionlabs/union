@@ -327,8 +327,7 @@ contract CometblsClient is
          */
         bytes32 trustedValidatorsHash = consensusState.nextValidatorsHash;
         bytes32 untrustedValidatorsHash;
-        bool adjacent = untrustedHeightNumber == trustedHeightNumber + 1;
-        if (adjacent) {
+        if (untrustedHeightNumber == trustedHeightNumber + 1) {
             if (header.signedHeader.validatorsHash != trustedValidatorsHash) {
                 revert CometblsClientLib.ErrInvalidUntrustedValidatorsHash();
             }

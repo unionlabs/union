@@ -47,13 +47,8 @@ library IBCChannelLib {
         address portId, bytes32 normalizedPortId, uint32 channelId
     );
 
-    error ErrPortIdMustBeLowercase();
-    error ErrConnNotSingleHop();
-    error ErrConnNotSingleVersion();
     error ErrInvalidConnectionState();
-    error ErrUnsupportedFeature();
     error ErrInvalidChannelState();
-    error ErrCounterpartyChannelNotEmpty();
     error ErrInvalidProof();
     error ErrInvalidChannelOrdering();
 }

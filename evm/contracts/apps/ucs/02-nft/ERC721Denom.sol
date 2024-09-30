@@ -6,7 +6,7 @@ import "./IERC721Denom.sol";
 contract ERC721Denom is ERC721URIStorage, IERC721Denom {
     error ERC721Unauthorized();
 
-    address public admin;
+    address public immutable admin;
 
     constructor(
         string memory name,

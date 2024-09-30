@@ -6,7 +6,7 @@ import "./IERC20Denom.sol";
 contract ERC20Denom is ERC20, IERC20Denom {
     error ERC20Unauthorized();
 
-    address public admin;
+    address public immutable admin;
 
     string private _name;
     string private _symbol;

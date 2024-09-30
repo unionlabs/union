@@ -22,7 +22,7 @@ contract Multicall {
         uint256 length = calls.length;
         returnData = new Result[](length);
         Call3 calldata calli;
-        for (uint256 i = 0; i < length;) {
+        for (uint256 i; i < length;) {
             Result memory result = returnData[i];
             calli = calls[i];
             (result.success, result.returnData) =

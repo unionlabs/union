@@ -309,11 +309,15 @@ contract UCS01Relay is
     ) external override {
         Token[] memory normalizedTokens = new Token[](tokens.length);
         uint256 tokensLength = tokens.length;
-        for (uint256 i; i < tokensLength; i++) {
+        for (uint256 i; i < tokensLength; ) {
             LocalToken calldata localToken = tokens[i];
             normalizedTokens[i].denom = sendToken(sourceChannel, localToken);
             normalizedTokens[i].amount = localToken.amount;
             normalizedTokens[i].fee = localToken.fee;
+
+            unchecked {
+                ++i;
+            }
         }
         RelayPacket memory packet = RelayPacket({
             sender: abi.encodePacked(msg.sender),
@@ -324,7 +328,7 @@ contract UCS01Relay is
         uint64 packetSequence = ibcHandler.sendPacket(
             sourceChannel, timeoutHeight, timeoutTimestamp, packet.encode()
         );
-        for (uint256 i; i < tokensLength; i++) {
+        for (uint256 i; i < tokensLength; ) {
             LocalToken calldata localToken = tokens[i];
             Token memory normalizedToken = normalizedTokens[i];
             emit RelayLib.Sent(
@@ -336,6 +340,10 @@ contract UCS01Relay is
                 localToken.denom,
                 uint256(localToken.amount)
             );
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -348,7 +356,7 @@ contract UCS01Relay is
         // We're going to refund, the receiver will be the sender.
         address userToRefund = RelayLib.bytesToAddress(packet.sender);
         uint256 packetTokensLength = packet.tokens.length;
-        for (uint256 i; i < packetTokensLength; i++) {
+        for (uint256 i; i < packetTokensLength;) {
             Token memory token = packet.tokens[i];
             address denomAddress = denomToAddress[channelId][token.denom];
             if (denomAddress != address(0)) {
@@ -373,6 +381,10 @@ contract UCS01Relay is
                 denomAddress,
                 token.amount
             );
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -440,7 +452,7 @@ contract UCS01Relay is
         RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
         string memory prefix = RelayLib.makeDenomPrefix(ibcPacket.sourceChannel);
         uint256 packetTokensLength = packet.tokens.length;
-        for (uint256 i; i < packetTokensLength; i++) {
+        for (uint256 i; i < packetTokensLength; ) {
             Token memory token = packet.tokens[i];
             if (token.amount == 0) {
                 revert RelayLib.ErrInvalidAmount();
@@ -500,6 +512,10 @@ contract UCS01Relay is
                     feeAmount
                 );
             }
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -521,11 +537,10 @@ contract UCS01Relay is
         );
         // We make sure not to revert to allow the failure ack to be sent back,
         // resulting in a refund.
-        if (success) {
+        if (success)
             return abi.encodePacked(RelayLib.ACK_SUCCESS);
-        } else {
-            return abi.encodePacked(RelayLib.ACK_FAILURE);
-        }
+        return abi.encodePacked(RelayLib.ACK_FAILURE);
+        
     }
 
     function onAcknowledgementPacket(

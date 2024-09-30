@@ -6,7 +6,6 @@ pragma solidity ^0.8.23;
 /// (256 bytes) and compressed (128 bytes) format.
 library Verifier {
     // Addresses of precompiles
-    uint256 constant PRECOMPILE_MODEXP = 0x05;
     uint256 constant PRECOMPILE_ADD = 0x06;
     uint256 constant PRECOMPILE_MUL = 0x07;
     uint256 constant PRECOMPILE_VERIFY = 0x08;
