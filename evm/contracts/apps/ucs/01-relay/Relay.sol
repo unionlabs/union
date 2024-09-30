@@ -505,7 +505,8 @@ contract UCS01Relay is
 
     function onRecvPacket(
         IBCPacket calldata ibcPacket,
-        address relayer
+        address relayer,
+        bytes calldata
     )
         external
         override(IBCAppBase, IIBCModule)
@@ -610,15 +611,15 @@ contract UCS01Relay is
     }
 
     function onChanCloseInit(
-        uint32 channelId,
-        address relayer
+        uint32,
+        address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
-        uint32 channelId,
-        address relayer
+        uint32,
+        address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
