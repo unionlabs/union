@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v1_aptos.transactions (\n                internal_chain_id, \n                height,\n                version,\n                transaction_hash,\n                transaction_index\n            ) VALUES ($1, $2, $3, $4, $5);\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8",
+        "Int8",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "417d5145a3b084f5a35437bace9d7059eccfeabbc2b4c51756531b53bd7ae6d8"
+}

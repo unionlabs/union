@@ -47,6 +47,7 @@ pub struct Config {
 }
 
 /// Unit struct describing parametrization of associated types for CosmosSDK based chains.
+#[derive(Clone)]
 pub struct CosmosSDK;
 
 impl postgres::ChainType for CosmosSDK {
@@ -232,7 +233,7 @@ async fn should_fast_sync_up_to(
     .block
     .header
     .height;
-    if latest.value() - current.value() >= batch_size.into() {
+    if latest.value() - current.value() >= batch_size as u64 {
         Ok(Some(latest))
     } else {
         Ok(None)

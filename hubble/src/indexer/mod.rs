@@ -1,10 +1,12 @@
 pub mod api;
+pub mod aptos;
 pub mod dummy;
 pub mod eth;
 mod fetcher;
 mod finalizer;
 mod fixer;
 mod postgres;
+pub mod tm;
 
 use std::{future::Future, time::Duration};
 
@@ -12,7 +14,7 @@ use api::{
     BlockHandle, BlockHeight, BlockRange, FetchMode, FetcherClient, IndexerError, IndexerId,
 };
 use color_eyre::eyre::Report;
-use futures::StreamExt;
+use futures::{pin_mut, StreamExt};
 use tokio::{task::JoinSet, time::sleep};
 use tracing::{error, info, info_span, Instrument};
 
@@ -171,7 +173,9 @@ impl<T: BlockHandle> HappyRangeFetcher<T> for T {
         F: Fn(T) -> Fut,
         Fut: Future<Output = Result<(), Report>>,
     {
-        let mut stream = self.fetch_range(range.clone(), mode)?;
+        let stream = self.fetch_range(range.clone(), mode)?;
+        pin_mut!(stream);
+
         let expected_block_heights = range.clone().into_iter();
 
         for expected_block_height in expected_block_heights {

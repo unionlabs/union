@@ -19,6 +19,10 @@ path = "src/main.rs"
 
 [dependencies]
 alloy              = { version = "0.1", features = ["full"] }
+aptos-crypto       = { workspace = true }
+aptos-move-ibc     = { workspace = true }
+aptos-rest-client  = { workspace = true }
+aptos-types        = { workspace = true }
 async-trait        = "0.1.82"
 axum               = { workspace = true, features = ["macros", "tokio"] }
 backon             = "0.4.4"

@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO v1_aptos.blocks (\n            internal_chain_id, \n            block_hash, \n            height, \n            timestamp, \n            first_version, \n            last_version\n        ) VALUES ($1, $2, $3, $4, $5, $6);\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Int8",
+        "Timestamptz",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4f037ee1e61e25343ea57414762aa9a738bbb9ca60c6737c325e2668fe23f256"
+}

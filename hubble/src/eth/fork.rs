@@ -98,7 +98,7 @@ impl Indexer {
                 let block = BlockInsert::from_provider_retried_filtered(
                     chain_id,
                     BlockId::Number(height.into()),
-                    provider,
+                    provider.clone(),
                     None,
                 )
                 .await?

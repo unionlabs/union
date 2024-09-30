@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT    cc.client_id\n        FROM      v1_cosmos.create_client cc\n        LEFT JOIN v0.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id\n        WHERE     cc.internal_chain_id = $1\n        AND       cl.chain_id IS NULL\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "client_id",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "627513b58a4776f055fac27be857d90874a465d033e08cb4ad9f70cc4bb22194"
+}

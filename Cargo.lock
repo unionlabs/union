@@ -6268,6 +6268,10 @@ name = "hubble"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "aptos-crypto",
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "aptos-types",
  "async-trait",
  "axum 0.6.20",
  "backon",

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM v0.transactions WHERE chain_id = $1 AND height = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "952f8a2d4facff5c2d947341f73cc937d55cb069d80ae0f7d12aad5b31cee6f3"
+}

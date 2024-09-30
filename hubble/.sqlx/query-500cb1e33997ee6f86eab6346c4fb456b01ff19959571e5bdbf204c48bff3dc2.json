@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO v1_aptos.events (\n                    internal_chain_id,\n                    height,\n                    version,\n                    sequence_number,\n                    creation_number,\n                    index,\n                    transaction_event_index,\n                    account_address,\n                    type,\n                    data\n                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Text",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "500cb1e33997ee6f86eab6346c4fb456b01ff19959571e5bdbf204c48bff3dc2"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM v1_aptos.events WHERE internal_chain_id = $1 AND height = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4123bb0c8d578612ae2842ac5200c7b2b8113e11a484f413198494ac182422cd"
+}
