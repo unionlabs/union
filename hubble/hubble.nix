@@ -164,6 +164,8 @@
                   "arb"
                   "scroll"
                   "eth-fetcher"
+                  "tm-fetcher"
+                  "aptos-fetcher"
                 ];
               };
               options.start_height = mkOption {
