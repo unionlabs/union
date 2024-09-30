@@ -20,7 +20,7 @@ use unionlabs::{
     },
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
+    core::{ChainId, ConsensusType},
     module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo},
     run_module_server, DefaultCmd, ModuleContext,
 };
@@ -133,9 +133,9 @@ impl ModuleContext for Module {
         ModuleInfo {
             kind: ConsensusModuleInfo {
                 chain_id: config.chain_id,
-                client_type: ClientType::new(match config.chain_spec {
-                    PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
-                    PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
+                consensus_type: ConsensusType::new(match config.chain_spec {
+                    PresetBaseKind::Minimal => ConsensusType::ETHEREUM_MINIMAL,
+                    PresetBaseKind::Mainnet => ConsensusType::ETHEREUM_MAINNET,
                 }),
             },
         }

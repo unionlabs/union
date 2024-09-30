@@ -29,6 +29,7 @@ use unionlabs::{
     traits::Member,
     QueryHeight, DELAY_PERIOD,
 };
+use voyager_core::ClientType;
 
 #[cfg(doc)]
 use crate::core::ClientInfo;
@@ -145,6 +146,8 @@ pub struct MakeMsgCreateClient {
     pub counterparty_chain_id: ChainId<'static>,
     /// The IBC interface to create the client on.
     pub ibc_interface: IbcInterface<'static>,
+    /// The type of client to create.
+    pub client_type: ClientType<'static>,
 }
 
 #[model]
@@ -647,6 +650,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 height,
                 metadata,
                 counterparty_chain_id,
+                client_type,
                 ibc_interface,
             }) => {
                 make_msg_create_client(
@@ -654,6 +658,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     counterparty_chain_id,
                     height,
                     chain_id,
+                    client_type,
                     ibc_interface,
                     metadata,
                 )
@@ -1043,6 +1048,7 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
     counterparty_chain_id: ChainId<'static>,
     height: QueryHeight,
     chain_id: ChainId<'static>,
+    client_type: ClientType<'static>,
     ibc_interface: IbcInterface<'_>,
     metadata: Value,
 ) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
@@ -1070,17 +1076,36 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
         .map_err(json_rpc_error_to_queue_error)?;
     trace!(%self_consensus_state);
 
-    let client_type = ctx
+    let consensus_type = ctx
         .rpc_server
         .modules()
         .map_err(error_object_to_queue_error)?
         .chain_consensus_type(&chain_id)?;
 
+    let client_consensus_type = ctx
+        .rpc_server
+        .modules()
+        .map_err(error_object_to_queue_error)?
+        .client_consensus_type(&client_type)?;
+
+    if client_consensus_type != consensus_type {
+        return Err(QueueError::Fatal(
+            format!(
+                "attempted to create a {client_type} client on \
+                {chain_id} tracking {counterparty_chain_id}, but \
+                the consensus of that chain ({consensus_type}) is \
+                not verifiable by a client of type {client_type} \
+                (which instead verifies {client_consensus_type})."
+            )
+            .into(),
+        ));
+    }
+
     let client_module = ctx
         .rpc_server
         .modules()
         .map_err(error_object_to_queue_error)?
-        .client_module(client_type, &ibc_interface)?;
+        .client_module(&client_type, &ibc_interface)?;
 
     Ok(data(WithChainId {
         chain_id,

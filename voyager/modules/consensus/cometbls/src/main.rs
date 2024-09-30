@@ -19,7 +19,7 @@ use unionlabs::{
     traits::Member,
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
+    core::{ChainId, ConsensusType},
     module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo},
     run_module_server, DefaultCmd, ModuleContext,
 };
@@ -94,7 +94,7 @@ impl ModuleContext for Module {
         ModuleInfo {
             kind: ConsensusModuleInfo {
                 chain_id: config.chain_id,
-                client_type: ClientType::new(ClientType::COMETBLS),
+                consensus_type: ConsensusType::new(ConsensusType::COMETBLS),
             },
         }
     }

@@ -25,8 +25,8 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{
-        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcGo08WasmClientMetadata,
-        IbcInterface,
+        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
+        IbcGo08WasmClientMetadata, IbcInterface,
     },
     module::{ClientModuleInfo, ClientModuleServer, ModuleInfo},
     run_module_server, DefaultCmd, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
@@ -65,6 +65,7 @@ impl ModuleContext for Module {
         ModuleInfo {
             kind: ClientModuleInfo {
                 client_type: ClientType::new(ClientType::MOVEMENT),
+                consensus_type: ConsensusType::new(ConsensusType::MOVEMENT),
                 ibc_interface: SUPPORTED_IBC_INTERFACE,
             },
         }
@@ -222,19 +223,21 @@ impl ClientModuleServer for Module {
         client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
         match client_type.as_str() {
-            ClientType::COMETBLS => Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
-                Bcs,
-            >(&client_state.0)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to decode client state: {}", ErrorReporter(err)),
-                    Some(json!({
-                        "client_type": client_type,
-                    })),
-                )
-            })?)
-            .encode_as::<Proto>())),
+            ClientType::COMETBLS_GROTH16 => {
+                Ok(Hex(Any(cometbls::client_state::ClientState::decode_as::<
+                    Bcs,
+                >(&client_state.0)
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        Some(json!({
+                            "client_type": client_type,
+                        })),
+                    )
+                })?)
+                .encode_as::<Proto>()))
+            }
             _ => Ok(client_state),
         }
     }

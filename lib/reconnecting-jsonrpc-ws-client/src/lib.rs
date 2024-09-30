@@ -11,7 +11,7 @@ use jsonrpsee::core::{
 };
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, debug_span, error, instrument, trace, warn, Instrument};
+use tracing::{debug, debug_span, error, instrument, trace, Instrument};
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -251,7 +251,7 @@ async fn reconnect<
             Err(error) => {
                 attempt += 1;
 
-                warn!(
+                debug!(
                     ?error,
                     %attempt,
                     "error while reconnecting client, \

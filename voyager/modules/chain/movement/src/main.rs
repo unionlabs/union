@@ -192,7 +192,7 @@ impl ChainModuleServer for Module {
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         match client_id.to_string().rsplit_once('-') {
             Some(("cometbls", _)) => Ok(ClientInfo {
-                client_type: ClientType::new(ClientType::COMETBLS),
+                client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
                 ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
                 metadata: Default::default(),
             }),

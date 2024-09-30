@@ -53,42 +53,101 @@ pub struct ClientType;
 /// Well-known client types, defined as constants for reusability and to allow
 /// for pattern matching.
 impl ClientType<'static> {
-    /// A client tracking [CometBLS] consensus.
+    /// A client tracking [CometBLS] consensus, verified by manually verifying the state transition.
     ///
     /// [CometBLS]: https://github.com/unionlabs/cometbls
     pub const COMETBLS: &'static str = "cometbls";
 
-    /// A client tracking vanilla [CometBFT] (Tendermint) consensus.
+    /// A client tracking [CometBLS] consensus, verified with a ZK proof of the state transition created by galois.
+    ///
+    /// [CometBLS]: https://github.com/unionlabs/cometbls
+    pub const COMETBLS_GROTH16: &'static str = "cometbls-groth16";
+
+    /// A client tracking vanilla [CometBFT] (Tendermint) consensus, through the `07-tendermint` light client specification.
     ///
     /// [CometBFT]: https://github.com/cometbft/cometbft
-    pub const TENDERMINT: &'static str = "tendermint";
+    pub const TENDERMINT: &'static str = "07-tendermint";
 
+    // TODO: Consolidate these two into one client type after https://github.com/unionlabs/union/issues/3006
     /// A client tracking the Ethereum beacon chain consensus, with the mainnet
-    /// configuration.
+    /// configuration. Verified through the [Ethereum Proof-of-Stake Consensus Specifications](spec).
+    ///
+    /// [spec]: https://github.com/ethereum/consensus-specs
     pub const ETHEREUM_MAINNET: &'static str = "ethereum-mainnet";
 
     /// A client tracking the Ethereum beacon chain consensus, with the minimal
-    /// configuration.
+    /// configuration. Verified through the [Ethereum Proof-of-Stake Consensus Specifications](spec).
+    ///
+    /// [spec]: https://github.com/ethereum/consensus-specs
     pub const ETHEREUM_MINIMAL: &'static str = "ethereum-minimal";
 
     /// A client tracking the state of the [Scroll] zkevm L2, settling on
-    /// Ethereum.
+    /// Ethereum, verified by verifying the L2 settlement on the L1.
     ///
     /// [Scroll]: https://github.com/scroll-tech/scroll
     pub const SCROLL: &'static str = "scroll";
 
     /// A client tracking the state of the [Arbitrum] optimistic L2, settling on
-    /// Ethereum.
+    /// Ethereum, verified by verifying the L2 settlement on the L1.
     ///
     /// [Arbitrum]: https://github.com/OffchainLabs/nitro-contracts
     pub const ARBITRUM: &'static str = "arbitrum";
 
-    /// A client tracking the state of a [BeaconKit] chain.
+    /// A client tracking the state of a [BeaconKit] chain, verified by verifying the underlying [CometBFT] consensus.
+    ///
+    /// [BeaconKit]: https://github.com/berachain/beacon-kit
+    /// [CometBFT]: https://github.com/cometbft/cometbft
+    pub const BEACON_KIT: &'static str = "beacon-kit";
+
+    /// A client tracking the state of a [Movement] chain.
+    ///
+    /// [Movement]: https://github.com/movementlabsxyz/movement
+    pub const MOVEMENT: &'static str = "movement";
+
+    // lots more to come - near, linea, polygon - stay tuned
+}
+
+/// Newtype for consensus types. A consensus is verifiable by potentially many [`ClientType`]s.
+#[apply(str_newtype)]
+pub struct ConsensusType;
+
+/// Well-known consensus types, defined as constants for reusability and to allow
+/// for pattern matching.
+impl ConsensusType<'static> {
+    /// [CometBLS] consensus.
+    ///
+    /// [CometBLS]: https://github.com/unionlabs/cometbls
+    pub const COMETBLS: &'static str = "cometbls";
+
+    /// [CometBFT] (Tendermint) consensus.
+    ///
+    /// [CometBFT]: https://github.com/cometbft/cometbft
+    pub const TENDERMINT: &'static str = "tendermint";
+
+    /// Ethereum beacon chain consensus, with the mainnet
+    /// configuration.
+    pub const ETHEREUM_MAINNET: &'static str = "ethereum-mainnet";
+
+    /// Ethereum beacon chain consensus, with the minimal
+    /// configuration.
+    pub const ETHEREUM_MINIMAL: &'static str = "ethereum-minimal";
+
+    /// [Scroll] zkevm L2, settling on Ethereum.
+    ///
+    /// [Scroll]: https://github.com/scroll-tech/scroll
+    pub const SCROLL: &'static str = "scroll";
+
+    /// [Arbitrum] optimistic L2, settling on Ethereum.
+    ///
+    /// [Arbitrum]: https://github.com/OffchainLabs/nitro-contracts
+    pub const ARBITRUM: &'static str = "arbitrum";
+
+    /// [BeaconKit] consensus.
     ///
     /// [BeaconKit]: https://github.com/berachain/beacon-kit
     pub const BEACON_KIT: &'static str = "beacon-kit";
 
-    /// A client tracking the state of a [Movement] chain.
+    /// [Movement] consensus.
     ///
     /// [Movement]: https://github.com/movementlabsxyz/movement
     pub const MOVEMENT: &'static str = "movement";

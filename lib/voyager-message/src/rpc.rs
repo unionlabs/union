@@ -16,6 +16,7 @@ use unionlabs::{
 };
 
 use crate::{
+    context::LoadedModulesInfo,
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface},
     FATAL_JSONRPC_ERROR_CODE,
 };
@@ -31,7 +32,7 @@ pub mod server;
 )]
 pub trait VoyagerRpc {
     #[method(name = "info")]
-    async fn info(&self) -> RpcResult<Info>;
+    async fn info(&self) -> RpcResult<LoadedModulesInfo>;
 
     #[method(name = "queryLatestHeight")]
     async fn query_latest_height(&self, chain_id: ChainId<'static>) -> RpcResult<Height>;
@@ -116,13 +117,6 @@ pub trait VoyagerRpc {
         ibc_interface: IbcInterface<'static>,
         consensus_state: Hex<Vec<u8>>,
     ) -> RpcResult<Value>;
-}
-
-#[model]
-pub struct Info {
-    chain: Vec<ChainId<'static>>,
-    consensus: Vec<ChainId<'static>>,
-    client: Vec<(ClientType<'static>, IbcInterface<'static>)>,
 }
 
 #[model]

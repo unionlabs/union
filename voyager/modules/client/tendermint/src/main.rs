@@ -19,7 +19,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
+    core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface},
     module::{ClientModuleInfo, ClientModuleServer, ModuleInfo},
     run_module_server, DefaultCmd, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -87,6 +87,7 @@ impl ModuleContext for Module {
         ModuleInfo {
             kind: ClientModuleInfo {
                 client_type: ClientType::new(ClientType::TENDERMINT),
+                consensus_type: ConsensusType::new(ConsensusType::TENDERMINT),
                 ibc_interface: IbcInterface::new(config.ibc_interface.as_str()),
             },
         }

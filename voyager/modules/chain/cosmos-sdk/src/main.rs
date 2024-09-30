@@ -395,7 +395,9 @@ impl ChainModuleServer for Module {
                             WasmClientType::EthereumMainnet => {
                                 ClientType::new(ClientType::ETHEREUM_MAINNET)
                             }
-                            WasmClientType::Cometbls => ClientType::new(ClientType::COMETBLS),
+                            WasmClientType::Cometbls => {
+                                ClientType::new(ClientType::COMETBLS_GROTH16)
+                            }
                             WasmClientType::Tendermint => ClientType::new(ClientType::TENDERMINT),
                             WasmClientType::Scroll => ClientType::new(ClientType::SCROLL),
                             WasmClientType::Arbitrum => ClientType::new(ClientType::ARBITRUM),

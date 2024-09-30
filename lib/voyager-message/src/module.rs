@@ -14,6 +14,7 @@ use unionlabs::{
     traits::Member,
     ErrorReporter,
 };
+use voyager_core::ConsensusType;
 #[cfg(doc)]
 use {
     crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},
@@ -69,12 +70,12 @@ impl IModuleKindInfo for ChainModuleInfo {
 #[model]
 pub struct ConsensusModuleInfo {
     pub chain_id: ChainId<'static>,
-    pub client_type: ClientType<'static>,
+    pub consensus_type: ConsensusType<'static>,
 }
 
 impl IModuleKindInfo for ConsensusModuleInfo {
     fn name(&self) -> String {
-        format!("consensus/{}/{}", self.chain_id, self.client_type)
+        format!("consensus/{}/{}", self.chain_id, self.consensus_type)
     }
 }
 
@@ -82,6 +83,9 @@ impl IModuleKindInfo for ConsensusModuleInfo {
 pub struct ClientModuleInfo {
     /// The client type that this client module provides functionality for.
     pub client_type: ClientType<'static>,
+
+    /// The consensus type that this client module verifies.
+    pub consensus_type: ConsensusType<'static>,
 
     /// The IBC interface that this client module provides functionality for.
     pub ibc_interface: IbcInterface<'static>,
