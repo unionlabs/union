@@ -38,16 +38,16 @@ interface IIBCModule {
 
     function onChanCloseConfirm(uint32 channelId, address relayer) external;
 
-    function onFulfillIntent(
+    function onRecvIntentPacket(
         IBCPacket calldata,
-        address maker,
-        bytes calldata makerMsg
+        address marketMaker,
+        bytes calldata marketMakerMsg
     ) external returns (bytes memory);
 
     function onRecvPacket(
         IBCPacket calldata,
-        address maker,
-        bytes calldata makerMsg
+        address relayer,
+        bytes calldata relayerMsg
     ) external returns (bytes memory);
 
     function onAcknowledgementPacket(

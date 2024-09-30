@@ -119,7 +119,7 @@ library IBCMsgs {
         address relayer;
     }
 
-    struct MsgFulfillIntent {
+    struct MsgIntentPacketRecv {
         IBCPacket[] packets;
         bytes[] marketMakerMsgs;
         address marketMaker;
