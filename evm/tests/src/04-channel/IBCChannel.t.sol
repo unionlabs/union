@@ -19,7 +19,7 @@ contract IBCChannelTests is Test {
     function setUp() public {
         handler = new TestIBCHandler();
         lightClient = new TestLightClient();
-        module = new TestModule(address(handler));
+        module = new TestModule(handler);
         handler.registerClient(CLIENT_TYPE, lightClient);
         clientId = handler.createClient(
             IBCMsgs.MsgCreateClient({

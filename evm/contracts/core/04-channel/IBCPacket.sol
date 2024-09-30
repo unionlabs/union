@@ -47,18 +47,13 @@ library IBCPacketLib {
     error ErrInvalidPacketCommitment();
     error ErrTimeoutHeightNotReached();
     error ErrTimeoutTimestampNotReached();
-    error ErrNextSequenceMustBeGreaterThanTimeoutSequence();
+    error ErrNextSequenceMustBeLEQThanTimeoutSequence();
     error ErrConnectionMismatch();
     error ErrNotEnoughPackets();
     error ErrCommittedPacketNotPresent();
     error ErrCommittedAckNotPresent();
     error ErrCannotIntentOrderedPacket();
-}
 
-/**
- * @dev IBCPacket is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
- */
-abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     function batchSingleAck(
         bytes calldata ack
     ) internal pure returns (bytes[] memory) {
@@ -91,6 +86,41 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         return packets;
     }
 
+    function commitAcks(
+        bytes[] calldata acknowledgements
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(acknowledgements));
+    }
+
+    function commitAcksMemory(
+        bytes[] memory acknowledgements
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(acknowledgements));
+    }
+
+    function commitPackets(
+        IBCPacket[] calldata packets
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(packets));
+    }
+
+    function commitPacketsMemory(
+        IBCPacket[] memory packets
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(packets));
+    }
+
+    function commitRecvSeq(
+        uint64 sequence
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(sequence));
+    }
+}
+
+/**
+ * @dev IBCPacket is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
+ */
+abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     /**
      * @dev batchSend is called by a module in order to commit multiple IBC packets.
      * An error occur if any of the packets wasn't sent.
@@ -109,7 +139,10 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             // If the channel mismatch, the commitment will be zero
             bytes32 commitment = commitments[IBCCommitment
                 .batchPacketsCommitmentKey(
-                msg_.sourceChannel, commitPacketsMemory(batchSingle(packet))
+                msg_.sourceChannel,
+                IBCPacketLib.commitPacketsMemory(
+                    IBCPacketLib.batchSingle(packet)
+                )
             )];
             // Every packet must have been previously sent to be batched
             if (commitment != IBCPacketLib.COMMITMENT_MAGIC) {
@@ -117,7 +150,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             }
         }
         commitments[IBCCommitment.batchPacketsCommitmentKey(
-            msg_.sourceChannel, commitPackets(msg_.packets)
+            msg_.sourceChannel, IBCPacketLib.commitPackets(msg_.packets)
         )] = IBCPacketLib.COMMITMENT_MAGIC;
     }
 
@@ -140,20 +173,28 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             // If the channel mismatch, the commitment will be zero.
             bytes32 commitment = commitments[IBCCommitment
                 .batchAcksCommitmentKey(
-                msg_.sourceChannel, commitPacketsMemory(batchSingle(packet))
+                msg_.sourceChannel,
+                IBCPacketLib.commitPacketsMemory(
+                    IBCPacketLib.batchSingle(packet)
+                )
             )];
             // Can't batch an empty ack.
             if (commitment == 0) {
                 revert IBCPacketLib.ErrAcknowledgementIsEmpty();
             }
             // Every packet must have been received to be batched.
-            if (commitment != commitAcksMemory(batchSingleAck(ack))) {
+            if (
+                commitment
+                    != IBCPacketLib.commitAcksMemory(
+                        IBCPacketLib.batchSingleAck(ack)
+                    )
+            ) {
                 revert IBCPacketLib.ErrCommittedAckNotPresent();
             }
         }
         commitments[IBCCommitment.batchAcksCommitmentKey(
-            msg_.sourceChannel, commitPackets(msg_.packets)
-        )] = commitAcks(msg_.acks);
+            msg_.sourceChannel, IBCPacketLib.commitPackets(msg_.packets)
+        )] = IBCPacketLib.commitAcks(msg_.acks);
     }
 
     /**
@@ -188,7 +229,10 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             timeoutTimestamp: timeoutTimestamp
         });
         commitments[IBCCommitment.batchPacketsCommitmentKey(
-            sourceChannel, commitPacketsMemory(batchSingleMemory(packet))
+            sourceChannel,
+            IBCPacketLib.commitPacketsMemory(
+                IBCPacketLib.batchSingleMemory(packet)
+            )
         )] = IBCPacketLib.COMMITMENT_MAGIC;
         emit IBCPacketLib.SendPacket(packet);
         return sequence;
@@ -198,7 +242,8 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IBCPacket calldata packet
     ) internal returns (bool) {
         bytes32 receiptCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-            packet.destinationChannel, commitPacketsMemory(batchSingle(packet))
+            packet.destinationChannel,
+            IBCPacketLib.commitPacketsMemory(IBCPacketLib.batchSingle(packet))
         );
         bool alreadyReceived =
             commitments[receiptCommitmentKey] == IBCPacketLib.COMMITMENT_MAGIC;
@@ -246,7 +291,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                     proofHeight,
                     proof,
                     IBCCommitment.batchPacketsCommitmentKey(
-                        destinationChannel, commitPackets(packets)
+                        destinationChannel, IBCPacketLib.commitPackets(packets)
                     ),
                     IBCPacketLib.COMMITMENT_MAGIC
                 )
@@ -337,14 +382,16 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         bytes memory acknowledgement
     ) internal {
         bytes32 ackCommitmentKey = IBCCommitment.batchAcksCommitmentKey(
-            packet.destinationChannel, commitPacketsMemory(batchSingle(packet))
+            packet.destinationChannel,
+            IBCPacketLib.commitPacketsMemory(IBCPacketLib.batchSingle(packet))
         );
         bytes32 ackCommitment = commitments[ackCommitmentKey];
         if (ackCommitment != IBCPacketLib.COMMITMENT_NULL) {
             revert IBCPacketLib.ErrAcknowledgementAlreadyExists();
         }
-        commitments[ackCommitmentKey] =
-            commitAcksMemory(batchSingleAckMemory(acknowledgement));
+        commitments[ackCommitmentKey] = IBCPacketLib.commitAcksMemory(
+            IBCPacketLib.batchSingleAckMemory(acknowledgement)
+        );
         emit IBCPacketLib.WriteAcknowledgement(packet, acknowledgement);
     }
 
@@ -411,9 +458,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 msg_.proofHeight,
                 msg_.proof,
                 IBCCommitment.batchAcksCommitmentKey(
-                    destinationChannel, commitPackets(msg_.packets)
+                    destinationChannel, IBCPacketLib.commitPackets(msg_.packets)
                 ),
-                commitAcks(msg_.acknowledgements)
+                IBCPacketLib.commitAcks(msg_.acknowledgements)
             )
         ) {
             revert IBCPacketLib.ErrInvalidProof();
@@ -461,7 +508,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                     IBCCommitment.nextSequenceRecvCommitmentKey(
                         destinationChannel
                     ),
-                    commitRecvSeq(msg_.nextSequenceRecv)
+                    IBCPacketLib.commitRecvSeq(msg_.nextSequenceRecv)
                 )
             ) {
                 revert IBCPacketLib.ErrInvalidProof();
@@ -473,7 +520,8 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                     msg_.proofHeight,
                     msg_.proof,
                     IBCCommitment.batchReceiptsCommitmentKey(
-                        destinationChannel, commitPackets(msg_.packets)
+                        destinationChannel,
+                        IBCPacketLib.commitPackets(msg_.packets)
                     )
                 )
             ) {
@@ -498,7 +546,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 if (msg_.nextSequenceRecv > packet.sequence) {
                     revert
                         IBCPacketLib
-                        .ErrNextSequenceMustBeGreaterThanTimeoutSequence();
+                        .ErrNextSequenceMustBeLEQThanTimeoutSequence();
                 }
             }
             lookupModuleByChannel(sourceChannel).onTimeoutPacket(
@@ -572,42 +620,12 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IBCPacket[] calldata packets
     ) internal {
         bytes32 packetCommitmentKey = IBCCommitment.batchPacketsCommitmentKey(
-            sourceChannel, commitPackets(packets)
+            sourceChannel, IBCPacketLib.commitPackets(packets)
         );
         bytes32 packetCommitment = commitments[packetCommitmentKey];
         if (packetCommitment != IBCPacketLib.COMMITMENT_MAGIC) {
             revert IBCPacketLib.ErrPacketCommitmentNotFound();
         }
         delete commitments[packetCommitmentKey];
-    }
-
-    function commitAcks(
-        bytes[] calldata acknowledgements
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(acknowledgements));
-    }
-
-    function commitAcksMemory(
-        bytes[] memory acknowledgements
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(acknowledgements));
-    }
-
-    function commitPackets(
-        IBCPacket[] calldata packets
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(packets));
-    }
-
-    function commitPacketsMemory(
-        IBCPacket[] memory packets
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(packets));
-    }
-
-    function commitRecvSeq(
-        uint64 sequence
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(sequence));
     }
 }

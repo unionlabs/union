@@ -1,12 +1,13 @@
 pragma solidity ^0.8.23;
 
+import "../../../contracts/core/25-handler/IBCHandler.sol";
 import "../../../contracts/apps/Base.sol";
 
 contract TestModule is IBCAppBase {
-    address private immutable ibcHandler;
+    IBCHandler private immutable ibcHandler;
 
     constructor(
-        address ibcHandler_
+        IBCHandler ibcHandler_
     ) {
         ibcHandler = ibcHandler_;
     }
