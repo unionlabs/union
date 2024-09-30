@@ -2,16 +2,17 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 
-import "../../../contracts/core/25-handler/IBCMsgs.sol";
-import "../core/IBCClient.sol";
+import "../core/IBCHandler.sol";
 import "../core/LightClient.sol";
 
+import "../../../contracts/core/25-handler/IBCMsgs.sol";
+
 contract IBCClientTests is Test {
-    TestIBCClient ibcClient;
+    TestIBCHandler handler;
     TestLightClient lightClient;
 
     function setUp() public {
-        ibcClient = new TestIBCClient();
+        handler = new TestIBCHandler();
         lightClient = new TestLightClient();
     }
 
@@ -21,7 +22,7 @@ contract IBCClientTests is Test {
         vm.expectEmit();
         emit IBCClientLib.ClientRegistered(typ, impl);
         vm.resumeGasMetering();
-        ibcClient.registerClient(typ, ILightClient(impl));
+        handler.registerClient(typ, ILightClient(impl));
     }
 
     function test_registerClient_alreadyRegistered(
@@ -31,46 +32,46 @@ contract IBCClientTests is Test {
         vm.assume(impl != address(0));
         vm.expectEmit();
         emit IBCClientLib.ClientRegistered(typ, impl);
-        ibcClient.registerClient(typ, ILightClient(impl));
+        handler.registerClient(typ, ILightClient(impl));
         vm.expectRevert(IBCClientLib.ErrClientTypeAlreadyExists.selector);
-        ibcClient.registerClient(typ, ILightClient(impl));
+        handler.registerClient(typ, ILightClient(impl));
     }
 
     function test_createClient_ok(IBCMsgs.MsgCreateClient calldata msg_)
         public
     {
         vm.pauseGasMetering();
-        ibcClient.registerClient(msg_.clientType, lightClient);
+        handler.registerClient(msg_.clientType, lightClient);
         vm.expectEmit();
         emit IBCClientLib.ClientCreated(0);
         vm.resumeGasMetering();
-        ibcClient.createClient(msg_);
+        handler.createClient(msg_);
     }
 
     function test_createClient_ko(IBCMsgs.MsgCreateClient calldata msg_)
         public
     {
         lightClient.setRevertCreate(true);
-        ibcClient.registerClient(msg_.clientType, lightClient);
+        handler.registerClient(msg_.clientType, lightClient);
         vm.expectRevert();
-        ibcClient.createClient(msg_);
+        handler.createClient(msg_);
     }
 
     function test_createClient_commitmentsSaved(
         IBCMsgs.MsgCreateClient calldata msg_
     ) public {
         vm.pauseGasMetering();
-        ibcClient.registerClient(msg_.clientType, lightClient);
+        handler.registerClient(msg_.clientType, lightClient);
         vm.resumeGasMetering();
-        uint32 clientId = ibcClient.createClient(msg_);
+        uint32 clientId = handler.createClient(msg_);
         assertEq(
-            ibcClient.commitments(
+            handler.commitments(
                 IBCCommitment.clientStateCommitmentKey(clientId)
             ),
             keccak256(msg_.clientStateBytes)
         );
         assertEq(
-            ibcClient.commitments(
+            handler.commitments(
                 IBCCommitment.consensusStateCommitmentKey(clientId, 0)
             ),
             keccak256(msg_.consensusStateBytes)
@@ -83,12 +84,12 @@ contract IBCClientTests is Test {
         address relayer
     ) public {
         vm.pauseGasMetering();
-        ibcClient.registerClient(msg_.clientType, lightClient);
-        uint32 clientId = ibcClient.createClient(msg_);
+        handler.registerClient(msg_.clientType, lightClient);
+        uint32 clientId = handler.createClient(msg_);
         vm.expectEmit();
         emit IBCClientLib.ClientUpdated(0, 1);
         vm.resumeGasMetering();
-        ibcClient.updateClient(
+        handler.updateClient(
             IBCMsgs.MsgUpdateClient({
                 clientId: clientId,
                 clientMessage: clientMessage,
@@ -104,11 +105,11 @@ contract IBCClientTests is Test {
     ) public {
         vm.pauseGasMetering();
         lightClient.setRevertUpdate(true);
-        ibcClient.registerClient(msg_.clientType, lightClient);
-        uint32 clientId = ibcClient.createClient(msg_);
+        handler.registerClient(msg_.clientType, lightClient);
+        uint32 clientId = handler.createClient(msg_);
         vm.resumeGasMetering();
         vm.expectRevert();
-        ibcClient.updateClient(
+        handler.updateClient(
             IBCMsgs.MsgUpdateClient({
                 clientId: clientId,
                 clientMessage: clientMessage,
@@ -123,10 +124,10 @@ contract IBCClientTests is Test {
         address relayer
     ) public {
         vm.pauseGasMetering();
-        ibcClient.registerClient(msg_.clientType, lightClient);
-        uint32 clientId = ibcClient.createClient(msg_);
+        handler.registerClient(msg_.clientType, lightClient);
+        uint32 clientId = handler.createClient(msg_);
         vm.resumeGasMetering();
-        ibcClient.updateClient(
+        handler.updateClient(
             IBCMsgs.MsgUpdateClient({
                 clientId: clientId,
                 clientMessage: clientMessage,
@@ -134,13 +135,13 @@ contract IBCClientTests is Test {
             })
         );
         assertEq(
-            ibcClient.commitments(
+            handler.commitments(
                 IBCCommitment.clientStateCommitmentKey(clientId)
             ),
             keccak256(msg_.clientStateBytes)
         );
         assertEq(
-            ibcClient.commitments(
+            handler.commitments(
                 IBCCommitment.consensusStateCommitmentKey(clientId, 1)
             ),
             keccak256(clientMessage)
