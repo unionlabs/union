@@ -136,7 +136,6 @@
 
         [profile.test]
         test = "tests/src"
-        optimizer = false
       '';
       wrappedForge = pkgs.symlinkJoin {
         name = "forge";
@@ -440,7 +439,7 @@
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/contracts/core" forge test -vvv --gas-report "$@"
+            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
           '';
         };
 
