@@ -27,7 +27,9 @@ contract ERC721Denom is ERC721URIStorage, IERC721Denom {
         _setTokenURI(tokenId, tokenURI);
     }
 
-    function burn(uint256 tokenId) external {
+    function burn(
+        uint256 tokenId
+    ) external {
         if (msg.sender != admin) {
             revert ERC721Unauthorized();
         }

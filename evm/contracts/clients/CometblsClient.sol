@@ -62,31 +62,25 @@ library CometblsClientLib {
         return currentTime > (headerTime + trustingPeriod);
     }
 
-    function encodeMemory(Header memory header)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encodeMemory(
+        Header memory header
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             header.signedHeader, header.trustedHeight, header.zeroKnowledgeProof
         );
     }
 
-    function encode(Header calldata header)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encode(
+        Header calldata header
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             header.signedHeader, header.trustedHeight, header.zeroKnowledgeProof
         );
     }
 
-    function decodeHeader(bytes calldata bz)
-        internal
-        pure
-        returns (Header calldata)
-    {
+    function decodeHeader(
+        bytes calldata bz
+    ) internal pure returns (Header calldata) {
         Header calldata header;
         assembly {
             header := bz.offset
@@ -94,11 +88,9 @@ library CometblsClientLib {
         return header;
     }
 
-    function encodeMemory(ClientState memory clientState)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encodeMemory(
+        ClientState memory clientState
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             clientState.chainId,
             clientState.trustingPeriod,
@@ -108,11 +100,9 @@ library CometblsClientLib {
         );
     }
 
-    function decodeClientState(bytes calldata bz)
-        internal
-        pure
-        returns (ClientState calldata)
-    {
+    function decodeClientState(
+        bytes calldata bz
+    ) internal pure returns (ClientState calldata) {
         ClientState calldata clientState;
         assembly {
             clientState := bz.offset
@@ -120,11 +110,9 @@ library CometblsClientLib {
         return clientState;
     }
 
-    function encodeMemory(ConsensusState memory consensusState)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encodeMemory(
+        ConsensusState memory consensusState
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             consensusState.timestamp,
             consensusState.appHash,
@@ -132,11 +120,9 @@ library CometblsClientLib {
         );
     }
 
-    function decodeConsensusState(bytes calldata bz)
-        internal
-        pure
-        returns (ConsensusState calldata)
-    {
+    function decodeConsensusState(
+        bytes calldata bz
+    ) internal pure returns (ConsensusState calldata) {
         ConsensusState calldata consensusState;
         assembly {
             consensusState := bz.offset
@@ -144,11 +130,9 @@ library CometblsClientLib {
         return consensusState;
     }
 
-    function decodeConsensusStateMemory(bytes memory bz)
-        internal
-        pure
-        returns (ConsensusState memory)
-    {
+    function decodeConsensusStateMemory(
+        bytes memory bz
+    ) internal pure returns (ConsensusState memory) {
         ConsensusState memory consensusState;
         (uint64 timestamp, bytes32 appHash, bytes32 nextValidatorsHash) =
             abi.decode(bz, (uint64, bytes32, bytes32));
@@ -158,19 +142,15 @@ library CometblsClientLib {
         return consensusState;
     }
 
-    function commit(ConsensusState memory consensusState)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function commit(
+        ConsensusState memory consensusState
+    ) internal pure returns (bytes32) {
         return keccak256(encodeMemory(consensusState));
     }
 
-    function commit(ClientState memory clientState)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function commit(
+        ClientState memory clientState
+    ) internal pure returns (bytes32) {
         return keccak256(encodeMemory(clientState));
     }
 }
@@ -422,11 +402,9 @@ contract CometblsClient is
         );
     }
 
-    function getClientState(uint32 clientId)
-        external
-        view
-        returns (bytes memory)
-    {
+    function getClientState(
+        uint32 clientId
+    ) external view returns (bytes memory) {
         return clientStates[clientId].encodeMemory();
     }
 
@@ -444,20 +422,21 @@ contract CometblsClient is
         return consensusStates[clientId][height].timestamp;
     }
 
-    function getLatestHeight(uint32 clientId)
-        external
-        view
-        override
-        returns (uint64)
-    {
+    function getLatestHeight(
+        uint32 clientId
+    ) external view override returns (uint64) {
         return clientStates[clientId].latestHeight;
     }
 
-    function isFrozen(uint32 clientId) external view virtual returns (bool) {
+    function isFrozen(
+        uint32 clientId
+    ) external view virtual returns (bool) {
         return isFrozenImpl(clientId);
     }
 
-    function isFrozenImpl(uint32 clientId) internal view returns (bool) {
+    function isFrozenImpl(
+        uint32 clientId
+    ) internal view returns (bool) {
         return clientStates[clientId].frozenHeight > 0;
     }
 
@@ -471,11 +450,9 @@ contract CometblsClient is
     bytes constant HMAC_O =
         hex"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
 
-    function hmac_keccak(bytes memory message)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function hmac_keccak(
+        bytes memory message
+    ) internal pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 HMAC_O, keccak256(abi.encodePacked(HMAC_I, message))
@@ -484,11 +461,9 @@ contract CometblsClient is
     }
 
     // Union whitepaper: (1) H_{hmac_r}
-    function hashToField(bytes memory message)
-        internal
-        pure
-        returns (uint256)
-    {
+    function hashToField(
+        bytes memory message
+    ) internal pure returns (uint256) {
         return (uint256(hmac_keccak(message)) % PRIME_R_MINUS_ONE) + 1;
     }
 
@@ -548,11 +523,9 @@ contract CometblsClient is
         );
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyOwner
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {

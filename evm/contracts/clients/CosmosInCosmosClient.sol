@@ -45,19 +45,15 @@ library CosmosInCosmosLib {
     error ErrInvalidL1Proof();
     error ErrInvalidInitialConsensusState();
 
-    function encode(ConsensusState memory consensusState)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encode(
+        ConsensusState memory consensusState
+    ) internal pure returns (bytes memory) {
         return abi.encode(consensusState.timestamp, consensusState.appHash);
     }
 
-    function encode(ClientState memory clientState)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encode(
+        ClientState memory clientState
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
@@ -66,19 +62,15 @@ library CosmosInCosmosLib {
         );
     }
 
-    function commit(ConsensusState memory consensusState)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function commit(
+        ConsensusState memory consensusState
+    ) internal pure returns (bytes32) {
         return keccak256(encode(consensusState));
     }
 
-    function commit(ClientState memory clientState)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function commit(
+        ClientState memory clientState
+    ) internal pure returns (bytes32) {
         return keccak256(encode(clientState));
     }
 }
@@ -236,11 +228,9 @@ contract CosmosInCosmosClient is
         );
     }
 
-    function getClientState(uint32 clientId)
-        external
-        view
-        returns (bytes memory)
-    {
+    function getClientState(
+        uint32 clientId
+    ) external view returns (bytes memory) {
         return clientStates[clientId].encode();
     }
 
@@ -258,29 +248,28 @@ contract CosmosInCosmosClient is
         return consensusStates[clientId][height].timestamp;
     }
 
-    function getLatestHeight(uint32 clientId)
-        external
-        view
-        override
-        returns (uint64)
-    {
+    function getLatestHeight(
+        uint32 clientId
+    ) external view override returns (uint64) {
         return clientStates[clientId].latestHeight;
     }
 
-    function isFrozen(uint32 clientId) external view virtual returns (bool) {
+    function isFrozen(
+        uint32 clientId
+    ) external view virtual returns (bool) {
         return isFrozenImpl(clientId);
     }
 
-    function isFrozenImpl(uint32 clientId) internal view returns (bool) {
+    function isFrozenImpl(
+        uint32 clientId
+    ) internal view returns (bool) {
         uint32 l1ClientId = clientStates[clientId].l1ClientId;
         return IBCStore(ibcHandler).getClient(l1ClientId).isFrozen(l1ClientId);
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyOwner
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {

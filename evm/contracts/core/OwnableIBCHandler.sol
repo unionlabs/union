@@ -10,7 +10,9 @@ contract OwnableIBCHandler is IBCHandler {
         _disableInitializers();
     }
 
-    function initialize(address admin) public override initializer {
+    function initialize(
+        address admin
+    ) public override initializer {
         IBCHandler.initialize(admin);
     }
 }

@@ -19,15 +19,18 @@ interface IIBCPacket {
      * @dev recvPacket is called by a module in order to receive & process an IBC packet
      * sent on the corresponding channel end on the counterparty chain.
      */
-    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external;
+    function recvPacket(
+        IBCMsgs.MsgPacketRecv calldata msg_
+    ) external;
 
     /**
      * @dev recvIntentPacket is called by a module in order to receive & process an IBC intent packet
      * for an IBC packet sent on the corresponding channel end on the counterparty chain.
      * Note that no verification is done by the handler, the protocol must ensure that the market maker fullfilling the intent executes the expected effects.
      */
-    function recvIntentPacket(IBCMsgs.MsgIntentPacketRecv calldata msg_)
-        external;
+    function recvIntentPacket(
+        IBCMsgs.MsgIntentPacketRecv calldata msg_
+    ) external;
 
     /**
      * @dev writeAcknowledgement writes the packet execution acknowledgement to the state,
@@ -46,26 +49,33 @@ interface IIBCPacket {
      * which is no longer necessary since the packet has been received and acted upon.
      * It will also increment NextSequenceAck in case of ORDERED channels.
      */
-    function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata msg_)
-        external;
+    function acknowledgePacket(
+        IBCMsgs.MsgPacketAcknowledgement calldata msg_
+    ) external;
 
     /**
      * @dev timeoutPacket is called by a module in order to receive & process an IBC packet
      * sent on the corresponding channel end on the counterparty chain.
      */
-    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_) external;
+    function timeoutPacket(
+        IBCMsgs.MsgPacketTimeout calldata msg_
+    ) external;
 
     /**
      * @dev batchSend is called by a module in order to commit multiple IBC packets that have been previously sent.
      * An error occur if any of the packets wasn't sent.
      * If successful, a new commitment is registered for the batch.
      */
-    function batchSend(IBCMsgs.MsgBatchSend calldata msg_) external;
+    function batchSend(
+        IBCMsgs.MsgBatchSend calldata msg_
+    ) external;
 
     /**
      * @dev batchAcks is called by a module in order to commit multiple IBC packets acknowledgements.
      * An error occur if any of the packets wasn't received.
      * If successful, a new commitment is registered for the batch.
      */
-    function batchAcks(IBCMsgs.MsgBatchAcks calldata msg_) external;
+    function batchAcks(
+        IBCMsgs.MsgBatchAcks calldata msg_
+    ) external;
 }

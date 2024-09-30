@@ -123,7 +123,9 @@ library RelayLib {
         uint256 amount
     );
 
-    function isValidVersion(bytes32 version) internal pure returns (bool) {
+    function isValidVersion(
+        bytes32 version
+    ) internal pure returns (bool) {
         return version == VERSION;
     }
 
@@ -135,11 +137,9 @@ library RelayLib {
             && denom.startsWith(makeDenomPrefix(channelId));
     }
 
-    function makeDenomPrefix(uint32 channelId)
-        internal
-        pure
-        returns (string memory)
-    {
+    function makeDenomPrefix(
+        uint32 channelId
+    ) internal pure returns (string memory) {
         return string(abi.encodePacked(channelId, "/"));
     }
 
@@ -150,7 +150,9 @@ library RelayLib {
         return string(abi.encodePacked(makeDenomPrefix(channelId), denom));
     }
 
-    function bytesToAddress(bytes memory b) internal pure returns (address) {
+    function bytesToAddress(
+        bytes memory b
+    ) internal pure returns (address) {
         if (b.length != 20) {
             revert ErrInvalidBytesAddress();
         }
@@ -159,21 +161,17 @@ library RelayLib {
 }
 
 library RelayPacketLib {
-    function encode(RelayPacket memory packet)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encode(
+        RelayPacket memory packet
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             packet.sender, packet.receiver, packet.tokens, packet.extension
         );
     }
 
-    function decode(bytes calldata stream)
-        internal
-        pure
-        returns (RelayPacket calldata)
-    {
+    function decode(
+        bytes calldata stream
+    ) internal pure returns (RelayPacket calldata) {
         RelayPacket calldata packet;
         assembly {
             packet := stream.offset
@@ -624,9 +622,7 @@ contract UCS01Relay is
         revert RelayLib.ErrUnstoppable();
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyOwner
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 }

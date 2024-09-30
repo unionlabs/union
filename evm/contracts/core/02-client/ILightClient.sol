@@ -34,10 +34,9 @@ interface ILightClient {
     /**
      * @dev getLatestHeight returns the latest height of the client state corresponding to `clientId`.
      */
-    function getLatestHeight(uint32 clientId)
-        external
-        view
-        returns (uint64 height);
+    function getLatestHeight(
+        uint32 clientId
+    ) external view returns (uint64 height);
 
     /**
      * @dev updateClient updates the client corresponding to `clientId`.
@@ -84,10 +83,9 @@ interface ILightClient {
     /**
      * @dev getClientState returns the clientState corresponding to `clientId`.
      */
-    function getClientState(uint32 clientId)
-        external
-        view
-        returns (bytes memory);
+    function getClientState(
+        uint32 clientId
+    ) external view returns (bytes memory);
 
     /**
      * @dev getConsensusState returns the consensusState corresponding to `clientId` and `height`.
@@ -100,5 +98,7 @@ interface ILightClient {
     /**
      * @dev isFrozen returns whether the `clientId` is frozen or not.
      */
-    function isFrozen(uint32 clientId) external view returns (bool);
+    function isFrozen(
+        uint32 clientId
+    ) external view returns (bool);
 }

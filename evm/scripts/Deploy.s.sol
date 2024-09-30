@@ -53,7 +53,9 @@ library LIB {
     string constant NAMESPACE = "lib";
     string constant MULTICALL = "multicall";
 
-    function make(string memory lib) internal pure returns (string memory) {
+    function make(
+        string memory lib
+    ) internal pure returns (string memory) {
         return string(abi.encodePacked(NAMESPACE, "/", lib));
     }
 }
@@ -66,11 +68,9 @@ library LightClients {
     string constant NAMESPACE = "lightclients";
     string constant COMETBLS = "cometbls";
 
-    function make(string memory lightClient)
-        internal
-        pure
-        returns (string memory)
-    {
+    function make(
+        string memory lightClient
+    ) internal pure returns (string memory) {
         return string(abi.encodePacked(NAMESPACE, "/", lightClient));
     }
 }
@@ -81,11 +81,9 @@ library Protocols {
     string constant UCS01 = "ucs01";
     string constant UCS02 = "ucs02";
 
-    function make(string memory protocol)
-        internal
-        pure
-        returns (string memory)
-    {
+    function make(
+        string memory protocol
+    ) internal pure returns (string memory) {
         return string(abi.encodePacked(NAMESPACE, "/", protocol));
     }
 }
@@ -123,7 +121,9 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
-    function deployIBCHandler(address owner) internal returns (IBCHandler) {
+    function deployIBCHandler(
+        address owner
+    ) internal returns (IBCHandler) {
         return IBCHandler(
             deploy(
                 IBC.BASED,
@@ -191,7 +191,9 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
-    function deployIBC(address owner)
+    function deployIBC(
+        address owner
+    )
         internal
         returns (IBCHandler, CometblsClient, UCS01Relay, UCS02NFT, Multicall)
     {
@@ -310,7 +312,9 @@ contract GetDeployed is Script {
         sender = vm.envAddress("SENDER");
     }
 
-    function getDeployed(string memory salt) internal view returns (address) {
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
         return CREATE3.getDeployed(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
@@ -352,7 +356,9 @@ contract DryUpgradeUCS01 is Script {
         owner = vm.envAddress("OWNER");
     }
 
-    function getDeployed(string memory salt) internal returns (address) {
+    function getDeployed(
+        string memory salt
+    ) internal returns (address) {
         return CREATE3.getDeployed(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
@@ -381,7 +387,9 @@ contract UpgradeUCS01 is Script {
         privateKey = vm.envUint("PRIVATE_KEY");
     }
 
-    function getDeployed(string memory salt) internal returns (address) {
+    function getDeployed(
+        string memory salt
+    ) internal returns (address) {
         return CREATE3.getDeployed(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
@@ -413,7 +421,9 @@ contract DryUpgradeIBCHandler is Script {
         owner = vm.envAddress("OWNER");
     }
 
-    function getDeployed(string memory salt) internal returns (address) {
+    function getDeployed(
+        string memory salt
+    ) internal returns (address) {
         return CREATE3.getDeployed(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
@@ -455,7 +465,9 @@ contract UpgradeIBCHandler is Script {
         privateKey = vm.envUint("PRIVATE_KEY");
     }
 
-    function getDeployed(string memory salt) internal returns (address) {
+    function getDeployed(
+        string memory salt
+    ) internal returns (address) {
         return CREATE3.getDeployed(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer

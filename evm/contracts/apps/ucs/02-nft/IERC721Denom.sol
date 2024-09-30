@@ -9,5 +9,7 @@ interface IERC721Denom is IERC721 {
         string calldata tokenURI
     ) external;
 
-    function burn(uint256 tokenId) external;
+    function burn(
+        uint256 tokenId
+    ) external;
 }

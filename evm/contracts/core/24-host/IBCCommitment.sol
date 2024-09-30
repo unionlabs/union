@@ -12,11 +12,9 @@ library IBCCommitment {
     bytes1 public constant NEXT_SEQ_RECV = 0x0A;
     bytes1 public constant NEXT_SEQ_ACK = 0x0B;
 
-    function clientStatePath(uint32 clientId)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function clientStatePath(
+        uint32 clientId
+    ) internal pure returns (bytes memory) {
         return abi.encodePacked(CLIENT_STATE, clientId);
     }
 
@@ -27,19 +25,15 @@ library IBCCommitment {
         return abi.encodePacked(CONSENSUS_STATE, clientId, height);
     }
 
-    function connectionPath(uint32 connectionId)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function connectionPath(
+        uint32 connectionId
+    ) internal pure returns (bytes memory) {
         return abi.encodePacked(CONNECTIONS, connectionId);
     }
 
-    function channelPath(uint32 channelId)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function channelPath(
+        uint32 channelId
+    ) internal pure returns (bytes memory) {
         return abi.encodePacked(CHANNELS, channelId);
     }
 
@@ -71,37 +65,29 @@ library IBCCommitment {
         return abi.encodePacked(PACKET_RECEIPTS, channelId, batchHash);
     }
 
-    function nextSequenceSendCommitmentPath(uint32 channelId)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function nextSequenceSendCommitmentPath(
+        uint32 channelId
+    ) internal pure returns (bytes memory) {
         return abi.encodePacked(NEXT_SEQ_SEND, channelId);
     }
 
-    function nextSequenceRecvCommitmentPath(uint32 channelId)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function nextSequenceRecvCommitmentPath(
+        uint32 channelId
+    ) internal pure returns (bytes memory) {
         return abi.encodePacked(NEXT_SEQ_RECV, channelId);
     }
 
-    function nextSequenceAckCommitmentPath(uint32 channelId)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function nextSequenceAckCommitmentPath(
+        uint32 channelId
+    ) internal pure returns (bytes memory) {
         return abi.encodePacked(NEXT_SEQ_ACK, channelId);
     }
 
     // Key generators for Commitment mapping
 
-    function clientStateCommitmentKey(uint32 clientId)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function clientStateCommitmentKey(
+        uint32 clientId
+    ) internal pure returns (bytes32) {
         return keccak256(clientStatePath(clientId));
     }
 
@@ -112,19 +98,15 @@ library IBCCommitment {
         return keccak256(consensusStatePath(clientId, height));
     }
 
-    function connectionCommitmentKey(uint32 connectionId)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function connectionCommitmentKey(
+        uint32 connectionId
+    ) internal pure returns (bytes32) {
         return keccak256(connectionPath(connectionId));
     }
 
-    function channelCommitmentKey(uint32 channelId)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function channelCommitmentKey(
+        uint32 channelId
+    ) internal pure returns (bytes32) {
         return keccak256(channelPath(channelId));
     }
 
@@ -156,27 +138,21 @@ library IBCCommitment {
         return keccak256(batchReceiptsCommitmentPath(channelId, batchHash));
     }
 
-    function nextSequenceSendCommitmentKey(uint32 channelId)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function nextSequenceSendCommitmentKey(
+        uint32 channelId
+    ) internal pure returns (bytes32) {
         return keccak256(nextSequenceSendCommitmentPath(channelId));
     }
 
-    function nextSequenceRecvCommitmentKey(uint32 channelId)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function nextSequenceRecvCommitmentKey(
+        uint32 channelId
+    ) internal pure returns (bytes32) {
         return keccak256(nextSequenceRecvCommitmentPath(channelId));
     }
 
-    function nextSequenceAckCommitmentKey(uint32 channelId)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function nextSequenceAckCommitmentKey(
+        uint32 channelId
+    ) internal pure returns (bytes32) {
         return keccak256(nextSequenceAckCommitmentPath(channelId));
     }
 }

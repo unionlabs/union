@@ -14,11 +14,9 @@ struct Result {
 event MulticallResult(Result[]);
 
 contract Multicall {
-    function multicall(Call3[] calldata calls)
-        public
-        payable
-        returns (Result[] memory returnData)
-    {
+    function multicall(
+        Call3[] calldata calls
+    ) public payable returns (Result[] memory returnData) {
         uint256 length = calls.length;
         returnData = new Result[](length);
         Call3 calldata calli;

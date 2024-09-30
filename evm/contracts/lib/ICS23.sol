@@ -163,11 +163,9 @@ library Ics23 {
         return VerifyChainedMembershipError.None;
     }
 
-    function convertExistenceError(Proof.VerifyExistenceError vCode)
-        internal
-        pure
-        returns (VerifyChainedMembershipError)
-    {
+    function convertExistenceError(
+        Proof.VerifyExistenceError vCode
+    ) internal pure returns (VerifyChainedMembershipError) {
         if (vCode == Proof.VerifyExistenceError.KeyNotMatching) {
             return VerifyChainedMembershipError.KeyMismatch;
         } else if (vCode == Proof.VerifyExistenceError.ValueNotMatching) {
@@ -361,11 +359,9 @@ library Proof {
         EmptyProof
     }
 
-    function calculateRoot(UnionIcs23.ExistenceProof calldata proof)
-        internal
-        pure
-        returns (bytes32, CalculateRootError)
-    {
+    function calculateRoot(
+        UnionIcs23.ExistenceProof calldata proof
+    ) internal pure returns (bytes32, CalculateRootError) {
         //require(LeafOp.isNil(proof.leaf) == false); // dev: Existence Proof needs defined LeafOp
         if (proof.leafPrefix.length == 0) {
             return ("", CalculateRootError.LeafNil);
@@ -511,11 +507,9 @@ library Proof {
         return VerifyNonExistenceError.None;
     }
 
-    function calculateRoot(UnionIcs23.NonExistenceProof calldata proof)
-        internal
-        pure
-        returns (bytes32, CalculateRootError)
-    {
+    function calculateRoot(
+        UnionIcs23.NonExistenceProof calldata proof
+    ) internal pure returns (bytes32, CalculateRootError) {
         if (!UnionIcs23.empty(proof.left)) {
             return calculateRoot(proof.left);
         }

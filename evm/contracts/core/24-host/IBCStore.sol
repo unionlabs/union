@@ -20,17 +20,17 @@ abstract contract IBCStore {
     mapping(bytes32 => bytes32) public commitments;
 
     // ClientType -> Address
-    mapping(bytes32 => address) internal clientRegistry;
+    mapping(bytes32 => address) public clientRegistry;
     // ClientId -> ClientType
-    mapping(uint32 => bytes32) internal clientTypes;
+    mapping(uint32 => bytes32) public clientTypes;
     // ClientId -> Address
-    mapping(uint32 => address) internal clientImpls;
+    mapping(uint32 => address) public clientImpls;
     // ConnectionId -> Connection
-    mapping(uint32 => IBCConnection) internal connections;
+    mapping(uint32 => IBCConnection) public connections;
     // ChannelId -> Channel
-    mapping(uint32 => IBCChannel) internal channels;
+    mapping(uint32 => IBCChannel) public channels;
     // ChannelId -> PortId
-    mapping(uint32 => address) internal channelOwner;
+    mapping(uint32 => address) public channelOwner;
 
     // Sequences for identifier
     bytes32 public constant nextClientSequencePath =
@@ -40,15 +40,15 @@ abstract contract IBCStore {
     bytes32 public constant nextChannelSequencePath =
         keccak256("nextChannelSequence");
 
-    function getClient(uint32 clientId) public view returns (ILightClient) {
+    function getClient(
+        uint32 clientId
+    ) public view returns (ILightClient) {
         return getClientInternal(clientId);
     }
 
-    function getClientInternal(uint32 clientId)
-        internal
-        view
-        returns (ILightClient)
-    {
+    function getClientInternal(
+        uint32 clientId
+    ) internal view returns (ILightClient) {
         address clientImpl = clientImpls[clientId];
         if (clientImpl == address(0)) {
             revert IBCStoreLib.ErrClientNotFound();
@@ -56,12 +56,9 @@ abstract contract IBCStore {
         return ILightClient(clientImpl);
     }
 
-    function lookupModuleByChannel(uint32 channelId)
-        internal
-        view
-        virtual
-        returns (IIBCModule)
-    {
+    function lookupModuleByChannel(
+        uint32 channelId
+    ) internal view virtual returns (IIBCModule) {
         address module = channelOwner[channelId];
         if (module == address(0)) {
             revert IBCStoreLib.ErrModuleNotFound();
@@ -73,19 +70,15 @@ abstract contract IBCStore {
         channelOwner[channelId] = portId;
     }
 
-    function authenticateChannelOwner(uint32 channelId)
-        internal
-        view
-        returns (bool)
-    {
+    function authenticateChannelOwner(
+        uint32 channelId
+    ) internal view returns (bool) {
         return msg.sender == channelOwner[channelId];
     }
 
-    function ensureConnectionState(uint32 connectionId)
-        internal
-        view
-        returns (IBCConnection storage)
-    {
+    function ensureConnectionState(
+        uint32 connectionId
+    ) internal view returns (IBCConnection storage) {
         IBCConnection storage connection = connections[connectionId];
         if (connection.state != IBCConnectionState.Open) {
             revert IBCStoreLib.ErrInvalidConnectionState();

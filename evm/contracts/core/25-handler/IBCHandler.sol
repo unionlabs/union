@@ -29,14 +29,14 @@ abstract contract IBCHandler is
         _disableInitializers();
     }
 
-    function initialize(address admin) public virtual initializer {
+    function initialize(
+        address admin
+    ) public virtual initializer {
         __Ownable_init(admin);
         __UUPSUpgradeable_init();
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyOwner
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 }

@@ -73,11 +73,9 @@ library ProtoBufRuntime {
      * @param location The location of storage
      * @return The encoded bytes
      */
-    function decodeStorage(bytes storage location)
-        internal
-        view
-        returns (bytes memory)
-    {
+    function decodeStorage(
+        bytes storage location
+    ) internal view returns (bytes memory) {
         /**
          * This code is to decode the first four bytes as size,
          * and then decode the rest using the decoded size.
@@ -147,7 +145,9 @@ library ProtoBufRuntime {
      * @param r The in-memory bytes array
      * @return The memory address of `r`
      */
-    function getMemoryAddress(bytes memory r) internal pure returns (uint256) {
+    function getMemoryAddress(
+        bytes memory r
+    ) internal pure returns (uint256) {
         uint256 addr;
         assembly {
             addr := r
@@ -842,7 +842,9 @@ library ProtoBufRuntime {
      * @param i The unsigned integer to be encoded
      * @return The encoded unsigned integer
      */
-    function _encode_zigzag(int256 i) internal pure returns (uint256) {
+    function _encode_zigzag(
+        int256 i
+    ) internal pure returns (uint256) {
         if (i >= 0) {
             return uint256(i) * 2;
         } else {
@@ -856,7 +858,9 @@ library ProtoBufRuntime {
      * @param i The length of LengthDelim
      * @return The estimated encoded length
      */
-    function _sz_lendelim(uint256 i) internal pure returns (uint256) {
+    function _sz_lendelim(
+        uint256 i
+    ) internal pure returns (uint256) {
         return i + _sz_varint(i);
     }
 
@@ -865,7 +869,9 @@ library ProtoBufRuntime {
      * @param i The field ID
      * @return The estimated encoded length
      */
-    function _sz_key(uint256 i) internal pure returns (uint256) {
+    function _sz_key(
+        uint256 i
+    ) internal pure returns (uint256) {
         if (i < 16) {
             return 1;
         } else if (i < 2048) {
@@ -882,7 +888,9 @@ library ProtoBufRuntime {
      * @param i The unsigned integer
      * @return The estimated encoded length
      */
-    function _sz_varint(uint256 i) internal pure returns (uint256) {
+    function _sz_varint(
+        uint256 i
+    ) internal pure returns (uint256) {
         uint256 count = 1;
         assembly {
             i := shr(7, i)
@@ -897,15 +905,21 @@ library ProtoBufRuntime {
     /**
      * `_sz_(u)int(32|64)` and `_sz_enum` are the concrete implementation of `_sz_varint`
      */
-    function _sz_uint32(uint32 i) internal pure returns (uint256) {
+    function _sz_uint32(
+        uint32 i
+    ) internal pure returns (uint256) {
         return _sz_varint(i);
     }
 
-    function _sz_uint64(uint64 i) internal pure returns (uint256) {
+    function _sz_uint64(
+        uint64 i
+    ) internal pure returns (uint256) {
         return _sz_varint(i);
     }
 
-    function _sz_int32(int32 i) internal pure returns (uint256) {
+    function _sz_int32(
+        int32 i
+    ) internal pure returns (uint256) {
         if (i < 0) {
             return 10;
         } else {
@@ -913,7 +927,9 @@ library ProtoBufRuntime {
         }
     }
 
-    function _sz_int64(int64 i) internal pure returns (uint256) {
+    function _sz_int64(
+        int64 i
+    ) internal pure returns (uint256) {
         if (i < 0) {
             return 10;
         } else {
@@ -921,7 +937,9 @@ library ProtoBufRuntime {
         }
     }
 
-    function _sz_enum(int64 i) internal pure returns (uint256) {
+    function _sz_enum(
+        int64 i
+    ) internal pure returns (uint256) {
         if (i < 0) {
             return 10;
         } else {
@@ -932,22 +950,24 @@ library ProtoBufRuntime {
     /**
      * `_sz_sint(32|64)` and `_sz_enum` are the concrete implementation of zig-zag encoding
      */
-    function _sz_sint32(int32 i) internal pure returns (uint256) {
+    function _sz_sint32(
+        int32 i
+    ) internal pure returns (uint256) {
         return _sz_varint(_encode_zigzag(i));
     }
 
-    function _sz_sint64(int64 i) internal pure returns (uint256) {
+    function _sz_sint64(
+        int64 i
+    ) internal pure returns (uint256) {
         return _sz_varint(_encode_zigzag(i));
     }
 
     /**
      * `_estimate_packed_repeated_(uint32|uint64|int32|int64|sint32|sint64)`
      */
-    function _estimate_packed_repeated_uint32(uint32[] memory a)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _estimate_packed_repeated_uint32(
+        uint32[] memory a
+    ) internal pure returns (uint256) {
         uint256 e = 0;
         for (uint256 i; i < a.length; i++) {
             e += _sz_uint32(a[i]);
@@ -955,11 +975,9 @@ library ProtoBufRuntime {
         return e;
     }
 
-    function _estimate_packed_repeated_uint64(uint64[] memory a)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _estimate_packed_repeated_uint64(
+        uint64[] memory a
+    ) internal pure returns (uint256) {
         uint256 e = 0;
         for (uint256 i; i < a.length; i++) {
             e += _sz_uint64(a[i]);
@@ -967,11 +985,9 @@ library ProtoBufRuntime {
         return e;
     }
 
-    function _estimate_packed_repeated_int32(int32[] memory a)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _estimate_packed_repeated_int32(
+        int32[] memory a
+    ) internal pure returns (uint256) {
         uint256 e = 0;
         for (uint256 i; i < a.length; i++) {
             e += _sz_int32(a[i]);
@@ -979,11 +995,9 @@ library ProtoBufRuntime {
         return e;
     }
 
-    function _estimate_packed_repeated_int64(int64[] memory a)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _estimate_packed_repeated_int64(
+        int64[] memory a
+    ) internal pure returns (uint256) {
         uint256 e = 0;
         for (uint256 i; i < a.length; i++) {
             e += _sz_int64(a[i]);
@@ -991,11 +1005,9 @@ library ProtoBufRuntime {
         return e;
     }
 
-    function _estimate_packed_repeated_sint32(int32[] memory a)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _estimate_packed_repeated_sint32(
+        int32[] memory a
+    ) internal pure returns (uint256) {
         uint256 e = 0;
         for (uint256 i; i < a.length; i++) {
             e += _sz_sint32(a[i]);
@@ -1003,11 +1015,9 @@ library ProtoBufRuntime {
         return e;
     }
 
-    function _estimate_packed_repeated_sint64(int64[] memory a)
-        internal
-        pure
-        returns (uint256)
-    {
+    function _estimate_packed_repeated_sint64(
+        int64[] memory a
+    ) internal pure returns (uint256) {
         uint256 e = 0;
         for (uint256 i; i < a.length; i++) {
             e += _sz_sint64(a[i]);

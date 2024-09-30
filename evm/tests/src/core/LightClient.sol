@@ -16,15 +16,21 @@ contract TestLightClient is ILightClient {
         height = 0;
     }
 
-    function setHeight(uint64 height_) public {
+    function setHeight(
+        uint64 height_
+    ) public {
         height = height_;
     }
 
-    function setRevertCreate(bool v) public {
+    function setRevertCreate(
+        bool v
+    ) public {
         revertCreate = v;
     }
 
-    function setRevertUpdate(bool v) public {
+    function setRevertUpdate(
+        bool v
+    ) public {
         revertUpdate = v;
     }
 
@@ -59,7 +65,9 @@ contract TestLightClient is ILightClient {
         return 0;
     }
 
-    function getLatestHeight(uint32) external view returns (uint64) {
+    function getLatestHeight(
+        uint32
+    ) external view returns (uint64) {
         return height;
     }
 
@@ -107,7 +115,9 @@ contract TestLightClient is ILightClient {
         return valid;
     }
 
-    function getClientState(uint32) external pure returns (bytes memory) {
+    function getClientState(
+        uint32
+    ) external pure returns (bytes memory) {
         return hex"";
     }
 
@@ -118,7 +128,9 @@ contract TestLightClient is ILightClient {
         return hex"";
     }
 
-    function isFrozen(uint32) external pure returns (bool) {
+    function isFrozen(
+        uint32
+    ) external pure returns (bool) {
         return false;
     }
 }

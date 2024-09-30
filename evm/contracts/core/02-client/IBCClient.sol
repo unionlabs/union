@@ -36,11 +36,9 @@ abstract contract IBCClient is IBCStore, IIBCClient {
     /**
      * @dev createClient creates a new client state and populates it with a given consensus state
      */
-    function createClient(IBCMsgs.MsgCreateClient calldata msg_)
-        external
-        override
-        returns (uint32)
-    {
+    function createClient(
+        IBCMsgs.MsgCreateClient calldata msg_
+    ) external override returns (uint32) {
         address clientImpl = clientRegistry[msg_.clientType];
         if (clientImpl == address(0)) {
             revert IBCClientLib.ErrClientTypeNotFound();
@@ -62,10 +60,9 @@ abstract contract IBCClient is IBCStore, IIBCClient {
     /**
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
-    function updateClient(IBCMsgs.MsgUpdateClient calldata msg_)
-        external
-        override
-    {
+    function updateClient(
+        IBCMsgs.MsgUpdateClient calldata msg_
+    ) external override {
         ConsensusStateUpdate memory update = getClientInternal(msg_.clientId)
             .updateClient(msg_.clientId, msg_.clientMessage);
         commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] =

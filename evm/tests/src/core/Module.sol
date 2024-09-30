@@ -5,8 +5,10 @@ import "../../../contracts/apps/Base.sol";
 contract TestModule is IBCAppBase {
     address private immutable ibcHandler;
 
-    constructor(address _ibcHandler) {
-        ibcHandler = _ibcHandler;
+    constructor(
+        address ibcHandler_
+    ) {
+        ibcHandler = ibcHandler_;
     }
 
     function ibcAddress() public view virtual override returns (address) {

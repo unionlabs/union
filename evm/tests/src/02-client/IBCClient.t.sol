@@ -37,9 +37,9 @@ contract IBCClientTests is Test {
         handler.registerClient(typ, ILightClient(impl));
     }
 
-    function test_createClient_ok(IBCMsgs.MsgCreateClient calldata msg_)
-        public
-    {
+    function test_createClient_ok(
+        IBCMsgs.MsgCreateClient calldata msg_
+    ) public {
         vm.pauseGasMetering();
         handler.registerClient(msg_.clientType, lightClient);
         vm.expectEmit();
@@ -48,9 +48,9 @@ contract IBCClientTests is Test {
         handler.createClient(msg_);
     }
 
-    function test_createClient_ko(IBCMsgs.MsgCreateClient calldata msg_)
-        public
-    {
+    function test_createClient_ko(
+        IBCMsgs.MsgCreateClient calldata msg_
+    ) public {
         lightClient.setRevertCreate(true);
         handler.registerClient(msg_.clientType, lightClient);
         vm.expectRevert();

@@ -57,7 +57,9 @@ library IBCChannelLib {
     error ErrInvalidProof();
     error ErrInvalidChannelOrdering();
 
-    function normalizePortId(address portId) internal pure returns (bytes32) {
+    function normalizePortId(
+        address portId
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(portId));
     }
 }
@@ -69,11 +71,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     /**
      * @dev channelOpenInit is called by a module to initiate a channel opening handshake with a module on another chain.
      */
-    function channelOpenInit(IBCMsgs.MsgChannelOpenInit calldata msg_)
-        external
-        override
-        returns (uint32)
-    {
+    function channelOpenInit(
+        IBCMsgs.MsgChannelOpenInit calldata msg_
+    ) external override returns (uint32) {
         if (msg_.channel.state != IBCChannelState.Init) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
@@ -110,11 +110,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     /**
      * @dev channelOpenTry is called by a module to accept the first step of a channel opening handshake initiated by a module on another chain.
      */
-    function channelOpenTry(IBCMsgs.MsgChannelOpenTry calldata msg_)
-        external
-        override
-        returns (uint32)
-    {
+    function channelOpenTry(
+        IBCMsgs.MsgChannelOpenTry calldata msg_
+    ) external override returns (uint32) {
         if (
             msg_.channel.ordering != IBCChannelOrder.Unordered
                 && msg_.channel.ordering != IBCChannelOrder.Ordered
@@ -176,10 +174,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     /**
      * @dev channelOpenAck is called by the handshake-originating module to acknowledge the acceptance of the initial request by the counterparty module on the other chain.
      */
-    function channelOpenAck(IBCMsgs.MsgChannelOpenAck calldata msg_)
-        external
-        override
-    {
+    function channelOpenAck(
+        IBCMsgs.MsgChannelOpenAck calldata msg_
+    ) external override {
         IBCChannel storage channel = channels[msg_.channelId];
         if (channel.state != IBCChannelState.Init) {
             revert IBCChannelLib.ErrInvalidChannelState();
@@ -233,10 +230,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     /**
      * @dev channelOpenConfirm is called by the counterparty module to close their end of the channel, since the other end has been closed.
      */
-    function channelOpenConfirm(IBCMsgs.MsgChannelOpenConfirm calldata msg_)
-        external
-        override
-    {
+    function channelOpenConfirm(
+        IBCMsgs.MsgChannelOpenConfirm calldata msg_
+    ) external override {
         IBCChannel storage channel = channels[msg_.channelId];
         if (channel.state != IBCChannelState.TryOpen) {
             revert IBCChannelLib.ErrInvalidChannelState();
@@ -283,10 +279,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     /**
      * @dev channelCloseInit is called by either module to close their end of the channel. Once closed, channels cannot be reopened.
      */
-    function channelCloseInit(IBCMsgs.MsgChannelCloseInit calldata msg_)
-        external
-        override
-    {
+    function channelCloseInit(
+        IBCMsgs.MsgChannelCloseInit calldata msg_
+    ) external override {
         IBCChannel storage channel = channels[msg_.channelId];
         if (channel.state != IBCChannelState.Open) {
             revert IBCChannelLib.ErrInvalidChannelState();
@@ -306,10 +301,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
      * @dev channelCloseConfirm is called by the counterparty module to close their end of the
      * channel, since the other end has been closed.
      */
-    function channelCloseConfirm(IBCMsgs.MsgChannelCloseConfirm calldata msg_)
-        external
-        override
-    {
+    function channelCloseConfirm(
+        IBCMsgs.MsgChannelCloseConfirm calldata msg_
+    ) external override {
         IBCChannel storage channel = channels[msg_.channelId];
         if (channel.state != IBCChannelState.Open) {
             revert IBCChannelLib.ErrInvalidChannelState();
@@ -348,11 +342,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         );
     }
 
-    function encodeChannel(IBCChannel memory channel)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function encodeChannel(
+        IBCChannel memory channel
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encode(channel));
     }
 
@@ -364,11 +356,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             encodeChannel(channel);
     }
 
-    function encodeChannelCalldata(IBCChannel calldata channel)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function encodeChannelCalldata(
+        IBCChannel calldata channel
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encode(channel));
     }
 
@@ -397,11 +387,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         );
     }
 
-    function getCounterpartyConnection(uint32 connectionId)
-        internal
-        view
-        returns (uint32)
-    {
+    function getCounterpartyConnection(
+        uint32 connectionId
+    ) internal view returns (uint32) {
         return connections[connectionId].counterparty.connectionId;
     }
 
@@ -413,7 +401,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         return nextChannelSequence;
     }
 
-    function initializeChannelSequences(uint32 channelId) internal {
+    function initializeChannelSequences(
+        uint32 channelId
+    ) internal {
         commitments[IBCCommitment.nextSequenceSendCommitmentKey(channelId)] =
             bytes32(uint256(1));
         commitments[IBCCommitment.nextSequenceRecvCommitmentKey(channelId)] =

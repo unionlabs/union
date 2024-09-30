@@ -21,19 +21,15 @@ library PingPongLib {
     event TimedOut();
     event Acknowledged();
 
-    function encode(PingPongPacket memory packet)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encode(
+        PingPongPacket memory packet
+    ) internal pure returns (bytes memory) {
         return abi.encode(packet.ping, packet.counterpartyTimeout);
     }
 
-    function decode(bytes memory packet)
-        internal
-        pure
-        returns (PingPongPacket memory)
-    {
+    function decode(
+        bytes memory packet
+    ) internal pure returns (PingPongPacket memory) {
         (bool ping, uint64 counterpartyTimeout) =
             abi.decode(packet, (bool, uint64));
         return PingPongPacket({

@@ -12,7 +12,9 @@ contract ERC20Denom is ERC20, IERC20Denom {
     string private _symbol;
     uint8 private _decimals;
 
-    constructor(string memory denomName) ERC20(denomName, denomName) {
+    constructor(
+        string memory denomName
+    ) ERC20(denomName, denomName) {
         admin = msg.sender;
     }
 

@@ -12,12 +12,14 @@ interface IIBCClient {
     /**
      * @dev createClient creates a new client state and populates it with a given consensus state
      */
-    function createClient(IBCMsgs.MsgCreateClient calldata msg_)
-        external
-        returns (uint32 clientId);
+    function createClient(
+        IBCMsgs.MsgCreateClient calldata msg_
+    ) external returns (uint32 clientId);
 
     /**
      * @dev updateClient updates the consensus state and the state root from a provided header
      */
-    function updateClient(IBCMsgs.MsgUpdateClient calldata msg_) external;
+    function updateClient(
+        IBCMsgs.MsgUpdateClient calldata msg_
+    ) external;
 }

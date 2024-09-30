@@ -85,11 +85,9 @@ library UnionIcs23 {
             ProofSpec({childSize: 32, minPrefixLength: 1, maxPrefixLength: 1});
     }
 
-    function empty(NonExistenceProof calldata proof)
-        internal
-        pure
-        returns (bool)
-    {
+    function empty(
+        NonExistenceProof calldata proof
+    ) internal pure returns (bool) {
         if (proof.key.length != 0) {
             return false;
         }
@@ -97,11 +95,9 @@ library UnionIcs23 {
         return empty(proof.left) && empty(proof.right);
     }
 
-    function empty(ExistenceProof calldata proof)
-        internal
-        pure
-        returns (bool)
-    {
+    function empty(
+        ExistenceProof calldata proof
+    ) internal pure returns (bool) {
         if (proof.key.length != 0) {
             return false;
         }

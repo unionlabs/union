@@ -59,41 +59,33 @@ library IBCPacketLib {
  * @dev IBCPacket is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
  */
 abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
-    function batchSingleAck(bytes calldata ack)
-        internal
-        pure
-        returns (bytes[] memory)
-    {
+    function batchSingleAck(
+        bytes calldata ack
+    ) internal pure returns (bytes[] memory) {
         bytes[] memory acks = new bytes[](1);
         acks[0] = ack;
         return acks;
     }
 
-    function batchSingleAckMemory(bytes memory ack)
-        internal
-        pure
-        returns (bytes[] memory)
-    {
+    function batchSingleAckMemory(
+        bytes memory ack
+    ) internal pure returns (bytes[] memory) {
         bytes[] memory acks = new bytes[](1);
         acks[0] = ack;
         return acks;
     }
 
-    function batchSingle(IBCPacket calldata packet)
-        internal
-        pure
-        returns (IBCPacket[] memory)
-    {
+    function batchSingle(
+        IBCPacket calldata packet
+    ) internal pure returns (IBCPacket[] memory) {
         IBCPacket[] memory packets = new IBCPacket[](1);
         packets[0] = packet;
         return packets;
     }
 
-    function batchSingleMemory(IBCPacket memory packet)
-        internal
-        pure
-        returns (IBCPacket[] memory)
-    {
+    function batchSingleMemory(
+        IBCPacket memory packet
+    ) internal pure returns (IBCPacket[] memory) {
         IBCPacket[] memory packets = new IBCPacket[](1);
         packets[0] = packet;
         return packets;
@@ -104,7 +96,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
      * An error occur if any of the packets wasn't sent.
      * If successful, a new commitment is registered for the batch.
      */
-    function batchSend(IBCMsgs.MsgBatchSend calldata msg_) external override {
+    function batchSend(
+        IBCMsgs.MsgBatchSend calldata msg_
+    ) external override {
         uint256 l = msg_.packets.length;
         // No reason to batch less than 2 packets as they are already individually committed.
         if (l < 2) {
@@ -132,7 +126,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
      * An error occur if any of the packets wasn't received.
      * If successful, a new commitment is registered for the batch.
      */
-    function batchAcks(IBCMsgs.MsgBatchAcks calldata msg_) external override {
+    function batchAcks(
+        IBCMsgs.MsgBatchAcks calldata msg_
+    ) external override {
         uint256 l = msg_.packets.length;
         // No reason to batch less than 2 packets as they are already individually committed.
         if (l < 2) {
@@ -198,10 +194,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         return sequence;
     }
 
-    function setPacketReceive(IBCPacket calldata packet)
-        internal
-        returns (bool)
-    {
+    function setPacketReceive(
+        IBCPacket calldata packet
+    ) internal returns (bool) {
         bytes32 receiptCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
             packet.destinationChannel, commitPacketsMemory(batchSingle(packet))
         );
@@ -311,7 +306,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         }
     }
 
-    function recvPacket(IBCMsgs.MsgPacketRecv calldata msg_) external {
+    function recvPacket(
+        IBCMsgs.MsgPacketRecv calldata msg_
+    ) external {
         processReceive(
             msg_.packets,
             msg_.relayer,
@@ -322,10 +319,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         );
     }
 
-    function recvIntentPacket(IBCMsgs.MsgIntentPacketRecv calldata msg_)
-        external
-        override
-    {
+    function recvIntentPacket(
+        IBCMsgs.MsgIntentPacketRecv calldata msg_
+    ) external override {
         processReceive(
             msg_.packets,
             msg_.marketMaker,
@@ -396,10 +392,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
      * which is no longer necessary since the packet has been received and acted upon.
      * It will also increment NextSequenceAck in case of ORDERED channels.
      */
-    function acknowledgePacket(IBCMsgs.MsgPacketAcknowledgement calldata msg_)
-        external
-        override
-    {
+    function acknowledgePacket(
+        IBCMsgs.MsgPacketAcknowledgement calldata msg_
+    ) external override {
         uint256 l = msg_.packets.length;
         if (l == 0) {
             revert IBCPacketLib.ErrNotEnoughPackets();
@@ -438,10 +433,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         }
     }
 
-    function timeoutPacket(IBCMsgs.MsgPacketTimeout calldata msg_)
-        external
-        override
-    {
+    function timeoutPacket(
+        IBCMsgs.MsgPacketTimeout calldata msg_
+    ) external override {
         uint256 l = msg_.packets.length;
         if (l == 0) {
             revert IBCPacketLib.ErrNotEnoughPackets();
@@ -548,11 +542,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         );
     }
 
-    function ensureChannelState(uint32 channelId)
-        internal
-        view
-        returns (IBCChannel storage)
-    {
+    function ensureChannelState(
+        uint32 channelId
+    ) internal view returns (IBCChannel storage) {
         IBCChannel storage channel = channels[channelId];
         if (channel.state != IBCChannelState.Open) {
             revert IBCPacketLib.ErrInvalidChannelState();
@@ -560,10 +552,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         return channel;
     }
 
-    function generatePacketSequence(uint32 channelId)
-        internal
-        returns (uint64)
-    {
+    function generatePacketSequence(
+        uint32 channelId
+    ) internal returns (uint64) {
         uint64 seq = uint64(
             uint256(
                 commitments[IBCCommitment.nextSequenceSendCommitmentKey(
@@ -590,39 +581,33 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         delete commitments[packetCommitmentKey];
     }
 
-    function commitAcks(bytes[] calldata acknowledgements)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function commitAcks(
+        bytes[] calldata acknowledgements
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encode(acknowledgements));
     }
 
-    function commitAcksMemory(bytes[] memory acknowledgements)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function commitAcksMemory(
+        bytes[] memory acknowledgements
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encode(acknowledgements));
     }
 
-    function commitPackets(IBCPacket[] calldata packets)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function commitPackets(
+        IBCPacket[] calldata packets
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encode(packets));
     }
 
-    function commitPacketsMemory(IBCPacket[] memory packets)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function commitPacketsMemory(
+        IBCPacket[] memory packets
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encode(packets));
     }
 
-    function commitRecvSeq(uint64 sequence) internal pure returns (bytes32) {
+    function commitRecvSeq(
+        uint64 sequence
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(sequence));
     }
 }

@@ -58,9 +58,9 @@ contract IBCConnectionTests is Test {
         );
     }
 
-    function test_connectionOpenTry_ok(IBCMsgs.MsgConnectionOpenTry memory msg_)
-        public
-    {
+    function test_connectionOpenTry_ok(
+        IBCMsgs.MsgConnectionOpenTry memory msg_
+    ) public {
         vm.pauseGasMetering();
         msg_.clientId = clientId;
         lightClient.pushValidMembership();
