@@ -366,54 +366,57 @@ module UCS01::ibc {
     }
 
 
-    // TODO: It works but there are couple unknown datas.
-    // tbh i don't know if it will work for every possible relaypacket struct
     public fun encode_packet(packet: &RelayPacket): vector<u8> {
         let buf = vector::empty<u8>();
 
         // TODO(aeryz): document
+        // Offset of `packet.sender`
         EthABI::encode_uint<u64>(&mut buf, 32 * 4);
+        // Offset of `packet.receiver`
         EthABI::encode_uint<u64>(&mut buf, 32 * 6);
+        // Offset of `packet.tokens`
         EthABI::encode_uint<u64>(&mut buf, 32 * 8);
-        EthABI::encode_uint<u64>(&mut buf, 0); // offset is determined later
-        // let memo_offset = 32 * 9 + (32 * 6 * vector::length(&packet.tokens)));
+        // Offset of `packet.extension`. We temprorarily write `0` here because
+        // `packet.tokens` contain arbitrary-length fields. Hence we can't calculate
+        // the offset at this point without recursing on the tokens.
+        EthABI::encode_uint<u64>(&mut buf, 0);
 
-
-        // TODO: how to encode senders now?
+        // bytes encoded `packet.sender`
         EthABI::encode_vector<u8>(&mut buf, packet.sender, |some_variable, data| {
             EthABI::encode_u8(some_variable, data);
         });
         
-        // let receiver_bytes = bcs::to_bytes(&packet.receiver);
-        
-        // TODO: how to encode senders now?
+        // bytes encoded `packet.receiver`
         EthABI::encode_vector<u8>(&mut buf, packet.receiver, |some_variable, data| {
             EthABI::encode_u8(some_variable, data);
         });
 
+        // length prefix of the tokens array
         let num_tokens = vector::length(&packet.tokens);
         EthABI::encode_uint<u64>(&mut buf, num_tokens);
 
+        let tokens_buf = vector::empty();
         let i = 0;
-        while (i < num_tokens) {
-            let cursor = 32 + (6 * 32 * (num_tokens - 1));
-            EthABI::encode_uint<u64>(&mut buf, cursor);
-            i = i + 1;
-        };
-
-        let i = 0;
+        let prev_len = 0;
         while (i < num_tokens) {
             let token = vector::borrow(&packet.tokens, i);
             
-            EthABI::encode_uint<u64>(&mut buf, 96);
-            EthABI::encode_uint<u64>(&mut buf, token.amount);
+            EthABI::encode_uint<u64>(&mut tokens_buf, 96);
+            EthABI::encode_uint<u64>(&mut tokens_buf, token.amount);
             // TODO(aeryz): handle fee
-            EthABI::encode_uint<u64>(&mut buf, 0);
+            EthABI::encode_uint<u64>(&mut tokens_buf, 0);
 
-            EthABI::encode_string(&mut buf, token.denom);
+            EthABI::encode_string(&mut tokens_buf, token.denom);
 
             i = i + 1;
+
+            let cursor = 32 + ((num_tokens - 1) * 32);
+            EthABI::encode_uint<u64>(&mut buf, cursor + prev_len);
+            prev_len = prev_len + vector::length(&tokens_buf);
+            i = i + 1;
         };
+
+        vector::append(&mut buf, tokens_buf);
 
         let offset_buf = vector::empty();        
         EthABI::encode_uint<u64>(&mut offset_buf, vector::length(&buf));

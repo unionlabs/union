@@ -250,7 +250,7 @@ module IBC::ibc {
         let client_id = generate_client_identifier(client_type);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let (status_code, client_state, consensus_state) = LightClient::create_client(
+        let (client_state, consensus_state) = LightClient::create_client(
             &get_ibc_signer(),
             client_id, 
             // from_bcs::to_bytes(client_state), 
@@ -258,8 +258,6 @@ module IBC::ibc {
             client_state, 
             consensus_state,
         );
-    
-        assert!(status_code == 0, status_code);
 
         // TODO(aeryz): fetch these status from proper exported consts
         assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
@@ -562,12 +560,10 @@ module IBC::ibc {
             abort E_CLIENT_NOT_FOUND
         };
 
-        let (client_state, consensus_states, heights, err) = LightClient::update_client(
+        let (client_state, consensus_states, heights) = LightClient::update_client(
             client_id,
             client_message
         );
-
-        assert!(err == 0, err);
 
         let heights_len = vector::length(&heights); 
 
