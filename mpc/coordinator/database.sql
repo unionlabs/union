@@ -208,16 +208,21 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- Username
 CREATE OR REPLACE VIEW user_name AS
-  SELECT u.id,
-    COALESCE(
-      (SELECT c.display_name FROM public.code c WHERE c.user_id = u.id),
-      COALESCE(
-        u.raw_user_meta_data->>'user_name',
-        u.raw_user_meta_data->>'name'
-      )
-    ) AS user_name FROM auth.users u;
+  SELECT u.id, ('anon_' || left(encode(sha256(u.id::text::bytea), 'hex'), 20)) AS user_name FROM auth.users u;
 
 ALTER VIEW user_name SET (security_invoker = off);
+
+-- CREATE OR REPLACE VIEW user_name AS
+--   SELECT u.id,
+--     COALESCE(
+--       (SELECT c.display_name FROM public.code c WHERE c.user_id = u.id),
+--       COALESCE(
+--         u.raw_user_meta_data->>'user_name',
+--         u.raw_user_meta_data->>'name'
+--       )
+--     ) AS user_name FROM auth.users u;
+
+-- ALTER VIEW user_name SET (security_invoker = off);
 
 -------------------------
 -- Contribution Status --
@@ -577,7 +582,7 @@ CREATE OR REPLACE VIEW current_user_state AS (
     ((SELECT COUNT(*)
       FROM public.waitlist w
       WHERE w.id <> (SELECT auth.uid())
-      AND w.seq < (SELECT ww.seq FROM public.waitlist ww WHERE w.id = (SELECT auth.uid()))
+      AND w.seq < (SELECT ww.seq FROM public.waitlist ww WHERE ww.id = (SELECT auth.uid()))
     ) + 1) AS waitlist_position
 );
 
