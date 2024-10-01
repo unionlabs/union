@@ -405,60 +405,68 @@ impl ChainModuleServer for Module {
 
         let address = <H256>::new(U256::from_be_hex(address_str).unwrap().to_be_bytes());
 
-        let req = format!(
-            "{base_url}/movement/v1/table-item-with-proof/{address}/{key}/{height}",
-            base_url = self.movement_rpc_url,
-            key = hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
-            address = address,
-            height = at.revision_height,
-        );
+        // let req = format!(
+        //     "{base_url}/movement/v1/table-item-with-proof/{address}/{key}/{height}",
+        //     base_url = self.movement_rpc_url,
+        //     key = hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
+        //     address = address,
+        //     height = at.revision_height,
+        // );
 
-        let (state_value, proof): (
-            Option<aptos_types::state_store::state_value::StateValue>,
-            aptos_types::proof::SparseMerkleProof,
-        ) = client.get(req).send().await.unwrap().json().await.unwrap();
+        // let (state_value, proof): (
+        //     Option<aptos_types::state_store::state_value::StateValue>,
+        //     aptos_types::proof::SparseMerkleProof,
+        // ) = client.get(req).send().await.unwrap().json().await.unwrap();
+
+        // Ok(into_value(StorageProof {
+        //     state_value: state_value.map(|s| {
+        //         let (metadata, data) = s.unpack();
+        //         match metadata.into_persistable() {
+        //             None => StateValue::V0(data.to_vec()),
+        //             Some(PersistedStateValueMetadata::V0 {
+        //                 deposit,
+        //                 creation_time_usecs,
+        //             }) => StateValue::WithMetadata {
+        //                 data: data.to_vec(),
+        //                 metadata: StateValueMetadata::V0 {
+        //                     deposit,
+        //                     creation_time_usecs,
+        //                 },
+        //             },
+        //             Some(PersistedStateValueMetadata::V1 {
+        //                 slot_deposit,
+        //                 bytes_deposit,
+        //                 creation_time_usecs,
+        //             }) => StateValue::WithMetadata {
+        //                 data: data.to_vec(),
+        //                 metadata: StateValueMetadata::V1 {
+        //                     slot_deposit,
+        //                     bytes_deposit,
+        //                     creation_time_usecs,
+        //                 },
+        //             },
+        //         }
+        //     }),
+        //     proof: SparseMerkleProof {
+        //         leaf: proof.leaf().map(|leaf| SparseMerkleLeafNode {
+        //             key: (*leaf.key().as_ref()).into(),
+        //             value_hash: (*leaf.value_hash().as_ref()).into(),
+        //         }),
+        //         siblings: proof
+        //             .siblings()
+        //             .iter()
+        //             .map(AsRef::as_ref)
+        //             .copied()
+        //             .map(Into::into)
+        //             .collect(),
+        //     },
+        // }))
 
         Ok(into_value(StorageProof {
-            state_value: state_value.map(|s| {
-                let (metadata, data) = s.unpack();
-                match metadata.into_persistable() {
-                    None => StateValue::V0(data.to_vec()),
-                    Some(PersistedStateValueMetadata::V0 {
-                        deposit,
-                        creation_time_usecs,
-                    }) => StateValue::WithMetadata {
-                        data: data.to_vec(),
-                        metadata: StateValueMetadata::V0 {
-                            deposit,
-                            creation_time_usecs,
-                        },
-                    },
-                    Some(PersistedStateValueMetadata::V1 {
-                        slot_deposit,
-                        bytes_deposit,
-                        creation_time_usecs,
-                    }) => StateValue::WithMetadata {
-                        data: data.to_vec(),
-                        metadata: StateValueMetadata::V1 {
-                            slot_deposit,
-                            bytes_deposit,
-                            creation_time_usecs,
-                        },
-                    },
-                }
-            }),
+            state_value: None,
             proof: SparseMerkleProof {
-                leaf: proof.leaf().map(|leaf| SparseMerkleLeafNode {
-                    key: (*leaf.key().as_ref()).into(),
-                    value_hash: (*leaf.value_hash().as_ref()).into(),
-                }),
-                siblings: proof
-                    .siblings()
-                    .iter()
-                    .map(AsRef::as_ref)
-                    .copied()
-                    .map(Into::into)
-                    .collect(),
+                leaf: None,
+                siblings: Vec::new(),
             },
         }))
     }

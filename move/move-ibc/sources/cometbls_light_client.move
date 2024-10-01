@@ -77,7 +77,7 @@ module IBC::LightClient {
         
         assert!(
             height::get_revision_height(&client_state.latest_height) != 0 &&
-            consensus_state.timestamp == 0, E_INVALID_CLIENT_STATE
+            consensus_state.timestamp != 0, E_INVALID_CLIENT_STATE
         );
 
         assert!(string::length(&client_state.chain_id) <= 31, E_INVALID_CLIENT_STATE);
@@ -197,7 +197,9 @@ module IBC::LightClient {
             prefix,
             path,
             value
-        )
+        );
+
+        0
     }
 
     public fun verify_non_membership(

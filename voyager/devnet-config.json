@@ -33,9 +33,9 @@
       "path": "./target/debug/voyager-chain-module-movement",
       "config": {
         "chain_id": "27",
-        "rpc_url": "http://localhost:30731",
+        "rpc_url": "https://aptos.testnet.suzuka.movementlabs.xyz",
         "movement_rpc_url": "http://localhost:30832",
-        "ibc_handler_address": "fab42d9bc05b672f3fd7ed856d59f79e3fcd81d98ab5824a533a844abe4d34fd"
+        "ibc_handler_address": "f2e43321983ebfc75ff689e625b0cdccf56365560d2d970ea4ec0b898728b954"
       }
     },
     {
@@ -106,10 +106,10 @@
       "path": "./target/debug/voyager-consensus-module-movement",
       "config": {
         "chain_id": "27",
-        "ibc_handler_address": "fab42d9bc05b672f3fd7ed856d59f79e3fcd81d98ab5824a533a844abe4d34fd",
+        "ibc_handler_address": "f2e43321983ebfc75ff689e625b0cdccf56365560d2d970ea4ec0b898728b954",
         "l1_settlement_address": "0x0000000000000000000000000000000000000000",
         "l1_client_id": "cometbls-0",
-        "aptos_rest_api": "http://localhost:30731",
+        "aptos_rest_api": "https://aptos.testnet.suzuka.movementlabs.xyz",
         "movement_rest_url": "http://localhost:30832"
       }
     },
@@ -125,15 +125,15 @@
       "path": "./target/debug/voyager-transaction-plugin-aptos",
       "config": {
         "chain_id": "27",
-        "rpc_url": "http://localhost:30731",
-        "ibc_handler_address": "fab42d9bc05b672f3fd7ed856d59f79e3fcd81d98ab5824a533a844abe4d34fd",
+        "rpc_url": "https://aptos.testnet.suzuka.movementlabs.xyz",
+        "ibc_handler_address": "f2e43321983ebfc75ff689e625b0cdccf56365560d2d970ea4ec0b898728b954",
         "keyring": {
           "name": "aptos-devnet",
           "keys": [
             {
               "type": "raw",
               "name": "dev-key0",
-              "key": "0xfa200bca80ba1c5d11487fbeea3ef18ca097fb5aede46074187914f217ebce24"
+              "key": "0xbd84d9e61094ce511c72d5942ae59af556023e3fce4fd74ab5ef5167c4314e5b"
             }
           ]
         }

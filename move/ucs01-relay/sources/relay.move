@@ -401,10 +401,15 @@ module UCS01::ibc {
         while (i < num_tokens) {
             let token = vector::borrow(&packet.tokens, i);
             
-            EthABI::encode_uint<u64>(&mut tokens_buf, 96);
-            EthABI::encode_uint<u64>(&mut tokens_buf, token.amount);
+            // TODO(aeryz): this should be 96 when fee is enabled
             // TODO(aeryz): handle fee
+            /*
+            EthABI::encode_uint<u64>(&mut tokens_buf, 96);
             EthABI::encode_uint<u64>(&mut tokens_buf, 0);
+            */
+
+            EthABI::encode_uint<u64>(&mut tokens_buf, 64);
+            EthABI::encode_uint<u64>(&mut tokens_buf, token.amount);
 
             EthABI::encode_string(&mut tokens_buf, token.denom);
 
@@ -465,7 +470,7 @@ module UCS01::ibc {
             index = index + 32;
 
             let amount = EthABI::decode_uint(buf, &mut index);
-            let _fee = EthABI::decode_uint(buf, &mut index); 
+            // let _fee = EthABI::decode_uint(buf, &mut index); 
             let denom = EthABI::decode_string(buf, &mut index);
 
             let token = Token {

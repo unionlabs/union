@@ -228,6 +228,39 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     .await
                     .unwrap();
 
+                // Ok(data(OrderedHeaders {
+                //     headers: vec![(
+                //         DecodedHeaderMeta {
+                //             height: Height {
+                //                 revision_number: 0,
+                //                 revision_height: to,
+                //             },
+                //         },
+                //         serde_json::to_value(movement::header::Header {
+                //             // dummy value for now, until movement settles on a public L1
+                //             // 0-1, otherwise it's omitted in the proto encoding(?)
+                //             l1_height: Height::default().increment(),
+                //             trusted_height: Height {
+                //                 revision_number: 0,
+                //                 revision_height: from,
+                //             },
+                //             state_proof: state_proof.state_proof,
+                //             tx_index: state_proof.tx_index,
+                //             tx_proof: state_proof.tx_proof,
+                //             state_proof_hash_proof: StorageProof {
+                //                 key: Default::default(),
+                //                 value: Default::default(),
+                //                 proof: Default::default(),
+                //             },
+                //             settlement_contract_proof: AccountProof {
+                //                 storage_root: Default::default(),
+                //                 proof: Default::default(),
+                //             },
+                //             new_height: to,
+                //         })
+                //         .unwrap(),
+                //     )],
+                // }))
                 Ok(data(OrderedHeaders {
                     headers: vec![(
                         DecodedHeaderMeta {
@@ -244,9 +277,9 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 revision_number: 0,
                                 revision_height: from,
                             },
-                            state_proof: state_proof.state_proof,
-                            tx_index: state_proof.tx_index,
-                            tx_proof: state_proof.tx_proof,
+                            state_proof: StateProof::default(),
+                            tx_index: 0,
+                            tx_proof: TransactionInfoWithProof::default(),
                             state_proof_hash_proof: StorageProof {
                                 key: Default::default(),
                                 value: Default::default(),
