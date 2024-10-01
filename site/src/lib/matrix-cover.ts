@@ -11,7 +11,8 @@ let displayWidth = 1000
 let displayHeight = 1000
 const RETINA_ENABLED = false
 const WIDTH = 80 // Must be even
-const duration = 0.04 // Total duration of the transition in seconds
+const WAIT_TIME = 2
+const DURATION = 4 // Total duration of the transition in seconds
 
 const W2 = WIDTH / 2
 
@@ -329,12 +330,13 @@ function initWebGL() {
     const startRotation = Math.PI / 2 // Starting rotation angle
     const endRotationY = Math.PI / 4 // Ending rotation angle
     const endRotationX = Math.PI / 4 // Ending rotation angle
-    const duration = 4 // Total duration of the transition in seconds
 
     // Current time since the animation started (you need to define how you get this)
 
     // Normalize time to a value between 0 and 1
-    const s = Math.max(0, Math.min(1, totalTime / duration))
+
+    const s =
+      totalTime < WAIT_TIME ? 0 : Math.max(0, Math.min(1, (totalTime - WAIT_TIME) / DURATION))
 
     // Smoothstep easing function for smooth transition
     function smoothStep(s) {
