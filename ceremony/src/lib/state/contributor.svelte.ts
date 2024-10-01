@@ -39,10 +39,9 @@ export type ClientState =
   | "offline"
   | undefined
 
-interface UserContext {
+interface QueueState {
   position: number | null
   count: number | null
-  error: string | null
 }
 
 interface QueueInfoSuccess {
@@ -61,7 +60,7 @@ type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 const second = 1000
 const CLIENT_POLING_INTERVAL = second
 const CONTRIBUTION_POLLING_INTERVAL = second * 5
-const QUEUE_POLLING_INTERVAL = second * 5
+const QUEUE_POLLING_INTERVAL = second * 15
 
 export class Contributor {
   userId = $state<string | undefined>(undefined)
@@ -74,10 +73,9 @@ export class Contributor {
   userWallet = $state("")
   downloadedSecret = $state<boolean>(localStorage.getItem("downloaded-secret") === "true")
 
-  queueState = $state<UserContext>({
+  queueState = $state<QueueState>({
     position: null,
     count: null,
-    error: null
   })
 
   private pollIntervals: {
@@ -255,7 +253,7 @@ export class Contributor {
   }
 
   private setError(message: string) {
-    this.queueState = { ...this.queueState, error: message }
+    console.error(message)
     this.state = "error"
   }
 
@@ -287,6 +285,7 @@ export class Contributor {
       this.state = "inQueue"
     } else if (this.contributionState === "contributed") {
       this.state = "contributed"
+      this.stopPolling()
     } else if (this.contributionState === "verifying") {
       this.state = "verifying"
     } else if (this.clientState === "offline") {
