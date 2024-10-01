@@ -288,8 +288,8 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 revert IBCPacketLib.ErrInvalidProof();
             }
         }
-        IIBCModule module = lookupModuleByChannel(destinationChannel);
         IBCChannelOrder ordering = channel.ordering;
+        IIBCModule module = lookupModuleByChannel(destinationChannel);
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = packets[i];
             // Check packet height timeout
@@ -448,7 +448,6 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IBCChannel storage channel = ensureChannelState(sourceChannel);
         IBCConnection storage connection =
             ensureConnectionState(channel.connectionId);
-        deletePacketsCommitment(sourceChannel, msg_.packets);
         bytes32 commitmentKey;
         if (l == 1) {
             commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
@@ -471,13 +470,15 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCPacketLib.ErrInvalidProof();
         }
         IBCChannelOrder ordering = channel.ordering;
+        IIBCModule module = lookupModuleByChannel(sourceChannel);
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
+            deletePacketCommitment(sourceChannel, packet);
             bytes calldata acknowledgement = msg_.acknowledgements[i];
             if (ordering == IBCChannelOrder.Ordered) {
                 setNextSequenceAck(sourceChannel, packet.sequence);
             }
-            lookupModuleByChannel(sourceChannel).onAcknowledgementPacket(
+            module.onAcknowledgementPacket(
                 packet, acknowledgement, msg_.relayer
             );
             emit IBCPacketLib.AcknowledgePacket(
@@ -498,7 +499,6 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IBCChannel storage channel = ensureChannelState(sourceChannel);
         IBCConnection storage connection =
             ensureConnectionState(channel.connectionId);
-        deletePacketsCommitment(sourceChannel, msg_.packets);
         ILightClient client = getClientInternal(connection.clientId);
         uint64 proofTimestamp =
             client.getTimestampAtHeight(connection.clientId, msg_.proofHeight);
@@ -540,8 +540,10 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 revert IBCPacketLib.ErrInvalidProof();
             }
         }
+        IIBCModule module = lookupModuleByChannel(sourceChannel);
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
+            deletePacketCommitment(sourceChannel, packet);
             if (
                 packet.timeoutTimestamp > 0
                     && packet.timeoutTimestamp >= proofTimestamp
@@ -561,9 +563,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                         .ErrNextSequenceMustBeLEQThanTimeoutSequence();
                 }
             }
-            lookupModuleByChannel(sourceChannel).onTimeoutPacket(
-                packet, msg_.relayer
-            );
+            module.onTimeoutPacket(packet, msg_.relayer);
             emit IBCPacketLib.TimeoutPacket(packet, msg_.relayer);
         }
     }
@@ -627,17 +627,17 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         return seq;
     }
 
-    function deletePacketsCommitment(
+    function deletePacketCommitment(
         uint32 sourceChannel,
-        IBCPacket[] calldata packets
+        IBCPacket calldata packet
     ) internal {
-        bytes32 packetCommitmentKey = IBCCommitment.batchPacketsCommitmentKey(
-            sourceChannel, IBCPacketLib.commitPackets(packets)
+        bytes32 commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+            sourceChannel, IBCPacketLib.commitPacket(packet)
         );
-        bytes32 packetCommitment = commitments[packetCommitmentKey];
-        if (packetCommitment != IBCPacketLib.COMMITMENT_MAGIC) {
+        bytes32 commitment = commitments[commitmentKey];
+        if (commitment != IBCPacketLib.COMMITMENT_MAGIC) {
             revert IBCPacketLib.ErrPacketCommitmentNotFound();
         }
-        delete commitments[packetCommitmentKey];
+        delete commitments[commitmentKey];
     }
 }

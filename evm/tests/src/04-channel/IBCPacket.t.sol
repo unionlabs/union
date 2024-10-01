@@ -456,4 +456,117 @@ contract IBCPacketTests is Test {
         vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
         handler.recvIntentPacket(msg_);
     }
+
+    function createPacketAcknowledgement(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) internal view returns (IBCMsgs.MsgPacketAcknowledgement memory) {
+        bytes32 normalizedPortId = keccak256(abi.encodePacked(address(module)));
+        IBCPacket[] memory packets = new IBCPacket[](nbPackets);
+        bytes[] memory acknowledgements = new bytes[](nbPackets);
+        for (uint8 i = 0; i < nbPackets; i++) {
+            packets[i] = IBCPacket({
+                sequence: i,
+                sourcePort: normalizedPortId,
+                sourceChannel: channelId,
+                destinationPort: destinationPort,
+                destinationChannel: destinationChannel,
+                data: message,
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: type(uint64).max
+            });
+            acknowledgements[i] = abi.encodePacked(i);
+        }
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ = IBCMsgs
+            .MsgPacketAcknowledgement({
+            packets: packets,
+            acknowledgements: acknowledgements,
+            relayer: address(this),
+            proof: hex"",
+            proofHeight: 0
+        });
+        return msg_;
+    }
+
+    function test_acknowledgePacket_ok(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.pauseGasMetering();
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ =
+        createPacketAcknowledgement(
+            destinationPort, destinationChannel, message, nbPackets
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            handler.assumePacketSent(channelId, msg_.packets[i]);
+        }
+        lightClient.pushValidMembership();
+        vm.resumeGasMetering();
+        handler.acknowledgePacket(msg_);
+    }
+
+    function test_acknowledgePacket_ok_1(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message
+    ) public {
+        vm.pauseGasMetering();
+        test_acknowledgePacket_ok(
+            destinationPort, destinationChannel, message, 1
+        );
+    }
+
+    function test_acknowledgePacket_commitmentRemoved(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ =
+        createPacketAcknowledgement(
+            destinationPort, destinationChannel, message, nbPackets
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            handler.assumePacketSent(channelId, msg_.packets[i]);
+        }
+        lightClient.pushValidMembership();
+        handler.acknowledgePacket(msg_);
+        for (uint8 i = 0; i < nbPackets; i++) {
+            assertEq(
+                handler.commitments(
+                    IBCCommitment.batchPacketsCommitmentKey(
+                        channelId,
+                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                    )
+                ),
+                IBCPacketLib.COMMITMENT_NULL
+            );
+        }
+    }
+
+    function test_acknowledgePacket_invalidProof(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.pauseGasMetering();
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ =
+        createPacketAcknowledgement(
+            destinationPort, destinationChannel, message, nbPackets
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            handler.assumePacketSent(channelId, msg_.packets[i]);
+        }
+        vm.resumeGasMetering();
+        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
+        handler.acknowledgePacket(msg_);
+    }
 }
