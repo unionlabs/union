@@ -15,6 +15,3 @@ rev    = "d34bb3e3dad03241967c0263a6f1fcfe6bccb7d7"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
-
-
-

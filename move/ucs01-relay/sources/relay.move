@@ -376,7 +376,7 @@ module UCS01::ibc {
         EthABI::encode_uint<u64>(&mut buf, 32 * 6);
         // Offset of `packet.tokens`
         EthABI::encode_uint<u64>(&mut buf, 32 * 8);
-        // Offset of `packet.extension`. We temprorarily write `0` here because
+        // Offset of `packet.extension`. We temporarily write `0` here because
         // `packet.tokens` contain arbitrary-length fields. Hence we can't calculate
         // the offset at this point without recursing on the tokens.
         EthABI::encode_uint<u64>(&mut buf, 0);
@@ -1197,11 +1197,11 @@ module UCS01::ibc {
             amount: 1000,
         };
         let token2 = Token {
-            denom: string::utf8(b"hebelelelele"),
+            denom: string::utf8(b"this is amazing"),
             amount: 3000,
         };
         let token3 = Token {
-            denom: string::utf8(b"weweweweewew"),
+            denom: string::utf8(b"insane cool"),
             amount: 3,
         };
         let tokens = vector::empty<Token>();
@@ -1228,10 +1228,10 @@ module UCS01::ibc {
         assert!(token.denom == string::utf8(b"denom"), 103);
         assert!(token.amount == 1000, 104);
         let token2 = vector::borrow(&decoded.tokens, 1);
-        assert!(token2.denom == string::utf8(b"hebelelelele"), 105);
+        assert!(token2.denom == string::utf8(b"this is amazing"), 105);
         assert!(token2.amount == 3000, 106);
         let token3 = vector::borrow(&decoded.tokens, 2);
-        assert!(token3.denom == string::utf8(b"weweweweewew"), 107);
+        assert!(token3.denom == string::utf8(b"insane cool"), 107);
         assert!(token3.amount == 3, 108);
     }
 

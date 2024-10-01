@@ -8,9 +8,7 @@ module UCS01::fa_coin {
     use std::option;
 
     /// Only fungible asset metadata owner can make changes.
-    const ENOT_OWNER: u64 = 1;
-    /// The FA coin is paused.
-    const EPAUSED: u64 = 2;
+    const E_NOT_OWNER: u64 = 1;
     
     const ASSET_SYMBOL: vector<u8> = b"FA";
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
@@ -198,7 +196,7 @@ module UCS01::fa_coin {
         owner: &signer,
         asset: Object<Metadata>,
     ): &ManagedFungibleAsset acquires ManagedFungibleAsset {
-        assert!(object::is_owner(asset, signer::address_of(owner)), error::permission_denied(ENOT_OWNER));
+        assert!(object::is_owner(asset, signer::address_of(owner)), error::permission_denied(E_NOT_OWNER));
         borrow_global<ManagedFungibleAsset>(object::object_address(&asset))
     }
 

@@ -67,7 +67,7 @@ module UCS01::EthABI {
         // Move the index forward after reading 32 bytes
         *index = *index + 32;
 
-        // TODO: Can't convert to T directly because of the endiannes we get problems.
+        // TODO: Can't convert to T directly because of the endianness we get problems.
         let result = from_bcs::to_u256(reversed_bytes);
         
         result
@@ -165,7 +165,7 @@ module UCS01::EthABI {
     #[test]
     public fun test_encode_decode_string() {
         let some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
-        let some_str = string::utf8(b"encode_stringencode_stringabcdefg");
+        let some_str = string::utf8(b"encode string encode string");
 
         encode_string(&mut some_variable, some_str);
         

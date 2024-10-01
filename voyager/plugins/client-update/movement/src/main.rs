@@ -215,7 +215,7 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate { from, to }) => {
                 // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
-                // we will uncomment this:
+                // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
                 // let header = get_lc_header(&self.movement_rest_url, from, to).await;
                 Ok(data(OrderedHeaders {
                     headers: vec![(

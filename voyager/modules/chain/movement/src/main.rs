@@ -403,7 +403,7 @@ impl ChainModuleServer for Module {
         let _address = <H256>::new(U256::from_be_hex(_address_str).unwrap().to_be_bytes());
 
         // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
-        // we will uncomment this:
+        // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
         // let storage_proof = get_storage_proof(
         //     &self.ctx.movement_rpc_url,
         //     address,
