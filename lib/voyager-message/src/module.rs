@@ -3,7 +3,6 @@ use std::{borrow::Cow, collections::VecDeque};
 use enumorph::Enumorph;
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject, RpcModule};
 use macros::model;
-use queue_msg::{optimize::OptimizationResult, Op};
 use serde_json::{json, Value};
 use serde_utils::Hex;
 use tracing::debug;
@@ -15,6 +14,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_core::ConsensusType;
+use voyager_vm::{optimize::OptimizationResult, Op};
 #[cfg(doc)]
 use {
     crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},

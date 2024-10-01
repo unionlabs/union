@@ -101,7 +101,7 @@ fn mk_impls(
 ) -> proc_macro2::TokenStream {
     quote_spanned! {field_type.span()=>
         #[automatically_derived]
-        impl #impl_generics queue_msg::aggregation::SubsetOf<#enum_ident #ty_generics> for #field_type #where_clause {
+        impl #impl_generics ::subset_of::SubsetOf<#enum_ident #ty_generics> for #field_type #where_clause {
             fn try_from_super(t: #enum_ident #ty_generics) -> Result<Self, #enum_ident #ty_generics> {
                 match t {
                     #enum_ident::#variant_name { #field_name: t, .. } => ::std::result::Result::Ok(t),
@@ -115,14 +115,6 @@ fn mk_impls(
                 #enum_ident::#variant_name { #field_name: self }
             }
         }
-
-        // #[automatically_derived]
-        // impl #impl_generics ::std::convert::From<#field_type> for #enum_ident #ty_generics #where_clause {
-        //     fn from(value: #field_type) -> Self {
-        //         #[allow(clippy::init_numbered_fields)]
-        //         #enum_ident::#variant_name { #field_name: value }
-        //     }
-        // }
     }
 }
 

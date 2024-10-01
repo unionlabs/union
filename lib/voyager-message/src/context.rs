@@ -3,13 +3,13 @@ use std::{collections::HashMap, process::Stdio, sync::Arc, time::Duration};
 use futures::{stream::FuturesUnordered, Future, StreamExt, TryStreamExt};
 use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
 use macros::model;
-use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
 use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
 use voyager_core::ConsensusType;
+use voyager_vm::{BoxDynError, QueueError};
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
@@ -53,7 +53,7 @@ pub struct Modules {
     client_consensus_types: HashMap<ClientType<'static>, ConsensusType<'static>>,
 }
 
-impl queue_msg::Context for Context {
+impl voyager_vm::Context for Context {
     fn tags(&self) -> Vec<&str> {
         self.interest_filters.keys().map(|s| s.as_str()).collect()
     }

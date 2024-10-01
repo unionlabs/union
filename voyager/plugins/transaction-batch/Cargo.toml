@@ -15,13 +15,14 @@ jsonrpsee                      = { workspace = true, features = ["macros", "serv
 macros                         = { workspace = true }
 prost                          = { workspace = true }
 protos                         = { workspace = true }
-queue-msg                      = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde_json                     = { workspace = true }
+subset-of                      = { workspace = true }
 thiserror                      = { workspace = true }
 tokio                          = { workspace = true }
 tracing                        = { workspace = true }
 tracing-subscriber             = { workspace = true }
 unionlabs                      = { workspace = true }
 voyager-message                = { workspace = true }
+voyager-vm                     = { workspace = true }

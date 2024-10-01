@@ -21,7 +21,6 @@ move-bindgen       = { workspace = true }
 move-core-types    = { workspace = true }
 prost              = { workspace = true }
 protos             = { workspace = true }
-queue-msg          = { workspace = true }
 reqwest            = { workspace = true, features = ["json"] }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
@@ -34,3 +33,4 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
 voyager-message    = { workspace = true }
+voyager-vm         = { workspace = true }

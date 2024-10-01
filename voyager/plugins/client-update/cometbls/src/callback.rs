@@ -4,7 +4,7 @@ use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
 use macros::model;
 use num_bigint::BigUint;
-use queue_msg::{aggregation::DoCallback, call, data, promise, Op};
+use subset_of::SubsetOf;
 use tracing::{debug, trace};
 use unionlabs::{
     bounded::BoundedI64,
@@ -30,6 +30,7 @@ use voyager_message::{
     data::{DecodedHeaderMeta, OrderedHeaders},
     PluginMessage, VoyagerMessage,
 };
+use voyager_vm::{aggregation::DoCallback, call, data, promise, Op};
 
 use crate::{
     call::{FetchProveRequest, ModuleCall},
@@ -37,7 +38,7 @@ use crate::{
 };
 
 #[model]
-#[derive(Enumorph)]
+#[derive(Enumorph, SubsetOf)]
 #[allow(clippy::large_enum_variant)]
 pub enum ModuleCallback {
     AggregateProveRequest(AggregateProveRequest),

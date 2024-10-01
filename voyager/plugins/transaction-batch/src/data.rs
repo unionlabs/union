@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use macros::model;
-use queue_msg::SubsetOf;
+use subset_of::SubsetOf;
 use unionlabs::{ibc::core::client::height::Height, id::ClientId};
 use voyager_message::data::{
     ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,

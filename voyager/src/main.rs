@@ -17,7 +17,6 @@ use std::{
 
 use chain_utils::BoxDynError;
 use clap::Parser;
-use queue_msg::call;
 use serde::Serialize;
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -28,6 +27,7 @@ use unionlabs::{ethereum::ibc_commitment_key, ics24};
 use voyager_message::{
     call::FetchBlocks, core::ChainId, module::ChainModuleClient, VoyagerMessage,
 };
+use voyager_vm::call;
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;

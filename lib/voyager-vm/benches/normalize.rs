@@ -1,10 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use queue_msg::{call, conc, data, noop, normalize::normalize, promise, seq, Op};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::FetchBlocks, callback::AggregateMsgUpdateClientsFromOrderedHeaders, core::ChainId,
     data::LatestHeight, VoyagerMessage,
 };
+use voyager_vm::{call, conc, data, noop, normalize::normalize, promise, seq, Op};
 
 fn bench_normalize(c: &mut Criterion) {
     c.bench_function("normalize", |b| {

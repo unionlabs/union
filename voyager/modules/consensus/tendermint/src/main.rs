@@ -9,7 +9,6 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;
@@ -27,6 +26,7 @@ use voyager_message::{
     module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo},
     run_module_server, DefaultCmd, ModuleContext,
 };
+use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {

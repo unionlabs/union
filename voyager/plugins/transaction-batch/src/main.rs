@@ -14,12 +14,9 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use queue_msg::{
-    aggregation::SubsetOf, call, data, now, optimize::OptimizationResult, promise, seq,
-    BoxDynError, Op,
-};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use subset_of::SubsetOf;
 use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
@@ -32,6 +29,7 @@ use voyager_message::{
     run_module_server, DefaultCmd, ExtensionsExt, ModuleContext, PluginMessage, VoyagerClient,
     VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
+use voyager_vm::{call, data, now, optimize::OptimizationResult, promise, seq, BoxDynError, Op};
 
 use crate::{
     call::{MakeTransactionBatchesWithUpdate, ModuleCall},
@@ -366,7 +364,7 @@ impl Module {
                     continue;
                 };
 
-                match ChainEvent::try_from_super(msg) {
+                match ChainEvent::try_from(msg) {
                     Ok(chain_event) => {
                         // the client id of the client on this chain (we are the counterparty from the perspective of the chain where the event was emitted)
                         // this is the client that will need to be updated before this ibc message can be sent

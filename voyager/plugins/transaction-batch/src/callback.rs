@@ -4,10 +4,6 @@ use enumorph::Enumorph;
 use frunk::hlist_pat;
 use jsonrpsee::core::RpcResult;
 use macros::model;
-use queue_msg::{
-    aggregation::{HListTryFromIterator, SubsetOf},
-    call, conc, data, noop, promise, seq, Op,
-};
 use tracing::warn;
 use unionlabs::{ibc::core::client::height::Height, id::ClientId, QueryHeight};
 use voyager_message::{
@@ -22,6 +18,7 @@ use voyager_message::{
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
     VoyagerClient, VoyagerMessage,
 };
+use voyager_vm::{aggregation::HListTryFromIterator, call, conc, data, noop, promise, seq, Op};
 
 use crate::{
     call::ModuleCall,
@@ -200,9 +197,7 @@ impl MakeBatchTransaction {
             warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");
         }
 
-        let msgs = datas
-            .into_iter()
-            .map(|d| IbcMessage::try_from_super(d).unwrap());
+        let msgs = datas.into_iter().map(|d| IbcMessage::try_from(d).unwrap());
 
         // TODO: We may need to sort packet messages when we support ordered channels
         // msgs.sort_unstable_by(|a, b| match (a, b) {

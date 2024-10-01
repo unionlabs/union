@@ -1,15 +1,10 @@
 use std::{collections::VecDeque, fmt::Debug};
 
 use frunk::{HCons, HList, HNil};
+use subset_of::SubsetOf;
 use tracing::error;
 
 use crate::{Op, QueueMessage};
-
-pub trait SubsetOf<T>: Sized {
-    fn try_from_super(t: T) -> Result<Self, T>;
-
-    fn into_super(self) -> T;
-}
 
 pub fn do_callback<T: QueueMessage, Cb: DoCallback<T>>(
     event: Cb,
@@ -153,14 +148,15 @@ impl<H, Tail: HListAsTuple> HListAsTuple for HCons<H, Tail> {
 mod tests {
     use std::collections::VecDeque;
 
+    use enumorph::Enumorph;
     use frunk::HList;
-    use queue_msg_macro::SubsetOf;
+    use subset_of::SubsetOf;
 
-    use crate::{aggregation::HListTryFromIterator, test_utils::queue_msg};
+    use crate::aggregation::HListTryFromIterator;
 
     #[test]
     fn hlist_try_from_iter() {
-        #[derive(Debug, PartialEq, enumorph::Enumorph, SubsetOf)]
+        #[derive(Debug, PartialEq, Enumorph, SubsetOf)]
         pub enum A {
             B(B),
             C(C),

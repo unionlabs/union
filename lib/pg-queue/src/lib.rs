@@ -4,14 +4,14 @@ use std::{
 };
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use queue_msg::{
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, PgPool};
+use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
+use voyager_vm::{
     normalize,
     optimize::{OptimizationResult, Pass, PurePass},
     Captures, Op, QueueMessage,
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, PgPool};
-use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
 
 use crate::metrics::{ITEM_PROCESSING_DURATION, OPTIMIZE_ITEM_COUNT, OPTIMIZE_PROCESSING_DURATION};
 
@@ -68,7 +68,7 @@ struct Record {
     created_at: sqlx::types::time::OffsetDateTime,
 }
 
-impl<T: QueueMessage> queue_msg::Queue<T> for PgQueue<T> {
+impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     type Config = PgQueueConfig;
     // type Error = tokio_postgres::Error;
     type Error = sqlx::Error;

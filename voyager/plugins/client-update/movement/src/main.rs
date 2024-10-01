@@ -7,7 +7,6 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
-use queue_msg::{call, data, optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
@@ -35,6 +34,7 @@ use voyager_message::{
     module::{ConsensusModuleServer, ModuleInfo, PluginInfo, PluginServer, PluginTypes},
     run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
 };
+use voyager_vm::{call, data, optimize::OptimizationResult, Op};
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 

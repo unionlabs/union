@@ -11,7 +11,6 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument};
@@ -29,6 +28,7 @@ use voyager_message::{
     module::{ChainModuleInfo, ChainModuleServer, ModuleInfo, RawClientState},
     run_module_server, DefaultCmd, ModuleContext,
 };
+use voyager_vm::BoxDynError;
 
 const ETHEREUM_REVISION_NUMBER: u64 = 0;
 

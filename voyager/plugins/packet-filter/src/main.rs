@@ -4,7 +4,6 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
-use queue_msg::{optimize::OptimizationResult, BoxDynError, Op};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
@@ -14,6 +13,7 @@ use voyager_message::{
     module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
     run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
 };
+use voyager_vm::{optimize::OptimizationResult, BoxDynError, Op};
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 

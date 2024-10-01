@@ -14,7 +14,6 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
-use queue_msg::{call, conc, data, optimize::OptimizationResult, seq, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, error, info, instrument};
@@ -41,6 +40,7 @@ use voyager_message::{
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
     run_module_server, ExtensionsExt, ModuleContext, VoyagerClient, VoyagerMessage,
 };
+use voyager_vm::{call, conc, data, optimize::OptimizationResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlock, FetchTransactions, MakeChainEvent, ModuleCall},

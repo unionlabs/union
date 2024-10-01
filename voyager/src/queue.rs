@@ -19,10 +19,6 @@ use futures::{
 };
 use pg_queue::{PgQueue, PgQueueConfig};
 use prometheus::TextEncoder;
-use queue_msg::{
-    optimize::{OptimizationResult, Pass, PurePass},
-    Captures, Engine, InMemoryQueue, Op, Queue, QueueMessage,
-};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -32,6 +28,10 @@ use unionlabs::ErrorReporter;
 use voyager_message::{
     context::Context, module::PluginClient, pass::JaqInterestFilter, rpc::VoyagerRpcServer,
     VoyagerMessage,
+};
+use voyager_vm::{
+    optimize::{OptimizationResult, Pass, PurePass},
+    Captures, Engine, InMemoryQueue, Op, Queue, QueueMessage,
 };
 
 use crate::config::Config;

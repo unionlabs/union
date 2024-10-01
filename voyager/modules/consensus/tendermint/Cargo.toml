@@ -15,7 +15,6 @@ macros             = { workspace = true }
 num-bigint         = { workspace = true }
 prost              = { workspace = true }
 protos             = { workspace = true }
-queue-msg          = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
 thiserror          = { workspace = true }
@@ -24,3 +23,4 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
 voyager-message    = { workspace = true }
+voyager-vm         = { workspace = true }

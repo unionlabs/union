@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use macros::model;
-use queue_msg::SubsetOf;
+use subset_of::SubsetOf;
 
 #[model]
 #[derive(Enumorph, SubsetOf)]

@@ -14,7 +14,6 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
-use queue_msg::{call, noop, optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
 use tracing::instrument;
@@ -26,6 +25,7 @@ use voyager_message::{
     module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
     run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
 };
+use voyager_vm::{call, noop, optimize::OptimizationResult, Op};
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 
@@ -240,7 +240,7 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                 entry_fn,
                                 400000,
                                 100,
-                                queue_msg::now() + 100,
+                                voyager_vm::now() + 100,
                                 self.chain_id.as_str().parse().unwrap(),
                             );
 

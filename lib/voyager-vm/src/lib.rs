@@ -22,7 +22,6 @@ use futures::{
     stream::{self, FuturesUnordered},
     FutureExt, Stream, StreamExt, TryStreamExt,
 };
-pub use queue_msg_macro::SubsetOf;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::{pin, time::sleep};
 use tracing::{debug, error, info, info_span, trace, warn, Instrument};
@@ -1191,7 +1190,7 @@ pub mod test_utils {
     use enumorph::Enumorph;
     use frunk::{hlist_pat, HList};
     use macros::model;
-    use queue_msg_macro::SubsetOf;
+    use subset_of::SubsetOf;
 
     use crate::{
         aggregation::{do_callback, DoCallback},
@@ -1199,7 +1198,7 @@ pub mod test_utils {
     };
 
     // for macros
-    pub mod queue_msg {
+    pub mod voyager_vm {
         pub use crate::*;
     }
 

@@ -9142,13 +9142,13 @@ version = "0.1.0"
 dependencies = [
  "frame-support-procedural",
  "prometheus",
- "queue-msg",
  "serde",
  "serde_json",
  "sqlx",
  "tokio",
  "tokio-postgres",
  "tracing",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -9819,43 +9819,6 @@ dependencies = [
  "wasi 0.11.0+wasi-snapshot-preview1",
  "web-sys",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "queue-msg"
-version = "0.1.0"
-dependencies = [
- "criterion 0.5.1",
- "either",
- "enumorph",
- "frame-support-procedural",
- "frunk",
- "futures",
- "itertools 0.12.1",
- "macros",
- "queue-msg-macro",
- "serde",
- "serde_json",
- "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
- "voyager-message",
-]
-
-[[package]]
-name = "queue-msg-macro"
-version = "0.0.0"
-dependencies = [
- "frame-support-procedural",
- "macros",
- "proc-macro2",
- "quote",
- "serde",
- "serde_json",
- "syn 2.0.77",
- "trybuild",
 ]
 
 [[package]]
@@ -11930,6 +11893,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "subset-of"
+version = "0.1.0"
+dependencies = [
+ "subset-of-derive",
+]
+
+[[package]]
+name = "subset-of-derive"
+version = "0.0.0"
+dependencies = [
+ "frame-support-procedural",
+ "macros",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
+ "syn 2.0.77",
+ "trybuild",
+]
+
+[[package]]
 name = "substrate-bn"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13501,7 +13485,6 @@ dependencies = [
  "prometheus",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "reqwest 0.11.27",
  "ripemd",
  "serde",
@@ -13526,6 +13509,7 @@ dependencies = [
  "typenum",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13549,7 +13533,6 @@ dependencies = [
  "move-core-types",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "reqwest 0.11.27",
  "serde",
  "serde-utils",
@@ -13562,6 +13545,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13578,7 +13562,6 @@ dependencies = [
  "macros",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13588,6 +13571,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13603,7 +13587,6 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13614,6 +13597,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13637,7 +13621,6 @@ dependencies = [
  "move-core-types",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "reqwest 0.11.27",
  "serde",
  "serde-utils",
@@ -13650,6 +13633,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13670,7 +13654,6 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13680,6 +13663,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13694,7 +13678,6 @@ dependencies = [
  "macros",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13704,6 +13687,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13718,7 +13702,6 @@ dependencies = [
  "macros",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13728,6 +13711,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13741,7 +13725,6 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13751,6 +13734,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13767,15 +13751,16 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde_json",
+ "subset-of",
  "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13795,7 +13780,6 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde_json",
  "thiserror",
@@ -13804,6 +13788,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13825,16 +13810,17 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
+ "subset-of",
  "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13852,7 +13838,6 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde_json",
  "thiserror",
@@ -13861,6 +13846,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13877,7 +13863,6 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde_json",
  "thiserror",
@@ -13886,6 +13871,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13905,7 +13891,6 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde_json",
  "thiserror",
@@ -13914,6 +13899,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13935,7 +13921,6 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -13945,6 +13930,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -13962,7 +13948,6 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde_json",
  "thiserror",
@@ -13971,6 +13956,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -14002,7 +13988,6 @@ dependencies = [
  "macros",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -14012,6 +13997,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -14027,17 +14013,18 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
+ "subset-of",
  "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -14066,13 +14053,13 @@ dependencies = [
  "num-bigint 0.4.6",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "reconnecting-jsonrpc-ws-client",
  "reth-ipc",
  "serde",
  "serde-utils",
  "serde_json",
  "soketto",
+ "subset-of",
  "tendermint",
  "tendermint-proto",
  "tendermint-rpc",
@@ -14085,6 +14072,7 @@ dependencies = [
  "typenum",
  "unionlabs",
  "voyager-core",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -14096,7 +14084,6 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
- "queue-msg",
  "regex",
  "serde",
  "serde_json",
@@ -14107,6 +14094,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -14124,16 +14112,17 @@ dependencies = [
  "macros",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "reconnecting-jsonrpc-ws-client",
  "serde",
  "serde_json",
+ "subset-of",
  "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -14154,7 +14143,6 @@ dependencies = [
  "macros",
  "move-bindgen",
  "move-core-types",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -14165,6 +14153,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -14183,7 +14172,6 @@ dependencies = [
  "macros",
  "prost 0.12.6",
  "protos",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
@@ -14195,6 +14183,7 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
 ]
 
 [[package]]
@@ -14211,11 +14200,35 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "macros",
- "queue-msg",
  "serde",
  "serde-utils",
  "serde_json",
  "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-vm"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+ "either",
+ "enumorph",
+ "frame-support-procedural",
+ "frunk",
+ "futures",
+ "itertools 0.12.1",
+ "macros",
+ "serde",
+ "serde_json",
+ "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
+ "subset-of",
+ "subset-of-derive",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",

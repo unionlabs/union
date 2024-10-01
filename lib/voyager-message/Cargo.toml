@@ -31,13 +31,13 @@ moka                           = { version = "0.12.8", features = ["future", "sy
 num-bigint                     = { workspace = true }
 prost                          = { workspace = true }
 protos                         = { workspace = true, features = ["proto_full", "client"] }
-queue-msg                      = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }
 serde_json                     = { workspace = true }
 soketto                        = "0.8.0"
+subset-of                      = { workspace = true }
 tendermint                     = { workspace = true }
 tendermint-proto               = { workspace = true }
 tendermint-rpc                 = { workspace = true, features = ["http-client", "websocket-client"] }
@@ -50,6 +50,7 @@ tracing-subscriber             = { workspace = true, features = ["json"] }
 typenum                        = { workspace = true }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
 voyager-core                   = { workspace = true }
+voyager-vm                     = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

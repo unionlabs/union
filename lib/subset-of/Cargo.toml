@@ -1,0 +1,12 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "subset-of"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[dependencies]
+subset-of-derive = { workspace = true }
+
+[lints]
+workspace = true
