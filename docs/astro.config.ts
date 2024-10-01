@@ -7,7 +7,7 @@ import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
 import starlightThemeRapide from "starlight-theme-rapide"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
-// import { markdownConfiguration } from "./markdown.config.ts"
+import { markdownConfiguration } from "./markdown.config.ts"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
 
@@ -31,8 +31,7 @@ export default defineConfig({
     contentIntellisense: true
   },
   trailingSlash: "ignore",
-  markdown: {},
-  // markdown: markdownConfiguration,
+  markdown: markdownConfiguration,
   vite: {
     ssr: {
       noExternal: ["monaco-editor"]
@@ -69,6 +68,7 @@ export default defineConfig({
       description: SITE_DESCRIPTION,
       tagline: "Connecting blockchains trustlessly",
       defaultLocale: "root",
+      expressiveCode: false,
       locales: { root: { label: "English", lang: "en" } },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
