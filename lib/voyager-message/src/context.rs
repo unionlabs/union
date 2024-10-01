@@ -7,8 +7,9 @@ use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, debug_span, error, info, instrument, warn, Instrument};
+use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
 use unionlabs::{ethereum::keccak256, hash::hash_v2::HexUnprefixed, traits::Member, ErrorReporter};
+use voyager_core::ConsensusType;
 
 use crate::{
     core::{ChainId, ClientType, IbcInterface},
@@ -47,7 +48,9 @@ pub struct Modules {
     /// map of client type to ibc interface to client module.
     client_modules: HashMap<ClientType<'static>, HashMap<IbcInterface<'static>, ModuleRpcClient>>,
 
-    chain_consensus_types: HashMap<ChainId<'static>, ClientType<'static>>,
+    chain_consensus_types: HashMap<ChainId<'static>, ConsensusType<'static>>,
+
+    client_consensus_types: HashMap<ClientType<'static>, ConsensusType<'static>>,
 }
 
 impl queue_msg::Context for Context {
@@ -75,7 +78,7 @@ impl ModuleRpcClient {
             let name = name.to_owned();
             move || {
                 async move {
-                    debug!("connecting to socket at {socket}");
+                    trace!("connecting to socket at {socket}");
                     reth_ipc::client::IpcClientBuilder::default()
                         .build(socket)
                         .await
@@ -148,6 +151,7 @@ impl Context {
             client_modules: Default::default(),
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
+            client_consensus_types: Default::default(),
         };
 
         let mut plugins = HashMap::default();
@@ -235,6 +239,7 @@ impl Context {
                 }
                 ModuleKindInfo::Client(ClientModuleInfo {
                     client_type,
+                    consensus_type,
                     ibc_interface,
                 }) => {
                     let prev = modules
@@ -246,10 +251,25 @@ impl Context {
                     if prev.is_some() {
                         return Err(format!(
                             "multiple client modules configured for \
-                                    client type `{client_type}` and IBC \
-                                    interface `{ibc_interface}`",
+                            client type `{client_type}` and IBC \
+                            interface `{ibc_interface}`",
                         )
                         .into());
+                    }
+
+                    if let Some(previous_consensus_type) = modules
+                        .client_consensus_types
+                        .insert(client_type.clone(), consensus_type.clone())
+                    {
+                        if previous_consensus_type != consensus_type {
+                            return Err(format!(
+                                "inconsistency in client consensus types: \
+                                client type `{client_type}` is registered \
+                                as tracking both `{previous_consensus_type}` \
+                                and `{consensus_type}`"
+                            )
+                            .into());
+                        }
                     }
 
                     info!(
@@ -260,7 +280,7 @@ impl Context {
                 }
                 ModuleKindInfo::Consensus(ConsensusModuleInfo {
                     chain_id,
-                    client_type,
+                    consensus_type,
                 }) => {
                     let prev = modules
                         .consensus_modules
@@ -275,14 +295,14 @@ impl Context {
 
                     let None = modules
                         .chain_consensus_types
-                        .insert(chain_id.clone(), client_type.clone())
+                        .insert(chain_id.clone(), consensus_type.clone())
                     else {
                         unreachable!()
                     };
 
                     info!(
                         %chain_id,
-                        %client_type,
+                        %consensus_type,
                         "registered consensus module"
                     );
                 }
@@ -364,34 +384,64 @@ impl Context {
 }
 
 impl Modules {
-    pub fn loaded_chain_modules(&self) -> impl Iterator<Item = &ChainId<'static>> {
-        self.chain_modules.keys()
-    }
+    pub fn info(&self) -> LoadedModulesInfo {
+        let chain = self
+            .chain_modules
+            .keys()
+            .cloned()
+            .map(|chain_id| ChainModuleInfo { chain_id })
+            .collect();
 
-    pub fn loaded_consensus_modules(&self) -> impl Iterator<Item = &ChainId<'static>> {
-        self.consensus_modules.keys()
-    }
+        let consensus = self
+            .consensus_modules
+            .keys()
+            .cloned()
+            .map(|chain_id| ConsensusModuleInfo {
+                consensus_type: self.chain_consensus_types[&chain_id].clone(),
+                chain_id,
+            })
+            .collect();
 
-    pub fn loaded_client_modules(
-        &self,
-    ) -> impl Iterator<
-        Item = (
-            &ClientType<'static>,
-            impl Iterator<Item = &IbcInterface<'static>>,
-        ),
-    > {
-        self.client_modules
+        let client = self
+            .client_modules
             .iter()
             .map(|(client_type, ibc_interfaces)| (client_type, ibc_interfaces.keys()))
+            .flat_map(|(client_type, ibc_interfaces)| {
+                ibc_interfaces
+                    .cloned()
+                    .map(move |ibc_interface| ClientModuleInfo {
+                        consensus_type: self.client_consensus_types[client_type].clone(),
+                        client_type: client_type.clone(),
+                        ibc_interface,
+                    })
+            })
+            .collect();
+
+        LoadedModulesInfo {
+            chain,
+            consensus,
+            client,
+        }
     }
 
     pub fn chain_consensus_type<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a ClientType<'static>, ConsensusModuleNotFound> {
+    ) -> Result<&'a ConsensusType<'static>, ConsensusModuleNotFound> {
         self.chain_consensus_types
             .get(chain_id)
             .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_owned()))
+    }
+
+    pub fn client_consensus_type<'a, 'b, 'c: 'a>(
+        &'a self,
+        client_type: &'b ClientType<'c>,
+    ) -> Result<&'a ConsensusType<'static>, ClientModuleNotFound> {
+        self.client_consensus_types.get(client_type).ok_or_else(|| {
+            ClientModuleNotFound::ClientTypeNotFound {
+                client_type: client_type.clone().into_owned(),
+            }
+        })
     }
 
     pub fn chain_module<'a, 'b, 'c: 'a>(
@@ -434,6 +484,13 @@ impl Modules {
             }),
         }
     }
+}
+
+#[model]
+pub struct LoadedModulesInfo {
+    chain: Vec<ChainModuleInfo>,
+    consensus: Vec<ConsensusModuleInfo>,
+    client: Vec<ClientModuleInfo>,
 }
 
 #[instrument(skip_all, fields(%name))]
@@ -667,6 +724,8 @@ pub fn get_module_info(module_config: &ModuleConfig) -> Result<ModuleInfo<Module
             }
         }
     }
+
+    trace!("plugin stdout: {}", String::from_utf8_lossy(&output.stdout));
 
     Ok(serde_json::from_slice(&output.stdout).unwrap())
 }

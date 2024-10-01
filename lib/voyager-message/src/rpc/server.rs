@@ -16,12 +16,12 @@ use unionlabs::{
 };
 
 use crate::{
-    context::Modules,
+    context::{LoadedModulesInfo, Modules},
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface},
     module::{ChainModuleClient, ChainModuleClientExt, ClientModuleClient, ConsensusModuleClient},
     rpc::{
-        json_rpc_error_to_error_object, IbcProof, IbcState, Info, SelfClientState,
-        SelfConsensusState, VoyagerRpcServer,
+        json_rpc_error_to_error_object, IbcProof, IbcState, SelfClientState, SelfConsensusState,
+        VoyagerRpcServer,
     },
     FATAL_JSONRPC_ERROR_CODE,
 };
@@ -551,31 +551,8 @@ impl Server {
 /// rpc impl
 #[async_trait]
 impl VoyagerRpcServer for Server {
-    async fn info(&self) -> RpcResult<Info> {
-        let chain = self
-            .inner
-            .modules()?
-            .loaded_chain_modules()
-            .cloned()
-            .collect();
-        let consensus = self
-            .inner
-            .modules()?
-            .loaded_consensus_modules()
-            .cloned()
-            .collect();
-        let client = self
-            .inner
-            .modules()?
-            .loaded_client_modules()
-            .flat_map(|(c, is)| is.map(|i| (c.clone(), i.clone())))
-            .collect();
-
-        Ok(Info {
-            chain,
-            consensus,
-            client,
-        })
+    async fn info(&self) -> RpcResult<LoadedModulesInfo> {
+        Ok(self.modules()?.info())
     }
 
     async fn query_latest_height(&self, chain_id: ChainId<'static>) -> RpcResult<Height> {

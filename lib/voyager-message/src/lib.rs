@@ -18,7 +18,7 @@ use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use tonic::async_trait;
-use tracing::{debug, debug_span, error, info, trace, Instrument};
+use tracing::{debug_span, error, info, trace, Instrument};
 use unionlabs::{never::Never, traits::Member, ErrorReporter};
 
 use crate::{
@@ -221,7 +221,7 @@ impl VoyagerClient {
             let name = name.clone();
             move || {
                 async move {
-                    debug!("connecting to socket at {voyager_socket}");
+                    trace!("connecting to socket at {voyager_socket}");
                     IpcClientBuilder::default().build(voyager_socket).await
                 }
                 .instrument(debug_span!("voyager_ipc_client", %name))
