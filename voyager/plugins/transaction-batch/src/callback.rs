@@ -3,9 +3,10 @@ use std::collections::VecDeque;
 use enumorph::Enumorph;
 use frunk::hlist_pat;
 use jsonrpsee::core::RpcResult;
+use macros::model;
 use queue_msg::{
     aggregation::{HListTryFromIterator, SubsetOf},
-    call, conc, data, noop, promise, queue_msg, seq, Op,
+    call, conc, data, noop, promise, seq, Op,
 };
 use tracing::warn;
 use unionlabs::{ibc::core::client::height::Height, id::ClientId, QueryHeight};
@@ -28,7 +29,7 @@ use crate::{
     Module,
 };
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
 pub enum ModuleCallback {
     MakeIbcMessagesFromUpdate(MakeIbcMessagesFromUpdate),
@@ -36,7 +37,7 @@ pub enum ModuleCallback {
 }
 
 /// Given an [`OrderedMsgUpdateClients`], returns [`Op`]s that generate [`IbcMessage`]s with proofs at the highest height of the updates.
-#[queue_msg]
+#[model]
 pub struct MakeIbcMessagesFromUpdate {
     pub client_id: ClientId,
     pub batches: Vec<Vec<BatchableEvent>>,
@@ -181,7 +182,7 @@ pub fn make_msgs(
     })))
 }
 
-#[queue_msg]
+#[model]
 pub struct MakeBatchTransaction {
     // NOTE: We could technically fetch this from the information in the callback data messages, but this is just so much easier
     pub client_id: ClientId,

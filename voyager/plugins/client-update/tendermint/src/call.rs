@@ -1,9 +1,8 @@
 use enumorph::Enumorph;
 use macros::model;
-use queue_msg::queue_msg;
 use unionlabs::ibc::core::client::height::Height;
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
 pub enum ModuleCall {
     FetchUpdate(FetchUpdate),

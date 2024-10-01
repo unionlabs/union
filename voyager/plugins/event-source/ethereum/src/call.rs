@@ -20,7 +20,7 @@ pub struct FetchBlock {
 
 /// Fetch all events in `block_number` emitted by the `IBCHandler` via [`eth_getLogs`].
 ///
-/// [`eth_getLogs`]: https://ethereum.org/en/developers/docs/apis/json-rpc/#eth_getlogs
+/// [`eth_getLogs`]: https://ethereum.org/en/developers/docs/apis/json-rpc/#[model]th_getlogs
 #[model]
 pub struct FetchGetLogs {
     pub block_number: u64,

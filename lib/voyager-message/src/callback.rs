@@ -3,8 +3,8 @@ use std::collections::VecDeque;
 use enumorph::Enumorph;
 use frunk::hlist_pat;
 use futures::{stream, StreamExt, TryFutureExt, TryStreamExt};
-use macros::apply;
-use queue_msg::{aggregation::HListTryFromIterator, queue_msg, HandleCallback, Op, QueueError};
+use macros::{apply, model};
+use queue_msg::{aggregation::HListTryFromIterator, HandleCallback, Op, QueueError};
 use unionlabs::{
     ibc::core::client::msg_update_client::MsgUpdateClient, id::ClientId, traits::Member,
 };
@@ -19,7 +19,7 @@ use crate::{
 };
 
 #[apply(top_level_identifiable_enum)]
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
 pub enum Callback<Cb = serde_json::Value> {
     AggregateMsgUpdateClientsFromOrderedHeaders(AggregateMsgUpdateClientsFromOrderedHeaders),
@@ -94,7 +94,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCallback<VoyagerMessage<D, C, Cb>> 
 }
 
 /// Required data: [`OrderedHeaders`]
-#[queue_msg]
+#[model]
 pub struct AggregateMsgUpdateClientsFromOrderedHeaders {
     pub chain_id: ChainId<'static>,
     pub counterparty_client_id: ClientId,

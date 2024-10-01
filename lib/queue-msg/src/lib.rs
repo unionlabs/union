@@ -22,7 +22,7 @@ use futures::{
     stream::{self, FuturesUnordered},
     FutureExt, Stream, StreamExt, TryStreamExt,
 };
-pub use queue_msg_macro::{queue_msg, SubsetOf};
+pub use queue_msg_macro::SubsetOf;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::{pin, time::sleep};
 use tracing::{debug, error, info, info_span, trace, warn, Instrument};
@@ -396,6 +396,8 @@ impl<T: QueueMessage> Op<T> {
 
 #[cfg(test)]
 mod tests {
+    use macros::model;
+
     use super::*;
     use crate::normalize::normalize;
 
@@ -421,11 +423,11 @@ mod tests {
         }
     }
 
-    #[queue_msg]
+    #[model]
     pub struct SimpleData {}
-    #[queue_msg]
+    #[model]
     pub struct SimpleCall {}
-    #[queue_msg]
+    #[model]
     pub struct SimpleCallback {}
 
     // macro_rules! vec_deque {
@@ -1188,7 +1190,8 @@ pub mod test_utils {
 
     use enumorph::Enumorph;
     use frunk::{hlist_pat, HList};
-    use queue_msg_macro::{queue_msg, SubsetOf};
+    use macros::model;
+    use queue_msg_macro::SubsetOf;
 
     use crate::{
         aggregation::{do_callback, DoCallback},
@@ -1238,7 +1241,7 @@ pub mod test_utils {
         }
     }
 
-    #[queue_msg]
+    #[model]
     #[derive(Enumorph, SubsetOf)]
     pub enum SimpleData {
         A(DataA),
@@ -1247,18 +1250,18 @@ pub mod test_utils {
         D(DataD),
         E(DataE),
     }
-    #[queue_msg]
+    #[model]
     pub struct DataA {}
-    #[queue_msg]
+    #[model]
     pub struct DataB {}
-    #[queue_msg]
+    #[model]
     pub struct DataC {}
-    #[queue_msg]
+    #[model]
     pub struct DataD {}
-    #[queue_msg]
+    #[model]
     pub struct DataE {}
 
-    #[queue_msg]
+    #[model]
     #[derive(Enumorph, SubsetOf)]
     pub enum SimpleCall {
         A(FetchA),
@@ -1268,34 +1271,34 @@ pub mod test_utils {
         E(FetchE),
         PrintAbc(PrintAbc),
     }
-    #[queue_msg]
+    #[model]
     pub struct FetchA {}
-    #[queue_msg]
+    #[model]
     pub struct FetchB {}
-    #[queue_msg]
+    #[model]
     pub struct FetchC {}
-    #[queue_msg]
+    #[model]
     pub struct FetchD {}
-    #[queue_msg]
+    #[model]
     pub struct FetchE {}
 
-    #[queue_msg]
+    #[model]
     pub struct PrintAbc {
         pub a: DataA,
         pub b: DataB,
         pub c: DataC,
     }
 
-    #[queue_msg]
+    #[model]
     pub struct SimpleWait {}
 
-    #[queue_msg]
+    #[model]
     #[derive(Enumorph)]
     pub enum SimpleAggregate {
         BuildPrintAbc(BuildPrintAbc),
     }
 
-    #[queue_msg]
+    #[model]
     pub struct BuildPrintAbc {}
 
     impl DoCallback<SimpleMessage> for BuildPrintAbc {

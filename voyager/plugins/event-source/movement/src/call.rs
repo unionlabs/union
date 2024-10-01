@@ -1,10 +1,10 @@
 use enumorph::Enumorph;
 use macros::model;
-use queue_msg::queue_msg;
 use unionlabs::hash::H256;
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
+#[allow(clippy::large_enum_variant)]
 pub enum ModuleCall {
     FetchBlock(FetchBlock),
     FetchBlocks(FetchBlocks),

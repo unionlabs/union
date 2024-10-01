@@ -1,18 +1,19 @@
 use enumorph::Enumorph;
-use queue_msg::{queue_msg, SubsetOf};
+use macros::model;
+use queue_msg::SubsetOf;
 use unionlabs::{ibc::core::client::height::Height, id::ClientId};
 use voyager_message::data::{
     ChannelOpenAck, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck, ConnectionOpenInit,
     ConnectionOpenTry, SendPacket, WriteAcknowledgement,
 };
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum ModuleData {
     BatchEvents(EventBatch),
 }
 
-#[queue_msg]
+#[model]
 pub struct EventBatch {
     /// The client that will need an update to send these messages through.
     pub client_id: ClientId,
@@ -20,7 +21,7 @@ pub struct EventBatch {
     pub events: Vec<BatchableEvent>,
 }
 
-#[queue_msg]
+#[model]
 pub struct BatchableEvent {
     /// unix timestamp (in ms) of when this event was first seen by this plugin.
     pub first_seen_at: u64,
@@ -31,7 +32,7 @@ pub struct BatchableEvent {
 
 // REVIEW: We probably want to add a way to have "a packet timed out" be a variant here as well
 /// A subset of [`FullIbcEvent`], containing only events that cause an action on the counterparty chain.
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
 pub enum Event {
     ConnectionOpenInit(ConnectionOpenInit),

@@ -1,5 +1,0 @@
-error: queue-msg only supports Enum and Struct
- --> tests/union.rs:4:1
-  |
-4 | union Union {
-  | ^^^^^
