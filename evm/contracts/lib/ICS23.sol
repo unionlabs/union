@@ -2,7 +2,6 @@ pragma solidity ^0.8.27;
 
 import {Math} from "@openzeppelin/utils/math/Math.sol";
 import "./UnionICS23.sol";
-import "./Protobuf.sol";
 
 library Ics23 {
     enum VerifyChainedNonMembershipError {
@@ -207,6 +206,45 @@ library Ops {
         ValueLength
     }
 
+    function _sz_varint(
+        uint256 i
+    ) internal pure returns (uint256) {
+        uint256 count = 1;
+        assembly {
+            i := shr(7, i)
+            for {} gt(i, 0) {} {
+                i := shr(7, i)
+                count := add(count, 1)
+            }
+        }
+        return count;
+    }
+
+    function _encode_varint(
+        uint256 x,
+        uint256 p,
+        bytes memory bs
+    ) internal pure returns (uint256) {
+        /**
+         * Refer to https://developers.google.com/protocol-buffers/docs/encoding
+         */
+        uint256 sz = 0;
+        assembly {
+            let bsptr := add(bs, p)
+            let byt := and(x, 0x7f)
+            for {} gt(shr(7, x), 0) {} {
+                mstore8(bsptr, or(0x80, byt))
+                bsptr := add(bsptr, 1)
+                sz := add(sz, 1)
+                x := shr(7, x)
+                byt := and(x, 0x7f)
+            }
+            mstore8(bsptr, byt)
+            sz := add(sz, 1)
+        }
+        return sz;
+    }
+
     // LeafOp operations
     function applyLeafOp(
         bytes calldata prefix,
@@ -219,14 +257,13 @@ library Ops {
         if (value.length == 0) return ("", ApplyLeafOpError.ValueLength);
 
         // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
-        bytes memory encodedKey =
-            new bytes(ProtoBufRuntime._sz_varint(key.length));
-        ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
+        bytes memory encodedKey = new bytes(_sz_varint(key.length));
+        _encode_varint(key.length, 32, encodedKey);
 
         // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
         bytes32 hashedValue = sha256(value);
-        bytes memory encodedValue = new bytes(ProtoBufRuntime._sz_varint(32));
-        ProtoBufRuntime._encode_varint(32, 32, encodedValue);
+        bytes memory encodedValue = new bytes(_sz_varint(32));
+        _encode_varint(32, 32, encodedValue);
 
         bytes32 data = sha256(
             abi.encodePacked(prefix, encodedKey, key, encodedValue, hashedValue)
