@@ -5,7 +5,6 @@ import {
   getUserQueueInfo,
   getContributionState,
   getUserWallet,
-  getWaitListPosition
 } from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
@@ -43,7 +42,6 @@ export type ClientState =
 interface UserContext {
   position: number | null
   count: number | null
-  estimatedTime: number | null
   error: string | null
 }
 
@@ -74,12 +72,11 @@ export class Contributor {
   clientState = $state<ClientState>("offline")
   contributionState = $state<ContributionState>("notContributed")
   userWallet = $state("")
-  waitListPosition = $state<number | undefined>(undefined)
   downloadedSecret = $state<boolean>(localStorage.getItem("downloaded-secret") === "true")
+
   queueState = $state<UserContext>({
     position: null,
     count: null,
-    estimatedTime: null,
     error: null
   })
 
@@ -113,11 +110,6 @@ export class Contributor {
       this.checkCurrentUserState(userId)
       this.startPolling()
     }
-  }
-
-  async checkWaitListPosition(): Promise<number | undefined> {
-    this.waitListPosition = await getWaitListPosition()
-    return this.waitListPosition
   }
 
   async checkCurrentUserState(userId: string | undefined): Promise<AllowanceState> {
@@ -246,14 +238,12 @@ export class Contributor {
         ...this.queueState,
         position: queueInfo.position,
         count: queueInfo.count,
-        estimatedTime: queueInfo.position * 60
       }
     } else {
       this.queueState = {
         ...this.queueState,
         position: null,
         count: null,
-        estimatedTime: null
       }
     }
     this.updateState()

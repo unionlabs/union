@@ -15,9 +15,10 @@ onDestroy(() => {
 })
 </script>
 
+<!--TODO add new time-->
 <Print>Your position:  {contributor.queueState.position ?? 1}</Print>
 <Print>Queue length: {contributor.queueState.count ?? 2}</Print>
-<Print>Estimated waiting time: {contributor.queueState.estimatedTime} minutes</Print>
+<Print>Estimated waiting time:  minutes</Print>
 <Print><br></Print>
 <LoadingBar max={contributor.queueState.count} current={contributor.queueState.position}/>
 <Print><br></Print>

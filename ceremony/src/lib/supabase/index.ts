@@ -202,12 +202,6 @@ export const getUserWallet = async (userId: string | undefined) => {
   return data.wallet
 }
 
-export const getWaitListPosition = async (): Promise<number | undefined> => {
-  const { data, error } = await queryCurrentUserState()
-  if (error || !data) return undefined
-
-  return data.waitlist_position
-}
 
 export const getAverageTimes = async (): Promise<TimeResult> => {
   let contributionResult: { data: unknown; error: unknown | null }
