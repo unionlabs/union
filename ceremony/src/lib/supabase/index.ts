@@ -18,7 +18,7 @@ import { supabase } from "$lib/supabase/client.ts"
 import { msToTimeString, sleep, timeToMs } from "$lib/utils/utils.ts"
 import type { AllowanceState, ContributionState } from "$lib/state/contributor.svelte.ts"
 
-interface TimeResult {
+export interface TimeResult {
   verification: string | null
   contribution: string | null
   total: string
@@ -105,7 +105,7 @@ export const getContributionState = async (): Promise<ContributionState> => {
     const hasSubmitted = !!submittedContribution?.data
     const hasVerified = !!verifiedContribution?.data
     const isExpired = contributionWindow?.data?.expire
-      ? new Date() > new Date(contributionWindow.data?.expire)
+      ? Date.now() > new Date(contributionWindow.data.expire).getTime()
       : false
 
     let status: ContributionState

@@ -1,63 +1,70 @@
 <script lang="ts">
-import { onMount, onDestroy } from "svelte"
 import Print from "$lib/components/Terminal/Print.svelte"
 import { getState } from "$lib/state/index.svelte.ts"
-import { getAverageTimes } from "$lib/supabase"
+import { queryContributionWindow } from "$lib/supabase/queries.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 const { contributor } = getState()
 
-let averageTimeSeconds: number
-let displayTime = "LOADING"
-let fetchInterval: NodeJS.Timeout | null = null
-let countdownInterval: NodeJS.Timeout | null = null
+let countdown = $state("LOADING")
+let startTimestamp = $state<number>()
+let expireTimestamp = $state<number>()
 
-async function fetchData() {
-  try {
-    const time = await getAverageTimes()
-    const queueLength = contributor.queueState.count
-    averageTimeSeconds = Math.round((time.totalMs / 1000) * queueLength ?? 0)
-  } catch (error) {
-    console.error("Error fetching data:", error)
+async function fetchTimestamps() {
+  const userId = user.session?.user.id
+  if (!userId) return
+  const window = await queryContributionWindow(userId)
+  startTimestamp = new Date(window.data?.started).getTime()
+  expireTimestamp = new Date(window.data?.expire).getTime()
+}
+
+function updateCountdown() {
+  if (!startTimestamp || !expireTimestamp) return
+  const now = Date.now()
+
+  let targetTime: number
+  let prefix: string
+
+  if (now < startTimestamp) {
+    targetTime = startTimestamp
+    prefix = ""
+  } else if (now < expireTimestamp) {
+    targetTime = expireTimestamp
+    prefix = ""
+  } else {
+    countdown = "EXPIRED"
+    return
   }
+
+  const distance = targetTime - now
+
+  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+
+  countdown = `${hours}H ${minutes}M ${seconds}S`
 }
 
-function startCountdown() {
-  if (countdownInterval) clearInterval(countdownInterval)
-  countdownInterval = setInterval(() => {
-    if (averageTimeSeconds > 0) {
-      averageTimeSeconds--
-      displayTime = formatTime(averageTimeSeconds)
-    } else {
-      displayTime = "00H 00M 00S"
-      if (countdownInterval) clearInterval(countdownInterval)
-    }
-  }, 1000)
-}
-
-function formatTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const remainingSeconds = seconds % 60
-  return `${hours.toString().padStart(2, "0")}H ${minutes.toString().padStart(2, "0")}M ${remainingSeconds.toString().padStart(2, "0")}S`
-}
-
-onMount(async () => {
-  await fetchData()
-  startCountdown()
-  fetchInterval = setInterval(async () => {
-    await fetchData()
-    startCountdown()
-  }, 5000)
+$effect(() => {
+  fetchTimestamps()
 })
 
-onDestroy(() => {
-  if (fetchInterval) clearInterval(fetchInterval)
-  if (countdownInterval) clearInterval(countdownInterval)
+$effect(() => {
+  if (!startTimestamp || !expireTimestamp) return
+  const timer = setInterval(updateCountdown, 1000)
+  updateCountdown()
+  return () => clearInterval(timer)
 })
+
+let show = $derived(
+  contributor.contributionState === "contribute" ||
+    contributor.contributionState === "verifying" ||
+    contributor.queueState.position !== null
+)
 </script>
 
-{#if contributor.loggedIn}
+{#if show}
   <Print class="!text-4xl text-[#FD6363] bg-black/50 backdrop-blur-2xl py-2 px-4 hidden sm:flex">
-    {displayTime}
+    {countdown}
   </Print>
 {/if}
