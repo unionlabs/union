@@ -13,11 +13,7 @@ interface Props {
 const { title, data, reverse } = Astro.props
 ---
 
-<ContainedSection>
-  <div class="text-center pb-4 sm:pb-8">
-    <LightedTitle {title} />
-  </div>
-  <article class="pb-12 sm:pb-16 md:pb-24">
+  <article>
     <div class:list={[
       'marquee',
       {'marquee--reverse': reverse}
@@ -39,5 +35,4 @@ const { title, data, reverse } = Astro.props
       </div>
     </div>
   </article>
-</ContainedSection>
 

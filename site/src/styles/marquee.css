@@ -4,6 +4,8 @@
   --duration: 60s;
   --scroll-start: 0;
   --scroll-end: calc(-100% - var(--gap));
+
+  --header-height: 68px;
 }
 
 .marquee {
@@ -61,9 +63,9 @@
 .marquee img {
   display: grid;
   place-items: center;
-  width: var(--size);
+  /* width: var(--size); */
   padding: calc(var(--size) / 20);
-  max-height: 130px;
+  max-height: 80px;
 }
 
 @keyframes fade {

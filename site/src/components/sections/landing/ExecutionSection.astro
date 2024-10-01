@@ -1,6 +1,6 @@
 ---
 import { Image } from "astro:assets"
-import H1 from "../../typography/h1.astro"
+import H2 from "../../typography/h2.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 import executionImage from "#/assets/images/spline-holders/modular.png"
@@ -9,16 +9,16 @@ import Spline from "../../Spline.astro"
 ---
 
 <ContainedSection>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-    <div class="flex flex-col justify-center gap-4">
-      <H1>Support for <span class="text-accent-500">any</span> execution <span>environment.</span></H1>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 py-12">
+    <div class="flex flex-col justify-center gap-6">
+      <H2>Support for <span class="text-accent-500">any</span> execution <span>environment.</span></H2>
       <div class="max-w-[672px]">
         <QuoteSubTitle class="text-lg sm:text-4xl">Union supports all types of blockchains by integrating
           with multiple execution environments and languages such as Solidity, Rust, and Move <span
                   class="text-accent-500">(coming soon).</span></QuoteSubTitle>
       </div>
-      <ButtonA href="/ecosystem">Our ecosystem >>></ButtonA>
+      <ButtonA href="/ecosystem">Our Ecosystem</ButtonA>
     </div>
-    <Spline model="https://prod.spline.design/ekGIwYVP-nKgYf8O/scene.splinecode" loading="eager" />
+    <video class="bg-black" src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/modularity-stack.webm" autoplay muted loop/>
   </div>
 </ContainedSection>

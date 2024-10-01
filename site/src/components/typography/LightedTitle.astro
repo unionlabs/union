@@ -1,5 +1,5 @@
 ---
-import H1 from "./h1.astro"
+import H2 from "./h2.astro"
 
 interface Props {
   title: string
@@ -12,8 +12,8 @@ const lastWord = words.pop()
 const restOfTitle = words.join(" ")
 ---
 
-<H1>
+<H2>
   {restOfTitle}
   {restOfTitle && ' '}
   <span class="text-accent-500">{lastWord}</span>
-</H1>
+</H2>
