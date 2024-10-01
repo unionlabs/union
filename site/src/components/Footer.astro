@@ -23,6 +23,10 @@ const menuItems = [
   {
     url: "https://x.com/union_build",
     name: "X.com"
+  },
+  {
+    url: "https://github.com/unionlabs/union",
+    name: "GitHub"
   }
 ]
 
@@ -32,9 +36,9 @@ function isInternal(menuItem: { url: string }): boolean {
 ---
 
 <footer
-  class="flex flex-col font-normal px-6 items-center text-[8px] sm:text-sm md:text-3xl gap-4 py-8 pt-36"
+  class="font-jetbrains flex flex-col justify-center font-normal items-center text-[8px] sm:text-sm md:text-xl gap-4 py-8 pt-36"
 >
-  <ul class="max-w-5xl w-full p-0 flex justify-between border-b border-white list-none pb-4">
+  <ul class="flex gap-8 list-none">
     {
       menuItems.map(menuItem => (
         <li>
@@ -50,5 +54,5 @@ function isInternal(menuItem: { url: string }): boolean {
       ))
     }
   </ul>
-  <p class="text-center block">&copy;Union Labs</p>
+  <p class="text-center block text-neutral-300">&copy; Union Labs</p>
 </footer>
