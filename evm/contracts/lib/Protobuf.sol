@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 /**
  * @title Runtime library for ProtoBuf serialization and/or deserialization.

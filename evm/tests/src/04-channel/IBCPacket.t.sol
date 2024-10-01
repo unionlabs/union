@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
@@ -109,9 +109,7 @@ contract IBCPacketTests is Test {
         bytes calldata packet
     ) public {
         vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
-        vm.pauseGasMetering();
         vm.prank(address(module));
-        vm.resumeGasMetering();
         uint64 sequence = handler.sendPacket(
             channelId, timeoutTimestamp, timeoutHeight, packet
         );
@@ -129,9 +127,7 @@ contract IBCPacketTests is Test {
         bytes calldata message
     ) public {
         vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
-        vm.pauseGasMetering();
         vm.prank(address(module));
-        vm.resumeGasMetering();
         uint64 sequence = handler.sendPacket(
             channelId, timeoutHeight, timeoutTimestamp, message
         );
@@ -150,10 +146,7 @@ contract IBCPacketTests is Test {
         assertEq(
             handler.commitments(
                 IBCCommitment.batchPacketsCommitmentKey(
-                    channelId,
-                    IBCPacketLib.commitPacketsMemory(
-                        IBCPacketLib.batchSingleMemory(packet)
-                    )
+                    channelId, IBCPacketLib.commitPacketMemory(packet)
                 )
             ),
             IBCPacketLib.COMMITMENT_MAGIC
@@ -176,9 +169,9 @@ contract IBCPacketTests is Test {
         uint64 timeoutHeight,
         bytes calldata packet
     ) public {
+        vm.pauseGasMetering();
         vm.assume(channelId_ != channelId);
         vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
-        vm.pauseGasMetering();
         vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
         vm.prank(address(module));
         vm.resumeGasMetering();
@@ -190,10 +183,277 @@ contract IBCPacketTests is Test {
         uint64 timeoutHeight,
         bytes calldata packet
     ) public {
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
         vm.pauseGasMetering();
+        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
         vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
         vm.resumeGasMetering();
         handler.sendPacket(channelId, timeoutTimestamp, timeoutHeight, packet);
+    }
+
+    function createReceivePacket(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) internal view returns (IBCMsgs.MsgPacketRecv memory) {
+        bytes32 normalizedPortId = keccak256(abi.encodePacked(address(module)));
+        IBCPacket[] memory packets = new IBCPacket[](nbPackets);
+        bytes[] memory relayerMsgs = new bytes[](nbPackets);
+        for (uint8 i = 0; i < nbPackets; i++) {
+            packets[i] = IBCPacket({
+                sequence: i,
+                sourcePort: sourcePort,
+                sourceChannel: sourceChannel,
+                destinationPort: normalizedPortId,
+                destinationChannel: channelId,
+                data: message,
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: type(uint64).max
+            });
+            relayerMsgs[i] = abi.encodePacked(i);
+        }
+        IBCMsgs.MsgPacketRecv memory msg_ = IBCMsgs.MsgPacketRecv({
+            packets: packets,
+            relayerMsgs: relayerMsgs,
+            relayer: address(this),
+            proof: hex"",
+            proofHeight: 0
+        });
+        return msg_;
+    }
+
+    function test_recvPacket_ok_1(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message
+    ) public {
+        vm.pauseGasMetering();
+        test_recvPacket_ok(sourcePort, sourceChannel, message, 1);
+    }
+
+    function test_recvPacket_ok(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.pauseGasMetering();
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketRecv memory msg_ =
+            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+        lightClient.pushValidMembership();
+        vm.resumeGasMetering();
+        handler.recvPacket(msg_);
+    }
+
+    function test_recvPacket_invalidProof(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketRecv memory msg_ =
+            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
+        handler.recvPacket(msg_);
+    }
+
+    function test_recvPacket_invalidChannelState(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(nbPackets > 0);
+        vm.assume(destinationChannel != channelId);
+        IBCMsgs.MsgPacketRecv memory msg_ =
+            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+        // fake non existant channel
+        msg_.packets[0].destinationChannel = destinationChannel;
+        vm.expectRevert(IBCPacketLib.ErrInvalidChannelState.selector);
+        handler.recvPacket(msg_);
+    }
+
+    function test_recvPacket_timeoutTimestamp(
+        uint32 timeout,
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(timeout > 0);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketRecv memory msg_ =
+            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+        // Timeout is expressed as nano because of ibc-go...
+        msg_.packets[0].timeoutTimestamp = uint64(timeout) * 1e9;
+        vm.warp(timeout);
+        lightClient.pushValidMembership();
+        vm.expectRevert(IBCPacketLib.ErrTimestampTimeout.selector);
+        handler.recvPacket(msg_);
+    }
+
+    function test_recvPacket_timeoutHeight(
+        uint64 timeout,
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(timeout > 0);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketRecv memory msg_ =
+            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+        // fake non existant channel
+        msg_.packets[0].timeoutHeight = timeout;
+        vm.roll(timeout);
+        lightClient.pushValidMembership();
+        vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
+        handler.recvPacket(msg_);
+    }
+
+    function test_recvPacket_commitmentSaved(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketRecv memory msg_ =
+            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+        lightClient.pushValidMembership();
+        handler.recvPacket(msg_);
+        for (uint8 i = 0; i < nbPackets; i++) {
+            assertEq(
+                handler.commitments(
+                    IBCCommitment.batchReceiptsCommitmentKey(
+                        channelId,
+                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                    )
+                ),
+                IBCPacketLib.commitAckMemory(TestModuleLib.ACKNOWLEDGEMENT)
+            );
+        }
+    }
+
+    function createReceiveIntentPacket(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) internal view returns (IBCMsgs.MsgIntentPacketRecv memory) {
+        bytes32 normalizedPortId = keccak256(abi.encodePacked(address(module)));
+        IBCPacket[] memory packets = new IBCPacket[](nbPackets);
+        bytes[] memory marketMakerMsgs = new bytes[](nbPackets);
+        for (uint8 i = 0; i < nbPackets; i++) {
+            packets[i] = IBCPacket({
+                sequence: i,
+                sourcePort: sourcePort,
+                sourceChannel: sourceChannel,
+                destinationPort: normalizedPortId,
+                destinationChannel: channelId,
+                data: message,
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: type(uint64).max
+            });
+            marketMakerMsgs[i] = abi.encodePacked(i);
+        }
+        IBCMsgs.MsgIntentPacketRecv memory msg_ = IBCMsgs.MsgIntentPacketRecv({
+            packets: packets,
+            marketMakerMsgs: marketMakerMsgs,
+            marketMaker: address(this),
+            emptyProof: hex""
+        });
+        return msg_;
+    }
+
+    function test_recvIntentPacket_ok_1(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message
+    ) public {
+        vm.pauseGasMetering();
+        test_recvIntentPacket_ok(sourcePort, sourceChannel, message, 1);
+    }
+
+    function test_recvIntentPacket_ok(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.pauseGasMetering();
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
+            sourcePort, sourceChannel, message, nbPackets
+        );
+        vm.resumeGasMetering();
+        handler.recvIntentPacket(msg_);
+    }
+
+    function test_recvIntentPacket_commitmentSaved(
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.pauseGasMetering();
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
+            sourcePort, sourceChannel, message, nbPackets
+        );
+        vm.resumeGasMetering();
+        handler.recvIntentPacket(msg_);
+        for (uint8 i = 0; i < nbPackets; i++) {
+            assertEq(
+                handler.commitments(
+                    IBCCommitment.batchReceiptsCommitmentKey(
+                        channelId,
+                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                    )
+                ),
+                IBCPacketLib.commitAckMemory(TestModuleLib.ACKNOWLEDGEMENT)
+            );
+        }
+    }
+
+    function test_recvIntentPacket_timeoutTimestamp(
+        uint32 timeout,
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(timeout > 0);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
+            sourcePort, sourceChannel, message, nbPackets
+        );
+        // Timeout is expressed as nano because of ibc-go...
+        msg_.packets[0].timeoutTimestamp = uint64(timeout) * 1e9;
+        vm.warp(timeout);
+        vm.expectRevert(IBCPacketLib.ErrTimestampTimeout.selector);
+        handler.recvIntentPacket(msg_);
+    }
+
+    function test_recvIntentPacket_timeoutHeight(
+        uint64 timeout,
+        bytes32 sourcePort,
+        uint32 sourceChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(timeout > 0);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
+            sourcePort, sourceChannel, message, nbPackets
+        );
+        // Timeout is expressed as nano because of ibc-go...
+        msg_.packets[0].timeoutHeight = timeout;
+        vm.roll(timeout);
+        vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
+        handler.recvIntentPacket(msg_);
     }
 }

@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "./IERC20Denom.sol";

@@ -1,16 +1,15 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 library IBCCommitment {
     bytes1 public constant CLIENT_STATE = 0x00;
     bytes1 public constant CONSENSUS_STATE = 0x01;
     bytes1 public constant CONNECTIONS = 0x02;
-    bytes1 public constant CHANNELS = 0x05;
-    bytes1 public constant PACKETS = 0x06;
-    bytes1 public constant PACKET_ACKS = 0x07;
-    bytes1 public constant PACKET_RECEIPTS = 0x08;
-    bytes1 public constant NEXT_SEQ_SEND = 0x09;
-    bytes1 public constant NEXT_SEQ_RECV = 0x0A;
-    bytes1 public constant NEXT_SEQ_ACK = 0x0B;
+    bytes1 public constant CHANNELS = 0x03;
+    bytes1 public constant PACKETS = 0x04;
+    bytes1 public constant PACKET_ACKS = 0x05;
+    bytes1 public constant NEXT_SEQ_SEND = 0x06;
+    bytes1 public constant NEXT_SEQ_RECV = 0x07;
+    bytes1 public constant NEXT_SEQ_ACK = 0x08;
 
     function clientStatePath(
         uint32 clientId
@@ -51,18 +50,11 @@ library IBCCommitment {
         return abi.encodePacked(PACKETS, channelId, batchHash);
     }
 
-    function batchAcksCommitmentPath(
-        uint32 channelId,
-        bytes32 batchHash
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(PACKET_ACKS, channelId, batchHash);
-    }
-
     function batchReceiptsCommitmentPath(
         uint32 channelId,
         bytes32 batchHash
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(PACKET_RECEIPTS, channelId, batchHash);
+        return abi.encodePacked(PACKET_ACKS, channelId, batchHash);
     }
 
     function nextSequenceSendCommitmentPath(
@@ -122,13 +114,6 @@ library IBCCommitment {
         bytes32 batchHash
     ) internal pure returns (bytes32) {
         return keccak256(batchPacketsCommitmentPath(channelId, batchHash));
-    }
-
-    function batchAcksCommitmentKey(
-        uint32 channelId,
-        bytes32 batchHash
-    ) internal pure returns (bytes32) {
-        return keccak256(batchAcksCommitmentPath(channelId, batchHash));
     }
 
     function batchReceiptsCommitmentKey(

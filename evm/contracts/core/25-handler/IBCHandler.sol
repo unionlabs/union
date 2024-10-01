@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "../24-host/IBCStore.sol";
 import "../02-client/IBCClient.sol";

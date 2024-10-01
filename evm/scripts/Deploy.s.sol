@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "forge-std/Vm.sol";
 import "forge-std/Script.sol";

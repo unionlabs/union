@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/token/ERC721/extensions/ERC721URIStorage.sol";
 import "./IERC721Denom.sol";

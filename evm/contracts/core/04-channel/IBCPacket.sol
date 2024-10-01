@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "../24-host/IBCStore.sol";
 import "../25-handler/IBCMsgs.sol";
@@ -9,7 +9,8 @@ import "../05-port/IIBCModule.sol";
 import "../Types.sol";
 
 library IBCPacketLib {
-    bytes32 public constant COMMITMENT_MAGIC = keccak256("zkgm");
+    bytes32 public constant COMMITMENT_MAGIC =
+        0x0100000000000000000000000000000000000000000000000000000000000000;
     bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
     event SendPacket(IBCPacket packet);
@@ -42,6 +43,7 @@ library IBCPacketLib {
     error ErrPacketSequenceNextSequenceMismatch();
     error ErrPacketSequenceAckSequenceMismatch();
     error ErrAcknowledgementIsEmpty();
+    error ErrPacketNotReceived();
     error ErrAcknowledgementAlreadyExists();
     error ErrPacketCommitmentNotFound();
     error ErrInvalidPacketCommitment();
@@ -54,48 +56,22 @@ library IBCPacketLib {
     error ErrCommittedAckNotPresent();
     error ErrCannotIntentOrderedPacket();
 
-    function batchSingleAck(
-        bytes calldata ack
-    ) internal pure returns (bytes[] memory) {
-        bytes[] memory acks = new bytes[](1);
-        acks[0] = ack;
-        return acks;
-    }
-
-    function batchSingleAckMemory(
-        bytes memory ack
-    ) internal pure returns (bytes[] memory) {
-        bytes[] memory acks = new bytes[](1);
-        acks[0] = ack;
-        return acks;
-    }
-
-    function batchSingle(
-        IBCPacket calldata packet
-    ) internal pure returns (IBCPacket[] memory) {
-        IBCPacket[] memory packets = new IBCPacket[](1);
-        packets[0] = packet;
-        return packets;
-    }
-
-    function batchSingleMemory(
-        IBCPacket memory packet
-    ) internal pure returns (IBCPacket[] memory) {
-        IBCPacket[] memory packets = new IBCPacket[](1);
-        packets[0] = packet;
-        return packets;
-    }
-
     function commitAcks(
-        bytes[] calldata acknowledgements
+        bytes[] calldata acks
     ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(acknowledgements));
+        return mergeAck(keccak256(abi.encode(acks)));
     }
 
-    function commitAcksMemory(
-        bytes[] memory acknowledgements
+    function commitAck(
+        bytes calldata ack
     ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(acknowledgements));
+        return mergeAck(keccak256(abi.encodePacked(ack)));
+    }
+
+    function commitAckMemory(
+        bytes memory ack
+    ) internal pure returns (bytes32) {
+        return mergeAck(keccak256(abi.encodePacked(ack)));
     }
 
     function commitPackets(
@@ -104,16 +80,32 @@ library IBCPacketLib {
         return keccak256(abi.encode(packets));
     }
 
-    function commitPacketsMemory(
-        IBCPacket[] memory packets
+    function commitPacketMemory(
+        IBCPacket memory packet
     ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(packets));
+        return keccak256(abi.encode(packet));
+    }
+
+    function commitPacket(
+        IBCPacket calldata packet
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(packet));
     }
 
     function commitRecvSeq(
         uint64 sequence
     ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(sequence));
+    }
+
+    function mergeAck(
+        bytes32 ack
+    ) internal pure returns (bytes32) {
+        return COMMITMENT_MAGIC
+            | (
+                ack
+                    & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+            );
     }
 }
 
@@ -139,10 +131,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             // If the channel mismatch, the commitment will be zero
             bytes32 commitment = commitments[IBCCommitment
                 .batchPacketsCommitmentKey(
-                msg_.sourceChannel,
-                IBCPacketLib.commitPacketsMemory(
-                    IBCPacketLib.batchSingle(packet)
-                )
+                msg_.sourceChannel, IBCPacketLib.commitPacket(packet)
             )];
             // Every packet must have been previously sent to be batched
             if (commitment != IBCPacketLib.COMMITMENT_MAGIC) {
@@ -172,27 +161,22 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             bytes calldata ack = msg_.acks[i];
             // If the channel mismatch, the commitment will be zero.
             bytes32 commitment = commitments[IBCCommitment
-                .batchAcksCommitmentKey(
-                msg_.sourceChannel,
-                IBCPacketLib.commitPacketsMemory(
-                    IBCPacketLib.batchSingle(packet)
-                )
+                .batchReceiptsCommitmentKey(
+                msg_.sourceChannel, IBCPacketLib.commitPacket(packet)
             )];
             // Can't batch an empty ack.
-            if (commitment == 0) {
+            if (
+                commitment == IBCPacketLib.COMMITMENT_NULL
+                    || commitment == IBCPacketLib.COMMITMENT_MAGIC
+            ) {
                 revert IBCPacketLib.ErrAcknowledgementIsEmpty();
             }
-            // Every packet must have been received to be batched.
-            if (
-                commitment
-                    != IBCPacketLib.commitAcksMemory(
-                        IBCPacketLib.batchSingleAck(ack)
-                    )
-            ) {
+            // Of course the ack must match.
+            if (commitment != IBCPacketLib.commitAck(ack)) {
                 revert IBCPacketLib.ErrCommittedAckNotPresent();
             }
         }
-        commitments[IBCCommitment.batchAcksCommitmentKey(
+        commitments[IBCCommitment.batchReceiptsCommitmentKey(
             msg_.sourceChannel, IBCPacketLib.commitPackets(msg_.packets)
         )] = IBCPacketLib.commitAcks(msg_.acks);
     }
@@ -229,26 +213,19 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             timeoutTimestamp: timeoutTimestamp
         });
         commitments[IBCCommitment.batchPacketsCommitmentKey(
-            sourceChannel,
-            IBCPacketLib.commitPacketsMemory(
-                IBCPacketLib.batchSingleMemory(packet)
-            )
+            sourceChannel, IBCPacketLib.commitPacketMemory(packet)
         )] = IBCPacketLib.COMMITMENT_MAGIC;
         emit IBCPacketLib.SendPacket(packet);
         return sequence;
     }
 
     function setPacketReceive(
-        IBCPacket calldata packet
+        bytes32 commitmentKey
     ) internal returns (bool) {
-        bytes32 receiptCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-            packet.destinationChannel,
-            IBCPacketLib.commitPacketsMemory(IBCPacketLib.batchSingle(packet))
-        );
         bool alreadyReceived =
-            commitments[receiptCommitmentKey] == IBCPacketLib.COMMITMENT_MAGIC;
+            commitments[commitmentKey] != IBCPacketLib.COMMITMENT_NULL;
         if (!alreadyReceived) {
-            commitments[receiptCommitmentKey] = IBCPacketLib.COMMITMENT_MAGIC;
+            commitments[commitmentKey] = IBCPacketLib.COMMITMENT_MAGIC;
         }
         return alreadyReceived;
     }
@@ -280,19 +257,31 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         bytes calldata proof,
         bool intent
     ) internal {
+        uint256 l = packets.length;
+        if (l == 0) {
+            revert IBCPacketLib.ErrNotEnoughPackets();
+        }
         uint32 destinationChannel = packets[0].destinationChannel;
         IBCChannel storage channel = ensureChannelState(destinationChannel);
         IBCConnection storage connection =
             ensureConnectionState(channel.connectionId);
         if (!intent) {
+            bytes32 proofCommitmentKey;
+            if (l == 1) {
+                proofCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+                    destinationChannel, IBCPacketLib.commitPacket(packets[0])
+                );
+            } else {
+                proofCommitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+                    destinationChannel, IBCPacketLib.commitPackets(packets)
+                );
+            }
             if (
                 !verifyCommitment(
                     connection,
                     proofHeight,
                     proof,
-                    IBCCommitment.batchPacketsCommitmentKey(
-                        destinationChannel, IBCPacketLib.commitPackets(packets)
-                    ),
+                    proofCommitmentKey,
                     IBCPacketLib.COMMITMENT_MAGIC
                 )
             ) {
@@ -300,7 +289,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             }
         }
         IIBCModule module = lookupModuleByChannel(destinationChannel);
-        uint256 l = packets.length;
+        IBCChannelOrder ordering = channel.ordering;
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = packets[i];
             // Check packet height timeout
@@ -320,11 +309,15 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 revert IBCPacketLib.ErrTimestampTimeout();
             }
 
+            bytes32 commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+                destinationChannel, IBCPacketLib.commitPacket(packet)
+            );
+
             // Allow unordered channels to have packets already received.
             bool alreadyReceived = false;
-            if (channel.ordering == IBCChannelOrder.Unordered) {
-                alreadyReceived = setPacketReceive(packet);
-            } else if (channel.ordering == IBCChannelOrder.Ordered) {
+            if (ordering == IBCChannelOrder.Unordered) {
+                alreadyReceived = setPacketReceive(commitmentKey);
+            } else if (ordering == IBCChannelOrder.Ordered) {
                 // We increase the sequence, hence can't avoid proofs
                 if (intent) {
                     revert IBCPacketLib.ErrCannotIntentOrderedPacket();
@@ -345,7 +338,10 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                     emit IBCPacketLib.RecvPacket(packet, maker, makerMsg);
                 }
                 if (acknowledgement.length > 0) {
-                    _writeAcknowledgement(packet, acknowledgement);
+                    _writeAcknowledgement(commitmentKey, acknowledgement);
+                    emit IBCPacketLib.WriteAcknowledgement(
+                        packet, acknowledgement
+                    );
                 }
             }
         }
@@ -378,21 +374,18 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     }
 
     function _writeAcknowledgement(
-        IBCPacket calldata packet,
+        bytes32 commitmentKey,
         bytes memory acknowledgement
     ) internal {
-        bytes32 ackCommitmentKey = IBCCommitment.batchAcksCommitmentKey(
-            packet.destinationChannel,
-            IBCPacketLib.commitPacketsMemory(IBCPacketLib.batchSingle(packet))
-        );
-        bytes32 ackCommitment = commitments[ackCommitmentKey];
-        if (ackCommitment != IBCPacketLib.COMMITMENT_NULL) {
+        bytes32 commitment = commitments[commitmentKey];
+        if (commitment == IBCPacketLib.COMMITMENT_NULL) {
+            revert IBCPacketLib.ErrPacketNotReceived();
+        }
+        if (commitment != IBCPacketLib.COMMITMENT_MAGIC) {
             revert IBCPacketLib.ErrAcknowledgementAlreadyExists();
         }
-        commitments[ackCommitmentKey] = IBCPacketLib.commitAcksMemory(
-            IBCPacketLib.batchSingleAckMemory(acknowledgement)
-        );
-        emit IBCPacketLib.WriteAcknowledgement(packet, acknowledgement);
+        commitments[commitmentKey] =
+            IBCPacketLib.commitAckMemory(acknowledgement);
     }
 
     /**
@@ -410,7 +403,11 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCPacketLib.ErrUnauthorized();
         }
         ensureChannelState(packet.destinationChannel);
-        _writeAcknowledgement(packet, acknowledgement);
+        bytes32 commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+            packet.destinationChannel, IBCPacketLib.commitPacket(packet)
+        );
+        _writeAcknowledgement(commitmentKey, acknowledgement);
+        emit IBCPacketLib.WriteAcknowledgement(packet, acknowledgement);
     }
 
     function setNextSequenceAck(
@@ -452,23 +449,32 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IBCConnection storage connection =
             ensureConnectionState(channel.connectionId);
         deletePacketsCommitment(sourceChannel, msg_.packets);
+        bytes32 commitmentKey;
+        if (l == 1) {
+            commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+                destinationChannel, IBCPacketLib.commitPacket(msg_.packets[0])
+            );
+        } else {
+            commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+                destinationChannel, IBCPacketLib.commitPackets(msg_.packets)
+            );
+        }
         if (
             !verifyCommitment(
                 connection,
                 msg_.proofHeight,
                 msg_.proof,
-                IBCCommitment.batchAcksCommitmentKey(
-                    destinationChannel, IBCPacketLib.commitPackets(msg_.packets)
-                ),
+                commitmentKey,
                 IBCPacketLib.commitAcks(msg_.acknowledgements)
             )
         ) {
             revert IBCPacketLib.ErrInvalidProof();
         }
+        IBCChannelOrder ordering = channel.ordering;
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
             bytes calldata acknowledgement = msg_.acknowledgements[i];
-            if (channel.ordering == IBCChannelOrder.Ordered) {
+            if (ordering == IBCChannelOrder.Ordered) {
                 setNextSequenceAck(sourceChannel, packet.sequence);
             }
             lookupModuleByChannel(sourceChannel).onAcknowledgementPacket(
@@ -499,7 +505,8 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         if (proofTimestamp == 0) {
             revert IBCPacketLib.ErrLatestTimestampNotFound();
         }
-        if (channel.ordering == IBCChannelOrder.Ordered) {
+        IBCChannelOrder ordering = channel.ordering;
+        if (ordering == IBCChannelOrder.Ordered) {
             if (
                 !verifyCommitment(
                     connection,
@@ -513,16 +520,21 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             ) {
                 revert IBCPacketLib.ErrInvalidProof();
             }
-        } else if (channel.ordering == IBCChannelOrder.Unordered) {
+        } else if (ordering == IBCChannelOrder.Unordered) {
+            bytes32 commitmentKey;
+            if (l == 1) {
+                commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+                    destinationChannel,
+                    IBCPacketLib.commitPacket(msg_.packets[0])
+                );
+            } else {
+                commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+                    destinationChannel, IBCPacketLib.commitPackets(msg_.packets)
+                );
+            }
             if (
                 !verifyAbsentCommitment(
-                    connection,
-                    msg_.proofHeight,
-                    msg_.proof,
-                    IBCCommitment.batchReceiptsCommitmentKey(
-                        destinationChannel,
-                        IBCPacketLib.commitPackets(msg_.packets)
-                    )
+                    connection, msg_.proofHeight, msg_.proof, commitmentKey
                 )
             ) {
                 revert IBCPacketLib.ErrInvalidProof();
@@ -542,7 +554,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             ) {
                 revert IBCPacketLib.ErrTimeoutHeightNotReached();
             }
-            if (channel.ordering == IBCChannelOrder.Ordered) {
+            if (ordering == IBCChannelOrder.Ordered) {
                 if (msg_.nextSequenceRecv > packet.sequence) {
                     revert
                         IBCPacketLib

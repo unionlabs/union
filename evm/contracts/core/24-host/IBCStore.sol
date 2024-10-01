@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "../02-client/ILightClient.sol";
 import "../05-port/IIBCModule.sol";

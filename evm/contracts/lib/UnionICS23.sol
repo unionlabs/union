@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 library UnionIcs23 {
     struct ExistenceProof {

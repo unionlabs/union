@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import {Math} from "@openzeppelin/utils/math/Math.sol";
 import "./UnionICS23.sol";

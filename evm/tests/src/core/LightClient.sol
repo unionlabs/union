@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "../../../contracts/core/02-client/ILightClient.sol";
 

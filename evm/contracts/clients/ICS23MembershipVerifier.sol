@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "../lib/ICS23.sol";
 import "../lib/UnionICS23.sol";

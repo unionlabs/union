@@ -23,7 +23,7 @@
       url = "github:numtide/treefmt-nix";
     };
     foundry = {
-      url = "github:shazow/foundry.nix/monthly";
+      url = "github:shazow/foundry.nix/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     rust-overlay = {
@@ -391,10 +391,10 @@
                       else
                         super.stdenv.mkDerivation rec {
                           pname = "solc-static";
-                          version = "0.8.23";
+                          version = "0.8.27";
                           src = pkgs.fetchurl {
                             url = "https://github.com/ethereum/solidity/releases/download/v${version}/solc-static-linux";
-                            hash = "sha256-KHJqRSKQxw4ZhPFcU60wiOfZh4PuMHCxGzZk2ndBVzI=";
+                            hash = "sha256-uZd9UAwXy6bwAyypOe+YxN7PY2PxnzhtBfsC9wgRUmQ=";
                           };
                           dontUnpack = true;
                           nativeBuildInputs = pkgs.lib.optionals (!super.stdenv.isDarwin) [ super.autoPatchelfHook ];
