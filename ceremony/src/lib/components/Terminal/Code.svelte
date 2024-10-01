@@ -16,7 +16,6 @@ let showInput = $state(true)
 
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key === "Enter") {
-    console.log("XX keydown")
     event.preventDefault()
     terminal.updateHistory({ text: `Entered code: ${inputCode}`, duplicate: true })
     terminal.updateHistory({
@@ -74,7 +73,6 @@ function onCancel() {
 }
 
 function trigger(value: "enter" | "cancel") {
-  console.log("XX trigger 2")
   if (value === "enter") {
     handleCodeJoin()
   } else if (value === "cancel") {

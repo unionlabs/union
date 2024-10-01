@@ -25,7 +25,6 @@ let select = async (value: string) => {
   terminal.updateHistory({ text: `Loading ${value} instructions..`, duplicate: true })
   await sleep(500)
   selectedOs = value
-  console.log("XX", value)
 }
 
 onDestroy(() => {
