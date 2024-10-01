@@ -325,7 +325,7 @@ const categories: Array<Category> = [
     <!-- Cards Grid -->
     <div class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
       {data.map(item => (
-              <div class="relative flex border-2 rounded-tl-[6rem] overflow-hidden h-96 w-[300px]">
+              <div class="relative flex border-2 border-neutral-800 rounded-tl-[6rem] overflow-hidden h-96 w-[300px]">
                 <div class="absolute z-10 bottom-0 inset-x-0 h-full bg-gradient-to-t from-black to-black/0"></div>
                 <img src={item.cover.src} alt={item.name}
                      class="absolute w-full h-full object-fill object-center"/>
