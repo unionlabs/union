@@ -4,7 +4,6 @@ import Reward from "$lib/components/Terminal/Reward.svelte"
 import Thanks from "$lib/components/Terminal/Thanks.svelte"
 import Queue from "$lib/components/Terminal/Queue.svelte"
 import Install from "$lib/components/Terminal/Install/index.svelte"
-import Print from "$lib/components/Terminal/Print.svelte"
 import Secret from "$lib/components/Terminal/Secret.svelte"
 import { onDestroy } from "svelte"
 
@@ -17,7 +16,7 @@ onDestroy(() => {
 
 {#if !contributor.userWallet}
   {terminal.setStep(4)}
-  <Reward />
+  <Reward/>
 
 {:else if contributor.state === "contributed"}
   {terminal.setStep(10)}
@@ -29,7 +28,7 @@ onDestroy(() => {
 
 {:else if contributor.state === "verifying"}
   {terminal.setStep(9)}
-  {terminal.updateHistory({text:"Verifying your contribution...", replace: true})}
+  {terminal.updateHistory({text: "Verifying your contribution...", replace: true})}
 
 {:else if contributor.clientState === "offline" || contributor.clientState === undefined}
   {terminal.setStep(5)}
@@ -37,7 +36,7 @@ onDestroy(() => {
 
 {:else if contributor.state === "inQueue"}
   {terminal.setStep(7)}
-  <Queue />
+  <Queue/>
 
 {:else if contributor.state === 'contribute'}
   {terminal.setStep(8)}
@@ -47,6 +46,11 @@ onDestroy(() => {
   {terminal.setStep(9)}
   {terminal.updateHistory({text: "Contributing...", replace: true})}
 
+{:else if contributor.contributionState === "missed"}
+  {terminal.setStep(9)}
+  {terminal.updateHistory({text: "Too bad, you missed your slot.", replace: true})}
+
 {:else}
- <Print>Not able to contribute at this time</Print>
+  {terminal.updateHistory({text: "Loading", replace: true})}
+
 {/if}

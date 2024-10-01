@@ -4,7 +4,7 @@ import {
   getCurrentUserState,
   getUserQueueInfo,
   getContributionState,
-  getUserWallet,
+  getUserWallet
 } from "$lib/supabase"
 
 type IntervalID = NodeJS.Timeout | number
@@ -22,7 +22,12 @@ type State =
 
 export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
 
-export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
+export type ContributionState =
+  | "contribute"
+  | "contributed"
+  | "verifying"
+  | "notContributed"
+  | "missed"
 
 export type ClientState =
   | "idle"
@@ -75,7 +80,7 @@ export class Contributor {
 
   queueState = $state<QueueState>({
     position: null,
-    count: null,
+    count: null
   })
 
   private pollIntervals: {
@@ -235,13 +240,13 @@ export class Contributor {
       this.queueState = {
         ...this.queueState,
         position: queueInfo.position,
-        count: queueInfo.count,
+        count: queueInfo.count
       }
     } else {
       this.queueState = {
         ...this.queueState,
         position: null,
-        count: null,
+        count: null
       }
     }
     this.updateState()

@@ -1,5 +1,5 @@
 import { get, post } from "$lib/client/http.ts"
-import { getQueuePayloadId } from "$lib/supabase/queries.ts"
+import { queryQueuePayloadId } from "$lib/supabase/queries.ts"
 import type { ContributeBody } from "$lib/client/types.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import type { ClientState } from "$lib/state/contributor.svelte.ts"
@@ -20,7 +20,7 @@ export const start = async (): Promise<ClientState | undefined> => {
     return
   }
 
-  const { data, error } = await getQueuePayloadId(userId)
+  const { data, error } = await queryQueuePayloadId(userId)
 
   if (error) {
     console.log("Error fetching payload_id:", error)
