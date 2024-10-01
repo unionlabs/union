@@ -1,6 +1,8 @@
 use std::{
     collections::{BTreeMap, HashMap, VecDeque},
     convert,
+    future::Future,
+    pin::Pin,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -10,6 +12,7 @@ use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
+    Extensions,
 };
 use queue_msg::{
     aggregation::SubsetOf, call, data, now, optimize::OptimizationResult, promise, seq,
@@ -24,10 +27,10 @@ use voyager_message::{
     callback::{AggregateMsgUpdateClientsFromOrderedHeaders, Callback},
     core::ChainId,
     data::{ChainEvent, Data, FullIbcEvent},
-    module::{ModuleInfo, PluginModuleInfo, PluginModuleServer, QueueInteractionsServer},
-    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
-    run_module_server, DefaultCmd, ModuleContext, ModuleServer, PluginMessage, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
+    rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
+    run_module_server, DefaultCmd, ExtensionsExt, ModuleContext, PluginMessage, VoyagerClient,
+    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{
@@ -42,7 +45,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module, _, _, _>().await
+    run_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -110,7 +113,7 @@ impl ClientConfigs {
 impl ModuleContext for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginModuleInfo;
+    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         Ok(Module::new(config))
@@ -120,8 +123,8 @@ impl ModuleContext for Module {
         let module = Module::new(config);
 
         ModuleInfo {
-            name: module.plugin_name(),
-            kind: PluginModuleInfo {
+            kind: PluginInfo {
+                name: module.plugin_name(),
                 interest_filter: format!(
                     r#"
 if ."@type" == "data" then
@@ -198,11 +201,27 @@ impl Module {
     }
 }
 
+impl PluginTypes for Module {
+    type D = ModuleData;
+    type C = ModuleCall;
+    type Cb = ModuleCallback;
+}
+
 #[async_trait]
-impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
+impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn run_pass(
+        &self,
+        e: &Extensions,
+        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        self.run_pass_internal(e, msgs).await
+    }
+
     #[instrument(skip_all)]
     async fn call(
         &self,
+        e: &Extensions,
         msg: ModuleCall,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match msg {
@@ -210,27 +229,27 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
                 client_id,
                 batches,
             }) => {
-                let client_meta = self
-                    .voyager_rpc_client
+                let client_meta = e
+                    .try_get::<VoyagerClient>()?
                     .client_meta(
-                        self.ctx.chain_id.clone(),
+                        self.chain_id.clone(),
                         QueryHeight::Latest,
                         client_id.clone(),
                     )
                     .await
-                    .map_err(json_rpc_error_to_rpc_error)?;
+                    .map_err(json_rpc_error_to_error_object)?;
 
                 // let client_info = self
                 //     .client
                 //     .client_info(self.chain_id.clone(), client_id.clone())
                 //     .await
-                //     .map_err(json_rpc_error_to_rpc_error)?;
+                //     .map_err(json_rpc_error_to_error_object)?;
 
-                let latest_height = self
-                    .voyager_rpc_client
+                let latest_height = e
+                    .try_get::<VoyagerClient>()?
                     .query_latest_height(client_meta.chain_id.clone())
                     .await
-                    .map_err(json_rpc_error_to_rpc_error)?;
+                    .map_err(json_rpc_error_to_error_object)?;
 
                 let target_height = batches
                     .iter()
@@ -253,7 +272,7 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
                             counterparty_chain_id = client_meta.chain_id,
                             trusted_height = client_meta.height,
                             client_id = client_id,
-                            self_chain_id = self.ctx.chain_id,
+                            self_chain_id = self.chain_id,
                         ),
                         Some(json!({
                             "current_timestamp": now(),
@@ -280,20 +299,20 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
                     Ok(promise(
                         [promise(
                             [call(FetchUpdateHeaders {
-                                counterparty_chain_id: self.ctx.chain_id.clone(),
+                                counterparty_chain_id: self.chain_id.clone(),
                                 chain_id: client_meta.chain_id,
                                 update_from: client_meta.height,
                                 update_to: latest_height,
                             })],
                             [],
                             AggregateMsgUpdateClientsFromOrderedHeaders {
-                                chain_id: self.ctx.chain_id.clone(),
+                                chain_id: self.chain_id.clone(),
                                 counterparty_client_id: client_id.clone(),
                             },
                         )],
                         [],
                         Callback::plugin(
-                            self.ctx.plugin_name(),
+                            self.plugin_name(),
                             MakeIbcMessagesFromUpdate {
                                 client_id: client_id.clone(),
                                 batches,
@@ -305,288 +324,271 @@ impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleS
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn callback(
         &self,
+        e: &Extensions,
         cb: ModuleCallback,
         datas: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         match cb {
-            ModuleCallback::MakeIbcMessagesFromUpdate(cb) => cb.call(self, datas).await,
-            ModuleCallback::MakeBatchTransaction(cb) => {
-                Ok(cb.call(self.ctx.chain_id.clone(), datas))
+            ModuleCallback::MakeIbcMessagesFromUpdate(cb) => {
+                cb.call(e.try_get()?, self, datas).await
             }
+            ModuleCallback::MakeBatchTransaction(cb) => Ok(cb.call(self.chain_id.clone(), datas)),
         }
     }
 }
 
-#[async_trait]
-impl PluginModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all, fields(chain_id = %self.ctx.chain_id))]
-    async fn run_pass(
-        &self,
+impl Module {
+    #[allow(clippy::type_complexity)] // if you knew why this was here you'd leave me alone
+    fn run_pass_internal<'a>(
+        &'a self,
+        e: &'a Extensions,
         msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        let mut batchers = HashMap::<ClientId, Vec<(usize, BatchableEvent)>>::new();
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = RpcResult<
+                        OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>,
+                    >,
+                > + Send
+                + 'a,
+        >,
+    > {
+        Box::pin(async move {
+            let mut batchers = HashMap::<ClientId, Vec<(usize, BatchableEvent)>>::new();
 
-        for (idx, msg) in msgs.into_iter().enumerate() {
-            let Op::Data(msg) = msg else {
-                error!("unexpected message: {msg:?}");
+            for (idx, msg) in msgs.into_iter().enumerate() {
+                let Op::Data(msg) = msg else {
+                    error!("unexpected message: {msg:?}");
 
-                continue;
-            };
-
-            match ChainEvent::try_from_super(msg) {
-                Ok(chain_event) => {
-                    // the client id of the client on this chain (we are the counterparty from the perspective of the chain where the event was emitted)
-                    // this is the client that will need to be updated before this ibc message can be sent
-                    let client_id = chain_event
-                        .counterparty_client_id()
-                        .expect("all batchable messages have a counterparty");
-
-                    trace!(%client_id, "batching event");
-
-                    let first_seen_at: u64 = SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_millis()
-                        .try_into()
-                        .expect("how many milliseconds can there be man");
-
-                    batchers.entry(client_id.clone()).or_default().push((
-                        idx,
-                        match chain_event.event {
-                            FullIbcEvent::ConnectionOpenInit(event) => BatchableEvent {
-                                first_seen_at,
-                                provable_height: chain_event.provable_height,
-                                event: event.into(),
-                            },
-                            FullIbcEvent::ConnectionOpenTry(event) => BatchableEvent {
-                                first_seen_at,
-                                provable_height: chain_event.provable_height,
-                                event: event.into(),
-                            },
-                            FullIbcEvent::ConnectionOpenAck(event) => BatchableEvent {
-                                first_seen_at,
-                                provable_height: chain_event.provable_height,
-                                event: event.into(),
-                            },
-
-                            FullIbcEvent::ChannelOpenInit(event) => BatchableEvent {
-                                first_seen_at,
-                                provable_height: chain_event.provable_height,
-                                event: event.into(),
-                            },
-                            FullIbcEvent::ChannelOpenTry(event) => BatchableEvent {
-                                first_seen_at,
-                                provable_height: chain_event.provable_height,
-                                event: event.into(),
-                            },
-                            FullIbcEvent::ChannelOpenAck(event) => BatchableEvent {
-                                first_seen_at,
-                                provable_height: chain_event.provable_height,
-                                event: event.into(),
-                            },
-
-                            FullIbcEvent::SendPacket(event) => BatchableEvent {
-                                first_seen_at,
-                                provable_height: chain_event.provable_height,
-                                event: event.into(),
-                            },
-                            FullIbcEvent::WriteAcknowledgement(event) => BatchableEvent {
-                                first_seen_at,
-                                provable_height: chain_event.provable_height,
-                                event: event.into(),
-                            },
-
-                            event => panic!("unexpected event: {event:?}"),
-                        },
-                    ));
-                }
-                Err(msg) => {
-                    match <PluginMessage<EventBatch>>::try_from_super(msg) {
-                        Ok(PluginMessage { plugin: _, message }) => {
-                            trace!(
-                                client_id = %message.client_id,
-                                events.len = %message.events.len(),
-                                "batching event"
-                            );
-
-                            batchers
-                                .entry(message.client_id)
-                                .or_default()
-                                .extend(message.events.into_iter().map(|event| (idx, event)));
-                        }
-                        Err(msg) => {
-                            error!("unexpected message: {msg:?}");
-                        }
-                    };
-                }
-            };
-        }
-
-        let (ready, optimize_further) = batchers
-            .into_iter()
-            .flat_map(|(client_id, mut events)| {
-                let client_config = &self.ctx.client_configs.config_for_client(&client_id);
-
-                events.sort_by_key(|e| e.1.first_seen_at);
-
-                let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-                let is_overdue = |first_seen_at| {
-                    Duration::from_millis(first_seen_at) + client_config.max_wait_time < now
+                    continue;
                 };
 
-                let (mut overdue_events, mut events): (Vec<_>, Vec<_>) =
-                    events.into_iter().partition_map(|e| {
-                        if is_overdue(e.1.first_seen_at) {
-                            Either::Left(e)
-                        } else {
-                            Either::Right(e)
-                        }
-                    });
+                match ChainEvent::try_from_super(msg) {
+                    Ok(chain_event) => {
+                        // the client id of the client on this chain (we are the counterparty from the perspective of the chain where the event was emitted)
+                        // this is the client that will need to be updated before this ibc message can be sent
+                        let client_id = chain_event
+                            .counterparty_client_id()
+                            .expect("all batchable messages have a counterparty");
 
-                events.sort_by_key(|e| e.1.provable_height);
-                overdue_events.sort_by_key(|e| e.1.provable_height);
+                        trace!(%client_id, "batching event");
 
-                if !overdue_events.is_empty()
-                    && overdue_events.len() + events.len() < client_config.min_batch_size
-                {
-                    warn!(
-                        "found {} overdue events and {} non-overdue events, but the min batch \
-                        size for this client ({client_id}) is {}",
-                        overdue_events.len(),
-                        events.len(),
-                        client_config.min_batch_size
-                    );
-                }
+                        let first_seen_at: u64 = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis()
+                            .try_into()
+                            .expect("how many milliseconds can there be man");
 
-                // [...overdue_events_sorted_by_provable_height, ...events_sorted_by_provable_height]
-                overdue_events
-                    .into_iter()
-                    .chain(events)
-                    .chunks(client_config.max_batch_size)
-                    .into_iter()
-                    .map(move |chunk| {
-                        let (idxs, events): (Vec<_>, Vec<_>) = chunk.into_iter().unzip();
+                        batchers.entry(client_id.clone()).or_default().push((
+                            idx,
+                            match chain_event.event {
+                                FullIbcEvent::ConnectionOpenInit(event) => BatchableEvent {
+                                    first_seen_at,
+                                    provable_height: chain_event.provable_height,
+                                    event: event.into(),
+                                },
+                                FullIbcEvent::ConnectionOpenTry(event) => BatchableEvent {
+                                    first_seen_at,
+                                    provable_height: chain_event.provable_height,
+                                    event: event.into(),
+                                },
+                                FullIbcEvent::ConnectionOpenAck(event) => BatchableEvent {
+                                    first_seen_at,
+                                    provable_height: chain_event.provable_height,
+                                    event: event.into(),
+                                },
 
-                        if events.len() == client_config.max_batch_size
-                            || events.iter().any(|e| is_overdue(e.first_seen_at))
-                        {
-                            // this batch is ready to send out, we need to fetch an update for the client on our chain and turn the events into `IbcMessage`s.
-                            //
-                            // in order to do this, we first need to figure out what height the client is at, and request an update from that height to a height >= the highest height of all of the messages in this batch.
-                            // note that we can't request a *specific* height to update to, since not all chains provide this functionality (ethereum being a notable one) - we instead need to wait for the update to be constructed, and then use the new trusted height of the update to fetch our proofs from.
-                            //
-                            // this will be done in a multi-step aggregation, where first we fetch the update, then construct the messages, and then turn that into a batch transaction.
+                                FullIbcEvent::ChannelOpenInit(event) => BatchableEvent {
+                                    first_seen_at,
+                                    provable_height: chain_event.provable_height,
+                                    event: event.into(),
+                                },
+                                FullIbcEvent::ChannelOpenTry(event) => BatchableEvent {
+                                    first_seen_at,
+                                    provable_height: chain_event.provable_height,
+                                    event: event.into(),
+                                },
+                                FullIbcEvent::ChannelOpenAck(event) => BatchableEvent {
+                                    first_seen_at,
+                                    provable_height: chain_event.provable_height,
+                                    event: event.into(),
+                                },
 
-                            // // the height on the counterparty chain that all of the events are provable at
-                            // let target_height = events
-                            //     .iter()
-                            //     .map(|e| e.provable_height)
-                            //     .max()
-                            //     .expect("batch has at least one event; qed;");
+                                FullIbcEvent::SendPacket(event) => BatchableEvent {
+                                    first_seen_at,
+                                    provable_height: chain_event.provable_height,
+                                    event: event.into(),
+                                },
+                                FullIbcEvent::WriteAcknowledgement(event) => BatchableEvent {
+                                    first_seen_at,
+                                    provable_height: chain_event.provable_height,
+                                    event: event.into(),
+                                },
 
-                            Either::Left((client_id.clone(), (idxs, events)))
-                            // self.client
-                            //     .client_meta(
-                            //         self.chain_id.clone(),
-                            //         QueryHeight::Latest,
-                            //         client_id.clone(),
-                            //     )
-                            //     .map_ok({
-                            //         let client_id = client_id.clone();
-                            //         move |client_meta| {
-                            //             (
-                            //                 idxs,
-                            //                 seq([
-                            //                     call(WaitForHeight {
-                            //                         chain_id: client_meta.chain_id,
-                            //                         height: target_height,
-                            //                     }),
-                            //                     call(Call::plugin(
-                            //                         self.ctx.plugin_name(),
-                            //                         MakeTransactionBatchWithUpdate {
-                            //                             batch: EventBatch { client_id, events },
-                            //                         },
-                            //                     )),
-                            //                 ]),
-                            //             )
-                            //         }
-                            //     }),
-                        } else {
-                            Either::Right((
-                                idxs,
-                                data(Data::plugin(
-                                    self.ctx.plugin_name(),
-                                    EventBatch {
-                                        client_id: client_id.clone(),
-                                        events,
-                                    },
-                                )),
-                                self.ctx.plugin_name(),
-                            ))
-                        }
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .partition_map::<Vec<_>, Vec<_>, _, _, _>(convert::identity);
+                                event => panic!("unexpected event: {event:?}"),
+                            },
+                        ));
+                    }
+                    Err(msg) => {
+                        match <PluginMessage<EventBatch>>::try_from_super(msg) {
+                            Ok(PluginMessage { plugin: _, message }) => {
+                                trace!(
+                                    client_id = %message.client_id,
+                                    events.len = %message.events.len(),
+                                    "batching event"
+                                );
 
-        let ready = ready
-            .into_iter()
-            .into_group_map()
-            .into_iter()
-            .map(|(client_id, events)| {
-                // the height on the counterparty chain that all of the events in these batches are provable at
-                // we only want to generate one update for all of these batches
-                let target_height = events
-                    .iter()
-                    .flat_map(|x| &x.1)
-                    .map(|e| e.provable_height)
-                    .max()
-                    .expect("batch has at least one event; qed;");
+                                batchers
+                                    .entry(message.client_id)
+                                    .or_default()
+                                    .extend(message.events.into_iter().map(|event| (idx, event)));
+                            }
+                            Err(msg) => {
+                                error!("unexpected message: {msg:?}");
+                            }
+                        };
+                    }
+                };
+            }
 
-                debug!(%client_id, "querying client meta for client");
+            let (ready, optimize_further) = batchers
+                .into_iter()
+                .flat_map(|(client_id, mut events)| {
+                    let client_config = &self.client_configs.config_for_client(&client_id);
 
-                self.voyager_rpc_client
-                    .client_meta(
-                        self.ctx.chain_id.clone(),
-                        QueryHeight::Latest,
-                        client_id.clone(),
-                    )
-                    .map_ok({
-                        let client_id = client_id.clone();
-                        move |client_meta| {
-                            let (idxs, events): (Vec<_>, Vec<_>) = events.into_iter().unzip();
+                    events.sort_by_key(|e| e.1.first_seen_at);
 
-                            (
-                                idxs.into_iter().flatten().collect::<Vec<_>>(),
-                                seq([
-                                    call(WaitForHeight {
-                                        chain_id: client_meta.chain_id,
-                                        height: target_height,
-                                    }),
-                                    call(Call::plugin(
-                                        self.ctx.plugin_name(),
-                                        MakeTransactionBatchesWithUpdate {
-                                            client_id,
-                                            batches: events,
+                    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+                    let is_overdue = |first_seen_at| {
+                        Duration::from_millis(first_seen_at) + client_config.max_wait_time < now
+                    };
+
+                    let (mut overdue_events, mut events): (Vec<_>, Vec<_>) =
+                        events.into_iter().partition_map(|e| {
+                            if is_overdue(e.1.first_seen_at) {
+                                Either::Left(e)
+                            } else {
+                                Either::Right(e)
+                            }
+                        });
+
+                    events.sort_by_key(|e| e.1.provable_height);
+                    overdue_events.sort_by_key(|e| e.1.provable_height);
+
+                    if !overdue_events.is_empty()
+                        && overdue_events.len() + events.len() < client_config.min_batch_size
+                    {
+                        warn!(
+                            "found {} overdue events and {} non-overdue events, but the min batch \
+                                size for this client ({client_id}) is {}",
+                            overdue_events.len(),
+                            events.len(),
+                            client_config.min_batch_size
+                        );
+                    }
+
+                    // [...overdue_events_sorted_by_provable_height, ...events_sorted_by_provable_height]
+                    overdue_events
+                        .into_iter()
+                        .chain(events)
+                        .chunks(client_config.max_batch_size)
+                        .into_iter()
+                        .map(move |chunk| {
+                            let (idxs, events): (Vec<_>, Vec<_>) = chunk.into_iter().unzip();
+
+                            if events.len() == client_config.max_batch_size
+                                || events.iter().any(|e| is_overdue(e.first_seen_at))
+                            {
+                                // this batch is ready to send out, we need to fetch an update for the client on our chain and turn the events into `IbcMessage`s.
+                                //
+                                // in order to do this, we first need to figure out what height the client is at, and request an update from that height to a height >= the highest height of all of the messages in this batch.
+                                // note that we can't request a *specific* height to update to, since not all chains provide this functionality (ethereum being a notable one) - we instead need to wait for the update to be constructed, and then use the new trusted height of the update to fetch our proofs from.
+                                //
+                                // this will be done in a multi-step aggregation, where first we fetch the update, then construct the messages, and then turn that into a batch transaction.
+                                Either::Left((client_id.clone(), (idxs, events)))
+                            } else {
+                                Either::Right((
+                                    idxs,
+                                    data(Data::plugin(
+                                        self.plugin_name(),
+                                        EventBatch {
+                                            client_id: client_id.clone(),
+                                            events,
                                         },
                                     )),
-                                ]),
-                            )
-                        }
-                    })
-            })
-            .collect::<FuturesOrdered<_>>();
+                                    self.plugin_name(),
+                                ))
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .partition_map::<Vec<_>, Vec<_>, _, _, _>(convert::identity);
 
-        Ok(OptimizationResult {
-            optimize_further,
-            ready: ready
-                .map(|x| x)
-                .try_collect()
-                .await
-                .map_err(json_rpc_error_to_rpc_error)?,
+            let ready = ready
+                .into_iter()
+                .into_group_map()
+                .into_iter()
+                .map(|(client_id, events)| async move {
+                    let client = e.try_get::<VoyagerClient>()?;
+
+                    // let client_meta =
+
+                    // the height on the counterparty chain that all of the events in these batches are provable at
+                    // we only want to generate one update for all of these batches
+                    let target_height = events
+                        .iter()
+                        .flat_map(|x| &x.1)
+                        .map(|e| e.provable_height)
+                        .max()
+                        .expect("batch has at least one event; qed;");
+
+                    debug!(%client_id, "querying client meta for client");
+
+                    client
+                        .client_meta(
+                            self.chain_id.clone(),
+                            QueryHeight::Latest,
+                            client_id.clone(),
+                        )
+                        .map_ok({
+                            let client_id = client_id.clone();
+                            move |client_meta| {
+                                let (idxs, events): (Vec<_>, Vec<_>) = events.into_iter().unzip();
+
+                                (
+                                    idxs.into_iter().flatten().collect::<Vec<_>>(),
+                                    seq([
+                                        call(WaitForHeight {
+                                            chain_id: client_meta.chain_id,
+                                            height: target_height,
+                                        }),
+                                        call(Call::plugin(
+                                            self.plugin_name(),
+                                            MakeTransactionBatchesWithUpdate {
+                                                client_id,
+                                                batches: events,
+                                            },
+                                        )),
+                                    ]),
+                                )
+                            }
+                        })
+                        .await
+                })
+                .collect::<FuturesOrdered<_>>();
+
+            Ok(OptimizationResult {
+                optimize_further,
+                ready: ready
+                    .map(|x| x)
+                    .try_collect()
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?,
+            })
         })
     }
 }

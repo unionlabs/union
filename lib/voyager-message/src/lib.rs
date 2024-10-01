@@ -3,15 +3,21 @@
 use std::{env::VarError, fmt::Debug, marker::PhantomData, time::Duration};
 
 use chain_utils::BoxDynError;
-use jsonrpsee::types::{
-    error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
-    ErrorObject,
+use jsonrpsee::{
+    core::{client::BatchResponse, params::BatchRequestBuilder, traits::ToRpcParams, RpcResult},
+    server::middleware::rpc::RpcServiceT,
+    types::{
+        error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
+        ErrorObject,
+    },
+    Extensions,
 };
 use macros::model;
 use queue_msg::{aggregation::SubsetOf, QueueError, QueueMessage};
-use reth_ipc::client::IpcClientBuilder;
+use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
+use tonic::async_trait;
 use tracing::{debug, debug_span, error, info, trace, Instrument};
 use unionlabs::{never::Never, traits::Member, ErrorReporter};
 
@@ -206,9 +212,81 @@ pub trait ModuleContext: Sized {
 }
 
 #[derive(Debug, Clone)]
-pub struct ModuleServer<Ctx: ModuleContext> {
-    pub voyager_rpc_client: reconnecting_jsonrpc_ws_client::Client,
-    pub ctx: Ctx,
+pub struct VoyagerClient(pub(crate) reconnecting_jsonrpc_ws_client::Client);
+
+impl VoyagerClient {
+    pub fn new(name: String, socket: String) -> Self {
+        let client = reconnecting_jsonrpc_ws_client::Client::new({
+            let voyager_socket: &'static str = socket.leak();
+            let name = name.clone();
+            move || {
+                async move {
+                    debug!("connecting to socket at {voyager_socket}");
+                    IpcClientBuilder::default().build(voyager_socket).await
+                }
+                .instrument(debug_span!("voyager_ipc_client", %name))
+            }
+        });
+        Self(client)
+    }
+}
+
+pub trait ExtensionsExt {
+    /// Retrieve a value from this [`Extensions`], returning an [`RpcResult`] for more
+    /// convenient handling in rpc server implementations.
+    fn try_get<T: Send + Sync + 'static>(&self) -> RpcResult<&T>;
+}
+
+impl ExtensionsExt for Extensions {
+    fn try_get<T: Send + Sync + 'static>(&self) -> RpcResult<&T> {
+        match self.get() {
+            Some(t) => Ok(t),
+            None => Err(ErrorObject::owned(
+                -1,
+                format!(
+                    "failed to retrieve value of type {} from extensions",
+                    std::any::type_name::<T>(),
+                ),
+                None::<()>,
+            )),
+        }
+    }
+}
+
+#[async_trait]
+impl jsonrpsee::core::client::ClientT for VoyagerClient {
+    async fn notification<Params>(
+        &self,
+        method: &str,
+        params: Params,
+    ) -> Result<(), jsonrpsee::core::client::Error>
+    where
+        Params: ToRpcParams + Send,
+    {
+        self.0.notification(method, params).await
+    }
+
+    async fn request<R, Params>(
+        &self,
+        method: &str,
+        params: Params,
+    ) -> Result<R, jsonrpsee::core::client::Error>
+    where
+        R: DeserializeOwned,
+        Params: ToRpcParams + Send,
+    {
+        self.0.request(method, params).await
+    }
+
+    async fn batch_request<'a, R>(
+        &self,
+        batch: BatchRequestBuilder<'a>,
+    ) -> Result<BatchResponse<'a, R>, jsonrpsee::core::client::Error>
+    where
+        R: DeserializeOwned + Debug + 'a,
+    {
+        self.0.batch_request(batch).await
+    }
 }
 
 #[derive(clap::Parser)]
@@ -229,10 +307,10 @@ enum App<Cmd: clap::Subcommand> {
     },
 }
 
-pub async fn run_module_server<T, D: Member, C: Member, Cb: Member>()
+pub async fn run_module_server<T>()
 where
     T: ModuleContext,
-    (T::Info, T): IntoRpc<D, C, Cb, RpcModule = ModuleServer<T>>,
+    (T::Info, T): IntoRpc<RpcModule = T>,
 {
     init_log();
 
@@ -254,23 +332,15 @@ where
         } => {
             let config = parse_config(&config);
 
-            let ModuleInfo { name, kind: _ } = T::info(config.clone());
+            let ModuleInfo { kind } = T::info(config.clone());
 
+            let name = kind.name();
             let name_ = name.clone();
             async move {
-                let voyager_rpc_client = reconnecting_jsonrpc_ws_client::Client::new({
-                    let voyager_socket: &'static str = voyager_socket.leak();
-                    let name_ = name_.clone();
-                    move || {
-                        async move {
-                            debug!("connecting to socket at {voyager_socket}");
-                            IpcClientBuilder::default().build(voyager_socket).await
-                        }
-                        .instrument(debug_span!("voyager_ipc_client", name = %name_))
-                    }
-                });
+                let voyager_client = VoyagerClient::new(name_.clone(), voyager_socket);
 
-                if let Err(err) = voyager_rpc_client
+                if let Err(err) = voyager_client
+                    .0
                     .wait_until_connected(Duration::from_millis(500))
                     .await
                 {
@@ -281,23 +351,27 @@ where
                 info!("connected to voyager socket");
 
                 let module_server = match T::new(config).await {
-                    Ok(ctx) => ModuleServer {
-                        voyager_rpc_client,
-                        ctx,
-                    },
+                    Ok(ctx) => ctx,
                     Err(err) => {
                         error!("startup error: {err:?}");
                         std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
                     }
                 };
 
-                let ipc_server = reth_ipc::server::Builder::default().build(socket);
-
-                let addr = ipc_server.endpoint();
+                let ipc_server = reth_ipc::server::Builder::default()
+                    .set_rpc_middleware(RpcServiceBuilder::new().layer_fn(move |service| {
+                        InjectClient {
+                            client: voyager_client.clone(),
+                            service,
+                        }
+                    }))
+                    .build(socket);
 
                 let rpcs = <(T::Info, T)>::into_rpc(module_server);
 
                 trace!(methods = ?*rpcs, "registered methods");
+
+                let addr = ipc_server.endpoint();
 
                 let server_handle = ipc_server.start(rpcs).await.unwrap();
 
@@ -318,12 +392,25 @@ where
             let info = T::info(parse_config(&config));
 
             let info = ModuleInfo::<ModuleKindInfo> {
-                name: info.name,
                 kind: info.kind.into(),
             };
 
             print!("{}", serde_json::to_string(&info).unwrap())
         }
         App::Cmd { cmd, config } => T::cmd(parse_config(&config), cmd).await,
+    }
+}
+
+struct InjectClient<S> {
+    client: VoyagerClient,
+    service: S,
+}
+
+impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for InjectClient<S> {
+    type Future = S::Future;
+
+    fn call(&self, mut request: jsonrpsee::types::Request<'a>) -> Self::Future {
+        request.extensions.insert(self.client.clone());
+        self.service.call(request)
     }
 }

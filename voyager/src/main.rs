@@ -22,11 +22,11 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
+use tracing::info;
 use tracing_subscriber::EnvFilter;
 use unionlabs::{ethereum::ibc_commitment_key, ics24};
 use voyager_message::{
-    call::FetchBlock, context::get_module_info, core::ChainId, module::ChainModuleClient,
-    VoyagerMessage,
+    call::FetchBlocks, core::ChainId, module::ChainModuleClient, VoyagerMessage,
 };
 
 #[global_allocator]
@@ -130,33 +130,40 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
         Command::Relay => {
             let voyager = Voyager::new(voyager_config.clone()).await?;
 
+            info!("starting relay service");
+
             voyager.run().await?;
         }
-        Command::Module { plugin_name, args } => match plugin_name {
-            Some(module_name) => {
-                let module_config = voyager_config
-                    .plugins
-                    .into_iter()
-                    .find(|module_config| {
-                        module_name == get_module_info(module_config).unwrap().name
-                    })
-                    .expect("module not found");
+        Command::Module {
+            plugin_name: _,
+            args: _,
+        } => {
+            // match plugin_name {
+            //     Some(module_name) => {
+            //         let module_config = voyager_config
+            //             .plugins
+            //             .into_iter()
+            //             .find(|module_config| {
+            //                 module_name == get_module_info(module_config).unwrap().name
+            //             })
+            //             .expect("module not found");
 
-                tokio::process::Command::new(&module_config.path)
-                    .arg("cmd")
-                    .arg("--config")
-                    .arg(module_config.config.to_string())
-                    .args(args)
-                    .spawn()?
-                    .wait()
-                    .await?;
-            }
-            None => {
-                for module_config in voyager_config.plugins {
-                    println!("{}", get_module_info(&module_config).unwrap().name);
-                }
-            }
-        },
+            //         tokio::process::Command::new(&module_config.path)
+            //             .arg("cmd")
+            //             .arg("--config")
+            //             .arg(module_config.config.to_string())
+            //             .args(args)
+            //             .spawn()?
+            //             .wait()
+            //             .await?;
+            //     }
+            //     None => {
+            //         for module_config in voyager_config.plugins {
+            //             println!("{}", get_module_info(&module_config).unwrap().name);
+            //         }
+            //     }
+            // }
+        }
         Command::Query { on, height, path } => {
             let voyager = Voyager::new(voyager_config.clone()).await?;
 
@@ -353,16 +360,17 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
             let chain = voyager
                 .context
-                .chain_module::<Value, Value, Value>(&ChainId::new(&chain_id))
-                .unwrap();
+                .rpc_server
+                .modules()?
+                .chain_module(&ChainId::new(&chain_id))?;
 
             let height = chain.query_latest_height().await.unwrap();
 
             voyager.shutdown().await;
 
-            print_json(&call::<VoyagerMessage<Value, Value, Value>>(FetchBlock {
+            print_json(&call::<VoyagerMessage<Value, Value, Value>>(FetchBlocks {
                 chain_id: ChainId::new(chain_id),
-                height,
+                start_height: height,
             }));
         }
         Command::Util(util) => match util {

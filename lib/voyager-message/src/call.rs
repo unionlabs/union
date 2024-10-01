@@ -1,10 +1,10 @@
 use enumorph::Enumorph;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::{apply, model};
-use queue_msg::{call, conc, data, defer, noop, now, promise, seq, HandleCall, Op, QueueError};
+use queue_msg::{call, data, defer, noop, now, seq, HandleCall, Op, QueueError};
 use serde_json::Value;
 use serde_utils::Hex;
-use tracing::{debug, info, instrument, trace};
+use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{
     ibc::core::{
         channel::{
@@ -33,14 +33,11 @@ use unionlabs::{
 #[cfg(doc)]
 use crate::core::ClientInfo;
 use crate::{
-    callback::AggregateFetchBlockRange,
     core::{ChainId, IbcInterface},
     data::{IbcMessage, LatestHeight, MsgCreateClientData, WithChainId},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
-    module::{
-        ChainModuleClient, ClientModuleClient, ConsensusModuleClient, QueueInteractionsClient,
-    },
-    rpc::json_rpc_error_to_rpc_error,
+    module::{ChainModuleClient, ClientModuleClient, ConsensusModuleClient, PluginClient},
+    rpc::json_rpc_error_to_error_object,
     top_level_identifiable_enum, Context, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -48,12 +45,11 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum Call<C = serde_json::Value> {
-    FetchBlock(FetchBlock),
-    FetchBlockRange(FetchBlockRange),
+    FetchBlocks(FetchBlocks),
 
     UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState),
 
-    UpdateHeaders(FetchUpdateHeaders),
+    FetchUpdateHeaders(FetchUpdateHeaders),
 
     MakeMsgCreateClient(MakeMsgCreateClient),
 
@@ -83,12 +79,40 @@ pub struct FetchBlockRange {
     pub to_height: Height,
 }
 
+/// Fetch blocks on a chain, starting at height `start_height`.
+///
+/// This represents a request for IBC events on a chain and must be
+/// picked up by a plugin. If it is not handled by a plugin, this will
+/// return with a fatal error.
+///
+/// # Implementor's Note
+///
+/// This message is intended to act as a "seed" to an infinite stream of
+/// unfolding messages. For example, if this is queued with height 10,
+/// the plugin message this is replaced with should fetch all events in
+/// block 10 and then wait for block 11 (which would then wait for block
+/// 12, etc). Due to differing behaviours between chains, this may not
+/// be the exact implementation, but the semantics of the unfold should
+/// still hold.
 #[model]
-pub struct FetchBlock {
+pub struct FetchBlocks {
     pub chain_id: ChainId<'static>,
-    pub height: Height,
+    pub start_height: Height,
 }
 
+/// Generate a client update for this module's client type.
+///
+/// This represents a request for a client update and must be picked up
+/// by a plugin. If it is not handled by a plugin, this will return with
+/// a fatal error.
+///
+/// # Implementor's Note
+///
+/// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data.
+/// This is the entrypoint called when a client update is requested, and
+/// is intended to be called in the queue of an
+/// [`AggregateMsgUpdateClientsFromOrderedHeaders`] message, which will
+/// be used to build the actual [`MsgUpdateClient`]s.
 #[model]
 pub struct FetchUpdateHeaders {
     pub chain_id: ChainId<'static>,
@@ -251,39 +275,18 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
     // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn handle(self, ctx: &Context) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
         match self {
-            Call::FetchBlock(FetchBlock { height, chain_id }) => {
-                info!(%height, "fetch_block");
-
-                Ok(promise(
-                    [call(WaitForHeight {
-                        chain_id,
-                        height: height.increment(),
-                    })],
-                    [],
-                    AggregateFetchBlockRange {
-                        from_height: height,
-                    },
-                ))
-            }
-
-            Call::FetchBlockRange(FetchBlockRange {
+            Call::FetchBlocks(FetchBlocks {
+                start_height,
                 chain_id,
-                from_height,
-                to_height,
             }) => {
-                info!(%from_height, %to_height, "fetch_block_range");
+                let message = format!(
+                    "fetch blocks request received for chain {chain_id} at height \
+                    {start_height} but it was not picked up by a plugin"
+                );
 
-                Ok(conc([
-                    ctx.chain_module(&chain_id)
-                        .map_err(error_object_to_queue_error)?
-                        .fetch_block_range(from_height, to_height)
-                        .await
-                        .map_err(json_rpc_error_to_queue_error)?,
-                    call(FetchBlock {
-                        chain_id,
-                        height: to_height,
-                    }),
-                ]))
+                error!(%message);
+
+                Err(QueueError::Fatal(message.into()))
             }
 
             // TODO: This is currently unused, but there is a wait that uses this call that needs to
@@ -622,35 +625,21 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
 
             Call::MakeMsgAcknowledgement(msg) => make_msg_acknowledgement(ctx, msg).await,
 
-            Call::UpdateHeaders(FetchUpdateHeaders {
+            Call::FetchUpdateHeaders(FetchUpdateHeaders {
                 chain_id,
                 counterparty_chain_id,
                 update_from,
                 update_to,
             }) => {
-                info!(
-                    %chain_id,
-                    %counterparty_chain_id,
-                    %update_from,
-                    %update_to,
-                    "fetching update headers",
+                let message = format!(
+                    "client update request received for a client on {counterparty_chain_id} \
+                    tracking {chain_id} from height {update_from} to {update_to} but it was \
+                    not picked up by a plugin"
                 );
-                if update_from >= update_to {
-                    Err(QueueError::Fatal(
-                        format!(
-                            "update range is invalid ({update_to} >= {update_to}), \
-                            chain_id: {chain_id}, counterparty_chain_id: \
-                            {counterparty_chain_id}"
-                        )
-                        .into(),
-                    ))
-                } else {
-                    ctx.consensus_module(&chain_id)
-                        .map_err(error_object_to_queue_error)?
-                        .fetch_update_headers(update_from, update_to, counterparty_chain_id)
-                        .await
-                        .map_err(json_rpc_error_to_queue_error)
-                }
+
+                error!(%message);
+
+                Err(QueueError::Fatal(message.into()))
             }
 
             Call::MakeMsgCreateClient(MakeMsgCreateClient {
@@ -753,8 +742,10 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 height,
             }) => {
                 let client_state = ctx
-                    .chain_module::<D, C, Cb>(&chain_id)
+                    .rpc_server
+                    .modules()
                     .map_err(error_object_to_queue_error)?
+                    .chain_module(&chain_id)?
                     .query_raw_unfinalized_trusted_client_state(client_id.clone())
                     .await
                     .map_err(json_rpc_error_to_queue_error)?;
@@ -1062,8 +1053,10 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
         .map_err(error_object_to_queue_error)?;
 
     let counterparty_consensus_module = ctx
-        .consensus_module::<Value, Value, Value>(&counterparty_chain_id)
-        .map_err(error_object_to_queue_error)?;
+        .rpc_server
+        .modules()
+        .map_err(error_object_to_queue_error)?
+        .consensus_module(&counterparty_chain_id)?;
 
     let self_client_state = counterparty_consensus_module
         .self_client_state(height)
@@ -1077,15 +1070,17 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
         .map_err(json_rpc_error_to_queue_error)?;
     trace!(%self_consensus_state);
 
-    let client_type = counterparty_consensus_module
-        .consensus_info()
-        .await
-        .map_err(json_rpc_error_to_queue_error)?
-        .client_type;
+    let client_type = ctx
+        .rpc_server
+        .modules()
+        .map_err(error_object_to_queue_error)?
+        .chain_consensus_type(&chain_id)?;
 
     let client_module = ctx
-        .client_module::<Value, Value, Value>(&client_type, &ibc_interface)
-        .map_err(error_object_to_queue_error)?;
+        .rpc_server
+        .modules()
+        .map_err(error_object_to_queue_error)?
+        .client_module(client_type, &ibc_interface)?;
 
     Ok(data(WithChainId {
         chain_id,
@@ -1102,7 +1097,7 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
                     .map_err(json_rpc_error_to_queue_error)?
                     .0,
             },
-            client_type,
+            client_type: client_type.clone(),
         }),
     }))
 }
@@ -1171,7 +1166,7 @@ async fn mk_connection_handshake_state_and_proofs(
             client_state_path,
         )
         .await
-        .map_err(json_rpc_error_to_rpc_error)?
+        .map_err(json_rpc_error_to_error_object)?
         .state;
 
     debug!(%client_state);
@@ -1194,13 +1189,15 @@ async fn mk_connection_handshake_state_and_proofs(
     );
 
     let reencoded_client_state = ctx
-        .client_module::<Value, Value, Value>(
+        .rpc_server
+        .modules()?
+        .client_module(
             &target_client_info.client_type,
             &target_client_info.ibc_interface,
         )?
         .reencode_counterparty_client_state(client_state.clone(), origin_client_info.client_type)
         .await
-        .map_err(json_rpc_error_to_rpc_error)?;
+        .map_err(json_rpc_error_to_error_object)?;
 
     debug!(%reencoded_client_state);
 
@@ -1215,7 +1212,7 @@ async fn mk_connection_handshake_state_and_proofs(
             },
         )
         .await
-        .map_err(json_rpc_error_to_rpc_error)?
+        .map_err(json_rpc_error_to_error_object)?
         .state
         .ok_or(ErrorObject::owned(
             FATAL_JSONRPC_ERROR_CODE,

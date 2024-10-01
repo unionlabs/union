@@ -530,6 +530,15 @@ mod tests {
     }
 
     #[test]
+    fn conc_seq_call_call_call() {
+        let msg = conc::<UnitMessage>([seq([call(()), call(())]), call(())]);
+        assert_eq!(
+            normalize(vec![msg.clone()]),
+            vec![(vec![0], seq([call(()), call(())])), (vec![0], call(()))]
+        );
+    }
+
+    #[test]
     fn extract_data_simple() {
         let msg = seq::<UnitMessage>([
             data(()),

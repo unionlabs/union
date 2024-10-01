@@ -276,6 +276,18 @@ pub enum BlockId {
     Hash(H256),
 }
 
+impl From<u64> for BlockId {
+    fn from(slot: u64) -> Self {
+        BlockId::Slot(slot)
+    }
+}
+
+impl From<H256> for BlockId {
+    fn from(root: H256) -> Self {
+        BlockId::Hash(root)
+    }
+}
+
 impl Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -1,0 +1,16 @@
+use enumorph::Enumorph;
+use macros::model;
+use queue_msg::queue_msg;
+use unionlabs::ibc::core::client::height::Height;
+
+#[queue_msg]
+#[derive(Enumorph)]
+pub enum ModuleCall {
+    FetchUpdate(FetchUpdate),
+}
+
+#[model]
+pub struct FetchUpdate {
+    pub update_from: Height,
+    pub update_to: Height,
+}

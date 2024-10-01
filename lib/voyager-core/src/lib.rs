@@ -184,7 +184,9 @@ macro_rules! str_newtype {
             /// `].
             ///
             /// This will capture the lifetime of the passed in value:
+            ///
             /// ```
+            /// # use voyager_core::*;
             #[doc = concat!(
                 "let _: ",
                 stringify!($Struct),
@@ -240,6 +242,7 @@ macro_rules! str_newtype {
             /// `], returning a new owned value pointing to the same data.
             ///
             /// ```
+            /// # use voyager_core::*;
             #[doc = concat!("let t = ", stringify!($Struct), "::new_static(\"static\");")]
             ///
             /// takes_ownership(t.borrow());

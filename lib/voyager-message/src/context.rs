@@ -1,10 +1,7 @@
 use std::{collections::HashMap, process::Stdio, sync::Arc, time::Duration};
 
 use futures::{stream::FuturesUnordered, Future, StreamExt, TryStreamExt};
-use jsonrpsee::{
-    core::RpcResult,
-    types::{ErrorObject, ErrorObjectOwned},
-};
+use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
 use macros::model;
 use queue_msg::{BoxDynError, QueueError};
 use serde_json::Value;
@@ -17,8 +14,8 @@ use crate::{
     core::{ChainId, ClientType, IbcInterface},
     module::{
         ChainModuleClient, ChainModuleInfo, ClientModuleClient, ClientModuleInfo,
-        ConsensusModuleClient, ConsensusModuleInfo, ModuleInfo, ModuleKindInfo, PluginModuleInfo,
-        QueueInteractionsClient,
+        ConsensusModuleClient, ConsensusModuleInfo, ModuleInfo, ModuleKindInfo, PluginClient,
+        PluginInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
     FATAL_JSONRPC_ERROR_CODE,
@@ -31,7 +28,7 @@ pub const STARTUP_ERROR_EXIT_CODE: u8 = 14;
 pub struct Context {
     pub rpc_server: Server,
 
-    plugin_modules: HashMap<String, ModuleRpcClient>,
+    plugins: HashMap<String, ModuleRpcClient>,
 
     interest_filters: HashMap<String, String>,
 
@@ -49,6 +46,8 @@ pub struct Modules {
 
     /// map of client type to ibc interface to client module.
     client_modules: HashMap<ClientType<'static>, HashMap<IbcInterface<'static>, ModuleRpcClient>>,
+
+    chain_consensus_types: HashMap<ChainId<'static>, ClientType<'static>>,
 }
 
 impl queue_msg::Context for Context {
@@ -110,6 +109,8 @@ async fn module_rpc_server(
     let socket = make_module_rpc_server_socket_path(name);
     let rpc_server = reth_ipc::server::Builder::default().build(socket.clone());
 
+    info!(%socket, "starting rpc server");
+
     let server = rpc_server.start(server.into_rpc()).await?;
 
     Ok(server
@@ -146,9 +147,11 @@ impl Context {
             chain_modules: Default::default(),
             client_modules: Default::default(),
             consensus_modules: Default::default(),
+            chain_consensus_types: Default::default(),
         };
-        let mut plugin_modules = HashMap::default();
-        // let mut module_servers = Vec::default();
+
+        let mut plugins = HashMap::default();
+
         let mut interest_filters = HashMap::default();
 
         let main_rpc_server = Server::new();
@@ -174,8 +177,8 @@ impl Context {
                 async move {
                     let module_info = get_module_info(&module_config)?;
 
-                    info!("starting rpc server for module {}", module_info.name);
-                    tokio::spawn(module_rpc_server(&module_info.name, server).await?);
+                    info!("starting rpc server for {}", module_info.kind.name());
+                    tokio::spawn(module_rpc_server(&module_info.kind.name(), server).await?);
 
                     Ok::<_, BoxDynError>((module_config, module_info))
                 }
@@ -184,8 +187,10 @@ impl Context {
             .try_collect::<Vec<_>>()
             .await?;
 
-        for (module_config, ModuleInfo { name, kind }) in module_configs {
-            info!("registering module {name}");
+        for (module_config, ModuleInfo { kind }) in module_configs {
+            let name = kind.name();
+
+            info!("registering module {}", name);
 
             // tokio::spawn(module_rpc_server(&name, main_rpc_server.clone()).await?);
 
@@ -197,10 +202,15 @@ impl Context {
 
             let rpc_client = ModuleRpcClient::new(&name);
 
-            plugin_modules.insert(name.clone(), rpc_client.clone());
+            plugins.insert(name.clone(), rpc_client.clone());
 
             match kind {
-                ModuleKindInfo::Plugin(PluginModuleInfo { interest_filter }) => {
+                ModuleKindInfo::Plugin(PluginInfo {
+                    name,
+                    interest_filter,
+                }) => {
+                    plugins.insert(name.clone(), rpc_client.clone());
+
                     info!(
                         %name,
                         "registered plugin module"
@@ -219,7 +229,6 @@ impl Context {
                     }
 
                     info!(
-                        %name,
                         %chain_id,
                         "registered chain module"
                     );
@@ -244,7 +253,6 @@ impl Context {
                     }
 
                     info!(
-                        %name,
                         %client_type,
                         %ibc_interface,
                         "registered client module"
@@ -265,8 +273,14 @@ impl Context {
                         .into());
                     }
 
+                    let None = modules
+                        .chain_consensus_types
+                        .insert(chain_id.clone(), client_type.clone())
+                    else {
+                        unreachable!()
+                    };
+
                     info!(
-                        %name,
                         %chain_id,
                         %client_type,
                         "registered consensus module"
@@ -280,7 +294,7 @@ impl Context {
         info!("checking for plugin health...");
 
         {
-            let mut futures = plugin_modules
+            let mut futures = plugins
                 .iter()
                 .map(|(name, client)| async move {
                     match client
@@ -304,7 +318,7 @@ impl Context {
 
         Ok(Self {
             rpc_server: main_rpc_server,
-            plugin_modules,
+            plugins,
             interest_filters,
             cancellation_token,
             // module_servers,
@@ -314,7 +328,7 @@ impl Context {
     pub async fn shutdown(self) {
         self.cancellation_token.cancel();
 
-        for (name, client) in self.plugin_modules {
+        for (name, client) in self.plugins {
             debug!("shutting down plugin client for {name}");
             client.client.shutdown();
         }
@@ -323,9 +337,9 @@ impl Context {
     pub fn plugin<D: Member, C: Member, Cb: Member>(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<&(impl QueueInteractionsClient<D, C, Cb> + '_), PluginNotFound> {
+    ) -> Result<&(impl PluginClient<D, C, Cb> + '_), PluginNotFound> {
         Ok(self
-            .plugin_modules
+            .plugins
             .get(name.as_ref())
             .ok_or_else(|| PluginNotFound {
                 name: name.as_ref().into(),
@@ -337,7 +351,7 @@ impl Context {
         &self,
         name: impl AsRef<str>,
     ) -> Result<&ModuleRpcClient, PluginNotFound> {
-        self.plugin_modules
+        self.plugins
             .get(name.as_ref())
             .ok_or_else(|| PluginNotFound {
                 name: name.as_ref().into(),
@@ -347,35 +361,6 @@ impl Context {
     pub fn interest_filters(&self) -> &HashMap<String, String> {
         &self.interest_filters
     }
-
-    pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
-        &'a self,
-        chain_id: &'b ChainId<'c>,
-    ) -> RpcResult<&'a (impl ChainModuleClient<D, C, Cb> + 'a)> {
-        Ok(self.rpc_server.modules()?.chain_module(chain_id)?)
-    }
-
-    pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
-        &'a self,
-        chain_id: &'b ChainId<'c>,
-    ) -> RpcResult<&'a (impl ConsensusModuleClient<D, C, Cb> + 'a)> {
-        Ok(self.rpc_server.modules()?.consensus_module(chain_id)?)
-    }
-
-    pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
-        &'a self,
-        client_type: &'b ClientType<'c>,
-        ibc_interface: &'b IbcInterface<'c>,
-    ) -> RpcResult<&'a (impl ClientModuleClient<D, C, Cb> + 'a)> {
-        Ok(self
-            .rpc_server
-            .modules()?
-            .client_module(client_type, ibc_interface)?)
-    }
-
-    // pub fn modules(&self) -> Arc<Modules> {
-    //     self.modules.clone()
-    // }
 }
 
 impl Modules {
@@ -400,10 +385,19 @@ impl Modules {
             .map(|(client_type, ibc_interfaces)| (client_type, ibc_interfaces.keys()))
     }
 
-    pub fn chain_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+    pub fn chain_consensus_type<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a (impl ChainModuleClient<D, C, Cb> + 'a), ChainModuleNotFound> {
+    ) -> Result<&'a ClientType<'static>, ConsensusModuleNotFound> {
+        self.chain_consensus_types
+            .get(chain_id)
+            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone().into_owned()))
+    }
+
+    pub fn chain_module<'a, 'b, 'c: 'a>(
+        &'a self,
+        chain_id: &'b ChainId<'c>,
+    ) -> Result<&'a (impl ChainModuleClient + 'a), ChainModuleNotFound> {
         Ok(self
             .chain_modules
             .get(chain_id)
@@ -411,10 +405,10 @@ impl Modules {
             .client())
     }
 
-    pub fn consensus_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+    pub fn consensus_module<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &'b ChainId<'c>,
-    ) -> Result<&'a (impl ConsensusModuleClient<D, C, Cb> + 'a), ConsensusModuleNotFound> {
+    ) -> Result<&'a (impl ConsensusModuleClient + 'a), ConsensusModuleNotFound> {
         Ok(self
             .consensus_modules
             .get(chain_id)
@@ -422,11 +416,11 @@ impl Modules {
             .client())
     }
 
-    pub fn client_module<'a: 'b, 'b, 'c: 'a, D: Member, C: Member, Cb: Member>(
+    pub fn client_module<'a, 'b, 'c: 'a>(
         &'a self,
         client_type: &'b ClientType<'c>,
         ibc_interface: &'b IbcInterface<'c>,
-    ) -> Result<&'a (impl ClientModuleClient<D, C, Cb> + 'a), ClientModuleNotFound> {
+    ) -> Result<&'a (impl ClientModuleClient + 'a), ClientModuleNotFound> {
         match self.client_modules.get(client_type) {
             Some(ibc_interfaces) => match ibc_interfaces.get(ibc_interface) {
                 Some(client_module) => Ok(client_module.client()),
@@ -448,6 +442,11 @@ async fn run_module(
     module_config: ModuleConfig,
     cancellation_token: CancellationToken,
 ) {
+    let client_socket = ModuleRpcClient::make_socket_path(&name);
+    let server_socket = make_module_rpc_server_socket_path(&name);
+
+    info!(%client_socket, %server_socket, "starting module {name}");
+
     let mut attempt = 0;
 
     loop {
@@ -455,8 +454,8 @@ async fn run_module(
 
         let mut cmd = tokio::process::Command::new(&module_config.path);
         cmd.arg("run");
-        cmd.arg(ModuleRpcClient::make_socket_path(&name));
-        cmd.arg(make_module_rpc_server_socket_path(&name));
+        cmd.arg(&client_socket);
+        cmd.arg(&server_socket);
         cmd.arg(module_config.config.to_string());
 
         let mut child = loop {

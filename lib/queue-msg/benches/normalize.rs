@@ -2,8 +2,8 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use queue_msg::{call, conc, data, noop, normalize::normalize, promise, seq, Op};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
-    call::FetchBlock, callback::AggregateFetchBlockRange, core::ChainId, data::LatestHeight,
-    VoyagerMessage,
+    call::FetchBlocks, callback::AggregateMsgUpdateClientsFromOrderedHeaders, core::ChainId,
+    data::LatestHeight, VoyagerMessage,
 };
 
 fn bench_normalize(c: &mut Criterion) {
@@ -26,9 +26,9 @@ fn mk_msg() -> Op<VoyagerMessage> {
                         revision_height: 1,
                     },
                 }),
-                call(FetchBlock {
+                call(FetchBlocks {
                     chain_id: ChainId::new("chain"),
-                    height: Height {
+                    start_height: Height {
                         revision_number: 1,
                         revision_height: 1,
                     },
@@ -42,9 +42,9 @@ fn mk_msg() -> Op<VoyagerMessage> {
                             revision_height: 1,
                         },
                     }),
-                    call(FetchBlock {
+                    call(FetchBlocks {
                         chain_id: ChainId::new("chain"),
-                        height: Height {
+                        start_height: Height {
                             revision_number: 1,
                             revision_height: 1,
                         },
@@ -52,11 +52,9 @@ fn mk_msg() -> Op<VoyagerMessage> {
                 ]),
             ],
             [],
-            AggregateFetchBlockRange {
-                from_height: Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                },
+            AggregateMsgUpdateClientsFromOrderedHeaders {
+                chain_id: ChainId::new("chain"),
+                counterparty_client_id: "counterparty_chain".parse().unwrap(),
             },
         ),
         seq([
@@ -67,9 +65,9 @@ fn mk_msg() -> Op<VoyagerMessage> {
                     revision_height: 1,
                 },
             }),
-            call(FetchBlock {
+            call(FetchBlocks {
                 chain_id: ChainId::new("chain"),
-                height: Height {
+                start_height: Height {
                     revision_number: 1,
                     revision_height: 1,
                 },
@@ -83,9 +81,9 @@ fn mk_msg() -> Op<VoyagerMessage> {
                         revision_height: 1,
                     },
                 }),
-                call(FetchBlock {
+                call(FetchBlocks {
                     chain_id: ChainId::new("chain"),
-                    height: Height {
+                    start_height: Height {
                         revision_number: 1,
                         revision_height: 1,
                     },

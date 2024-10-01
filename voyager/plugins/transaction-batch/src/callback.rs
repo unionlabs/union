@@ -18,8 +18,8 @@ use voyager_message::{
     callback::Callback,
     core::{ChainId, ClientStateMeta},
     data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
-    rpc::{json_rpc_error_to_rpc_error, VoyagerRpcClient},
-    ModuleServer, VoyagerMessage,
+    rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
+    VoyagerClient, VoyagerMessage,
 };
 
 use crate::{
@@ -45,7 +45,8 @@ pub struct MakeIbcMessagesFromUpdate {
 impl MakeIbcMessagesFromUpdate {
     pub async fn call(
         self,
-        module_server: &ModuleServer<Module>,
+        voyager_client: &VoyagerClient,
+        module_server: &Module,
         datas: VecDeque<Data<ModuleData>>,
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         let Ok(
@@ -57,15 +58,14 @@ impl MakeIbcMessagesFromUpdate {
             panic!("bad data")
         };
 
-        let client_meta = module_server
-            .voyager_rpc_client
+        let client_meta = voyager_client
             .client_meta(
-                module_server.ctx.chain_id.clone(),
+                module_server.chain_id.clone(),
                 QueryHeight::Latest,
                 self.client_id.clone(),
             )
             .await
-            .map_err(json_rpc_error_to_rpc_error)?;
+            .map_err(json_rpc_error_to_error_object)?;
 
         let new_trusted_height = updates
             .updates
@@ -86,7 +86,7 @@ impl MakeIbcMessagesFromUpdate {
 }
 
 pub fn make_msgs(
-    module_server: &ModuleServer<Module>,
+    module_server: &Module,
 
     client_id: ClientId,
     batches: Vec<Vec<BatchableEvent>>,
@@ -102,7 +102,7 @@ pub fn make_msgs(
                 assert!(batchable_event.provable_height <= new_trusted_height);
 
                 let origin_chain_id = client_meta.chain_id.clone();
-                let target_chain_id = module_server.ctx.chain_id.clone();
+                let target_chain_id = module_server.chain_id.clone();
 
                 // in this context, we are the destination - the counterparty of the source is the destination
                 match batchable_event.event {
@@ -170,7 +170,7 @@ pub fn make_msgs(
             }),
             [],
             Callback::plugin(
-                module_server.ctx.plugin_name(),
+                module_server.plugin_name(),
                 MakeBatchTransaction {
                     client_id: client_id.clone(),
                     // if updates are provided and this is the first batch using this update height, provide the updates along with the messages

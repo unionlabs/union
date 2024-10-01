@@ -195,7 +195,7 @@ pub trait VoyagerRpcClientExt: VoyagerRpcClient {
 
 impl<T> VoyagerRpcClientExt for T where T: VoyagerRpcClient {}
 
-pub fn json_rpc_error_to_rpc_error(value: jsonrpsee::core::client::Error) -> ErrorObjectOwned {
+pub fn json_rpc_error_to_error_object(value: jsonrpsee::core::client::Error) -> ErrorObjectOwned {
     match value {
         jsonrpsee::core::client::Error::Call(error) => error,
         value => ErrorObject::owned(-1, format!("error: {}", ErrorReporter(value)), None::<()>),

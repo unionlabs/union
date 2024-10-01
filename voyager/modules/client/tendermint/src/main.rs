@@ -1,11 +1,10 @@
-use std::collections::VecDeque;
-
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
+    Extensions,
 };
 use macros::model;
-use queue_msg::{BoxDynError, Op};
+use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -21,21 +20,13 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
-    data::Data,
-    module::{ClientModuleInfo, ClientModuleServer, ModuleInfo, QueueInteractionsServer},
-    run_module_server, DefaultCmd, ModuleContext, ModuleServer, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    module::{ClientModuleInfo, ClientModuleServer, ModuleInfo},
+    run_module_server, DefaultCmd, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
 };
-
-use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
-
-pub mod call;
-pub mod callback;
-pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module, _, _, _>().await
+    run_module_server::<Module>().await
 }
 
 #[model(no_serde)]
@@ -94,7 +85,6 @@ impl ModuleContext for Module {
 
     fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
         ModuleInfo {
-            name: plugin_name(config.ibc_interface),
             kind: ClientModuleInfo {
                 client_type: ClientType::new(ClientType::TENDERMINT),
                 ibc_interface: IbcInterface::new(config.ibc_interface.as_str()),
@@ -105,12 +95,6 @@ impl ModuleContext for Module {
     async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
         match cmd {}
     }
-}
-
-fn plugin_name(ibc_interface: SupportedIbcInterface) -> String {
-    pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
-
-    format!("{PLUGIN_NAME}/{}", ibc_interface.as_str())
 }
 
 impl Module {
@@ -148,41 +132,14 @@ impl Module {
 }
 
 #[async_trait]
-impl QueueInteractionsServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all)]
-    async fn call(
-        &self,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match msg {}
-    }
-
-    #[instrument(skip_all)]
-    async fn callback(
-        &self,
-        cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match cb {}
-    }
-}
-
-#[async_trait]
-impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer<Module> {
-    #[instrument(skip_all)]
-    async fn supported_interface(&self) -> RpcResult<ClientModuleInfo> {
-        Ok(ClientModuleInfo {
-            client_type: ClientType::new(ClientType::TENDERMINT),
-            ibc_interface: IbcInterface::new(self.ctx.ibc_interface.as_str()),
-        })
-    }
-
+impl ClientModuleServer for Module {
     #[instrument(skip_all)]
     async fn decode_client_state_meta(
         &self,
+        _: &Extensions,
         client_state: Hex<Vec<u8>>,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = self.ctx.decode_client_state(&client_state.0)?;
+        let cs = self.decode_client_state(&client_state.0)?;
 
         Ok(ClientStateMeta {
             chain_id: ChainId::new(cs.chain_id),
@@ -193,9 +150,10 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     #[instrument(skip_all)]
     async fn decode_consensus_state_meta(
         &self,
+        _: &Extensions,
         consensus_state: Hex<Vec<u8>>,
     ) -> RpcResult<ConsensusStateMeta> {
-        let cs = self.ctx.decode_consensus_state(&consensus_state.0)?;
+        let cs = self.decode_consensus_state(&consensus_state.0)?;
 
         Ok(ConsensusStateMeta {
             timestamp_nanos: cs.timestamp.as_unix_nanos(),
@@ -203,18 +161,27 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     }
 
     #[instrument(skip_all)]
-    async fn decode_client_state(&self, client_state: Hex<Vec<u8>>) -> RpcResult<Value> {
-        Ok(serde_json::to_value(self.ctx.decode_client_state(&client_state.0)?).unwrap())
+    async fn decode_client_state(
+        &self,
+        _: &Extensions,
+        client_state: Hex<Vec<u8>>,
+    ) -> RpcResult<Value> {
+        Ok(serde_json::to_value(self.decode_client_state(&client_state.0)?).unwrap())
     }
 
     #[instrument(skip_all)]
-    async fn decode_consensus_state(&self, consensus_state: Hex<Vec<u8>>) -> RpcResult<Value> {
-        Ok(serde_json::to_value(self.ctx.decode_consensus_state(&consensus_state.0)?).unwrap())
+    async fn decode_consensus_state(
+        &self,
+        _: &Extensions,
+        consensus_state: Hex<Vec<u8>>,
+    ) -> RpcResult<Value> {
+        Ok(serde_json::to_value(self.decode_consensus_state(&consensus_state.0)?).unwrap())
     }
 
     #[instrument(skip_all)]
     async fn encode_client_state(
         &self,
+        _: &Extensions,
         client_state: Value,
         metadata: Value,
     ) -> RpcResult<Hex<Vec<u8>>> {
@@ -237,14 +204,18 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                     None::<()>,
                 )
             })
-            .map(|cs| match self.ctx.ibc_interface {
+            .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>(),
             })
             .map(Hex)
     }
 
     #[instrument(skip_all)]
-    async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Hex<Vec<u8>>> {
+    async fn encode_consensus_state(
+        &self,
+        _: &Extensions,
+        consensus_state: Value,
+    ) -> RpcResult<Hex<Vec<u8>>> {
         serde_json::from_value::<ConsensusState>(consensus_state)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -256,7 +227,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                     None::<()>,
                 )
             })
-            .map(|cs| match self.ctx.ibc_interface {
+            .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>(),
             })
             .map(Hex)
@@ -265,6 +236,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     #[instrument(skip_all)]
     async fn reencode_counterparty_client_state(
         &self,
+        _: &Extensions,
         client_state: Hex<Vec<u8>>,
         _client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
@@ -274,6 +246,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     #[instrument(skip_all)]
     async fn reencode_counterparty_consensus_state(
         &self,
+        _: &Extensions,
         consensus_state: Hex<Vec<u8>>,
         _client_type: ClientType<'static>,
     ) -> RpcResult<Hex<Vec<u8>>> {
@@ -281,7 +254,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
     }
 
     #[instrument(skip_all)]
-    async fn encode_header(&self, header: Value) -> RpcResult<Hex<Vec<u8>>> {
+    async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Hex<Vec<u8>>> {
         serde_json::from_value::<Header>(header)
             .map_err(|err| {
                 ErrorObject::owned(
@@ -290,14 +263,14 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                     None::<()>,
                 )
             })
-            .map(|header| match self.ctx.ibc_interface {
+            .map(|header| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => Ok(Any(header).encode_as::<Proto>()),
             })?
             .map(Hex)
     }
 
     #[instrument(skip_all)]
-    async fn encode_proof(&self, proof: Value) -> RpcResult<Hex<Vec<u8>>> {
+    async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Hex<Vec<u8>>> {
         debug!(%proof, "encoding proof");
 
         serde_json::from_value::<unionlabs::ibc::core::commitment::merkle_proof::MerkleProof>(proof)
@@ -308,7 +281,7 @@ impl ClientModuleServer<ModuleData, ModuleCall, ModuleCallback> for ModuleServer
                     None::<()>,
                 )
             })
-            .map(|cs| match self.ctx.ibc_interface {
+            .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcGoV8Native => cs.encode_as::<Proto>(),
             })
             .map(Hex)

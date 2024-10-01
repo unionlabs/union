@@ -10321,8 +10321,8 @@ dependencies = [
 
 [[package]]
 name = "reth-ipc"
-version = "1.0.6"
-source = "git+https://github.com/paradigmxyz/reth#fcab695a93526c704ef898a3a8d2b6afb183f579"
+version = "1.0.7"
+source = "git+https://github.com/paradigmxyz/reth#6e1cc1b948f5025daf365d1bd3d39d819accfaa0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -13529,6 +13529,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-block-plugin-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-crypto",
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "aptos-types",
+ "bcs 0.1.6",
+ "clap 4.5.4",
+ "enumorph",
+ "frunk",
+ "futures",
+ "hex",
+ "hex-literal",
+ "jsonrpsee",
+ "macros",
+ "move-bindgen",
+ "move-core-types",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "reqwest 0.11.27",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
 name = "voyager-chain-module-cosmos-sdk"
 version = "0.1.0"
 dependencies = [
@@ -13718,6 +13754,116 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-update-plugin-cometbls"
+version = "0.1.0"
+dependencies = [
+ "cometbft-rpc",
+ "dashmap",
+ "enumorph",
+ "frunk",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-ethereum"
+version = "0.1.0"
+dependencies = [
+ "beacon-api",
+ "bitvec 1.0.1",
+ "chain-utils",
+ "enumorph",
+ "ethereum-verifier",
+ "ethers",
+ "frunk",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "aptos-types",
+ "bitvec 1.0.1",
+ "chain-utils",
+ "enumorph",
+ "ethers",
+ "frunk",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "move-core-types",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-tendermint"
+version = "0.1.0"
+dependencies = [
+ "cometbft-rpc",
+ "dashmap",
+ "enumorph",
+ "frunk",
+ "futures",
+ "ics23",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
 name = "voyager-consensus-module-cometbls"
 version = "0.1.0"
 dependencies = [
@@ -13843,6 +13989,58 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-event-source-plugin-cosmos-sdk"
+version = "0.1.0"
+dependencies = [
+ "clap 4.5.4",
+ "cometbft-rpc",
+ "dashmap",
+ "enumorph",
+ "frunk",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "prost 0.12.6",
+ "protos",
+ "queue-msg",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-event-source-plugin-ethereum"
+version = "0.1.0"
+dependencies = [
+ "beacon-api",
+ "chain-utils",
+ "contracts",
+ "enumorph",
+ "ethers",
+ "frunk",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "queue-msg",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
 name = "voyager-message"
 version = "0.1.0"
 dependencies = [
@@ -13939,7 +14137,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-transaction-module-aptos"
+name = "voyager-transaction-plugin-aptos"
 version = "0.1.0"
 dependencies = [
  "aptos-crypto",
@@ -13970,7 +14168,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-transaction-module-cosmos-sdk"
+name = "voyager-transaction-plugin-cosmos-sdk"
 version = "0.1.0"
 dependencies = [
  "bip32",
@@ -14000,7 +14198,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-transaction-module-ethereum"
+name = "voyager-transaction-plugin-ethereum"
 version = "0.1.0"
 dependencies = [
  "beacon-api",

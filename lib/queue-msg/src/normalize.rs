@@ -91,6 +91,12 @@ pub fn normalize<T: QueueMessage>(ops: Vec<Op<T>>) -> Vec<(Vec<usize>, Op<T>)> {
 
     ops.into_iter()
         .enumerate()
-        .flat_map(|(i, op)| go(op).into_iter().map(move |op| (vec![i], op)))
+        .flat_map(|(i, op)| {
+            // flatten conc to multiple messages
+            go(op).into_iter().flat_map(move |op| match op {
+                Op::Conc(ops) => ops.into_iter().map(move |op| (vec![i], op)).collect(),
+                op => vec![(vec![i], op)],
+            })
+        })
         .collect()
 }

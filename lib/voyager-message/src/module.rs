@@ -23,13 +23,23 @@ use {
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
     data::Data,
-    ModuleContext, ModuleServer, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    ModuleContext, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 #[model]
 pub struct ModuleInfo<K> {
-    pub name: String,
     pub kind: K,
+}
+
+impl ModuleKindInfo {
+    pub fn name(&self) -> String {
+        match self {
+            ModuleKindInfo::Chain(info) => info.name(),
+            ModuleKindInfo::Consensus(info) => info.name(),
+            ModuleKindInfo::Client(info) => info.name(),
+            ModuleKindInfo::Plugin(info) => info.name(),
+        }
+    }
 }
 
 #[model]
@@ -38,17 +48,23 @@ pub enum ModuleKindInfo {
     Chain(ChainModuleInfo),
     Consensus(ConsensusModuleInfo),
     Client(ClientModuleInfo),
-    Plugin(PluginModuleInfo),
+    Plugin(PluginInfo),
 }
 
-pub trait IModuleKindInfo: Member + Into<ModuleKindInfo> {}
+pub trait IModuleKindInfo: Member + Into<ModuleKindInfo> {
+    fn name(&self) -> String;
+}
 
 #[model]
 pub struct ChainModuleInfo {
     pub chain_id: ChainId<'static>,
 }
 
-impl IModuleKindInfo for ChainModuleInfo {}
+impl IModuleKindInfo for ChainModuleInfo {
+    fn name(&self) -> String {
+        format!("chain/{}", self.chain_id)
+    }
+}
 
 #[model]
 pub struct ConsensusModuleInfo {
@@ -56,7 +72,11 @@ pub struct ConsensusModuleInfo {
     pub client_type: ClientType<'static>,
 }
 
-impl IModuleKindInfo for ConsensusModuleInfo {}
+impl IModuleKindInfo for ConsensusModuleInfo {
+    fn name(&self) -> String {
+        format!("consensus/{}/{}", self.chain_id, self.client_type)
+    }
+}
 
 #[model]
 pub struct ClientModuleInfo {
@@ -67,35 +87,104 @@ pub struct ClientModuleInfo {
     pub ibc_interface: IbcInterface<'static>,
 }
 
-impl IModuleKindInfo for ClientModuleInfo {}
+impl IModuleKindInfo for ClientModuleInfo {
+    fn name(&self) -> String {
+        format!("client/{}/{}", self.client_type, self.ibc_interface)
+    }
+}
 
 #[model]
-pub struct PluginModuleInfo {
+pub struct PluginInfo {
+    /// The name of this plugin. Any plugin messages with this name will be
+    /// routed to this plugin.
+    pub name: String,
     /// A jaq filter to run on every message before pushing them to the queue.
     /// This ***MUST*** return a bool. If this returns `true`, the message will
-    /// be pushed to the optimization queue with this plugin's name as the
-    /// tag, else it will be passed on to the next plugin to be filtered.
+    /// be pushed to the optimization queue with this plugin's name as the tag,
+    /// otherwise it will be passed on to the next plugin to be filtered.
     pub interest_filter: String,
 }
 
-impl IModuleKindInfo for PluginModuleInfo {}
+impl IModuleKindInfo for PluginInfo {
+    fn name(&self) -> String {
+        format!("plugin/{}", self.name)
+    }
+}
 
-// REVIEW: Rename?
-#[rpc(
-    client,
-    server,
-    client_bounds(Self: Send + Sync),
-    server_bounds(Self: Send + Sync),
-    namespace = "plugin",
-)]
-// TODO: Rename this lol
-pub trait QueueInteractions<D: Member, C: Member, Cb: Member> {
+pub trait IntoRpc: Sized {
+    type RpcModule;
+
+    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule>;
+}
+
+impl<T> IntoRpc for (PluginInfo, T)
+where
+    T: ModuleContext<Info = PluginInfo>
+        + PluginTypes
+        + PluginServer<<T as PluginTypes>::D, <T as PluginTypes>::C, <T as PluginTypes>::Cb>,
+{
+    type RpcModule = T;
+
+    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
+        PluginServer::into_rpc(t)
+    }
+}
+
+// .try_get::<VoyagerClient>()?
+
+impl<T> IntoRpc for (ChainModuleInfo, T)
+where
+    T: ModuleContext<Info = ChainModuleInfo> + ChainModuleServer,
+{
+    type RpcModule = T;
+
+    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
+        ChainModuleServer::into_rpc(t)
+    }
+}
+
+impl<T> IntoRpc for (ClientModuleInfo, T)
+where
+    T: ModuleContext<Info = ClientModuleInfo> + ClientModuleServer,
+{
+    type RpcModule = T;
+
+    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
+        ClientModuleServer::into_rpc(t)
+    }
+}
+
+impl<T> IntoRpc for (ConsensusModuleInfo, T)
+where
+    T: ModuleContext<Info = ConsensusModuleInfo> + ConsensusModuleServer,
+{
+    type RpcModule = T;
+
+    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
+        ConsensusModuleServer::into_rpc(t)
+    }
+}
+
+pub trait PluginTypes {
+    type D: Member;
+    type C: Member;
+    type Cb: Member;
+}
+
+#[rpc(client, server, namespace = "plugin")]
+pub trait Plugin<D: Member, C: Member, Cb: Member> {
+    #[method(name = "runPass", with_extensions)]
+    async fn run_pass(
+        &self,
+        msgs: Vec<Op<VoyagerMessage<D, C, Cb>>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage<D, C, Cb>>>;
+
     /// Handle a custom `Call` message for this module.
-    #[method(name = "call")]
+    #[method(name = "call", with_extensions)]
     async fn call(&self, call: C) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 
     /// Handle a custom `Callback` message for this module.
-    #[method(name = "callback")]
+    #[method(name = "callback", with_extensions)]
     async fn callback(
         &self,
         aggregate: Cb,
@@ -103,144 +192,44 @@ pub trait QueueInteractions<D: Member, C: Member, Cb: Member> {
     ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 }
 
-pub trait IntoRpc<D: Member, C: Member, Cb: Member>: Sized {
-    type RpcModule;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule>;
-}
-
-impl<T, D: Member, C: Member, Cb: Member> IntoRpc<D, C, Cb> for (PluginModuleInfo, T)
-where
-    T: ModuleContext<Info = PluginModuleInfo>,
-    ModuleServer<T>: Clone + QueueInteractionsServer<D, C, Cb> + PluginModuleServer<D, C, Cb>,
-{
-    type RpcModule = ModuleServer<T>;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
-        let mut rpcs = QueueInteractionsServer::into_rpc(t.clone());
-        rpcs.merge(PluginModuleServer::into_rpc(t)).unwrap();
-        rpcs
-    }
-}
-
-impl<T, D: Member, C: Member, Cb: Member> IntoRpc<D, C, Cb> for (ChainModuleInfo, T)
-where
-    T: ModuleContext<Info = ChainModuleInfo>,
-    ModuleServer<T>: Clone + QueueInteractionsServer<D, C, Cb> + ChainModuleServer<D, C, Cb>,
-{
-    type RpcModule = ModuleServer<T>;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
-        let mut rpcs = QueueInteractionsServer::into_rpc(t.clone());
-        rpcs.merge(ChainModuleServer::into_rpc(t)).unwrap();
-        rpcs
-    }
-}
-
-impl<T, D: Member, C: Member, Cb: Member> IntoRpc<D, C, Cb> for (ClientModuleInfo, T)
-where
-    T: ModuleContext<Info = ClientModuleInfo>,
-    ModuleServer<T>: Clone + QueueInteractionsServer<D, C, Cb> + ClientModuleServer<D, C, Cb>,
-{
-    type RpcModule = ModuleServer<T>;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
-        let mut rpcs = QueueInteractionsServer::into_rpc(t.clone());
-        rpcs.merge(ClientModuleServer::into_rpc(t)).unwrap();
-        rpcs
-    }
-}
-
-impl<T, D: Member, C: Member, Cb: Member> IntoRpc<D, C, Cb> for (ConsensusModuleInfo, T)
-where
-    T: ModuleContext<Info = ConsensusModuleInfo>,
-    ModuleServer<T>: Clone + QueueInteractionsServer<D, C, Cb> + ConsensusModuleServer<D, C, Cb>,
-{
-    type RpcModule = ModuleServer<T>;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
-        let mut rpcs = QueueInteractionsServer::into_rpc(t.clone());
-        rpcs.merge(ConsensusModuleServer::into_rpc(t)).unwrap();
-        rpcs
-    }
-}
-
-#[rpc(
-    client,
-    server,
-    client_bounds(Self: QueueInteractionsClient<D, C, Cb>),
-    server_bounds(Self: QueueInteractionsServer<D, C, Cb>),
-    namespace = "plugin"
-)]
-pub trait PluginModule<D: Member, C: Member, Cb: Member> {
-    #[method(name = "runPass")]
-    async fn run_pass(
-        &self,
-        msgs: Vec<Op<VoyagerMessage<D, C, Cb>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<D, C, Cb>>>;
-}
-
 /// Chain modules provide functionality to interact with a single chain,
 /// providing interfaces to interact with the
-#[rpc(
-    client,
-    server,
-    client_bounds(Self: QueueInteractionsClient<D, C, Cb>),
-    server_bounds(Self: QueueInteractionsServer<D, C, Cb>),
-    namespace = "chain"
-)]
-pub trait ChainModule<D: Member, C: Member, Cb: Member> {
-    /// Register this chain module with Voyager, returning the chain id of the
-    /// chain this module tracks.
-    // TODO: This can probably be removed
-    #[method(name = "chainId")]
-    fn chain_id(&self) -> RpcResult<ChainId<'static>>;
-
+#[rpc(client, server, namespace = "chain")]
+pub trait ChainModule {
     /// Query the latest finalized height of this chain.
-    #[method(name = "queryLatestHeight")]
+    #[method(name = "queryLatestHeight", with_extensions)]
     async fn query_latest_height(&self) -> RpcResult<Height>;
 
     /// Query the latest (non-finalized) height of this chain.
-    #[method(name = "queryLatestHeightAsDestination")]
+    #[method(name = "queryLatestHeightAsDestination", with_extensions)]
     async fn query_latest_height_as_destination(&self) -> RpcResult<Height>;
 
     /// Query the latest finalized timestamp of this chain.
-    #[method(name = "queryLatestTimestamp")]
+    #[method(name = "queryLatestTimestamp", with_extensions)]
     // TODO: Make this return a better type than i64
     async fn query_latest_timestamp(&self) -> RpcResult<i64>;
-
-    #[method(name = "fetchBlockRange")]
-    async fn fetch_block_range(
-        &self,
-        from_height: Height,
-        to_height: Height,
-    ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 
     /// Query the latest raw, unfinalized trusted client state of the client
     /// `client_id`.
     // SEE: <https://github.com/unionlabs/union/issues/1813>
-    #[method(name = "queryRawUnfinalizedTrustedClientState")]
+    #[method(name = "queryRawUnfinalizedTrustedClientState", with_extensions)]
     async fn query_raw_unfinalized_trusted_client_state(
         &self,
         client_id: ClientId,
     ) -> RpcResult<RawClientState<'static>>;
 
-    // TODO: For the state and proof query functions, it would be best if they
-    // weren't concerned with the encoding of them; this should be handed off to a
-    // different module
-
     /// Fetch the client info of a client on this chain.
-    #[method(name = "clientInfo")]
+    #[method(name = "clientInfo", with_extensions)]
     async fn client_info(&self, client_id: ClientId) -> RpcResult<ClientInfo>;
 
     /// Query IBC state on this chain, at the specified [`Height`], returning
     /// the value as a JSON [`Value`].
-    #[method(name = "queryIbcState")]
+    #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state(&self, at: Height, path: Path) -> RpcResult<Value>;
 
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the proof as a JSON [`Value`].
-    #[method(name = "queryIbcProof")]
+    #[method(name = "queryIbcProof", with_extensions)]
     async fn query_ibc_proof(&self, at: Height, path: Path) -> RpcResult<Value>;
 }
 
@@ -252,7 +241,7 @@ pub struct RawClientState<'a> {
     pub bytes: Cow<'a, [u8]>,
 }
 
-pub trait ChainModuleClientExt: ChainModuleClient<Value, Value, Value> + Send + Sync {
+pub trait ChainModuleClientExt: ChainModuleClient + Send + Sync {
     // TODO: Maybe rename? Cor likes "_checked"
     // TODO: Maybe take by ref here?
     #[allow(async_fn_in_trait)]
@@ -280,29 +269,18 @@ pub trait ChainModuleClientExt: ChainModuleClient<Value, Value, Value> + Send + 
     }
 }
 
-impl<T> ChainModuleClientExt for T where T: ChainModuleClient<Value, Value, Value> + Send + Sync {}
+impl<T> ChainModuleClientExt for T where T: ChainModuleClient + Send + Sync {}
 
 /// Client modules provide functionality to interact with a single light client
 /// type, on a single IBC interface. This can also be thought of as a "client
 /// codec", as all of the endpoints it exposes are related to encoding and
 /// decoding state.
-#[rpc(
-    client,
-    server,
-    client_bounds(Self: QueueInteractionsClient<D, C, Cb>),
-    server_bounds(Self: QueueInteractionsServer<D, C, Cb>),
-    namespace = "client"
-)]
+#[rpc(client, server, namespace = "client")]
 // TODO: Rename to client codec module
-pub trait ClientModule<D: Member, C: Member, Cb: Member> {
-    /// Register this module with Voyager.
-    // TODO: This can probably be removed
-    #[method(name = "supportedInterface")]
-    async fn supported_interface(&self) -> RpcResult<ClientModuleInfo>;
-
+pub trait ClientModule {
     /// Decode the raw client state, returning the decoded metadata common
     /// between all client state types.
-    #[method(name = "decodeClientStateMeta")]
+    #[method(name = "decodeClientStateMeta", with_extensions)]
     async fn decode_client_state_meta(
         &self,
         client_state: Hex<Vec<u8>>,
@@ -310,22 +288,22 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
 
     /// Decode the raw consensus state, returning the decoded metadata common
     /// between all consensus state types.
-    #[method(name = "decodeConsensusStateMeta")]
+    #[method(name = "decodeConsensusStateMeta", with_extensions)]
     async fn decode_consensus_state_meta(
         &self,
         consensus_state: Hex<Vec<u8>>,
     ) -> RpcResult<ConsensusStateMeta>;
 
     /// Decode the raw client state, returning the decoded state as JSON.
-    #[method(name = "decodeClientState")]
+    #[method(name = "decodeClientState", with_extensions)]
     async fn decode_client_state(&self, client_state: Hex<Vec<u8>>) -> RpcResult<Value>;
 
     /// Decode the raw consensus state, returning the decoded state as JSON.
-    #[method(name = "decodeConsensusState")]
+    #[method(name = "decodeConsensusState", with_extensions)]
     async fn decode_consensus_state(&self, consensus_state: Hex<Vec<u8>>) -> RpcResult<Value>;
 
     /// Encode the client state, provided as JSON.
-    #[method(name = "encodeClientState")]
+    #[method(name = "encodeClientState", with_extensions)]
     async fn encode_client_state(
         &self,
         client_state: Value,
@@ -333,7 +311,7 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     ) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Encode the consensus state, provided as JSON.
-    #[method(name = "encodeConsensusState")]
+    #[method(name = "encodeConsensusState", with_extensions)]
     async fn encode_consensus_state(&self, consensus_state: Value) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Re-encode the client state of the specified counterparty client type.
@@ -341,7 +319,7 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     /// This is required due to limitations with ibc-go v8, and can likely be
     /// removed once support for that IBC interface is dropped. In most cases,
     /// this will simply be a pass-through of the bytes provided.
-    #[method(name = "reencodeCounterpartyClientState")]
+    #[method(name = "reencodeCounterpartyClientState", with_extensions)]
     async fn reencode_counterparty_client_state(
         &self,
         client_state: Hex<Vec<u8>>,
@@ -353,7 +331,7 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     /// This is required due to limitations with ibc-go v8, and can likely be
     /// removed once support for that IBC interface is dropped. In most cases,
     /// this will simply be a pass-through of the bytes provided.
-    #[method(name = "reencodeCounterpartyConsensusState")]
+    #[method(name = "reencodeCounterpartyConsensusState", with_extensions)]
     async fn reencode_counterparty_consensus_state(
         &self,
         consensus_state: Hex<Vec<u8>>,
@@ -361,57 +339,29 @@ pub trait ClientModule<D: Member, C: Member, Cb: Member> {
     ) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Encode the header, provided as JSON.
-    #[method(name = "encodeHeader")]
+    #[method(name = "encodeHeader", with_extensions)]
     async fn encode_header(&self, header: Value) -> RpcResult<Hex<Vec<u8>>>;
 
     /// Encode the proof, provided as JSON.
-    #[method(name = "encodeProof")]
+    #[method(name = "encodeProof", with_extensions)]
     async fn encode_proof(&self, proof: Value) -> RpcResult<Hex<Vec<u8>>>;
 }
 
 /// Client modules provide functionality for interacting with a specific chain
 /// consensus.
-#[rpc(
-    client,
-    server,
-    client_bounds(Self: QueueInteractionsClient<D, C, Cb>),
-    server_bounds(Self: QueueInteractionsServer<D, C, Cb>),
-    namespace = "consensus"
-)]
-pub trait ConsensusModule<D: Member, C: Member, Cb: Member> {
-    /// Register this module with Voyager.
-    // TODO: This can probably be removed
-    #[method(name = "info")]
-    async fn consensus_info(&self) -> RpcResult<ConsensusModuleInfo>;
-
+#[rpc(client, server, namespace = "consensus")]
+pub trait ConsensusModule {
     /// The client state of this chain at the specified [`Height`].
     ///
     /// Returns the client state value as JSON, which will then be encoded to
     /// bytes by a ClientModule.
-    #[method(name = "selfClientState")]
+    #[method(name = "selfClientState", with_extensions)]
     async fn self_client_state(&self, height: Height) -> RpcResult<Value>;
 
     /// The consensus state of this chain at the specified [`Height`].
     ///
     /// Returns the consensus state value as JSON, which will then be encoded to
     /// bytes by a ClientModule.
-    #[method(name = "selfConsensusState")]
+    #[method(name = "selfConsensusState", with_extensions)]
     async fn self_consensus_state(&self, height: Height) -> RpcResult<Value>;
-
-    /// Generate a client update for this module's client type.
-    ///
-    /// # Implementor's Note
-    ///
-    /// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data.
-    /// This is the entrypoint called when a client update is requested, and
-    /// is intended to be called in the queue of an
-    /// [`AggregateMsgUpdateClientsFromOrderedHeaders`] message, which will
-    /// be used to build the actual [`MsgUpdateClient`]s.
-    #[method(name = "fetchUpdateHeaders")]
-    async fn fetch_update_headers(
-        &self,
-        update_from: Height,
-        update_to: Height,
-        counterparty_chain_id: ChainId<'static>,
-    ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
 }
