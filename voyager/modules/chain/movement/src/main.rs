@@ -11,7 +11,6 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
-use sha2::{Digest as _, Sha256};
 use tracing::{debug, error, instrument};
 use unionlabs::{
     aptos::{
@@ -265,11 +264,7 @@ impl ChainModuleServer for Module {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),
-                        (Sha256::new()
-                            .chain_update(path.to_string().into_bytes())
-                            .finalize()
-                            .to_vec()
-                            .into(),),
+                        (path.to_string().into_bytes().into(),),
                         Some(ledger_version),
                     )
                     .await
@@ -277,16 +272,23 @@ impl ChainModuleServer for Module {
 
                 into_value(<H256>::try_from(commitment.0).unwrap())
             }
-            Path::Acknowledgement(_) => todo!(),
+            Path::Acknowledgement(path) => {
+                let commitment = self
+                    .get_commitment(
+                        self.ibc_handler_address.into(),
+                        (path.to_string().into_bytes().into(),),
+                        Some(ledger_version),
+                    )
+                    .await
+                    .map_err(rest_error_to_rpc_error)?;
+
+                into_value(<H256>::try_from(commitment.0).unwrap())
+            }
             Path::Receipt(path) => {
                 let commitment = self
                     .get_commitment(
                         self.ibc_handler_address.into(),
-                        (Sha256::new()
-                            .chain_update(path.to_string().into_bytes())
-                            .finalize()
-                            .to_vec()
-                            .into(),),
+                        (path.to_string().into_bytes().into(),),
                         Some(ledger_version),
                     )
                     .await
@@ -376,8 +378,6 @@ impl ChainModuleServer for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-        let client = reqwest::Client::new();
-
         let ledger_version = self.ledger_version_of_height(at.revision_height).await;
 
         let vault_addr = self
@@ -385,7 +385,7 @@ impl ChainModuleServer for Module {
             .await
             .unwrap();
 
-        let address_str = self
+        let _address_str = self
             .aptos_client
             .get_account_resource(
                 vault_addr.into(),
@@ -400,63 +400,22 @@ impl ChainModuleServer for Module {
             .as_str()
             .unwrap()
             .to_owned();
+        let _address = <H256>::new(U256::from_be_hex(_address_str).unwrap().to_be_bytes());
 
-        let address = <H256>::new(U256::from_be_hex(address_str).unwrap().to_be_bytes());
-
-        let req = format!(
-            "{base_url}/movement/v1/resource-proof/{key}/{address}/{height}",
-            base_url = self.movement_rpc_url,
-            key = hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
-            address = address,
-            height = at.revision_height,
-        );
-
-        let (state_value, proof): (
-            Option<aptos_types::state_store::state_value::StateValue>,
-            aptos_types::proof::SparseMerkleProof,
-        ) = client.get(req).send().await.unwrap().json().await.unwrap();
+        // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
+        // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
+        // let storage_proof = get_storage_proof(
+        //     &self.ctx.movement_rpc_url,
+        //     address,
+        //     hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
+        //     at.revision_height,
+        // ).await;
 
         Ok(into_value(StorageProof {
-            state_value: state_value.map(|s| {
-                let (metadata, data) = s.unpack();
-                match metadata.into_persistable() {
-                    None => StateValue::V0(data.to_vec()),
-                    Some(PersistedStateValueMetadata::V0 {
-                        deposit,
-                        creation_time_usecs,
-                    }) => StateValue::WithMetadata {
-                        data: data.to_vec(),
-                        metadata: StateValueMetadata::V0 {
-                            deposit,
-                            creation_time_usecs,
-                        },
-                    },
-                    Some(PersistedStateValueMetadata::V1 {
-                        slot_deposit,
-                        bytes_deposit,
-                        creation_time_usecs,
-                    }) => StateValue::WithMetadata {
-                        data: data.to_vec(),
-                        metadata: StateValueMetadata::V1 {
-                            slot_deposit,
-                            bytes_deposit,
-                            creation_time_usecs,
-                        },
-                    },
-                }
-            }),
+            state_value: None,
             proof: SparseMerkleProof {
-                leaf: proof.leaf().map(|leaf| SparseMerkleLeafNode {
-                    key: (*leaf.key().as_ref()).into(),
-                    value_hash: (*leaf.value_hash().as_ref()).into(),
-                }),
-                siblings: proof
-                    .siblings()
-                    .iter()
-                    .map(AsRef::as_ref)
-                    .copied()
-                    .map(Into::into)
-                    .collect(),
+                leaf: None,
+                siblings: Vec::new(),
             },
         }))
     }
@@ -568,5 +527,66 @@ pub fn convert_channel(channel: aptos_move_ibc::channel::Channel) -> Channel {
             .map(|hop| hop.parse().unwrap())
             .collect(),
         version: channel.version,
+    }
+}
+
+pub async fn get_storage_proof(
+    movement_rpc_url: &str,
+    address: H256,
+    key: String,
+    height: u64,
+) -> StorageProof {
+    let client = reqwest::Client::new();
+
+    let req =
+        format!("{movement_rpc_url}/movement/v1/table-item-with-proof/{address}/{key}/{height}",);
+
+    let (state_value, proof): (
+        Option<aptos_types::state_store::state_value::StateValue>,
+        aptos_types::proof::SparseMerkleProof,
+    ) = client.get(req).send().await.unwrap().json().await.unwrap();
+
+    StorageProof {
+        state_value: state_value.map(|s| {
+            let (metadata, data) = s.unpack();
+            match metadata.into_persistable() {
+                None => StateValue::V0(data.to_vec()),
+                Some(PersistedStateValueMetadata::V0 {
+                    deposit,
+                    creation_time_usecs,
+                }) => StateValue::WithMetadata {
+                    data: data.to_vec(),
+                    metadata: StateValueMetadata::V0 {
+                        deposit,
+                        creation_time_usecs,
+                    },
+                },
+                Some(PersistedStateValueMetadata::V1 {
+                    slot_deposit,
+                    bytes_deposit,
+                    creation_time_usecs,
+                }) => StateValue::WithMetadata {
+                    data: data.to_vec(),
+                    metadata: StateValueMetadata::V1 {
+                        slot_deposit,
+                        bytes_deposit,
+                        creation_time_usecs,
+                    },
+                },
+            }
+        }),
+        proof: SparseMerkleProof {
+            leaf: proof.leaf().map(|leaf| SparseMerkleLeafNode {
+                key: (*leaf.key().as_ref()).into(),
+                value_hash: (*leaf.value_hash().as_ref()).into(),
+            }),
+            siblings: proof
+                .siblings()
+                .iter()
+                .map(AsRef::as_ref)
+                .copied()
+                .map(Into::into)
+                .collect(),
+        },
     }
 }

@@ -250,7 +250,7 @@ module IBC::ibc {
         let client_id = generate_client_identifier(client_type);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let (status_code, client_state, consensus_state) = LightClient::create_client(
+        let (client_state, consensus_state) = LightClient::create_client(
             &get_ibc_signer(),
             client_id, 
             // from_bcs::to_bytes(client_state), 
@@ -258,8 +258,6 @@ module IBC::ibc {
             client_state, 
             consensus_state,
         );
-    
-        assert!(status_code == 0, status_code);
 
         // TODO(aeryz): fetch these status from proper exported consts
         assert!(LightClient::status(&client_id) == 0, E_CLIENT_NOT_ACTIVE);
@@ -562,12 +560,10 @@ module IBC::ibc {
             abort E_CLIENT_NOT_FOUND
         };
 
-        let (client_state, consensus_states, heights, err) = LightClient::update_client(
+        let (client_state, consensus_states, heights) = LightClient::update_client(
             client_id,
             client_message
         );
-
-        assert!(err == 0, err);
 
         let heights_len = vector::length(&heights); 
 
@@ -699,7 +695,7 @@ module IBC::ibc {
             proof_init,
             *channel::counterparty_port_id(&counterparty),
             *channel::counterparty_channel_id(&counterparty),
-            bcs::to_bytes(&expected_channel)
+            expected_channel
         );
         assert!(err == 0, E_INVALID_PROOF);
 
@@ -773,7 +769,7 @@ module IBC::ibc {
 
         let expected_counterparty = channel::new_counterparty(port_id, channel_id);
         let expected_channel = channel::new(
-            CHAN_STATE_INIT,
+            CHAN_STATE_TRYOPEN,
             channel::ordering(&chan),
             expected_counterparty,
             get_counterparty_hops(*vector::borrow(channel::connection_hops(&chan), 0)),
@@ -786,17 +782,16 @@ module IBC::ibc {
             proof_try,
             *channel::chan_counterparty_port_id(&chan),
             counterparty_channel_id,
-            bcs::to_bytes(&expected_channel)
+            expected_channel
         );
         assert!(err == 0, E_INVALID_PROOF);
-
-        update_channel_commitment(port_id, channel_id);
 
         channel::set_state(&mut chan, CHAN_STATE_OPEN);
         channel::set_version(&mut chan, counterparty_version);
         channel::set_chan_counterparty_channel_id(&mut chan, counterparty_channel_id);
 
         smart_table::upsert(&mut borrow_global_mut<IBCStore>(get_vault_addr()).channels, channel_port, chan);
+        update_channel_commitment(port_id, channel_id);
 
         event::emit(
             ChannelOpenAck {
@@ -847,7 +842,7 @@ module IBC::ibc {
             proof_ack,
             *channel::chan_counterparty_port_id(&channel),
             *channel::chan_counterparty_channel_id(&channel),
-            bcs::to_bytes(&expected_channel)
+            expected_channel
         );
         assert!(err == 0, E_INVALID_PROOF);
 
@@ -907,10 +902,9 @@ module IBC::ibc {
         };
 
         let packet_sequence = from_bcs::to_u64(
-            *table::borrow_with_default(
+            *table::borrow(
                 &store.commitments,
                 IBCCommitment::next_sequence_send_key(source_port, source_channel),
-                &bcs::to_bytes(&0u64)
             )
         );
         table::upsert(
@@ -1081,47 +1075,39 @@ module IBC::ibc {
         proof: vector<u8>,
         proof_height: height::Height
     ) acquires IBCStore {
-        if (object::create_object_address(&port_id, IBC_APP_SEED) != signer::address_of(ibc_app)) {
-            abort E_UNAUTHORIZED
-        };
+        assert!(object::create_object_address(&port_id, IBC_APP_SEED) == signer::address_of(ibc_app), E_UNAUTHORIZED);
+
+        let source_port_id = *packet::source_port(&packet);
+        let source_channel_id = *packet::source_channel(&packet);       
 
         let port_id = address_to_string(port_id);
-        if (port_id != *packet::source_port(&packet)) {
-            abort E_UNAUTHORIZED
-        };
+        assert!(port_id == *packet::source_port(&packet), E_UNAUTHORIZED);
 
-        let port_id = *packet::source_port(&packet);
-        let channel_id = *packet::source_channel(&packet);
-        
-        let channel = ensure_channel_state(port_id, channel_id);
+        let destination_port_id = *packet::destination_port(&packet);
+        let destination_channel_id = *packet::destination_channel(&packet);       
 
-        if (port_id != *channel::chan_counterparty_port_id(&channel)) {
-            abort E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH
-        };
-        if (channel_id != *channel::chan_counterparty_channel_id(&channel)) {
-            abort E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH
-        };
+        let channel = ensure_channel_state(source_port_id, source_channel_id);
+
+        assert!(destination_port_id != *channel::chan_counterparty_port_id(&channel), E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH);
+
+        assert!(destination_channel_id != *channel::chan_counterparty_channel_id(&channel), E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH);
 
         let connection = ensure_connection_state(*vector::borrow(channel::connection_hops(&channel), 0));
 
-        let packet_commitment_key = IBCCommitment::packet_key(port_id, channel_id, packet::sequence(&packet));
+        let packet_commitment_key = IBCCommitment::packet_key(source_port_id, source_channel_id, packet::sequence(&packet));
         let expected_packet_commitment = get_commitment(packet_commitment_key);
 
-        if (vector::length(&expected_packet_commitment) == 0) {
-            abort E_PACKET_COMMITMENT_NOT_FOUND
-        };
+        assert!(!vector::is_empty(&expected_packet_commitment), E_PACKET_COMMITMENT_NOT_FOUND);
 
-        if (expected_packet_commitment != packet::commitment(&packet)) {
-            abort E_INVALID_PACKET_COMMITMENT
-        };
+        assert!(expected_packet_commitment == packet::commitment(&packet), E_INVALID_PACKET_COMMITMENT);
 
         let err = verify_commitment(
             &connection,
             proof_height,
             proof,
             IBCCommitment::packet_acknowledgement_key(
-                *packet::destination_port(&packet),
-                *packet::destination_channel(&packet),
+                destination_port_id,
+                destination_channel_id,
                 packet::sequence(&packet)
             ),
             hash::sha2_256(acknowledgement)
@@ -1135,18 +1121,16 @@ module IBC::ibc {
             let expected_ack_sequence = from_bcs::to_u64(
                 *table::borrow_with_default(
                     &borrow_global<IBCStore>(get_vault_addr()).commitments,
-                    IBCCommitment::next_sequence_ack_key(port_id, channel_id),
+                    IBCCommitment::next_sequence_ack_key(source_port_id, source_channel_id),
                     &bcs::to_bytes(&0u64)
                 )
             );
 
-            if (expected_ack_sequence != packet::sequence(&packet)) {
-                abort E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH
-            };
+            assert!(expected_ack_sequence == packet::sequence(&packet), E_PACKET_SEQUENCE_NEXT_SEQUENCE_MISMATCH);
 
             table::upsert(
                 &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
-                IBCCommitment::next_sequence_ack_key(port_id, channel_id),
+                IBCCommitment::next_sequence_ack_key(source_port_id, source_channel_id),
                 bcs::to_bytes(&(expected_ack_sequence + 1))
             );
         };
@@ -1169,14 +1153,8 @@ module IBC::ibc {
     ) acquires IBCStore {
         let channel = ensure_channel_state(port_id, channel_id);
 
-        if (*packet::destination_port(&packet) != *channel::chan_counterparty_port_id(&channel)) {
-            std::debug::print(packet::destination_port(&packet));
-            std::debug::print(channel::chan_counterparty_port_id(&channel));
-            abort E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH
-        };
-        if (*packet::destination_channel(&packet) != *channel::chan_counterparty_channel_id(&channel)) {
-            abort E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH
-        };
+        assert!(*packet::destination_port(&packet) == *channel::chan_counterparty_port_id(&channel), E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH);
+        assert!(*packet::destination_channel(&packet) == *channel::chan_counterparty_channel_id(&channel), E_DESTINATION_AND_COUNTERPARTY_CHANNEL_MISMATCH);
 
         let connection_hop = *vector::borrow(channel::connection_hops(&channel), 0);
         let connection = ensure_connection_state(connection_hop);
@@ -1187,34 +1165,27 @@ module IBC::ibc {
             packet::sequence(&packet)
         );
         let expected_packet_commitment = get_commitment(packet_commitment_key);
-        if (vector::length(&expected_packet_commitment) == 0) {
-            abort E_PACKET_COMMITMENT_NOT_FOUND
-        };
+        assert!(!vector::is_empty(&expected_packet_commitment), E_PACKET_COMMITMENT_NOT_FOUND);
 
         let packet_commitment = packet::commitment(&packet);
-        if (expected_packet_commitment != packet_commitment) {
-            abort E_INVALID_PACKET_COMMITMENT
-        };
+        assert!(expected_packet_commitment == packet_commitment, E_INVALID_PACKET_COMMITMENT);
 
         let proof_timestamp = LightClient::get_timestamp_at_height(
             *connection_end::client_id(&connection),
             proof_height
         );
-        if (proof_timestamp == 0) {
-            abort E_LATEST_TIMESTAMP_NOT_FOUND
+        assert!(proof_timestamp != 0, E_LATEST_TIMESTAMP_NOT_FOUND);
+
+        if (packet::timeout_timestamp(&packet) != 0) {
+            assert!(packet::timeout_timestamp(&packet) < proof_timestamp, E_TIMESTAMP_TIMEOUT_NOT_REACHED);
         };
 
-        if (packet::timeout_timestamp(&packet) != 0 && packet::timeout_timestamp(&packet) >= proof_timestamp) {
-            abort E_TIMESTAMP_TIMEOUT_NOT_REACHED
-        };
-        if (!height::is_zero(&packet::timeout_height(&packet)) && height::gte(&packet::timeout_height(&packet), &proof_height)) {
-            abort E_TIMEOUT_HEIGHT_NOT_REACHED
+        if (!height::is_zero(&packet::timeout_height(&packet))) {
+            assert!(height::lt(&packet::timeout_height(&packet), &proof_height), E_TIMEOUT_HEIGHT_NOT_REACHED);
         };
 
         if (channel::ordering(&channel) == CHAN_ORDERING_ORDERED) {
-            if (next_sequence_recv <= packet::sequence(&packet)) {
-                abort E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE
-            };
+            assert!(next_sequence_recv > packet::sequence(&packet), E_NEXT_SEQUENCE_MUST_BE_GREATER_THAN_TIMEOUT_SEQUENCE);
             let err = verify_commitment(
                 &connection,
                 proof_height,
@@ -1226,7 +1197,7 @@ module IBC::ibc {
                 bcs::to_bytes(&next_sequence_recv)
             );
             if (err != 0) {
-                abort E_INVALID_PROOF
+                abort err
             };
             channel::set_state(&mut channel, CHAN_STATE_CLOSED);
         } else if (channel::ordering(&channel) == CHAN_ORDERING_UNORDERED) {
@@ -1241,7 +1212,7 @@ module IBC::ibc {
                 )
             );
             if (err != 0) {
-                abort E_INVALID_PROOF
+                abort err
             };
         } else {
             abort E_UNKNOWN_CHANNEL_ORDERING
@@ -1749,7 +1720,7 @@ module IBC::ibc {
         proof: vector<u8>,
         port_id: String,
         channel_id: String,
-        channel_bytes: vector<u8>
+        channel: Channel
     ): u64 {
         let path = IBCCommitment::channel_key(port_id, channel_id);
         LightClient::verify_membership(
@@ -1758,7 +1729,7 @@ module IBC::ibc {
             proof,
             *connection_end::conn_counterparty_key_prefix(connection),
             path,
-            channel_bytes
+            channel::encode_proto(channel),
         )
     }
 

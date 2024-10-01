@@ -1163,6 +1163,7 @@ staticcheck
 staticlib
 statix
 stdenv
+stdlib
 storemetrics
 storetypes
 storyblok
@@ -1296,6 +1297,7 @@ undelegate
 undelegations
 unergonomic
 unescrow
+unescrowed
 unfinalized
 uninit
 unionbuild
@@ -1340,6 +1342,7 @@ upgradeclient
 upgradekeeper
 upgradetypes
 upsert
+upstreamed
 urql
 ursi
 usecs

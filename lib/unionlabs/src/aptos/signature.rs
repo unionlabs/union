@@ -8,8 +8,8 @@ use crate::{bls::BlsSignature, errors::InvalidLength};
     from
 ))]
 pub struct AggregateSignature {
-    validator_bitmask: ValidatorBitmask,
-    sig: Option<BlsSignature>,
+    pub validator_bitmask: ValidatorBitmask,
+    pub sig: Option<BlsSignature>,
 }
 
 #[model]

@@ -1,4 +1,6 @@
 module IBC::LightClient {
+    use IBC::proto_utils;
+    use std::option;
     use std::vector;
     use std::bcs;
     use std::string::{Self, String};
@@ -9,6 +11,16 @@ module IBC::LightClient {
     use IBC::ics23;
     use IBC::bcs_utils;
     use IBC::groth16_verifier::{Self, ZKP};
+
+    const E_INVALID_CLIENT_STATE: u64 = 35100;
+    const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
+    const E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT: u64 = 35102;
+    const E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT: u64 = 35103;
+    const E_HEADER_EXCEEDED_TRUSTING_PERIOD: u64 = 35104;
+    const E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT: u64 = 35105;
+    const E_VALIDATORS_HASH_MISMATCH: u64 = 35106;
+    const E_INVALID_ZKP: u64 = 35107;
+    const E_FROZEN_CLIENT: u64 = 35108;
 
     struct State has key, store {
         client_state: ClientState,
@@ -59,17 +71,16 @@ module IBC::LightClient {
         client_id: String, 
         client_state_bytes: vector<u8>, 
         consensus_state_bytes: vector<u8>,
-    ): (u64, vector<u8>, vector<u8>) {
+    ): (vector<u8>, vector<u8>) {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
         
-        if (height::get_revision_height(&client_state.latest_height) == 0 || consensus_state.timestamp == 0) {
-            return (1, vector::empty(), vector::empty())
-        };
+        assert!(
+            height::get_revision_height(&client_state.latest_height) != 0 &&
+            consensus_state.timestamp != 0, E_INVALID_CLIENT_STATE
+        );
 
-        if (string::length(&client_state.chain_id) > 31) {
-            return (1, vector::empty(), vector::empty())
-        };
+        assert!(string::length(&client_state.chain_id) <= 31, E_INVALID_CLIENT_STATE);
 
         let consensus_states = smart_table::new<height::Height, ConsensusState>();
         smart_table::upsert<height::Height, ConsensusState>(&mut consensus_states, client_state.latest_height, consensus_state);
@@ -84,7 +95,7 @@ module IBC::LightClient {
 
         move_to(&client_signer, state);
         
-        (0, client_state_bytes, consensus_state_bytes)
+        (client_state_bytes, consensus_state_bytes)
     }
 
     public fun latest_height(
@@ -99,69 +110,48 @@ module IBC::LightClient {
         header: &Header,
         state: &State,
         consensus_state: &ConsensusState
-    ): u64 {
-        if (consensus_state.timestamp == 0) {
-            return 1
-        };
+    ) {
+        assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
 
         let untrusted_height_number = header.signed_header.height;
         let trusted_height_number = height::get_revision_height(&header.trusted_height);
 
-        if (untrusted_height_number <= trusted_height_number) {
-            return 2
-        };
+        assert!(untrusted_height_number > trusted_height_number, E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT);
 
         let trusted_timestamp = consensus_state.timestamp;
         let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
-        if (untrusted_timestamp <= trusted_timestamp) {
-            return 3  
-        };
+        assert!(untrusted_timestamp > trusted_timestamp, E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT);
 
         let current_time = timestamp::now_seconds() * 1_000_000_000;
-        if (untrusted_timestamp> (current_time + state.client_state.trusting_period)) {
-            return 4  
-        };
+        assert!(untrusted_timestamp < current_time + state.client_state.trusting_period, E_HEADER_EXCEEDED_TRUSTING_PERIOD);
 
-        if (untrusted_timestamp >= current_time + state.client_state.max_clock_drift) {
-            return 5  
-        };
+        assert!(untrusted_timestamp < current_time + state.client_state.max_clock_drift, E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT);
 
         if (untrusted_height_number == trusted_height_number + 1) {
-            if (header.signed_header.validators_hash != consensus_state.next_validators_hash) {
-                return 6
-            };
+            assert!(header.signed_header.validators_hash == consensus_state.next_validators_hash, E_VALIDATORS_HASH_MISMATCH);
         };
 
-        if (!groth16_verifier::verify_zkp(
+        assert!(groth16_verifier::verify_zkp(
             &state.client_state.chain_id,
             &consensus_state.next_validators_hash,
             light_header_as_input_hash(&header.signed_header),
             &header.zero_knowledge_proof,
-        )) {
-            return 7
-        };
-
-        0
+        ), E_INVALID_ZKP);
     }
 
     public fun update_client(
         client_id: String,
         client_msg: vector<u8>
-    ): (vector<u8>, vector<vector<u8>>, vector<height::Height>, u64) acquires State {
+    ): (vector<u8>, vector<vector<u8>>, vector<height::Height>) acquires State {
         let header = decode_header(client_msg);
 
         let state = borrow_global_mut<State>(get_client_address(&client_id));
 
-        if (!height::is_zero(&state.client_state.frozen_height)) {
-            return (vector::empty(), vector::empty(), vector::empty(), 8)
-        };
+        assert!(height::is_zero(&state.client_state.frozen_height), E_FROZEN_CLIENT);
 
         let consensus_state = smart_table::borrow<height::Height, ConsensusState>(&state.consensus_states, header.trusted_height);
 
-        let err = verify_header(&header, state, consensus_state);
-        if (err != 0) {
-            return (vector::empty(), vector::empty(), vector::empty(), err)
-        };
+        verify_header(&header, state, consensus_state);
 
         let untrusted_height_number = header.signed_header.height;
         let untrusted_timestamp = header.signed_header.time.seconds * 1_000_000_000 + (header.signed_header.time.nanos as u64);
@@ -188,7 +178,6 @@ module IBC::LightClient {
             vector<height::Height>[
                 new_height
             ],
-            0
         )
     }
 
@@ -208,7 +197,9 @@ module IBC::LightClient {
             prefix,
             path,
             value
-        )
+        );
+
+        0
     }
 
     public fun verify_non_membership(
@@ -275,10 +266,12 @@ module IBC::LightClient {
 
 
     public fun get_timestamp_at_height(
-        _client_id: String,
-        _height: height::Height
-    ): u64 {
-        1
+        client_id: String,
+        height: height::Height
+    ): u64 acquires State {
+        let state = borrow_global<State>(get_client_address(&client_id));
+        let consensus_state = smart_table::borrow(&state.consensus_states, height);
+        consensus_state.timestamp
     }
 
     public fun get_client_state(client_id: String): vector<u8> acquires State {

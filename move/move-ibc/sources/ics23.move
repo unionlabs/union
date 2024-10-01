@@ -4,6 +4,18 @@ module IBC::ics23 {
     use std::hash;
     use IBC::bcs_utils::{Self, BcsBuf};
     use IBC::connection_end;
+    use IBC::proto_utils;
+
+    const E_EMPTY_LEAF_PREFIX: u64 = 35200;
+    const E_EMPTY_LEAF_KEY: u64 = 35201;
+    const E_EMPTY_INNER_KEY: u64 = 35202;
+    const E_EMPTY_CHILD: u64 = 35203;
+    const E_PROOF_KEY_MISMATCH: u64 = 35204;
+    const E_PROOF_VALUE_MISMATCH: u64 = 35205;
+    const E_COMMITMENT_ROOT_MISMATCH: u64 = 35206;
+    const E_INVALID_LEAF_PREFIX: u64 = 35207;
+    const E_INVALID_INNER_PREFIX: u64 = 35208;
+    const E_EMPTY_INNER_VALUE: u64 = 35209;
 
     struct MembershipProof has drop {
         sub_proof: ExistenceProof,
@@ -57,22 +69,15 @@ module IBC::ics23 {
         prefix: vector<u8>,
         key: vector<u8>,
         value: vector<u8>,
-    ): u64 {
-        let (subroot, err) = calculate_existence_root(&proof.sub_proof);
-        if (err != 0) {
-            return err
-        };
+    ) {
+        let subroot = calculate_existence_root(&proof.sub_proof);
 
-        let err = verify_no_root_check(
+        verify_no_root_check(
             &proof.sub_proof,
             iavl_proof_spec(),
             key,
             value,
         );
-
-        if (err != 0) {
-            return err
-        };
 
         verify_existence(
             &proof.top_level_proof,
@@ -80,7 +85,7 @@ module IBC::ics23 {
             root,
             prefix,
             subroot,
-        )
+        );
     }
 
     fun verify_existence(
@@ -89,30 +94,16 @@ module IBC::ics23 {
         commitment_root: vector<u8>,
         key: vector<u8>,
         value: vector<u8>,
-    ): u64 {
-        if (key != proof.key) {
-            return 1000
-        };
+    ) {
+        assert!(key == proof.key, E_PROOF_KEY_MISMATCH);
 
-        if (value != proof.value) {
-            return 2000
-        };
+        assert!(value == proof.value, E_PROOF_VALUE_MISMATCH);
 
-        let err = check_against_spec(proof, proof_spec);
-        if (err != 0) {
-            return err
-        };
+        check_against_spec(proof, proof_spec);
 
-        let (root, err) = calculate_existence_root(proof);
-        if (err != 0) {
-            return err
-        };
+        let root = calculate_existence_root(proof);
 
-        if (root != commitment_root) {
-            return 3000
-        };
-
-        0
+        assert!(root == commitment_root, E_COMMITMENT_ROOT_MISMATCH);
     }
 
     fun verify_no_root_check(
@@ -120,78 +111,54 @@ module IBC::ics23 {
         proof_spec: ProofSpec,
         key: vector<u8>,
         value: vector<u8>,
-    ): u64 {
-        if (key != proof.key) {
-            return 200
-        };
+    ) {
+        assert!(key == proof.key, E_PROOF_KEY_MISMATCH);
 
-        if (value != proof.value) {
-            return 300
-        };
+        assert!(value == proof.value, E_PROOF_VALUE_MISMATCH);
 
-        check_against_spec(proof, proof_spec)
+        check_against_spec(proof, proof_spec);
     }
 
-    fun check_against_spec(proof: &ExistenceProof, proof_spec: ProofSpec): u64 {
-        if (vector::is_empty(&proof.leaf_prefix)) {
-            return 400
-        };
+    fun check_against_spec(proof: &ExistenceProof, proof_spec: ProofSpec) {
+        assert!(!vector::is_empty(&proof.leaf_prefix), E_EMPTY_LEAF_PREFIX);
 
-        if (*vector::borrow(&proof.leaf_prefix, 0) != 0) {
-            return 500
-        };
+        assert!(*vector::borrow(&proof.leaf_prefix, 0) == 0, E_INVALID_LEAF_PREFIX);
 
         let max = proof_spec.max_prefix_length + proof_spec.child_size;
         let i = 0;
         while (i < vector::length(&proof.path)) {
             let inner_op = vector::borrow(&proof.path, i);
-            if (vector::length(&inner_op.prefix) < proof_spec.min_prefix_length 
-                    || *vector::borrow(&inner_op.prefix, 0) == 0 
-                    || vector::length(&inner_op.prefix) > max) {
-                return 600
-            };
+            assert!(vector::length(&inner_op.prefix) >= proof_spec.min_prefix_length 
+                    && *vector::borrow(&inner_op.prefix, 0) != 0 
+                    || vector::length(&inner_op.prefix) <= max, E_INVALID_INNER_PREFIX);
             
             i = i + 1;
         };
-
-        0
     }
 
-    fun calculate_existence_root(proof: &ExistenceProof): (vector<u8>, u64) {
-        if (vector::length(&proof.leaf_prefix) == 0) {
-            return (vector::empty(), 700)
-        };
+    fun calculate_existence_root(proof: &ExistenceProof): vector<u8> {
+        assert!(!vector::is_empty(&proof.leaf_prefix), E_EMPTY_LEAF_PREFIX);
 
-        let (root, err) = apply_leaf_op(&proof.leaf_prefix, &proof.key, &proof.value);
-        if (err != 0) {
-            return (vector::empty(), err)
-        };
+        let root = apply_leaf_op(&proof.leaf_prefix, &proof.key, &proof.value);
 
         let i = 0;
         while (i < vector::length(&proof.path)) {
-            (root, err) = apply_inner_op(*vector::borrow(&proof.path, i), root);
-            if (err != 0) {
-                return (vector::empty(), err)
-            };
+            root = apply_inner_op(*vector::borrow(&proof.path, i), root);
             i = i + 1;
         };
 
-        (root, 0)
+        root
     }
 
-    fun apply_leaf_op(prefix: &vector<u8>, key: &vector<u8>, value: &vector<u8>): (vector<u8>, u64) {
-        if (vector::is_empty(key)) {
-            return (vector::empty(), 8)
-        };
+    fun apply_leaf_op(prefix: &vector<u8>, key: &vector<u8>, value: &vector<u8>): vector<u8> {
+        assert!(!vector::is_empty(key), E_EMPTY_INNER_KEY);
         
-        if (vector::is_empty(value)) {
-            return (vector::empty(), 9)
-        };
+        assert!(!vector::is_empty(value), E_EMPTY_INNER_VALUE);
 
-        let encoded_key = varint(vector::length(key));
+        let encoded_key = proto_utils::encode_varint(vector::length(key));
 
         let hashed_value = hash::sha2_256(*value);
-        let encoded_value = varint(32);
+        let encoded_value = proto_utils::encode_varint(32);
 
         let hash_data: vector<u8> = vector::empty();
         vector::append(&mut hash_data, *prefix);
@@ -200,35 +167,17 @@ module IBC::ics23 {
         vector::append(&mut hash_data, encoded_value);
         vector::append(&mut hash_data, hashed_value);
 
-        (hash::sha2_256(hash_data), 0)
+        hash::sha2_256(hash_data)
     }
 
-    fun apply_inner_op(inner_op: InnerOp, child: vector<u8>): (vector<u8>, u64) {
-        if (vector::is_empty(&child)) {
-            return (vector::empty(), 10)
-        };
+    fun apply_inner_op(inner_op: InnerOp, child: vector<u8>): vector<u8> {
+        assert!(!vector::is_empty(&child), E_EMPTY_CHILD);
 
         let pre_image = inner_op.prefix;
         vector::append(&mut pre_image, child);
         vector::append(&mut pre_image, inner_op.suffix);
 
-        (hash::sha2_256(pre_image), 0)
-    }
-
-    fun varint(value: u64): vector<u8> {
-        let buf: vector<u8> = vector::empty();
-        let i = 0;
-        while (i < 10) {
-            if (value < 0x80) {
-                vector::push_back(&mut buf, (value as u8));
-                break
-            } else {
-                vector::push_back(&mut buf, (((value & 0x7F) | 0x80) as u8));
-                value = value >> 7;
-            };
-            i = i + 1;
-        };
-        buf
+        hash::sha2_256(pre_image)
     }
 
     public fun decode_membership_proof(buf: vector<u8>): MembershipProof {

@@ -1,0 +1,22 @@
+[package]
+authors = []
+name    = "ucs01-relay"
+version = "1.0.0"
+
+[addresses]
+IBC          = "_"
+UCS01        = "_"
+zero_account = "0000000000000000000000000000000000000000000000000000000000000000"
+
+[dev-addresses]
+IBC   = "0x22222"
+UCS01 = "0x4444444444444"
+
+[dependencies.AptosFramework]
+git    = "https://github.com/aeryz/aptos-core.git"
+rev    = "movement"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dependencies]
+# AptosStdlib = { git = "https://github.com/aeryz/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "movement" }
+ibc = { local = "../move-ibc" }

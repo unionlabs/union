@@ -6,10 +6,15 @@ use macros::model;
 use sha2::Digest;
 
 use super::{
+    block_info::BlockInfo,
     epoch_change::{EpochChangeProof, TryFromEpochChangeProof},
     ledger_info::{LedgerInfo, LedgerInfoWithSignatures, TryFromLedgerInfoWithSignatures},
+    signature::AggregateSignature,
 };
-use crate::errors::{required, MissingField};
+use crate::{
+    errors::{required, MissingField},
+    hash::hash_v2::Hash,
+};
 
 /// A convenience type for the collection of sub-proofs that constitute a
 /// response to a `get_state_proof` request.
@@ -26,6 +31,36 @@ use crate::errors::{required, MissingField};
 pub struct StateProof {
     pub latest_li_w_sigs: LedgerInfoWithSignatures,
     pub epoch_changes: EpochChangeProof,
+}
+
+// TODO(aeryz): only for testing purposes, will remove this once we have state proofs
+impl Default for StateProof {
+    fn default() -> Self {
+        Self {
+            latest_li_w_sigs: LedgerInfoWithSignatures::V0(super::ledger_info::LedgerInfoWithV0 {
+                ledger_info: LedgerInfo {
+                    commit_info: BlockInfo {
+                        epoch: 0,
+                        round: 0,
+                        id: Hash::default(),
+                        executed_state_id: Hash::default(),
+                        version: 0,
+                        timestamp_usecs: 0,
+                        next_epoch_state: None,
+                    },
+                    consensus_data_hash: Hash::default(),
+                },
+                signatures: AggregateSignature {
+                    validator_bitmask: super::signature::ValidatorBitmask { inner: vec![] },
+                    sig: None,
+                },
+            }),
+            epoch_changes: EpochChangeProof {
+                ledger_info_with_sigs: vec![],
+                more: false,
+            },
+        }
+    }
 }
 
 impl StateProof {
