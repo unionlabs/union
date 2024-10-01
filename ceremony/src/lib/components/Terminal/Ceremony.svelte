@@ -6,6 +6,8 @@ import Queue from "$lib/components/Terminal/Queue.svelte"
 import Install from "$lib/components/Terminal/Install/index.svelte"
 import Secret from "$lib/components/Terminal/Secret.svelte"
 import { onDestroy } from "svelte"
+import Missed from "$lib/components/Terminal/Missed.svelte"
+import Print from "$lib/components/Terminal/Print.svelte"
 
 const { contributor, terminal } = getState()
 
@@ -22,10 +24,6 @@ onDestroy(() => {
   {terminal.setStep(10)}
   <Thanks/>
 
-{:else if !contributor.downloadedSecret && contributor.clientState === "idle"}
-  {terminal.setStep(6)}
-  <Secret/>
-
 {:else if contributor.state === "verifying"}
   {terminal.setStep(9)}
   {terminal.updateHistory({text: "Verifying your contribution...", replace: true})}
@@ -33,6 +31,10 @@ onDestroy(() => {
 {:else if contributor.clientState === "offline" || contributor.clientState === undefined}
   {terminal.setStep(5)}
   <Install/>
+
+{:else if !contributor.downloadedSecret && contributor.clientState === "idle"}
+  {terminal.setStep(6)}
+  <Secret/>
 
 {:else if contributor.state === "inQueue"}
   {terminal.setStep(7)}
@@ -46,11 +48,11 @@ onDestroy(() => {
   {terminal.setStep(9)}
   {terminal.updateHistory({text: "Contributing...", replace: true})}
 
-{:else if contributor.contributionState === "missed"}
+{:else if contributor.state === "missed"}
   {terminal.setStep(9)}
-  {terminal.updateHistory({text: "Too bad, you missed your slot.", replace: true})}
+  <Missed />
 
 {:else}
-  {terminal.updateHistory({text: "Loading", replace: true})}
+  <Print>Loading</Print>
 
 {/if}

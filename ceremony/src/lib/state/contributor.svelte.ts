@@ -19,6 +19,7 @@ type State =
   | "error"
   | "offline"
   | "noClient"
+  | "missed"
 
 export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
 
@@ -293,6 +294,8 @@ export class Contributor {
       this.stopPolling()
     } else if (this.contributionState === "verifying") {
       this.state = "verifying"
+    } else if (this.contributionState === "missed") {
+      this.state = "missed"
     } else if (this.clientState === "offline") {
       this.state = "offline"
     } else {
