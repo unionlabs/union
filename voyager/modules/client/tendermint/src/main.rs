@@ -4,7 +4,6 @@ use jsonrpsee::{
     Extensions,
 };
 use macros::model;
-use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -23,6 +22,7 @@ use voyager_message::{
     module::{ClientModuleInfo, ClientModuleServer, ModuleInfo},
     run_module_server, DefaultCmd, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
 };
+use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {

@@ -17,7 +17,6 @@ macros             = { workspace = true }
 num-bigint         = { workspace = true }
 prost              = { workspace = true }
 protos             = { workspace = true }
-queue-msg          = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
@@ -27,6 +26,7 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 unionlabs          = { workspace = true }
 voyager-message    = { workspace = true }
+voyager-vm         = { workspace = true }
 
 [dev-dependencies]
 hex.workspace = true

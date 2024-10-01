@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use jaq_interpret::{Ctx, Filter, FilterT, ParseCtx, RcIter, Val};
-use queue_msg::{
+use tracing::{error, trace, trace_span};
+use unionlabs::ErrorReporter;
+use voyager_vm::{
     optimize::{OptimizationResult, PurePass},
     BoxDynError, Op,
 };
-use tracing::{error, trace, trace_span};
-use unionlabs::ErrorReporter;
 
 use crate::VoyagerMessage;
 

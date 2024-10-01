@@ -2,8 +2,8 @@ use std::num::NonZeroU64;
 
 use enumorph::Enumorph;
 use macros::{apply, model};
-use queue_msg::SubsetOf;
 use serde_json::Value;
+use subset_of::SubsetOf;
 use tracing::info;
 #[cfg(doc)]
 use unionlabs::events::IbcEvent;

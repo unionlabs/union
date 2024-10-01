@@ -15,11 +15,11 @@ test-include = ["lib/cometbls-groth16-verifier/verifying_key.bin"]
 [dependencies]
 ark-ff       = { version = "0.4.2", default-features = false }
 byteorder    = { version = "1.4", default-features = false }
-hex-literal  = { workspace = true, default-features = false }
-sha2         = { workspace = true, default-features = false }
-sha3         = { workspace = true, default-features = false }
+hex-literal  = { workspace = true }
+sha2         = { workspace = true }
+sha3         = { workspace = true }
 substrate-bn = { version = "0.6", default-features = false }
-unionlabs    = { workspace = true, default-features = false }
+unionlabs    = { workspace = true }
 
 [build-dependencies]
 gnark-key-parser = { workspace = true }

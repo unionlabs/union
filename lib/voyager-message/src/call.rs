@@ -1,7 +1,6 @@
 use enumorph::Enumorph;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::{apply, model};
-use queue_msg::{call, data, defer, noop, now, seq, HandleCall, Op, QueueError};
 use serde_json::Value;
 use serde_utils::Hex;
 use tracing::{debug, error, info, instrument, trace};
@@ -30,6 +29,7 @@ use unionlabs::{
     QueryHeight, DELAY_PERIOD,
 };
 use voyager_core::ClientType;
+use voyager_vm::{call, data, defer, noop, now, seq, HandleCall, Op, QueueError};
 
 #[cfg(doc)]
 use crate::core::ClientInfo;
@@ -394,7 +394,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 .await
                 .map_err(error_object_to_queue_error)?;
 
-                Ok(queue_msg::data(IbcMessage::from(MsgConnectionOpenAck {
+                Ok(voyager_vm::data(IbcMessage::from(MsgConnectionOpenAck {
                     connection_id: connection_open_try_event.counterparty_connection_id,
                     counterparty_connection_id: connection_open_try_event.connection_id,
                     client_state: encoded_client_state,
@@ -449,7 +449,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                Ok(queue_msg::data(IbcMessage::from(
+                Ok(voyager_vm::data(IbcMessage::from(
                     MsgConnectionOpenConfirm {
                         connection_id: connection_open_ack_event.counterparty_connection_id,
                         proof_height: origin_chain_proof_height,
@@ -616,7 +616,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                Ok(queue_msg::data(IbcMessage::from(MsgChannelOpenConfirm {
+                Ok(voyager_vm::data(IbcMessage::from(MsgChannelOpenConfirm {
                     port_id: channel_open_ack_event.counterparty_port_id,
                     channel_id: channel_open_ack_event.counterparty_channel_id,
                     proof_ack: encoded_proof_ack,
@@ -888,7 +888,7 @@ async fn make_msg_recv_packet<D: Member, C: Member, Cb: Member>(
         .await
         .map_err(error_object_to_queue_error)?;
 
-    Ok(queue_msg::data(IbcMessage::from(MsgRecvPacket {
+    Ok(voyager_vm::data(IbcMessage::from(MsgRecvPacket {
         packet: channel::packet::Packet {
             sequence: send_packet_event.packet.sequence,
             source_port: send_packet_event.packet.source_channel.port_id,
@@ -1010,7 +1010,7 @@ async fn make_msg_acknowledgement<D: Member, C: Member, Cb: Member>(
         .await
         .map_err(error_object_to_queue_error)?;
 
-    Ok(queue_msg::data(IbcMessage::from(MsgAcknowledgement {
+    Ok(voyager_vm::data(IbcMessage::from(MsgAcknowledgement {
         packet: channel::packet::Packet {
             sequence: write_acknowledgement_event.packet.sequence,
             source_port: write_acknowledgement_event.packet.source_channel.port_id,

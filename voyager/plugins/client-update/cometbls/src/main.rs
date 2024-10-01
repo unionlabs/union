@@ -5,9 +5,6 @@ use jsonrpsee::{
     Extensions,
 };
 use protos::union::galois::api::v3::union_prover_api_client;
-use queue_msg::{
-    call, data, defer, now, optimize::OptimizationResult, promise, seq, void, BoxDynError, Op,
-};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument};
 use unionlabs::union::galois::{
@@ -21,6 +18,9 @@ use voyager_message::{
     data::Data,
     module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
     run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
+};
+use voyager_vm::{
+    call, data, defer, now, optimize::OptimizationResult, promise, seq, void, BoxDynError, Op,
 };
 
 use crate::{
@@ -328,10 +328,10 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
         Ok(match callback {
             ModuleCallback::AggregateProveRequest(aggregate) => {
-                queue_msg::aggregation::do_callback(aggregate, data)
+                voyager_vm::aggregation::do_callback(aggregate, data)
             }
             ModuleCallback::AggregateHeader(aggregate) => {
-                queue_msg::aggregation::do_callback(aggregate, data)
+                voyager_vm::aggregation::do_callback(aggregate, data)
             }
         })
     }

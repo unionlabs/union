@@ -1,5 +1,5 @@
 [package]
-name    = "queue-msg"
+name    = "voyager-vm"
 version = "0.1.0"
 
 edition = { workspace = true }
@@ -14,10 +14,11 @@ frunk                    = { workspace = true }
 futures                  = { workspace = true, features = ["alloc", "std"] }
 itertools                = { version = "0.12.1", default-features = false }
 macros                   = { workspace = true }
-queue-msg-macro          = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
 serde_json               = { workspace = true }
 static_assertions        = { workspace = true }
+subset-of                = { workspace = true }
+subset-of-derive         = { workspace = true }
 tokio                    = { workspace = true, features = ["time", "rt"] }
 tracing                  = { workspace = true }
 unionlabs                = { workspace = true }

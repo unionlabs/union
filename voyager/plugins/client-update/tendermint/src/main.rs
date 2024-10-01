@@ -4,7 +4,6 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
-use queue_msg::{call, data, optimize::OptimizationResult, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{
@@ -19,6 +18,7 @@ use voyager_message::{
     module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
     run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
 };
+use voyager_vm::{call, data, optimize::OptimizationResult, BoxDynError, Op};
 
 use crate::{
     call::{FetchUpdate, ModuleCall},

@@ -14,7 +14,6 @@ use jsonrpsee::{
     Extensions,
 };
 use prost::Message;
-use queue_msg::{call, noop, optimize::OptimizationResult, Op};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tracing::{debug, error, info, instrument, warn};
@@ -43,6 +42,7 @@ use voyager_message::{
     module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
     run_module_server, DefaultCmd, ModuleContext, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
+use voyager_vm::{call, noop, optimize::OptimizationResult, Op};
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 

@@ -41,7 +41,6 @@ pin-utils                = "0.1.0"
 prometheus               = "0.13.4"
 prost                    = { workspace = true }
 protos                   = { workspace = true, features = ["proto_full", "client"] }
-queue-msg                = { workspace = true }
 reqwest                  = { workspace = true, features = ["tokio-rustls"] }
 ripemd                   = { workspace = true }
 serde                    = { workspace = true, features = ["derive"] }
@@ -66,6 +65,7 @@ tracing-subscriber       = { workspace = true, features = ["env-filter", "json"]
 typenum                  = { workspace = true }
 unionlabs                = { workspace = true, features = ["ethabi"] }
 voyager-message          = { workspace = true }
+voyager-vm               = { workspace = true }
 
 [features]
 default = []

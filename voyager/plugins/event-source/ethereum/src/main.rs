@@ -18,7 +18,6 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use queue_msg::{call, conc, data, noop, optimize::OptimizationResult, seq, BoxDynError, Op};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument, trace, warn};
 use unionlabs::{
@@ -41,6 +40,7 @@ use voyager_message::{
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
     run_module_server, DefaultCmd, ExtensionsExt, ModuleContext, VoyagerClient, VoyagerMessage,
 };
+use voyager_vm::{call, conc, data, noop, optimize::OptimizationResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlock, FetchGetLogs, MakeFullEvent, ModuleCall},

@@ -1,7 +1,7 @@
 [package]
 autotests = false
 edition   = "2021"
-name      = "queue-msg-macro"
+name      = "subset-of-derive"
 resolver  = "2"
 version   = "0.0.0"
 

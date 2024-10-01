@@ -13,13 +13,14 @@ use jsonrpsee::{
     Extensions,
 };
 use macros::model;
-use queue_msg::{aggregation::SubsetOf, QueueError, QueueMessage};
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
+use subset_of::SubsetOf;
 use tonic::async_trait;
 use tracing::{debug_span, error, info, trace, Instrument};
 use unionlabs::{never::Never, traits::Member, ErrorReporter};
+use voyager_vm::{QueueError, QueueMessage};
 
 use crate::{
     call::Call,
@@ -61,7 +62,7 @@ impl<D: Member, C: Member, Cb: Member> QueueMessage for VoyagerMessage<D, C, Cb>
 /// code, it will be treated as failed and not retried.
 pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 
-/// Convert a [`jsonrpsee::core::client::Error`] to a `queue-msg`
+/// Convert a [`jsonrpsee::core::client::Error`] to a `voyager-vm`
 /// [`QueueError`].
 ///
 /// All errors are treated as retryable, unless `error` is a `Call` variant and
@@ -75,7 +76,7 @@ pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> Q
     }
 }
 
-/// Convert a `jsonrpsee` [`ErrorObject`] to a `queue-msg` [`QueueError`].
+/// Convert a `jsonrpsee` [`ErrorObject`] to a `voyager-vm` [`QueueError`].
 ///
 /// Certain error codes are treated as fatal (i.e. not retryable):
 ///

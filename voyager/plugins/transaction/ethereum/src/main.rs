@@ -32,7 +32,6 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use queue_msg::{call, defer, now, optimize::OptimizationResult, seq, Op};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, error_span, info, info_span, instrument, warn, Instrument};
 use unionlabs::{
@@ -47,6 +46,7 @@ use voyager_message::{
     module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
     run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
 };
+use voyager_vm::{call, defer, now, optimize::OptimizationResult, seq, Op};
 
 use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
 

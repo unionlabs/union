@@ -10,7 +10,6 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use queue_msg::{call, defer, now, optimize::OptimizationResult, seq, Op};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
@@ -36,6 +35,7 @@ use voyager_message::{
     module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
     run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
 };
+use voyager_vm::{call, defer, now, optimize::OptimizationResult, seq, Op};
 
 use crate::{
     call::{FetchUpdate, ModuleCall},
@@ -465,7 +465,7 @@ impl Module {
                 .unwrap()
                     * NANOS_PER_SECOND as i64,
             }),
-            queue_msg::data(OrderedHeaders {
+            voyager_vm::data(OrderedHeaders {
                 headers: headers
                     .into_iter()
                     .map(|header| {

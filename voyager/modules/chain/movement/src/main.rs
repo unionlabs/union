@@ -8,7 +8,6 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
-use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -36,6 +35,7 @@ use voyager_message::{
     module::{ChainModuleInfo, ChainModuleServer, ModuleInfo, RawClientState},
     run_module_server, DefaultCmd, ModuleContext,
 };
+use voyager_vm::BoxDynError;
 
 pub mod events;
 

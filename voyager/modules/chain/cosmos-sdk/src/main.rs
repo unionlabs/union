@@ -13,7 +13,6 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
-use queue_msg::BoxDynError;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
@@ -39,6 +38,7 @@ use voyager_message::{
     module::{ChainModuleInfo, ChainModuleServer, ModuleInfo, RawClientState},
     run_module_server, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
 };
+use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {

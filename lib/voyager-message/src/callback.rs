@@ -4,11 +4,11 @@ use enumorph::Enumorph;
 use frunk::hlist_pat;
 use futures::{stream, StreamExt, TryFutureExt, TryStreamExt};
 use macros::{apply, model};
-use queue_msg::{aggregation::HListTryFromIterator, HandleCallback, Op, QueueError};
 use unionlabs::{
     ibc::core::client::msg_update_client::MsgUpdateClient, id::ClientId, traits::Member,
 };
 use voyager_core::ClientInfo;
+use voyager_vm::{aggregation::HListTryFromIterator, HandleCallback, Op, QueueError};
 
 use crate::{
     core::ChainId,
@@ -63,7 +63,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCallback<VoyagerMessage<D, C, Cb>> 
                     .map_err(error_object_to_queue_error)?
                     .client_module(&client_type, &ibc_interface)?;
 
-                Ok(queue_msg::data(OrderedMsgUpdateClients {
+                Ok(voyager_vm::data(OrderedMsgUpdateClients {
                     // REVIEW: Use FuturesOrdered here?
                     updates: stream::iter(headers.into_iter())
                         .then(|(meta, header)| {

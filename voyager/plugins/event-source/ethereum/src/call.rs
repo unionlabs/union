@@ -1,7 +1,7 @@
 use chain_utils::ethereum::IBCHandlerEvents;
 use enumorph::Enumorph;
 use macros::model;
-use queue_msg::SubsetOf;
+use subset_of::SubsetOf;
 use unionlabs::hash::H256;
 
 #[model]
