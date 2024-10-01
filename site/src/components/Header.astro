@@ -58,7 +58,7 @@ const menuItems = [
 </script>
 
 <header
-  class="z-[100] w-full flex justify-around pt-3 top-0 py-2 left-0"
+  class="z-[100] w-full flex justify-around"
 >
   <div class="max-w-[1440px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl">
     <a
@@ -192,6 +192,11 @@ const menuItems = [
 </header>
 
 <style is:inline>
+  header {
+    max-height: var(--header-height) !important;
+    height: var(--header-height) !important;
+    min-height: var(--header-height) !important;
+  }
   header::before {
     content: '';
     position: absolute;

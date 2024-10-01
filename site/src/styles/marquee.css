@@ -4,6 +4,8 @@
   --duration: 60s;
   --scroll-start: 0;
   --scroll-end: calc(-100% - var(--gap));
+
+  --header-height: 68px;
 }
 
 .marquee {

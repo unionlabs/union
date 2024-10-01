@@ -50,9 +50,9 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 
 <style lang="postcss" is:global>
   .header-grid {
-    --outer-border: 4px;
-    --inner-border: 4px;
-    height: calc(100svh);
+    --outer-border: 8px;
+    --inner-border: 2px;
+    height: calc(100svh - var(--header-height));
     width: full;
     display: grid;
     grid-template-rows: 0 var(--inner-border) 1fr auto 1fr var(--inner-border) var(--outer-border);
@@ -60,7 +60,7 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
   }
 
   .shiny-border {
-    background-color: theme(colors.black); 
+    background-color: theme(colors.neutral.500); 
     grid-area: 2 / 2 / 7 / 7;
   }
   .header-grid > canvas {

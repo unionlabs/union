@@ -10,7 +10,7 @@ let targetMouseY = 0
 let displayWidth = 1000
 let displayHeight = 1000
 const RETINA_ENABLED = false
-const WIDTH = 60 // Must be even
+const WIDTH = 80 // Must be even
 const duration = 0.04 // Total duration of the transition in seconds
 
 const W2 = WIDTH / 2
