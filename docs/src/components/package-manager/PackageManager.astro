@@ -1,8 +1,8 @@
 ---
 // import { shikiConfig } from "markdown.config"
-import type { NoRepetition } from '#/lib/types.ts'
-import { Code, Tabs, TabItem } from '@astrojs/starlight/components'
-import { commands, type CommandType, type PackageManager } from './index.ts'
+import type { NoRepetition } from "#/lib/types.ts"
+import { Code, Tabs, TabItem } from "@astrojs/starlight/components"
+import { commands, type CommandType, type PackageManager } from "./index.ts"
 
 interface Props {
   prefix?: string
@@ -17,7 +17,7 @@ const {
   postfix,
   command,
   packageId,
-  pkgManagers = ['pnpm', 'bun', 'npm', 'yarn'],
+  pkgManagers = ["pnpm", "bun", "npm", "yarn"]
 } = Astro.props
 ---
 
