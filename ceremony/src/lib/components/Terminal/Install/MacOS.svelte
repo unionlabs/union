@@ -24,7 +24,7 @@ onMount(() => {
     },
     { text: "---" },
     {
-      text: '1. <a class="underline-offset-4 decoration-union-accent-500 underline" href="https://orbstack.dev/ ">Install OrbStack</a>'
+      text: '1. <a class="underline-offset-4 decoration-union-accent-500 underline" href="https://orbstack.dev/" target="_blank">Install OrbStack</a>'
     },
     { text: "2. Open OrbStack from the Applications/ folder" },
     { text: "3. Click allow on the OrbStack popups" },
