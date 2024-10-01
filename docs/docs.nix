@@ -21,12 +21,12 @@ _: {
       packages = {
         docs = mkCi false (
           unstablePkgs.buildNpmPackage {
-            npmDepsHash = "sha256-m8CDSaQern9KttSJP5kmCZymOx+P8hai9LoPJAQcjuc=";
+            npmDepsHash = "sha256-EM6OjmBa87Y+cULyzPf2BmGs+nQUJLTL3Nr0Hdmc5EI=";
             src = ./.;
-srcs = [
-  ./.
-  ./../versions/.
-];
+            srcs = [
+              ./.
+              ./../versions/.
+            ];
             sourceRoot = "docs";
             pname = packageJSON.name;
             inherit (packageJSON) version;

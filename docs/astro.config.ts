@@ -30,7 +30,6 @@ export default defineConfig({
     directRenderScript: true,
     contentIntellisense: true
   },
-\ma
   trailingSlash: "ignore",
   markdown: {},
   // markdown: markdownConfiguration,
