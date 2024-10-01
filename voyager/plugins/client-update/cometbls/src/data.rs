@@ -1,13 +1,15 @@
 use enumorph::Enumorph;
-use queue_msg::{queue_msg, SubsetOf};
+use macros::model;
+use queue_msg::SubsetOf;
 use unionlabs::{
     ibc::core::client::height::Height,
     tendermint::types::{signed_header::SignedHeader, validator::Validator},
     union::galois::prove_response,
 };
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph, SubsetOf)]
+#[allow(clippy::large_enum_variant)]
 pub enum ModuleData {
     UntrustedCommit(UntrustedCommit),
     TrustedValidators(TrustedValidators),
@@ -15,31 +17,31 @@ pub enum ModuleData {
     ProveResponse(ProveResponse),
 }
 
-#[queue_msg]
+#[model]
 pub struct UntrustedCommit {
     pub height: Height,
     pub signed_header: SignedHeader,
 }
 
-#[queue_msg]
+#[model]
 pub struct TrustedCommit {
     pub height: Height,
     pub signed_header: SignedHeader,
 }
 
-#[queue_msg]
+#[model]
 pub struct TrustedValidators {
     pub height: Height,
     pub validators: Vec<Validator>,
 }
 
-#[queue_msg]
+#[model]
 pub struct UntrustedValidators {
     pub height: Height,
     pub validators: Vec<Validator>,
 }
 
-#[queue_msg]
+#[model]
 pub struct ProveResponse {
     pub prove_response: prove_response::ProveResponse,
 }

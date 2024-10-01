@@ -1,5 +1,0 @@
-error: queue-msg only supports Named and Unnamed Struct fields
- --> tests/unit-struct.rs:4:1
-  |
-4 | struct UnitStruct;
-  | ^^^^^^

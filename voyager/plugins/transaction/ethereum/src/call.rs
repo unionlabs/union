@@ -1,8 +1,8 @@
 use enumorph::Enumorph;
-use queue_msg::queue_msg;
+use macros::model;
 use voyager_message::data::IbcMessage;
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
 pub enum ModuleCall {
     SubmitMulticall(Vec<IbcMessage>),

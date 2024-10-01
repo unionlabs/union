@@ -1,6 +1,7 @@
 use enumorph::Enumorph;
-use queue_msg::{queue_msg, SubsetOf};
+use macros::model;
+use queue_msg::SubsetOf;
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum ModuleData {}

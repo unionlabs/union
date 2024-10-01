@@ -4,6 +4,7 @@ use unionlabs::{ibc::core::client::height::Height, union::galois::prove_request:
 
 #[model]
 #[derive(Enumorph)]
+#[allow(clippy::large_enum_variant)]
 pub enum ModuleCall {
     FetchUpdate(FetchUpdate),
     FetchUntrustedCommit(FetchUntrustedCommit),

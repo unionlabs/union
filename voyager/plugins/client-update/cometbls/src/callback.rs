@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use enumorph::Enumorph;
 use frunk::{hlist_pat, HList};
+use macros::model;
 use num_bigint::BigUint;
-use queue_msg::{aggregation::DoCallback, call, data, promise, queue_msg, Op};
+use queue_msg::{aggregation::DoCallback, call, data, promise, Op};
 use tracing::{debug, trace};
 use unionlabs::{
     bounded::BoundedI64,
@@ -35,14 +36,15 @@ use crate::{
     data::{ModuleData, ProveResponse, TrustedValidators, UntrustedCommit, UntrustedValidators},
 };
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
+#[allow(clippy::large_enum_variant)]
 pub enum ModuleCallback {
     AggregateProveRequest(AggregateProveRequest),
     AggregateHeader(AggregateHeader),
 }
 
-#[queue_msg]
+#[model]
 pub struct AggregateProveRequest {
     pub chain_id: ChainId<'static>,
 
@@ -50,7 +52,7 @@ pub struct AggregateProveRequest {
     pub update_to: Height,
 }
 
-#[queue_msg]
+#[model]
 pub struct AggregateHeader {
     pub chain_id: ChainId<'static>,
 

@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
-use queue_msg::queue_msg;
+use macros::model;
 
-#[queue_msg]
+#[model]
 #[derive(Enumorph)]
 pub enum ModuleCall {}

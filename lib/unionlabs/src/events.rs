@@ -24,7 +24,7 @@ macro_rules! event {
             )+
         }
     ) => {
-        #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, enumorph::Enumorph)]
+        #[derive(::macros::Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, enumorph::Enumorph)]
         #[serde(tag = "@type", content = "@value", rename_all = "snake_case")]
         pub enum $Enum {
             $(
@@ -55,7 +55,7 @@ macro_rules! event {
         }
 
         $(
-            #[derive(::macros::Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+            #[derive(::macros::Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
             #[serde(deny_unknown_fields)]
             pub struct $Struct {
                 $(

@@ -19,7 +19,7 @@ pub struct Minimal;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Mainnet;
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PresetBaseKind {
     Minimal,

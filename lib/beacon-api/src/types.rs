@@ -201,7 +201,7 @@ pub struct LightClientUpdateResponse {
 //     }
 // }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub struct Spec {
     pub preset_base: PresetBaseKind,
