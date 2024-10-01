@@ -18,7 +18,6 @@ let command =
 
 onMount(() => {
   const messages = [
-    { text: "---" },
     {
       text: "You must have OrbStack installed in order to contribute, because Docker Desktop is too slow. If you use Docker Desktop it is extremely likely that you will lose your contribution slot."
     },
@@ -40,8 +39,10 @@ onMount(() => {
     {
       text: "Once the MPC client is running you can return to this page."
     },
+    { text: "---", duplicate: true },
     {
-      text: "If the MPC client is running but you still see this page, ensure that you are using either Chrome, FireFox or Brave. For Brave, disable the shields in the address bar."
+      text: "If the MPC client is running but you still see this page, ensure that you are using Chrome, Firefox, or Brave. Also, make sure to temporarily turn off ad-blockers or browser shields (especially in Brave).",
+      type: "warning"
     }
   ]
 

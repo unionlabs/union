@@ -18,7 +18,6 @@ let command =
 
 onMount(() => {
   const messages = [
-    { text: "---", duplicate: true },
     {
       text: "You must have docker installed and running in order to contribute. Once you have docker running, copy the following command in your terminal:"
     },
@@ -26,8 +25,10 @@ onMount(() => {
     { text: command, duplicate: true },
     { text: "---", duplicate: true },
     { text: "Once the MPC client is running you can return to this page.", duplicate: true },
+    { text: "---", duplicate: true },
     {
-      text: "If the MPC client is running but you still see this page, ensure that you are using either Chrome, FireFox or Brave. For Brave, disable the shields in the address bar.",
+      text: "If the MPC client is running but you still see this page, ensure that you are using Chrome, Firefox, or Brave. Also, make sure to temporarily turn off ad-blockers or browser shields (especially in Brave).",
+      type: "warning",
       duplicate: true
     }
   ]
