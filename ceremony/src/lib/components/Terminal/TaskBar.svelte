@@ -22,5 +22,10 @@ let progressBar = $derived(
       <div class="w-2 h-2 bg-union-accent-500 rounded-full"></div>
       <Print>CONNECTED</Print>
     </div>
+    {:else }
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 bg-[#FD6363] rounded-full"></div>
+      <Print>DISCONNECTED</Print>
+    </div>
   {/if}
 </div>
