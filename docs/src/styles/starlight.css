@@ -21,6 +21,7 @@
 }
 
 :root[data-theme="dark"] {
+  --sl-color-black: var(var(--bg-gray));
   --sl-accent-color: theme("colors.accent.500");
   --dark-blue: theme("colors.accent.500");
   --sl-color-text-accent: theme("colors.accent.500");

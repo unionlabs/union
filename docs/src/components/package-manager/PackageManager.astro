@@ -26,13 +26,13 @@ const {
   {
     pkgManagers.map(pkgManager => (
       <TabItem label={pkgManager} icon={commands[pkgManager].icon}>
-          <Code
-            lang="bash"
-            theme="houston"
-            class="text-sm sm:text-base size-full"
-            transformers={shikiConfig.transformers}
-            code={`${prefix ?? ''} ${pkgManager} ${commands[pkgManager].commands[command]} ${packageId} ${postfix ?? ''}`.trim()}
-          />
+        <Code
+          lang="bash"
+          theme="houston"
+          class="text-sm sm:text-base size-full"
+          transformers={shikiConfig.transformers}
+          code={`${prefix ?? ''} ${pkgManager} ${commands[pkgManager].commands[command]} ${packageId} ${postfix ?? ''}`.trim()}
+        />
       </TabItem>
     ))
   }

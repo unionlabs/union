@@ -30,10 +30,9 @@ export function initiateTerminal(
     cursorBlink: true,
     theme: xTermTheme,
     cursorStyle: "bar",
-    // windowOptions: {},
+    windowOptions: {},
     allowProposedApi: true,
     cursorInactiveStyle: "bar",
-    fontFamily: "IBM Plex Mono",
     fontSize: options.fontSize,
     disableStdin: options.readonly,
     drawBoldTextInBrightColors: true

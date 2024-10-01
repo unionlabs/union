@@ -12,7 +12,16 @@ const fetcher = createGraphiQLFetcher({
 
 let query = dedent(/* GraphQL */ `
       query UserTransfers {
-        v0_transfers(where: { sender: { _eq: "union17ttpfu2xsmfxu6shl756mmxyqu33l5ljs5j6md" } }) {
+        v0_transfers(
+          limit: 3,
+          where: {
+            sender: { 
+              _eq: "union17ttpfu2xsmfxu6shl756mmxyqu33l5ljs5j6md"
+            }
+          }
+        ) {
+          sender
+          receiver
           source_transaction_hash
           destination_transaction_hash
         }

@@ -1,5 +1,7 @@
 import * as React from "react"
 import ts from "shiki/langs/typescript.mjs"
+// biome-ignore lint/correctness/noUnusedImports: used as type
+import type * as monaco from "monaco-editor"
 import { shikiToMonaco } from "@shikijs/monaco"
 import { createHighlighterCoreSync } from "shiki"
 import tokyoNight from "shiki/themes/tokyo-night.mjs"

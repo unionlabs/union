@@ -21,12 +21,10 @@ _: {
       packages = {
         docs = mkCi false (
           unstablePkgs.buildNpmPackage {
-            npmDepsHash = "sha256-bUGt5KeXa7O82cbG7XHYdmuMW/2YXMq3KcGp6HF2z9w=";
+            npmDepsHash = "sha256-EM6OjmBa87Y+cULyzPf2BmGs+nQUJLTL3Nr0Hdmc5EI=";
             src = ./.;
             srcs = [
               ./.
-              ./../evm/.
-              ./../networks/genesis/.
               ./../versions/.
             ];
             sourceRoot = "docs";

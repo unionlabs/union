@@ -12,6 +12,8 @@ import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
 
 const SITE_URL = "https://docs.union.build"
+const SITE_DESCRIPTION =
+  "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks."
 
 const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
   process.env.NODE_ENV,
@@ -61,12 +63,13 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Union",
-      tagline: "Connecting blockchains trustlessly",
-      description:
-        "Union is a hyper-efficient, zero-knowledge interoperability layer that connects Appchains, Layer 1, and Layer 2 networks.",
-      favicon: "/favicon.svg",
       lastUpdated: true,
+      favicon: "/favicon.svg",
+      description: SITE_DESCRIPTION,
+      tagline: "Connecting blockchains trustlessly",
+      defaultLocale: "root",
       expressiveCode: false,
+      locales: { root: { label: "English", lang: "en" } },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
       },
@@ -75,8 +78,6 @@ export default defineConfig({
         discord: "https://discord.union.build",
         "x.com": "https://x.com/union_build"
       },
-      defaultLocale: "root",
-      locales: { root: { label: "English", lang: "en" } },
       logo: {
         alt: "Union Logo",
         replacesTitle: true,
@@ -220,10 +221,8 @@ export default defineConfig({
         "./src/styles/index.css",
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
-        // "./src/styles/twoslash.css",
         "./src/styles/starlight.css",
         "./node_modules/katex/dist/katex.min.css"
-        // "./node_modules/@shikijs/twoslash/style-rich.css"
       ]
     }),
     sitemap(),
