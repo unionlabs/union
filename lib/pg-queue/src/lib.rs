@@ -4,8 +4,9 @@ use std::{
 };
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
+use futures_util::TryStreamExt;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, PgPool};
+use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, Executor, PgPool};
 use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
 use voyager_vm::{
     normalize,
@@ -85,8 +86,53 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         //     }
         // });
 
+        let pool = config.into_pg_pool().await?;
+
+        pool.execute_many(
+            r#"
+            CREATE TABLE IF NOT EXISTS queue(
+                id BIGSERIAL PRIMARY KEY,
+                item JSONB NOT NULL,
+                parents BIGINT[] DEFAULT '{}',
+                created_at timestamptz NOT NULL DEFAULT now()
+            );
+
+            CREATE TABLE IF NOT EXISTS optimize(
+                -- TODO: Figure out how to do this properly
+                id BIGINT PRIMARY KEY DEFAULT nextval('queue_id_seq'::regclass),
+                item JSONB NOT NULL,
+                tag text NOT NULL,
+                parents BIGINT[] DEFAULT '{}',
+                created_at timestamptz NOT NULL DEFAULT now()
+            );
+
+            CREATE TABLE IF NOT EXISTS done(
+                id BIGINT,
+                item JSONB NOT NULL,
+                parents BIGINT[] DEFAULT '{}',
+                created_at timestamptz NOT NULL DEFAULT now(),
+                PRIMARY KEY (id, created_at)
+            );
+
+            CREATE TABLE IF NOT EXISTS failed(
+                id BIGINT PRIMARY KEY,
+                item JSONB NOT NULL,
+                parents BIGINT[] DEFAULT '{}',
+                message TEXT,
+                created_at timestamptz NOT NULL DEFAULT now()
+            );
+
+            CREATE INDEX IF NOT EXISTS index_queue_id ON queue(id);
+            "#,
+        )
+        .try_for_each(
+            |result| async move { Ok(trace!("rows affected: {}", result.rows_affected())) },
+        )
+        .instrument(info_span!("init"))
+        .await?;
+
         Ok(Self {
-            client: config.into_pg_pool().await?,
+            client: pool,
             __marker: PhantomData,
         })
     }
