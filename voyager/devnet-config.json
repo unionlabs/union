@@ -33,7 +33,7 @@
       "path": "./target/debug/voyager-chain-module-movement",
       "config": {
         "chain_id": "27",
-        "rpc_url": "https://aptos.testnet.suzuka.movementlabs.xyz",
+        "rpc_url": "http://localhost:30731",
         "movement_rpc_url": "http://localhost:30832",
         "ibc_handler_address": "f2e43321983ebfc75ff689e625b0cdccf56365560d2d970ea4ec0b898728b954"
       }
@@ -109,7 +109,7 @@
         "ibc_handler_address": "f2e43321983ebfc75ff689e625b0cdccf56365560d2d970ea4ec0b898728b954",
         "l1_settlement_address": "0x0000000000000000000000000000000000000000",
         "l1_client_id": "cometbls-0",
-        "aptos_rest_api": "https://aptos.testnet.suzuka.movementlabs.xyz",
+        "aptos_rest_api": "http://localhost:30731",
         "movement_rest_url": "http://localhost:30832"
       }
     },
