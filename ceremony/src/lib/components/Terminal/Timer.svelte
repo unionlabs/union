@@ -19,7 +19,7 @@ async function fetchTimestamps() {
 }
 
 function updateCountdown() {
-  if (!startTimestamp || !expireTimestamp) return
+  if (!(startTimestamp && expireTimestamp)) return
   const now = Date.now()
 
   let targetTime: number
@@ -50,7 +50,7 @@ $effect(() => {
 })
 
 $effect(() => {
-  if (!startTimestamp || !expireTimestamp) return
+  if (!(startTimestamp && expireTimestamp)) return
   const timer = setInterval(updateCountdown, 1000)
   updateCountdown()
   return () => clearInterval(timer)
