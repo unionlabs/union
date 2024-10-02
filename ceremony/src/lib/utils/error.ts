@@ -41,26 +41,9 @@ export const sendWindowRejectionLog = async (event: PromiseRejectionEvent) => {
   return await sendErrorLog({ window: windowEventError }, "window")
 }
 
-const sendErrorLog = async (detail: ErrorDetail, type: "client" | "window") => {
+const sendErrorLog = (detail: ErrorDetail, type: "client" | "window") => {
   const errorId = crypto.randomUUID()
-  const jsonBody = JSON.stringify(
-    {
-      errorId,
-      type,
-      detail
-    },
-    errorJsonReplacer
-  )
-
-  axiom.ingest("errors", [
-    {
-      errorId,
-      type,
-      detail
-    },
-    errorJsonReplacer
-  ])
-
+  axiom.ingest("errors", [{ errorId, type, detail }, errorJsonReplacer])
   return errorId
 }
 
