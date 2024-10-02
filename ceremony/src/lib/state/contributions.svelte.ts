@@ -11,7 +11,7 @@ export class Contributions {
 
   constructor() {
     this.loadContributions()
-    this.intervalId = setInterval(() => this.loadContributions(), 5000)
+    this.intervalId = setInterval(() => this.loadContributions(), 30000)
   }
 
   async loadContributions() {
