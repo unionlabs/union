@@ -391,6 +391,7 @@ cermony
 cerr
 chainer
 chainid
+chainlist
 chainsafe
 channelkeeper
 channeltypes
@@ -1053,6 +1054,7 @@ rehype
 reindex
 rekt
 relpath
+remappings
 repellendus
 repr
 reqwest
@@ -1415,8 +1417,6 @@ xkaiserkarel
 xkown
 xlink
 xlpa
-remappings
-chainlist
 xnever
 xpla
 xprv

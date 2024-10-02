@@ -172,9 +172,14 @@ export default defineConfig({
                   badge: { variant: "success", text: "new" }
                 },
                 {
-                  label: "Solidity",
-                  link: "/integrations/solidity",
-                  badge: { variant: "success", text: "new" }
+                  label: "UCS01",
+                  items: [
+                    {
+                      label: "Solidity",
+                      link: "/integrations/ucs01/solidity",
+                      badge: { variant: "success", text: "new" }
+                    }
+                  ]
                 },
                 {
                   label: "API",
