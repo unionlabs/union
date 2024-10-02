@@ -24,13 +24,13 @@ GIT_LFS_SKIP_SMUDGE=true nix build github:unionlabs/union/release/ceremony#cerem
 
 Image published [here](https://github.com/unionlabs/union/pkgs/container/union%2Fmpc-client), handles the generation of the contribution, generation of the gpg key, and signs/uploads the contributions.
 
-You can build it locally like this:
+You can build it locally like this on a `x86_64-linux` machine:
 
 ```sh
 GIT_LFS_SKIP_SMUDGE=true nix build github:unionlabs/union/bbfaa2f39d0183c2fd6c1d2505fad6c64ddb39e1#packages.x86_64-linux.mpc-client -L
 ```
 
-and load the image like this:
+and load the image like this on a `x86_64-linux` machine::
 
 ```sh
 docker load -i ./result
@@ -38,13 +38,18 @@ docker load -i ./result
 
 ## MPC Coordinator
 
-Is deployed on Supabase. 
+The coordinator has two components:
+
+1. Postgres, managing the queue and contributions. Hosted by Supabase.
+3. The `mpc-coordinator` service, verifying incoming contributions. Hosted by Hetzner.
 
 
-You can build it locally like this:
+You can see the database schema [here](https://github.com/unionlabs/union/blob/bbfaa2f39d0183c2fd6c1d2505fad6c64ddb39e1/mpc/coordinator/database.sql), and you can build the service locally like this on a `x86_64-linux` machine:
 
 ```sh
 GIT_LFS_SKIP_SMUDGE=true nix build github:unionlabs/union/bbfaa2f39d0183c2fd6c1d2505fad6c64ddb39e1#packages.x86_64-linux.mpc-coordinator -L
 ```
+There are no trust assumptions on the database, as at the end of the ceremony all contributions will be published and verifiable by all.
+
 
 
