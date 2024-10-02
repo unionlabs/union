@@ -29,6 +29,11 @@ onMount(() => {
     replace: true,
     type: "warning"
   })
+  terminal.updateHistory({
+    text: "Only one contribution per device is allowed.",
+    replace: true,
+    type: "warning"
+  })
   terminal.setStep(2)
 })
 onDestroy(() => {
