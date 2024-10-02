@@ -32,12 +32,6 @@ function handleKeyDown(event: KeyboardEvent) {
 }
 
 onMount(() => {
-  terminal.clearHistory()
-  terminal.updateHistory({
-    text: "Please enter your invitation code",
-    lineBreak: true,
-    duplicate: true
-  })
   if (inputElement) {
     inputElement.focus()
   }

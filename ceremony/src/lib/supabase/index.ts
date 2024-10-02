@@ -138,11 +138,11 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
   const { data, error } = await queryCurrentUserState()
   if (error || !data) return undefined
 
+  return "join"
   if (data.in_queue) return "inQueue"
   if (data.has_redeemed) return "hasRedeemed"
   if (data.in_waitlist) return "inWaitlist"
 
-  return "join"
 }
 
 export const getContributions = async () => {
