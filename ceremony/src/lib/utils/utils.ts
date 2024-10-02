@@ -92,3 +92,18 @@ export function msToTimeString(ms: number): string {
   const milliseconds = ms % 1000
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`
 }
+
+export function formatWaitTime(minutes: number) {
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = Math.round(minutes % 60)
+
+  if (hours === 0) {
+    return `${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`
+  }
+
+  if (remainingMinutes === 0) {
+    return `${hours} hour${hours !== 1 ? "s" : ""}`
+  }
+
+  return `${hours} hour${hours !== 1 ? "s" : ""} and ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`
+}

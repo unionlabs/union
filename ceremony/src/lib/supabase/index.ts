@@ -1,23 +1,24 @@
 import { user } from "$lib/state/session.svelte.ts"
 import {
-  getContribution,
-  getContributor,
-  getQueueCount,
-  getSubmittedContribution,
-  getUserQueuePosition,
+  queryContribution,
+  queryContributor,
+  queryQueueCount,
+  querySubmittedContribution,
+  queryUserQueuePosition,
   queryContributions,
   queryContributionTime,
   queryCurrentUserState,
   queryUserContribution,
   queryUserPublicHash,
   queryUserWallet,
-  queryVerificationTime
+  queryVerificationTime,
+  queryContributionWindow
 } from "$lib/supabase/queries.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import { msToTimeString, sleep, timeToMs } from "$lib/utils/utils.ts"
 import type { AllowanceState, ContributionState } from "$lib/state/contributor.svelte.ts"
 
-interface TimeResult {
+export interface TimeResult {
   verification: string | null
   contribution: string | null
   total: string
@@ -52,7 +53,6 @@ export const callJoinQueue = async (code: string | null): Promise<boolean> => {
 
 export const checkIfOpen = async (): Promise<boolean> => {
   const { data, error } = await supabase.rpc("open_to_public")
-  console.log("isOpen:", data)
   return data
 }
 
@@ -62,11 +62,10 @@ export const getUserQueueInfo = async () => {
   }
   const userId = user.session.user.id
 
-  const { data, error } = await getUserQueuePosition(userId)
-  const { count, error: countError } = await getQueueCount()
+  const { data, error } = await queryUserQueuePosition(userId)
+  const { count, error: countError } = await queryQueueCount()
 
   if (error) {
-    console.log("Error getting user queue position:", error)
     return { error }
   }
 
@@ -94,15 +93,20 @@ export const getContributionState = async (): Promise<ContributionState> => {
   }
 
   try {
-    const [contributor, submittedContribution, verifiedContribution] = await Promise.all([
-      getContributor(userId),
-      getSubmittedContribution(userId),
-      getContribution(userId)
-    ])
+    const [contributor, submittedContribution, verifiedContribution, contributionWindow] =
+      await Promise.all([
+        queryContributor(userId),
+        querySubmittedContribution(userId),
+        queryContribution(userId),
+        queryContributionWindow(userId)
+      ])
 
     const isContributor = !!contributor?.data
     const hasSubmitted = !!submittedContribution?.data
     const hasVerified = !!verifiedContribution?.data
+    const isExpired = contributionWindow?.data?.expire
+      ? Date.now() > new Date(contributionWindow.data.expire).getTime()
+      : false
 
     let status: ContributionState
 
@@ -112,6 +116,8 @@ export const getContributionState = async (): Promise<ContributionState> => {
       status = "verifying"
     } else if (hasVerified) {
       status = "contributed"
+    } else if (!hasSubmitted && isExpired) {
+      status = "missed"
     } else {
       status = "notContributed"
     }
@@ -132,8 +138,8 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
   const { data, error } = await queryCurrentUserState()
   if (error || !data) return undefined
 
-  if (data.has_redeemed) return "hasRedeemed"
   if (data.in_queue) return "inQueue"
+  if (data.has_redeemed) return "hasRedeemed"
   if (data.in_waitlist) return "inWaitlist"
 
   return "join"
@@ -190,23 +196,16 @@ export const getPublicHash = async () => {
   return data.public_key_hash
 }
 
-export const getUserWallet = async (userId: string | undefined) => {
+export const getUserWallet = async (userId: string | null): Promise<string | null> => {
   if (!userId) {
     console.log("Need to be logged in to get allowance state")
-    return undefined
+    return null
   }
 
   const { data, error } = await queryUserWallet(userId)
-  if (error || !data) return undefined
+  if (error || !data) return null
 
   return data.wallet
-}
-
-export const getWaitListPosition = async (): Promise<number | undefined> => {
-  const { data, error } = await queryCurrentUserState()
-  if (error || !data) return undefined
-
-  return data.waitlist_position
 }
 
 export const getAverageTimes = async (): Promise<TimeResult> => {

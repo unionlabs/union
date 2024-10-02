@@ -3,6 +3,8 @@ import { onDestroy, onMount } from "svelte"
 import { getState } from "$lib/state/index.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import { axiom } from "$lib/utils/axiom.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 type Props = {
   change: () => void
@@ -17,14 +19,15 @@ let command =
   "mkdir -p ceremony && docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -v $(pwd)/ceremony:/ceremony -w /ceremony -p 4919:4919 --rm -it ghcr.io/unionlabs/union/mpc-client:latest"
 
 onMount(() => {
+  terminal.setStep(3)
+  axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_macos" }])
   const messages = [
-    { text: "---" },
     {
       text: "You must have OrbStack installed in order to contribute, because Docker Desktop is too slow. If you use Docker Desktop it is extremely likely that you will lose your contribution slot."
     },
     { text: "---" },
     {
-      text: '1. <a class="underline-offset-4 decoration-union-accent-500 underline" href="https://orbstack.dev/ ">Install OrbStack</a>'
+      text: '1. <a class="underline-offset-4 decoration-union-accent-500 underline" href="https://orbstack.dev/" target="_blank">Install OrbStack</a>'
     },
     { text: "2. Open OrbStack from the Applications/ folder" },
     { text: "3. Click allow on the OrbStack popups" },
@@ -40,8 +43,10 @@ onMount(() => {
     {
       text: "Once the MPC client is running you can return to this page."
     },
+    { text: "---", duplicate: true },
     {
-      text: "If the MPC client is running but you still see this page, ensure that you are using either Chrome, FireFox or Brave. For Brave, disable the shields in the address bar."
+      text: "If the MPC client is running but you still see this page, ensure that you are using Chrome, Firefox, or Brave. Also, make sure to temporarily turn off ad-blockers or browser shields (especially in Brave).",
+      type: "warning"
     }
   ]
 

@@ -3,6 +3,8 @@ import { AddressForm, type ValidState } from "$lib/components/address"
 import { getState } from "$lib/state/index.svelte.ts"
 import { onDestroy, onMount } from "svelte"
 import Print from "$lib/components/Terminal/Print.svelte"
+import { axiom } from "$lib/utils/axiom.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 let { terminal } = getState()
 
@@ -13,12 +15,14 @@ let validation = (val: ValidState) => {
 }
 
 onMount(() => {
+  terminal.setStep(5)
   terminal.updateHistory({
     text: "Add an address, you may receive rewards for successful contributions."
   })
   terminal.updateHistory({
     text: 'You can enter your union or any cosmos address, or type "skip".'
   })
+  axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_address" }])
 })
 
 onDestroy(() => {

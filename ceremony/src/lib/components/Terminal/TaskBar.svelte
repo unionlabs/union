@@ -1,6 +1,7 @@
 <script lang="ts">
 import Print from "$lib/components/Terminal/Print.svelte"
 import { getState } from "$lib/state/index.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 const { terminal, contributor } = getState()
 
@@ -10,17 +11,29 @@ let progressBar = $derived(
 </script>
 
 <div class="py-2 px-4 border-t border-[#48494C] w-full flex justify-between">
-  <div class="flex items-center gap-2">
-    <div class="text-center font-mono">
-      <Print>[<span class="text-union-accent-500">{progressBar}</span>]</Print>
+  <div class="flex gap-2 items-center">
+    <div class="flex items-center gap-2">
+      <div class="text-center font-mono">
+        <Print>[<span class="text-union-accent-500">{progressBar}</span>]</Print>
+      </div>
+      <Print>{terminal.currentStep}/{terminal.maxStep} COMPLETED | </Print>
     </div>
-    <Print>{terminal.currentStep}/{terminal.maxStep} COMPLETED</Print>
+    {#if user?.session?.user?.email}
+      <p class="text-xs font-mono text-white uppercase">
+        {user.session.user.email}
+      </p>
+    {/if}
   </div>
 
   {#if contributor.clientState !== "offline" && contributor.clientState !== undefined}
     <div class="flex items-center gap-2">
       <div class="w-2 h-2 bg-union-accent-500 rounded-full"></div>
       <Print>CONNECTED</Print>
+    </div>
+  {:else }
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 bg-[#FD6363] rounded-full"></div>
+      <Print>DISCONNECTED</Print>
     </div>
   {/if}
 </div>

@@ -1,6 +1,6 @@
 import { supabase } from "$lib/supabase/client.ts"
 
-export const getContributor = async (userId: string) => {
+export const queryContributor = async (userId: string) => {
   const { data, error } = await supabase
     .from("current_contributor_id")
     .select("id")
@@ -9,31 +9,36 @@ export const getContributor = async (userId: string) => {
   return { data, error }
 }
 
-export const getSubmittedContribution = async (userId: string) => {
+export const querySubmittedContribution = async (userId: string) => {
   const { data, error } = await supabase
     .from("contribution_submitted")
     .select("id")
     .eq("id", userId)
-    .maybeSingle()
+    .single()
   return { data, error }
 }
 
-export const getContribution = async (userId: string) => {
+export const queryContribution = async (userId: string) => {
+  const { data, error } = await supabase.from("contribution").select("id").eq("id", userId).single()
+  return { data, error }
+}
+
+export const queryContributionWindow = async (userId: string) => {
   const { data, error } = await supabase
-    .from("contribution")
-    .select("id")
+    .from("contribution_status")
+    .select("started, expire")
     .eq("id", userId)
     .maybeSingle()
   return { data, error }
 }
 
-export const getUserQueuePosition = async (userId: string) => {
+export const queryUserQueuePosition = async (userId: string) => {
   const { data, error } = await supabase.from("current_queue").select("*").eq("id", userId).single()
 
   return { data, error }
 }
 
-export const getQueueCount = async () => {
+export const queryQueueCount = async () => {
   const { count, error } = await supabase
     .from("current_queue")
     .select("*", { count: "exact", head: true })
@@ -41,7 +46,7 @@ export const getQueueCount = async () => {
   return { count, error }
 }
 
-export const getQueuePayloadId = async (userId: string) => {
+export const queryQueuePayloadId = async (userId: string) => {
   const { data, error } = await supabase
     .from("queue")
     .select("payload_id")
@@ -101,15 +106,11 @@ export const queryUserWallet = async (id: string) => {
 export const queryVerificationTime = async () => {
   const { data, error } = await supabase.from("current_verification_average").select("*").single()
 
-  console.log(data)
-
   return { data, error }
 }
 
 export const queryContributionTime = async () => {
   const { data, error } = await supabase.from("current_contribution_average").select("*").single()
-
-  console.log(data)
 
   return { data, error }
 }

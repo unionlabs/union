@@ -1,8 +1,10 @@
 import { get, post } from "$lib/client/http.ts"
-import { getQueuePayloadId } from "$lib/supabase/queries.ts"
+import { queryQueuePayloadId } from "$lib/supabase/queries.ts"
 import type { ContributeBody } from "$lib/client/types.ts"
 import { supabase } from "$lib/supabase/client.ts"
 import type { ClientState } from "$lib/state/contributor.svelte.ts"
+import { axiom } from "$lib/utils/axiom.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 export const start = async (): Promise<ClientState | undefined> => {
   const { data: session, error: sessionError } = await supabase.auth.refreshSession()
@@ -20,7 +22,7 @@ export const start = async (): Promise<ClientState | undefined> => {
     return
   }
 
-  const { data, error } = await getQueuePayloadId(userId)
+  const { data, error } = await queryQueuePayloadId(userId)
 
   if (error) {
     console.log("Error fetching payload_id:", error)
@@ -48,7 +50,9 @@ export const start = async (): Promise<ClientState | undefined> => {
 export const checkState = async (): Promise<ClientState> => {
   try {
     const response = await get<ClientState>("contribute", {})
-
+    axiom.ingest("monitor", [
+      { user: user.session?.user.id, type: `client_state_${response ?? "offline"}` }
+    ])
     return response ?? "offline"
   } catch (error) {
     console.log("Error fetching status:", error)

@@ -6,9 +6,15 @@ import { checkAuth } from "$lib/state/session.svelte.ts"
 import Terminal from "$lib/components/Terminal/index.svelte"
 import { start } from "$lib/client"
 import Timer from "$lib/components/Terminal/Timer.svelte"
+import { onMount } from "svelte"
+import { axiom } from "$lib/utils/axiom.ts"
+import {
+  generateUserErrorMessage,
+  sendWindowErrorLog,
+  sendWindowRejectionLog
+} from "$lib/utils/error.ts"
 
 import "../styles/tailwind.css"
-import { onMount } from "svelte"
 
 let { children } = $props()
 
@@ -31,6 +37,7 @@ $effect(() => {
     contributor.state !== "contributing" &&
     contributor.downloadedSecret
   ) {
+    axiom.ingest("monitor", [{ user: user.session?.user.id, type: "start_contribution" }])
     start()
   }
 })
@@ -51,13 +58,27 @@ $effect(() => {
 let showBootSequence = $state(localStorage?.getItem("ceremony:show-boot-sequence") !== "false")
 let bootSequenceVideoElement = $state<HTMLVideoElement | null>(null)
 
-onMount(() => bootSequenceVideoElement?.play())
+onMount(() => {
+  bootSequenceVideoElement?.play()
+})
 
 const hideBootSequenceVideo = () => {
   showBootSequence = false
   localStorage?.setItem("ceremony:show-boot-sequence", "false")
 }
+
+const handleRejection = async (e: PromiseRejectionEvent) => {
+  const errorId = await sendWindowRejectionLog(e)
+  console.error(generateUserErrorMessage(errorId))
+}
+
+const handleError = async (e: Event) => {
+  const errorId = await sendWindowErrorLog(e)
+  console.error(generateUserErrorMessage(errorId))
+}
 </script>
+
+<svelte:window on:error={handleError} on:unhandledrejection={handleRejection} />
 
 {#if showBootSequence}
   <video

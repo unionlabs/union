@@ -4,9 +4,9 @@ import {
   getCurrentUserState,
   getUserQueueInfo,
   getContributionState,
-  getUserWallet,
-  getWaitListPosition
+  getUserWallet
 } from "$lib/supabase"
+import { axiom } from "$lib/utils/axiom.ts"
 
 type IntervalID = NodeJS.Timeout | number
 
@@ -20,10 +20,17 @@ type State =
   | "error"
   | "offline"
   | "noClient"
+  | "missed"
 
 export type AllowanceState = "hasRedeemed" | "inWaitlist" | "inQueue" | "join" | undefined
 
-export type ContributionState = "contribute" | "contributed" | "verifying" | "notContributed"
+export type ContributionState =
+  | "contribute"
+  | "contributed"
+  | "verifying"
+  | "notContributed"
+  | "missed"
+  | undefined
 
 export type ClientState =
   | "idle"
@@ -40,11 +47,9 @@ export type ClientState =
   | "offline"
   | undefined
 
-interface UserContext {
+interface QueueState {
   position: number | null
   count: number | null
-  estimatedTime: number | null
-  error: string | null
 }
 
 interface QueueInfoSuccess {
@@ -61,9 +66,9 @@ interface QueueInfoError {
 type QueueInfoResult = QueueInfoSuccess | QueueInfoError
 
 const second = 1000
-const CLIENT_POLING_INTERVAL = second
+const CLIENT_POLING_INTERVAL = second * 5
 const CONTRIBUTION_POLLING_INTERVAL = second * 5
-const QUEUE_POLLING_INTERVAL = second * 5
+const QUEUE_POLLING_INTERVAL = second * 15
 
 export class Contributor {
   userId = $state<string | undefined>(undefined)
@@ -71,16 +76,14 @@ export class Contributor {
   currentUserState = $state<AllowanceState>(undefined)
   pollingState = $state<"stopped" | "polling">("stopped")
   state = $state<State>("loading")
-  clientState = $state<ClientState>("offline")
-  contributionState = $state<ContributionState>("notContributed")
-  userWallet = $state("")
-  waitListPosition = $state<number | undefined>(undefined)
+  clientState = $state<ClientState>(undefined)
+  contributionState = $state<ContributionState>(undefined)
+  userWallet = $state<string | null>()
   downloadedSecret = $state<boolean>(localStorage.getItem("downloaded-secret") === "true")
-  queueState = $state<UserContext>({
+
+  queueState = $state<QueueState>({
     position: null,
-    count: null,
-    estimatedTime: null,
-    error: null
+    count: null
   })
 
   private pollIntervals: {
@@ -115,17 +118,12 @@ export class Contributor {
     }
   }
 
-  async checkWaitListPosition(): Promise<number | undefined> {
-    this.waitListPosition = await getWaitListPosition()
-    return this.waitListPosition
-  }
-
   async checkCurrentUserState(userId: string | undefined): Promise<AllowanceState> {
     this.currentUserState = await getCurrentUserState(userId)
     return this.currentUserState
   }
 
-  async checkUserWallet(userId: string | undefined): Promise<string> {
+  async checkUserWallet(userId: string): Promise<string | null> {
     this.userWallet = await getUserWallet(userId)
     return this.userWallet
   }
@@ -165,7 +163,7 @@ export class Contributor {
     this.stopContributionStatePolling()
   }
 
-  private startClientStatePolling() {
+  private async startClientStatePolling() {
     this.pollClientState()
     this.pollIntervals.client = setInterval(
       () => this.pollClientState(),
@@ -245,15 +243,13 @@ export class Contributor {
       this.queueState = {
         ...this.queueState,
         position: queueInfo.position,
-        count: queueInfo.count,
-        estimatedTime: queueInfo.position * 60
+        count: queueInfo.count
       }
     } else {
       this.queueState = {
         ...this.queueState,
         position: null,
-        count: null,
-        estimatedTime: null
+        count: null
       }
     }
     this.updateState()
@@ -265,7 +261,7 @@ export class Contributor {
   }
 
   private setError(message: string) {
-    this.queueState = { ...this.queueState, error: message }
+    console.error(message)
     this.state = "error"
   }
 
@@ -280,27 +276,39 @@ export class Contributor {
         case "contributionEnded":
         case "uploadStarted":
         case "uploadEnded":
-        case "successful":
+        case "successful": {
           this.state = "contributing"
           break
-        case "failed":
+        }
+        case "failed": {
           this.state = "error"
           break
-        case "offline":
+        }
+        case "offline": {
           this.state = "noClient"
           break
-        default:
+        }
+        default: {
           this.state = "contribute"
           break
+        }
       }
     } else if (this.queueState.position !== null) {
       this.state = "inQueue"
+      axiom.ingest("monitor", [{ user: this.userId, type: "in_queue" }])
     } else if (this.contributionState === "contributed") {
       this.state = "contributed"
+      this.stopPolling()
+      axiom.ingest("monitor", [{ user: this.userId, type: "contributed" }])
     } else if (this.contributionState === "verifying") {
       this.state = "verifying"
+      axiom.ingest("monitor", [{ user: this.userId, type: "verifying" }])
+    } else if (this.contributionState === "missed") {
+      this.state = "missed"
+      axiom.ingest("monitor", [{ user: this.userId, type: "missed" }])
     } else if (this.clientState === "offline") {
       this.state = "offline"
+      axiom.ingest("monitor", [{ user: this.userId, type: "offline" }])
     } else {
       this.state = "loading"
     }
