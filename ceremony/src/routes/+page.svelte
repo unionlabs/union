@@ -50,11 +50,11 @@ onMount(() => {
           <Queue/>
 
         {:else if contributor.state === 'contribute'}
-          {terminal.setStep(7)}
+          {terminal.setStep(9)}
           {terminal.updateHistory({text: "Starting contribution...", replace: true})}
 
         {:else if contributor.state === "contributing"}
-          {terminal.setStep(8)}
+          {terminal.setStep(9)}
           {terminal.updateHistory({text: "Contributing...", replace: true})}
 
         {:else}

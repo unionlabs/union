@@ -9,7 +9,7 @@ import { user } from "$lib/state/session.svelte.ts"
 const { terminal } = getState()
 
 onMount(async () => {
-  terminal.setStep(5)
+  terminal.setStep(7)
   terminal.updateHistory({ text: "You're on the waitlist" })
   terminal.updateHistory({
     text: `When the ceremony opens to the public, you will get priority in the queue.`

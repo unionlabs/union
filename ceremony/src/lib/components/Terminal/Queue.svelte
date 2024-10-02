@@ -14,7 +14,7 @@ let waitingTime = $state<number>(0)
 let averages = $state<TimeResult>()
 
 onMount(async () => {
-  terminal.setStep(6)
+  terminal.setStep(8)
   terminal.updateHistory({ text: "You are in queue" })
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_queue" }])
   averages = await getAverageTimes()
