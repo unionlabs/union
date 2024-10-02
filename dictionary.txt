@@ -89,6 +89,7 @@ Halfnode
 Hashable
 Hasher
 Hedgies
+Hetzner
 Hhvf
 Hyperlane
 IAVL

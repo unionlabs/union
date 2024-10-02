@@ -193,6 +193,10 @@ export default defineConfig({
               autogenerate: {
                 directory: "/joining-testnet"
               }
+            },
+            {
+              label: "Ceremony",
+              link: "/ceremony"
             }
           ]
         },
