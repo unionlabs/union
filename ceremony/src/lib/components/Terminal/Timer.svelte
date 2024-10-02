@@ -23,14 +23,15 @@ function updateCountdown() {
   const now = Date.now()
 
   let targetTime: number
-  let prefix: string
+  let prefix = ""
+  let suffix = ""
 
   if (now < startTimestamp) {
     targetTime = startTimestamp
-    prefix = ""
+    prefix = "ETA "
   } else if (now < expireTimestamp) {
     targetTime = expireTimestamp
-    prefix = ""
+    suffix = " LEFT"
   } else {
     countdown = "EXPIRED"
     return
@@ -42,7 +43,7 @@ function updateCountdown() {
   const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
   const seconds = Math.floor((distance % (1000 * 60)) / 1000)
 
-  countdown = `${hours}H ${minutes}M ${seconds}S`
+  countdown = `${prefix}${hours}H ${minutes}M ${seconds}S${suffix}`
 }
 
 $effect(() => {
