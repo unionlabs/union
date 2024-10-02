@@ -1,14 +1,10 @@
 [package]
 edition = { workspace = true }
-include = [".sqlx", "migrations"]
 name    = "pg-queue"
 version = "0.1.0"
 
 [lints]
 workspace = true
-
-[package.metadata.crane]
-test-include = []
 
 [dependencies]
 frame-support-procedural = { workspace = true }
