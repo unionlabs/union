@@ -26,8 +26,8 @@ onDestroy(() => {
 })
 
 $effect(() => {
-  if (averages && contributor.queueState.count) {
-    waitingTime = (contributor.queueState.count * averages.totalMs) / 1000 / 60
+  if (averages && contributor.queueState.position) {
+    waitingTime = (contributor.queueState.position * averages.totalMs) / 1000 / 60
   }
 })
 </script>
