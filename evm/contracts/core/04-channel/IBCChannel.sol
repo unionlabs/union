@@ -8,44 +8,29 @@ import "../05-port/IIBCModule.sol";
 
 library IBCChannelLib {
     event ChannelOpenInit(
-        address portId,
-        bytes32 normalizedPortId,
-        uint32 channelId,
-        bytes32 counterpartyPortId,
-        uint32 connectionId,
-        bytes32 version
+        address portId, uint32 channelId, uint32 connectionId, bytes32 version
     );
     event ChannelOpenTry(
         address portId,
-        bytes32 normalizedPortId,
         uint32 channelId,
-        bytes32 counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId,
         bytes32 version
     );
     event ChannelOpenAck(
         address portId,
-        bytes32 normalizedPortId,
         uint32 channelId,
-        bytes32 counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
     event ChannelOpenConfirm(
         address portId,
-        bytes32 normalizedPortId,
         uint32 channelId,
-        bytes32 counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
-    event ChannelCloseInit(
-        address portId, bytes32 normalizedPortId, uint32 channelId
-    );
-    event ChannelCloseConfirm(
-        address portId, bytes32 normalizedPortId, uint32 channelId
-    );
+    event ChannelCloseInit(address portId, uint32 channelId);
+    event ChannelCloseConfirm(address portId, uint32 channelId);
 
     error ErrPortIdMustBeLowercase();
     error ErrConnNotSingleHop();
@@ -56,12 +41,6 @@ library IBCChannelLib {
     error ErrCounterpartyChannelNotEmpty();
     error ErrInvalidProof();
     error ErrInvalidChannelOrdering();
-
-    function normalizePortId(
-        address portId
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(portId));
-    }
 }
 
 /**
@@ -98,9 +77,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         );
         emit IBCChannelLib.ChannelOpenInit(
             msg_.portId,
-            IBCChannelLib.normalizePortId(msg_.portId),
             channelId,
-            msg_.channel.counterparty.portId,
             msg_.channel.connectionId,
             msg_.channel.version
         );
@@ -122,11 +99,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         if (msg_.channel.state != IBCChannelState.TryOpen) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
-        IBCConnection storage connection =
-            ensureConnectionState(msg_.channel.connectionId);
-        bytes32 normalizedPortId = IBCChannelLib.normalizePortId(msg_.portId);
+        uint32 clientId = ensureConnectionState(msg_.channel.connectionId);
         IBCChannelCounterparty memory expectedCounterparty =
-            IBCChannelCounterparty({portId: normalizedPortId, channelId: 0});
+            IBCChannelCounterparty({channelId: 0});
         IBCChannel memory expectedChannel = IBCChannel({
             state: IBCChannelState.Init,
             ordering: msg_.channel.ordering,
@@ -136,7 +111,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         });
         if (
             !verifyChannelState(
-                connection,
+                clientId,
                 msg_.proofHeight,
                 msg_.proofInit,
                 msg_.channel.counterparty.channelId,
@@ -161,9 +136,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         );
         emit IBCChannelLib.ChannelOpenTry(
             msg_.portId,
-            IBCChannelLib.normalizePortId(msg_.portId),
             channelId,
-            msg_.channel.counterparty.portId,
             msg_.channel.counterparty.channelId,
             msg_.channel.connectionId,
             msg_.counterpartyVersion
@@ -181,14 +154,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         if (channel.state != IBCChannelState.Init) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
-        IBCConnection storage connection =
-            ensureConnectionState(channel.connectionId);
-        bytes32 normalizedPortId = IBCChannelLib.normalizePortId(msg_.portId);
+        uint32 clientId = ensureConnectionState(channel.connectionId);
         IBCChannelCounterparty memory expectedCounterparty =
-        IBCChannelCounterparty({
-            portId: normalizedPortId,
-            channelId: msg_.channelId
-        });
+            IBCChannelCounterparty({channelId: msg_.channelId});
         IBCChannel memory expectedChannel = IBCChannel({
             state: IBCChannelState.TryOpen,
             ordering: channel.ordering,
@@ -198,7 +166,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         });
         if (
             !verifyChannelState(
-                connection,
+                clientId,
                 msg_.proofHeight,
                 msg_.proofTry,
                 msg_.counterpartyChannelId,
@@ -219,9 +187,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         );
         emit IBCChannelLib.ChannelOpenAck(
             msg_.portId,
-            normalizedPortId,
             msg_.channelId,
-            channel.counterparty.portId,
             msg_.counterpartyChannelId,
             channel.connectionId
         );
@@ -237,14 +203,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         if (channel.state != IBCChannelState.TryOpen) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
-        IBCConnection storage connection =
-            ensureConnectionState(channel.connectionId);
-        bytes32 normalizedPortId = IBCChannelLib.normalizePortId(msg_.portId);
+        uint32 clientId = ensureConnectionState(channel.connectionId);
         IBCChannelCounterparty memory expectedCounterparty =
-        IBCChannelCounterparty({
-            portId: normalizedPortId,
-            channelId: msg_.channelId
-        });
+            IBCChannelCounterparty({channelId: msg_.channelId});
         IBCChannel memory expectedChannel = IBCChannel({
             state: IBCChannelState.Open,
             ordering: channel.ordering,
@@ -254,7 +215,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         });
         if (
             !verifyChannelState(
-                connection,
+                clientId,
                 msg_.proofHeight,
                 msg_.proofAck,
                 channel.counterparty.channelId,
@@ -268,9 +229,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         IIBCModule(msg_.portId).onChanOpenConfirm(msg_.channelId, msg_.relayer);
         emit IBCChannelLib.ChannelOpenConfirm(
             msg_.portId,
-            normalizedPortId,
             msg_.channelId,
-            channel.counterparty.portId,
             channel.counterparty.channelId,
             channel.connectionId
         );
@@ -290,11 +249,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         channel.state = IBCChannelState.Closed;
         commitChannel(msg_.channelId, channel);
         IIBCModule(msg_.portId).onChanCloseInit(msg_.channelId, msg_.relayer);
-        emit IBCChannelLib.ChannelCloseInit(
-            msg_.portId,
-            IBCChannelLib.normalizePortId(msg_.portId),
-            msg_.channelId
-        );
+        emit IBCChannelLib.ChannelCloseInit(msg_.portId, msg_.channelId);
     }
 
     /**
@@ -308,14 +263,9 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         if (channel.state != IBCChannelState.Open) {
             revert IBCChannelLib.ErrInvalidChannelState();
         }
-        IBCConnection storage connection =
-            ensureConnectionState(channel.connectionId);
-        bytes32 normalizedPortId = IBCChannelLib.normalizePortId(msg_.portId);
+        uint32 clientId = ensureConnectionState(channel.connectionId);
         IBCChannelCounterparty memory expectedCounterparty =
-        IBCChannelCounterparty({
-            portId: normalizedPortId,
-            channelId: msg_.channelId
-        });
+            IBCChannelCounterparty({channelId: msg_.channelId});
         IBCChannel memory expectedChannel = IBCChannel({
             state: IBCChannelState.Closed,
             ordering: channel.ordering,
@@ -325,7 +275,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         });
         if (
             !verifyChannelState(
-                connection,
+                clientId,
                 msg_.proofHeight,
                 msg_.proofInit,
                 channel.counterparty.channelId,
@@ -337,9 +287,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         channel.state = IBCChannelState.Closed;
         commitChannel(msg_.channelId, channel);
         IIBCModule(msg_.portId).onChanCloseConfirm(msg_.channelId, msg_.relayer);
-        emit IBCChannelLib.ChannelCloseConfirm(
-            msg_.portId, normalizedPortId, msg_.channelId
-        );
+        emit IBCChannelLib.ChannelCloseConfirm(msg_.portId, msg_.channelId);
     }
 
     function encodeChannel(
@@ -371,17 +319,16 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     }
 
     function verifyChannelState(
-        IBCConnection storage connection,
+        uint32 clientId,
         uint64 height,
         bytes calldata proof,
         uint32 channelId,
         IBCChannel memory channel
     ) internal returns (bool) {
-        return getClientInternal(connection.clientId).verifyMembership(
-            connection.clientId,
+        return getClientInternal(clientId).verifyMembership(
+            clientId,
             height,
             proof,
-            abi.encodePacked(connection.counterparty.merklePrefix),
             abi.encodePacked(IBCCommitment.channelCommitmentKey(channelId)),
             abi.encodePacked(encodeChannel(channel))
         );

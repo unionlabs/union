@@ -7,7 +7,10 @@ import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
 
 import "./ICS23MembershipVerifier.sol";
 import "./Verifier.sol";
+
 import "../core/02-client/ILightClient.sol";
+import "../core/24-host/IBCStore.sol";
+import "../core/24-host/IBCCommitment.sol";
 import "../lib/Common.sol";
 import "../lib/ICS23.sol";
 
@@ -373,7 +376,6 @@ contract CometblsClient is
         uint32 clientId,
         uint64 height,
         bytes calldata proof,
-        bytes calldata prefix,
         bytes calldata path,
         bytes calldata value
     ) external virtual returns (bool) {
@@ -382,7 +384,11 @@ contract CometblsClient is
         }
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyMembership(
-            appHash, proof, prefix, path, value
+            appHash,
+            proof,
+            abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
+            path,
+            value
         );
     }
 
@@ -390,7 +396,6 @@ contract CometblsClient is
         uint32 clientId,
         uint64 height,
         bytes calldata proof,
-        bytes calldata prefix,
         bytes calldata path
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
@@ -398,7 +403,10 @@ contract CometblsClient is
         }
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyNonMembership(
-            appHash, proof, prefix, path
+            appHash,
+            proof,
+            abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
+            path
         );
     }
 

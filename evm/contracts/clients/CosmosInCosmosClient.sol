@@ -10,8 +10,9 @@ import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
+import "../lib/Common.sol";
+
 import "./ICS23MembershipVerifier.sol";
-import {ProcessedMoment} from "../lib/Common.sol";
 
 struct TendermintConsensusState {
     uint64 timestamp;
@@ -154,11 +155,12 @@ contract CosmosInCosmosClient is
                 clientState.l1ClientId,
                 header.l1Height,
                 header.l2InclusionProof,
-                abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
-                IBCCommitment.consensusStatePath(
-                    clientState.l2ClientId, header.l2Height
+                abi.encodePacked(
+                    IBCCommitment.consensusStateCommitmentKey(
+                        clientState.l2ClientId, header.l2Height
+                    )
                 ),
-                header.l2ConsensusState
+                abi.encodePacked(keccak256(abi.encode(header.l2ConsensusState)))
             )
         ) {
             revert CosmosInCosmosLib.ErrInvalidL1Proof();
@@ -199,7 +201,6 @@ contract CosmosInCosmosClient is
         uint32 clientId,
         uint64 height,
         bytes calldata proof,
-        bytes calldata prefix,
         bytes calldata path,
         bytes calldata value
     ) external virtual returns (bool) {
@@ -208,7 +209,11 @@ contract CosmosInCosmosClient is
         }
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyMembership(
-            appHash, proof, prefix, path, value
+            appHash,
+            proof,
+            abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
+            path,
+            value
         );
     }
 
@@ -216,7 +221,6 @@ contract CosmosInCosmosClient is
         uint32 clientId,
         uint64 height,
         bytes calldata proof,
-        bytes calldata prefix,
         bytes calldata path
     ) external virtual returns (bool) {
         if (isFrozenImpl(clientId)) {
@@ -224,7 +228,10 @@ contract CosmosInCosmosClient is
         }
         bytes32 appHash = consensusStates[clientId][height].appHash;
         return ICS23MembershipVerifier.verifyNonMembership(
-            appHash, proof, prefix, path
+            appHash,
+            proof,
+            abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
+            path
         );
     }
 

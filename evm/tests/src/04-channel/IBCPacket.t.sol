@@ -11,8 +11,6 @@ import "@openzeppelin/utils/math/Math.sol";
 contract IBCPacketTests is Test {
     bytes32 public constant CLIENT_TYPE = keccak256("zkgm");
     bytes32 public constant VERSION = keccak256("protocol-1");
-    bytes32 public constant COUNTERPARTY_PORT_ID =
-        keccak256(abi.encodePacked(address(0)));
     uint32 public constant COUNTERPARTY_CHANNEL_ID = 0xDEADC0DE;
 
     TestIBCHandler handler;
@@ -44,8 +42,7 @@ contract IBCPacketTests is Test {
             .MsgConnectionOpenTry({
             counterparty: IBCConnectionCounterparty({
                 clientId: 0xDEADC0DE,
-                connectionId: 0xCAFE,
-                merklePrefix: keccak256("root")
+                connectionId: 0xCAFE
             }),
             clientId: clientId,
             proofInit: hex"",
@@ -73,7 +70,6 @@ contract IBCPacketTests is Test {
                 ordering: IBCChannelOrder.Unordered,
                 version: VERSION,
                 counterparty: IBCChannelCounterparty({
-                    portId: COUNTERPARTY_PORT_ID,
                     channelId: COUNTERPARTY_CHANNEL_ID
                 })
             }),
@@ -133,13 +129,9 @@ contract IBCPacketTests is Test {
         uint64 sequence = handler.sendPacket(
             channelId, timeoutHeight, timeoutTimestamp, message
         );
-        bytes32 normalizedSourcePort =
-            keccak256(abi.encodePacked(address(module)));
         IBCPacket memory packet = IBCPacket({
             sequence: sequence,
-            sourcePort: normalizedSourcePort,
             sourceChannel: channelId,
-            destinationPort: COUNTERPARTY_PORT_ID,
             destinationChannel: COUNTERPARTY_CHANNEL_ID,
             data: message,
             timeoutHeight: timeoutHeight,
@@ -187,20 +179,16 @@ contract IBCPacketTests is Test {
     }
 
     function createReceivePacket(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) internal view returns (IBCMsgs.MsgPacketRecv memory) {
-        bytes32 normalizedPortId = keccak256(abi.encodePacked(address(module)));
         IBCPacket[] memory packets = new IBCPacket[](nbPackets);
         bytes[] memory relayerMsgs = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
                 sequence: i,
-                sourcePort: sourcePort,
                 sourceChannel: sourceChannel,
-                destinationPort: normalizedPortId,
                 destinationChannel: channelId,
                 data: message,
                 timeoutHeight: type(uint64).max,
@@ -219,16 +207,14 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvPacket_ok_1(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvPacket_ok(sourcePort, sourceChannel, message, 1);
+        test_recvPacket_ok(sourceChannel, message, 1);
     }
 
     function test_recvPacket_ok(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
@@ -236,7 +222,7 @@ contract IBCPacketTests is Test {
         vm.pauseGasMetering();
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
@@ -252,20 +238,18 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvPacket_invalidProof(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
         handler.recvPacket(msg_);
     }
 
     function test_recvPacket_invalidChannelState(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         uint32 destinationChannel,
         bytes calldata message,
@@ -274,16 +258,15 @@ contract IBCPacketTests is Test {
         vm.assume(nbPackets > 0);
         vm.assume(destinationChannel != channelId);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         // fake non existant channel
         msg_.packets[0].destinationChannel = destinationChannel;
-        vm.expectRevert(IBCPacketLib.ErrInvalidChannelState.selector);
+        vm.expectRevert(IBCStoreLib.ErrInvalidChannelState.selector);
         handler.recvPacket(msg_);
     }
 
     function test_recvPacket_timeoutTimestamp(
         uint32 timeout,
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
@@ -291,7 +274,7 @@ contract IBCPacketTests is Test {
         vm.assume(timeout > 0);
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         // Timeout is expressed as nano because of ibc-go...
         msg_.packets[0].timeoutTimestamp = uint64(timeout) * 1e9;
         vm.warp(timeout);
@@ -302,7 +285,6 @@ contract IBCPacketTests is Test {
 
     function test_recvPacket_timeoutHeight(
         uint64 timeout,
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
@@ -310,7 +292,7 @@ contract IBCPacketTests is Test {
         vm.assume(timeout > 0);
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         // fake non existant channel
         msg_.packets[0].timeoutHeight = timeout;
         vm.roll(timeout);
@@ -320,14 +302,13 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvPacket_commitmentSaved(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
+            createReceivePacket(sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
         handler.recvPacket(msg_);
         for (uint8 i = 0; i < nbPackets; i++) {
@@ -344,20 +325,16 @@ contract IBCPacketTests is Test {
     }
 
     function createReceiveIntentPacket(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) internal view returns (IBCMsgs.MsgIntentPacketRecv memory) {
-        bytes32 normalizedPortId = keccak256(abi.encodePacked(address(module)));
         IBCPacket[] memory packets = new IBCPacket[](nbPackets);
         bytes[] memory marketMakerMsgs = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
                 sequence: i,
-                sourcePort: sourcePort,
                 sourceChannel: sourceChannel,
-                destinationPort: normalizedPortId,
                 destinationChannel: channelId,
                 data: message,
                 timeoutHeight: type(uint64).max,
@@ -375,25 +352,22 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvIntentPacket_ok_1(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourcePort, sourceChannel, message, 1);
+        test_recvIntentPacket_ok(sourceChannel, message, 1);
     }
 
     function test_recvIntentPacket_ok(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.pauseGasMetering();
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
-            sourcePort, sourceChannel, message, nbPackets
-        );
+        IBCMsgs.MsgIntentPacketRecv memory msg_ =
+            createReceiveIntentPacket(sourceChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.RecvIntentPacket(
@@ -408,15 +382,13 @@ contract IBCPacketTests is Test {
     }
 
     function test_recvIntentPacket_commitmentSaved(
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
-            sourcePort, sourceChannel, message, nbPackets
-        );
+        IBCMsgs.MsgIntentPacketRecv memory msg_ =
+            createReceiveIntentPacket(sourceChannel, message, nbPackets);
         handler.recvIntentPacket(msg_);
         for (uint8 i = 0; i < nbPackets; i++) {
             assertEq(
@@ -433,16 +405,14 @@ contract IBCPacketTests is Test {
 
     function test_recvIntentPacket_timeoutTimestamp(
         uint32 timeout,
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(timeout > 0);
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
-            sourcePort, sourceChannel, message, nbPackets
-        );
+        IBCMsgs.MsgIntentPacketRecv memory msg_ =
+            createReceiveIntentPacket(sourceChannel, message, nbPackets);
         // Timeout is expressed as nano because of ibc-go...
         msg_.packets[0].timeoutTimestamp = uint64(timeout) * 1e9;
         vm.warp(timeout);
@@ -452,16 +422,14 @@ contract IBCPacketTests is Test {
 
     function test_recvIntentPacket_timeoutHeight(
         uint64 timeout,
-        bytes32 sourcePort,
         uint32 sourceChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(timeout > 0);
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
-            sourcePort, sourceChannel, message, nbPackets
-        );
+        IBCMsgs.MsgIntentPacketRecv memory msg_ =
+            createReceiveIntentPacket(sourceChannel, message, nbPackets);
         // Timeout is expressed as nano because of ibc-go...
         msg_.packets[0].timeoutHeight = timeout;
         vm.roll(timeout);
@@ -470,20 +438,16 @@ contract IBCPacketTests is Test {
     }
 
     function createPacketAcknowledgement(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets
     ) internal view returns (IBCMsgs.MsgPacketAcknowledgement memory) {
-        bytes32 normalizedPortId = keccak256(abi.encodePacked(address(module)));
         IBCPacket[] memory packets = new IBCPacket[](nbPackets);
         bytes[] memory acknowledgements = new bytes[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
                 sequence: i,
-                sourcePort: normalizedPortId,
                 sourceChannel: channelId,
-                destinationPort: destinationPort,
                 destinationChannel: destinationChannel,
                 data: message,
                 timeoutHeight: type(uint64).max,
@@ -503,7 +467,6 @@ contract IBCPacketTests is Test {
     }
 
     function test_acknowledgePacket_ok(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets
@@ -511,9 +474,7 @@ contract IBCPacketTests is Test {
         vm.pauseGasMetering();
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketAcknowledgement memory msg_ =
-        createPacketAcknowledgement(
-            destinationPort, destinationChannel, message, nbPackets
-        );
+            createPacketAcknowledgement(destinationChannel, message, nbPackets);
         lightClient.pushValidMembership();
         for (uint8 i = 0; i < nbPackets; i++) {
             handler.assumePacketSent(channelId, msg_.packets[i]);
@@ -529,27 +490,21 @@ contract IBCPacketTests is Test {
     }
 
     function test_acknowledgePacket_ok_1(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message
     ) public {
         vm.pauseGasMetering();
-        test_acknowledgePacket_ok(
-            destinationPort, destinationChannel, message, 1
-        );
+        test_acknowledgePacket_ok(destinationChannel, message, 1);
     }
 
     function test_acknowledgePacket_commitmentRemoved(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketAcknowledgement memory msg_ =
-        createPacketAcknowledgement(
-            destinationPort, destinationChannel, message, nbPackets
-        );
+            createPacketAcknowledgement(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             handler.assumePacketSent(channelId, msg_.packets[i]);
         }
@@ -569,16 +524,13 @@ contract IBCPacketTests is Test {
     }
 
     function test_acknowledgePacket_invalidProof(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets
     ) public {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketAcknowledgement memory msg_ =
-        createPacketAcknowledgement(
-            destinationPort, destinationChannel, message, nbPackets
-        );
+            createPacketAcknowledgement(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             handler.assumePacketSent(channelId, msg_.packets[i]);
         }
@@ -587,19 +539,15 @@ contract IBCPacketTests is Test {
     }
 
     function createPacketTimeout(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets
     ) internal view returns (IBCMsgs.MsgPacketTimeout memory) {
-        bytes32 normalizedPortId = keccak256(abi.encodePacked(address(module)));
         IBCPacket[] memory packets = new IBCPacket[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             packets[i] = IBCPacket({
                 sequence: i,
-                sourcePort: normalizedPortId,
                 sourceChannel: channelId,
-                destinationPort: destinationPort,
                 destinationChannel: destinationChannel,
                 data: message,
                 timeoutHeight: type(uint64).max,
@@ -617,7 +565,6 @@ contract IBCPacketTests is Test {
     }
 
     function test_timeoutPacket_timestamp_ok(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets,
@@ -628,9 +575,8 @@ contract IBCPacketTests is Test {
         vm.assume(timestamp > 0);
         vm.assume(k <= timestamp);
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
-            destinationPort, destinationChannel, message, nbPackets
-        );
+        IBCMsgs.MsgPacketTimeout memory msg_ =
+            createPacketTimeout(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             // fake timeout
             msg_.packets[i].timeoutTimestamp = timestamp;
@@ -650,7 +596,6 @@ contract IBCPacketTests is Test {
     }
 
     function test_timeoutPacket_timestamp_ok_1(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint32 timestamp,
@@ -658,12 +603,11 @@ contract IBCPacketTests is Test {
     ) public {
         vm.pauseGasMetering();
         test_timeoutPacket_timestamp_ok(
-            destinationPort, destinationChannel, message, 1, timestamp, k
+            destinationChannel, message, 1, timestamp, k
         );
     }
 
     function test_timeoutPacket_timestamp_commitmentRemoved(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets,
@@ -671,12 +615,7 @@ contract IBCPacketTests is Test {
         uint32 k
     ) public {
         IBCMsgs.MsgPacketTimeout memory msg_ = test_timeoutPacket_timestamp_ok(
-            destinationPort,
-            destinationChannel,
-            message,
-            nbPackets,
-            timestamp,
-            k
+            destinationChannel, message, nbPackets, timestamp, k
         );
         for (uint8 i = 0; i < nbPackets; i++) {
             assertEq(
@@ -692,7 +631,6 @@ contract IBCPacketTests is Test {
     }
 
     function test_timeoutPacket_timestamp_invalidProof(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets,
@@ -702,9 +640,8 @@ contract IBCPacketTests is Test {
         vm.assume(timestamp > 0);
         vm.assume(k <= timestamp);
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
-            destinationPort, destinationChannel, message, nbPackets
-        );
+        IBCMsgs.MsgPacketTimeout memory msg_ =
+            createPacketTimeout(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             // fake timeout
             msg_.packets[i].timeoutTimestamp = timestamp;
@@ -717,7 +654,6 @@ contract IBCPacketTests is Test {
     }
 
     function test_timeoutPacket_timestamp_notReached(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets,
@@ -727,9 +663,8 @@ contract IBCPacketTests is Test {
         vm.assume(timestamp > 0);
         vm.assume(k <= timestamp);
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
-            destinationPort, destinationChannel, message, nbPackets
-        );
+        IBCMsgs.MsgPacketTimeout memory msg_ =
+            createPacketTimeout(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             // fake timeout
             msg_.packets[i].timeoutTimestamp = uint64(timestamp) + k + 1;
@@ -743,7 +678,6 @@ contract IBCPacketTests is Test {
     }
 
     function test_timeoutPacket_height_ok(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets,
@@ -754,9 +688,8 @@ contract IBCPacketTests is Test {
         vm.assume(height > 0);
         vm.assume(k <= height);
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
-            destinationPort, destinationChannel, message, nbPackets
-        );
+        IBCMsgs.MsgPacketTimeout memory msg_ =
+            createPacketTimeout(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             // fake timeout
             msg_.packets[i].timeoutTimestamp = 0;
@@ -777,20 +710,16 @@ contract IBCPacketTests is Test {
     }
 
     function test_timeoutPacket_height_ok_1(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint32 height,
         uint32 k
     ) public {
         vm.pauseGasMetering();
-        test_timeoutPacket_height_ok(
-            destinationPort, destinationChannel, message, 1, height, k
-        );
+        test_timeoutPacket_height_ok(destinationChannel, message, 1, height, k);
     }
 
     function test_timeoutPacket_height_commitmentRemoved(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets,
@@ -798,7 +727,7 @@ contract IBCPacketTests is Test {
         uint32 k
     ) public {
         IBCMsgs.MsgPacketTimeout memory msg_ = test_timeoutPacket_height_ok(
-            destinationPort, destinationChannel, message, nbPackets, height, k
+            destinationChannel, message, nbPackets, height, k
         );
         for (uint8 i = 0; i < nbPackets; i++) {
             assertEq(
@@ -814,7 +743,6 @@ contract IBCPacketTests is Test {
     }
 
     function test_timeoutPacket_height_invalidProof(
-        bytes32 destinationPort,
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets,
@@ -824,9 +752,8 @@ contract IBCPacketTests is Test {
         vm.assume(height > 0);
         vm.assume(k <= height);
         vm.assume(nbPackets > 0);
-        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
-            destinationPort, destinationChannel, message, nbPackets
-        );
+        IBCMsgs.MsgPacketTimeout memory msg_ =
+            createPacketTimeout(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             // fake timeout
             msg_.packets[i].timeoutTimestamp = 0;

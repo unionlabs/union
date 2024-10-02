@@ -101,7 +101,6 @@ contract TestLightClient is ILightClient {
         uint64,
         bytes calldata,
         bytes calldata,
-        bytes calldata,
         bytes calldata
     ) external returns (bool) {
         bool valid = validMembership > 0;
@@ -114,7 +113,6 @@ contract TestLightClient is ILightClient {
     function verifyNonMembership(
         uint32,
         uint64,
-        bytes calldata,
         bytes calldata,
         bytes calldata
     ) external returns (bool) {

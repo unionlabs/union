@@ -10,6 +10,7 @@ library IBCStoreLib {
     error ErrClientNotFound();
     error ErrModuleNotFound();
     error ErrInvalidConnectionState();
+    error ErrInvalidChannelState();
 }
 
 abstract contract IBCStore {
@@ -78,11 +79,21 @@ abstract contract IBCStore {
 
     function ensureConnectionState(
         uint32 connectionId
-    ) internal view returns (IBCConnection storage) {
+    ) internal view returns (uint32) {
         IBCConnection storage connection = connections[connectionId];
         if (connection.state != IBCConnectionState.Open) {
             revert IBCStoreLib.ErrInvalidConnectionState();
         }
-        return connection;
+        return connection.clientId;
+    }
+
+    function ensureChannelState(
+        uint32 channelId
+    ) internal view returns (IBCChannel storage) {
+        IBCChannel storage channel = channels[channelId];
+        if (channel.state != IBCChannelState.Open) {
+            revert IBCStoreLib.ErrInvalidChannelState();
+        }
+        return channel;
     }
 }

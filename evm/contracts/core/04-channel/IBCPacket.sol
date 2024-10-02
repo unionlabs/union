@@ -25,32 +25,20 @@ library IBCPacketLib {
     event TimeoutPacket(IBCPacket packet, address relayer);
 
     error ErrUnauthorized();
-    error ErrInvalidChannelState();
-    error ErrLatestHeightNotFound();
     error ErrLatestTimestampNotFound();
-    error ErrInvalidTimeoutHeight();
-    error ErrInvalidTimeoutTimestamp();
     error ErrTimeoutMustBeSet();
-    error ErrSourceAndCounterpartyPortMismatch();
-    error ErrSourceAndCounterpartyChannelMismatch();
-    error ErrDestinationAndCounterpartyPortMismatch();
-    error ErrDestinationAndCounterpartyChannelMismatch();
-    error ErrInvalidConnectionState();
     error ErrHeightTimeout();
     error ErrTimestampTimeout();
     error ErrInvalidProof();
-    error ErrPacketAlreadyReceived();
     error ErrPacketSequenceNextSequenceMismatch();
     error ErrPacketSequenceAckSequenceMismatch();
     error ErrAcknowledgementIsEmpty();
     error ErrPacketNotReceived();
     error ErrAcknowledgementAlreadyExists();
     error ErrPacketCommitmentNotFound();
-    error ErrInvalidPacketCommitment();
     error ErrTimeoutHeightNotReached();
     error ErrTimeoutTimestampNotReached();
     error ErrNextSequenceMustBeLEQThanTimeoutSequence();
-    error ErrConnectionMismatch();
     error ErrNotEnoughPackets();
     error ErrCommittedPacketNotPresent();
     error ErrCommittedAckNotPresent();
@@ -185,13 +173,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         }
         IBCChannel storage channel = ensureChannelState(sourceChannel);
         uint64 sequence = generatePacketSequence(sourceChannel);
-        address sourcePort = msg.sender;
-        bytes32 normalizedSourcePort = keccak256(abi.encodePacked(sourcePort));
         IBCPacket memory packet = IBCPacket({
             sequence: sequence,
-            sourcePort: normalizedSourcePort,
             sourceChannel: sourceChannel,
-            destinationPort: channel.counterparty.portId,
             destinationChannel: channel.counterparty.channelId,
             data: data,
             timeoutHeight: timeoutHeight,
@@ -248,8 +232,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         }
         uint32 destinationChannel = packets[0].destinationChannel;
         IBCChannel storage channel = ensureChannelState(destinationChannel);
-        IBCConnection storage connection =
-            ensureConnectionState(channel.connectionId);
+        uint32 clientId = ensureConnectionState(channel.connectionId);
         if (!intent) {
             bytes32 proofCommitmentKey;
             if (l == 1) {
@@ -263,7 +246,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             }
             if (
                 !verifyCommitment(
-                    connection,
+                    clientId,
                     proofHeight,
                     proof,
                     proofCommitmentKey,
@@ -419,8 +402,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         uint32 sourceChannel = msg_.packets[0].sourceChannel;
         uint32 destinationChannel = msg_.packets[0].destinationChannel;
         IBCChannel storage channel = ensureChannelState(sourceChannel);
-        IBCConnection storage connection =
-            ensureConnectionState(channel.connectionId);
+        uint32 clientId = ensureConnectionState(channel.connectionId);
         bytes32 commitmentKey;
         if (l == 1) {
             commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
@@ -433,7 +415,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         }
         if (
             !verifyCommitment(
-                connection,
+                clientId,
                 msg_.proofHeight,
                 msg_.proof,
                 commitmentKey,
@@ -470,11 +452,10 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         uint32 sourceChannel = msg_.packets[0].sourceChannel;
         uint32 destinationChannel = msg_.packets[0].destinationChannel;
         IBCChannel storage channel = ensureChannelState(sourceChannel);
-        IBCConnection storage connection =
-            ensureConnectionState(channel.connectionId);
-        ILightClient client = getClientInternal(connection.clientId);
+        uint32 clientId = ensureConnectionState(channel.connectionId);
+        ILightClient client = getClientInternal(clientId);
         uint64 proofTimestamp =
-            client.getTimestampAtHeight(connection.clientId, msg_.proofHeight);
+            client.getTimestampAtHeight(clientId, msg_.proofHeight);
         if (proofTimestamp == 0) {
             revert IBCPacketLib.ErrLatestTimestampNotFound();
         }
@@ -482,7 +463,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         if (ordering == IBCChannelOrder.Ordered) {
             if (
                 !verifyCommitment(
-                    connection,
+                    clientId,
                     msg_.proofHeight,
                     msg_.proof,
                     IBCCommitment.nextSequenceRecvCommitmentKey(
@@ -507,7 +488,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             }
             if (
                 !verifyAbsentCommitment(
-                    connection, msg_.proofHeight, msg_.proof, commitmentKey
+                    clientId, msg_.proofHeight, msg_.proof, commitmentKey
                 )
             ) {
                 revert IBCPacketLib.ErrInvalidProof();
@@ -545,47 +526,30 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     }
 
     function verifyCommitment(
-        IBCConnection storage connection,
+        uint32 clientId,
         uint64 height,
         bytes calldata proof,
         bytes32 path,
         bytes32 commitment
     ) internal virtual returns (bool) {
-        uint32 clientId = connection.clientId;
         return getClientInternal(clientId).verifyMembership(
             clientId,
             height,
             proof,
-            abi.encodePacked(connection.counterparty.merklePrefix),
             abi.encodePacked(path),
             abi.encodePacked(commitment)
         );
     }
 
     function verifyAbsentCommitment(
-        IBCConnection storage connection,
+        uint32 clientId,
         uint64 height,
         bytes calldata proof,
         bytes32 path
     ) internal virtual returns (bool) {
-        uint32 clientId = connection.clientId;
         return getClientInternal(clientId).verifyNonMembership(
-            clientId,
-            height,
-            proof,
-            abi.encodePacked(connection.counterparty.merklePrefix),
-            abi.encodePacked(path)
+            clientId, height, proof, abi.encodePacked(path)
         );
-    }
-
-    function ensureChannelState(
-        uint32 channelId
-    ) internal view returns (IBCChannel storage) {
-        IBCChannel storage channel = channels[channelId];
-        if (channel.state != IBCChannelState.Open) {
-            revert IBCPacketLib.ErrInvalidChannelState();
-        }
-        return channel;
     }
 
     function generatePacketSequence(

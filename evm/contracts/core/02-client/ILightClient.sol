@@ -63,7 +63,6 @@ interface ILightClient {
         uint32 clientId,
         uint64 height,
         bytes calldata proof,
-        bytes calldata prefix,
         bytes calldata path,
         bytes calldata value
     ) external returns (bool);
@@ -76,7 +75,6 @@ interface ILightClient {
         uint32 clientId,
         uint64 height,
         bytes calldata proof,
-        bytes calldata prefix,
         bytes calldata path
     ) external returns (bool);
 

@@ -29,7 +29,7 @@ library Ics23 {
         UnionIcs23.NonExistenceProof calldata nonExistProof,
         UnionIcs23.ExistenceProof calldata existProof,
         bytes32 root,
-        bytes calldata prefix,
+        bytes memory prefix,
         bytes calldata key
     ) internal pure returns (VerifyChainedNonMembershipError) {
         (bytes32 subroot, Proof.CalculateRootError rCode) =
@@ -127,7 +127,7 @@ library Ics23 {
     function verifyChainedMembership(
         UnionIcs23.ExistenceProof[2] calldata proofs,
         bytes32 root,
-        bytes calldata prefix,
+        bytes memory prefix,
         bytes calldata key,
         bytes calldata value
     ) internal pure returns (VerifyChainedMembershipError) {
@@ -337,7 +337,7 @@ library Proof {
     function verifyNoRootCheck(
         UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
-        bytes calldata key,
+        bytes memory key,
         bytes memory value
     ) internal pure returns (VerifyExistenceError) {
         //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof
@@ -361,7 +361,7 @@ library Proof {
         UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
         bytes32 commitmentRoot,
-        bytes calldata key,
+        bytes memory key,
         bytes memory value
     ) internal pure returns (VerifyExistenceError) {
         //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof

@@ -7,7 +7,7 @@ library ICS23MembershipVerifier {
     function verifyMembership(
         bytes32 root,
         bytes calldata proof,
-        bytes calldata prefix,
+        bytes memory prefix,
         bytes calldata path,
         bytes calldata value
     ) internal pure returns (bool) {
@@ -28,7 +28,7 @@ library ICS23MembershipVerifier {
     function verifyNonMembership(
         bytes32 root,
         bytes calldata proof,
-        bytes calldata prefix,
+        bytes memory prefix,
         bytes calldata path
     ) internal pure returns (bool) {
         NonMembershipProof calldata nonexistenceProof;
