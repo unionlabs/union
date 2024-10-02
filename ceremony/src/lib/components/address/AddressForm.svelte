@@ -6,7 +6,7 @@ import { insertWalletData } from "$lib/supabase"
 import { user } from "$lib/state/session.svelte.ts"
 import { getState } from "$lib/state/index.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
-import {axiom} from "$lib/utils/axiom.ts";
+import { axiom } from "$lib/utils/axiom.ts"
 
 interface Props extends HTMLInputAttributes {
   class?: string
@@ -51,7 +51,7 @@ const onAddressSubmit = async (event: Event) => {
         terminal.updateHistory({ text: "Saving address..." })
         await sleep(2000)
         terminal.updateHistory({ text: "Wallet address saved successfully" })
-        axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'added_address' }])
+        axiom.ingest("monitor", [{ user: user.session?.user.id, type: "added_address" }])
         await sleep(2000)
         contributor.checkUserWallet(user.session?.user.id)
       } else {
@@ -77,7 +77,7 @@ const skip = async () => {
     })
     if (result) {
       terminal.updateHistory({ text: "Saving to db..." })
-      axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'skipped_address' }])
+      axiom.ingest("monitor", [{ user: user.session?.user.id, type: "skipped_address" }])
       await sleep(2000)
       contributor.userWallet = "SKIPPED"
     } else {

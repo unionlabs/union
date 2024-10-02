@@ -6,7 +6,7 @@ import {
   getContributionState,
   getUserWallet
 } from "$lib/supabase"
-import {axiom} from "$lib/utils/axiom.ts";
+import { axiom } from "$lib/utils/axiom.ts"
 
 type IntervalID = NodeJS.Timeout | number
 
@@ -275,22 +275,26 @@ export class Contributor {
         case "contributionEnded":
         case "uploadStarted":
         case "uploadEnded":
-        case "successful":
+        case "successful": {
           this.state = "contributing"
-          axiom.ingest('monitor', [{ user: this.userId, type: 'contributing' }])
+          axiom.ingest("monitor", [{ user: this.userId, type: "contributing" }])
           break
-        case "failed":
+        }
+        case "failed": {
           this.state = "error"
-          axiom.ingest('monitor', [{ user: this.userId, type: 'contributing_error' }])
+          axiom.ingest("monitor", [{ user: this.userId, type: "contributing_error" }])
           break
-        case "offline":
+        }
+        case "offline": {
           this.state = "noClient"
-          axiom.ingest('monitor', [{ user: this.userId, type: 'no_client' }])
+          axiom.ingest("monitor", [{ user: this.userId, type: "no_client" }])
           break
-        default:
+        }
+        default: {
           this.state = "contribute"
-          axiom.ingest('monitor', [{ user: this.userId, type: 'contribute' }])
+          axiom.ingest("monitor", [{ user: this.userId, type: "contribute" }])
           break
+        }
       }
     } else if (this.queueState.position !== null) {
       this.state = "inQueue"
@@ -299,13 +303,13 @@ export class Contributor {
       this.stopPolling()
     } else if (this.contributionState === "verifying") {
       this.state = "verifying"
-      axiom.ingest('monitor', [{ user: this.userId, type: 'verifying' }])
+      axiom.ingest("monitor", [{ user: this.userId, type: "verifying" }])
     } else if (this.contributionState === "missed") {
       this.state = "missed"
-      axiom.ingest('monitor', [{ user: this.userId, type: 'missed' }])
+      axiom.ingest("monitor", [{ user: this.userId, type: "missed" }])
     } else if (this.clientState === "offline") {
       this.state = "offline"
-      axiom.ingest('monitor', [{ user: this.userId, type: 'offline' }])
+      axiom.ingest("monitor", [{ user: this.userId, type: "offline" }])
     } else {
       this.state = "loading"
     }

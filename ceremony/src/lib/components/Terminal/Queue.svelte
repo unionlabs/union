@@ -4,8 +4,8 @@ import { getState } from "$lib/state/index.svelte.ts"
 import Print from "$lib/components/Terminal/Print.svelte"
 import LoadingBar from "$lib/components/Terminal/LoadingBar.svelte"
 import { getAverageTimes, type TimeResult } from "$lib/supabase"
-import {axiom} from "$lib/utils/axiom.ts";
-import {user} from "$lib/state/session.svelte.ts";
+import { axiom } from "$lib/utils/axiom.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 const { contributor, terminal } = getState()
 
@@ -14,7 +14,7 @@ let averages = $state<TimeResult>()
 
 onMount(async () => {
   terminal.updateHistory({ text: "You are in queue" })
-  axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'mount_queue' }])
+  axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_queue" }])
   averages = await getAverageTimes()
   console.log(averages)
 })

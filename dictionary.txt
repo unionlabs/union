@@ -311,6 +311,7 @@ autoplay
 autotests
 awkroot
 axelar
+axiomhq
 backoff
 backon
 backported
@@ -1011,6 +1012,7 @@ pvalue
 pxplusqx
 pxqx
 pxrx
+qaca
 qemq
 qself
 quattro
@@ -1433,5 +1435,3 @@ zktrie
 zstd
 αlphα
 λpxrx
-axiomhq
-qaca

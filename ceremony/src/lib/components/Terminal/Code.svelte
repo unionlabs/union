@@ -5,8 +5,8 @@ import Print from "$lib/components/Terminal/Print.svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
 import { sleep } from "$lib/utils/utils.ts"
 import { callJoinQueue } from "$lib/supabase"
-import {axiom} from "$lib/utils/axiom.ts";
-import {user} from "$lib/state/session.svelte.ts";
+import { axiom } from "$lib/utils/axiom.ts"
+import { user } from "$lib/state/session.svelte.ts"
 
 const { terminal, contributor } = getState()
 
@@ -33,7 +33,11 @@ function handleKeyDown(event: KeyboardEvent) {
 
 onMount(() => {
   terminal.clearHistory()
-  terminal.updateHistory({ text: "Please enter your invitation code", lineBreak: true, duplicate: true })
+  terminal.updateHistory({
+    text: "Please enter your invitation code",
+    lineBreak: true,
+    duplicate: true
+  })
   if (inputElement) {
     inputElement.focus()
   }
@@ -62,7 +66,7 @@ async function handleCodeJoin() {
     } else {
       terminal.updateHistory({ text: "The code is not valid", duplicate: true })
       terminal.updateHistory({ text: "", lineBreak: true, duplicate: true })
-      axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'invalid_code' }])
+      axiom.ingest("monitor", [{ user: user.session?.user.id, type: "invalid_code" }])
       onCancel()
     }
   } catch (error) {
