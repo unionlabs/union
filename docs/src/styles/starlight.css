@@ -3,6 +3,7 @@
   --sl-white: #f9f9f9;
   --sl-color-white: #f9f9f9;
   --bg-gray: #1f1f1f1f;
+  --sl-color-black: #0d0d0d;
 }
 
 :root[data-theme="light"] {
@@ -11,7 +12,7 @@
   --sl-color-text-accent: theme("colors.accent.700");
   --sl-color-accent-high: theme("colors.accent.950") !important;
   --sl-color-white: var(--sl-white);
-  --sl-color-bg: var(--bg-gray);
+  --sl-color-bg: var(--bg-white);
   --sl-rapide-ui-header-bg-color: var(--bg-gray);
   --sl-color-bg-sidebar: var(--sl-white);
   --sl-color-text: var(--sl-gray);
@@ -21,12 +22,12 @@
 }
 
 :root[data-theme="dark"] {
-  --sl-color-black: var(var(--bg-gray));
+  --sl-color-black: theme("colors.neutral.900");
   --sl-accent-color: theme("colors.accent.500");
   --dark-blue: theme("colors.accent.500");
   --sl-color-text-accent: theme("colors.accent.500");
   --sl-color-accent-high: theme("colors.accent.500") !important;
-  --sl-color-white: var(--sl-white) / 0.8;
+  --sl-color-white: var(--sl-white);
   --sl-color-bg: var(--bg-gray);
   --sl-rapide-ui-header-bg-color: var(--bg-gray) / 0.8;
   --sl-color-bg-sidebar: var(--bg-gray) / 0.8;

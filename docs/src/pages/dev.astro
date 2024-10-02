@@ -41,9 +41,13 @@ const dependencies: Array<Packages> = [
   }}
   client:only="react"
 />
+
 <Terminal webcontainerFiles={JSON.stringify(demoFiles)} />
 
 <style lang="postcss" is:global>
+  @import url('../styles/index.css');
+  @import url('../styles/fonts.css');
+  @import url('../styles/tailwind.css');
   textarea {
     color: #131313 !important;
   }

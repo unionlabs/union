@@ -24,7 +24,11 @@ import { rehypeHeadingIds, type RemarkPlugin, type ShikiConfig } from "@astrojs/
 type Markdown = AstroUserConfig["markdown"]
 
 export const shikiConfig = {
-  theme: "houston",
+  themes: {
+    dark: "houston",
+    light: "github-light"
+  },
+  defaultColor: false,
   transformers: [
     transformerTwoslash({
       explicitTrigger: /\btwoslash\b/,
@@ -47,7 +51,6 @@ export const markdownConfiguration = {
   smartypants: false,
   syntaxHighlight: "shiki",
   remarkRehype: {
-    allowDangerousHtml: true,
     clobberPrefix: "union-docs-",
     passThrough: ["code", "root"]
   },
