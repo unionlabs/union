@@ -278,21 +278,25 @@ export class Contributor {
         case "successful": {
           this.state = "contributing"
           axiom.ingest("monitor", [{ user: this.userId, type: "contributing" }])
+          axiom.ingest("monitor", [{ user: this.userId, type: `client_state_${this.clientState}` }])
           break
         }
         case "failed": {
           this.state = "error"
           axiom.ingest("monitor", [{ user: this.userId, type: "contributing_error" }])
+          axiom.ingest("monitor", [{ user: this.userId, type: "client_state_failed" }])
           break
         }
         case "offline": {
           this.state = "noClient"
           axiom.ingest("monitor", [{ user: this.userId, type: "no_client" }])
+          axiom.ingest("monitor", [{ user: this.userId, type: "client_state_offline" }])
           break
         }
         default: {
           this.state = "contribute"
           axiom.ingest("monitor", [{ user: this.userId, type: "contribute" }])
+          axiom.ingest("monitor", [{ user: this.userId, type: `client_state_${this.clientState}` }])
           break
         }
       }
