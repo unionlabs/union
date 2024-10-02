@@ -113,11 +113,6 @@ library IBCPacketLib {
  * @dev IBCPacket is a contract that implements [ICS-4](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics).
  */
 abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
-    /**
-     * @dev batchSend is called by a module in order to commit multiple IBC packets.
-     * An error occur if any of the packets wasn't sent.
-     * If successful, a new commitment is registered for the batch.
-     */
     function batchSend(
         IBCMsgs.MsgBatchSend calldata msg_
     ) external override {
@@ -143,11 +138,6 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         )] = IBCPacketLib.COMMITMENT_MAGIC;
     }
 
-    /**
-     * @dev batchAcks is called by a module in order to commit multiple IBC packets acknowledgements.
-     * An error occur if any of the packets wasn't received.
-     * If successful, a new commitment is registered for the batch.
-     */
     function batchAcks(
         IBCMsgs.MsgBatchAcks calldata msg_
     ) external override {
@@ -181,11 +171,6 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         )] = IBCPacketLib.commitAcks(msg_.acks);
     }
 
-    /**
-     * @dev sendPacket is called by a module in order to send an IBC packet on a channel.
-     * The packet sequence generated for the packet to be sent is returned. An error
-     * is returned if one occurs.
-     */
     function sendPacket(
         uint32 sourceChannel,
         uint64 timeoutHeight,
@@ -388,10 +373,6 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             IBCPacketLib.commitAckMemory(acknowledgement);
     }
 
-    /**
-     * @dev writeAcknowledgement writes the packet execution acknowledgement to the state,
-     * which will be verified by the counterparty chain using AcknowledgePacket.
-     */
     function writeAcknowledgement(
         IBCPacket calldata packet,
         bytes memory acknowledgement
@@ -428,14 +409,6 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             bytes32(uint256(expectedAckSequence + 1));
     }
 
-    /**
-     * @dev AcknowledgePacket is called by a module to process the acknowledgement of a
-     * packet previously sent by the calling module on a channel to a counterparty
-     * module on the counterparty chain. Its intended usage is within the ante
-     * handler. AcknowledgePacket will clean up the packet commitment,
-     * which is no longer necessary since the packet has been received and acted upon.
-     * It will also increment NextSequenceAck in case of ORDERED channels.
-     */
     function acknowledgePacket(
         IBCMsgs.MsgPacketAcknowledgement calldata msg_
     ) external override {
@@ -544,9 +517,12 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
             deletePacketCommitment(sourceChannel, packet);
+            if (packet.timeoutTimestamp == 0 && packet.timeoutHeight == 0) {
+                revert IBCPacketLib.ErrTimeoutMustBeSet();
+            }
             if (
                 packet.timeoutTimestamp > 0
-                    && packet.timeoutTimestamp >= proofTimestamp
+                    && packet.timeoutTimestamp > proofTimestamp
             ) {
                 revert IBCPacketLib.ErrTimeoutTimestampNotReached();
             }

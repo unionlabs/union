@@ -3,23 +3,20 @@ pragma solidity ^0.8.27;
 import "../../../contracts/core/02-client/ILightClient.sol";
 
 contract TestLightClient is ILightClient {
-    uint64 height;
     bool revertCreate;
     bool revertUpdate;
     uint64 validMembership;
     uint64 validNonMembership;
     bytes clientState;
 
+    uint64 latestHeight;
+
+    mapping(uint64 => uint64) timestamps;
+
     constructor() {
         revertCreate = false;
         revertUpdate = false;
-        height = 0;
-    }
-
-    function setHeight(
-        uint64 height_
-    ) public {
-        height = height_;
+        latestHeight = 0;
     }
 
     function setRevertCreate(
@@ -42,6 +39,19 @@ contract TestLightClient is ILightClient {
         validNonMembership += 1;
     }
 
+    function setLatestTimestamp(
+        uint64 timestamp
+    ) public {
+        timestamps[latestHeight] = timestamp;
+    }
+
+    function setLatestHeight(
+        uint64 height
+    ) public {
+        latestHeight = height;
+        timestamps[height] = 1;
+    }
+
     function createClient(
         uint32,
         bytes calldata clientStateBytes,
@@ -54,21 +64,21 @@ contract TestLightClient is ILightClient {
         return ConsensusStateUpdate({
             clientStateCommitment: keccak256(clientStateBytes),
             consensusStateCommitment: keccak256(consensusStateBytes),
-            height: height
+            height: latestHeight
         });
     }
 
     function getTimestampAtHeight(
         uint32,
-        uint64
-    ) external pure returns (uint64) {
-        return 0;
+        uint64 height
+    ) external view returns (uint64) {
+        return timestamps[height];
     }
 
     function getLatestHeight(
         uint32
     ) external view returns (uint64) {
-        return height;
+        return latestHeight;
     }
 
     function updateClient(
@@ -78,11 +88,11 @@ contract TestLightClient is ILightClient {
         if (revertUpdate) {
             revert();
         }
-        height = height + 1;
+        latestHeight += 1;
         return ConsensusStateUpdate({
             clientStateCommitment: keccak256(clientState),
             consensusStateCommitment: keccak256(clientMessageBytes),
-            height: height
+            height: latestHeight
         });
     }
 

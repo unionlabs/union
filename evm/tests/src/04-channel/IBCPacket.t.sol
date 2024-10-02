@@ -6,6 +6,8 @@ import "../core/IBCHandler.sol";
 import "../core/LightClient.sol";
 import "../core/Module.sol";
 
+import "@openzeppelin/utils/math/Math.sol";
+
 contract IBCPacketTests is Test {
     bytes32 public constant CLIENT_TYPE = keccak256("zkgm");
     bytes32 public constant VERSION = keccak256("protocol-1");
@@ -96,8 +98,8 @@ contract IBCPacketTests is Test {
         uint64 timeoutHeight,
         bytes calldata packet
     ) public {
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
         vm.pauseGasMetering();
+        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
         vm.prank(address(module));
         vm.resumeGasMetering();
         handler.sendPacket(channelId, timeoutTimestamp, timeoutHeight, packet);
@@ -156,10 +158,8 @@ contract IBCPacketTests is Test {
     function test_sendPacket_missingTimeout(
         bytes calldata packet
     ) public {
-        vm.pauseGasMetering();
         vm.prank(address(module));
         vm.expectRevert(IBCPacketLib.ErrTimeoutMustBeSet.selector);
-        vm.resumeGasMetering();
         handler.sendPacket(channelId, 0, 0, packet);
     }
 
@@ -169,12 +169,10 @@ contract IBCPacketTests is Test {
         uint64 timeoutHeight,
         bytes calldata packet
     ) public {
-        vm.pauseGasMetering();
         vm.assume(channelId_ != channelId);
         vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
         vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
         vm.prank(address(module));
-        vm.resumeGasMetering();
         handler.sendPacket(channelId_, timeoutTimestamp, timeoutHeight, packet);
     }
 
@@ -183,10 +181,8 @@ contract IBCPacketTests is Test {
         uint64 timeoutHeight,
         bytes calldata packet
     ) public {
-        vm.pauseGasMetering();
         vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
         vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
-        vm.resumeGasMetering();
         handler.sendPacket(channelId, timeoutTimestamp, timeoutHeight, packet);
     }
 
@@ -242,6 +238,15 @@ contract IBCPacketTests is Test {
         IBCMsgs.MsgPacketRecv memory msg_ =
             createReceivePacket(sourcePort, sourceChannel, message, nbPackets);
         lightClient.pushValidMembership();
+        for (uint8 i = 0; i < nbPackets; i++) {
+            vm.expectEmit();
+            emit IBCPacketLib.RecvPacket(
+                msg_.packets[i], msg_.relayer, msg_.relayerMsgs[i]
+            );
+            emit IBCPacketLib.WriteAcknowledgement(
+                msg_.packets[i], TestModuleLib.ACKNOWLEDGEMENT
+            );
+        }
         vm.resumeGasMetering();
         handler.recvPacket(msg_);
     }
@@ -389,6 +394,15 @@ contract IBCPacketTests is Test {
         IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
             sourcePort, sourceChannel, message, nbPackets
         );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            vm.expectEmit();
+            emit IBCPacketLib.RecvIntentPacket(
+                msg_.packets[i], msg_.marketMaker, msg_.marketMakerMsgs[i]
+            );
+            emit IBCPacketLib.WriteAcknowledgement(
+                msg_.packets[i], TestModuleLib.ACKNOWLEDGEMENT
+            );
+        }
         vm.resumeGasMetering();
         handler.recvIntentPacket(msg_);
     }
@@ -399,12 +413,10 @@ contract IBCPacketTests is Test {
         bytes calldata message,
         uint8 nbPackets
     ) public {
-        vm.pauseGasMetering();
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgIntentPacketRecv memory msg_ = createReceiveIntentPacket(
             sourcePort, sourceChannel, message, nbPackets
         );
-        vm.resumeGasMetering();
         handler.recvIntentPacket(msg_);
         for (uint8 i = 0; i < nbPackets; i++) {
             assertEq(
@@ -502,10 +514,16 @@ contract IBCPacketTests is Test {
         createPacketAcknowledgement(
             destinationPort, destinationChannel, message, nbPackets
         );
+        lightClient.pushValidMembership();
         for (uint8 i = 0; i < nbPackets; i++) {
             handler.assumePacketSent(channelId, msg_.packets[i]);
         }
-        lightClient.pushValidMembership();
+        for (uint8 i = 0; i < nbPackets; i++) {
+            vm.expectEmit();
+            emit IBCPacketLib.AcknowledgePacket(
+                msg_.packets[i], abi.encodePacked(i), msg_.relayer
+            );
+        }
         vm.resumeGasMetering();
         handler.acknowledgePacket(msg_);
     }
@@ -556,7 +574,6 @@ contract IBCPacketTests is Test {
         bytes calldata message,
         uint8 nbPackets
     ) public {
-        vm.pauseGasMetering();
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketAcknowledgement memory msg_ =
         createPacketAcknowledgement(
@@ -565,8 +582,260 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             handler.assumePacketSent(channelId, msg_.packets[i]);
         }
-        vm.resumeGasMetering();
         vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
         handler.acknowledgePacket(msg_);
+    }
+
+    function createPacketTimeout(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets
+    ) internal view returns (IBCMsgs.MsgPacketTimeout memory) {
+        bytes32 normalizedPortId = keccak256(abi.encodePacked(address(module)));
+        IBCPacket[] memory packets = new IBCPacket[](nbPackets);
+        for (uint8 i = 0; i < nbPackets; i++) {
+            packets[i] = IBCPacket({
+                sequence: i,
+                sourcePort: normalizedPortId,
+                sourceChannel: channelId,
+                destinationPort: destinationPort,
+                destinationChannel: destinationChannel,
+                data: message,
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: type(uint64).max
+            });
+        }
+        IBCMsgs.MsgPacketTimeout memory msg_ = IBCMsgs.MsgPacketTimeout({
+            packets: packets,
+            relayer: address(this),
+            proof: hex"",
+            proofHeight: 0,
+            nextSequenceRecv: 0
+        });
+        return msg_;
+    }
+
+    function test_timeoutPacket_timestamp_ok(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets,
+        uint32 timestamp,
+        uint32 k
+    ) public returns (IBCMsgs.MsgPacketTimeout memory) {
+        vm.pauseGasMetering();
+        vm.assume(timestamp > 0);
+        vm.assume(k <= timestamp);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
+            destinationPort, destinationChannel, message, nbPackets
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            // fake timeout
+            msg_.packets[i].timeoutTimestamp = timestamp;
+            msg_.packets[i].timeoutHeight = 0;
+            handler.assumePacketSent(channelId, msg_.packets[i]);
+        }
+        lightClient.pushValidNonMembership();
+        lightClient.setLatestTimestamp(uint64(timestamp) + k);
+        for (uint8 i = 0; i < nbPackets; i++) {
+            vm.expectEmit();
+            emit IBCPacketLib.TimeoutPacket(msg_.packets[i], msg_.relayer);
+        }
+        vm.resumeGasMetering();
+        handler.timeoutPacket(msg_);
+        vm.pauseGasMetering();
+        return msg_;
+    }
+
+    function test_timeoutPacket_timestamp_ok_1(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint32 timestamp,
+        uint32 k
+    ) public {
+        vm.pauseGasMetering();
+        test_timeoutPacket_timestamp_ok(
+            destinationPort, destinationChannel, message, 1, timestamp, k
+        );
+    }
+
+    function test_timeoutPacket_timestamp_commitmentRemoved(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets,
+        uint32 timestamp,
+        uint32 k
+    ) public {
+        IBCMsgs.MsgPacketTimeout memory msg_ = test_timeoutPacket_timestamp_ok(
+            destinationPort,
+            destinationChannel,
+            message,
+            nbPackets,
+            timestamp,
+            k
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            assertEq(
+                handler.commitments(
+                    IBCCommitment.batchPacketsCommitmentKey(
+                        channelId,
+                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                    )
+                ),
+                IBCPacketLib.COMMITMENT_NULL
+            );
+        }
+    }
+
+    function test_timeoutPacket_timestamp_invalidProof(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets,
+        uint32 timestamp,
+        uint32 k
+    ) public {
+        vm.assume(timestamp > 0);
+        vm.assume(k <= timestamp);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
+            destinationPort, destinationChannel, message, nbPackets
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            // fake timeout
+            msg_.packets[i].timeoutTimestamp = timestamp;
+            msg_.packets[i].timeoutHeight = 0;
+            handler.assumePacketSent(channelId, msg_.packets[i]);
+        }
+        lightClient.setLatestTimestamp(uint64(timestamp) + k);
+        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
+        handler.timeoutPacket(msg_);
+    }
+
+    function test_timeoutPacket_timestamp_notReached(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets,
+        uint32 timestamp,
+        uint32 k
+    ) public {
+        vm.assume(timestamp > 0);
+        vm.assume(k <= timestamp);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
+            destinationPort, destinationChannel, message, nbPackets
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            // fake timeout
+            msg_.packets[i].timeoutTimestamp = uint64(timestamp) + k + 1;
+            msg_.packets[i].timeoutHeight = 0;
+            handler.assumePacketSent(channelId, msg_.packets[i]);
+        }
+        lightClient.pushValidNonMembership();
+        lightClient.setLatestTimestamp(timestamp);
+        vm.expectRevert(IBCPacketLib.ErrTimeoutTimestampNotReached.selector);
+        handler.timeoutPacket(msg_);
+    }
+
+    function test_timeoutPacket_height_ok(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets,
+        uint32 height,
+        uint32 k
+    ) public returns (IBCMsgs.MsgPacketTimeout memory) {
+        vm.pauseGasMetering();
+        vm.assume(height > 0);
+        vm.assume(k <= height);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
+            destinationPort, destinationChannel, message, nbPackets
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            // fake timeout
+            msg_.packets[i].timeoutTimestamp = 0;
+            msg_.packets[i].timeoutHeight = height;
+            handler.assumePacketSent(channelId, msg_.packets[i]);
+        }
+        lightClient.pushValidNonMembership();
+        lightClient.setLatestHeight(uint64(height) + k);
+        msg_.proofHeight = uint64(height) + k;
+        for (uint8 i = 0; i < nbPackets; i++) {
+            vm.expectEmit();
+            emit IBCPacketLib.TimeoutPacket(msg_.packets[i], msg_.relayer);
+        }
+        vm.resumeGasMetering();
+        handler.timeoutPacket(msg_);
+        vm.pauseGasMetering();
+        return msg_;
+    }
+
+    function test_timeoutPacket_height_ok_1(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint32 height,
+        uint32 k
+    ) public {
+        vm.pauseGasMetering();
+        test_timeoutPacket_height_ok(
+            destinationPort, destinationChannel, message, 1, height, k
+        );
+    }
+
+    function test_timeoutPacket_height_commitmentRemoved(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets,
+        uint32 height,
+        uint32 k
+    ) public {
+        IBCMsgs.MsgPacketTimeout memory msg_ = test_timeoutPacket_height_ok(
+            destinationPort, destinationChannel, message, nbPackets, height, k
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            assertEq(
+                handler.commitments(
+                    IBCCommitment.batchPacketsCommitmentKey(
+                        channelId,
+                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                    )
+                ),
+                IBCPacketLib.COMMITMENT_NULL
+            );
+        }
+    }
+
+    function test_timeoutPacket_height_invalidProof(
+        bytes32 destinationPort,
+        uint32 destinationChannel,
+        bytes calldata message,
+        uint8 nbPackets,
+        uint32 height,
+        uint32 k
+    ) public {
+        vm.assume(height > 0);
+        vm.assume(k <= height);
+        vm.assume(nbPackets > 0);
+        IBCMsgs.MsgPacketTimeout memory msg_ = createPacketTimeout(
+            destinationPort, destinationChannel, message, nbPackets
+        );
+        for (uint8 i = 0; i < nbPackets; i++) {
+            // fake timeout
+            msg_.packets[i].timeoutTimestamp = 0;
+            msg_.packets[i].timeoutHeight = height;
+            handler.assumePacketSent(channelId, msg_.packets[i]);
+        }
+        lightClient.setLatestHeight(uint64(height) + k);
+        msg_.proofHeight = uint64(height) + k;
+        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
+        handler.timeoutPacket(msg_);
     }
 }
