@@ -28,8 +28,9 @@ const {
       <TabItem label={pkgManager} icon={commands[pkgManager].icon}>
         <Code
           lang="bash"
-          theme="houston"
+          themes={shikiConfig.themes}
           class="text-sm sm:text-base size-full"
+          defaultColor={shikiConfig.defaultColor}
           transformers={shikiConfig.transformers}
           code={`${prefix ?? ''} ${pkgManager} ${commands[pkgManager].commands[command]} ${packageId} ${postfix ?? ''}`.trim()}
         />

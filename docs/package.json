@@ -80,7 +80,7 @@
     "@types/bun": "^1.1.10",
     "@types/node": "^22.7.4",
     "@types/postcss-import": "^14.0.3",
-    "@types/react": "^18.3.10",
+    "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
     "@typescript/twoslash": "^3.2.8",
     "autoprefixer": "^10.4.20",

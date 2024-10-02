@@ -26,9 +26,9 @@ type Markdown = AstroUserConfig["markdown"]
 export const shikiConfig = {
   themes: {
     dark: "houston",
-    light: "github-light"
+    light: "github-light-default"
   },
-  defaultColor: false,
+  defaultColor: "dark",
   transformers: [
     transformerTwoslash({
       explicitTrigger: /\btwoslash\b/,

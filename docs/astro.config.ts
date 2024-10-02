@@ -172,6 +172,11 @@ export default defineConfig({
                   badge: { variant: "success", text: "new" }
                 },
                 {
+                  label: "Solidity",
+                  link: "/integrations/solidity",
+                  badge: { variant: "success", text: "new" }
+                },
+                {
                   label: "API",
                   collapsed: true,
                   autogenerate: {
@@ -187,6 +192,7 @@ export default defineConfig({
                 }
               ]
             },
+
             {
               label: "Joining the Testnet",
               collapsed: true,
