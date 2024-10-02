@@ -15,6 +15,7 @@ let validation = (val: ValidState) => {
 }
 
 onMount(() => {
+  terminal.setStep(5)
   terminal.updateHistory({
     text: "Add an address, you may receive rewards for successful contributions."
   })

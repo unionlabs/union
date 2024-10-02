@@ -14,6 +14,7 @@ let buttons = $state<Array<HTMLButtonElement>>([])
 let focusedIndex = $state(0)
 
 onMount(() => {
+  terminal.setStep(4)
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_secret" }])
 })
 

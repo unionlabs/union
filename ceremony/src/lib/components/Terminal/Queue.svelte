@@ -6,13 +6,15 @@ import LoadingBar from "$lib/components/Terminal/LoadingBar.svelte"
 import { getAverageTimes, type TimeResult } from "$lib/supabase"
 import { axiom } from "$lib/utils/axiom.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import { formatWaitTime } from "$lib/utils/utils.js"
 
 const { contributor, terminal } = getState()
 
-let waitingTime = $state("")
+let waitingTime = $state<number>(0)
 let averages = $state<TimeResult>()
 
 onMount(async () => {
+  terminal.setStep(6)
   terminal.updateHistory({ text: "You are in queue" })
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_queue" }])
   averages = await getAverageTimes()
@@ -25,7 +27,7 @@ onDestroy(() => {
 
 $effect(() => {
   if (averages && contributor.queueState.count) {
-    waitingTime = ((contributor.queueState.count * averages.totalMs) / 1000 / 60).toFixed(0)
+    waitingTime = (contributor.queueState.count * averages.totalMs) / 1000 / 60
   }
 })
 </script>
@@ -33,7 +35,7 @@ $effect(() => {
 <!--TODO add new time-->
 <Print>Your position:  {contributor.queueState.position ?? 1}</Print>
 <Print>Queue length: {contributor.queueState.count ?? 2}</Print>
-<Print>Estimated waiting time: {waitingTime} minutes</Print>
+<Print>Estimated waiting time: {formatWaitTime(waitingTime)}</Print>
 <Print><br></Print>
 <LoadingBar max={contributor.queueState.count} current={contributor.queueState.position}/>
 <Print><br></Print>

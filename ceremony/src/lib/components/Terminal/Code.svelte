@@ -3,10 +3,11 @@ import { getState } from "$lib/state/index.svelte.ts"
 import { onDestroy, onMount } from "svelte"
 import Print from "$lib/components/Terminal/Print.svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
-import { sleep } from "$lib/utils/utils.ts"
-import { callJoinQueue } from "$lib/supabase"
+import { formatWaitTime, sleep } from "$lib/utils/utils.ts"
+import { callJoinQueue, getAverageTimes } from "$lib/supabase"
 import { axiom } from "$lib/utils/axiom.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import { queryQueueCount } from "$lib/supabase/queries.ts"
 
 const { terminal, contributor } = getState()
 
@@ -16,22 +17,53 @@ let inputElement: HTMLInputElement
 let showConfirm = $state(false)
 let showInput = $state(true)
 
-function handleKeyDown(event: KeyboardEvent) {
+async function handleKeyDown(event: KeyboardEvent) {
   if (event.key === "Enter") {
     event.preventDefault()
+
+    let queue = await queryQueueCount()
+    const averages = await getAverageTimes()
+
+    terminal.updateHistory({ text: "", lineBreak: true, duplicate: true })
     terminal.updateHistory({ text: `Entered code: ${inputCode}`, duplicate: true })
     terminal.updateHistory({
-      text: "If you enter the queue then you must have your browser and terminal open when it is your turn. you cannot leave the queue, and when it is your turn you need to contribute",
+      text: "Warning: you must have your browser open and terminal running when it is your turn to contribute. You cannot leave the queue, and when it is your turn you have 1 hour to contribute.",
       type: "warning",
       duplicate: true
     })
-    terminal.updateHistory({ text: "", lineBreak: true })
+    if (queue.count !== null) {
+      if (queue.count > 0) {
+        terminal.updateHistory({ text: "", lineBreak: true, duplicate: true })
+        let message = `There ${queue.count === 1 ? "is" : "are"} ${queue.count} ${queue.count === 1 ? "person" : "people"} ahead of you in the queue.`
+
+        if (averages.totalMs) {
+          const waitTimeMinutes = (averages.totalMs / 1000 / 60) * queue.count
+          const formattedWaitTime = formatWaitTime(waitTimeMinutes)
+          message += ` Average wait time: ${formattedWaitTime}.`
+        }
+
+        terminal.updateHistory({
+          text: message,
+          type: "warning",
+          duplicate: true
+        })
+      } else {
+        terminal.updateHistory({ text: "", lineBreak: true, duplicate: true })
+        terminal.updateHistory({
+          text: "The queue is currently empty. You'll be the next to contribute if you enter now.",
+          type: "warning",
+          duplicate: true
+        })
+      }
+    }
+
     showInput = false
     showConfirm = true
   }
 }
 
 onMount(() => {
+  terminal.setStep(5)
   if (inputElement) {
     inputElement.focus()
   }

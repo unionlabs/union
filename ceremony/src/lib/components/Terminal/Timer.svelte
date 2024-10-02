@@ -7,43 +7,30 @@ import { user } from "$lib/state/session.svelte.ts"
 const { contributor } = getState()
 
 let countdown = $state("LOADING")
-let startTimestamp = $state<number>()
 let expireTimestamp = $state<number>()
 
 async function fetchTimestamps() {
   const userId = user.session?.user.id
   if (!userId) return
   const window = await queryContributionWindow(userId)
-  startTimestamp = new Date(window.data?.started).getTime()
   expireTimestamp = new Date(window.data?.expire).getTime()
 }
 
 function updateCountdown() {
-  if (!(startTimestamp && expireTimestamp)) return
+  if (!expireTimestamp) return
   const now = Date.now()
 
-  let targetTime: number
-  let prefix = ""
-  let suffix = ""
+  if (now < expireTimestamp) {
+    const distance = expireTimestamp - now
 
-  if (now < startTimestamp) {
-    targetTime = startTimestamp
-    prefix = "ETA "
-  } else if (now < expireTimestamp) {
-    targetTime = expireTimestamp
-    suffix = " LEFT"
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+
+    countdown = `${hours}H ${minutes}M ${seconds}S LEFT`
   } else {
     countdown = "EXPIRED"
-    return
   }
-
-  const distance = targetTime - now
-
-  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
-  const seconds = Math.floor((distance % (1000 * 60)) / 1000)
-
-  countdown = `${prefix}${hours}H ${minutes}M ${seconds}S${suffix}`
 }
 
 $effect(() => {
@@ -51,16 +38,14 @@ $effect(() => {
 })
 
 $effect(() => {
-  if (!(startTimestamp && expireTimestamp)) return
+  if (!expireTimestamp) return
   const timer = setInterval(updateCountdown, 1000)
   updateCountdown()
   return () => clearInterval(timer)
 })
 
 let show = $derived(
-  contributor.contributionState === "contribute" ||
-    contributor.contributionState === "verifying" ||
-    contributor.queueState.position !== null
+  contributor.contributionState === "contribute" || contributor.contributionState === "verifying"
 )
 </script>
 

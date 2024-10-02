@@ -1,5 +1,5 @@
 <script lang="ts">
-import { callJoinQueue } from "$lib/supabase"
+import { callJoinQueue, getAverageTimes } from "$lib/supabase"
 import { toast } from "svelte-sonner"
 import { getState } from "$lib/state/index.svelte.ts"
 import { onDestroy, onMount } from "svelte"
@@ -17,8 +17,8 @@ let selected = $state(false)
 let code = $state(false)
 
 onMount(() => {
+  terminal.setStep(4)
   terminal.updateHistory({ text: "Access the ceremony", replace: true })
-  terminal.updateHistory({ text: "", lineBreak: true })
   terminal.updateHistory({
     text: "We officially support Linux and macOS on Chrome, Firefox, or Brave browsers.",
     replace: true,

@@ -10,6 +10,7 @@ let redirecting = $state(false)
 const { terminal } = getState()
 
 onMount(() => {
+  terminal.setStep(1)
   terminal.updateHistory({ text: "Unauthenticated user", replace: true })
   terminal.updateHistory({ text: "Please authenticate with one of the following", replace: true })
 })

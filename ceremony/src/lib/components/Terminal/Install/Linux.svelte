@@ -19,6 +19,7 @@ let command =
   "mkdir -p ceremony && docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -v $(pwd)/ceremony:/ceremony -w /ceremony -p 4919:4919 --rm -it ghcr.io/unionlabs/union/mpc-client:latest"
 
 onMount(() => {
+  terminal.setStep(3)
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_linux" }])
   const messages = [
     {

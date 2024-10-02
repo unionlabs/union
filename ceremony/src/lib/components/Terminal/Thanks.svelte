@@ -10,6 +10,7 @@ import { user } from "$lib/state/session.svelte.ts"
 const { terminal } = getState()
 
 onMount(() => {
+  terminal.setStep(10)
   terminal.updateHistory({ text: "Thank you!", replace: true })
   terminal.updateHistory({ text: "-------------" })
   terminal.updateHistory({

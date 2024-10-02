@@ -19,6 +19,7 @@ const selections = [
 ]
 
 onMount(() => {
+  terminal.setStep(2)
   terminal.updateHistory({
     text: "Warning: Can't connect to the local client. This might be because:",
     replace: true,

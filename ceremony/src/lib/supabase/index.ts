@@ -196,14 +196,14 @@ export const getPublicHash = async () => {
   return data.public_key_hash
 }
 
-export const getUserWallet = async (userId: string | undefined) => {
+export const getUserWallet = async (userId: string | null): Promise<string | null> => {
   if (!userId) {
     console.log("Need to be logged in to get allowance state")
-    return undefined
+    return null
   }
 
   const { data, error } = await queryUserWallet(userId)
-  if (error || !data) return undefined
+  if (error || !data) return null
 
   return data.wallet
 }
