@@ -6,6 +6,7 @@ import {
   getContributionState,
   getUserWallet
 } from "$lib/supabase"
+import {axiom} from "$lib/utils/axiom.ts";
 
 type IntervalID = NodeJS.Timeout | number
 
@@ -110,9 +111,9 @@ export class Contributor {
     if (this.userId === undefined && userId) {
       this.userId = userId
       this.loggedIn = true
+      this.startPolling()
       this.checkUserWallet(userId)
       this.checkCurrentUserState(userId)
-      this.startPolling()
     }
   }
 
@@ -276,15 +277,19 @@ export class Contributor {
         case "uploadEnded":
         case "successful":
           this.state = "contributing"
+          axiom.ingest('monitor', [{ user: this.userId, type: 'contributing' }])
           break
         case "failed":
           this.state = "error"
+          axiom.ingest('monitor', [{ user: this.userId, type: 'contributing_error' }])
           break
         case "offline":
           this.state = "noClient"
+          axiom.ingest('monitor', [{ user: this.userId, type: 'no_client' }])
           break
         default:
           this.state = "contribute"
+          axiom.ingest('monitor', [{ user: this.userId, type: 'contribute' }])
           break
       }
     } else if (this.queueState.position !== null) {
@@ -294,10 +299,13 @@ export class Contributor {
       this.stopPolling()
     } else if (this.contributionState === "verifying") {
       this.state = "verifying"
+      axiom.ingest('monitor', [{ user: this.userId, type: 'verifying' }])
     } else if (this.contributionState === "missed") {
       this.state = "missed"
+      axiom.ingest('monitor', [{ user: this.userId, type: 'missed' }])
     } else if (this.clientState === "offline") {
       this.state = "offline"
+      axiom.ingest('monitor', [{ user: this.userId, type: 'offline' }])
     } else {
       this.state = "loading"
     }

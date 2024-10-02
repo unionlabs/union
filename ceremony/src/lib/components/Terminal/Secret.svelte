@@ -2,8 +2,9 @@
 import { getState } from "$lib/state/index.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
 import { generateSecret } from "$lib/client"
-import { onDestroy } from "svelte"
+import {onDestroy, onMount} from "svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import {axiom} from "$lib/utils/axiom.ts";
 
 const { contributor, terminal, user } = getState()
 
@@ -12,6 +13,10 @@ let generating = $state(false)
 let buttons = $state<Array<HTMLButtonElement>>([])
 let focusedIndex = $state(0)
 
+onMount(() => {
+  axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'mount_secret' }])
+})
+
 function handleDownload() {
   const newUrl = "http://localhost:4919/secret_key"
   window.open(newUrl, "_blank")
@@ -19,6 +24,7 @@ function handleDownload() {
 
 function stored() {
   localStorage.setItem("downloaded-secret", "true")
+  axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'stored_secret' }])
   contributor.downloadedSecret = true
 }
 
@@ -26,6 +32,7 @@ async function generate() {
   if (contributor.state !== "noClient") {
     generating = true
     terminal.updateHistory({ text: "Generating secret..." })
+    axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'generated_secret' }])
     await sleep(3000)
     generateSecret(user.session?.user.email)
     terminal.updateHistory({ text: "Initialize saving..." })

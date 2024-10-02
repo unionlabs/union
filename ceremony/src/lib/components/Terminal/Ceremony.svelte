@@ -8,6 +8,8 @@ import Secret from "$lib/components/Terminal/Secret.svelte"
 import { onDestroy } from "svelte"
 import Missed from "$lib/components/Terminal/Missed.svelte"
 import Print from "$lib/components/Terminal/Print.svelte"
+import {user} from "$lib/state/session.svelte.ts";
+import {axiom} from "$lib/utils/axiom.ts";
 
 const { contributor, terminal } = getState()
 

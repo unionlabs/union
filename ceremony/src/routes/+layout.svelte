@@ -9,6 +9,7 @@ import Timer from "$lib/components/Terminal/Timer.svelte"
 
 import "../styles/tailwind.css"
 import { onMount } from "svelte"
+import {axiom} from "$lib/utils/axiom.ts";
 
 let { children } = $props()
 
@@ -31,6 +32,7 @@ $effect(() => {
     contributor.state !== "contributing" &&
     contributor.downloadedSecret
   ) {
+    axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'start_contribution' }])
     start()
   }
 })

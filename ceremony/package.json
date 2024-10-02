@@ -26,6 +26,7 @@
     "vite": "^5.0.3"
   },
   "dependencies": {
+    "@axiomhq/js": "^1.2.0",
     "@scure/base": "^1.1.8",
     "@splinetool/runtime": "^1.9.23",
     "@supabase/supabase-js": "^2.45.3",

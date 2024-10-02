@@ -4,6 +4,8 @@ import { getState } from "$lib/state/index.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
 import { onDestroy, onMount } from "svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import {axiom} from "$lib/utils/axiom.ts";
+import {user} from "$lib/state/session.svelte.ts";
 
 const { terminal } = getState()
 
@@ -14,6 +16,7 @@ onMount(() => {
     text: "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency.",
     replace: true
   })
+  axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'mount_thanks' }])
 })
 
 async function shareOnTwitter() {
@@ -21,6 +24,7 @@ async function shareOnTwitter() {
   let hash = await getPublicHash()
   await sleep(2000)
   terminal.updateHistory({ text: "Opening X (twitter)...", duplicate: true })
+  axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'tweet' }])
   await sleep(2000)
   let url = `https://ceremony.union.build/contributions/${hash}`
   const tweetText = `I just contributed to the @union_build Trusted Setup Ceremony, to secure its ZK circuit for trustless, decentralized interoperability. \n\nI attest to my contribution. My public key hash is: \n\n${url}\n\n#JoinTheUnion`

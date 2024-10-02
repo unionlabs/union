@@ -3,6 +3,8 @@ import { onDestroy, onMount } from "svelte"
 import { getState } from "$lib/state/index.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import {axiom} from "$lib/utils/axiom.ts";
+import {user} from "$lib/state/session.svelte.ts";
 
 type Props = {
   change: () => void
@@ -17,6 +19,7 @@ let command =
   "mkdir -p ceremony && docker pull ghcr.io/unionlabs/union/mpc-client:latest && docker run -v $(pwd)/ceremony:/ceremony -w /ceremony -p 4919:4919 --rm -it ghcr.io/unionlabs/union/mpc-client:latest"
 
 onMount(() => {
+  axiom.ingest('monitor', [{ user: user.session?.user.id, type: 'mount_macos' }])
   const messages = [
     {
       text: "You must have OrbStack installed in order to contribute, because Docker Desktop is too slow. If you use Docker Desktop it is extremely likely that you will lose your contribution slot."
