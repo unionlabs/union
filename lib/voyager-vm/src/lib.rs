@@ -144,6 +144,43 @@ pub enum Op<T: QueueMessage> {
     Noop,
 }
 
+impl<T: QueueMessage> Op<T> {
+    pub fn visit(&mut self, visitor: &mut impl OpVisitor<T>) {
+        match self {
+            Op::Data(data) => visitor.visit_data(data),
+            Op::Call(call) => visitor.visit_call(call),
+            Op::Defer { until: _ } => {}
+            Op::Timeout {
+                timeout_timestamp: _,
+                msg,
+            } => msg.visit(visitor),
+            Op::Seq(seq) => seq.iter_mut().for_each(|op| op.visit(visitor)),
+            Op::Conc(conc) => conc.iter_mut().for_each(|op| op.visit(visitor)),
+            Op::Retry { remaining: _, msg } => msg.visit(visitor),
+            Op::Promise {
+                queue,
+                data,
+                receiver: _,
+            } => {
+                queue.iter_mut().for_each(|op| op.visit(visitor));
+                data.iter_mut().for_each(|data| visitor.visit_data(data));
+            }
+            Op::Void(op) => op.visit(visitor),
+            Op::Noop => {}
+        }
+    }
+}
+
+pub trait OpVisitor<T: QueueMessage> {
+    fn visit_data(&mut self, data: &mut T::Data) {
+        let _ = data;
+    }
+
+    fn visit_call(&mut self, call: &mut T::Call) {
+        let _ = call;
+    }
+}
+
 /// Convenience constructor for [`Op::Retry`]
 #[inline]
 #[must_use = "constructing an instruction has no effect"]

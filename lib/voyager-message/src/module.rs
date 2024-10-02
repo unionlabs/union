@@ -1,8 +1,8 @@
 use std::{borrow::Cow, collections::VecDeque};
 
-use enumorph::Enumorph;
-use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject, RpcModule};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
 use macros::model;
+use schemars::JsonSchema;
 use serde_json::{json, Value};
 use serde_utils::Hex;
 use tracing::debug;
@@ -14,7 +14,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_core::ConsensusType;
-use voyager_vm::{optimize::OptimizationResult, Op};
+use voyager_vm::{optimize::OptimizationResult, BoxDynError, Op};
 #[cfg(doc)]
 use {
     crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},
@@ -24,80 +24,174 @@ use {
 use crate::{
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface},
     data::Data,
-    ModuleContext, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 #[model]
-pub struct ModuleInfo<K> {
-    pub kind: K,
+#[derive(clap::Args, JsonSchema)]
+pub struct ChainModuleInfo {
+    #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+    pub chain_id: ChainId<'static>,
 }
 
-impl ModuleKindInfo {
-    pub fn name(&self) -> String {
-        match self {
-            ModuleKindInfo::Chain(info) => info.name(),
-            ModuleKindInfo::Consensus(info) => info.name(),
-            ModuleKindInfo::Client(info) => info.name(),
-            ModuleKindInfo::Plugin(info) => info.name(),
+impl ChainModuleInfo {
+    pub fn id(&self) -> String {
+        format!("chain/{}", self.chain_id)
+    }
+
+    pub fn ensure_chain_id(&self, chain_id: impl AsRef<str>) -> Result<(), UnexpectedChainIdError> {
+        if chain_id.as_ref() != self.chain_id.as_str() {
+            Err(UnexpectedChainIdError {
+                expected: self.chain_id.clone(),
+                found: chain_id.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+}
+
+fn ok<T>(t: T) -> Result<T, BoxDynError> {
+    Ok(t)
+}
+
+#[model]
+#[derive(clap::Args, JsonSchema)]
+pub struct ConsensusModuleInfo {
+    #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+    pub chain_id: ChainId<'static>,
+    #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
+    pub consensus_type: ConsensusType<'static>,
+}
+
+impl ConsensusModuleInfo {
+    pub fn id(&self) -> String {
+        format!("consensus/{}/{}", self.chain_id, self.consensus_type)
+    }
+
+    pub fn ensure_chain_id(&self, chain_id: impl AsRef<str>) -> Result<(), UnexpectedChainIdError> {
+        if chain_id.as_ref() != self.chain_id.as_str() {
+            Err(UnexpectedChainIdError {
+                expected: self.chain_id.clone(),
+                found: chain_id.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn ensure_consensus_type(
+        &self,
+        consensus_type: impl AsRef<str>,
+    ) -> Result<(), UnexpectedConsensusTypeError> {
+        if consensus_type.as_ref() != self.consensus_type.as_str() {
+            Err(UnexpectedConsensusTypeError {
+                expected: self.consensus_type.clone(),
+                found: consensus_type.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid chain id: expected `{expected}` but the rpc responded with `{found}`")]
+pub struct UnexpectedChainIdError {
+    pub expected: ChainId<'static>,
+    pub found: String,
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid consensus type: this module provides functionality for consensus type `{expected}`, but the config specifies `{found}`")]
+pub struct UnexpectedConsensusTypeError {
+    pub expected: ConsensusType<'static>,
+    pub found: String,
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid client type: this module provides functionality for client type `{expected}`, but the config specifies `{found}`")]
+pub struct UnexpectedClientTypeError {
+    pub expected: ClientType<'static>,
+    pub found: String,
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid IBC interface: this module provides functionality for IBC interface `{expected}`, but the config specifies `{found}`")]
+pub struct UnexpectedIbcInterfaceError {
+    pub expected: IbcInterface<'static>,
+    pub found: String,
+}
+
+#[model]
+#[derive(clap::Args, JsonSchema)]
+pub struct ClientModuleInfo {
+    /// The client type that this client module provides functionality for.
+    #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
+    pub client_type: ClientType<'static>,
+
+    /// The consensus type that this client module verifies.
+    #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
+    pub consensus_type: ConsensusType<'static>,
+
+    /// The IBC interface that this client module provides functionality for.
+    #[arg(value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
+    pub ibc_interface: IbcInterface<'static>,
+}
+
+impl ClientModuleInfo {
+    pub fn id(&self) -> String {
+        format!(
+            "client/{}/{}/{}",
+            self.client_type, self.consensus_type, self.ibc_interface
+        )
+    }
+
+    pub fn ensure_client_type(
+        &self,
+        client_type: impl AsRef<str>,
+    ) -> Result<(), UnexpectedClientTypeError> {
+        if client_type.as_ref() != self.client_type.as_str() {
+            Err(UnexpectedClientTypeError {
+                expected: self.client_type.clone(),
+                found: client_type.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn ensure_consensus_type(
+        &self,
+        consensus_type: impl AsRef<str>,
+    ) -> Result<(), UnexpectedConsensusTypeError> {
+        if consensus_type.as_ref() != self.consensus_type.as_str() {
+            Err(UnexpectedConsensusTypeError {
+                expected: self.consensus_type.clone(),
+                found: consensus_type.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn ensure_ibc_interface(
+        &self,
+        ibc_interface: impl AsRef<str>,
+    ) -> Result<(), UnexpectedIbcInterfaceError> {
+        if ibc_interface.as_ref() != self.ibc_interface.as_str() {
+            Err(UnexpectedIbcInterfaceError {
+                expected: self.ibc_interface.clone(),
+                found: ibc_interface.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
         }
     }
 }
 
 #[model]
-#[derive(Enumorph)]
-pub enum ModuleKindInfo {
-    Chain(ChainModuleInfo),
-    Consensus(ConsensusModuleInfo),
-    Client(ClientModuleInfo),
-    Plugin(PluginInfo),
-}
-
-pub trait IModuleKindInfo: Member + Into<ModuleKindInfo> {
-    fn name(&self) -> String;
-}
-
-#[model]
-pub struct ChainModuleInfo {
-    pub chain_id: ChainId<'static>,
-}
-
-impl IModuleKindInfo for ChainModuleInfo {
-    fn name(&self) -> String {
-        format!("chain/{}", self.chain_id)
-    }
-}
-
-#[model]
-pub struct ConsensusModuleInfo {
-    pub chain_id: ChainId<'static>,
-    pub consensus_type: ConsensusType<'static>,
-}
-
-impl IModuleKindInfo for ConsensusModuleInfo {
-    fn name(&self) -> String {
-        format!("consensus/{}/{}", self.chain_id, self.consensus_type)
-    }
-}
-
-#[model]
-pub struct ClientModuleInfo {
-    /// The client type that this client module provides functionality for.
-    pub client_type: ClientType<'static>,
-
-    /// The consensus type that this client module verifies.
-    pub consensus_type: ConsensusType<'static>,
-
-    /// The IBC interface that this client module provides functionality for.
-    pub ibc_interface: IbcInterface<'static>,
-}
-
-impl IModuleKindInfo for ClientModuleInfo {
-    fn name(&self) -> String {
-        format!("client/{}/{}", self.client_type, self.ibc_interface)
-    }
-}
-
-#[model]
+#[derive(clap::Args, JsonSchema)]
 pub struct PluginInfo {
     /// The name of this plugin. Any plugin messages with this name will be
     /// routed to this plugin.
@@ -109,91 +203,21 @@ pub struct PluginInfo {
     pub interest_filter: String,
 }
 
-impl IModuleKindInfo for PluginInfo {
-    fn name(&self) -> String {
-        format!("plugin/{}", self.name)
-    }
-}
-
-pub trait IntoRpc: Sized {
-    type RpcModule;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule>;
-}
-
-impl<T> IntoRpc for (PluginInfo, T)
-where
-    T: ModuleContext<Info = PluginInfo>
-        + PluginTypes
-        + PluginServer<<T as PluginTypes>::D, <T as PluginTypes>::C, <T as PluginTypes>::Cb>,
-{
-    type RpcModule = T;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
-        PluginServer::into_rpc(t)
-    }
-}
-
-// .try_get::<VoyagerClient>()?
-
-impl<T> IntoRpc for (ChainModuleInfo, T)
-where
-    T: ModuleContext<Info = ChainModuleInfo> + ChainModuleServer,
-{
-    type RpcModule = T;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
-        ChainModuleServer::into_rpc(t)
-    }
-}
-
-impl<T> IntoRpc for (ClientModuleInfo, T)
-where
-    T: ModuleContext<Info = ClientModuleInfo> + ClientModuleServer,
-{
-    type RpcModule = T;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
-        ClientModuleServer::into_rpc(t)
-    }
-}
-
-impl<T> IntoRpc for (ConsensusModuleInfo, T)
-where
-    T: ModuleContext<Info = ConsensusModuleInfo> + ConsensusModuleServer,
-{
-    type RpcModule = T;
-
-    fn into_rpc(t: Self::RpcModule) -> RpcModule<Self::RpcModule> {
-        ConsensusModuleServer::into_rpc(t)
-    }
-}
-
-pub trait PluginTypes {
-    type D: Member;
-    type C: Member;
-    type Cb: Member;
-}
-
 #[rpc(client, server, namespace = "plugin")]
-pub trait Plugin<D: Member, C: Member, Cb: Member> {
+pub trait Plugin<C: Member, Cb: Member> {
     #[method(name = "runPass", with_extensions)]
     async fn run_pass(
         &self,
-        msgs: Vec<Op<VoyagerMessage<D, C, Cb>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<D, C, Cb>>>;
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>>;
 
     /// Handle a custom `Call` message for this module.
     #[method(name = "call", with_extensions)]
-    async fn call(&self, call: C) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
+    async fn call(&self, call: C) -> RpcResult<Op<VoyagerMessage>>;
 
     /// Handle a custom `Callback` message for this module.
     #[method(name = "callback", with_extensions)]
-    async fn callback(
-        &self,
-        aggregate: Cb,
-        data: VecDeque<Data<D>>,
-    ) -> RpcResult<Op<VoyagerMessage<D, C, Cb>>>;
+    async fn callback(&self, aggregate: Cb, data: VecDeque<Data>) -> RpcResult<Op<VoyagerMessage>>;
 }
 
 /// Chain modules provide functionality to interact with a single chain,

@@ -1,6 +1,6 @@
 #![feature(trait_alias)]
 
-use std::{env::VarError, fmt::Debug, marker::PhantomData, time::Duration};
+use std::{env::VarError, fmt::Debug, future::Future, time::Duration};
 
 use chain_utils::BoxDynError;
 use jsonrpsee::{
@@ -10,16 +10,15 @@ use jsonrpsee::{
         error::{INVALID_PARAMS_CODE, METHOD_NOT_FOUND_CODE},
         ErrorObject,
     },
-    Extensions,
+    Extensions, RpcModule,
 };
 use macros::model;
 use reth_ipc::{client::IpcClientBuilder, server::RpcServiceBuilder};
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
-use subset_of::SubsetOf;
 use tonic::async_trait;
-use tracing::{debug_span, error, info, trace, Instrument};
-use unionlabs::{never::Never, traits::Member, ErrorReporter};
+use tracing::{debug, debug_span, error, info, trace, Instrument};
+use unionlabs::{traits::Member, ErrorReporter};
 use voyager_vm::{QueueError, QueueMessage};
 
 use crate::{
@@ -27,7 +26,10 @@ use crate::{
     callback::Callback,
     context::{Context, INVALID_CONFIG_EXIT_CODE, STARTUP_ERROR_EXIT_CODE},
     data::Data,
-    module::{IModuleKindInfo, IntoRpc, ModuleInfo, ModuleKindInfo},
+    module::{
+        ChainModuleInfo, ChainModuleServer, ClientModuleInfo, ClientModuleServer,
+        ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginServer,
+    },
 };
 
 pub mod call;
@@ -38,22 +40,20 @@ pub mod context;
 pub mod module;
 pub mod pass;
 
+pub mod hook;
+
 pub mod rpc;
 
 pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
 pub use voyager_core as core;
 
-pub struct VoyagerMessage<D = Value, F = Value, A = Value> {
-    #[allow(clippy::type_complexity)] // it's a phantom data bro fight me
-    __marker: PhantomData<fn() -> (D, F, A)>,
-    __unconstructable: Never,
-}
+pub enum VoyagerMessage {}
 
-impl<D: Member, C: Member, Cb: Member> QueueMessage for VoyagerMessage<D, C, Cb> {
-    type Call = Call<C>;
-    type Data = Data<D>;
-    type Callback = Callback<Cb>;
+impl QueueMessage for VoyagerMessage {
+    type Call = Call;
+    type Data = Data;
+    type Callback = Callback;
 
     type Context = Context;
 }
@@ -106,34 +106,38 @@ pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
 /// This is used in [`Call`], [`Callback`], and [`Data`] to route messages to
 /// plugins.
 #[model]
-pub struct PluginMessage<T = serde_json::Value> {
+pub struct PluginMessage {
     pub plugin: String,
-    pub message: T,
+    pub message: Value,
 }
 
-impl<T, U> SubsetOf<Data<T>> for PluginMessage<U>
-where
-    U: SubsetOf<T>,
-{
-    fn try_from_super(data: Data<T>) -> Result<Self, Data<T>> {
-        match data {
-            Data::Plugin(PluginMessage { plugin, message }) => match U::try_from_super(message) {
-                Ok(message) => Ok(PluginMessage { plugin, message }),
-                Err(message) => Err(Data::plugin(plugin, message)),
-            },
-            data => Err(data),
+impl PluginMessage {
+    pub fn new(plugin_name: impl Into<String>, message: impl Serialize) -> Self {
+        Self {
+            plugin: plugin_name.into(),
+            message: serde_json::to_value(message).expect(
+                "serialization must be infallible, this is a bug in the plugin implementation",
+            ),
         }
     }
 
-    fn into_super(self) -> Data<T> {
-        Data::<T>::plugin(self.plugin, self.message.into_super())
+    pub fn downcast<T: DeserializeOwned>(self, plugin_name: impl AsRef<str>) -> Result<T, Self> {
+        if self.plugin == plugin_name.as_ref() {
+            if let Ok(t) = serde_json::from_value(self.message.clone()) {
+                Ok(t)
+            } else {
+                Err(self)
+            }
+        } else {
+            Err(self)
+        }
     }
 }
 
 macro_rules! top_level_identifiable_enum {
     (
         $(#[$meta:meta])*
-        pub enum $Enum:ident$(<$Inner:ident = serde_json::Value>)? {
+        pub enum $Enum:ident {
             $(
                 $(#[$inner_meta:meta])*
                 $Variant:ident($VariantInner:ty$(,)?),
@@ -142,20 +146,22 @@ macro_rules! top_level_identifiable_enum {
     ) => {
         $(#[$meta])*
         #[allow(clippy::large_enum_variant)]
-        pub enum $Enum$(<$Inner = serde_json::Value>)? {
+        pub enum $Enum {
             $(
                 $(#[$inner_meta])*
                 $Variant($VariantInner),
             )*
         }
 
-        $(
-            impl<$Inner> $Enum<$Inner> {
-                pub fn plugin(plugin: impl Into<String>, message: impl Into<$Inner>) -> $Enum<$Inner> {
-                    Self::Plugin(PluginMessage { plugin: plugin.into(), message: message.into() }).into()
+        impl $Enum {
+            #[allow(clippy::result_large_err)]
+            pub fn as_plugin<T: ::serde::de::DeserializeOwned>(self, plugin_name: impl AsRef<str>) -> Result<T, $Enum> {
+                match self {
+                    Self::Plugin(plugin_message) => plugin_message.downcast(plugin_name).map_err(Self::Plugin),
+                    this => Err(this)
                 }
             }
-        )*
+        }
     };
 }
 pub(crate) use top_level_identifiable_enum;
@@ -200,16 +206,39 @@ fn init_log() {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait ModuleContext: Sized {
+pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
+    type Call: Member;
+    type Callback: Member;
+
     type Config: DeserializeOwned + Clone;
     type Cmd: clap::Subcommand;
-    type Info: IModuleKindInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError>;
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info>;
+    fn info(config: Self::Config) -> PluginInfo;
 
     async fn cmd(config: Self::Config, cmd: Self::Cmd);
+}
+
+#[allow(async_fn_in_trait)]
+pub trait ChainModule: ChainModuleServer + Sized {
+    type Config: DeserializeOwned + Clone;
+
+    async fn new(config: Self::Config, info: ChainModuleInfo) -> Result<Self, BoxDynError>;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait ConsensusModule: ConsensusModuleServer + Sized {
+    type Config: DeserializeOwned + Clone;
+
+    async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError>;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait ClientModule: ClientModuleServer + Sized {
+    type Config: DeserializeOwned + Clone;
+
+    async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError>;
 }
 
 #[derive(Debug, Clone)]
@@ -291,7 +320,7 @@ impl jsonrpsee::core::client::ClientT for VoyagerClient {
 }
 
 #[derive(clap::Parser)]
-enum App<Cmd: clap::Subcommand> {
+enum PluginApp<Cmd: clap::Subcommand> {
     Run {
         socket: String,
         voyager_socket: String,
@@ -308,98 +337,210 @@ enum App<Cmd: clap::Subcommand> {
     },
 }
 
-pub async fn run_module_server<T>()
-where
-    T: ModuleContext,
-    (T::Info, T): IntoRpc<RpcModule = T>,
-{
-    init_log();
+#[derive(clap::Parser)]
+enum ModuleApp {
+    Run {
+        socket: String,
+        voyager_socket: String,
+        config: String,
+        info: String,
+    },
+}
 
-    let app = <App<T::Cmd> as clap::Parser>::parse();
-
-    let parse_config = |config_str| match serde_json::from_str::<T::Config>(config_str) {
+fn must_parse<T: DeserializeOwned>(config_str: &str) -> T {
+    match serde_json::from_str::<T>(config_str) {
         Ok(ok) => ok,
         Err(err) => {
             error!("invalid config: {}", ErrorReporter(err));
             std::process::exit(INVALID_CONFIG_EXIT_CODE as i32);
         }
-    };
+    }
+}
+
+pub async fn run_plugin_server<T: Plugin>() {
+    init_log();
+
+    let app = <PluginApp<T::Cmd> as clap::Parser>::parse();
 
     match app {
-        App::Run {
+        PluginApp::Run {
             socket,
             voyager_socket,
             config,
         } => {
-            let config = parse_config(&config);
+            let config = must_parse::<T::Config>(&config);
 
-            let ModuleInfo { kind } = T::info(config.clone());
+            let info = T::info(config.clone());
 
-            let name = kind.name();
-            let name_ = name.clone();
-            async move {
-                let voyager_client = VoyagerClient::new(name_.clone(), voyager_socket);
+            let name = info.name;
 
-                if let Err(err) = voyager_client
-                    .0
-                    .wait_until_connected(Duration::from_millis(500))
-                    .await
-                {
-                    error!("unable to connect to voyager socket: {err}");
-                    std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
-                };
-
-                info!("connected to voyager socket");
-
-                let module_server = match T::new(config).await {
-                    Ok(ctx) => ctx,
-                    Err(err) => {
-                        error!("startup error: {err:?}");
-                        std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
-                    }
-                };
-
-                let ipc_server = reth_ipc::server::Builder::default()
-                    .set_rpc_middleware(RpcServiceBuilder::new().layer_fn(move |service| {
-                        InjectClient {
-                            client: voyager_client.clone(),
-                            service,
-                        }
-                    }))
-                    .build(socket);
-
-                let rpcs = <(T::Info, T)>::into_rpc(module_server);
-
-                trace!(methods = ?*rpcs, "registered methods");
-
-                let addr = ipc_server.endpoint();
-
-                let server_handle = ipc_server.start(rpcs).await.unwrap();
-
-                info!("listening on {addr}");
-
-                tokio::spawn(
-                    server_handle
-                        .stopped()
-                        .instrument(debug_span!("module_server", name = %name_)),
-                )
-                .await
-                .unwrap();
-            }
-            .instrument(debug_span!("run_module_server", %name))
+            run_server(
+                name.clone(),
+                voyager_socket,
+                config,
+                socket,
+                T::new,
+                T::into_rpc,
+            )
+            .instrument(debug_span!("run_plugin_server", %name))
             .await
         }
-        App::Info { config } => {
-            let info = T::info(parse_config(&config));
-
-            let info = ModuleInfo::<ModuleKindInfo> {
-                kind: info.kind.into(),
-            };
+        PluginApp::Info { config } => {
+            let info = T::info(must_parse(&config));
 
             print!("{}", serde_json::to_string(&info).unwrap())
         }
-        App::Cmd { cmd, config } => T::cmd(parse_config(&config), cmd).await,
+        PluginApp::Cmd { cmd, config } => T::cmd(must_parse(&config), cmd).await,
     }
+}
+
+pub async fn run_chain_module_server<T: ChainModule>() {
+    init_log();
+
+    match <ModuleApp as clap::Parser>::parse() {
+        ModuleApp::Run {
+            socket,
+            voyager_socket,
+            config,
+            info,
+        } => {
+            let config = must_parse::<T::Config>(&config);
+
+            let info = must_parse::<ChainModuleInfo>(&info);
+
+            let name = format!("chain/{}", info.chain_id);
+
+            run_server(
+                name.clone(),
+                voyager_socket,
+                (config, info),
+                socket,
+                |(config, info)| T::new(config, info),
+                T::into_rpc,
+            )
+            .instrument(debug_span!("run_chain_module_server", %name))
+            .await
+        }
+    }
+}
+
+pub async fn run_consensus_module_server<T: ConsensusModule>() {
+    init_log();
+
+    match <ModuleApp as clap::Parser>::parse() {
+        ModuleApp::Run {
+            socket,
+            voyager_socket,
+            config,
+            info,
+        } => {
+            let config = must_parse::<T::Config>(&config);
+
+            let info = must_parse::<ConsensusModuleInfo>(&info);
+
+            let name = format!("chain/{}", info.chain_id);
+
+            run_server(
+                name.clone(),
+                voyager_socket,
+                (config, info),
+                socket,
+                |(config, info)| T::new(config, info),
+                T::into_rpc,
+            )
+            .instrument(debug_span!("run_consensus_module_server", %name))
+            .await
+        }
+    }
+}
+
+pub async fn run_client_module_server<T: ClientModule>() {
+    init_log();
+
+    match <ModuleApp as clap::Parser>::parse() {
+        ModuleApp::Run {
+            socket,
+            voyager_socket,
+            config,
+            info,
+        } => {
+            let config = must_parse::<T::Config>(&config);
+
+            let info = must_parse::<ClientModuleInfo>(&info);
+
+            let id = info.id();
+
+            run_server(
+                id.clone(),
+                voyager_socket,
+                (config, info),
+                socket,
+                |(config, info)| T::new(config, info),
+                T::into_rpc,
+            )
+            .instrument(debug_span!("run_client_module_server", %id))
+            .await
+        }
+    }
+}
+
+async fn run_server<
+    T,
+    NewF: FnOnce(NewT) -> Fut,
+    NewT,
+    Fut: Future<Output = Result<T, BoxDynError>>,
+    IntoRpcF: FnOnce(T) -> RpcModule<T>,
+>(
+    id: String,
+    voyager_socket: String,
+    new_t: NewT,
+    socket: String,
+    new: NewF,
+    into_rpc: IntoRpcF,
+) {
+    let voyager_client = VoyagerClient::new(id.clone(), voyager_socket);
+    if let Err(err) = voyager_client
+        .0
+        .wait_until_connected(Duration::from_millis(500))
+        .await
+    {
+        error!("unable to connect to voyager socket: {err}");
+        std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
+    };
+
+    debug!("connected to voyager socket");
+
+    let module_server = match new(new_t).await {
+        Ok(ctx) => ctx,
+        Err(err) => {
+            error!("startup error: {err:?}");
+            std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
+        }
+    };
+
+    let ipc_server = reth_ipc::server::Builder::default()
+        .set_rpc_middleware(
+            RpcServiceBuilder::new().layer_fn(move |service| InjectClient {
+                client: voyager_client.clone(),
+                service,
+            }),
+        )
+        .build(socket);
+
+    let rpcs = into_rpc(module_server);
+
+    trace!(methods = ?*rpcs, "registered methods");
+    let addr = ipc_server.endpoint();
+    let server_handle = ipc_server.start(rpcs).await.unwrap();
+    info!("listening on {addr}");
+
+    tokio::spawn(
+        server_handle
+            .stopped()
+            .instrument(debug_span!("module_server", %id)),
+    )
+    .await
+    .unwrap()
 }
 
 struct InjectClient<S> {

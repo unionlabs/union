@@ -35,7 +35,7 @@ use voyager_vm::{call, data, defer, noop, now, seq, HandleCall, Op, QueueError};
 use crate::core::ClientInfo;
 use crate::{
     core::{ChainId, IbcInterface},
-    data::{IbcMessage, LatestHeight, MsgCreateClientData, WithChainId},
+    data::{IbcMessage, MsgCreateClientData, WithChainId},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ChainModuleClient, ClientModuleClient, ConsensusModuleClient, PluginClient},
     rpc::json_rpc_error_to_error_object,
@@ -45,7 +45,7 @@ use crate::{
 #[apply(top_level_identifiable_enum)]
 #[model]
 #[derive(Enumorph)]
-pub enum Call<C = serde_json::Value> {
+pub enum Call {
     FetchBlocks(FetchBlocks),
 
     FetchUpdateHeaders(FetchUpdateHeaders),
@@ -68,7 +68,7 @@ pub enum Call<C = serde_json::Value> {
     WaitForTimestamp(WaitForTimestamp),
     WaitForTrustedHeight(WaitForTrustedHeight),
 
-    Plugin(PluginMessage<C>),
+    Plugin(PluginMessage),
 }
 
 #[model]
@@ -266,9 +266,9 @@ pub struct WaitForTrustedHeight {
     pub height: Height,
 }
 
-impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for Call<C> {
+impl HandleCall<VoyagerMessage> for Call {
     // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle(self, ctx: &Context) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
+    async fn handle(self, ctx: &Context) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
             Call::FetchBlocks(FetchBlocks {
                 start_height,
@@ -648,10 +648,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 debug!("latest height is {chain_height}, waiting for {height}");
 
                 if chain_height.revision_height >= height.revision_height {
-                    Ok(data(LatestHeight {
-                        chain_id,
-                        height: chain_height,
-                    }))
+                    Ok(noop())
                 } else {
                     Ok(seq([
                         defer(now() + 1),
@@ -772,7 +769,7 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
         %send_packet_event.packet.timeout_timestamp,
     )
 )]
-async fn make_msg_recv_packet<D: Member, C: Member, Cb: Member>(
+async fn make_msg_recv_packet(
     ctx: &Context,
     MakeMsgRecvPacket {
         origin_chain_id,
@@ -780,7 +777,7 @@ async fn make_msg_recv_packet<D: Member, C: Member, Cb: Member>(
         target_chain_id,
         send_packet_event,
     }: MakeMsgRecvPacket,
-) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
+) -> Result<Op<VoyagerMessage>, QueueError> {
     let target_chain_latest_height = ctx
         .rpc_server
         .query_latest_height(&target_chain_id)
@@ -882,7 +879,7 @@ async fn make_msg_recv_packet<D: Member, C: Member, Cb: Member>(
         %write_acknowledgement_event.packet.timeout_timestamp,
     )
 )]
-async fn make_msg_acknowledgement<D: Member, C: Member, Cb: Member>(
+async fn make_msg_acknowledgement(
     ctx: &Context,
     MakeMsgAcknowledgement {
         origin_chain_id,
@@ -890,7 +887,7 @@ async fn make_msg_acknowledgement<D: Member, C: Member, Cb: Member>(
         target_chain_id,
         write_acknowledgement_event,
     }: MakeMsgAcknowledgement,
-) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
+) -> Result<Op<VoyagerMessage>, QueueError> {
     let target_chain_latest_height = ctx
         .rpc_server
         .query_latest_height(&target_chain_id)
@@ -1005,7 +1002,7 @@ async fn make_msg_acknowledgement<D: Member, C: Member, Cb: Member>(
          %metadata,
      )
  )]
-async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
+async fn make_msg_create_client(
     ctx: &Context,
     counterparty_chain_id: ChainId<'static>,
     height: QueryHeight,
@@ -1013,7 +1010,7 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
     client_type: ClientType<'static>,
     ibc_interface: IbcInterface<'_>,
     metadata: Value,
-) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
+) -> Result<Op<VoyagerMessage>, QueueError> {
     let height = ctx
         .rpc_server
         .query_latest_height(&counterparty_chain_id)
@@ -1042,7 +1039,7 @@ async fn make_msg_create_client<D: Member, C: Member, Cb: Member>(
         .rpc_server
         .modules()
         .map_err(error_object_to_queue_error)?
-        .chain_consensus_type(&chain_id)?;
+        .chain_consensus_type(&counterparty_chain_id)?;
 
     let client_consensus_type = ctx
         .rpc_server

@@ -36,16 +36,15 @@ use voyager_message::{
     call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, ClientType},
     data::{ChainEvent, ChannelMetadata, ConnectionMetadata, Data, PacketMetadata},
-    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
+    module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
-    run_module_server, ExtensionsExt, ModuleContext, VoyagerClient, VoyagerMessage,
+    run_plugin_server, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, optimize::OptimizationResult, seq, BoxDynError, Op};
 
 use crate::{
-    call::{FetchBlock, FetchTransactions, MakeChainEvent, ModuleCall},
+    call::{FetchBlocks, FetchTransactions, MakeChainEvent, ModuleCall},
     callback::ModuleCallback,
-    data::ModuleData,
 };
 
 pub mod call;
@@ -56,7 +55,7 @@ const PER_PAGE_LIMIT: NonZeroU8 = option_unwrap!(NonZeroU8::new(10));
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_plugin_server::<Module>().await
 }
 
 #[derive(clap::Subcommand)]
@@ -84,10 +83,12 @@ pub struct Config {
     pub grpc_url: String,
 }
 
-impl ModuleContext for Module {
+impl Plugin for Module {
+    type Call = ModuleCall;
+    type Callback = ModuleCallback;
+
     type Config = Config;
     type Cmd = Cmd;
-    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
@@ -116,15 +117,13 @@ impl ModuleContext for Module {
         })
     }
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: PluginInfo {
-                name: plugin_name(&config.chain_id),
-                interest_filter: format!(
-                    r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
-                    config.chain_id
-                ),
-            },
+    fn info(config: Self::Config) -> PluginInfo {
+        PluginInfo {
+            name: plugin_name(&config.chain_id),
+            interest_filter: format!(
+                r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
+                config.chain_id
+            ),
         }
     }
 
@@ -444,31 +443,25 @@ pub struct ChainIdParseError {
     source: Option<ParseIntError>,
 }
 
-impl PluginTypes for Module {
-    type D = ModuleData;
-    type C = ModuleCall;
-    type Cb = ModuleCallback;
-}
-
 #[async_trait]
-impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
         Ok(OptimizationResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .map(|op| match op {
                     Op::Call(Call::FetchBlocks(fetch)) if fetch.chain_id == self.chain_id => {
-                        call(Call::plugin(
+                        call(PluginMessage::new(
                             self.plugin_name(),
-                            FetchBlock {
+                            ModuleCall::from(FetchBlocks {
                                 height: fetch.start_height,
-                            },
+                            }),
                         ))
                     }
                     op => op,
@@ -484,17 +477,13 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        _data: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(
-        &self,
-        e: &Extensions,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchTransactions(FetchTransactions { height, page }) => {
                 info!(%height, %page, "fetching events in block");
@@ -539,47 +528,47 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         .into_iter()
                         .map(|(ibc_event, tx_hash)| {
                             debug!(event = %ibc_event.name(), "observed IBC event");
-                            call(Call::plugin(
+                            call(PluginMessage::new(
                                 self.plugin_name(),
-                                MakeChainEvent {
+                                ModuleCall::from(MakeChainEvent {
                                     height,
                                     tx_hash: tx_hash.into_encoding(),
                                     event: ibc_event,
-                                },
+                                }),
                             ))
                         })
                         .chain(
                             ((page.get() * PER_PAGE_LIMIT.get() as u32) < response.total_count)
                                 .then(|| {
-                                    call(Call::plugin(
+                                    call(PluginMessage::new(
                                         self.plugin_name(),
-                                        FetchTransactions {
+                                        ModuleCall::from(FetchTransactions {
                                             height,
                                             page: page.checked_add(1).expect("too many pages?"),
-                                        },
+                                        }),
                                     ))
                                 }),
                         ),
                 ))
             }
-            ModuleCall::FetchBlocks(FetchBlock { height }) => Ok(conc([
-                call(Call::plugin(
+            ModuleCall::FetchBlocks(FetchBlocks { height }) => Ok(conc([
+                call(PluginMessage::new(
                     self.plugin_name(),
-                    FetchTransactions {
+                    ModuleCall::from(FetchTransactions {
                         height,
                         page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
-                    },
+                    }),
                 )),
                 seq([
                     call(WaitForHeight {
                         chain_id: self.chain_id.clone(),
                         height: height.increment(),
                     }),
-                    call(Call::plugin(
+                    call(PluginMessage::new(
                         self.plugin_name(),
-                        FetchBlock {
+                        ModuleCall::from(FetchBlocks {
                             height: height.increment(),
-                        },
+                        }),
                     )),
                 ]),
             ])),

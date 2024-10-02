@@ -8,22 +8,17 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use tracing::{instrument, trace};
+use unionlabs::never::Never;
 use voyager_message::{
     data::Data,
-    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
-    run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
+    module::{PluginInfo, PluginServer},
+    run_plugin_server, DefaultCmd, Plugin, VoyagerMessage,
 };
 use voyager_vm::{optimize::OptimizationResult, BoxDynError, Op};
 
-use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
-
-pub mod call;
-pub mod callback;
-pub mod data;
-
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_plugin_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -40,23 +35,23 @@ pub struct Config {
     pub packet_event_filters: Vec<PacketEventFilter>,
 }
 
-impl ModuleContext for Module {
+impl Plugin for Module {
+    type Call = Never;
+    type Callback = Never;
+
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         Ok(Module::new(config))
     }
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
+    fn info(config: Self::Config) -> PluginInfo {
         let module = Module::new(config);
 
-        ModuleInfo {
-            kind: PluginInfo {
-                name: module.plugin_name(),
-                interest_filter: module.make_filter(),
-            },
+        PluginInfo {
+            name: module.plugin_name(),
+            interest_filter: module.make_filter(),
         }
     }
 
@@ -298,31 +293,21 @@ end
     }
 }
 
-impl PluginTypes for Module {
-    type D = ModuleData;
-    type C = ModuleCall;
-    type Cb = ModuleCallback;
-}
-
 #[async_trait]
-impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+impl PluginServer<Never, Never> for Module {
     #[instrument]
     async fn run_pass(
         &self,
         _: &Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
         trace!("dropping {} messages", msgs.len());
 
         Ok(OptimizationResult::default())
     }
 
     #[instrument]
-    async fn call(
-        &self,
-        _: &Extensions,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+    async fn call(&self, _: &Extensions, msg: Never) -> RpcResult<Op<VoyagerMessage>> {
         match msg {}
     }
 
@@ -330,9 +315,9 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        cb: Never,
+        _data: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
     }
 }

@@ -20,13 +20,17 @@ use futures::{
 use pg_queue::{PgQueue, PgQueueConfig};
 use prometheus::TextEncoder;
 use reqwest::StatusCode;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, error, info, info_span, trace, trace_span};
 use tracing_futures::Instrument;
 use unionlabs::ErrorReporter;
 use voyager_message::{
-    context::Context, module::PluginClient, pass::JaqInterestFilter, rpc::VoyagerRpcServer,
+    context::Context,
+    module::{PluginClient, PluginInfo},
+    pass::JaqInterestFilter,
+    rpc::VoyagerRpcServer,
     VoyagerMessage,
 };
 use voyager_vm::{
@@ -49,7 +53,7 @@ pub struct Voyager {
     pub optimizer_delay_milliseconds: u64,
 }
 
-#[derive(DebugNoBound, CloneNoBound, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type")]
 pub enum AnyQueueConfig {
     InMemory,
@@ -248,7 +252,7 @@ impl Voyager {
             .map_err(VoyagerInitError::QueueInit)?;
 
         Ok(Self {
-            context: Context::new(config.plugins)
+            context: Context::new(config.plugins, config.modules)
                 .await
                 .map_err(VoyagerInitError::Plugin)?,
             num_workers: config.voyager.num_workers,
@@ -266,6 +270,10 @@ impl Voyager {
                 .interest_filters()
                 .clone()
                 .into_iter()
+                .map(|(name, interest_filter)| PluginInfo {
+                    name,
+                    interest_filter,
+                })
                 .collect(),
         )?;
 
@@ -407,9 +415,7 @@ impl Voyager {
                 client: T,
             }
 
-            impl<T: PluginClient<Value, Value, Value> + Send + Sync> Pass<VoyagerMessage>
-                for PluginOptPass<&'_ T>
-            {
+            impl<T: PluginClient<Value, Value> + Send + Sync> Pass<VoyagerMessage> for PluginOptPass<&'_ T> {
                 type Error = jsonrpsee::core::client::Error;
 
                 fn run_pass(

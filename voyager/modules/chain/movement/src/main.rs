@@ -31,8 +31,8 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
-    module::{ChainModuleInfo, ChainModuleServer, ModuleInfo, RawClientState},
-    run_module_server, DefaultCmd, ModuleContext,
+    module::{ChainModuleInfo, ChainModuleServer, RawClientState},
+    run_chain_module_server, ChainModule,
 };
 use voyager_vm::BoxDynError;
 
@@ -40,7 +40,7 @@ pub mod events;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_chain_module_server::<Module>().await
 }
 
 #[derive(clap::Subcommand)]
@@ -61,15 +61,15 @@ pub struct Module {
     pub ibc_handler_address: Address,
 }
 
-impl ModuleContext for Module {
+impl ChainModule for Module {
     type Config = Config;
-    type Cmd = DefaultCmd;
-    type Info = ChainModuleInfo;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ChainModuleInfo) -> Result<Self, BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse()?);
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;
+
+        info.ensure_chain_id(chain_id.to_string())?;
 
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
@@ -78,24 +78,11 @@ impl ModuleContext for Module {
             ibc_handler_address: config.ibc_handler_address,
         })
     }
-
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ChainModuleInfo {
-                chain_id: config.chain_id,
-            },
-        }
-    }
-
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub chain_id: ChainId<'static>,
     pub rpc_url: String,
     pub movement_rpc_url: String,
     pub ibc_handler_address: Address,

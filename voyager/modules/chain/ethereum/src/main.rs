@@ -25,8 +25,8 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
-    module::{ChainModuleInfo, ChainModuleServer, ModuleInfo, RawClientState},
-    run_module_server, DefaultCmd, ModuleContext,
+    module::{ChainModuleInfo, ChainModuleServer, RawClientState},
+    run_chain_module_server, ChainModule,
 };
 use voyager_vm::BoxDynError;
 
@@ -34,7 +34,7 @@ const ETHEREUM_REVISION_NUMBER: u64 = 0;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_chain_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -50,9 +50,6 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    /// The expected chain id of this ethereum-like chain.
-    pub chain_id: ChainId<'static>,
-
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
@@ -62,25 +59,22 @@ pub struct Config {
     pub eth_beacon_rpc_api: String,
 }
 
-impl ModuleContext for Module {
+impl ChainModule for Module {
     type Config = Config;
-    type Cmd = DefaultCmd;
-    type Info = ChainModuleInfo;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        Module::new(config).await
-    }
+    async fn new(config: Self::Config, info: ChainModuleInfo) -> Result<Self, BoxDynError> {
+        let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ChainModuleInfo {
-                chain_id: config.chain_id,
-            },
-        }
-    }
+        let chain_id = provider.get_chainid().await?;
 
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
+        info.ensure_chain_id(U256(chain_id).to_string())?;
+
+        Ok(Module {
+            chain_id: ChainId::new(U256(chain_id).to_string()),
+            ibc_handler_address: config.ibc_handler_address,
+            provider,
+            beacon_api_client: BeaconApiClient::new(config.eth_beacon_rpc_api).await?,
+        })
     }
 }
 

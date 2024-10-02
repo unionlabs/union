@@ -1,4 +1,4 @@
-use std::{cmp, collections::VecDeque, fmt::Debug};
+use std::collections::VecDeque;
 
 use aptos_move_ibc::ibc::{self, ClientExt as _};
 use aptos_rest_client::{
@@ -12,7 +12,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, instrument};
+use tracing::{debug, info, instrument};
 use unionlabs::{
     hash::H256,
     ibc::core::{
@@ -26,7 +26,7 @@ use unionlabs::{
     ErrorReporter, QueryHeight,
 };
 use voyager_message::{
-    call::Call,
+    call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, ClientType},
     data::{
         AcknowledgePacket, ChainEvent, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm,
@@ -34,19 +34,19 @@ use voyager_message::{
         ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, Data,
         FullIbcEvent, PacketMetadata, RecvPacket, SendPacket, UpdateClient, WriteAcknowledgement,
     },
-    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
+    module::{PluginInfo, PluginServer},
     reconnecting_jsonrpc_ws_client,
     rpc::{
         json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt as _,
     },
-    run_module_server, DefaultCmd, ExtensionsExt, ModuleContext, VoyagerClient, VoyagerMessage,
+    run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
+    VoyagerMessage,
 };
-use voyager_vm::{call, conc, data, noop, optimize::OptimizationResult, BoxDynError, Op};
+use voyager_vm::{call, conc, data, optimize::OptimizationResult, seq, BoxDynError, Op};
 
 use crate::{
-    call::{FetchBlock, FetchBlocks, MakeEvent, ModuleCall},
+    call::{FetchBlocks, FetchTransactions, MakeEvent, ModuleCall},
     callback::ModuleCallback,
-    data::ModuleData,
 };
 
 pub mod call;
@@ -57,7 +57,7 @@ pub mod events;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_plugin_server::<Module>().await
 }
 
 #[derive(clap::Subcommand)]
@@ -78,10 +78,12 @@ pub struct Module {
     pub ibc_handler_address: Address,
 }
 
-impl ModuleContext for Module {
+impl Plugin for Module {
+    type Call = ModuleCall;
+    type Callback = ModuleCallback;
+
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse()?);
@@ -96,15 +98,13 @@ impl ModuleContext for Module {
         })
     }
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: PluginInfo {
-                name: plugin_name(&config.chain_id),
-                interest_filter: format!(
-                    r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
-                    config.chain_id
-                ),
-            },
+    fn info(config: Self::Config) -> PluginInfo {
+        PluginInfo {
+            name: plugin_name(&config.chain_id),
+            interest_filter: format!(
+                r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
+                config.chain_id
+            ),
         }
     }
 
@@ -268,31 +268,25 @@ impl Module {
     }
 }
 
-impl PluginTypes for Module {
-    type D = ModuleData;
-    type C = ModuleCall;
-    type Cb = ModuleCallback;
-}
-
 #[async_trait]
-impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
         Ok(OptimizationResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .map(|op| match op {
                     Op::Call(Call::FetchBlocks(fetch)) if fetch.chain_id == self.chain_id => {
-                        call(Call::plugin(
+                        call(PluginMessage::new(
                             self.plugin_name(),
-                            FetchBlock {
+                            ModuleCall::FetchBlocks(FetchBlocks {
                                 height: fetch.start_height.revision_height,
-                            },
+                            }),
                         ))
                     }
                     op => op,
@@ -308,19 +302,16 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        _data: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(
-        &self,
-        e: &Extensions,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::FetchBlock(FetchBlock { height }) => {
+            ModuleCall::FetchTransactions(FetchTransactions { height }) => {
+                info!("fetching block height {height}");
                 let events = self
                     .aptos_client
                     .get_block_by_height(height, true)
@@ -346,12 +337,13 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             .map(move |events| (events, tx.info.hash))
                     })
                     .filter_map(|(e, hash)| match e.typ {
-                        MoveType::Struct(s) => (dbg!(&s).address == self.ibc_handler_address)
-                            .then_some((s, e.data, hash)),
+                        MoveType::Struct(s) => {
+                            (s.address == self.ibc_handler_address).then_some((s, e.data, hash))
+                        }
                         _ => None,
                     })
                     .map(|(typ, data, hash)| {
-                        let event = match typ.name.0.as_str() {
+                        let event = match dbg!(typ).name.0.as_str() {
                             "ClientCreatedEvent" => {
                                 serde_json::from_value::<ibc::ClientCreatedEvent>(data)
                                     .unwrap()
@@ -418,52 +410,34 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             unknown => panic!("unknown event `{unknown}`"),
                         };
                         // TODO: Check the type before deserializing
-                        call(Call::plugin(
+                        call(PluginMessage::new(
                             self.plugin_name(),
-                            MakeEvent {
+                            ModuleCall::from(MakeEvent {
                                 event,
                                 tx_hash: H256::new(*hash.0),
                                 height,
-                            },
+                            }),
                         ))
                     });
 
                 Ok(conc(events))
             }
-            ModuleCall::FetchBlocks(FetchBlocks {
-                from_height,
-                to_height,
-            }) => Ok(match (from_height + 1).cmp(&to_height) {
-                // still blocks left to fetch between from_height and to_height
-                cmp::Ordering::Less => conc([
-                    call(Call::plugin(
+            ModuleCall::FetchBlocks(FetchBlocks { height }) => Ok(conc([
+                call(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleCall::from(FetchTransactions { height }),
+                )),
+                seq([
+                    call(WaitForHeight {
+                        chain_id: self.chain_id.clone(),
+                        height: self.make_height(height + 1),
+                    }),
+                    call(PluginMessage::new(
                         self.plugin_name(),
-                        FetchBlock {
-                            height: from_height,
-                        },
-                    )),
-                    call(Call::plugin(
-                        self.plugin_name(),
-                        FetchBlocks {
-                            from_height: from_height + 1,
-                            to_height,
-                        },
+                        ModuleCall::from(FetchBlocks { height: height + 1 }),
                     )),
                 ]),
-                // from_height + 1 == to_height, range is finished
-                cmp::Ordering::Equal => call(Call::plugin(
-                    self.plugin_name(),
-                    FetchBlock {
-                        height: from_height,
-                    },
-                )),
-                // inverted range, this is either a bug or a bad input
-                cmp::Ordering::Greater => {
-                    error!("attempted to fetch blocks in range {from_height} to {to_height}");
-                    // REVIEW: Should this return an error instead?
-                    noop()
-                }
-            }),
+            ])),
             ModuleCall::MakeEvent(MakeEvent {
                 event,
                 tx_hash,

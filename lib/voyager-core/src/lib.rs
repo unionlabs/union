@@ -55,17 +55,20 @@ pub struct ClientType;
 impl ClientType<'static> {
     /// A client tracking [CometBLS] consensus, verified by manually verifying the state transition.
     ///
+    /// NOTE: This is currently unused. See <https://github.com/unionlabs/union/issues/3066> for more information.
+    ///
     /// [CometBLS]: https://github.com/unionlabs/cometbls
     pub const COMETBLS: &'static str = "cometbls";
 
     /// A client tracking [CometBLS] consensus, verified with a ZK proof of the state transition created by galois.
     ///
     /// [CometBLS]: https://github.com/unionlabs/cometbls
-    pub const COMETBLS_GROTH16: &'static str = "cometbls-groth16";
+    pub const COMETBLS_GROTH16: &'static str = "cometbls";
 
-    /// A client tracking vanilla [CometBFT] (Tendermint) consensus, through the `07-tendermint` light client specification.
+    /// A client tracking vanilla [CometBFT] (Tendermint) consensus, through the [`07-tendermint`] light client specification.
     ///
     /// [CometBFT]: https://github.com/cometbft/cometbft
+    /// [`07-tendermint`]: https://github.com/cosmos/ibc/blob/main/spec/client/ics-007-tendermint-client/README.md
     pub const TENDERMINT: &'static str = "07-tendermint";
 
     // TODO: Consolidate these two into one client type after https://github.com/unionlabs/union/issues/3006
@@ -223,7 +226,16 @@ macro_rules! str_newtype {
         $vis:vis struct $Struct:ident;
     ) => {
         $(#[doc = $doc])+
-        #[derive(macros::Debug, Clone, PartialEq, Eq, Hash, ::serde::Serialize, ::serde::Deserialize)]
+        #[derive(
+            macros::Debug,
+            Clone,
+            PartialEq,
+            Eq,
+            Hash,
+            ::serde::Serialize,
+            ::serde::Deserialize,
+            ::schemars::JsonSchema
+        )]
         // I tested this and apparently it's not required (newtype is automatically transparent?) but
         // keeping it here for clarity
         #[serde(transparent)]

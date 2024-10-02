@@ -6,19 +6,18 @@ use unionlabs::hash::H256;
 #[derive(Enumorph)]
 #[allow(clippy::large_enum_variant)]
 pub enum ModuleCall {
-    FetchBlock(FetchBlock),
+    FetchTransactions(FetchTransactions),
     FetchBlocks(FetchBlocks),
     MakeEvent(MakeEvent),
 }
 
 #[model]
 pub struct FetchBlocks {
-    pub from_height: u64,
-    pub to_height: u64,
+    pub height: u64,
 }
 
 #[model]
-pub struct FetchBlock {
+pub struct FetchTransactions {
     pub height: u64,
 }
 

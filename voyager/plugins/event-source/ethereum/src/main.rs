@@ -36,16 +36,16 @@ use voyager_message::{
         ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
         ConnectionOpenInit, ConnectionOpenTry, CreateClient, Data, PacketMetadata, UpdateClient,
     },
-    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
+    module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
-    run_module_server, DefaultCmd, ExtensionsExt, ModuleContext, VoyagerClient, VoyagerMessage,
+    run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
+    VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, noop, optimize::OptimizationResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlock, FetchGetLogs, MakeFullEvent, ModuleCall},
     callback::ModuleCallback,
-    data::ModuleData,
 };
 
 pub mod call;
@@ -56,7 +56,7 @@ const ETHEREUM_REVISION_NUMBER: u64 = 0;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_plugin_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -84,24 +84,24 @@ pub struct Config {
     pub eth_beacon_rpc_api: String,
 }
 
-impl ModuleContext for Module {
+impl Plugin for Module {
+    type Call = ModuleCall;
+    type Callback = ModuleCallback;
+
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         Module::new(config).await
     }
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: PluginInfo {
-                name: plugin_name(&config.chain_id),
-                interest_filter: format!(
-                    r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
-                    config.chain_id
-                ),
-            },
+    fn info(config: Self::Config) -> PluginInfo {
+        PluginInfo {
+            name: plugin_name(&config.chain_id),
+            interest_filter: format!(
+                r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
+                config.chain_id
+            ),
         }
     }
 
@@ -246,31 +246,25 @@ impl Module {
     }
 }
 
-impl PluginTypes for Module {
-    type D = ModuleData;
-    type C = ModuleCall;
-    type Cb = ModuleCallback;
-}
-
 #[async_trait]
-impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
         Ok(OptimizationResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .map(|op| match op {
                     Op::Call(Call::FetchBlocks(fetch)) if fetch.chain_id == self.chain_id => {
-                        call(Call::plugin(
+                        call(PluginMessage::new(
                             self.plugin_name(),
-                            FetchBlock {
+                            ModuleCall::from(FetchBlock {
                                 slot: fetch.start_height.revision_height,
-                            },
+                            }),
                         ))
                     }
                     op => op,
@@ -286,17 +280,13 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        _data: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(
-        &self,
-        e: &Extensions,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::MakeFullEvent(MakeFullEvent {
                 block_number,
@@ -1046,9 +1036,9 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                     )) => {
                         info!(%slot, %message, %error, %status_code, "beacon block not found for slot");
 
-                        Ok(call(Call::plugin(
+                        Ok(call(PluginMessage::new(
                             self.plugin_name(),
-                            FetchBlock { slot: slot + 1 },
+                            ModuleCall::from(FetchBlock { slot: slot + 1 }),
                         )))
                     }
                     Err(err) => Err(ErrorObject::owned(
@@ -1076,9 +1066,9 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             info!(%slot, "block is finalized");
 
                             Ok(conc([
-                                call(Call::plugin(
+                                call(PluginMessage::new(
                                     self.plugin_name(),
-                                    FetchGetLogs {
+                                    ModuleCall::from(FetchGetLogs {
                                         block_number: self
                                             .beacon_api_client
                                             .execution_height(slot.into())
@@ -1094,11 +1084,11 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                                     None::<()>,
                                                 )
                                             })?,
-                                    },
+                                    }),
                                 )),
-                                call(Call::plugin(
+                                call(PluginMessage::new(
                                     self.plugin_name(),
-                                    FetchBlock { slot: slot + 1 },
+                                    ModuleCall::from(FetchBlock { slot: slot + 1 }),
                                 )),
                             ]))
                         } else {
@@ -1112,7 +1102,10 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                                     chain_id: self.chain_id.clone(),
                                     height: self.make_height(slot),
                                 }),
-                                call(Call::plugin(self.plugin_name(), FetchBlock { slot })),
+                                call(PluginMessage::new(
+                                    self.plugin_name(),
+                                    ModuleCall::from(FetchBlock { slot }),
+                                )),
                             ]))
                         }
                     }
@@ -1153,13 +1146,13 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                         Ok(event) => {
                             trace!(?event, "found IBCHandler event");
 
-                            Some(call(Call::plugin(
+                            Some(call(PluginMessage::new(
                                 self.plugin_name(),
-                                MakeFullEvent {
+                                ModuleCall::from(MakeFullEvent {
                                     block_number,
                                     tx_hash,
                                     event,
-                                },
+                                }),
                             )))
                         }
                         Err(e) => {

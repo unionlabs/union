@@ -36,15 +36,14 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    call::Call,
     core::ChainId,
     data::{Data, IbcMessage, WithChainId},
-    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
-    run_module_server, DefaultCmd, ModuleContext, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    module::{PluginInfo, PluginServer},
+    run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, noop, optimize::OptimizationResult, Op};
 
-use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
+use crate::{call::ModuleCall, callback::ModuleCallback};
 
 pub mod call;
 pub mod callback;
@@ -52,7 +51,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_plugin_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -74,10 +73,12 @@ pub struct Config {
     pub gas_config: GasConfig,
 }
 
-impl ModuleContext for Module {
+impl Plugin for Module {
+    type Call = ModuleCall;
+    type Callback = ModuleCallback;
+
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
@@ -122,12 +123,11 @@ impl ModuleContext for Module {
         })
     }
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: PluginInfo {
-                name: plugin_name(&config.chain_id),
-                interest_filter: format!(
-                    r#"
+    fn info(config: Self::Config) -> PluginInfo {
+        PluginInfo {
+            name: plugin_name(&config.chain_id),
+            interest_filter: format!(
+                r#"
 if ."@type" == "data" then
     ."@value" as $data |
 
@@ -138,9 +138,8 @@ else
     false
 end
 "#,
-                    chain_id = config.chain_id,
-                ),
-            },
+                chain_id = config.chain_id,
+            ),
         }
     }
 
@@ -163,8 +162,7 @@ impl Module {
     pub async fn do_send_transaction(
         &self,
         msgs: Vec<IbcMessage>,
-    ) -> Result<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>, BroadcastTxCommitError>
-    {
+    ) -> Result<Op<VoyagerMessage>, BroadcastTxCommitError> {
         let res = self
             .keyring
             .with(|signer| {
@@ -287,7 +285,8 @@ impl Module {
             })
             .await;
 
-        let rewrap_msg = || Call::plugin(self.plugin_name(), ModuleCall::SubmitTransaction(msgs));
+        let rewrap_msg =
+            || PluginMessage::new(self.plugin_name(), ModuleCall::SubmitTransaction(msgs));
 
         match res {
             Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => Ok(call(rewrap_msg())),
@@ -600,20 +599,14 @@ pub enum BroadcastTxCommitError {
     OutOfGas,
 }
 
-impl PluginTypes for Module {
-    type D = ModuleData;
-    type C = ModuleCall;
-    type Cb = ModuleCallback;
-}
-
 #[async_trait]
-impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all)]
     async fn run_pass(
         &self,
         _: &Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
         Ok(OptimizationResult {
             optimize_further: vec![],
             ready: msgs
@@ -629,7 +622,7 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             })) => {
                                 assert_eq!(chain_id, self.chain_id);
 
-                                call(Call::plugin(
+                                call(PluginMessage::new(
                                     self.plugin_name(),
                                     ModuleCall::SubmitTransaction(vec![message]),
                                 ))
@@ -640,7 +633,7 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             })) => {
                                 assert_eq!(chain_id, self.chain_id);
 
-                                call(Call::plugin(
+                                call(PluginMessage::new(
                                     self.plugin_name(),
                                     ModuleCall::SubmitTransaction(message),
                                 ))
@@ -655,11 +648,7 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     #[allow(clippy::collapsible_match)]
-    async fn call(
-        &self,
-        _: &Extensions,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+    async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::SubmitTransaction(msgs) => {
                 self.do_send_transaction(msgs)
@@ -700,8 +689,8 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        _data: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
     }
 }

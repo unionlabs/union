@@ -8,14 +8,14 @@ use unionlabs::{events::IbcEvent, hash::H256, ibc::core::client::height::Height}
 #[derive(Enumorph)]
 #[allow(clippy::large_enum_variant)]
 pub enum ModuleCall {
-    FetchBlocks(FetchBlock),
+    FetchBlocks(FetchBlocks),
     FetchTransactions(FetchTransactions),
     MakeChainEvent(MakeChainEvent),
 }
 
 /// Fetch a block at the specified height, requeueing a seq(wait(H+1), fetch(H+1)).
 #[model]
-pub struct FetchBlock {
+pub struct FetchBlocks {
     pub height: Height,
 }
 

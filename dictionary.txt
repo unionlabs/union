@@ -1001,6 +1001,7 @@ prysm
 prysmaticlabs
 prysmctl
 psim
+psql
 pubkey
 pubkey's
 pubkeys

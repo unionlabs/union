@@ -111,7 +111,6 @@
       "result",
       "vendor",
       ".vercel",
-
       "testdata",
       "generated",
       ".svelte-kit",
@@ -175,7 +174,6 @@
       "result",
       "vendor",
       ".vercel",
-
       "testdata",
       "generated",
       ".svelte-kit",
@@ -211,7 +209,9 @@
         "useFilenamingConvention": "off",
         "useConsistentArrayType": {
           "level": "warn",
-          "options": { "syntax": "generic" }
+          "options": {
+            "syntax": "generic"
+          }
         }
       },
       "a11y": {
@@ -296,7 +296,6 @@
       "result",
       "vendor",
       ".vercel",
-
       "testdata",
       "generated",
       ".svelte-kit",

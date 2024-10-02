@@ -39,22 +39,17 @@ use crate::{
 #[apply(top_level_identifiable_enum)]
 #[model]
 #[derive(Enumorph, SubsetOf)]
-pub enum Data<D = serde_json::Value> {
+pub enum Data {
     IbcEvent(ChainEvent),
     IbcMessage(IbcMessage),
 
-    // TODO: Remove this
-    LatestHeight(LatestHeight),
-
-    // ClientInfo(ClientInfo),
     OrderedHeaders(OrderedHeaders),
     OrderedMsgUpdateClients(OrderedMsgUpdateClients),
 
     IdentifiedIbcMessage(WithChainId<IbcMessage>),
     IdentifiedIbcMessageBatch(WithChainId<Vec<IbcMessage>>),
 
-    #[subset_of(ignore)]
-    Plugin(PluginMessage<D>),
+    Plugin(PluginMessage),
 }
 
 #[model]
@@ -379,12 +374,6 @@ pub enum FullIbcEvent {
     WriteAcknowledgement(WriteAcknowledgement),
     AcknowledgePacket(AcknowledgePacket),
     TimeoutPacket(TimeoutPacket),
-}
-
-#[model]
-pub struct LatestHeight {
-    pub chain_id: ChainId<'static>,
-    pub height: Height,
 }
 
 #[model]

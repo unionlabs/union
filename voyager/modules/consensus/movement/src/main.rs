@@ -20,8 +20,8 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},
-    module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo},
-    run_module_server, DefaultCmd, ModuleContext,
+    module::{ConsensusModuleInfo, ConsensusModuleServer},
+    run_consensus_module_server, ConsensusModule,
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -33,7 +33,7 @@ struct StateProofResponse {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_consensus_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -53,15 +53,19 @@ pub struct Module {
     pub movement_rest_url: String,
 }
 
-impl ModuleContext for Module {
+impl ConsensusModule for Module {
     type Config = Config;
-    type Cmd = DefaultCmd;
-    type Info = ConsensusModuleInfo;
 
-    async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(
+        config: Self::Config,
+        info: ConsensusModuleInfo,
+    ) -> Result<Self, chain_utils::BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;
+
+        info.ensure_chain_id(chain_id.to_string())?;
+        info.ensure_consensus_type(ConsensusType::MOVEMENT)?;
 
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
@@ -71,18 +75,6 @@ impl ModuleContext for Module {
             l1_client_id: config.l1_client_id.validate().unwrap(),
             movement_rest_url: config.movement_rest_url,
         })
-    }
-
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ConsensusModuleInfo {
-                chain_id: config.chain_id,
-                consensus_type: ConsensusType::new(ConsensusType::MOVEMENT),
-            },
-        }
-    }
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
     }
 }
 
@@ -94,9 +86,6 @@ impl aptos_move_ibc::ibc::ClientExt for Module {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    /// The identifier of the chain
-    pub chain_id: ChainId<'static>,
-
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: AccountAddress,
 
