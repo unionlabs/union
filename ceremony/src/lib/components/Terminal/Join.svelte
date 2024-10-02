@@ -17,7 +17,7 @@ let selected = $state(false)
 let code = $state(false)
 
 onMount(() => {
-  terminal.setStep(4)
+  terminal.setStep(6)
   terminal.updateHistory({ text: "Access the ceremony", replace: true })
   terminal.updateHistory({
     text: "We officially support Linux and macOS on Chrome, Firefox, or Brave browsers.",
@@ -34,8 +34,8 @@ onMount(() => {
     replace: true,
     type: "warning"
   })
-  terminal.setStep(2)
 })
+
 onDestroy(() => {
   terminal.clearHistory()
 })

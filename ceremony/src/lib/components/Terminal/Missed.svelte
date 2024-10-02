@@ -7,7 +7,7 @@ import { user } from "$lib/state/session.svelte.ts"
 const { terminal } = getState()
 
 onMount(() => {
-  terminal.setStep(9)
+  terminal.setStep(0)
   terminal.updateHistory({ text: "Too bad, you missed your slot.", replace: true })
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "missed" }])
 })

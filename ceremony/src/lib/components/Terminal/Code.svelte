@@ -63,7 +63,7 @@ async function handleKeyDown(event: KeyboardEvent) {
 }
 
 onMount(() => {
-  terminal.setStep(5)
+  terminal.setStep(7)
   if (inputElement) {
     inputElement.focus()
   }
