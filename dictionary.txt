@@ -1415,6 +1415,8 @@ xkaiserkarel
 xkown
 xlink
 xlpa
+remappings
+chainlist
 xnever
 xpla
 xprv
