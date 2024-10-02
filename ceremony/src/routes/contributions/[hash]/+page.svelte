@@ -39,8 +39,6 @@ async function copyToClipboard(text: string, type: string) {
   prints.push(`Successfully copied ${type}`)
 }
 
-const imagePath = "https://ceremony.union.build/images/ceremony.png"
-
 function trigger(value: "key" | "signature") {
   if (value === "key") {
     copyToClipboard(decodeHexString(contribution.public_key), "public key")
@@ -49,37 +47,6 @@ function trigger(value: "key" | "signature") {
   }
 }
 </script>
-
-<svelte:head>
-  <title>Union Ceremony</title>
-  <meta name="description"
-        content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
-
-  <meta property="og:title" content="Union Ceremony "/>
-  <meta property="og:description"
-        content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
-  <meta property="og:type" content="website"/>
-  <meta property="og:url" content="https://ceremony.union.build"/>
-  <meta property="og:site_name" content="Union Ceremony"/>
-  <meta property="og:locale" content="en_US"/>
-  <meta property="og:image" content={imagePath}/>
-  <meta property="og:image:secure_url" content={imagePath}/>
-  <meta property="og:image:type" content="image/png"/>
-  <meta property="og:image:width" content="1200"/>
-  <meta property="og:image:height" content="675"/>
-  <meta property="og:image:alt" content="Union Ceremony event banner"/>
-
-  <meta name="twitter:title"
-        content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
-  <meta name="twitter:description"
-        content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
-  <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:site" content="@union_build"/>
-  <meta name="twitter:creator" content="@union_build"/>
-  <meta name="twitter:image" content={imagePath}/>
-  <meta name="twitter:image:alt" content="Union Ceremony event banner"/>
-</svelte:head>
-
 
 {#if contribution}
   <pre class="text-white whitespace-pre-wrap text-sm sm:text-base">{decodeHexString(contribution?.public_key)}</pre>

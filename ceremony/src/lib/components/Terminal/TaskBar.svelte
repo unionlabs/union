@@ -19,9 +19,9 @@ let progressBar = $derived(
       <Print>{terminal.currentStep}/{terminal.maxStep} COMPLETED | </Print>
     </div>
     {#if user?.session?.user?.email}
-      <p class="text-xs font-mono text-white uppercase">
+      <Print class="uppercase">
         {user.session.user.email}
-      </p>
+      </Print>
     {/if}
   </div>
 

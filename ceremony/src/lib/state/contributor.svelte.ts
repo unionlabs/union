@@ -308,7 +308,6 @@ export class Contributor {
       axiom.ingest("monitor", [{ user: this.userId, type: "missed" }])
     } else if (this.clientState === "offline") {
       this.state = "offline"
-      axiom.ingest("monitor", [{ user: this.userId, type: "offline" }])
     } else {
       this.state = "loading"
     }
