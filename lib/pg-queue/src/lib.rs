@@ -4,8 +4,9 @@ use std::{
 };
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
+use futures_util::TryStreamExt;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, PgPool};
+use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, Executor, PgPool};
 use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
 use voyager_vm::{
     normalize,
@@ -68,6 +69,89 @@ struct Record {
     created_at: sqlx::types::time::OffsetDateTime,
 }
 
+#[derive(Debug, FromRow, Serialize)]
+#[serde(bound(serialize = ""))]
+pub struct FailedRecord<T: QueueMessage> {
+    pub id: i64,
+    pub parents: Vec<i64>,
+    pub item: Json<Op<T>>,
+    pub message: String,
+    // pub created_at: sqlx::types::time::OffsetDateTime,
+}
+
+impl<T: QueueMessage> PgQueue<T> {
+    pub async fn query_failed(
+        &self,
+        page: i64,
+        per_page: i64,
+        mut item_filters: Vec<String>,
+        mut message_filters: Vec<String>,
+    ) -> Result<Vec<FailedRecord<T>>, sqlx::Error> {
+        // default to all-inclusive filter if none are provided
+        if item_filters.is_empty() {
+            item_filters.push("%".to_owned())
+        }
+
+        if message_filters.is_empty() {
+            message_filters.push("%".to_owned())
+        }
+
+        sqlx::query(
+            r#"
+            SELECT
+                id,
+                parents,
+                item,
+                message
+            FROM
+                failed 
+            WHERE
+                item::TEXT LIKE ANY($1) 
+                AND message LIKE ANY($2) 
+            ORDER BY
+                id DESC
+            LIMIT
+                $3
+            OFFSET
+                $4
+            "#,
+        )
+        .bind(item_filters)
+        .bind(message_filters)
+        .bind(per_page)
+        .bind((page - 1) * per_page)
+        .map(|row| FailedRecord::<T>::from_row(&row))
+        .fetch_all(&self.client)
+        .await?
+        .into_iter()
+        .collect()
+    }
+
+    pub async fn query_failed_by_id(
+        &self,
+        id: i64,
+    ) -> Result<Option<FailedRecord<T>>, sqlx::Error> {
+        sqlx::query(
+            r#"
+            SELECT
+               id,
+               parents,
+               item,
+               message
+            FROM
+               failed 
+            WHERE
+               id = $1
+            "#,
+        )
+        .bind(id)
+        .map(|row| FailedRecord::<T>::from_row(&row))
+        .fetch_optional(&self.client)
+        .await?
+        .transpose()
+    }
+}
+
 impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     type Config = PgQueueConfig;
     // type Error = tokio_postgres::Error;
@@ -85,8 +169,53 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         //     }
         // });
 
+        let pool = config.into_pg_pool().await?;
+
+        pool.execute_many(
+            r#"
+            CREATE TABLE IF NOT EXISTS queue(
+                id BIGSERIAL PRIMARY KEY,
+                item JSONB NOT NULL,
+                parents BIGINT[] DEFAULT '{}',
+                created_at timestamptz NOT NULL DEFAULT now()
+            );
+
+            CREATE TABLE IF NOT EXISTS optimize(
+                -- TODO: Figure out how to do this properly
+                id BIGINT PRIMARY KEY DEFAULT nextval('queue_id_seq'::regclass),
+                item JSONB NOT NULL,
+                tag text NOT NULL,
+                parents BIGINT[] DEFAULT '{}',
+                created_at timestamptz NOT NULL DEFAULT now()
+            );
+
+            CREATE TABLE IF NOT EXISTS done(
+                id BIGINT,
+                item JSONB NOT NULL,
+                parents BIGINT[] DEFAULT '{}',
+                created_at timestamptz NOT NULL DEFAULT now(),
+                PRIMARY KEY (id, created_at)
+            );
+
+            CREATE TABLE IF NOT EXISTS failed(
+                id BIGINT PRIMARY KEY,
+                item JSONB NOT NULL,
+                parents BIGINT[] DEFAULT '{}',
+                message TEXT,
+                created_at timestamptz NOT NULL DEFAULT now()
+            );
+
+            CREATE INDEX IF NOT EXISTS index_queue_id ON queue(id);
+            "#,
+        )
+        .try_for_each(
+            |result| async move { Ok(trace!("rows affected: {}", result.rows_affected())) },
+        )
+        .instrument(info_span!("init"))
+        .await?;
+
         Ok(Self {
-            client: config.into_pg_pool().await?,
+            client: pool,
             __marker: PhantomData,
         })
     }

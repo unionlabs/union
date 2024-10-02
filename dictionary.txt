@@ -9,6 +9,7 @@ Acks
 Agglayer
 Axelar
 BAYC
+BIGSERIAL
 BLOCKSCOUT
 Bera
 Berachain

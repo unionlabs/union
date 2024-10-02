@@ -9141,6 +9141,7 @@ name = "pg-queue"
 version = "0.1.0"
 dependencies = [
  "frame-support-procedural",
+ "futures-util",
  "prometheus",
  "serde",
  "serde_json",
