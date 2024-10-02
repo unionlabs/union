@@ -271,7 +271,10 @@ impl HandleData<VoyagerMessage> for VoyagerData {
                                     $($ClientType => {
                                         mk_relay_event::<$Hc, $BlockHc, $Tr>(chain_id, ibc_event)
                                     })*
-                                    _ => unimplemented!(),
+                                    ct => {
+                                        tracing::warn!("unknown client type {ct:?}");
+                                        noop()
+                                    },
                                 },
                             ),)*
                             msg => VoyagerMessage::from_op(msg),
