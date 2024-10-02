@@ -12,7 +12,7 @@ test-include = []
 
 [dependencies]
 frame-support-procedural = { workspace = true }
-futures-util = "0.3.30"
+futures-util             = "0.3.30"
 prometheus               = "0.13.4"
 serde                    = { workspace = true }
 serde_json               = { workspace = true, features = ["unbounded_depth"] }

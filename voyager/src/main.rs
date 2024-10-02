@@ -27,13 +27,13 @@ use unionlabs::{ethereum::ibc_commitment_key, ics24};
 use voyager_message::{
     call::FetchBlocks, core::ChainId, module::ChainModuleClient, VoyagerMessage,
 };
-use voyager_vm::call;
+use voyager_vm::{call, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
-    cli::{AppArgs, Command, UtilCmd},
+    cli::{AppArgs, Command, QueueCmd, UtilCmd},
     config::Config,
     queue::{AnyQueueConfig, Voyager, VoyagerInitError},
 };
@@ -221,56 +221,55 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                "state": state,
             }));
         }
-        Command::Queue(_cli_msg) => {
-            todo!()
+        Command::Queue(cli_msg) => {
+            let db = match voyager_config.voyager.queue {
+                AnyQueueConfig::PgQueue(cfg) => {
+                    pg_queue::PgQueue::<VoyagerMessage>::new(cfg).await?
+                }
+                _ => {
+                    return Err("no database set in config, queue commands \
+                        require the `pg-queue` database backend"
+                        .to_string()
+                        .into())
+                }
+            };
+
+            match cli_msg {
+                // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
+                // cli::QueueCmd::History { id, max_depth } => {
+                //     // let results = query_as!(
+                //     //     Record,
+                //     //     r#"SELECT id as "id!", parent, item as "item!: Item" FROM get_list($1, $2) ORDER BY id ASC"#,
+                //     //     id.inner(),
+                //     //     max_depth.inner()
+                //     // )
+                //     // .fetch_all(&db)
+                //     // .await
+                //     // .unwrap();
+
+                //     // println!("{}", serde_json::to_string_pretty(&results).unwrap());
+
+                //     todo!();
+                // }
+                QueueCmd::Failed {
+                    page,
+                    per_page,
+                    item_filters,
+                    message_filters,
+                } => {
+                    let record = db
+                        .query_failed(page.into(), per_page.into(), item_filters, message_filters)
+                        .await?;
+
+                    print_json(&record);
+                }
+                QueueCmd::FailedById { id } => {
+                    let record = db.query_failed_by_id(id.inner()).await?;
+
+                    print_json(&record);
+                }
+            }
         }
-        // Command::Queue(cli_msg) => {
-        //     let db = match voyager_config.voyager.queue {
-        //         AnyQueueConfig::PgQueue(cfg) => cfg.into_pg_pool().await.unwrap(),
-        //         _ => panic!("no database set in config"),
-        //     };
-
-        //     type Item = sqlx::types::Json<Op<VoyagerMessage>>;
-
-        //     match cli_msg {
-        //         // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
-        //         // cli::QueueCmd::History { id, max_depth } => {
-        //         //     // let results = query_as!(
-        //         //     //     Record,
-        //         //     //     r#"SELECT id as "id!", parent, item as "item!: Item" FROM get_list($1, $2) ORDER BY id ASC"#,
-        //         //     //     id.inner(),
-        //         //     //     max_depth.inner()
-        //         //     // )
-        //         //     // .fetch_all(&db)
-        //         //     // .await
-        //         //     // .unwrap();
-
-        //         //     // println!("{}", serde_json::to_string_pretty(&results).unwrap());
-
-        //         //     todo!();
-        //         // }
-        //         cli::QueueCmd::Failed { page, per_page } => {
-        //             #[derive(Debug, serde::Serialize)]
-        //             struct Record {
-        //                 id: i64,
-        //                 message: String,
-        //                 item: Item,
-        //             }
-
-        //             let results = query_as!(
-        //                 Record,
-        //                 r#"SELECT id, item as "item: Item", message as "message!" FROM queue WHERE status = 'failed' ORDER BY id ASC LIMIT $1 OFFSET $2"#,
-        //                 per_page.inner(),
-        //                 ((page.inner() - 1) * per_page.inner()),
-        //             )
-        //             .fetch_all(&db)
-        //             .await
-        //             .unwrap();
-
-        //             print_json(&results);
-        //         }
-        //     }
-        // }
         Command::Handshake(_) => todo!(),
         // Command::Handshake(HandshakeCmd {
         //     chain_a,

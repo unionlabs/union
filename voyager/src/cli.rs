@@ -74,7 +74,7 @@ pub enum Command {
     },
 }
 
-type Pg64 = BoundedI64<0, { i64::MAX }>;
+type Pg64 = BoundedI64<1, { i64::MAX }>;
 
 #[derive(Debug, Subcommand)]
 pub enum QueueCmd {
@@ -88,6 +88,13 @@ pub enum QueueCmd {
         page: Pg64,
         #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
         per_page: Pg64,
+        #[arg(long, short = 'i')]
+        item_filters: Vec<String>,
+        #[arg(long, short = 'm')]
+        message_filters: Vec<String>,
+    },
+    FailedById {
+        id: Pg64,
     },
 }
 

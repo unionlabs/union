@@ -48,8 +48,6 @@ use crate::{
 pub enum Call<C = serde_json::Value> {
     FetchBlocks(FetchBlocks),
 
-    UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState),
-
     FetchUpdateHeaders(FetchUpdateHeaders),
 
     MakeMsgCreateClient(MakeMsgCreateClient),
@@ -120,12 +118,6 @@ pub struct FetchUpdateHeaders {
     pub counterparty_chain_id: ChainId<'static>,
     pub update_from: Height,
     pub update_to: Height,
-}
-
-#[model]
-pub struct FetchUnfinalizedTrustedClientState {
-    pub chain_id: ChainId<'static>,
-    pub client_id: ClientId,
 }
 
 /// Build a [`MsgCreateClient`] [`IbcMessage`].
@@ -283,43 +275,13 @@ impl<D: Member, C: Member, Cb: Member> HandleCall<VoyagerMessage<D, C, Cb>> for 
                 chain_id,
             }) => {
                 let message = format!(
-                    "fetch blocks request received for chain {chain_id} at height \
+                    "fetch blocks request received for chain `{chain_id}` at height \
                     {start_height} but it was not picked up by a plugin"
                 );
 
                 error!(%message);
 
                 Err(QueueError::Fatal(message.into()))
-            }
-
-            // TODO: This is currently unused, but there is a wait that uses this call that needs to
-            // be refactored to be an aggregation using this
-            Call::UnfinalizedTrustedClientState(FetchUnfinalizedTrustedClientState {
-                chain_id: _,
-                client_id: _,
-            }) => {
-                // let client_state = ctx
-                //     .chain_module(&chain_id)
-                //     ?
-                //     .query_raw_unfinalized_trusted_client_state(client_id)
-                //     .await
-                //     .map_err(json_rpc_error_to_queue_error)?;
-
-                // let decoded = ctx
-                //     .client_module(&client_state.client_type, &client_state.ibc_interface)
-                //     ?
-                //     .decode_client_state_meta(client_state.bytes, client_state.ibc_interface)
-                //     .await
-                //     .map_err(json_rpc_error_to_queue_error)?;
-
-                // Ok(data(id(
-                //     self.chain_id,
-                //     UnfinalizedTrustedClientState {
-                //         height,
-                //         client_state,
-                //     },
-                // )))
-                todo!()
             }
 
             Call::MakeMsgConnectionOpenTry(MakeMsgConnectionOpenTry {

@@ -69,6 +69,89 @@ struct Record {
     created_at: sqlx::types::time::OffsetDateTime,
 }
 
+#[derive(Debug, FromRow, Serialize)]
+#[serde(bound(serialize = ""))]
+pub struct FailedRecord<T: QueueMessage> {
+    pub id: i64,
+    pub parents: Vec<i64>,
+    pub item: Json<Op<T>>,
+    pub message: String,
+    // pub created_at: sqlx::types::time::OffsetDateTime,
+}
+
+impl<T: QueueMessage> PgQueue<T> {
+    pub async fn query_failed(
+        &self,
+        page: i64,
+        per_page: i64,
+        mut item_filters: Vec<String>,
+        mut message_filters: Vec<String>,
+    ) -> Result<Vec<FailedRecord<T>>, sqlx::Error> {
+        // default to all-inclusive filter if none are provided
+        if item_filters.is_empty() {
+            item_filters.push("%".to_owned())
+        }
+
+        if message_filters.is_empty() {
+            message_filters.push("%".to_owned())
+        }
+
+        sqlx::query(
+            r#"
+            SELECT
+                id,
+                parents,
+                item,
+                message
+            FROM
+                failed 
+            WHERE
+                item::TEXT LIKE ANY($1) 
+                AND message LIKE ANY($2) 
+            ORDER BY
+                id DESC
+            LIMIT
+                $3
+            OFFSET
+                $4
+            "#,
+        )
+        .bind(item_filters)
+        .bind(message_filters)
+        .bind(per_page)
+        .bind((page - 1) * per_page)
+        .map(|row| FailedRecord::<T>::from_row(&row))
+        .fetch_all(&self.client)
+        .await?
+        .into_iter()
+        .collect()
+    }
+
+    pub async fn query_failed_by_id(
+        &self,
+        id: i64,
+    ) -> Result<Option<FailedRecord<T>>, sqlx::Error> {
+        sqlx::query(
+            r#"
+            SELECT
+               id,
+               parents,
+               item,
+               message
+            FROM
+               failed 
+            WHERE
+               id = $1
+            "#,
+        )
+        .bind(id)
+        .map(|row| FailedRecord::<T>::from_row(&row))
+        .fetch_optional(&self.client)
+        .await?
+        .transpose()
+    }
+}
+
 impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     type Config = PgQueueConfig;
     // type Error = tokio_postgres::Error;
