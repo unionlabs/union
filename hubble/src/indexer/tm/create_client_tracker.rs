@@ -146,9 +146,19 @@ pub fn schedule_create_client_checker(
                                     cs.execution_chain_id.to_string()
                                 }
                                 WasmClientType::EvmInCosmos => {
-                                    todo!()
+                                    todo!("We still need to add evm-in-cosmos")
                                 }
-                                WasmClientType::Movement => todo!(),
+                                WasmClientType::Movement => {
+                                    let cs = match unionlabs::ibc::lightclients::movement::client_state::ClientState::decode_as::<Proto>(&cs.data) {
+                                        Ok(cs) => cs,
+                                        Err(err) => {
+                                            warn!("error while decoding client {client_id}: {:?}. Most likely due to a client state upgrade. This can then be safely ignored", err);
+                                            continue;
+                                        }
+                                    };
+
+                                    cs.chain_id.to_string()
+                                }
                             };
 
                             info!("{}: add mapping {} => {} (ibc.lightclients.wasm.v1.ClientState)", internal_chain_id, client_id, counterparty_chain_id);
