@@ -21,7 +21,7 @@ _: {
       packages = {
         docs = mkCi false (
           unstablePkgs.buildNpmPackage {
-            npmDepsHash = "sha256-ThCypKNVVxdTEYuANN5n/xc3nuMI5vnbIZi9gXGotlU=";
+            npmDepsHash = "sha256-SbB+robeu/voUqzqDBUPIpWGSo5wtEdhPRPGUfLNYek=";
             src = ./.;
             srcs = [
               ./.

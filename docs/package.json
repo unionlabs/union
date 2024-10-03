@@ -40,7 +40,7 @@
     "astro-live-code": "^0.0.3",
     "graphiql": "^3.7.1",
     "graphql": "^16.9.0",
-    "mermaid": "^11.2.1",
+    "mermaid": "^11.3.0",
     "monaco-editor": "^0.52.0",
     "monaco-editor-auto-typings": "^0.4.5",
     "react": "^18.3.1",
@@ -63,7 +63,7 @@
     "starlight-theme-rapide": "^0.2.0",
     "svelte": "^4.2.19",
     "viem": "^2.21.17",
-    "vue": "^3.5.10"
+    "vue": "^3.5.11"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.3",
