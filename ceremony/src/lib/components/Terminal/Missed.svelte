@@ -99,5 +99,5 @@ async function trigger(value: "retry" | "help") {
 </script>
 
 {#if showButtons}
-  <Buttons data={[{text: "Retry", action: "retry"}, {text: "I need help", action: "help"}]} trigger={(action) => trigger(action)}/>
+  <Buttons data={[{text: "Generate new slot and continue", action: "retry"}, {text: "Exit and create a support ticket", action: "help"}]} trigger={(action) => trigger(action)}/>
 {/if}
