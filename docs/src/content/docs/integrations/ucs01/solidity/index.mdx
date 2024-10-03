@@ -2,6 +2,7 @@
 title: "UCS01 Relay Solidity Integration"
 description: "Example showcasing how to create a contract that leverages UCS01 Relay to transfer assets."
 ---
+
 import Code from '#/components/Code.astro'
 import { Tabs, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
 
@@ -158,22 +159,7 @@ The first transfer we will do against a forked network using `anvil`.
 
 <Steps>
     1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
-    2. Deploy the contract
-        ```sh
-        forge create \
-            --rpc-url $SEPOLIA_RPC_URL \
-            --private-key $PRIVATE_KEY src/Transfer.sol:Transfer
-        ```
-        ```ansi
-        [⠊] Compiling...
-        No files changed, compilation skipped
-        Deployer: 0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd
-        Deployed to: 0x10Aa7982252D004395Da4Ff4Efb31B9Fa838e60F
-        Transaction hash: 0x77cd18f940e31fadb45647d6be38cc986c84e3110356f791ff5079b47b232e15
-        ```
-        [deployment example transaction](https://scope.sh/11155111/tx/0x77cd18f940e31fadb45647d6be38cc986c84e3110356f791ff5079b47b232e15)
-        – [deployed contract](https://scope.sh/11155111/address/0x10aa7982252d004395da4ff4efb31b9fa838e60f)
-    3. Run the script
+    2. Run the script, this will also deploy the contract
         ```sh
         forge script script/Transfer.s.sol:TransferScript \
             --rpc-url $SEPOLIA_RPC_URL \
@@ -207,7 +193,9 @@ The first transfer we will do against a forked network using `anvil`.
         ==========================
         ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
         ```
-    4. Optional - verify the contract
+        [deployment example transaction](https://eth-sepolia.blockscout.com/tx/0x462a91caf0a55bbb708fbae48e930902316a8e53d2bd1a4dbcbf0e33e8d04898)
+        – [deployed contract](https://eth-sepolia.blockscout.com/address/0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A)
+    3. Optional - verify the contract
         ```sh
         forge verify-contract 0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A \
             src/Transfer.sol:Transfer
@@ -216,4 +204,5 @@ The first transfer we will do against a forked network using `anvil`.
             --watch
         ```
         we verified this contract on [Sourcify](https://repo.sourcify.dev/contracts/full_match/11155111/0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A/sources/src/)
+    4. Query Union's GraphQL API for the deployed contract transfers: [playground link](https://docs.union.build/reference/graphql/?query=query%20ContractTransfers%20%7B%0A%20%20v1_transfers(%0A%20%20%20%20where%3A%20%7B%0A%20%20%20%20%20%20sender%3A%20%7B%0A%20%20%20%20%20%20%20%20_like%3A%20%220xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A%22%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20)%20%7B%0A%20%20%20%20sender%0A%20%20%20%20source_chain_id%0A%20%20%20%20source_timestamp%0A%20%20%20%20source_port_id%0A%20%20%20%20source_channel_id%0A%20%20%20%20source_block_hash%0A%20%20%20%20source_connection_id%0A%20%20%20%20source_transaction_hash%0A%0A%20%20%20%20receiver%0A%20%20%20%20destination_chain_id%0A%20%20%20%20destination_timestamp%0A%20%20%20%20destination_port_id%0A%20%20%20%20destination_channel_id%0A%20%20%20%20destination_block_hash%0A%20%20%20%20destination_connection_id%0A%20%20%20%20destination_transaction_hash%0A%20%20%7D%0A%7D)
 </Steps>
