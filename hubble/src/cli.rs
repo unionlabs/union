@@ -45,6 +45,10 @@ pub struct Args {
         default_value = "json"
     )]
     pub log_format: LogFormat,
+
+    /// List of URLs to include.
+    #[arg(short, long, env = "TOKENS_URLS")]
+    pub tokens_urls: TokensUrls,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -200,6 +204,29 @@ impl IndexerConfig {
 }
 
 impl FromStr for Indexers {
+    type Err = color_eyre::eyre::Error;
+
+    fn from_str(item: &str) -> Result<Self, <Self as FromStr>::Err> {
+        serde_json::from_str(item).map_err(Into::into)
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct TokensUrls {
+    pub urls: Vec<String>,
+}
+
+impl IntoIterator for TokensUrls {
+    type Item = String;
+
+    type IntoIter = std::vec::IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.urls.into_iter()
+    }
+}
+
+impl FromStr for TokensUrls {
     type Err = color_eyre::eyre::Error;
 
     fn from_str(item: &str) -> Result<Self, <Self as FromStr>::Err> {

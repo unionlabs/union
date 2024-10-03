@@ -27,6 +27,7 @@ mod postgres;
 mod race_client;
 mod scroll;
 mod tm;
+mod token_list;
 
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
@@ -39,7 +40,6 @@ static GLOBAL: Jemalloc = Jemalloc;
 async fn main() -> color_eyre::eyre::Result<()> {
     color_eyre::install().unwrap();
     let args = crate::cli::Args::parse();
-
     crate::logging::init(args.log_format);
     metrics::register_custom_metrics();
 
@@ -75,17 +75,32 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
     let indexers = args.indexers.clone();
 
-    let client_updates = async move {
-        let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
+    let client_updates = {
+        let db = db.clone();
+        async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
 
-        loop {
-            info!("fetching new client counterparty_chain_ids");
-            chain_id_query::tx(db.clone(), indexers.clone()).await;
-            interval.tick().await;
+            loop {
+                info!("fetching new client counterparty_chain_ids");
+                chain_id_query::tx(db.clone(), indexers.clone()).await;
+                interval.tick().await;
+            }
         }
     };
 
     set.spawn(client_updates);
+
+    let tokens_updates = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
+        interval.tick().await;
+        loop {
+            info!("updating_tokens");
+            token_list::update_tokens(db.clone(), args.tokens_urls.clone()).await?;
+            interval.tick().await;
+        }
+    };
+
+    set.spawn(tokens_updates);
 
     while let Some(res) = set.join_next().await {
         match res {
