@@ -241,3 +241,23 @@ export const getAverageTimes = async (): Promise<TimeResult> => {
     totalMs
   }
 }
+
+export const rejoin = async () => {
+  if (!user.session) {
+    throw new Error("User is not logged in")
+  }
+
+  try {
+    const { error } = await supabase.rpc("rejoin_queue")
+
+    if (error) {
+      console.log("Error joining queue:", error)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    console.log("Unexpected error:", err)
+    return false
+  }
+}
