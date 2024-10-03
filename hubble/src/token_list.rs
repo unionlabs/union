@@ -68,11 +68,11 @@ pub async fn update_tokens(db: sqlx::PgPool, urls: TokensUrls) -> Result<()> {
 pub async fn get_tokens(urls: TokensUrls) -> Result<Option<Vec<TokenList>>> {
     let client = reqwest::Client::new();
 
-    let requests = urls.urls.iter().map(|url| {
+    let requests = urls.into_iter().map(|url| {
         let client = client.clone();
         info!("Requesting token list from: {}", url);
         async move {
-            let val: serde_json::Value = client.get(url).send().await?.json().await?;
+            let val: serde_json::Value = client.get(url.clone()).send().await?.json().await?;
 
             if val.get("statusCode").is_none() {
                 debug!("Token list successfully retrieved from: {}", url);
