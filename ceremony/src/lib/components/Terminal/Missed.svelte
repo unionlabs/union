@@ -74,7 +74,7 @@ async function trigger(value: "retry" | "help") {
       await sleep(1000)
 
       if (rejoined) {
-        terminal.updateHistory({ text: "Successfully added user to queue" })
+        terminal.updateHistory({ text: "Successfully added user to queue." })
         await sleep(1000)
         terminal.updateHistory({ text: "Redirecting..." })
         await sleep(1000)
