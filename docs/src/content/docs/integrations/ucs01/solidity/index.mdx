@@ -3,7 +3,7 @@ title: "UCS01 Relay Solidity Integration"
 description: "Example showcasing how to create a contract that leverages UCS01 Relay to transfer assets."
 ---
 import Code from '#/components/Code.astro'
-import { Tabs, TabItem, FileTree } from '@astrojs/starlight/components'
+import { Tabs, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
 
 This example demonstrates how to create a Solidity contract that calls Union's UCS01 Relay to transfer assets.
 
@@ -21,6 +21,10 @@ UCS01_RELAY=0xD0081080Ae8493cf7340458Eaf4412030df5FEEb
 </FileTree>
 
 ## Transfer USDC on Sepolia
+
+Let's write a dead simple contract that transfers USDC from one address to another.
+
+### Contract Source
 
 ```solidity
 // src/Transfer.sol
@@ -73,11 +77,7 @@ contract Transfer {
 }
 ```
 
-## Executing the Contract
-
-We will transfer 1 USDC from Sepolia to a Union wallet. The first transfer we will do against a forked network using `anvil`.
-
-### Solidity Script
+### Contract Running Script
 
 ```solidity
 // script/Transfer.s.sol
@@ -105,51 +105,115 @@ contract TransferScript is Script {
 }
 ```
 
-### Running a Forked Network
-
-```sh
-# grab a sepolia RPC url from chainlist.org
-anvil --fork-url $SEPOLIA_RPC_URL
-```
-
-### Funding the Wallet
+## Funding the Wallet
 
 USDC faucet: [faucet.circle.com](https://faucet.circle.com)
 
 or pick a different token from faucet list here [app.union.build/faucet](https://app.union.build/faucet)
 
-### Running the Script
+## Executing the Contract
 
-```sh
-export PRIVATE_KEY=<PRIVATE_KEY>
+We will transfer 1 USDC from Sepolia to a Union wallet.
 
-forge script script/Transfer.s.sol:TransferScript \
-  --fork-url $SEPOLIA_RPC_URL \
-  --broadcast
-```
+The first transfer we will do against a forked network using `anvil`.
 
-we should see something like this:
+### Forked Network Example
 
-```ansi
-[⠊] Compiling...
-No files changed, compilation skipped
-Script ran successfully.
+<Steps>
+    1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
+    2. Start a local `anvil` fork of Sepolia
+        ```sh
+        anvil --fork-url $SEPOLIA_RPC_URL
+        ```
+    3. Run the script
+        ```sh
+        forge script script/Transfer.s.sol:TransferScript \
+            --fork-url $SEPOLIA_RPC_URL \
+            --broadcast
+        ```
+    
+    4. we should see something like this:
 
-== Logs ==
-  transferring
-  complete
+        ```ansi
+        [⠊] Compiling...
+        No files changed, compilation skipped
+        Script ran successfully.
 
-## Setting up 1 EVM.
-==========================
-Chain 11155111
+        == Logs ==
+          transferring
+          complete
 
-Estimated gas price: 492.753087966 gwei
-Estimated total gas used for script: 688015
-Estimated amount required: 0.33902151581692749 ETH
-==========================
+        ## Setting up 1 EVM.
+        ==========================
+        Chain 11155111
 
-##### sepolia
-✅  [Success]Hash: 0x38b0fc68c482f75c1ca89e069cf18fea712131fd44c930bee03274804e9fc6b7
-Block: 6801346
-Paid: 0.042409917351145045 ETH (183391 gas * 231.254081995 gwei)
-```
+        ##### sepolia
+        ✅  [Success]Hash: 0x38b0fc68c482f75c1ca89e069cf18fea712131fd44c930bee03274804e9fc6b7
+        Block: 6801346
+        Paid: 0.042409917351145045 ETH (183391 gas * 231.254081995 gwei)
+        ```
+</Steps>
+
+### Live Sepolia Example
+
+<Steps>
+    1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
+    2. Deploy the contract
+        ```sh
+        forge create \
+            --rpc-url $SEPOLIA_RPC_URL \
+            --private-key $PRIVATE_KEY src/Transfer.sol:Transfer
+        ```
+        ```ansi
+        [⠊] Compiling...
+        No files changed, compilation skipped
+        Deployer: 0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd
+        Deployed to: 0x10Aa7982252D004395Da4Ff4Efb31B9Fa838e60F
+        Transaction hash: 0x77cd18f940e31fadb45647d6be38cc986c84e3110356f791ff5079b47b232e15
+        ```
+        [deployment example transaction](https://scope.sh/11155111/tx/0x77cd18f940e31fadb45647d6be38cc986c84e3110356f791ff5079b47b232e15)
+        – [deployed contract](https://scope.sh/11155111/address/0x10aa7982252d004395da4ff4efb31b9fa838e60f)
+    3. Run the script
+        ```sh
+        forge script script/Transfer.s.sol:TransferScript \
+            --rpc-url $SEPOLIA_RPC_URL \
+            --private-key $PRIVATE_KEY \
+            --broadcast
+        ```
+        ```ansi
+        [⠊] Compiling...
+        No files changed, compilation skipped
+        Script ran successfully.
+
+        == Logs ==
+          transferring
+          complete
+
+        ## Setting up 1 EVM.
+        ==========================
+
+        ##### sepolia
+        ✅  [Success]Hash: 0x462a91caf0a55bbb708fbae48e930902316a8e53d2bd1a4dbcbf0e33e8d04898
+        Contract Address: 0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A
+        Block: 6803704
+        Paid: 0.042853127668735725 ETH (258225 gas * 165.952667901 gwei)
+
+        ##### sepolia
+        ✅  [Success]Hash: 0x26bc6d93323fd57315141c370ca346c10757b2eb989bffd0e9f9a91d8b2864f6
+        Block: 6803704
+        Paid: 0.03045895266654954 ETH (183540 gas * 165.952667901 gwei)
+
+        ✅ Sequence #1 on sepolia | Total Paid: 0.083627532219343524 ETH (503924 gas * avg 165.952667901 gwei)
+        ==========================
+        ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
+        ```
+    4. Optional - verify the contract
+        ```sh
+        forge verify-contract 0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A \
+            src/Transfer.sol:Transfer
+            --chain-id 11155111 \
+            --verifier sourcify \
+            --watch
+        ```
+        we verified this contract on [Sourcify](https://repo.sourcify.dev/contracts/full_match/11155111/0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A/sources/src/)
+</Steps>
