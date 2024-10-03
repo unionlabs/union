@@ -115,6 +115,19 @@ contract TransferScript is Script {
 }
 ```
 
+You will be using the same RPC url across examples, so good to export it to an environment variable:
+
+```sh
+RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_API_KEY>
+```
+
+:::note
+
+you should use a premium RPC provider like [Alchemy](https://www.alchemy.com/) or [Infura](https://infura.io/) to avoid rate limiting
+and to be able to deploy contracts.
+
+:::
+
 ## Funding the Wallet
 
 ETH Sepolia faucets:
@@ -137,12 +150,12 @@ The first transfer we will do against a forked network using [`anvil`](https://b
     1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
     2. Start a local [`anvil`](https://book.getfoundry.sh/anvil/) fork of Sepolia
         ```sh
-        anvil --fork-url $SEPOLIA_RPC_URL
+        anvil --fork-url $RPC_URL
         ```
     3. Run the script with [`forge`](https://book.getfoundry.sh/forge/)
         ```sh
         forge script script/Transfer.s.sol:TransferScript \
-            --fork-url $SEPOLIA_RPC_URL \
+            --fork-url $RPC_URL \
             --broadcast
         ```
     
@@ -167,7 +180,7 @@ The first transfer we will do against a forked network using [`anvil`](https://b
     2. Run the script with [`forge`](https://book.getfoundry.sh/forge/), this will also deploy the contract
         ```sh
         forge script script/Transfer.s.sol:TransferScript \
-            --rpc-url $SEPOLIA_RPC_URL \
+            --rpc-url $RPC_URL \
             --private-key $PRIVATE_KEY \
             --broadcast
         ```
