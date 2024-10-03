@@ -12,6 +12,15 @@ This example demonstrates how to create a Solidity contract that calls Union's U
 UCS01_RELAY=0xD0081080Ae8493cf7340458Eaf4412030df5FEEb
 ```
 
+Source code for this example can be found her: [ucs01-solidity-example](https://github.com/unionlabs/ucs01-solidity-example)
+For this example we will be using [foundry](https://book.getfoundry.sh/getting-started/installation).
+
+Install foundry
+
+```sh
+curl -L https://foundry.paradigm.xyz | bash
+```
+
 <FileTree>
 - src
   - Transfer.sol
@@ -108,6 +117,8 @@ contract TransferScript is Script {
 
 ## Funding the Wallet
 
+ETH Sepolia faucet: [sepolia.chain.link/sepolia](https://faucets.chain.link/sepolia)
+
 USDC faucet: [faucet.circle.com](https://faucet.circle.com)
 
 or pick a different token from faucet list here [app.union.build/faucet](https://app.union.build/faucet)
@@ -116,17 +127,17 @@ or pick a different token from faucet list here [app.union.build/faucet](https:/
 
 We will transfer 1 USDC from Sepolia to a Union wallet.
 
-The first transfer we will do against a forked network using `anvil`.
+The first transfer we will do against a forked network using [`anvil`](https://book.getfoundry.sh/anvil/).
 
 ### Forked Network Example
 
 <Steps>
     1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
-    2. Start a local `anvil` fork of Sepolia
+    2. Start a local [`anvil`](https://book.getfoundry.sh/anvil/) fork of Sepolia
         ```sh
         anvil --fork-url $SEPOLIA_RPC_URL
         ```
-    3. Run the script
+    3. Run the script with [`forge`](https://book.getfoundry.sh/forge/)
         ```sh
         forge script script/Transfer.s.sol:TransferScript \
             --fork-url $SEPOLIA_RPC_URL \
@@ -140,14 +151,6 @@ The first transfer we will do against a forked network using `anvil`.
         No files changed, compilation skipped
         Script ran successfully.
 
-        == Logs ==
-          transferring
-          complete
-
-        ## Setting up 1 EVM.
-        ==========================
-        Chain 11155111
-
         ##### sepolia
         ✅  [Success]Hash: 0x38b0fc68c482f75c1ca89e069cf18fea712131fd44c930bee03274804e9fc6b7
         Block: 6801346
@@ -159,7 +162,7 @@ The first transfer we will do against a forked network using `anvil`.
 
 <Steps>
     1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
-    2. Run the script, this will also deploy the contract
+    2. Run the script with [`forge`](https://book.getfoundry.sh/forge/), this will also deploy the contract
         ```sh
         forge script script/Transfer.s.sol:TransferScript \
             --rpc-url $SEPOLIA_RPC_URL \
@@ -170,13 +173,6 @@ The first transfer we will do against a forked network using `anvil`.
         [⠊] Compiling...
         No files changed, compilation skipped
         Script ran successfully.
-
-        == Logs ==
-          transferring
-          complete
-
-        ## Setting up 1 EVM.
-        ==========================
 
         ##### sepolia
         ✅  [Success]Hash: 0x462a91caf0a55bbb708fbae48e930902316a8e53d2bd1a4dbcbf0e33e8d04898
