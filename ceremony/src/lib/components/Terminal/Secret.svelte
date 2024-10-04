@@ -10,8 +10,6 @@ const { contributor, terminal, user } = getState()
 
 let generated = $state(false)
 let generating = $state(false)
-let buttons = $state<Array<HTMLButtonElement>>([])
-let focusedIndex = $state(0)
 
 onMount(() => {
   terminal.setStep(4)
@@ -19,7 +17,7 @@ onMount(() => {
 })
 
 function handleDownload() {
-  const newUrl = "http://localhost:4919/secret_key"
+  const newUrl = `http://localhost:4919/secret_key/${user.session?.user.email}`
   window.open(newUrl, "_blank")
 }
 
