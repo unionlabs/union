@@ -58,13 +58,11 @@ async function trigger(value: "retry" | "help") {
     await sleep(1000)
     terminal.updateHistory({ text: "Clearing old user data..." })
 
-    localStorage.removeItem("ceremony:show-boot-sequence")
-    localStorage.removeItem("downloaded-secret")
+    localStorage.removeItem(`${contributor.userId}:downloaded-secret`)
 
-    const bootSequenceCleared = !localStorage.getItem("ceremony:show-boot-sequence")
-    const secretCleared = !localStorage.getItem("downloaded-secret")
+    const secretCleared = !localStorage.getItem(`${contributor.userId}:downloaded-secret`)
 
-    if (bootSequenceCleared && secretCleared) {
+    if (secretCleared) {
       await sleep(1000)
       terminal.updateHistory({ text: "Successfully cleared user data." })
       await sleep(1000)
@@ -76,6 +74,7 @@ async function trigger(value: "retry" | "help") {
       if (rejoined) {
         terminal.updateHistory({ text: "Successfully added user to queue." })
         await sleep(1000)
+        localStorage.removeItem("ceremony:show-boot-sequence")
         terminal.updateHistory({ text: "Redirecting..." })
         await sleep(1000)
         window.location.href = "/"

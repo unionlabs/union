@@ -37,7 +37,7 @@ onMount(() => {
     {:else if contributor.clientState === "offline"}
       <Install/>
 
-    {:else if !contributor.downloadedSecret && contributor.clientState === "idle"}
+    {:else if !contributor.storedSecret && contributor.clientState === "idle"}
       <Secret/>
 
     {:else if contributor.userWallet === null}

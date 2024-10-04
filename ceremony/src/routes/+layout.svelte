@@ -35,7 +35,7 @@ $effect(() => {
   if (
     contributor.contributionState === "contribute" &&
     contributor.state !== "contributing" &&
-    contributor.downloadedSecret
+    contributor.storedSecret
   ) {
     axiom.ingest("monitor", [{ user: user.session?.user.id, type: "start_contribution" }])
     start()

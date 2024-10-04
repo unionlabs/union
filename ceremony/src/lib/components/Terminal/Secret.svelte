@@ -13,7 +13,7 @@ let generating = $state(false)
 
 onMount(() => {
   terminal.setStep(4)
-  axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_secret" }])
+  axiom.ingest("monitor", [{ user: contributor.userId, type: "mount_secret" }])
 })
 
 function handleDownload() {
@@ -22,16 +22,16 @@ function handleDownload() {
 }
 
 function stored() {
-  localStorage.setItem("downloaded-secret", "true")
-  axiom.ingest("monitor", [{ user: user.session?.user.id, type: "stored_secret" }])
-  contributor.downloadedSecret = true
+  localStorage.setItem(`${contributor.userId}:downloaded-secret`, "true")
+  axiom.ingest("monitor", [{ user: contributor.userId, type: "stored_secret" }])
+  contributor.storedSecret = true
 }
 
 async function generate() {
   if (contributor.state !== "noClient") {
     generating = true
     terminal.updateHistory({ text: "Generating secret..." })
-    axiom.ingest("monitor", [{ user: user.session?.user.id, type: "generated_secret" }])
+    axiom.ingest("monitor", [{ user: contributor.userId, type: "generated_secret" }])
     await sleep(3000)
     generateSecret(user.session?.user.email)
     terminal.updateHistory({ text: "Initialize saving..." })
