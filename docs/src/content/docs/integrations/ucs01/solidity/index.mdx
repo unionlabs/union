@@ -1,0 +1,219 @@
+---
+title: "UCS01 Relay Solidity Integration"
+description: "Example showcasing how to create a contract that leverages UCS01 Relay to transfer assets."
+---
+
+import Code from '#/components/Code.astro'
+import { Tabs, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
+
+This example demonstrates how to create a Solidity contract that calls Union's UCS01 Relay to transfer assets.
+
+```sh
+UCS01_RELAY=0xD0081080Ae8493cf7340458Eaf4412030df5FEEb
+```
+
+Source code for this example can be found her: [example-ucs01-solidity](https://github.com/unionlabs/example-ucs01-solidity)
+For this example we will be using [foundry](https://book.getfoundry.sh/getting-started/installation).
+
+Install foundry
+
+```sh
+curl -L https://foundry.paradigm.xyz | bash
+```
+
+<FileTree>
+- src
+  - Transfer.sol
+- script
+  - Transfer.s.sol
+- remappings.txt
+- foundry.toml
+</FileTree>
+
+## Transfer USDC on Sepolia
+
+Let's write a dead simple contract that transfers USDC from one address to another.
+
+### Contract Source
+
+```solidity
+// src/Transfer.sol
+pragma solidity ^0.8.27;
+
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+
+struct LocalToken {
+  address denom;
+  uint128 amount;
+}
+
+struct Height {
+  uint64 revisionNumber;
+  uint64 revisionHeight;
+}
+
+interface IRelay {
+  function send(
+    string calldata sourceChannel,
+    bytes calldata receiver,
+    LocalToken[] calldata tokens,
+    string calldata extension,
+    Height calldata timeoutHeight,
+    uint64 timeoutTimestamp
+  ) external;
+}
+
+contract Transfer {
+  // https://github.com/unionlabs/union/blob/main/evm/README.md#sepolia
+  address public constant relay = 0xD0081080Ae8493cf7340458Eaf4412030df5FEEb;
+
+  // https://github.com/unionlabs/union/blob/main/evm/contracts/apps/ucs/01-relay/Relay.sol#L54-L61
+  function transferAsset() public {
+    LocalToken[] memory tokens = new LocalToken[](1);
+    tokens[0].denom = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+    tokens[0].amount = 1000000;
+
+    IERC20(tokens[0].denom).approve(relay, 1000000);
+
+    IRelay(relay).send(
+      "channel-90",
+      hex"a833B03D8ED1228C4791cBfAb22b3ED57954429F",
+      tokens,
+      "",
+      Height({revisionNumber: 100, revisionHeight: 1000000}),
+      0
+    );
+  }
+}
+```
+
+### Contract Running Script
+
+```solidity
+// script/Transfer.s.sol
+pragma solidity ^0.8.27;
+
+import {Script, console} from "forge-std/Script.sol";
+import {Transfer} from "../src/Transfer.sol";
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+
+contract TransferScript is Script {
+  address public constant USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+
+  function run() public {
+    uint256 privateKey = vm.envUint("PRIVATE_KEY");
+    vm.startBroadcast(privateKey);
+    Transfer transfer = new Transfer();
+
+    IERC20(USDC).transfer(address(transfer), 1500000);
+
+    console.log("transferring");
+    transfer.transferAsset();
+    console.log("complete");
+    vm.stopBroadcast();
+  }
+}
+```
+
+You will be using the same RPC url across examples, so good to export it to an environment variable:
+
+```sh
+RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_API_KEY>
+```
+
+:::note
+
+you should use a premium RPC provider like [Alchemy](https://www.alchemy.com/) or [Infura](https://infura.io/) to avoid rate limiting
+and to be able to deploy contracts.
+
+:::
+
+## Funding the Wallet
+
+ETH Sepolia faucets:
+  - [sepolia.chain.link/sepolia](https://faucets.chain.link/sepolia),
+  - [cloud.google.com](https://cloud.google.com/application/web3/faucet/ethereum/sepolia)
+
+USDC faucet: [faucet.circle.com](https://faucet.circle.com)
+
+or pick a different token from faucet list here [app.union.build/faucet](https://app.union.build/faucet)
+
+## Executing the Contract
+
+We will transfer 1 USDC from Sepolia to a Union wallet.
+
+The first transfer we will do against a forked network using [`anvil`](https://book.getfoundry.sh/anvil/).
+
+### Forked Network Example
+
+<Steps>
+    1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
+    2. Start a local [`anvil`](https://book.getfoundry.sh/anvil/) fork of Sepolia
+        ```sh
+        anvil --fork-url $RPC_URL
+        ```
+    3. Run the script with [`forge`](https://book.getfoundry.sh/forge/)
+        ```sh
+        forge script script/Transfer.s.sol:TransferScript \
+            --fork-url $RPC_URL \
+            --broadcast
+        ```
+    
+    4. we should see something like this:
+
+        ```ansi
+        [⠊] Compiling...
+        No files changed, compilation skipped
+        Script ran successfully.
+
+        ##### sepolia
+        ✅  [Success]Hash: 0x38b0fc68c482f75c1ca89e069cf18fea712131fd44c930bee03274804e9fc6b7
+        Block: 6801346
+        Paid: 0.042409917351145045 ETH (183391 gas * 231.254081995 gwei)
+        ```
+</Steps>
+
+### Live Sepolia Example
+
+<Steps>
+    1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
+    2. Run the script with [`forge`](https://book.getfoundry.sh/forge/), this will also deploy the contract
+        ```sh
+        forge script script/Transfer.s.sol:TransferScript \
+            --rpc-url $RPC_URL \
+            --private-key $PRIVATE_KEY \
+            --broadcast
+        ```
+        ```ansi
+        [⠊] Compiling...
+        No files changed, compilation skipped
+        Script ran successfully.
+
+        ##### sepolia
+        ✅  [Success]Hash: 0x462a91caf0a55bbb708fbae48e930902316a8e53d2bd1a4dbcbf0e33e8d04898
+        Contract Address: 0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A
+        Block: 6803704
+        Paid: 0.042853127668735725 ETH (258225 gas * 165.952667901 gwei)
+
+        ##### sepolia
+        ✅  [Success]Hash: 0x26bc6d93323fd57315141c370ca346c10757b2eb989bffd0e9f9a91d8b2864f6
+        Block: 6803704
+        Paid: 0.03045895266654954 ETH (183540 gas * 165.952667901 gwei)
+
+        ✅ Sequence #1 on sepolia | Total Paid: 0.083627532219343524 ETH (503924 gas * avg 165.952667901 gwei)
+        ==========================
+        ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
+        ```
+        [deployment example transaction](https://eth-sepolia.blockscout.com/tx/0x462a91caf0a55bbb708fbae48e930902316a8e53d2bd1a4dbcbf0e33e8d04898)
+        – [deployed contract](https://eth-sepolia.blockscout.com/address/0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A)
+    3. Optional - verify the contract
+        ```sh
+        forge verify-contract 0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A \
+            src/Transfer.sol:Transfer
+            --chain-id 11155111 \
+            --verifier sourcify \
+            --watch
+        ```
+        we verified this contract on [Sourcify](https://repo.sourcify.dev/contracts/full_match/11155111/0xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A/sources/src/)
+    4. Query Union's GraphQL API for the deployed contract transfers: [playground link](https://docs.union.build/reference/graphql/?query=query%20ContractTransfers%20%7B%0A%20%20v1_transfers(%0A%20%20%20%20where%3A%20%7B%0A%20%20%20%20%20%20sender%3A%20%7B%0A%20%20%20%20%20%20%20%20_like%3A%20%220xA8cE7c5a7b367dF6ef6c9E33Ec56145816b9931A%22%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20)%20%7B%0A%20%20%20%20sender%0A%20%20%20%20source_chain_id%0A%20%20%20%20source_timestamp%0A%20%20%20%20source_port_id%0A%20%20%20%20source_channel_id%0A%20%20%20%20source_block_hash%0A%20%20%20%20source_connection_id%0A%20%20%20%20source_transaction_hash%0A%0A%20%20%20%20receiver%0A%20%20%20%20destination_chain_id%0A%20%20%20%20destination_timestamp%0A%20%20%20%20destination_port_id%0A%20%20%20%20destination_channel_id%0A%20%20%20%20destination_block_hash%0A%20%20%20%20destination_connection_id%0A%20%20%20%20destination_transaction_hash%0A%20%20%7D%0A%7D)
+</Steps>

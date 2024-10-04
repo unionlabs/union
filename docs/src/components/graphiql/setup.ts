@@ -61,7 +61,6 @@ const graphiqlProps = {
             const query = localStorage.getItem("graphiql:query")
             if (!query) return
             const encoded = encodeURIComponent(query)
-            console.info(encoded)
             window.history.pushState({}, "", `?query=${encoded}`)
             // copy url to clipboard
             navigator.clipboard.writeText(window.location.href)

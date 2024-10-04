@@ -55,6 +55,7 @@
     "lib/pg-queue/migrations",
     "./site/src/content/openapi/**",
     "./docs/src/content/openapi/**",
-    "uniond/docs/static/openapi.yml"
+    "uniond/docs/static/openapi.yml",
+    "docs/src/assets/theme/**"
   ]
 }
