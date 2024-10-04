@@ -7,7 +7,7 @@ import "../Types.sol";
 // https://github.com/cosmos/ibc/blob/2921c5cec7b18e4ef77677e16a6b693051ae3b35/spec/core/ics-026-routing-module/README.md
 interface IIBCModule {
     function onChanOpenInit(
-        IBCChannelOrder,
+        IBCChannelOrder order,
         uint32 connectionId,
         uint32 channelId,
         IBCChannelCounterparty calldata counterparty,
@@ -16,7 +16,7 @@ interface IIBCModule {
     ) external;
 
     function onChanOpenTry(
-        IBCChannelOrder,
+        IBCChannelOrder order,
         uint32 connectionId,
         uint32 channelId,
         IBCChannelCounterparty calldata counterparty,
@@ -39,19 +39,19 @@ interface IIBCModule {
     function onChanCloseConfirm(uint32 channelId, address relayer) external;
 
     function onRecvIntentPacket(
-        IBCPacket calldata,
+        IBCPacket calldata packet,
         address marketMaker,
         bytes calldata marketMakerMsg
     ) external returns (bytes memory);
 
     function onRecvPacket(
-        IBCPacket calldata,
+        IBCPacket calldata packet,
         address relayer,
         bytes calldata relayerMsg
     ) external returns (bytes memory);
 
     function onAcknowledgementPacket(
-        IBCPacket calldata,
+        IBCPacket calldata packet,
         bytes calldata acknowledgement,
         address relayer
     ) external;
