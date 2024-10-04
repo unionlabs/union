@@ -12,17 +12,15 @@ use voyager_message::{
         MakeMsgChannelOpenTry, MakeMsgConnectionOpenAck, MakeMsgConnectionOpenConfirm,
         MakeMsgConnectionOpenTry, MakeMsgRecvPacket, WaitForTrustedHeight,
     },
-    callback::Callback,
     core::{ChainId, ClientStateMeta},
     data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
-    VoyagerClient, VoyagerMessage,
+    PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{aggregation::HListTryFromIterator, call, conc, data, noop, promise, seq, Op};
 
 use crate::{
-    call::ModuleCall,
-    data::{BatchableEvent, Event, ModuleData},
+    data::{BatchableEvent, Event},
     Module,
 };
 
@@ -45,8 +43,8 @@ impl MakeIbcMessagesFromUpdate {
         self,
         voyager_client: &VoyagerClient,
         module_server: &Module,
-        datas: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        datas: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         let Ok(
             hlist_pat![
                 updates @ OrderedMsgUpdateClients { .. },
@@ -93,7 +91,7 @@ pub fn make_msgs(
 
     client_meta: ClientStateMeta,
     new_trusted_height: Height,
-) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+) -> RpcResult<Op<VoyagerMessage>> {
     Ok(conc(batches.into_iter().enumerate().map(|(i, batch)| {
         promise(
             batch.into_iter().map(|batchable_event| {
@@ -167,13 +165,13 @@ pub fn make_msgs(
                 }
             }),
             [],
-            Callback::plugin(
+            PluginMessage::new(
                 module_server.plugin_name(),
-                MakeBatchTransaction {
+                ModuleCallback::from(MakeBatchTransaction {
                     client_id: client_id.clone(),
                     // if updates are provided and this is the first batch using this update height, provide the updates along with the messages
                     updates: (i == 0).then(|| updates.clone()).flatten(),
-                },
+                }),
             ),
         )
     })))
@@ -188,11 +186,7 @@ pub struct MakeBatchTransaction {
 }
 
 impl MakeBatchTransaction {
-    pub fn call(
-        self,
-        chain_id: ChainId<'static>,
-        datas: VecDeque<Data<ModuleData>>,
-    ) -> Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>> {
+    pub fn call(self, chain_id: ChainId<'static>, datas: VecDeque<Data>) -> Op<VoyagerMessage> {
         if datas.is_empty() {
             warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");
         }

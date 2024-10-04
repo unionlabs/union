@@ -1,18 +1,23 @@
 use std::net::SocketAddr;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use voyager_message::context::ModuleConfig;
+use voyager_message::context::{ModulesConfig, PluginConfig};
 
 use crate::queue::AnyQueueConfig;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub plugins: Vec<ModuleConfig>,
+    // allows for using $schema in the config file
+    #[serde(rename = "$schema", default, skip_serializing_if = "Option::is_none")]
+    pub schema: Option<String>,
+    pub modules: ModulesConfig,
+    pub plugins: Vec<PluginConfig>,
     pub voyager: VoyagerConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct VoyagerConfig {
     pub num_workers: u16,
@@ -21,8 +26,8 @@ pub struct VoyagerConfig {
     #[serde(default = "default_rpc_laddr")]
     pub rpc_laddr: SocketAddr,
     pub queue: AnyQueueConfig,
-    // pub tx_batch: TxBatch,
-    #[serde(default)]
+    // TODO: Specify per plugin
+    #[serde(default = "default_optimizer_delay_milliseconds")]
     pub optimizer_delay_milliseconds: u64,
 }
 
@@ -32,4 +37,8 @@ pub fn default_rest_laddr() -> SocketAddr {
 
 pub fn default_rpc_laddr() -> SocketAddr {
     "0.0.0.0:7178".parse().unwrap()
+}
+
+pub fn default_optimizer_delay_milliseconds() -> u64 {
+    100
 }

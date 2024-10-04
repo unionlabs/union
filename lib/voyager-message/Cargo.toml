@@ -33,6 +33,7 @@ prost                          = { workspace = true }
 protos                         = { workspace = true, features = ["proto_full", "client"] }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
+schemars.workspace             = true
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }
 serde_json                     = { workspace = true }

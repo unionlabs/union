@@ -16,17 +16,16 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use subset_of::SubsetOf;
 use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{id::ClientId, QueryHeight};
 use voyager_message::{
-    call::{Call, FetchUpdateHeaders, WaitForHeight},
-    callback::{AggregateMsgUpdateClientsFromOrderedHeaders, Callback},
+    call::{FetchUpdateHeaders, WaitForHeight},
+    callback::AggregateMsgUpdateClientsFromOrderedHeaders,
     core::ChainId,
     data::{ChainEvent, Data, FullIbcEvent},
-    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
+    module::{PluginInfo, PluginServer},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
-    run_module_server, DefaultCmd, ExtensionsExt, ModuleContext, PluginMessage, VoyagerClient,
+    run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
     VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, data, now, optimize::OptimizationResult, promise, seq, BoxDynError, Op};
@@ -43,7 +42,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_plugin_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -108,23 +107,24 @@ impl ClientConfigs {
     }
 }
 
-impl ModuleContext for Module {
+impl Plugin for Module {
+    type Call = ModuleCall;
+    type Callback = ModuleCallback;
+
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         Ok(Module::new(config))
     }
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
+    fn info(config: Self::Config) -> PluginInfo {
         let module = Module::new(config);
 
-        ModuleInfo {
-            kind: PluginInfo {
-                name: module.plugin_name(),
-                interest_filter: format!(
-                    r#"
+        PluginInfo {
+            name: module.plugin_name(),
+            interest_filter: format!(
+                r#"
 if ."@type" == "data" then
     ."@value" as $data |
 
@@ -168,11 +168,10 @@ else
     false
 end
 "#,
-                    chain_id = module.chain_id,
-                    plugin_name = module.plugin_name(),
-                    clients_filter = module.client_configs.jaq_filter()
-                ),
-            },
+                chain_id = module.chain_id,
+                plugin_name = module.plugin_name(),
+                clients_filter = module.client_configs.jaq_filter()
+            ),
         }
     }
 
@@ -199,29 +198,19 @@ impl Module {
     }
 }
 
-impl PluginTypes for Module {
-    type D = ModuleData;
-    type C = ModuleCall;
-    type Cb = ModuleCallback;
-}
-
 #[async_trait]
-impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         e: &Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
         self.run_pass_internal(e, msgs).await
     }
 
     #[instrument(skip_all)]
-    async fn call(
-        &self,
-        e: &Extensions,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::MakeTransactionBatchesWithUpdate(MakeTransactionBatchesWithUpdate {
                 client_id,
@@ -309,12 +298,12 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
                             },
                         )],
                         [],
-                        Callback::plugin(
+                        PluginMessage::new(
                             self.plugin_name(),
-                            MakeIbcMessagesFromUpdate {
+                            ModuleCallback::from(MakeIbcMessagesFromUpdate {
                                 client_id: client_id.clone(),
                                 batches,
-                            },
+                            }),
                         ),
                     ))
                 }
@@ -327,8 +316,8 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         e: &Extensions,
         cb: ModuleCallback,
-        datas: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        datas: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {
             ModuleCallback::MakeIbcMessagesFromUpdate(cb) => {
                 cb.call(e.try_get()?, self, datas).await
@@ -343,17 +332,9 @@ impl Module {
     fn run_pass_internal<'a>(
         &'a self,
         e: &'a Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> Pin<
-        Box<
-            dyn Future<
-                    Output = RpcResult<
-                        OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>,
-                    >,
-                > + Send
-                + 'a,
-        >,
-    > {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> Pin<Box<dyn Future<Output = RpcResult<OptimizationResult<VoyagerMessage>>> + Send + 'a>>
+    {
         Box::pin(async move {
             let mut batchers = HashMap::<ClientId, Vec<(usize, BatchableEvent)>>::new();
 
@@ -432,8 +413,8 @@ impl Module {
                         ));
                     }
                     Err(msg) => {
-                        match <PluginMessage<EventBatch>>::try_from_super(msg) {
-                            Ok(PluginMessage { plugin: _, message }) => {
+                        match msg.as_plugin::<ModuleData>(self.plugin_name()) {
+                            Ok(ModuleData::BatchEvents(message)) => {
                                 trace!(
                                     client_id = %message.client_id,
                                     events.len = %message.events.len(),
@@ -511,12 +492,12 @@ impl Module {
                             } else {
                                 Either::Right((
                                     idxs,
-                                    data(Data::plugin(
+                                    data(PluginMessage::new(
                                         self.plugin_name(),
-                                        EventBatch {
+                                        ModuleData::from(EventBatch {
                                             client_id: client_id.clone(),
                                             events,
-                                        },
+                                        }),
                                     )),
                                     self.plugin_name(),
                                 ))
@@ -564,12 +545,12 @@ impl Module {
                                             chain_id: client_meta.chain_id,
                                             height: target_height,
                                         }),
-                                        call(Call::plugin(
+                                        call(PluginMessage::new(
                                             self.plugin_name(),
-                                            MakeTransactionBatchesWithUpdate {
+                                            ModuleCall::from(MakeTransactionBatchesWithUpdate {
                                                 client_id,
                                                 batches: events,
-                                            },
+                                            }),
                                         )),
                                     ]),
                                 )

@@ -5,6 +5,7 @@ use std::{
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures_util::TryStreamExt;
+use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, Executor, PgPool};
 use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
@@ -34,7 +35,7 @@ pub struct PgQueue<T> {
     __marker: PhantomData<fn() -> T>,
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PgQueueConfig {
     pub database_url: String,

@@ -25,14 +25,14 @@ use voyager_message::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
         IbcGo08WasmClientMetadata, IbcInterface,
     },
-    module::{ClientModuleInfo, ClientModuleServer, ModuleInfo},
-    run_module_server, DefaultCmd, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
+    module::{ClientModuleInfo, ClientModuleServer},
+    run_client_module_server, ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_client_module_server::<Module>().await
 }
 
 #[model(no_serde)]
@@ -80,33 +80,18 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
-    pub ibc_interface: SupportedIbcInterface,
-}
+pub struct Config {}
 
-impl ModuleContext for Module {
+impl ClientModule for Module {
     type Config = Config;
-    type Cmd = DefaultCmd;
-    type Info = ClientModuleInfo;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
+        info.ensure_client_type(ClientType::COMETBLS_GROTH16)?;
+        info.ensure_consensus_type(ConsensusType::COMETBLS)?;
+
         Ok(Self {
-            ibc_interface: config.ibc_interface,
+            ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())?,
         })
-    }
-
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ClientModuleInfo {
-                client_type: ClientType::new(ClientType::COMETBLS_GROTH16),
-                consensus_type: ConsensusType::new(ConsensusType::COMETBLS),
-                ibc_interface: IbcInterface::new(config.ibc_interface.as_str()),
-            },
-        }
-    }
-
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
     }
 }
 

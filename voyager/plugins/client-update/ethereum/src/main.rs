@@ -32,15 +32,15 @@ use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTimestamp},
     core::ChainId,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
-    module::{ModuleInfo, PluginInfo, PluginServer, PluginTypes},
-    run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
+    hook::UpdateHook,
+    module::{PluginInfo, PluginServer},
+    run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
 use voyager_vm::{call, defer, now, optimize::OptimizationResult, seq, Op};
 
 use crate::{
     call::{FetchUpdate, ModuleCall},
     callback::ModuleCallback,
-    data::ModuleData,
 };
 
 pub mod call;
@@ -49,7 +49,7 @@ pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_plugin_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -122,16 +122,12 @@ impl Module {
     }
 }
 
-impl PluginTypes for Module {
-    type D = ModuleData;
-    type C = ModuleCall;
-    type Cb = ModuleCallback;
-}
+impl Plugin for Module {
+    type Call = ModuleCall;
+    type Callback = ModuleCallback;
 
-impl ModuleContext for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
@@ -167,15 +163,10 @@ impl ModuleContext for Module {
         })
     }
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: PluginInfo {
-                name: plugin_name(&config.chain_id),
-                interest_filter: format!(
-                    r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".chain_id == "{}"] | any"#,
-                    config.chain_id
-                ),
-            },
+    fn info(config: Self::Config) -> PluginInfo {
+        PluginInfo {
+            name: plugin_name(&config.chain_id),
+            interest_filter: UpdateHook::filter(&config.chain_id),
         }
     }
 
@@ -195,31 +186,30 @@ pub enum ModuleInitError {
 }
 
 #[async_trait]
-impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
         Ok(OptimizationResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
-                .map(|op| match op {
-                    Op::Call(Call::FetchUpdateHeaders(fetch))
-                        if fetch.chain_id == self.chain_id =>
-                    {
-                        call(Call::plugin(
+                .map(|mut op| {
+                    op.visit(&mut UpdateHook::new(&self.chain_id, |fetch| {
+                        Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
-                            FetchUpdate {
+                            ModuleCall::from(FetchUpdate {
                                 from_height: fetch.update_from,
                                 to_height: fetch.update_to,
-                                counterparty_chain_id: fetch.counterparty_chain_id,
-                            },
+                                counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                            }),
                         ))
-                    }
-                    op => op,
+                    }));
+
+                    op
                 })
                 .enumerate()
                 .map(|(i, op)| (vec![i], op))
@@ -228,11 +218,7 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(
-        &self,
-        _: &Extensions,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+    async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate {
                 from_height,
@@ -256,18 +242,9 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
-        match cb {
-            // ModuleCallback::CreateUpdate(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::MakeCreateUpdates(aggregate) => do_callback(aggregate, data),
-            // ModuleCallback::MakeCreateUpdatesFromLightClientUpdates(aggregate) => {
-            //     do_callback(aggregate, data)
-            // }
-            // ModuleCallback::AggregateHeaders(cb) => {
-            //     cb.aggregate(&self.beacon_api_client, data).await?
-            // }
-        }
+        _data: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
+        match cb {}
     }
 }
 
@@ -289,7 +266,7 @@ impl Module {
         update_from: Height,
         update_to: Height,
         counterparty_chain_id: ChainId<'static>,
-    ) -> Result<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>, BoxDynError> {
+    ) -> Result<Op<VoyagerMessage>, BoxDynError> {
         let finality_update = self.beacon_api_client.finality_update().await.unwrap().data;
 
         // === FETCH VALID FINALITY UPDATE

@@ -10,6 +10,7 @@ workspace = true
 frame-support-procedural = { workspace = true }
 futures-util             = "0.3.30"
 prometheus               = "0.13.4"
+schemars.workspace       = true
 serde                    = { workspace = true }
 serde_json               = { workspace = true, features = ["unbounded_depth"] }
 sqlx                     = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio", "time"] }

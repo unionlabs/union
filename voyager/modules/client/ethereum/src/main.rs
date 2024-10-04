@@ -25,19 +25,17 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{
-        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
-        IbcGo08WasmClientMetadata, IbcInterface,
+        ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, IbcGo08WasmClientMetadata,
+        IbcInterface,
     },
-    module::{ClientModuleInfo, ClientModuleServer, ModuleInfo},
-    run_module_server, DefaultCmd, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
+    module::{ClientModuleInfo, ClientModuleServer},
+    run_client_module_server, ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
-
-const SUPPORTED_IBC_INTERFACE: IbcInterface<'static> =
-    IbcInterface::new_static(IbcInterface::IBC_GO_V8_08_WASM);
+use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_client_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -50,35 +48,23 @@ pub struct Config {
     pub chain_spec: PresetBaseKind,
 }
 
-impl ModuleContext for Module {
+impl ClientModule for Module {
     type Config = Config;
-    type Cmd = DefaultCmd;
-    type Info = ClientModuleInfo;
 
-    async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
+        info.ensure_client_type(match config.chain_spec {
+            PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
+            PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
+        })?;
+        info.ensure_consensus_type(match config.chain_spec {
+            PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
+            PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
+        })?;
+        info.ensure_ibc_interface(IbcInterface::IBC_GO_V8_08_WASM)?;
+
         Ok(Self {
             chain_spec: config.chain_spec,
         })
-    }
-
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ClientModuleInfo {
-                client_type: ClientType::new_static(match config.chain_spec {
-                    PresetBaseKind::Minimal => ClientType::ETHEREUM_MINIMAL,
-                    PresetBaseKind::Mainnet => ClientType::ETHEREUM_MAINNET,
-                }),
-                consensus_type: ConsensusType::new_static(match config.chain_spec {
-                    PresetBaseKind::Minimal => ConsensusType::ETHEREUM_MINIMAL,
-                    PresetBaseKind::Mainnet => ConsensusType::ETHEREUM_MAINNET,
-                }),
-                ibc_interface: SUPPORTED_IBC_INTERFACE,
-            },
-        }
-    }
-
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
     }
 }
 

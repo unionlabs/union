@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::FetchBlocks, callback::AggregateMsgUpdateClientsFromOrderedHeaders, core::ChainId,
-    data::LatestHeight, VoyagerMessage,
+    PluginMessage, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, noop, normalize::normalize, promise, seq, Op};
 
@@ -19,13 +19,7 @@ fn mk_msg() -> Op<VoyagerMessage> {
     seq([
         promise(
             [
-                data(LatestHeight {
-                    chain_id: ChainId::new("chain"),
-                    height: Height {
-                        revision_number: 1,
-                        revision_height: 1,
-                    },
-                }),
+                data(PluginMessage::new("", "")),
                 call(FetchBlocks {
                     chain_id: ChainId::new("chain"),
                     start_height: Height {
@@ -35,13 +29,7 @@ fn mk_msg() -> Op<VoyagerMessage> {
                 }),
                 conc([
                     noop(),
-                    data(LatestHeight {
-                        chain_id: ChainId::new("chain"),
-                        height: Height {
-                            revision_number: 1,
-                            revision_height: 1,
-                        },
-                    }),
+                    data(PluginMessage::new("", "")),
                     call(FetchBlocks {
                         chain_id: ChainId::new("chain"),
                         start_height: Height {
@@ -58,13 +46,7 @@ fn mk_msg() -> Op<VoyagerMessage> {
             },
         ),
         seq([
-            data(LatestHeight {
-                chain_id: ChainId::new("chain"),
-                height: Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                },
-            }),
+            data(PluginMessage::new("", "")),
             call(FetchBlocks {
                 chain_id: ChainId::new("chain"),
                 start_height: Height {
@@ -74,13 +56,7 @@ fn mk_msg() -> Op<VoyagerMessage> {
             }),
             conc([
                 noop(),
-                data(LatestHeight {
-                    chain_id: ChainId::new("chain"),
-                    height: Height {
-                        revision_number: 1,
-                        revision_height: 1,
-                    },
-                }),
+                data(PluginMessage::new("", "")),
                 call(FetchBlocks {
                     chain_id: ChainId::new("chain"),
                     start_height: Height {

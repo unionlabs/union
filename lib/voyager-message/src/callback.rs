@@ -21,19 +21,19 @@ use crate::{
 #[apply(top_level_identifiable_enum)]
 #[model]
 #[derive(Enumorph)]
-pub enum Callback<Cb = serde_json::Value> {
+pub enum Callback {
     AggregateMsgUpdateClientsFromOrderedHeaders(AggregateMsgUpdateClientsFromOrderedHeaders),
 
-    Plugin(PluginMessage<Cb>),
+    Plugin(PluginMessage),
 }
 
-impl<D: Member, C: Member, Cb: Member> HandleCallback<VoyagerMessage<D, C, Cb>> for Callback<Cb> {
+impl HandleCallback<VoyagerMessage> for Callback {
     // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn handle(
         self,
         ctx: &Context,
-        data: VecDeque<Data<D>>,
-    ) -> Result<Op<VoyagerMessage<D, C, Cb>>, QueueError> {
+        data: VecDeque<Data>,
+    ) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
             Callback::AggregateMsgUpdateClientsFromOrderedHeaders(
                 AggregateMsgUpdateClientsFromOrderedHeaders {

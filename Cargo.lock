@@ -9143,6 +9143,7 @@ dependencies = [
  "frame-support-procedural",
  "futures-util",
  "prometheus",
+ "schemars",
  "serde",
  "serde_json",
  "sqlx",
@@ -13488,6 +13489,7 @@ dependencies = [
  "protos",
  "reqwest 0.11.27",
  "ripemd",
+ "schemars",
  "serde",
  "serde-utils",
  "serde_json",
@@ -13508,42 +13510,6 @@ dependencies = [
  "tracing-futures",
  "tracing-subscriber 0.3.18",
  "typenum",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-block-plugin-movement"
-version = "0.1.0"
-dependencies = [
- "aptos-crypto",
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
- "bcs 0.1.6",
- "clap 4.5.4",
- "enumorph",
- "frunk",
- "futures",
- "hex",
- "hex-literal",
- "jsonrpsee",
- "macros",
- "move-bindgen",
- "move-core-types",
- "prost 0.12.6",
- "protos",
- "reqwest 0.11.27",
- "serde",
- "serde-utils",
- "serde_json",
- "sha2 0.10.8",
- "sha3 0.10.8",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -13747,6 +13713,7 @@ dependencies = [
  "enumorph",
  "frunk",
  "futures",
+ "itertools 0.13.0",
  "jsonrpsee",
  "macros",
  "num-bigint 0.4.6",
@@ -13968,6 +13935,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "macros",
+ "schemars",
  "serde",
  "serde_json",
  "thiserror",
@@ -14029,6 +13997,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-event-source-plugin-movement"
+version = "0.1.0"
+dependencies = [
+ "aptos-crypto",
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "aptos-types",
+ "bcs 0.1.6",
+ "clap 4.5.4",
+ "enumorph",
+ "frunk",
+ "futures",
+ "hex",
+ "hex-literal",
+ "jsonrpsee",
+ "macros",
+ "move-bindgen",
+ "move-core-types",
+ "prost 0.12.6",
+ "protos",
+ "reqwest 0.11.27",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-message"
 version = "0.1.0"
 dependencies = [
@@ -14056,6 +14060,7 @@ dependencies = [
  "protos",
  "reconnecting-jsonrpc-ws-client",
  "reth-ipc",
+ "schemars",
  "serde",
  "serde-utils",
  "serde_json",

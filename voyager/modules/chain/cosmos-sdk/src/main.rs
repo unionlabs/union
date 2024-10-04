@@ -35,14 +35,14 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
-    module::{ChainModuleInfo, ChainModuleServer, ModuleInfo, RawClientState},
-    run_module_server, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
+    module::{ChainModuleInfo, ChainModuleServer, RawClientState},
+    run_chain_module_server, ChainModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_chain_module_server::<Module>().await
 }
 
 #[derive(clap::Subcommand)]
@@ -65,20 +65,19 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub chain_id: ChainId<'static>,
     pub ws_url: String,
     pub grpc_url: String,
 }
 
-impl ModuleContext for Module {
+impl ChainModule for Module {
     type Config = Config;
-    type Cmd = Cmd;
-    type Info = ChainModuleInfo;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ChainModuleInfo) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network;
+
+        info.ensure_chain_id(&chain_id)?;
 
         let chain_revision = chain_id
             .split('-')
@@ -100,23 +99,6 @@ impl ModuleContext for Module {
             grpc_url: config.grpc_url,
             checksum_cache: Arc::new(DashMap::default()),
         })
-    }
-
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ChainModuleInfo {
-                chain_id: config.chain_id,
-            },
-        }
-    }
-
-    async fn cmd(config: Self::Config, cmd: Self::Cmd) {
-        let module = Self::new(config).await.unwrap();
-
-        match cmd {
-            Cmd::ChainId => println!("{}", module.chain_id),
-            Cmd::LatestHeight => println!("{}", module.latest_height().await.unwrap()),
-        }
     }
 }
 

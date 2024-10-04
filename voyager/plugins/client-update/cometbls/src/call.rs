@@ -7,9 +7,6 @@ use unionlabs::{ibc::core::client::height::Height, union::galois::prove_request:
 #[allow(clippy::large_enum_variant)]
 pub enum ModuleCall {
     FetchUpdate(FetchUpdate),
-    FetchUntrustedCommit(FetchUntrustedCommit),
-    FetchTrustedValidators(FetchTrustedValidators),
-    FetchUntrustedValidators(FetchUntrustedValidators),
     FetchProveRequest(FetchProveRequest),
 }
 
@@ -17,26 +14,6 @@ pub enum ModuleCall {
 pub struct FetchUpdate {
     pub update_from: Height,
     pub update_to: Height,
-}
-
-#[model]
-pub struct FetchTrustedCommit {
-    pub height: Height,
-}
-
-#[model]
-pub struct FetchUntrustedCommit {
-    pub height: Height,
-}
-
-#[model]
-pub struct FetchTrustedValidators {
-    pub height: Height,
-}
-
-#[model]
-pub struct FetchUntrustedValidators {
-    pub height: Height,
 }
 
 #[model]

@@ -23,14 +23,14 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},
-    module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo},
-    run_module_server, DefaultCmd, ModuleContext,
+    module::{ConsensusModuleInfo, ConsensusModuleServer},
+    run_consensus_module_server, ConsensusModule,
 };
 use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_consensus_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -44,29 +44,20 @@ pub struct Module {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub chain_id: ChainId<'static>,
-
     pub ws_url: String,
     pub grpc_url: String,
 }
 
-impl ModuleContext for Module {
+impl ConsensusModule for Module {
     type Config = Config;
-    type Cmd = DefaultCmd;
-    type Info = ConsensusModuleInfo;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.ws_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
 
-        if chain_id != config.chain_id.as_str() {
-            return Err(format!(
-                "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
-        }
+        info.ensure_chain_id(&chain_id)?;
+        info.ensure_consensus_type(ConsensusType::TENDERMINT)?;
 
         let chain_revision = chain_id
             .split('-')
@@ -87,19 +78,6 @@ impl ModuleContext for Module {
             chain_revision,
             grpc_url: config.grpc_url,
         })
-    }
-
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ConsensusModuleInfo {
-                chain_id: config.chain_id,
-                consensus_type: ConsensusType::new(ConsensusType::TENDERMINT),
-            },
-        }
-    }
-
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
     }
 }
 

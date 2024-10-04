@@ -28,16 +28,13 @@ use voyager_message::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType,
         IbcGo08WasmClientMetadata, IbcInterface,
     },
-    module::{ClientModuleInfo, ClientModuleServer, ModuleInfo},
-    run_module_server, DefaultCmd, ModuleContext, FATAL_JSONRPC_ERROR_CODE,
+    module::{ClientModuleInfo, ClientModuleServer},
+    run_client_module_server, ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
-
-const SUPPORTED_IBC_INTERFACE: IbcInterface<'static> =
-    IbcInterface::new_static(IbcInterface::IBC_GO_V8_08_WASM);
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_client_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -50,37 +47,19 @@ type SelfConsensusState =
     Any<wasm::consensus_state::ConsensusState<movement::consensus_state::ConsensusState>>;
 type SelfClientState = Any<wasm::client_state::ClientState<movement::client_state::ClientState>>;
 
-impl ModuleContext for Module {
+impl ClientModule for Module {
     type Config = Config;
 
-    type Cmd = DefaultCmd;
+    async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
+        info.ensure_client_type(ClientType::MOVEMENT)?;
+        info.ensure_consensus_type(ConsensusType::MOVEMENT)?;
+        info.ensure_ibc_interface(IbcInterface::IBC_GO_V8_08_WASM)?;
 
-    type Info = ClientModuleInfo;
-
-    async fn new(_config: Self::Config) -> Result<Self, BoxDynError> {
         Ok(Module {})
-    }
-
-    fn info(_config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ClientModuleInfo {
-                client_type: ClientType::new(ClientType::MOVEMENT),
-                consensus_type: ConsensusType::new(ConsensusType::MOVEMENT),
-                ibc_interface: SUPPORTED_IBC_INTERFACE,
-            },
-        }
-    }
-
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
     }
 }
 
 impl Module {
-    pub async fn new(_config: Config, _voyager_config: String) -> Result<Self, ModuleInitError> {
-        Ok(Self {})
-    }
-
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
         SelfConsensusState::decode_as::<Proto>(consensus_state).map_err(|err| {
             ErrorObject::owned(

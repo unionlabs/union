@@ -1,8 +1,20 @@
-use std::{collections::HashMap, process::Stdio, sync::Arc, time::Duration};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    process::Stdio,
+    sync::Arc,
+    time::Duration,
+};
 
-use futures::{stream::FuturesUnordered, Future, StreamExt, TryStreamExt};
+use futures::{
+    future,
+    stream::{self, FuturesUnordered},
+    Future, StreamExt, TryStreamExt,
+};
 use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
 use macros::model;
+use schemars::JsonSchema;
+use serde::Serialize;
 use serde_json::Value;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
@@ -15,8 +27,7 @@ use crate::{
     core::{ChainId, ClientType, IbcInterface},
     module::{
         ChainModuleClient, ChainModuleInfo, ClientModuleClient, ClientModuleInfo,
-        ConsensusModuleClient, ConsensusModuleInfo, ModuleInfo, ModuleKindInfo, PluginClient,
-        PluginInfo,
+        ConsensusModuleClient, ConsensusModuleInfo, PluginClient, PluginInfo,
     },
     rpc::{server::Server, VoyagerRpcServer},
     FATAL_JSONRPC_ERROR_CODE,
@@ -129,9 +140,27 @@ fn make_module_rpc_server_socket_path(name: &str) -> String {
 }
 
 #[model]
-#[derive(Hash)]
-pub struct ModuleConfig {
-    pub path: String,
+#[derive(Hash, JsonSchema)]
+pub struct PluginConfig {
+    pub path: PathBuf,
+    pub config: Value,
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
+}
+
+#[model]
+#[derive(JsonSchema)]
+pub struct ModulesConfig {
+    pub chain: Vec<ModuleConfig<ChainModuleInfo>>,
+    pub consensus: Vec<ModuleConfig<ConsensusModuleInfo>>,
+    pub client: Vec<ModuleConfig<ClientModuleInfo>>,
+}
+
+#[model]
+#[derive(JsonSchema)]
+pub struct ModuleConfig<T> {
+    pub path: PathBuf,
+    pub info: T,
     pub config: Value,
     #[serde(default = "default_enabled")]
     pub enabled: bool,
@@ -143,7 +172,10 @@ fn default_enabled() -> bool {
 
 impl Context {
     #[instrument(name = "context_new", skip_all)]
-    pub async fn new(module_configs: Vec<ModuleConfig>) -> Result<Self, BoxDynError> {
+    pub async fn new(
+        plugin_configs: Vec<PluginConfig>,
+        module_configs: ModulesConfig,
+    ) -> Result<Self, BoxDynError> {
         let cancellation_token = CancellationToken::new();
 
         let mut modules = Modules {
@@ -160,154 +192,207 @@ impl Context {
 
         let main_rpc_server = Server::new();
 
-        let module_configs = module_configs
-            .into_iter()
-            .filter(|module_config| {
-                if !module_config.enabled {
-                    info!(module_path = %module_config.path, "module is not enabled, skipping");
+        info!("spawning {} plugins", plugin_configs.len());
+
+        stream::iter(plugin_configs)
+            .filter(|plugin_config| {
+                future::ready(if !plugin_config.enabled {
+                    info!(
+                        module_path = %plugin_config.path.to_string_lossy(),
+                        "module is not enabled, skipping"
+                    );
                     false
                 } else {
                     true
+                })
+            })
+            .zip(stream::repeat(main_rpc_server.clone()))
+            .map(Ok)
+            .try_filter_map(|(plugin_config, server)| async move {
+                if !plugin_config.enabled {
+                    info!(
+                        module_path = %plugin_config.path.to_string_lossy(),
+                        "module is not enabled, skipping"
+                    );
+                    Ok(None)
+                } else {
+                    let plugin_info = get_plugin_info(&plugin_config)?;
+
+                    info!("starting rpc server for plugin {}", plugin_info.name);
+                    tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
+
+                    Ok::<_, BoxDynError>(Some((plugin_config, plugin_info)))
                 }
             })
-            .collect::<Vec<_>>();
+            .try_for_each_concurrent(
+                None,
+                |(
+                    plugin_config,
+                    PluginInfo {
+                        name,
+                        interest_filter,
+                    },
+                )| {
+                    info!("registering plugin {}", name);
 
-        info!("fetching module info");
+                    tokio::spawn(plugin_child_process(
+                        name.clone(),
+                        plugin_config.clone(),
+                        cancellation_token.clone(),
+                    ));
 
-        let module_configs = module_configs
-            .into_iter()
-            .map(|module_config| {
-                let server = main_rpc_server.clone();
-                async move {
-                    let module_info = get_module_info(&module_config)?;
+                    let rpc_client = ModuleRpcClient::new(&name);
 
-                    info!("starting rpc server for {}", module_info.kind.name());
-                    tokio::spawn(module_rpc_server(&module_info.kind.name(), server).await?);
+                    let prev = plugins.insert(name.clone(), rpc_client.clone());
 
-                    Ok::<_, BoxDynError>((module_config, module_info))
-                }
-            })
-            .collect::<FuturesUnordered<_>>()
-            .try_collect::<Vec<_>>()
+                    if prev.is_some() {
+                        return future::ready(Err(format!(
+                            "multiple plugins configured with name `{name}`"
+                        )
+                        .into()));
+                    }
+
+                    info!("registered plugin {name}");
+
+                    interest_filters.insert(name, interest_filter);
+
+                    future::ready(Ok::<_, BoxDynError>(()))
+                },
+            )
             .await?;
 
-        for (module_config, ModuleInfo { kind }) in module_configs {
-            let name = kind.name();
+        module_startup(
+            module_configs.chain,
+            cancellation_token.clone(),
+            main_rpc_server.clone(),
+            |info| info.id(),
+            |ChainModuleInfo { chain_id }, rpc_client| {
+                let prev = modules.chain_modules.insert(chain_id.clone(), rpc_client);
 
-            info!("registering module {}", name);
-
-            // tokio::spawn(module_rpc_server(&name, main_rpc_server.clone()).await?);
-
-            tokio::spawn(run_module(
-                name.clone(),
-                module_config.clone(),
-                cancellation_token.clone(),
-            ));
-
-            let rpc_client = ModuleRpcClient::new(&name);
-
-            plugins.insert(name.clone(), rpc_client.clone());
-
-            match kind {
-                ModuleKindInfo::Plugin(PluginInfo {
-                    name,
-                    interest_filter,
-                }) => {
-                    plugins.insert(name.clone(), rpc_client.clone());
-
-                    info!(
-                        %name,
-                        "registered plugin module"
-                    );
-
-                    interest_filters.insert(name.clone(), interest_filter);
+                if prev.is_some() {
+                    return Err(format!(
+                        "multiple chain modules configured for chain id `{}`",
+                        chain_id
+                    )
+                    .into());
                 }
-                ModuleKindInfo::Chain(ChainModuleInfo { chain_id }) => {
-                    let prev = modules.chain_modules.insert(chain_id.clone(), rpc_client);
 
-                    if prev.is_some() {
+                Ok(())
+            },
+        )
+        .await?;
+
+        module_startup(
+            module_configs.consensus,
+            cancellation_token.clone(),
+            main_rpc_server.clone(),
+            |info| info.id(),
+            |ConsensusModuleInfo {
+                 chain_id,
+                 consensus_type,
+             },
+             rpc_client| {
+                let prev = modules
+                    .consensus_modules
+                    .insert(chain_id.clone(), rpc_client);
+
+                if prev.is_some() {
+                    return Err(format!(
+                        "multiple consensus modules configured for consensus id `{}`",
+                        chain_id
+                    )
+                    .into());
+                }
+
+                let None = modules
+                    .chain_consensus_types
+                    .insert(chain_id.clone(), consensus_type.clone())
+                else {
+                    unreachable!()
+                };
+
+                Ok(())
+            },
+        )
+        .await?;
+
+        module_startup(
+            module_configs.client,
+            cancellation_token.clone(),
+            main_rpc_server.clone(),
+            |info| info.id(),
+            |ClientModuleInfo {
+                 client_type,
+                 consensus_type,
+                 ibc_interface,
+             },
+             rpc_client| {
+                let prev = modules
+                    .client_modules
+                    .entry(client_type.clone())
+                    .or_default()
+                    .insert(ibc_interface.clone(), rpc_client.clone());
+
+                if prev.is_some() {
+                    return Err(format!(
+                        "multiple client modules configured for \
+                        client type `{client_type}` and IBC \
+                        interface `{ibc_interface}`",
+                    )
+                    .into());
+                }
+
+                if let Some(previous_consensus_type) = modules
+                    .client_consensus_types
+                    .insert(client_type.clone(), consensus_type.clone())
+                {
+                    if &previous_consensus_type != consensus_type {
                         return Err(format!(
-                            "multiple chain modules configured for chain id `{chain_id}`"
+                            "inconsistency in client consensus types: \
+                            client type `{client_type}` is registered \
+                            as tracking both `{previous_consensus_type}` \
+                            and `{consensus_type}`"
                         )
                         .into());
                     }
-
-                    info!(
-                        %chain_id,
-                        "registered chain module"
-                    );
                 }
-                ModuleKindInfo::Client(ClientModuleInfo {
-                    client_type,
-                    consensus_type,
-                    ibc_interface,
-                }) => {
-                    let prev = modules
-                        .client_modules
-                        .entry(client_type.clone())
-                        .or_default()
-                        .insert(ibc_interface.clone(), rpc_client.clone());
 
-                    if prev.is_some() {
-                        return Err(format!(
-                            "multiple client modules configured for \
-                            client type `{client_type}` and IBC \
-                            interface `{ibc_interface}`",
-                        )
-                        .into());
-                    }
+                Ok(())
+            },
+        )
+        .await?;
 
-                    if let Some(previous_consensus_type) = modules
-                        .client_consensus_types
-                        .insert(client_type.clone(), consensus_type.clone())
-                    {
-                        if previous_consensus_type != consensus_type {
-                            return Err(format!(
-                                "inconsistency in client consensus types: \
-                                client type `{client_type}` is registered \
-                                as tracking both `{previous_consensus_type}` \
-                                and `{consensus_type}`"
-                            )
-                            .into());
-                        }
-                    }
+        // let plugin_configs = plugin_configs
+        //     .into_iter()
+        //     .map(|plugin_config| {
+        //         let server = main_rpc_server.clone();
+        //         async move {
+        //             let plugin_info = get_plugin_info(&plugin_config)?;
 
-                    info!(
-                        %client_type,
-                        %ibc_interface,
-                        "registered client module"
-                    );
-                }
-                ModuleKindInfo::Consensus(ConsensusModuleInfo {
-                    chain_id,
-                    consensus_type,
-                }) => {
-                    let prev = modules
-                        .consensus_modules
-                        .insert(chain_id.clone(), rpc_client.clone());
+        //             info!("starting rpc server for {}", plugin_info.name);
+        //             tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
 
-                    if prev.is_some() {
-                        return Err(format!(
-                            "multiple consensus modules configured for chain id `{chain_id}`"
-                        )
-                        .into());
-                    }
+        //             Ok::<_, BoxDynError>((plugin_config, plugin_info))
+        //         }
+        //     })
+        //     .collect::<FuturesUnordered<_>>()
+        //     .try_collect::<Vec<_>>()
+        //     .await?;
 
-                    let None = modules
-                        .chain_consensus_types
-                        .insert(chain_id.clone(), consensus_type.clone())
-                    else {
-                        unreachable!()
-                    };
+        // match kind {
+        //     ModuleInfo::Client(ClientModuleInfo {
+        //         client_type,
+        //         consensus_type,
+        //         ibc_interface,
+        //     }) => {
 
-                    info!(
-                        %chain_id,
-                        %consensus_type,
-                        "registered consensus module"
-                    );
-                }
-            }
-        }
+        //         info!(
+        //             %client_type,
+        //             %ibc_interface,
+        //             "registered client module"
+        //         );
+        //     }
+        // }
 
         main_rpc_server.start(Arc::new(modules));
 
@@ -354,10 +439,10 @@ impl Context {
         }
     }
 
-    pub fn plugin<D: Member, C: Member, Cb: Member>(
+    pub fn plugin(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<&(impl PluginClient<D, C, Cb> + '_), PluginNotFound> {
+    ) -> Result<&(impl PluginClient<Value, Value> + '_), PluginNotFound> {
         Ok(self
             .plugins
             .get(name.as_ref())
@@ -494,9 +579,39 @@ pub struct LoadedModulesInfo {
 }
 
 #[instrument(skip_all, fields(%name))]
-async fn run_module(
+async fn plugin_child_process(
     name: String,
-    module_config: ModuleConfig,
+    module_config: PluginConfig,
+    cancellation_token: CancellationToken,
+) {
+    let client_socket = ModuleRpcClient::make_socket_path(&name);
+    let server_socket = make_module_rpc_server_socket_path(&name);
+
+    info!(%client_socket, %server_socket, "starting plugin {name}");
+
+    let mut cmd = tokio::process::Command::new(&module_config.path);
+    cmd.arg("run");
+    cmd.arg(&client_socket);
+    cmd.arg(&server_socket);
+    cmd.arg(module_config.config.to_string());
+
+    lazarus_pit(
+        &module_config.path,
+        &[
+            "run",
+            &client_socket,
+            &server_socket,
+            &module_config.config.to_string(),
+        ],
+        cancellation_token,
+    )
+    .await
+}
+
+#[instrument(skip_all, fields(%name))]
+async fn module_child_process<Info: Serialize>(
+    name: String,
+    module_config: ModuleConfig<Info>,
     cancellation_token: CancellationToken,
 ) {
     let client_socket = ModuleRpcClient::make_socket_path(&name);
@@ -504,16 +619,28 @@ async fn run_module(
 
     info!(%client_socket, %server_socket, "starting module {name}");
 
+    lazarus_pit(
+        &module_config.path,
+        &[
+            "run",
+            &client_socket,
+            &server_socket,
+            &module_config.config.to_string(),
+            &serde_json::to_string(&module_config.info).unwrap(),
+        ],
+        cancellation_token,
+    )
+    .await
+}
+
+async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: CancellationToken) {
     let mut attempt = 0;
 
     loop {
-        debug!(%attempt, "spawning plugin child process");
+        let mut cmd = tokio::process::Command::new(cmd);
+        cmd.args(args);
 
-        let mut cmd = tokio::process::Command::new(&module_config.path);
-        cmd.arg("run");
-        cmd.arg(&client_socket);
-        cmd.arg(&server_socket);
-        cmd.arg(module_config.config.to_string());
+        debug!(%attempt, "spawning plugin child process");
 
         let mut child = loop {
             match cmd.spawn() {
@@ -527,7 +654,6 @@ async fn run_module(
                 Err(err) => {
                     error!(
                         err = %ErrorReporter(err),
-                        path = ?module_config.path,
                         "unable to spawn plugin"
                     );
 
@@ -688,10 +814,10 @@ impl From<PluginNotFound> for jsonrpsee::core::client::Error {
     }
 }
 
-pub fn get_module_info(module_config: &ModuleConfig) -> Result<ModuleInfo<ModuleKindInfo>, String> {
+pub fn get_plugin_info(module_config: &PluginConfig) -> Result<PluginInfo, String> {
     debug!(
         "querying module info from module at {}",
-        &module_config.path
+        &module_config.path.to_string_lossy(),
     );
 
     let mut cmd = std::process::Command::new(&module_config.path);
@@ -711,14 +837,14 @@ pub fn get_module_info(module_config: &ModuleConfig) -> Result<ModuleInfo<Module
             Some(code) if code == INVALID_CONFIG_EXIT_CODE as i32 => {
                 return Err(format!(
                     "invalid config for module at path {}:\n{}",
-                    &module_config.path,
+                    &module_config.path.to_string_lossy(),
                     String::from_utf8_lossy(&output.stdout)
                 ));
             }
             Some(_) | None => {
                 return Err(format!(
                     "unable to query info for module at path {}:\n{}",
-                    &module_config.path,
+                    &module_config.path.to_string_lossy(),
                     String::from_utf8_lossy(&output.stdout)
                 ))
             }
@@ -728,4 +854,66 @@ pub fn get_module_info(module_config: &ModuleConfig) -> Result<ModuleInfo<Module
     trace!("plugin stdout: {}", String::from_utf8_lossy(&output.stdout));
 
     Ok(serde_json::from_slice(&output.stdout).unwrap())
+}
+
+async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
+    configs: Vec<ModuleConfig<Info>>,
+    cancellation_token: CancellationToken,
+    main_rpc_server: Server,
+    id_f: fn(&Info) -> String,
+    mut push_f: impl FnMut(&Info, ModuleRpcClient) -> Result<(), BoxDynError>,
+) -> Result<(), BoxDynError> {
+    stream::iter(configs)
+        .filter(|module_config| {
+            future::ready(if !module_config.enabled {
+                info!(
+                    module_path = %module_config.path.to_string_lossy(),
+                    "module is not enabled, skipping"
+                );
+                false
+            } else {
+                true
+            })
+        })
+        .zip(stream::repeat(main_rpc_server.clone()))
+        .map(Ok)
+        .try_filter_map(|(module_config, server)| async move {
+            if !module_config.enabled {
+                info!(
+                    module_path = %module_config.path.to_string_lossy(),
+                    "module is not enabled, skipping"
+                );
+                Ok(None)
+            } else {
+                info!(
+                    "starting rpc server for module {}",
+                    id_f(&module_config.info)
+                );
+                tokio::spawn(module_rpc_server(&id_f(&module_config.info), server).await?);
+
+                Ok::<_, BoxDynError>(Some(module_config))
+            }
+        })
+        .try_collect::<FuturesUnordered<_>>()
+        .await?
+        .into_iter()
+        .try_for_each(|module_config| {
+            let id = id_f(&module_config.info);
+
+            info!("registering module {}", id);
+
+            tokio::spawn(module_child_process(
+                id.clone(),
+                module_config.clone(),
+                cancellation_token.clone(),
+            ));
+
+            let rpc_client = ModuleRpcClient::new(&id);
+
+            push_f(&module_config.info, rpc_client)?;
+
+            info!("registered module {id}");
+
+            Ok::<_, BoxDynError>(())
+        })
 }

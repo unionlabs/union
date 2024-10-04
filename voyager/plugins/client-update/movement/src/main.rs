@@ -31,12 +31,13 @@ use voyager_message::{
     call::Call,
     core::ChainId,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
-    module::{ConsensusModuleServer, ModuleInfo, PluginInfo, PluginServer, PluginTypes},
-    run_module_server, DefaultCmd, ModuleContext, VoyagerMessage,
+    hook::UpdateHook,
+    module::{ConsensusModuleServer, PluginInfo, PluginServer, UnexpectedChainIdError},
+    run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, data, optimize::OptimizationResult, Op};
+use voyager_vm::{data, optimize::OptimizationResult, Op};
 
-use crate::{call::ModuleCall, callback::ModuleCallback, data::ModuleData};
+use crate::{call::ModuleCall, callback::ModuleCallback};
 
 pub mod call;
 pub mod callback;
@@ -51,7 +52,7 @@ struct StateProofResponse {
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_plugin_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -71,18 +72,28 @@ pub struct Module {
     pub movement_rest_url: String,
 }
 
-impl ModuleContext for Module {
+impl Plugin for Module {
+    type Call = ModuleCall;
+    type Callback = ModuleCallback;
+
     type Config = Config;
     type Cmd = DefaultCmd;
-    type Info = PluginInfo;
 
     async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
-        let chain_id = aptos_client.get_index().await?.inner().chain_id;
+        let chain_id = aptos_client.get_index().await?.inner().chain_id.to_string();
+
+        if chain_id != config.chain_id.as_str() {
+            return Err(UnexpectedChainIdError {
+                expected: config.chain_id,
+                found: chain_id,
+            }
+            .into());
+        }
 
         Ok(Self {
-            chain_id: ChainId::new(chain_id.to_string()),
+            chain_id: config.chain_id,
             ibc_handler_address: config.ibc_handler_address,
             aptos_client,
             l1_settlement_address: config.l1_settlement_address,
@@ -91,17 +102,13 @@ impl ModuleContext for Module {
         })
     }
 
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: PluginInfo {
-                name: plugin_name(&config.chain_id),
-                interest_filter: format!(
-                    r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".chain_id == "{}"] | any"#,
-                    config.chain_id
-                ),
-            },
+    fn info(config: Self::Config) -> PluginInfo {
+        PluginInfo {
+            name: plugin_name(&config.chain_id),
+            interest_filter: UpdateHook::filter(&config.chain_id),
         }
     }
+
     async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
         match cmd {}
     }
@@ -168,37 +175,30 @@ pub enum ModuleInitError {
     Rest(#[from] RestError),
 }
 
-impl PluginTypes for Module {
-    type D = ModuleData;
-    type C = ModuleCall;
-    type Cb = ModuleCallback;
-}
-
 #[async_trait]
-impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
-        msgs: Vec<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        msgs: Vec<Op<VoyagerMessage>>,
+    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
         Ok(OptimizationResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
-                .map(|op| match op {
-                    Op::Call(Call::FetchUpdateHeaders(fetch))
-                        if fetch.chain_id == self.chain_id =>
-                    {
-                        call(Call::plugin(
+                .map(|mut op| {
+                    op.visit(&mut UpdateHook::new(&self.chain_id, |fetch| {
+                        Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
-                            FetchUpdate {
+                            ModuleCall::from(FetchUpdate {
                                 from: fetch.update_from.revision_height,
                                 to: fetch.update_to.revision_height,
-                            },
+                            }),
                         ))
-                    }
-                    op => op,
+                    }));
+
+                    op
                 })
                 .enumerate()
                 .map(|(i, op)| (vec![i], op))
@@ -207,11 +207,7 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(
-        &self,
-        _: &Extensions,
-        msg: ModuleCall,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+    async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate { from, to }) => {
                 // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
@@ -259,8 +255,8 @@ impl PluginServer<ModuleData, ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         cb: ModuleCallback,
-        _data: VecDeque<Data<ModuleData>>,
-    ) -> RpcResult<Op<VoyagerMessage<ModuleData, ModuleCall, ModuleCallback>>> {
+        _data: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
     }
 }

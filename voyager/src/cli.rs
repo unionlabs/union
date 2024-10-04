@@ -10,7 +10,10 @@ use unionlabs::{
     uint::U256,
     QueryHeight,
 };
-use voyager_message::core::ChainId;
+use voyager_message::{
+    core::ChainId,
+    module::{ChainModuleInfo, ClientModuleInfo, ConsensusModuleInfo},
+};
 
 use crate::cli::handshake::HandshakeCmd;
 
@@ -19,14 +22,8 @@ pub mod handshake;
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
 pub struct AppArgs {
-    #[arg(
-        long,
-        short = 'c',
-        env,
-        global = true,
-        default_value = "voyager/devnet-config.json"
-    )]
-    pub config_file_path: OsString,
+    #[arg(long, short = 'c', env, global = true)]
+    pub config_file_path: Option<OsString>,
     #[arg(long, short = 'l', env, global = true, default_value_t = LogFormat::default())]
     pub log_format: LogFormat,
     #[arg(long, global = true, default_value_t = 2 * 1024 * 1024)]
@@ -47,31 +44,46 @@ pub enum LogFormat {
 #[derive(Debug, Subcommand)]
 #[allow(clippy::large_enum_variant)]
 pub enum Command {
-    PrintConfig,
+    /// Config related subcommands.
+    #[command(subcommand)]
+    Config(ConfigCmd),
     Handshake(HandshakeCmd),
-    /// Construct a `FetchBlocks` message to send to the specified chain. The message will start at the current latest height of the chain.
+    /// Construct a `FetchBlocks` message to send to the specified chain.
+    ///
+    /// The message will start at the current latest height of the chain.
     InitFetch {
+        // TODO: Use chain id here directly
         chain_id: String,
     },
     /// Run Voyager.
-    Relay,
-    #[command(subcommand)]
+    Start,
+    /// Query and interact with the queue.
+    #[command(subcommand, alias = "q")]
     Queue(QueueCmd),
     #[command(subcommand)]
     Util(UtilCmd),
-    Module {
-        plugin_name: Option<String>,
-        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
-        args: Vec<String>,
-    },
+    #[command(subcommand)]
+    Plugin(PluginCmd),
+    #[command(subcommand)]
+    Module(ModuleCmd),
     Query {
         #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
         on: ChainId<'static>,
-        #[arg(long, default_value_t = QueryHeight::Latest)]
+        #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
         height: QueryHeight,
         #[command(subcommand)]
         path: ics24::Path,
     },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ConfigCmd {
+    /// Print the config being used by voyager.
+    Print,
+    /// Print a default config.
+    Default,
+    /// Print the JSON Schema for the voyager config, to be used in the top-level `$schema` field.
+    Schema,
 }
 
 type Pg64 = BoundedI64<1, { i64::MAX }>;
@@ -83,19 +95,34 @@ pub enum QueueCmd {
     //     #[arg(long, default_value_t = result_unwrap!(Pg32::new(10)))]
     //     max_depth: Pg32,
     // },
-    Failed {
+    /// Query all failed messages.
+    QueryFailed {
         #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
         page: Pg64,
         #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
         per_page: Pg64,
-        #[arg(long, short = 'i')]
+        /// SQL filters for the item.
+        ///
+        /// These will be run on the stringified item, (item::text), which is the *almost* fully compact JSON:
+        ///
+        /// ```psql
+        /// default=# select '{"a":{"b":"c"}}'::jsonb::text;
+        ///        text        
+        /// -------------------
+        ///  {"a": {"b": "c"}}
+        /// ````
+        ///
+        /// This can be specified multiple times to specify multiple filters.
+        #[arg(long = "item-filter", short = 'i')]
         item_filters: Vec<String>,
-        #[arg(long, short = 'm')]
+        /// SQL filters for failure message.
+        ///
+        /// This can be specified multiple times to specify multiple filters.
+        #[arg(long = "message-filter", short = 'm')]
         message_filters: Vec<String>,
     },
-    FailedById {
-        id: Pg64,
-    },
+    /// Query a failed message by it's ID.
+    QueryFailedById { id: Pg64 },
 }
 
 #[derive(Debug, Subcommand)]
@@ -110,10 +137,25 @@ pub enum UtilCmd {
 }
 
 #[derive(Debug, Subcommand)]
-pub enum SignerCmd {
-    /// Fetch the balances of all of the configured signers for all enabled chains. If --on is specified, only fetch the signers of that chain, whether the chain is enabled or not.
-    Balances {
-        #[arg(long)]
-        on: Option<String>,
+pub enum PluginCmd {
+    /// Run the interest filter for the specified plugin on the provided JSON object.
+    Interest {
+        plugin_name: String,
+        message: String,
     },
+    /// Print the plugin info for a plugin.
+    Info { plugin_name: String },
+    /// Call a plugin directly from the CLI.
+    Call {
+        plugin_name: Option<String>,
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
+        args: Vec<String>,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ModuleCmd {
+    Chain(ChainModuleInfo),
+    Consensus(ConsensusModuleInfo),
+    Client(ClientModuleInfo),
 }

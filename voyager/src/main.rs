@@ -1,4 +1,4 @@
-#![feature(trait_alias)]
+#![feature(trait_alias, try_find)]
 // #![warn(clippy::pedantic)]
 #![allow(
      // required due to return_position_impl_trait_in_trait false positives
@@ -17,15 +17,21 @@ use std::{
 
 use chain_utils::BoxDynError;
 use clap::Parser;
+use pg_queue::PgQueueConfig;
+use schemars::gen::{SchemaGenerator, SchemaSettings};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::json;
 use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use unionlabs::{ethereum::ibc_commitment_key, ics24};
 use voyager_message::{
-    call::FetchBlocks, core::ChainId, module::ChainModuleClient, VoyagerMessage,
+    call::FetchBlocks,
+    context::{get_plugin_info, ModulesConfig},
+    core::ChainId,
+    pass::{make_filter, run_filter, FilterResult},
+    VoyagerMessage,
 };
 use voyager_vm::{call, Queue};
 
@@ -33,10 +39,16 @@ use voyager_vm::{call, Queue};
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
-    cli::{AppArgs, Command, QueueCmd, UtilCmd},
-    config::Config,
+    cli::{AppArgs, Command, ConfigCmd, ModuleCmd, PluginCmd, QueueCmd, UtilCmd},
+    config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
     queue::{AnyQueueConfig, Voyager, VoyagerInitError},
 };
+
+#[cfg(not(target_os = "linux"))]
+compile_error!(
+    "voyager interacts directly with subprocesses and has \
+    not been tested on non-linux operating systems."
+);
 
 pub mod cli;
 pub mod config;
@@ -111,61 +123,138 @@ pub enum VoyagerError {
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
 async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
-    let mut voyager_config = read_to_string(&args.config_file_path)
-        .map_err(|err| VoyagerError::ConfigFileNotFound {
-            path: args.config_file_path.clone(),
-            source: err,
-        })
-        .and_then(|s| {
-            serde_json::from_str::<Config>(&s).map_err(|err| VoyagerError::ConfigFileParse {
-                path: args.config_file_path,
+    let get_voyager_config = || match &args.config_file_path {
+        Some(config_file_path) => read_to_string(config_file_path)
+            .map_err(|err| VoyagerError::ConfigFileNotFound {
+                path: config_file_path.clone(),
                 source: err,
             })
-        })?;
+            .and_then(|s| {
+                serde_json::from_str::<Config>(&s).map_err(|err| VoyagerError::ConfigFileParse {
+                    path: config_file_path.clone(),
+                    source: err,
+                })
+            })
+            .map_err(Into::into),
+        None => Err::<_, BoxDynError>("config file must be specified".to_owned().into()),
+    };
 
     match args.command {
-        Command::PrintConfig => {
-            print_json(&voyager_config);
-        }
-        Command::Relay => {
-            let voyager = Voyager::new(voyager_config.clone()).await?;
+        Command::Config(cmd) => match cmd {
+            ConfigCmd::Print => {
+                print_json(&get_voyager_config()?);
+            }
+            ConfigCmd::Default => print_json(&Config {
+                schema: None,
+                plugins: vec![],
+                modules: ModulesConfig {
+                    chain: vec![],
+                    consensus: vec![],
+                    client: vec![],
+                },
+                voyager: VoyagerConfig {
+                    num_workers: 1,
+                    rest_laddr: default_rest_laddr(),
+                    rpc_laddr: default_rpc_laddr(),
+                    queue: AnyQueueConfig::PgQueue(PgQueueConfig {
+                        database_url: "".to_owned(),
+                        max_connections: None,
+                        min_connections: None,
+                        idle_timeout: None,
+                        max_lifetime: None,
+                    }),
+                    optimizer_delay_milliseconds: 100,
+                },
+            }),
+            ConfigCmd::Schema => print_json(
+                &SchemaGenerator::new(SchemaSettings::draft2019_09().with(|s| {
+                    s.option_nullable = true;
+                    s.option_add_null_type = false;
+                }))
+                .into_root_schema_for::<Config>(),
+            ),
+        },
+        Command::Start => {
+            let voyager = Voyager::new(get_voyager_config()?).await?;
 
             info!("starting relay service");
 
             voyager.run().await?;
         }
-        Command::Module {
-            plugin_name: _,
-            args: _,
-        } => {
-            // match plugin_name {
-            //     Some(module_name) => {
-            //         let module_config = voyager_config
-            //             .plugins
-            //             .into_iter()
-            //             .find(|module_config| {
-            //                 module_name == get_module_info(module_config).unwrap().name
-            //             })
-            //             .expect("module not found");
+        Command::Plugin(cmd) => match cmd {
+            PluginCmd::Interest {
+                plugin_name,
+                message,
+            } => {
+                let plugin_config = get_voyager_config()?
+                    .plugins
+                    .into_iter()
+                    .try_find(|plugin_config| {
+                        Ok::<_, BoxDynError>(plugin_name == get_plugin_info(plugin_config)?.name)
+                    })?
+                    .ok_or("plugin not found".to_owned())?;
 
-            //         tokio::process::Command::new(&module_config.path)
-            //             .arg("cmd")
-            //             .arg("--config")
-            //             .arg(module_config.config.to_string())
-            //             .args(args)
-            //             .spawn()?
-            //             .wait()
-            //             .await?;
-            //     }
-            //     None => {
-            //         for module_config in voyager_config.plugins {
-            //             println!("{}", get_module_info(&module_config).unwrap().name);
-            //         }
-            //     }
-            // }
-        }
+                let (filter, plugin_name) = make_filter(get_plugin_info(&plugin_config)?)?;
+
+                let result = run_filter(
+                    &filter,
+                    &plugin_name,
+                    serde_json::from_str::<serde_json::Value>(&message)?.into(),
+                );
+
+                match result {
+                    Ok(FilterResult::Interest) => println!("interest"),
+                    Ok(FilterResult::NoInterest) => println!("no interest"),
+                    Err(()) => println!("failed"),
+                }
+            }
+            PluginCmd::Info { plugin_name } => {
+                let plugin_config = get_voyager_config()?
+                    .plugins
+                    .into_iter()
+                    .try_find(|plugin_config| {
+                        Ok::<_, BoxDynError>(plugin_name == get_plugin_info(plugin_config)?.name)
+                    })?
+                    .ok_or("plugin not found".to_owned())?;
+
+                print_json(&get_plugin_info(&plugin_config)?);
+            }
+            PluginCmd::Call { plugin_name, args } => match plugin_name {
+                Some(module_name) => {
+                    let plugin_config = get_voyager_config()?
+                        .plugins
+                        .into_iter()
+                        .try_find(|plugin_config| {
+                            Ok::<_, BoxDynError>(
+                                module_name == get_plugin_info(plugin_config)?.name,
+                            )
+                        })?
+                        .ok_or("plugin not found".to_owned())?;
+
+                    tokio::process::Command::new(&plugin_config.path)
+                        .arg("cmd")
+                        .arg("--config")
+                        .arg(plugin_config.config.to_string())
+                        .args(args)
+                        .spawn()?
+                        .wait()
+                        .await?;
+                }
+                None => {
+                    println!("available plugins and modules");
+                    for module_config in get_voyager_config()?.plugins {
+                        println!("  {}", get_plugin_info(&module_config)?.name);
+                    }
+                }
+            },
+        },
+        Command::Module(cmd) => match cmd {
+            ModuleCmd::Chain(_) => todo!(),
+            ModuleCmd::Consensus(_) => todo!(),
+            ModuleCmd::Client(_) => todo!(),
+        },
         Command::Query { on, height, path } => {
-            let voyager = Voyager::new(voyager_config.clone()).await?;
+            let voyager = Voyager::new(get_voyager_config()?).await?;
 
             let height = voyager.context.rpc_server.query_height(&on, height).await?;
 
@@ -222,7 +311,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             }));
         }
         Command::Queue(cli_msg) => {
-            let db = match voyager_config.voyager.queue {
+            let db = match get_voyager_config()?.voyager.queue {
                 AnyQueueConfig::PgQueue(cfg) => {
                     pg_queue::PgQueue::<VoyagerMessage>::new(cfg).await?
                 }
@@ -251,7 +340,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                 //     todo!();
                 // }
-                QueueCmd::Failed {
+                QueueCmd::QueryFailed {
                     page,
                     per_page,
                     item_filters,
@@ -263,7 +352,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
                     print_json(&record);
                 }
-                QueueCmd::FailedById { id } => {
+                QueueCmd::QueryFailedById { id } => {
                     let record = db.query_failed_by_id(id.inner()).await?;
 
                     print_json(&record);
@@ -353,21 +442,21 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
         //     print_json(&all_msgs);
         // }
         Command::InitFetch { chain_id } => {
+            let mut voyager_config = get_voyager_config()?;
+
             voyager_config.voyager.queue = AnyQueueConfig::InMemory;
 
             let voyager = Voyager::new(voyager_config).await?;
 
-            let chain = voyager
+            let height = voyager
                 .context
                 .rpc_server
-                .modules()?
-                .chain_module(&ChainId::new(&chain_id))?;
-
-            let height = chain.query_latest_height().await.unwrap();
+                .query_latest_height(&ChainId::new(chain_id.clone()))
+                .await?;
 
             voyager.shutdown().await;
 
-            print_json(&call::<VoyagerMessage<Value, Value, Value>>(FetchBlocks {
+            print_json(&call::<VoyagerMessage>(FetchBlocks {
                 chain_id: ChainId::new(chain_id),
                 start_height: height,
             }));

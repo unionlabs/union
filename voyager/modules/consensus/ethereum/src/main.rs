@@ -21,13 +21,14 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ConsensusType},
-    module::{ConsensusModuleInfo, ConsensusModuleServer, ModuleInfo},
-    run_module_server, DefaultCmd, ModuleContext,
+    module::{ConsensusModuleInfo, ConsensusModuleServer},
+    run_consensus_module_server, ConsensusModule,
 };
+use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    run_module_server::<Module>().await
+    run_consensus_module_server::<Module>().await
 }
 
 #[derive(Debug, Clone)]
@@ -45,8 +46,6 @@ pub struct Module {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub chain_id: ChainId<'static>,
-
     pub chain_spec: PresetBaseKind,
 
     /// The address of the `IBCHandler` smart contract.
@@ -90,23 +89,19 @@ impl Module {
     }
 }
 
-impl ModuleContext for Module {
+impl ConsensusModule for Module {
     type Config = Config;
-    type Cmd = DefaultCmd;
-    type Info = ConsensusModuleInfo;
 
-    async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
         let provider = Provider::new(Ws::connect(config.eth_rpc_api).await?);
 
         let chain_id = ChainId::new(provider.get_chainid().await?.to_string());
 
-        if chain_id != config.chain_id {
-            return Err(format!(
-                "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
-        }
+        info.ensure_chain_id(chain_id.to_string())?;
+        info.ensure_consensus_type(match config.chain_spec {
+            PresetBaseKind::Minimal => ConsensusType::ETHEREUM_MINIMAL,
+            PresetBaseKind::Mainnet => ConsensusType::ETHEREUM_MAINNET,
+        })?;
 
         let beacon_api_client = BeaconApiClient::new(config.eth_beacon_rpc_api).await?;
 
@@ -127,22 +122,6 @@ impl ModuleContext for Module {
             provider,
             beacon_api_client,
         })
-    }
-
-    fn info(config: Self::Config) -> ModuleInfo<Self::Info> {
-        ModuleInfo {
-            kind: ConsensusModuleInfo {
-                chain_id: config.chain_id,
-                consensus_type: ConsensusType::new(match config.chain_spec {
-                    PresetBaseKind::Minimal => ConsensusType::ETHEREUM_MINIMAL,
-                    PresetBaseKind::Mainnet => ConsensusType::ETHEREUM_MAINNET,
-                }),
-            },
-        }
-    }
-
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
     }
 }
 
