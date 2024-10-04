@@ -152,6 +152,22 @@ ALTER TABLE code ENABLE ROW LEVEL SECURITY;
 ALTER TABLE code ADD FOREIGN KEY (user_id) REFERENCES auth.users(id);
 CREATE UNIQUE INDEX idx_code_user_id ON code(user_id);
 
+CREATE OR REPLACE FUNCTION rejoin_queue() RETURNS void AS $$
+BEGIN
+  IF (NOT EXISTS (SELECT * FROM public.queue q WHERE q.id = (SELECT auth.uid()))) THEN
+    RAISE EXCEPTION 'not_in_queue';
+  END IF;
+  IF (EXISTS (SELECT * FROM public.contribution_submitted cs WHERE cs.id = (SELECT auth.uid()))) THEN
+    RAISE EXCEPTION 'already_submitted';
+  END IF;
+  IF (NOT EXISTS (SELECT * FROM public.contribution_status cs WHERE cs.id = (SELECT auth.uid()) AND cs.expire < now())) THEN
+    RAISE EXCEPTION 'not_expired';
+  END IF;
+  UPDATE public.queue SET score = public.min_score() WHERE id = (SELECT auth.uid());
+  DELETE FROM public.contribution_status cs WHERE id = (SELECT auth.uid());
+END
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
 CREATE OR REPLACE FUNCTION redeem(code_id text) RETURNS void AS $$
 DECLARE
   redeemed_code public.code%ROWTYPE := NULL;
