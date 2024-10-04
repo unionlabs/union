@@ -10,14 +10,33 @@ library TestModuleLib {
 contract TestModule is IBCAppBase {
     IBCHandler private immutable ibcHandler;
 
+    bool ack;
+    bytes ackValue;
+
     constructor(
         IBCHandler ibcHandler_
     ) {
         ibcHandler = ibcHandler_;
+        ack = true;
+        ackValue = TestModuleLib.ACKNOWLEDGEMENT;
     }
 
     function ibcAddress() public view virtual override returns (address) {
         return address(ibcHandler);
+    }
+
+    function pauseAck() public {
+        ack = false;
+    }
+
+    function resumeAck() public {
+        ack = true;
+    }
+
+    function setAck(
+        bytes memory value
+    ) public {
+        ackValue = value;
     }
 
     function onRecvPacket(
@@ -25,7 +44,11 @@ contract TestModule is IBCAppBase {
         address,
         bytes calldata
     ) external virtual override onlyIBC returns (bytes memory) {
-        return TestModuleLib.ACKNOWLEDGEMENT;
+        if (!ack) {
+            return hex"";
+        } else {
+            return ackValue;
+        }
     }
 
     function onRecvIntentPacket(
@@ -33,6 +56,6 @@ contract TestModule is IBCAppBase {
         address,
         bytes calldata
     ) external virtual override onlyIBC returns (bytes memory) {
-        return TestModuleLib.ACKNOWLEDGEMENT;
+        return ackValue;
     }
 }

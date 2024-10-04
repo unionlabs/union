@@ -40,9 +40,14 @@ library IBCPacketLib {
     error ErrTimeoutTimestampNotReached();
     error ErrNextSequenceMustBeLEQThanTimeoutSequence();
     error ErrNotEnoughPackets();
-    error ErrCommittedPacketNotPresent();
     error ErrCommittedAckNotPresent();
     error ErrCannotIntentOrderedPacket();
+
+    function commitAcksMemory(
+        bytes[] memory acks
+    ) internal pure returns (bytes32) {
+        return mergeAck(keccak256(abi.encode(acks)));
+    }
 
     function commitAcks(
         bytes[] calldata acks
@@ -60,6 +65,12 @@ library IBCPacketLib {
         bytes memory ack
     ) internal pure returns (bytes32) {
         return mergeAck(keccak256(abi.encodePacked(ack)));
+    }
+
+    function commitPacketsMemory(
+        IBCPacket[] memory packets
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(packets));
     }
 
     function commitPackets(
@@ -118,7 +129,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             )];
             // Every packet must have been previously sent to be batched
             if (commitment != IBCPacketLib.COMMITMENT_MAGIC) {
-                revert IBCPacketLib.ErrCommittedPacketNotPresent();
+                revert IBCPacketLib.ErrPacketCommitmentNotFound();
             }
         }
         commitments[IBCCommitment.batchPacketsCommitmentKey(
@@ -240,7 +251,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                     destinationChannel, IBCPacketLib.commitPacket(packets[0])
                 );
             } else {
-                proofCommitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+                proofCommitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
                     destinationChannel, IBCPacketLib.commitPackets(packets)
                 );
             }
@@ -409,7 +420,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 destinationChannel, IBCPacketLib.commitPacket(msg_.packets[0])
             );
         } else {
-            commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+            commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
                 destinationChannel, IBCPacketLib.commitPackets(msg_.packets)
             );
         }
@@ -482,7 +493,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                     IBCPacketLib.commitPacket(msg_.packets[0])
                 );
             } else {
-                commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+                commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
                     destinationChannel, IBCPacketLib.commitPackets(msg_.packets)
                 );
             }
