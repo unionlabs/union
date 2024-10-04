@@ -47,10 +47,6 @@ use types::Status;
 const CONTRIBUTE_ENDPOINT: &str = "/contribute";
 const SK_ENDPOINT: &str = "/secret_key";
 
-const ZKGM_DIR: &str = "zkgm";
-const CONTRIB_SK_PATH: &str = "zkgm/contrib_key.sk.asc";
-const SUCCESSFUL_PATH: &str = ".zkgm_successful";
-
 #[derive(PartialEq, Eq, Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Contribute {
@@ -60,7 +56,7 @@ struct Contribute {
     api_key: String,
     contributor_id: String,
     payload_id: String,
-    user_email: Option<String>,
+    user_email: String,
 }
 
 #[derive(thiserror::Error, Debug, Clone)]
@@ -85,8 +81,42 @@ type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 
 type DynError = Box<dyn std::error::Error + Send + Sync>;
 
-fn temp_file(payload_id: &str) -> String {
-    format!("{ZKGM_DIR}/{payload_id}")
+fn successful_file(contributor_id: &str) -> String {
+    temp_file(
+        contributor_id,
+        &format!("{}.zkgm_successful", contributor_id),
+    )
+}
+
+fn temp_dir(contributor_id: &str) -> String {
+    format!("{contributor_id}.zkgm")
+}
+
+fn temp_file(contributor_id: &str, file: &str) -> String {
+    let dir = temp_dir(contributor_id);
+    format!("{dir}/{file}")
+}
+
+fn pgp_secret_file(email: &str) -> String {
+    format!("{email}.contrib_key.sk.asc")
+}
+
+async fn is_already_successful(contributor_id: &str) -> bool {
+    tokio::fs::metadata(successful_file(contributor_id))
+        .await
+        .is_ok()
+}
+
+async fn create_temp_dir(contributor_id: &str) -> Result<(), DynError> {
+    if let Err(_) = tokio::fs::metadata(temp_dir(contributor_id)).await {
+        tokio::fs::create_dir(temp_dir(contributor_id)).await?;
+    }
+    Ok(())
+}
+
+async fn remove_temp_dir(contributor_id: &str) -> Result<(), DynError> {
+    tokio::fs::remove_dir_all(temp_dir(contributor_id)).await?;
+    Ok(())
 }
 
 fn generate_pgp_key(email: String) -> SignedSecretKey {
@@ -108,21 +138,6 @@ fn generate_pgp_key(email: String) -> SignedSecretKey {
     signed_secret_key
 }
 
-async fn is_already_successful() -> bool {
-    tokio::fs::metadata(SUCCESSFUL_PATH).await.is_ok()
-}
-
-async fn wait_successful(tx_status: Sender<Status>) {
-    loop {
-        if is_already_successful().await {
-            let _ = tokio::fs::remove_dir_all(ZKGM_DIR).await;
-            tx_status.send(Status::Successful).expect("impossible");
-            tokio::time::sleep(tokio::time::Duration::from_millis(10000)).await;
-            break;
-        }
-    }
-}
-
 async fn contribute(
     tx_status: Sender<Status>,
     Contribute {
@@ -132,15 +147,20 @@ async fn contribute(
         api_key,
         contributor_id,
         payload_id,
+        user_email,
         ..
     }: Contribute,
 ) -> Result<(), DynError> {
-    if is_already_successful().await {
+    create_temp_dir(&contributor_id).await?;
+    if is_already_successful(&contributor_id).await {
+        remove_temp_dir(&contributor_id).await?;
+        tx_status.send(Status::Successful).expect("impossible");
         return Ok(());
     }
-    let mut secret_key = if let Ok(_) = tokio::fs::metadata(CONTRIB_SK_PATH).await {
+    let pgp_secret_file = pgp_secret_file(&user_email);
+    let mut secret_key = if let Ok(_) = tokio::fs::metadata(&pgp_secret_file).await {
         SignedSecretKey::from_armor_single::<&[u8]>(
-            tokio::fs::read(CONTRIB_SK_PATH).await?.as_ref(),
+            tokio::fs::read(&pgp_secret_file).await?.as_ref(),
         )
         .expect("impossible")
         .0
@@ -165,7 +185,7 @@ async fn contribute(
     let payload = client
         .download_payload(
             &current_payload.id,
-            &temp_file(&current_payload.id),
+            &temp_file(&contributor_id, &current_payload.id),
             |percent| {
                 let tx_status = tx_status.clone();
                 let current_payload_clone = current_payload.id.clone();
@@ -180,11 +200,12 @@ async fn contribute(
     tx_status
         .send(Status::DownloadEnded(current_payload.id.clone()))
         .expect("impossible");
-    let phase2_contribution = if let Ok(true) = tokio::fs::metadata(temp_file(&payload_id))
-        .await
-        .map(|meta| meta.size() as usize == CONTRIBUTION_SIZE)
+    let phase2_contribution = if let Ok(true) =
+        tokio::fs::metadata(temp_file(&contributor_id, &payload_id))
+            .await
+            .map(|meta| meta.size() as usize == CONTRIBUTION_SIZE)
     {
-        tokio::fs::read(temp_file(&payload_id)).await?
+        tokio::fs::read(temp_file(&contributor_id, &payload_id)).await?
     } else {
         tx_status
             .send(Status::ContributionStarted)
@@ -200,7 +221,11 @@ async fn contribute(
         tx_status
             .send(Status::ContributionEnded)
             .expect("impossible");
-        tokio::fs::write(temp_file(&payload_id), &phase2_contribution).await?;
+        tokio::fs::write(
+            temp_file(&contributor_id, &payload_id),
+            &phase2_contribution,
+        )
+        .await?;
         phase2_contribution
     };
 
@@ -234,7 +259,7 @@ async fn contribute(
         )
         .await?;
     let pool = PoolBuilder::new()
-        .path(temp_file("state.sqlite3"))
+        .path(temp_file(&contributor_id, "state.sqlite3"))
         .flags(
             OpenFlags::SQLITE_OPEN_READ_WRITE
                 | OpenFlags::SQLITE_OPEN_CREATE
@@ -383,6 +408,7 @@ async fn contribute(
             .expect("impossible");
     }
     pool.close().await?;
+    tokio::fs::write(successful_file(&contributor_id), &[0xBE, 0xEF]).await?;
     Ok(())
 }
 
@@ -406,31 +432,33 @@ async fn handle(
             .body(body)
             .unwrap())
     };
-    let file_response = |status, body| {
+    let file_response = |status, body, name| {
         Ok(hyper::Response::builder()
             .header(hyper::header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
             .header(hyper::header::CONTENT_TYPE, "application/octet-stream")
             .header(
                 hyper::header::CONTENT_DISPOSITION,
-                format!("attachment; filename={CONTRIB_SK_PATH}"),
+                format!("attachment; filename={name}"),
             )
             .status(status)
             .body(body)
             .unwrap())
     };
     let response_empty = |status| response(status, BoxBody::default());
-    match (req.method(), req.uri().path()) {
+    let path = req.uri().path();
+    match (req.method(), path) {
         (&Method::POST, SK_ENDPOINT) => {
             let whole_body = req.collect().await?.aggregate();
-            let email = serde_json::from_reader(whole_body.reader())?;
+            let email = serde_json::from_reader::<_, String>(whole_body.reader())?;
+            let pgp_secret_file = pgp_secret_file(&email);
             let guard = latest_status.write().await;
             let result = {
-                if let Err(_) = tokio::fs::metadata(CONTRIB_SK_PATH).await {
+                if let Err(_) = tokio::fs::metadata(&pgp_secret_file).await {
                     let secret_key = generate_pgp_key(email);
                     let secret_key_serialized = secret_key
                         .to_armored_bytes(ArmorOptions::default())
                         .expect("impossible");
-                    tokio::fs::write(CONTRIB_SK_PATH, &secret_key_serialized).await?;
+                    tokio::fs::write(pgp_secret_file, &secret_key_serialized).await?;
                     response_empty(hyper::StatusCode::CREATED)
                 } else {
                     response_empty(hyper::StatusCode::OK)
@@ -439,12 +467,20 @@ async fn handle(
             drop(guard);
             result
         }
-        (&Method::GET, SK_ENDPOINT) => {
-            if let Err(_) = tokio::fs::metadata(CONTRIB_SK_PATH).await {
-                response_empty(hyper::StatusCode::NOT_FOUND)
+        (&Method::GET, _) if path.starts_with(SK_ENDPOINT) => {
+            if let Some(email) = path
+                .strip_prefix(SK_ENDPOINT)
+                .and_then(|x| x.strip_prefix("/"))
+            {
+                let pgp_secret_file = pgp_secret_file(email);
+                if let Err(_) = tokio::fs::metadata(&pgp_secret_file).await {
+                    response_empty(hyper::StatusCode::NOT_FOUND)
+                } else {
+                    let content = tokio::fs::read(&pgp_secret_file).await?;
+                    file_response(hyper::StatusCode::OK, full(content), pgp_secret_file)
+                }
             } else {
-                let content = tokio::fs::read(CONTRIB_SK_PATH).await?;
-                file_response(hyper::StatusCode::OK, full(content))
+                response_empty(hyper::StatusCode::NOT_FOUND)
             }
         }
         (&Method::POST, CONTRIBUTE_ENDPOINT)
@@ -466,7 +502,7 @@ async fn handle(
                 .await;
                 match result {
                     Ok(_) => {
-                        let _ = tokio::fs::write(SUCCESSFUL_PATH, &[1u8]).await;
+                        tx_status.send(Status::Successful).expect("impossible");
                     }
                     Err(e) => {
                         tx_status
@@ -563,9 +599,6 @@ async fn input_and_status_handling(
 
 #[tokio::main]
 async fn main() -> Result<(), DynError> {
-    if let Err(_) = tokio::fs::metadata(ZKGM_DIR).await {
-        tokio::fs::create_dir(ZKGM_DIR).await?;
-    }
     let status = Arc::new(RwLock::new(Status::Idle));
     let lock = Arc::new(AtomicBool::new(false));
     let (tx_status, rx_status) = broadcast::channel(64);
@@ -619,10 +652,7 @@ async fn main() -> Result<(), DynError> {
         },
     )?;
     input_and_status_handling(status, rx_status, tx_ui).await;
-    tokio::select! {
-        _ = ui::run_ui(&mut terminal, rx_ui) => {}
-        _ = wait_successful(tx_status) => {}
-    }
+    ui::run_ui(&mut terminal, rx_ui).await?;
     terminal.clear()?;
     crossterm::terminal::disable_raw_mode()?;
     let _ = execute!(io::stdout(), Show);
