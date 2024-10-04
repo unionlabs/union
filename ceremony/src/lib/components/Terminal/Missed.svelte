@@ -75,8 +75,8 @@ async function trigger(value: "retry" | "help") {
         terminal.updateHistory({ text: "Successfully added user to queue." })
         await sleep(1000)
         localStorage.removeItem("ceremony:show-boot-sequence")
-        terminal.updateHistory({ text: "Redirecting..." })
-        await sleep(1000)
+        terminal.updateHistory({ text: "Reinitializing..." })
+        await sleep(4000)
         window.location.href = "/"
       } else {
         terminal.updateHistory({ text: "Failed to add user to queue." })
@@ -91,7 +91,7 @@ async function trigger(value: "retry" | "help") {
     }
   } else if (value === "help") {
     terminal.updateHistory({ text: "Redirecting to discord..." })
-    await sleep(1000)
+    await sleep(4000)
     window.open("https://discord.union.build/", "_blank")
   }
 }
