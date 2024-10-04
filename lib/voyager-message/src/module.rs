@@ -14,7 +14,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_core::ConsensusType;
-use voyager_vm::{optimize::OptimizationResult, BoxDynError, Op};
+use voyager_vm::{pass::PassResult, BoxDynError, Op};
 #[cfg(doc)]
 use {
     crate::{callback::AggregateMsgUpdateClientsFromOrderedHeaders, data::OrderedHeaders},
@@ -62,6 +62,10 @@ pub struct ConsensusModuleInfo {
     pub chain_id: ChainId<'static>,
     #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
     pub consensus_type: ConsensusType<'static>,
+    // REVIEW: Maybe we need this? Do different client types for a single consensus necessarily have the same client and consensus state types?
+    // /// The type of client this consensus module provides state for.
+    // #[arg(value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
+    // pub client_type: ClientType<'static>,
 }
 
 impl ConsensusModuleInfo {
@@ -209,7 +213,7 @@ pub trait Plugin<C: Member, Cb: Member> {
     async fn run_pass(
         &self,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>>;
+    ) -> RpcResult<PassResult<VoyagerMessage>>;
 
     /// Handle a custom `Call` message for this module.
     #[method(name = "call", with_extensions)]

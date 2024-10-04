@@ -519,7 +519,6 @@
                 protobuf
                 httpie
                 self'.packages.tdc
-                self'.packages.voy-send-msg
                 yq
               ])
               ++ (with unstablePkgs; [
@@ -565,6 +564,8 @@
             ETHEREUM_CONSENSUS_SPECS_DIR = "${inputs.ethereum-consensus-specs}";
 
             RUST_SRC_PATH = "${rust.toolchains.dev}/lib/rustlib/src/rust/library";
+
+            VOYAGER_CONFIG_FILE_PATH = "voyager/devnet-config.json";
 
             SQLX_OFFLINE = true;
             LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";

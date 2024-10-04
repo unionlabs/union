@@ -11,7 +11,6 @@ aptos-types        = { workspace = true }
 bcs                = { workspace = true }
 clap               = { workspace = true, features = ["derive"] }
 enumorph           = { workspace = true }
-frunk              = { workspace = true }
 futures            = { workspace = true }
 hex                = { workspace = true }
 hex-literal        = { workspace = true }

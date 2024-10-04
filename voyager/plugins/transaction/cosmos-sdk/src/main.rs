@@ -41,7 +41,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, noop, optimize::OptimizationResult, Op};
+use voyager_vm::{call, noop, pass::PassResult, Op};
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
 
@@ -606,8 +606,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
-        Ok(OptimizationResult {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
+        Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()

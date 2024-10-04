@@ -29,7 +29,6 @@ either                   = { workspace = true, features = ["serde"] }
 enumorph                 = { workspace = true }
 ethers                   = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural = { workspace = true }
-frunk                    = { workspace = true }
 futures                  = { workspace = true }
 hex                      = { workspace = true }
 hex-literal              = { workspace = true }

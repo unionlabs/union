@@ -42,7 +42,7 @@ impl Provider {
             rpc_client: RaceClient::new(
                 rpc_urls
                     .into_iter()
-                    .map(|rpc_url| aptos_rest_client::Client::new(rpc_url))
+                    .map(aptos_rest_client::Client::new)
                     .collect(),
             ),
         }

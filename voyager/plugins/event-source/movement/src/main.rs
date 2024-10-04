@@ -42,7 +42,7 @@ use voyager_message::{
     run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
     VoyagerMessage,
 };
-use voyager_vm::{call, conc, data, optimize::OptimizationResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlocks, FetchTransactions, MakeEvent, ModuleCall},
@@ -275,8 +275,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
-        Ok(OptimizationResult {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
+        Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()

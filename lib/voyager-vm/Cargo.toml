@@ -10,7 +10,6 @@ workspace = true
 [dependencies]
 either                   = { workspace = true }
 frame-support-procedural = { workspace = true }
-frunk                    = { workspace = true }
 futures                  = { workspace = true, features = ["alloc", "std"] }
 itertools                = { version = "0.12.1", default-features = false }
 macros                   = { workspace = true }
@@ -19,6 +18,7 @@ serde_json               = { workspace = true }
 static_assertions        = { workspace = true }
 subset-of                = { workspace = true }
 subset-of-derive         = { workspace = true }
+thiserror.workspace      = true
 tokio                    = { workspace = true, features = ["time", "rt"] }
 tracing                  = { workspace = true }
 unionlabs                = { workspace = true }

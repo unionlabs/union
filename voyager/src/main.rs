@@ -1,10 +1,12 @@
 #![feature(trait_alias, try_find)]
-// #![warn(clippy::pedantic)]
+#![warn(clippy::pedantic)]
 #![allow(
-     // required due to return_position_impl_trait_in_trait false positives
+    // required due to return_position_impl_trait_in_trait false positives
     clippy::manual_async_fn,
-    clippy::large_enum_variant,
+    clippy::single_match_else,
     clippy::module_name_repetitions,
+    clippy::missing_panics_doc,
+    clippy::missing_errors_doc
 )]
 
 use std::{
@@ -12,6 +14,7 @@ use std::{
     fmt::{Debug, Write},
     fs::read_to_string,
     iter,
+    net::SocketAddr,
     process::ExitCode,
 };
 
@@ -25,15 +28,14 @@ use serde_utils::Hex;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use unionlabs::{ethereum::ibc_commitment_key, ics24};
+use unionlabs::{ethereum::ibc_commitment_key, ics24, QueryHeight};
 use voyager_message::{
     call::FetchBlocks,
-    context::{get_plugin_info, ModulesConfig},
-    core::ChainId,
-    pass::{make_filter, run_filter, FilterResult},
+    context::{get_plugin_info, Context, ModulesConfig},
+    filter::{make_filter, run_filter},
     VoyagerMessage,
 };
-use voyager_vm::{call, Queue};
+use voyager_vm::{call, filter::FilterResult, Op, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -41,7 +43,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use crate::{
     cli::{AppArgs, Command, ConfigCmd, ModuleCmd, PluginCmd, QueueCmd, UtilCmd},
     config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
-    queue::{AnyQueueConfig, Voyager, VoyagerInitError},
+    queue::{QueueConfig, Voyager, VoyagerInitError},
 };
 
 #[cfg(not(target_os = "linux"))]
@@ -50,9 +52,9 @@ compile_error!(
     not been tested on non-linux operating systems."
 );
 
+pub mod api;
 pub mod cli;
 pub mod config;
-
 pub mod queue;
 
 fn main() -> ExitCode {
@@ -156,8 +158,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                     num_workers: 1,
                     rest_laddr: default_rest_laddr(),
                     rpc_laddr: default_rpc_laddr(),
-                    queue: AnyQueueConfig::PgQueue(PgQueueConfig {
-                        database_url: "".to_owned(),
+                    queue: QueueConfig::PgQueue(PgQueueConfig {
+                        database_url: String::new(),
                         max_connections: None,
                         min_connections: None,
                         idle_timeout: None,
@@ -203,7 +205,7 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
                 );
 
                 match result {
-                    Ok(FilterResult::Interest) => println!("interest"),
+                    Ok(FilterResult::Interest(tag)) => println!("interest ({tag})"),
                     Ok(FilterResult::NoInterest) => println!("no interest"),
                     Err(()) => println!("failed"),
                 }
@@ -312,10 +314,8 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
         }
         Command::Queue(cli_msg) => {
             let db = match get_voyager_config()?.voyager.queue {
-                AnyQueueConfig::PgQueue(cfg) => {
-                    pg_queue::PgQueue::<VoyagerMessage>::new(cfg).await?
-                }
-                _ => {
+                QueueConfig::PgQueue(cfg) => pg_queue::PgQueue::<VoyagerMessage>::new(cfg).await?,
+                QueueConfig::InMemory => {
                     return Err("no database set in config, queue commands \
                         require the `pg-queue` database backend"
                         .to_string()
@@ -324,6 +324,9 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
             };
 
             match cli_msg {
+                QueueCmd::Enqueue { op } => {
+                    send_enqueue(&get_voyager_config()?.voyager.rest_laddr, op).await?;
+                }
                 // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
                 // cli::QueueCmd::History { id, max_depth } => {
                 //     // let results = query_as!(
@@ -441,25 +444,37 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
 
         //     print_json(&all_msgs);
         // }
-        Command::InitFetch { chain_id } => {
-            let mut voyager_config = get_voyager_config()?;
+        Command::InitFetch {
+            chain_id,
+            height,
+            enqueue,
+        } => {
+            let start_height = match height {
+                QueryHeight::Latest => {
+                    let config = get_voyager_config()?;
 
-            voyager_config.voyager.queue = AnyQueueConfig::InMemory;
+                    let context = Context::new(config.plugins, config.modules).await?;
 
-            let voyager = Voyager::new(voyager_config).await?;
+                    let latest_height = context.rpc_server.query_latest_height(&chain_id).await?;
 
-            let height = voyager
-                .context
-                .rpc_server
-                .query_latest_height(&ChainId::new(chain_id.clone()))
-                .await?;
+                    context.shutdown().await;
 
-            voyager.shutdown().await;
+                    latest_height
+                }
+                QueryHeight::Specific(height) => height,
+            };
 
-            print_json(&call::<VoyagerMessage>(FetchBlocks {
-                chain_id: ChainId::new(chain_id),
-                start_height: height,
-            }));
+            let op = call::<VoyagerMessage>(FetchBlocks {
+                chain_id: chain_id.clone(),
+                start_height,
+            });
+
+            if enqueue {
+                println!("enqueueing op for `{chain_id}` at `{start_height}`");
+                send_enqueue(&get_voyager_config()?.voyager.rest_laddr, op).await?;
+            } else {
+                print_json(&op);
+            }
         }
         Command::Util(util) => match util {
             UtilCmd::IbcCommitmentKey {
@@ -472,6 +487,17 @@ async fn do_main(args: cli::AppArgs) -> Result<(), BoxDynError> {
     Ok(())
 }
 
+async fn send_enqueue(
+    rest_laddr: &SocketAddr,
+    op: Op<VoyagerMessage>,
+) -> Result<reqwest::Response, BoxDynError> {
+    Ok(reqwest::Client::new()
+        .post(format!("http://{rest_laddr}/enqueue"))
+        .json(&op)
+        .send()
+        .await?)
+}
+
 fn print_json<T: Serialize>(t: &T) {
-    println!("{}", serde_json::to_string(&t).unwrap())
+    println!("{}", serde_json::to_string(&t).unwrap());
 }

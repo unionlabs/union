@@ -35,6 +35,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
+    into_value,
     module::{ChainModuleInfo, ChainModuleServer, RawClientState},
     run_chain_module_server, ChainModule, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -663,24 +664,5 @@ fn fatal_rpc_error<E: Into<Box<dyn Error>>>(
         let message = format!("{message}: {}", ErrorReporter(&*e));
         error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
         ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, message, data)
-    }
-}
-
-#[track_caller]
-fn into_value<T: Debug + Serialize>(t: T) -> Value {
-    match serde_json::to_value(t) {
-        Ok(ok) => ok,
-        Err(err) => {
-            error!(
-                error = %ErrorReporter(err),
-                "error serializing value of type {}",
-                std::any::type_name::<T>()
-            );
-
-            panic!(
-                "error serializing value of type {}",
-                std::any::type_name::<T>()
-            );
-        }
     }
 }

@@ -24,7 +24,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, noop, optimize::OptimizationResult, Op};
+use voyager_vm::{call, noop, pass::PassResult, Op};
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
 
@@ -148,16 +148,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
-        Ok(OptimizationResult {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
+        Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .enumerate()
-                .map(|(idx, msg)| {
+                .map(|(idx, op)| {
                     (
                         vec![idx],
-                        match msg {
+                        match op {
                             Op::Data(Data::IdentifiedIbcMessage(WithChainId {
                                 chain_id,
                                 message,
@@ -180,7 +180,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     ModuleCall::SubmitTransaction(message),
                                 ))
                             }
-                            _ => panic!("unexpected message: {msg:?}"),
+                            _ => panic!("unexpected message: {op:?}"),
                         },
                     )
                 })

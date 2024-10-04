@@ -41,14 +41,6 @@
       packages =
         voyager.packages
         // {
-          voy-send-msg = pkgs.writeShellApplication {
-            name = "voy-send-msg";
-            runtimeInputs = [ pkgs.curl ];
-            text = ''
-              set -e
-              curl localhost:7177/msg -H "content-type: application/json" -d "$@"
-            '';
-          };
           ethereum-multi-send = pkgs.writeShellApplication {
             name = "ethereum-multi-send";
             runtimeInputs = [ self'.packages.forge ];

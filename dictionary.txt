@@ -578,7 +578,6 @@ formsnap
 founderheads
 fpkmyvw
 frontends
-frunk
 fullscreen
 functionx
 fuzzer

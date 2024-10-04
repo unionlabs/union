@@ -9,6 +9,7 @@ workspace = true
 [dependencies]
 frame-support-procedural = { workspace = true }
 futures-util             = "0.3.30"
+itertools                = "0.13.0"
 prometheus               = "0.13.4"
 schemars.workspace       = true
 serde                    = { workspace = true }

@@ -1,7 +1,7 @@
 # Ethereum Light Client Architecture
 
 Our [Ethereum](https://ethereum.org/) light client is a CosmWasm smart contract that implements the [wasm light client spec](https://github.com/cosmos/ibc/blob/main/spec/client/ics-008-wasm-client/README.md).
-To see how this is integrated within `uniond`, see [uniond/ARCHITECTURE.md](../../uniond/ARCHITECTURE.md). We decided on implementing the light client as a smart contract instead of a native module because:
+To see how this is integrated within `uniond`, see [uniond/README.md](../../uniond/README.md). We decided on implementing the light client as a smart contract instead of a native module because:
 
 1. Native modules require chain-upgrade if we want to introduce the native client or update it. But the wasm light client can be uploaded and modified through governance.
 2. `08-wasm` module already implements the generic client module and it only calls the underlying smart contract for the chain-specific parts like membership verification
@@ -13,7 +13,7 @@ Ethereum.
 
 ## Light Client Update
 
-This diagram roughly describes the light client state update process, starting from our [Voyager](../../voyager/ARCHITECTURE.md)
+This diagram roughly describes the light client state update process, starting from our [Voyager](../../voyager/README.md)
 
 ```mermaid
 sequenceDiagram

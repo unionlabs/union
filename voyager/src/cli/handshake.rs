@@ -30,6 +30,7 @@ impl Args for HandshakeCmd {
 
 impl HandshakeCmd {
     pub fn from_raw(mut raw: HandshakeRaw) -> Result<Self, clap::Error> {
+        #[allow(clippy::enum_glob_use)]
         use HandshakeType::*;
 
         let msg = |arg: &str| {
