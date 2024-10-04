@@ -223,6 +223,16 @@
           description = "RUST_LOG passed to hubble";
           example = "hubble=debug";
         };
+        backtrace = mkOption {
+          type = types.enum [
+            "0"
+            "1"
+            "full"
+          ];
+          default = "1";
+          description = "RUST_BACKTRACE passed to hubble";
+          example = "full";
+        };
         log-format = mkOption {
           type = types.enum [
             "json"
@@ -230,6 +240,12 @@
           ];
           default = "json";
           example = "plain";
+        };
+        tokens_urls = mkOption {
+          type = types.nullOr (types.listOf types.str);
+          description = "List of tokenlist urls";
+          example = [ "https://static.optimism.io/optimism.tokenlist.json" ];
+          default = null;
         };
       };
 
@@ -245,13 +261,15 @@
               text =
                 let
                   indexersJson = builtins.toJSON cfg.indexers;
+                  tokensUrlsJson = builtins.toJSON cfg.tokens_urls;
                 in
                 ''
                   ${pkgs.lib.getExe cfg.package}  \
                     --database-url "$(head -n 1 ${cfg.api-key-file})" \
                     --log-format ${cfg.log-format} \
                     --metrics-addr ${cfg.metrics-addr} \
-                    --indexers '${indexersJson}' 
+                    --indexers '${indexersJson}' \
+                    --tokens-urls '${tokensUrlsJson}'
                 '';
             };
           in
@@ -269,6 +287,7 @@
             };
             environment = {
               RUST_LOG = "${cfg.log-level}";
+              RUST_BACKTRACE = "${cfg.backtrace}";
             };
           };
       };

@@ -212,9 +212,7 @@ impl FromStr for Indexers {
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
-pub struct TokensUrls {
-    pub urls: Vec<String>,
-}
+pub struct TokensUrls(Vec<String>);
 
 impl IntoIterator for TokensUrls {
     type Item = String;
@@ -222,7 +220,7 @@ impl IntoIterator for TokensUrls {
     type IntoIter = std::vec::IntoIter<String>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.urls.into_iter()
+        self.0.into_iter()
     }
 }
 
