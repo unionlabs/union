@@ -17,8 +17,16 @@ onMount(() => {
 })
 
 function handleDownload() {
-  const newUrl = `http://localhost:4919/secret_key/${user.session?.user.email}`
-  window.open(newUrl, "_blank")
+  const newUrl = `http://localhost:4919/secret_key/${user.session?.user.email}`;
+
+  const link = document.createElement('a');
+  link.href = newUrl;
+
+  link.setAttribute('download', '');
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function stored() {
@@ -30,11 +38,11 @@ function stored() {
 async function generate() {
   if (contributor.state !== "noClient") {
     generating = true
-    terminal.updateHistory({ text: "Generating secret..." })
+    terminal.updateHistory({ text: "Generating secret...", duplicate: true })
     axiom.ingest("monitor", [{ user: contributor.userId, type: "generated_secret" }])
     await sleep(3000)
     generateSecret(user.session?.user.email)
-    terminal.updateHistory({ text: "Initialize saving..." })
+    terminal.updateHistory({ text: "Initialize saving...", duplicate: true })
     await sleep(1000)
     handleDownload()
     generating = false
