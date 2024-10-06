@@ -150,6 +150,7 @@ The first transfer we will do against a forked network using [`anvil`](https://b
     1. Grab a sepolia RPC url from [chainlist.org](https://chainlist.org). Recommended to use a premium RPC provider.
     2. Start a local [`anvil`](https://book.getfoundry.sh/anvil/) fork of Sepolia
         ```sh
+        source .env
         anvil --fork-url $RPC_URL
         ```
     3. Run the script with [`forge`](https://book.getfoundry.sh/forge/)
