@@ -39,7 +39,7 @@ use voyager_message::{
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
 use voyager_vm::{
-    call, data, defer, now, optimize::OptimizationResult, promise, seq, void, BoxDynError, Op,
+    call, data, defer, now, pass::PassResult, promise, seq, void, BoxDynError, Op, Visit,
 };
 
 use crate::{
@@ -159,13 +159,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
-        Ok(OptimizationResult {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
+        Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    op.visit(&mut UpdateHook::new(&self.chain_id, |fetch| {
+                    UpdateHook::new(&self.chain_id, |fetch| {
                         Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchUpdate {
@@ -173,7 +173,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 update_to: fetch.update_to,
                             }),
                         ))
-                    }));
+                    })
+                    .visit_op(&mut op);
 
                     op
                 })

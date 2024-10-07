@@ -130,9 +130,11 @@
     },
     "ModuleConfig_for_ChainModuleInfo": {
       "type": "object",
-      "required": ["config", "info", "path"],
+      "required": ["info", "path"],
       "properties": {
-        "config": true,
+        "config": {
+          "default": {}
+        },
         "enabled": {
           "default": true,
           "type": "boolean"
@@ -148,9 +150,11 @@
     },
     "ModuleConfig_for_ClientModuleInfo": {
       "type": "object",
-      "required": ["config", "info", "path"],
+      "required": ["info", "path"],
       "properties": {
-        "config": true,
+        "config": {
+          "default": {}
+        },
         "enabled": {
           "default": true,
           "type": "boolean"
@@ -166,9 +170,11 @@
     },
     "ModuleConfig_for_ConsensusModuleInfo": {
       "type": "object",
-      "required": ["config", "info", "path"],
+      "required": ["info", "path"],
       "properties": {
-        "config": true,
+        "config": {
+          "default": {}
+        },
         "enabled": {
           "default": true,
           "type": "boolean"

@@ -25,20 +25,20 @@ The upgradability of contracts on other chains, connections, token configuration
 
 ## Components
 
-| Component                          | Description                                          | Language(s)           |
-| ---------------------------------- | ---------------------------------------------------- | --------------------- |
-| [`uniond`](./uniond)               | The Union node implementation, using [`CometBLS`]    | [Go]                  |
-| [`galoisd`](./galoisd)             | The zero-knowledge prover implementation             | [Go] [Gnark]          |
-| [`voyager`](./voyager)             | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
-| [`hubble`](./hubble)               | Multi-ecosystem, GMP-enabled chain indexer           | [Rust]                |
-| [`cosmwasm`](./cosmwasm)           | [CosmWasm] smart contract stack                      | [Rust]                |
-| [`light-clients`](./light-clients) | [Light Clients] for various ecosystems               | [Rust]                |
-| [`unionvisor`](./unionvisor)       | Node supervisor intended for production usage        | [Rust]                |
-| [`drip`](./drip)                   | Faucet for [Cosmos] chains: [app.union.build/faucet] | [Rust]                |
-| [`evm`](./evm)                     | [EVM] smart contract stack                           | [Solidity]            |
-| [`app`](./app)                     | [app.union.build]                                    | [TypeScript] [Svelte] |
-| [`site`](./site)                   | [union.build]                                        | [TypeScript] [Astro]  |
-| [`TypeScript SDK`](./typescript-sdk) | TypeScript SDK for interacting with Union          | [TypeScript]          |
+| Component                                   | Description                                          | Language(s)           |
+| ------------------------------------------- | ---------------------------------------------------- | --------------------- |
+| [`uniond`](./uniond)                        | The Union node implementation, using [`CometBLS`]    | [Go]                  |
+| [`galoisd`](./galoisd)                      | The zero-knowledge prover implementation             | [Go] [Gnark]          |
+| [`voyager`](./voyager)                      | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
+| [`hubble`](./hubble)                        | Multi-ecosystem, GMP-enabled chain indexer           | [Rust]                |
+| [`cosmwasm`](./cosmwasm)                    | [CosmWasm] smart contract stack                      | [Rust]                |
+| [`light-clients`](./light-clients)          | [Light Clients] for various ecosystems               | [Rust]                |
+| [`unionvisor`](./unionvisor/README.md)       | Node supervisor intended for production usage        | [Rust]                |
+| [`drip`](./drip)                            | Faucet for [Cosmos] chains: [app.union.build/faucet] | [Rust]                |
+| [`evm`](./evm)                              | [EVM] smart contract stack                           | [Solidity]            |
+| [`app`](./app)                              | [app.union.build]                                    | [TypeScript] [Svelte] |
+| [`site`](./site)                            | [union.build]                                        | [TypeScript] [Astro]  |
+| [`TypeScript SDK`](./typescript-sdk)        | TypeScript SDK for interacting with Union            | [TypeScript]          |
 
 ## Quickstart
 

@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
 use enumorph::Enumorph;
-use frunk::hlist_pat;
-use jsonrpsee::core::RpcResult;
+use itertools::Itertools;
+use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use tracing::warn;
 use unionlabs::{ibc::core::client::height::Height, id::ClientId, QueryHeight};
@@ -15,9 +15,9 @@ use voyager_message::{
     core::{ChainId, ClientStateMeta},
     data::{Data, IbcMessage, OrderedMsgUpdateClients, WithChainId},
     rpc::{json_rpc_error_to_error_object, VoyagerRpcClient},
-    PluginMessage, VoyagerClient, VoyagerMessage,
+    PluginMessage, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{aggregation::HListTryFromIterator, call, conc, data, noop, promise, seq, Op};
+use voyager_vm::{call, conc, data, noop, promise, seq, Op};
 
 use crate::{
     data::{BatchableEvent, Event},
@@ -45,14 +45,25 @@ impl MakeIbcMessagesFromUpdate {
         module_server: &Module,
         datas: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        let Ok(
-            hlist_pat![
-                updates @ OrderedMsgUpdateClients { .. },
-            ],
-        ) = HListTryFromIterator::try_from_iter(datas)
-        else {
-            panic!("bad data")
-        };
+        let updates @ OrderedMsgUpdateClients { .. } = datas
+            .into_iter()
+            .exactly_one()
+            .map_err(|found| serde_json::to_string(&found.collect::<Vec<_>>()).unwrap())
+            .and_then(|d| {
+                d.try_into()
+                    .map_err(|found| serde_json::to_string(&found).unwrap())
+            })
+            .map_err(|found| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!(
+                        "OrderedHeaders not present in data queue for \
+                        AggregateMsgUpdateClientsFromOrderedHeaders, \
+                        found {found}",
+                    ),
+                    None::<()>,
+                )
+            })?;
 
         let client_meta = voyager_client
             .client_meta(

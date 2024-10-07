@@ -18,9 +18,9 @@ dashmap                        = { workspace = true }
 enumorph                       = { workspace = true }
 ethers                         = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural       = { workspace = true }
-frunk                          = { workspace = true }
 futures                        = { workspace = true }
 hex                            = { workspace = true }
+itertools                      = "0.13.0"
 jaq-core                       = "1.5.1"
 jaq-interpret                  = "1.5.0"
 jaq-std                        = "1.6.0"

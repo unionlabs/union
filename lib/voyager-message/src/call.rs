@@ -1,6 +1,7 @@
 use enumorph::Enumorph;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
-use macros::{apply, model};
+use macros::model;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 use serde_utils::Hex;
 use tracing::{debug, error, info, instrument, trace};
@@ -29,7 +30,7 @@ use unionlabs::{
     QueryHeight, DELAY_PERIOD,
 };
 use voyager_core::ClientType;
-use voyager_vm::{call, data, defer, noop, now, seq, HandleCall, Op, QueueError};
+use voyager_vm::{call, data, defer, noop, now, seq, CallT, Op, QueueError};
 
 #[cfg(doc)]
 use crate::core::ClientInfo;
@@ -39,10 +40,9 @@ use crate::{
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ChainModuleClient, ClientModuleClient, ConsensusModuleClient, PluginClient},
     rpc::json_rpc_error_to_error_object,
-    top_level_identifiable_enum, Context, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    Context, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
-#[apply(top_level_identifiable_enum)]
 #[model]
 #[derive(Enumorph)]
 pub enum Call {
@@ -69,6 +69,18 @@ pub enum Call {
     WaitForTrustedHeight(WaitForTrustedHeight),
 
     Plugin(PluginMessage),
+}
+
+impl Call {
+    #[allow(clippy::result_large_err)]
+    pub fn as_plugin<T: DeserializeOwned>(self, plugin_name: impl AsRef<str>) -> Result<T, Self> {
+        match self {
+            Self::Plugin(plugin_message) => {
+                plugin_message.downcast(plugin_name).map_err(Self::Plugin)
+            }
+            this => Err(this),
+        }
+    }
 }
 
 #[model]
@@ -266,9 +278,9 @@ pub struct WaitForTrustedHeight {
     pub height: Height,
 }
 
-impl HandleCall<VoyagerMessage> for Call {
+impl CallT<VoyagerMessage> for Call {
     // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn handle(self, ctx: &Context) -> Result<Op<VoyagerMessage>, QueueError> {
+    async fn process(self, ctx: &Context) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
             Call::FetchBlocks(FetchBlocks {
                 start_height,

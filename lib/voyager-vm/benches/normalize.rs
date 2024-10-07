@@ -4,13 +4,13 @@ use voyager_message::{
     call::FetchBlocks, callback::AggregateMsgUpdateClientsFromOrderedHeaders, core::ChainId,
     PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, conc, data, noop, normalize::normalize, promise, seq, Op};
+use voyager_vm::{call, conc, data, noop, promise, seq, Op};
 
 fn bench_normalize(c: &mut Criterion) {
     c.bench_function("normalize", |b| {
         b.iter_with_setup(
             || vec![mk_msg(), mk_msg(), mk_msg()],
-            |msgs| black_box(normalize(msgs)),
+            |op| black_box(op.into_iter().map(Op::normalize)),
         )
     });
 }

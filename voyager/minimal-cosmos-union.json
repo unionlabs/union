@@ -1,0 +1,219 @@
+{
+  "$schema": "./schema.json",
+  "modules": {
+    "chain": [
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-chain-module-cosmos-sdk",
+        "info": {
+          "chain_id": "union-devnet-1"
+        },
+        "config": {
+          "ws_url": "http://localhost:26657",
+          "grpc_url": "http://localhost:9090"
+        }
+      },
+      {
+        "enabled": false,
+        "path": "./target/debug/voyager-chain-module-cosmos-sdk",
+        "info": {
+          "chain_id": "stargaze-devnet-1"
+        },
+        "config": {
+          "ws_url": "http://localhost:26657",
+          "grpc_url": "http://localhost:9090"
+        }
+      }
+    ],
+    "consensus": [
+      {
+        "enabled": false,
+        "path": "./target/debug/voyager-consensus-module-cometbls",
+        "info": {
+          "chain_id": "union-devnet-1",
+          "consensus_type": "cometbls"
+        },
+        "config": {
+          "chain_id": "union-devnet-1",
+          "ws_url": "http://localhost:26657",
+          "grpc_url": "http://localhost:9090"
+        }
+      },
+      {
+        "enabled": false,
+        "path": "./target/debug/voyager-consensus-module-tendermint",
+        "info": {
+          "chain_id": "stargaze-devnet-1",
+          "consensus_type": "07-tendermint"
+        },
+        "config": {
+          "chain_id": "stargaze-devnet-1",
+          "ws_url": "http://localhost:26657",
+          "grpc_url": "http://localhost:9090"
+        }
+      }
+    ],
+    "client": [
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-client-module-cometbls",
+        "info": {
+          "client_type": "cometbls",
+          "consensus_type": "cometbls",
+          "ibc_interface": "ibc-go-v8/08-wasm"
+        }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-client-module-tendermint",
+        "info": {
+          "client_type": "07-tendermint",
+          "consensus_type": "tendermint",
+          "ibc_interface": "ibc-go-v8/native"
+        }
+      }
+    ]
+  },
+  "plugins": [
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-client-update-plugin-cometbls",
+      "config": {
+        "chain_id": "union-devnet-1",
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090",
+        "prover_endpoints": ["https://galois.testnet-8.union.build:443"]
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-client-update-plugin-tendermint",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "union-devnet-1",
+        "keyring": {
+          "name": "union-devnet",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "alice",
+              "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+            }
+          ]
+        },
+        "gas_config": {
+          "gas_price": "1.0",
+          "gas_denom": "muno",
+          "gas_multiplier": "1.1",
+          "max_gas": 60000000
+        },
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "enabled": false,
+      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
+        "keyring": {
+          "name": "stargaze-devnet",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "alice",
+              "key": "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+            }
+          ]
+        },
+        "gas_config": {
+          "gas_price": "1.0",
+          "gas_denom": "ustars",
+          "gas_multiplier": "1.1",
+          "max_gas": 60000000
+        },
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-plugin-packet-filter",
+      "config": {
+        "connection_event_filters": [{}],
+        "channel_event_filters": [{}],
+        "packet_event_filters": [{}]
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-plugin-transaction-batch",
+      "config": {
+        "chain_id": "union-devnet-1",
+        "client_configs": {
+          "*": {
+            "min_batch_size": 1,
+            "max_batch_size": 3,
+            "max_wait_time": {
+              "secs": 10,
+              "nanos": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "enabled": false,
+      "path": "./target/debug/voyager-plugin-transaction-batch",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
+        "client_configs": {
+          "*": {
+            "min_batch_size": 1,
+            "max_batch_size": 3,
+            "max_wait_time": {
+              "secs": 10,
+              "nanos": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "union-devnet-1",
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090"
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "stargaze-devnet-1",
+        "ws_url": "http://localhost:26657",
+        "grpc_url": "http://localhost:9090"
+      }
+    }
+  ],
+  "voyager": {
+    "num_workers": 50,
+    "queue": {
+      "type": "pg-queue",
+      "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
+      "max_connections": 50,
+      "min_connections": 50
+    },
+    "optimizer_delay_milliseconds": 100
+  }
+}

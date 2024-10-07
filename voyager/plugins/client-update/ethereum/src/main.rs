@@ -36,7 +36,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, defer, now, optimize::OptimizationResult, seq, Op};
+use voyager_vm::{call, defer, now, pass::PassResult, seq, Op, Visit};
 
 use crate::{
     call::{FetchUpdate, ModuleCall},
@@ -192,13 +192,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
-        Ok(OptimizationResult {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
+        Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    op.visit(&mut UpdateHook::new(&self.chain_id, |fetch| {
+                    UpdateHook::new(&self.chain_id, |fetch| {
                         Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchUpdate {
@@ -207,7 +207,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 counterparty_chain_id: fetch.counterparty_chain_id.clone(),
                             }),
                         ))
-                    }));
+                    })
+                    .visit_op(&mut op);
 
                     op
                 })

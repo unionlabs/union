@@ -15,7 +15,7 @@ use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
 use macros::model;
 use schemars::JsonSchema;
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, debug_span, error, info, instrument, trace, warn, Instrument};
@@ -64,11 +64,7 @@ pub struct Modules {
     client_consensus_types: HashMap<ClientType<'static>, ConsensusType<'static>>,
 }
 
-impl voyager_vm::Context for Context {
-    fn tags(&self) -> Vec<&str> {
-        self.interest_filters.keys().map(|s| s.as_str()).collect()
-    }
-}
+impl voyager_vm::Context for Context {}
 
 #[derive(macros::Debug, Clone)]
 pub struct ModuleRpcClient {
@@ -161,12 +157,17 @@ pub struct ModulesConfig {
 pub struct ModuleConfig<T> {
     pub path: PathBuf,
     pub info: T,
+    #[serde(default = "default_config")]
     pub config: Value,
     #[serde(default = "default_enabled")]
     pub enabled: bool,
 }
 
-fn default_enabled() -> bool {
+fn default_config() -> Value {
+    Value::Object(Map::new())
+}
+
+const fn default_enabled() -> bool {
     true
 }
 

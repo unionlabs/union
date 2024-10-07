@@ -28,7 +28,7 @@ use voyager_message::{
     run_plugin_server, DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient,
     VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, data, now, optimize::OptimizationResult, promise, seq, BoxDynError, Op};
+use voyager_vm::{call, data, now, pass::PassResult, promise, seq, BoxDynError, Op};
 
 use crate::{
     call::{MakeTransactionBatchesWithUpdate, ModuleCall},
@@ -205,7 +205,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         &self,
         e: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
         self.run_pass_internal(e, msgs).await
     }
 
@@ -333,8 +333,7 @@ impl Module {
         &'a self,
         e: &'a Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> Pin<Box<dyn Future<Output = RpcResult<OptimizationResult<VoyagerMessage>>> + Send + 'a>>
-    {
+    ) -> Pin<Box<dyn Future<Output = RpcResult<PassResult<VoyagerMessage>>> + Send + 'a>> {
         Box::pin(async move {
             let mut batchers = HashMap::<ClientId, Vec<(usize, BatchableEvent)>>::new();
 
@@ -560,7 +559,7 @@ impl Module {
                 })
                 .collect::<FuturesOrdered<_>>();
 
-            Ok(OptimizationResult {
+            Ok(PassResult {
                 optimize_further,
                 ready: ready
                     .map(|x| x)

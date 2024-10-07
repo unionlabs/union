@@ -11,7 +11,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_utils::Hex;
-use tracing::{debug, error, instrument};
+use tracing::{debug, instrument};
 use unionlabs::{
     aptos::{
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
@@ -31,6 +31,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
+    into_value,
     module::{ChainModuleInfo, ChainModuleServer, RawClientState},
     run_chain_module_server, ChainModule,
 };
@@ -444,26 +445,6 @@ impl ChainModuleServer for Module {
 
 pub fn rest_error_to_rpc_error(e: RestError) -> ErrorObjectOwned {
     ErrorObject::owned(-1, format!("rest error: {}", ErrorReporter(e)), None::<()>)
-}
-
-// TODO: Deduplicate this (it's also in the cosmos-sdk chain module), probably put it in voyager-message
-#[track_caller]
-fn into_value<T: Debug + Serialize>(t: T) -> Value {
-    match serde_json::to_value(t) {
-        Ok(ok) => ok,
-        Err(err) => {
-            error!(
-                error = %ErrorReporter(err),
-                "error serializing value of type {}",
-                std::any::type_name::<T>()
-            );
-
-            panic!(
-                "error serializing value of type {}",
-                std::any::type_name::<T>()
-            );
-        }
-    }
 }
 
 pub fn convert_connection(

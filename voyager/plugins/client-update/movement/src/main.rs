@@ -35,7 +35,7 @@ use voyager_message::{
     module::{ConsensusModuleServer, PluginInfo, PluginServer, UnexpectedChainIdError},
     run_plugin_server, DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{data, optimize::OptimizationResult, Op};
+use voyager_vm::{data, pass::PassResult, Op, Visit};
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
 
@@ -182,13 +182,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
-        Ok(OptimizationResult {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
+        Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    op.visit(&mut UpdateHook::new(&self.chain_id, |fetch| {
+                    UpdateHook::new(&self.chain_id, |fetch| {
                         Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchUpdate {
@@ -196,7 +196,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 to: fetch.update_to.revision_height,
                             }),
                         ))
-                    }));
+                    })
+                    .visit_op(&mut op);
 
                     op
                 })

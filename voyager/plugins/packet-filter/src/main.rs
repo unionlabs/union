@@ -14,7 +14,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     run_plugin_server, DefaultCmd, Plugin, VoyagerMessage,
 };
-use voyager_vm::{optimize::OptimizationResult, BoxDynError, Op};
+use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -300,10 +300,10 @@ impl PluginServer<Never, Never> for Module {
         &self,
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
         trace!("dropping {} messages", msgs.len());
 
-        Ok(OptimizationResult::default())
+        Ok(PassResult::default())
     }
 
     #[instrument]

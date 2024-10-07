@@ -40,7 +40,7 @@ use voyager_message::{
     rpc::{json_rpc_error_to_error_object, missing_state, VoyagerRpcClient, VoyagerRpcClientExt},
     run_plugin_server, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
-use voyager_vm::{call, conc, data, optimize::OptimizationResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlocks, FetchTransactions, MakeChainEvent, ModuleCall},
@@ -450,8 +450,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         &self,
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
-    ) -> RpcResult<OptimizationResult<VoyagerMessage>> {
-        Ok(OptimizationResult {
+    ) -> RpcResult<PassResult<VoyagerMessage>> {
+        Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()

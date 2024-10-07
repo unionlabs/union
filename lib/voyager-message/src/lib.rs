@@ -26,6 +26,7 @@ use crate::{
     callback::Callback,
     context::{Context, INVALID_CONFIG_EXIT_CODE, STARTUP_ERROR_EXIT_CODE},
     data::Data,
+    filter::JaqInterestFilter,
     module::{
         ChainModuleInfo, ChainModuleServer, ClientModuleInfo, ClientModuleServer,
         ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginServer,
@@ -37,6 +38,7 @@ pub mod callback;
 pub mod data;
 
 pub mod context;
+pub mod filter;
 pub mod module;
 pub mod pass;
 
@@ -54,6 +56,8 @@ impl QueueMessage for VoyagerMessage {
     type Call = Call;
     type Data = Data;
     type Callback = Callback;
+
+    type Filter = JaqInterestFilter;
 
     type Context = Context;
 }
@@ -89,7 +93,7 @@ pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> Q
 /// - [`INVALID_PARAMS_CODE`]: The custom message sent to the plugin or module
 ///   could not be deserialized. This could either be due a bug in the plugin or
 ///   module (JSON serialization not roundtripping correctly) or a message that
-///   was manually inserted into the queue via `/msg`.
+///   was manually inserted into the queue via `/enqueue`.
 pub fn error_object_to_queue_error(error: ErrorObject<'_>) -> QueueError {
     if error.code() == FATAL_JSONRPC_ERROR_CODE
         || error.code() == METHOD_NOT_FOUND_CODE
@@ -133,38 +137,6 @@ impl PluginMessage {
         }
     }
 }
-
-macro_rules! top_level_identifiable_enum {
-    (
-        $(#[$meta:meta])*
-        pub enum $Enum:ident {
-            $(
-                $(#[$inner_meta:meta])*
-                $Variant:ident($VariantInner:ty$(,)?),
-            )*
-        }
-    ) => {
-        $(#[$meta])*
-        #[allow(clippy::large_enum_variant)]
-        pub enum $Enum {
-            $(
-                $(#[$inner_meta])*
-                $Variant($VariantInner),
-            )*
-        }
-
-        impl $Enum {
-            #[allow(clippy::result_large_err)]
-            pub fn as_plugin<T: ::serde::de::DeserializeOwned>(self, plugin_name: impl AsRef<str>) -> Result<T, $Enum> {
-                match self {
-                    Self::Plugin(plugin_message) => plugin_message.downcast(plugin_name).map_err(Self::Plugin),
-                    this => Err(this)
-                }
-            }
-        }
-    };
-}
-pub(crate) use top_level_identifiable_enum;
 
 #[derive(clap::Subcommand)]
 pub enum DefaultCmd {}
@@ -554,5 +526,25 @@ impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for InjectClient<S> {
     fn call(&self, mut request: jsonrpsee::types::Request<'a>) -> Self::Future {
         request.extensions.insert(self.client.clone());
         self.service.call(request)
+    }
+}
+
+// TODO: Deduplicate this (it's also in the cosmos-sdk chain module), probably put it in voyager-message
+#[track_caller]
+pub fn into_value<T: Debug + Serialize>(t: T) -> Value {
+    match serde_json::to_value(t) {
+        Ok(ok) => ok,
+        Err(err) => {
+            error!(
+                error = %ErrorReporter(err),
+                "error serializing value of type {}",
+                std::any::type_name::<T>()
+            );
+
+            panic!(
+                "error serializing value of type {}",
+                std::any::type_name::<T>()
+            );
+        }
     }
 }

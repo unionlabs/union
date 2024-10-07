@@ -14,7 +14,6 @@ bcs                = { workspace = true }
 bip32              = { workspace = true }
 chain-utils        = { workspace = true }
 enumorph           = { workspace = true }
-frunk              = { workspace = true }
 futures            = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }

@@ -1,6 +1,6 @@
 use tracing::info;
 use voyager_core::ChainId;
-use voyager_vm::OpVisitor;
+use voyager_vm::Visit;
 
 use crate::{
     call::{Call, FetchUpdateHeaders},
@@ -27,7 +27,7 @@ impl<'a> UpdateHook<'a, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
     }
 }
 
-impl<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> OpVisitor<VoyagerMessage>
+impl<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage>
     for UpdateHook<'a, F>
 {
     fn visit_call(&mut self, c: &mut Call) {

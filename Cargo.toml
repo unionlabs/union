@@ -122,8 +122,9 @@ license-file = "LICENSE"
 repository   = "https://github.com/unionlabs/union"
 
 [workspace.lints.clippy]
-disallowed_types = "deny"
-module_inception = "allow" # it's useful sometimes
+disallowed_types        = "deny"
+module_inception        = "allow" # it's useful sometimes
+module_name_repetitions = "allow" # dumb lint
 
 [workspace.lints.rustdoc]
 broken-intra-doc-links = "deny"
@@ -213,7 +214,6 @@ either                   = { version = "1.9.0", default-features = false }
 enumorph                 = { version = "0.1.2", default-features = false }
 ethabi                   = { version = "18.0.0", default-features = false }
 frame-support-procedural = { version = "30.0.0", default-features = false }
-frunk                    = { version = "0.4.2", default-features = false }
 futures                  = { version = "0.3.28", default-features = false }
 go-parse-duration        = { version = "0.1.1", default-features = false }
 hex                      = { version = "0.4.3", default-features = false }

@@ -1,69 +1,47 @@
 #![allow(clippy::type_complexity)]
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display},
-    net::SocketAddr,
-    panic::AssertUnwindSafe,
-};
+use std::{fmt::Debug, net::SocketAddr, panic::AssertUnwindSafe};
 
-use axum::{
-    extract::State,
-    routing::{get, post},
-    Json,
-};
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use futures::{
-    channel::mpsc::UnboundedSender, future::BoxFuture, stream::FuturesUnordered, Future, FutureExt,
-    SinkExt, StreamExt,
-};
+use futures::{future::BoxFuture, stream::FuturesUnordered, Future, FutureExt, StreamExt};
 use pg_queue::{PgQueue, PgQueueConfig};
-use prometheus::TextEncoder;
-use reqwest::StatusCode;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tracing::{debug, error, info, info_span, trace, trace_span};
 use tracing_futures::Instrument;
 use unionlabs::ErrorReporter;
 use voyager_message::{
-    context::Context,
-    module::{PluginClient, PluginInfo},
-    pass::JaqInterestFilter,
-    rpc::VoyagerRpcServer,
-    VoyagerMessage,
+    context::Context, filter::JaqInterestFilter, into_value, module::PluginInfo,
+    pass::PluginOptPass, rpc::VoyagerRpcServer, VoyagerMessage,
 };
 use voyager_vm::{
-    optimize::{OptimizationResult, Pass, PurePass},
-    Captures, Engine, InMemoryQueue, Op, Queue, QueueMessage,
+    engine::Engine, in_memory::InMemoryQueue, pass::Pass, BoxDynError, Captures, Op, Queue,
 };
 
-use crate::config::Config;
-
-type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
+use crate::{api, config::Config};
 
 #[derive(Debug)]
 pub struct Voyager {
+    // TODO: Make private
     pub context: Context,
     num_workers: u16,
-    pub rest_laddr: SocketAddr,
-    pub rpc_laddr: SocketAddr,
-    // NOTE: pub temporarily
-    pub queue: AnyQueue<VoyagerMessage>,
-    pub optimizer_delay_milliseconds: u64,
+    rest_laddr: SocketAddr,
+    rpc_laddr: SocketAddr,
+    queue: QueueImpl,
+    optimizer_delay_milliseconds: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case", tag = "type")]
-pub enum AnyQueueConfig {
+pub enum QueueConfig {
     InMemory,
     PgQueue(PgQueueConfig),
 }
 
 #[derive(DebugNoBound, CloneNoBound)]
-pub enum AnyQueue<T: QueueMessage> {
-    InMemory(InMemoryQueue<T>),
-    PgQueue(PgQueue<T>),
+pub enum QueueImpl {
+    InMemory(InMemoryQueue<VoyagerMessage>),
+    PgQueue(PgQueue<VoyagerMessage>),
 }
 
 #[derive(DebugNoBound, thiserror::Error)]
@@ -73,38 +51,38 @@ pub enum AnyQueueError {
     PgQueue(sqlx::Error),
 }
 
-impl<T: QueueMessage> Queue<T> for AnyQueue<T> {
+impl Queue<VoyagerMessage> for QueueImpl {
     type Error = AnyQueueError;
-    type Config = AnyQueueConfig;
+    type Config = QueueConfig;
 
     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
         async move {
             Ok(match cfg {
-                AnyQueueConfig::InMemory => Self::InMemory(
+                QueueConfig::InMemory => Self::InMemory(
                     InMemoryQueue::new(())
                         .await
                         .map_err(AnyQueueError::InMemory)?,
                 ),
-                AnyQueueConfig::PgQueue(cfg) => {
+                QueueConfig::PgQueue(cfg) => {
                     Self::PgQueue(PgQueue::new(cfg).await.map_err(AnyQueueError::PgQueue)?)
                 }
             })
         }
     }
 
-    fn enqueue<'a, O: PurePass<T>>(
+    fn enqueue<'a>(
         &'a self,
-        item: Op<T>,
-        pre_enqueue_passes: &'a O,
+        item: Op<VoyagerMessage>,
+        filter: &'a JaqInterestFilter,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
         async move {
             match self {
-                AnyQueue::InMemory(queue) => queue
-                    .enqueue(item, pre_enqueue_passes)
+                QueueImpl::InMemory(queue) => queue
+                    .enqueue(item, filter)
                     .await
                     .map_err(AnyQueueError::InMemory)?,
-                AnyQueue::PgQueue(queue) => queue
-                    .enqueue(item, pre_enqueue_passes)
+                QueueImpl::PgQueue(queue) => queue
+                    .enqueue(item, filter)
                     .await
                     .map_err(AnyQueueError::PgQueue)?,
             };
@@ -115,25 +93,24 @@ impl<T: QueueMessage> Queue<T> for AnyQueue<T> {
         }
     }
 
-    fn process<'a, F, Fut, R, O>(
+    fn process<'a, F, Fut, R>(
         &'a self,
-        pre_reenqueue_passes: &'a O,
+        filter: &'a JaqInterestFilter,
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + Captures<'a>
     where
-        F: (FnOnce(Op<T>) -> Fut) + Send + Captures<'a>,
-        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
+        F: (FnOnce(Op<VoyagerMessage>) -> Fut) + Send + Captures<'a>,
+        Fut: Future<Output = (R, Result<Vec<Op<VoyagerMessage>>, String>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
-        O: PurePass<T>,
     {
         async move {
             let res = match self {
-                AnyQueue::InMemory(queue) => queue
-                    .process(pre_reenqueue_passes, f)
+                QueueImpl::InMemory(queue) => queue
+                    .process(filter, f)
                     .await
                     .map_err(AnyQueueError::InMemory),
-                AnyQueue::PgQueue(queue) => queue
-                    .process(pre_reenqueue_passes, f)
+                QueueImpl::PgQueue(queue) => queue
+                    .process(filter, f)
                     .await
                     .map_err(AnyQueueError::PgQueue),
             };
@@ -144,17 +121,17 @@ impl<T: QueueMessage> Queue<T> for AnyQueue<T> {
         }
     }
 
-    async fn optimize<'a, O: Pass<T>>(
+    async fn optimize<'a, O: Pass<VoyagerMessage>>(
         &'a self,
         tag: &'a str,
         optimizer: &'a O,
     ) -> Result<(), sqlx::Either<Self::Error, O::Error>> {
         match self {
-            AnyQueue::InMemory(queue) => queue
+            QueueImpl::InMemory(queue) => queue
                 .optimize(tag, optimizer)
                 .await
                 .map_err(|e| e.map_left(AnyQueueError::InMemory)),
-            AnyQueue::PgQueue(queue) => queue
+            QueueImpl::PgQueue(queue) => queue
                 .optimize(tag, optimizer)
                 .await
                 .map_err(|e| e.map_left(AnyQueueError::PgQueue)),
@@ -162,81 +139,8 @@ impl<T: QueueMessage> Queue<T> for AnyQueue<T> {
     }
 }
 
-// #[derive(DebugNoBound, CloneNoBound)]
-// pub struct PgQueue<T: QueueMessage>(pg_queue::PgQueue<Op<T>>, sqlx::PgPool);
-
-// impl<T: QueueMessage> Queue<T> for PgQueue<T> {
-//     type Error = sqlx::Error;
-
-//     type Config = PgQueueConfig;
-
-//     fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
-//         async move { Ok(Self(pg_queue::Queue::new(), cfg.into_pg_pool().await?)) }
-//     }
-
-//     fn enqueue<'a, O: PurePass<T>>(
-//         &'a self,
-//         item: Op<T>,
-//         pre_enqueue_passes: &'a O,
-//     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a {
-//         async move {
-//             let res = pre_enqueue_passes.run_pass_pure(vec![item]);
-
-//             for (_, msg) in res.optimize_further {
-//                 self.0
-//                     .enqueue(&self.1, msg, vec![], EnqueueStatus::Optimize)
-//                     .await?
-//             }
-
-//             for (_, msg) in res.ready {
-//                 self.0
-//                     .enqueue(&self.1, msg, vec![], EnqueueStatus::Ready)
-//                     .await?
-//             }
-
-//             Ok(())
-//         }
-//     }
-
-//     fn process<'a, F, Fut, R, O>(
-//         &'a self,
-//         pre_reenqueue_passes: &'a O,
-//         f: F,
-//     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + '_
-//     where
-//         F: (FnOnce(Op<T>) -> Fut) + Send + 'static,
-//         Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + 'static,
-//         R: Send + Sync + 'static,
-//         O: PurePass<T>,
-//     {
-//         async move {
-//             self.0
-//                 .process(&self.1, f, |msgs| {
-//                     let res = pre_reenqueue_passes.run_pass_pure(msgs);
-
-//                     (res.optimize_further, res.ready)
-//                 })
-//                 .await
-//         }
-//     }
-
-//     fn optimize<'a, O: Pass<T>>(
-//         &'a self,
-//         optimizer: &'a O,
-//     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
-//         self.0.optimize(&self.1, move |msgs| async move {
-//             optimizer
-//                 .run_pass(msgs)
-//                 .map_ok(|x| (x.optimize_further, x.ready))
-//                 .await
-//         })
-//     }
-// }
-
 #[derive(Debug, thiserror::Error)]
 pub enum VoyagerInitError {
-    #[error("multiple configured chains have the same chain id `{chain_id}`")]
-    DuplicateChainId { chain_id: String },
     #[error("error initializing queue")]
     QueueInit(#[source] AnyQueueError),
     #[error("error initializing plugins")]
@@ -245,9 +149,7 @@ pub enum VoyagerInitError {
 
 impl Voyager {
     pub async fn new(config: Config) -> Result<Self, VoyagerInitError> {
-        // let chains = chains_from_config(config.chain).await?;
-
-        let queue = AnyQueue::new(config.voyager.queue.clone())
+        let queue = QueueImpl::new(config.voyager.queue.clone())
             .await
             .map_err(VoyagerInitError::QueueInit)?;
 
@@ -259,11 +161,11 @@ impl Voyager {
             rest_laddr: config.voyager.rest_laddr,
             rpc_laddr: config.voyager.rpc_laddr,
             queue,
-            // tx_batch: config.voyager.tx_batch,
             optimizer_delay_milliseconds: config.voyager.optimizer_delay_milliseconds,
         })
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn run(self) -> Result<(), BoxDynError> {
         let interest_filter = JaqInterestFilter::new(
             self.context
@@ -277,81 +179,24 @@ impl Voyager {
                 .collect(),
         )?;
 
+        let queue_rx = api::run(&self.rest_laddr);
+
         {
-            // set up msg server
-            let (queue_tx, queue_rx) = futures::channel::mpsc::unbounded::<Op<VoyagerMessage>>();
-
-            let app = axum::Router::new()
-                .route("/msg", post(msg))
-                .route("/msgs", post(msgs))
-                .route("/health", get(|| async move { StatusCode::OK }))
-                .route("/metrics", get(metrics))
-                // .route(
-                //     "/signer/balances",
-                //     get({
-                //         let chains = self.chains.clone();
-                //         || async move { Json(signer_balances(&chains).await) }
-                //     }),
-                // )
-                .with_state(queue_tx.clone());
-
-            // #[axum::debug_handler]
-            async fn msg<T: QueueMessage>(
-                State(mut sender): State<UnboundedSender<Op<T>>>,
-                Json(msg): Json<Op<T>>,
-            ) -> StatusCode {
-                sender.send(msg).await.expect("receiver should not close");
-
-                StatusCode::OK
-            }
-
-            // #[axum::debug_handler]
-            async fn msgs<T: QueueMessage>(
-                State(mut sender): State<UnboundedSender<Op<T>>>,
-                Json(msgs): Json<Vec<Op<T>>>,
-            ) -> StatusCode {
-                for msg in msgs {
-                    sender.send(msg).await.expect("receiver should not close");
-                }
-
-                StatusCode::OK
-            }
-
-            async fn metrics() -> Result<String, StatusCode> {
-                TextEncoder::new()
-                    .encode_to_string(&prometheus::gather())
-                    .map_err(|err| {
-                        error!(?err, "could not gather metrics");
-                        StatusCode::INTERNAL_SERVER_ERROR
-                    })
-            }
-
-            tokio::spawn(axum::Server::bind(&self.rest_laddr).serve(app.into_make_service()));
-
             let mut tasks =
                 FuturesUnordered::<BoxFuture<Result<Result<(), BoxDynError>, _>>>::new();
 
             tasks.push(Box::pin(
                 AssertUnwindSafe(async {
                     let server = jsonrpsee::server::Server::builder()
-                        .build(self.rpc_laddr)
+                        .build(&self.rpc_laddr)
                         .await?;
-                    let mut module = jsonrpsee::RpcModule::new(&self.context);
-
-                    module
-                        .merge(self.context.rpc_server.clone().into_rpc())
-                        .unwrap();
-
                     let addr = server.local_addr()?;
-                    let handle = server.start(module);
-
+                    let handle = server.start(self.context.rpc_server.clone().into_rpc());
                     info!("rpc listening on {addr}");
-
                     handle
                         .stopped()
                         .instrument(trace_span!("voyager_rpc_server"))
                         .await;
-
                     Err("rpc server exited".into())
                 })
                 .catch_unwind(),
@@ -363,13 +208,10 @@ impl Voyager {
 
                     pin_utils::pin_mut!(queue_rx);
 
-                    while let Some(msg) = queue_rx.next().await {
-                        info!(
-                            json = %serde_json::to_string(&msg).unwrap(),
-                            "received new message",
-                        );
+                    while let Some(op) = queue_rx.next().await {
+                        info!("received new message: {}", into_value(&op));
 
-                        self.queue.enqueue(msg, &interest_filter).await?;
+                        self.queue.enqueue(op, &interest_filter).await?;
                     }
 
                     Ok(())
@@ -382,8 +224,6 @@ impl Voyager {
             for id in 0..self.num_workers {
                 info!("spawning worker {id}");
 
-                // let engine = ;
-
                 tasks.push(Box::pin(
                     AssertUnwindSafe(
                         Engine::new(&self.context, &self.queue, &interest_filter)
@@ -392,15 +232,15 @@ impl Voyager {
                                 match res {
                                     Ok(data) => {
                                         info!(
-                                            data = %serde_json::to_string(&data).unwrap(),
-                                            "received data outside of an aggregation"
+                                            "received data outside of an aggregation: {}",
+                                            into_value(&data)
                                         );
                                     }
                                     Err(error) => {
                                         error!(
                                             error = %ErrorReporter(&*error),
                                             "error processing message"
-                                        )
+                                        );
                                     }
                                 }
                             })
@@ -411,22 +251,6 @@ impl Voyager {
                 ));
             }
 
-            struct PluginOptPass<T> {
-                client: T,
-            }
-
-            impl<T: PluginClient<Value, Value> + Send + Sync> Pass<VoyagerMessage> for PluginOptPass<&'_ T> {
-                type Error = jsonrpsee::core::client::Error;
-
-                fn run_pass(
-                    &self,
-                    msgs: Vec<Op<VoyagerMessage>>,
-                ) -> impl Future<Output = Result<OptimizationResult<VoyagerMessage>, Self::Error>> + Send
-                {
-                    self.client.run_pass(msgs)
-                }
-            }
-
             for (plugin_name, filter) in self.context.interest_filters() {
                 info!(%plugin_name, "spawning optimizer");
 
@@ -435,22 +259,18 @@ impl Voyager {
                         async {
                             let plugin_name = plugin_name.clone();
 
-                            let pass = PluginOptPass {
-                                client: self
-                                    .context
+                            let pass = PluginOptPass::new(
+                                self.context
                                     .plugin_client_raw(&plugin_name)
-                                    .unwrap()
+                                    .expect("plugin exists")
                                     .client(),
-                            };
+                            );
 
                             loop {
                                 trace!("optimizing");
 
-                                let res = self
-                                    .queue
-                                    .optimize(&plugin_name.to_owned(), &pass)
-                                    .await
-                                    .map_err(|e| {
+                                let res =
+                                    self.queue.optimize(&plugin_name, &pass).await.map_err(|e| {
                                         e.map_either::<_, _, BoxDynError, BoxDynError>(
                                             |x| Box::new(x),
                                             |x| Box::new(x),
@@ -501,27 +321,10 @@ impl Voyager {
 
         self.context.shutdown().await;
 
-        Err(RunError { errs: vec![] }.into())
+        Err("runtime error, exiting".to_owned().into())
     }
 
     pub async fn shutdown(self) {
-        self.context.shutdown().await
-    }
-}
-
-#[derive(Debug)]
-pub struct RunError {
-    errs: Vec<Box<dyn Error + Send + Sync>>,
-}
-
-impl Error for RunError {}
-
-impl Display for RunError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for err in &self.errs {
-            writeln!(f, "{err}")?
-        }
-
-        Ok(())
+        self.context.shutdown().await;
     }
 }

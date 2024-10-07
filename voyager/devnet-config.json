@@ -101,8 +101,7 @@
           "client_type": "movement",
           "consensus_type": "movement",
           "ibc_interface": "ibc-go-v8/08-wasm"
-        },
-        "config": {}
+        }
       },
       {
         "enabled": false,
@@ -111,8 +110,7 @@
           "client_type": "cometbls",
           "consensus_type": "cometbls",
           "ibc_interface": "ibc-solidity"
-        },
-        "config": {}
+        }
       },
       {
         "enabled": true,
@@ -121,8 +119,7 @@
           "client_type": "cometbls",
           "consensus_type": "cometbls",
           "ibc_interface": "ibc-move/aptos"
-        },
-        "config": {}
+        }
       },
       {
         "enabled": true,
@@ -131,8 +128,7 @@
           "client_type": "cometbls",
           "consensus_type": "cometbls",
           "ibc_interface": "ibc-go-v8/08-wasm"
-        },
-        "config": {}
+        }
       },
       {
         "enabled": true,
@@ -141,8 +137,7 @@
           "client_type": "07-tendermint",
           "consensus_type": "tendermint",
           "ibc_interface": "ibc-go-v8/native"
-        },
-        "config": {}
+        }
       },
       {
         "enabled": false,

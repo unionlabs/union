@@ -13,7 +13,9 @@ use unionlabs::{
 use voyager_message::{
     core::ChainId,
     module::{ChainModuleInfo, ClientModuleInfo, ConsensusModuleInfo},
+    VoyagerMessage,
 };
+use voyager_vm::Op;
 
 use crate::cli::handshake::HandshakeCmd;
 
@@ -22,11 +24,30 @@ pub mod handshake;
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
 pub struct AppArgs {
-    #[arg(long, short = 'c', env, global = true)]
+    #[arg(
+        long,
+        short = 'c',
+        env = "VOYAGER_CONFIG_FILE_PATH",
+        global = true,
+        help_heading = "Global options"
+    )]
     pub config_file_path: Option<OsString>,
-    #[arg(long, short = 'l', env, global = true, default_value_t = LogFormat::default())]
+    #[arg(
+        long,
+        short = 'l',
+        env = "VOYAGER_LOG_FORMAT",
+        global = true,
+        default_value_t = LogFormat::default(),
+        help_heading = "Global options"
+    )]
     pub log_format: LogFormat,
-    #[arg(long, global = true, default_value_t = 2 * 1024 * 1024)]
+    #[arg(
+        long,
+        env = "VOYAGER_STACK_SIZE",
+        global = true,
+        default_value_t = 2 * 1024 * 1024,
+        help_heading = "Global options"
+    )]
     pub stack_size: usize,
     #[command(subcommand)]
     pub command: Command,
@@ -48,12 +69,16 @@ pub enum Command {
     #[command(subcommand)]
     Config(ConfigCmd),
     Handshake(HandshakeCmd),
-    /// Construct a `FetchBlocks` message to send to the specified chain.
-    ///
-    /// The message will start at the current latest height of the chain.
+    /// Construct a `FetchBlocks` op to send to the specified chain.
     InitFetch {
-        // TODO: Use chain id here directly
-        chain_id: String,
+        #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
+        chain_id: ChainId<'static>,
+        /// The height to start fetching blocks at.
+        #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
+        height: QueryHeight,
+        /// Automatically enqueue the op.
+        #[arg(long, short = 'e', default_value_t = false)]
+        enqueue: bool,
     },
     /// Run Voyager.
     Start,
@@ -90,6 +115,12 @@ type Pg64 = BoundedI64<1, { i64::MAX }>;
 
 #[derive(Debug, Subcommand)]
 pub enum QueueCmd {
+    /// Enqueue a new op to the queue of an already running voyager instance.
+    Enqueue {
+        #[arg(value_parser(|s: &str| serde_json::from_str::<Op<VoyagerMessage>>(s)))]
+        op: Op<VoyagerMessage>,
+    },
+
     // History {
     //     id: PgId,
     //     #[arg(long, default_value_t = result_unwrap!(Pg32::new(10)))]
@@ -103,7 +134,7 @@ pub enum QueueCmd {
         per_page: Pg64,
         /// SQL filters for the item.
         ///
-        /// These will be run on the stringified item, (item::text), which is the *almost* fully compact JSON:
+        /// These will be run on the stringified item (`item::text`), which is the *almost* fully compact JSON:
         ///
         /// ```psql
         /// default=# select '{"a":{"b":"c"}}'::jsonb::text;

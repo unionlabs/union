@@ -704,9 +704,9 @@ dependencies = [
 
 [[package]]
 name = "anstyle"
-version = "1.0.6"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8901269c6307e8d93993578286ac0edf7f195079ffff5ebdeea6a59ffb7e36bc"
+checksum = "1bec1de6f59aedf83baf9ff929c98f2ad654b97c9510f4e70cf6f661d49fd5b1"
 
 [[package]]
 name = "anstyle-parse"
@@ -954,7 +954,7 @@ dependencies = [
  "blake2-rfc",
  "bulletproofs",
  "byteorder",
- "clap 4.5.4",
+ "clap 4.5.18",
  "codespan-reporting",
  "curve25519-dalek-ng",
  "either",
@@ -1151,7 +1151,7 @@ dependencies = [
  "anyhow",
  "aptos-types",
  "bcs 0.1.4",
- "clap 4.5.4",
+ "clap 4.5.18",
  "heck 0.4.1",
  "move-core-types",
  "once_cell",
@@ -2862,9 +2862,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.4"
+version = "4.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90bc066a67923782aa8515dbaea16946c5bcc5addbd668bb80af688e53e548a0"
+checksum = "b0956a43b323ac1afaffc053ed5c4b7c1f1800bacd1683c353aabbb752515dd3"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -2872,9 +2872,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.2"
+version = "4.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae129e2e766ae0ec03484e609954119f123cc1fe650337e155d03b022f24f7b4"
+checksum = "4d72166dd41634086d5803a47eb71ae740e61d84709c36f3c34110173db3961b"
 dependencies = [
  "anstream",
  "anstyle",
@@ -2885,9 +2885,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.4"
+version = "4.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "528131438037fd55894f62d6e9f068b8f45ac57ffa77517819645d10aed04f64"
+checksum = "4ac6a0c7b1a9e9a5186361f67dfa1b88213572f427fb9ab038efb2bd8c582dab"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -3505,7 +3505,7 @@ dependencies = [
  "anes",
  "cast",
  "ciborium",
- "clap 4.5.4",
+ "clap 4.5.18",
  "criterion-plot 0.5.0",
  "is-terminal",
  "itertools 0.10.5",
@@ -4239,7 +4239,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.21.7",
  "bip39",
- "clap 4.5.4",
+ "clap 4.5.18",
  "cosmwasm-std 2.1.0",
  "ed25519-compact",
  "hex",
@@ -4363,7 +4363,7 @@ dependencies = [
  "axum 0.7.5",
  "chain-utils",
  "chrono",
- "clap 4.5.4",
+ "clap 4.5.18",
  "dashmap",
  "prost 0.12.6",
  "protos",
@@ -4597,7 +4597,7 @@ dependencies = [
 name = "ensure-blocks"
 version = "0.0.0"
 dependencies = [
- "clap 4.5.4",
+ "clap 4.5.18",
  "ethers",
  "reqwest 0.11.27",
  "tendermint-rpc",
@@ -5463,45 +5463,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "frunk"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11a351b59e12f97b4176ee78497dff72e4276fb1ceb13e19056aca7fa0206287"
-dependencies = [
- "frunk_core",
- "frunk_derives",
-]
-
-[[package]]
-name = "frunk_core"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af2469fab0bd07e64ccf0ad57a1438f63160c69b2e57f04a439653d68eb558d6"
-
-[[package]]
-name = "frunk_derives"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0fa992f1656e1707946bbba340ad244f0814009ef8c0118eb7b658395f19a2e"
-dependencies = [
- "frunk_proc_macro_helpers",
- "quote",
- "syn 2.0.77",
-]
-
-[[package]]
-name = "frunk_proc_macro_helpers"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35b54add839292b743aeda6ebedbd8b11e93404f902c56223e51b9ec18a13d2c"
-dependencies = [
- "frunk_core",
- "proc-macro2",
- "quote",
- "syn 2.0.77",
-]
-
-[[package]]
 name = "fs-err"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5689,7 +5650,7 @@ checksum = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"
 name = "generate-rust-sol-bindings"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.4",
+ "clap 4.5.18",
  "ethers-contract-abigen",
 ]
 
@@ -6277,7 +6238,7 @@ dependencies = [
  "base64 0.21.7",
  "chain-utils",
  "chrono",
- "clap 4.5.4",
+ "clap 4.5.18",
  "color-eyre",
  "cometbft-rpc",
  "const-hex",
@@ -7795,7 +7756,7 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.4",
+ "clap 4.5.18",
  "codespan-reporting",
  "hex",
  "move-binary-format",
@@ -7822,7 +7783,7 @@ dependencies = [
  "abstract-domain-derive",
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.4",
+ "clap 4.5.18",
  "codespan-reporting",
  "ethnum",
  "flexi_logger",
@@ -7877,7 +7838,7 @@ source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b4655
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.4",
+ "clap 4.5.18",
  "codespan",
  "colored",
  "move-binary-format",
@@ -7895,7 +7856,7 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "anyhow",
- "clap 4.5.4",
+ "clap 4.5.18",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -7912,7 +7873,7 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "anyhow",
- "clap 4.5.4",
+ "clap 4.5.18",
  "codespan",
  "codespan-reporting",
  "itertools 0.13.0",
@@ -8001,7 +7962,7 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#119e510cb6be4b380bc82b46551abaf04c640f1d"
 dependencies = [
  "anyhow",
- "clap 4.5.4",
+ "clap 4.5.18",
  "colored",
  "itertools 0.13.0",
  "move-abigen",
@@ -8891,7 +8852,7 @@ dependencies = [
 name = "parse-wasm-client-type"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.4",
+ "clap 4.5.18",
  "unionlabs",
 ]
 
@@ -9142,6 +9103,7 @@ version = "0.1.0"
 dependencies = [
  "frame-support-procedural",
  "futures-util",
+ "itertools 0.13.0",
  "prometheus",
  "schemars",
  "serde",
@@ -12324,7 +12286,7 @@ version = "0.1.0"
 dependencies = [
  "cargo-util-schemas",
  "cargo_metadata",
- "clap 4.5.4",
+ "clap 4.5.18",
  "toml 0.8.12",
  "tracing",
  "tracing-subscriber 0.3.18",
@@ -13060,7 +13022,7 @@ version = "0.1.0"
 dependencies = [
  "beacon-api",
  "chain-utils",
- "clap 4.5.4",
+ "clap 4.5.18",
  "contracts",
  "cosmwasm-std 1.5.2",
  "ethers",
@@ -13253,7 +13215,7 @@ dependencies = [
  "borsh",
  "bs58 0.4.0",
  "chrono",
- "clap 4.5.4",
+ "clap 4.5.18",
  "contracts",
  "cosmwasm-std 1.5.2",
  "derive_more 0.99.17",
@@ -13300,7 +13262,7 @@ dependencies = [
 name = "unionvisor"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.4",
+ "clap 4.5.18",
  "color-eyre",
  "figment",
  "fs_extra",
@@ -13467,7 +13429,7 @@ dependencies = [
  "bip32",
  "bitvec 1.0.1",
  "chain-utils",
- "clap 4.5.4",
+ "clap 4.5.18",
  "contracts",
  "crossbeam-queue",
  "derive_more 0.99.17",
@@ -13475,7 +13437,6 @@ dependencies = [
  "enumorph",
  "ethers",
  "frame-support-procedural",
- "frunk",
  "futures",
  "hex",
  "hex-literal",
@@ -13519,11 +13480,10 @@ dependencies = [
 name = "voyager-chain-module-cosmos-sdk"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.4",
+ "clap 4.5.18",
  "cometbft-rpc",
  "dashmap",
  "enumorph",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13550,7 +13510,6 @@ dependencies = [
  "contracts",
  "enumorph",
  "ethers",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13576,9 +13535,8 @@ dependencies = [
  "aptos-rest-client",
  "aptos-types",
  "bcs 0.1.6",
- "clap 4.5.4",
+ "clap 4.5.18",
  "enumorph",
- "frunk",
  "futures",
  "hex",
  "hex-literal",
@@ -13609,11 +13567,10 @@ version = "0.1.0"
 dependencies = [
  "ark-bn254",
  "ark-serialize 0.4.2",
- "clap 4.5.4",
+ "clap 4.5.18",
  "cometbft-rpc",
  "dashmap",
  "enumorph",
- "frunk",
  "futures",
  "hex",
  "jsonrpsee",
@@ -13639,7 +13596,6 @@ version = "0.1.0"
 dependencies = [
  "chain-utils",
  "enumorph",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13663,7 +13619,6 @@ version = "0.1.0"
 dependencies = [
  "chain-utils",
  "enumorph",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13685,7 +13640,7 @@ dependencies = [
 name = "voyager-client-module-tendermint"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.4",
+ "clap 4.5.18",
  "cometbft-rpc",
  "dashmap",
  "enumorph",
@@ -13711,7 +13666,6 @@ dependencies = [
  "cometbft-rpc",
  "dashmap",
  "enumorph",
- "frunk",
  "futures",
  "itertools 0.13.0",
  "jsonrpsee",
@@ -13741,7 +13695,6 @@ dependencies = [
  "enumorph",
  "ethereum-verifier",
  "ethers",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13770,7 +13723,6 @@ dependencies = [
  "chain-utils",
  "enumorph",
  "ethers",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13798,7 +13750,6 @@ dependencies = [
  "cometbft-rpc",
  "dashmap",
  "enumorph",
- "frunk",
  "futures",
  "ics23",
  "jsonrpsee",
@@ -13824,7 +13775,6 @@ dependencies = [
  "cometbft-rpc",
  "dashmap",
  "enumorph",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13852,7 +13802,6 @@ dependencies = [
  "enumorph",
  "ethereum-verifier",
  "ethers",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13881,7 +13830,6 @@ dependencies = [
  "chain-utils",
  "enumorph",
  "ethers",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13908,7 +13856,6 @@ dependencies = [
  "cometbft-rpc",
  "dashmap",
  "enumorph",
- "frunk",
  "futures",
  "ics23",
  "jsonrpsee",
@@ -13947,11 +13894,10 @@ dependencies = [
 name = "voyager-event-source-plugin-cosmos-sdk"
 version = "0.1.0"
 dependencies = [
- "clap 4.5.4",
+ "clap 4.5.18",
  "cometbft-rpc",
  "dashmap",
  "enumorph",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -13978,7 +13924,6 @@ dependencies = [
  "contracts",
  "enumorph",
  "ethers",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -14005,9 +13950,8 @@ dependencies = [
  "aptos-rest-client",
  "aptos-types",
  "bcs 0.1.6",
- "clap 4.5.4",
+ "clap 4.5.18",
  "enumorph",
- "frunk",
  "futures",
  "hex",
  "hex-literal",
@@ -14038,16 +13982,16 @@ version = "0.1.0"
 dependencies = [
  "beacon-api",
  "chain-utils",
- "clap 4.5.4",
+ "clap 4.5.18",
  "contracts",
  "dashmap",
  "enumorph",
  "ethers",
  "frame-support-procedural",
- "frunk",
  "futures",
  "hex",
  "hex-literal",
+ "itertools 0.13.0",
  "jaq-core",
  "jaq-interpret",
  "jaq-std",
@@ -14086,7 +14030,6 @@ name = "voyager-plugin-packet-filter"
 version = "0.1.0"
 dependencies = [
  "enumorph",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -14111,7 +14054,6 @@ dependencies = [
  "dashmap",
  "either",
  "enumorph",
- "frunk",
  "futures",
  "itertools 0.13.0",
  "jsonrpsee",
@@ -14143,7 +14085,6 @@ dependencies = [
  "bip32",
  "chain-utils",
  "enumorph",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -14171,7 +14112,6 @@ dependencies = [
  "cometbft-rpc",
  "dashmap",
  "enumorph",
- "frunk",
  "futures",
  "hex",
  "jsonrpsee",
@@ -14202,7 +14142,6 @@ dependencies = [
  "contracts",
  "enumorph",
  "ethers",
- "frunk",
  "futures",
  "jsonrpsee",
  "macros",
@@ -14226,7 +14165,6 @@ dependencies = [
  "either",
  "enumorph",
  "frame-support-procedural",
- "frunk",
  "futures",
  "itertools 0.12.1",
  "macros",
@@ -14235,6 +14173,7 @@ dependencies = [
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "subset-of",
  "subset-of-derive",
+ "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
