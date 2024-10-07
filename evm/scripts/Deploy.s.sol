@@ -10,7 +10,8 @@ import "@openzeppelin/access/Ownable.sol";
 import "../contracts/Multicall.sol";
 import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClient.sol";
-import { CosmosInCosmosClient } from "../contracts/clients/CosmosInCosmosClient.sol";
+import {CosmosInCosmosClient} from
+    "../contracts/clients/CosmosInCosmosClient.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
 import "../contracts/lib/Hex.sol";
@@ -124,9 +125,7 @@ abstract contract UnionScript is UnionBase {
                 IBC.BASED,
                 abi.encode(
                     address(new OwnableIBCHandler()),
-                    abi.encodeCall(
-                        IBCHandler.initialize, (owner)
-                    )
+                    abi.encodeCall(IBCHandler.initialize, (owner))
                 )
             )
         );
