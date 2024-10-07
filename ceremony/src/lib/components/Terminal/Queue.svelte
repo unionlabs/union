@@ -18,7 +18,7 @@ onMount(async () => {
   terminal.updateHistory({ text: "You are in queue" })
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_queue" }])
   averages = await getAverageTimes()
-  console.log(averages)
+  await contributor.checkUserWallet(contributor.userId)
 })
 
 onDestroy(() => {
@@ -32,14 +32,18 @@ $effect(() => {
 })
 </script>
 
-<!--TODO add new time-->
-<Print>Your position:  {contributor.queueState.position ?? 1}</Print>
-<Print>Queue length: {contributor.queueState.count ?? 2}</Print>
+<Print>Your position:  {contributor.queueState.position}</Print>
+<Print>Queue length: {contributor.queueState.count}</Print>
 <Print>Estimated waiting time: {formatWaitTime(waitingTime)}</Print>
 <Print><br></Print>
 <LoadingBar max={contributor.queueState.count} current={contributor.queueState.position}/>
 <Print><br></Print>
-<Print>Your MPC Client is connected.</Print>
+<Print><span class="text-green-400">✓</span> MPC Client connected.</Print>
+{#if contributor.userWallet && contributor.userWallet !== "SKIPPED"}
+  <Print><span class="text-green-400">✓</span> Wallet registered and valid.</Print>
+{/if}
+<Print><span class="text-green-400">✓</span> Ready to contribute and awaiting slot.</Print>
+<Print><br></Print>
 <Print class="!text-[#FD6363]">Do not close this tab or your Terminal. Ensure you have a reliable internet connection
   and that your computer does not go to sleep.
 </Print>

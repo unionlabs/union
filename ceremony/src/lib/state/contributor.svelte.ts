@@ -78,7 +78,7 @@ export class Contributor {
   state = $state<State>("loading")
   clientState = $state<ClientState>(undefined)
   contributionState = $state<ContributionState>(undefined)
-  userWallet = $state<string | null>()
+  userWallet = $state<string | undefined>(undefined)
   storedSecret = $state<boolean>(false)
 
   queueState = $state<QueueState>({
@@ -128,7 +128,8 @@ export class Contributor {
     return this.currentUserState
   }
 
-  async checkUserWallet(userId: string): Promise<string | null> {
+  async checkUserWallet(userId: string | undefined): Promise<string | undefined> {
+    if (!userId) return undefined
     this.userWallet = await getUserWallet(userId)
     return this.userWallet
   }

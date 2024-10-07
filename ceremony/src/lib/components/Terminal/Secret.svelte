@@ -17,16 +17,16 @@ onMount(() => {
 })
 
 function handleDownload() {
-  const newUrl = `http://localhost:4919/secret_key/${user.session?.user.email}`;
+  const newUrl = `http://localhost:4919/secret_key/${user.session?.user.email}`
 
-  const link = document.createElement('a');
-  link.href = newUrl;
+  const link = document.createElement("a")
+  link.href = newUrl
 
-  link.setAttribute('download', '');
+  link.setAttribute("download", "")
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 function stored() {

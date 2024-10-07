@@ -19,6 +19,7 @@ onMount(() => {
 })
 </script>
 
+
 {#if user.loading}
   <Print>loading...</Print>
 {:else}
@@ -32,7 +33,7 @@ onMount(() => {
       {terminal.updateHistory({text: "Verifying your contribution...", replace: true})}
 
     {:else if contributor.state === "missed"}
-      <Missed/>
+      <Missed />
 
     {:else if contributor.clientState === "offline"}
       <Install/>
@@ -40,7 +41,7 @@ onMount(() => {
     {:else if !contributor.storedSecret && contributor.clientState === "idle"}
       <Secret/>
 
-    {:else if contributor.userWallet === null}
+    {:else if !contributor.userWallet}
       <Reward/>
 
     {:else}

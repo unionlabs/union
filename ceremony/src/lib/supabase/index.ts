@@ -166,23 +166,53 @@ interface WalletData {
 }
 
 export const insertWalletData = async (data: WalletData) => {
-  const { data: insertedData, error } = await supabase
-    .from("wallet_address")
-    .insert([
-      {
-        id: data.id,
-        wallet: data.wallet
-      }
-    ])
-    .select()
 
-  if (error) {
-    console.error("Error inserting data:", error)
-    return null
+  const { data: existingData, error: fetchError } = await supabase
+    .from('wallet_address')
+    .select()
+    .eq('id', data.id);
+
+  if (fetchError) {
+    console.error('Error fetching data:', fetchError);
+    return null;
   }
 
-  return insertedData
-}
+  if (existingData && existingData.length > 0) {
+    const { data: updatedData, error: updateError } = await supabase
+      .from('wallet_address')
+      .update({
+        wallet: data.wallet,
+      })
+      .eq('id', data.id)
+      .select()
+
+
+    if (updateError) {
+      console.error('Error updating data:', updateError);
+      return null;
+    }
+
+    return updatedData;
+  } else {
+    console.log('INSERTING USER ADDRESS')
+    const { data: insertedData, error: insertError } = await supabase
+      .from('wallet_address')
+      .insert({
+        id: data.id,
+        wallet: data.wallet,
+      })
+      .select();
+
+    if (insertError) {
+      console.error('Error inserting data:', insertError);
+      return null;
+    }
+
+    return insertedData;
+  }
+};
+
+
 
 export const getPublicHash = async () => {
   if (!user.session) {
@@ -196,14 +226,14 @@ export const getPublicHash = async () => {
   return data.public_key_hash
 }
 
-export const getUserWallet = async (userId: string | null): Promise<string | null> => {
+export const getUserWallet = async (userId: string): Promise<string | undefined> => {
   if (!userId) {
     console.log("Need to be logged in to get allowance state")
-    return null
+    return undefined
   }
 
   const { data, error } = await queryUserWallet(userId)
-  if (error || !data) return null
+  if (error || !data) return undefined
 
   return data.wallet
 }
