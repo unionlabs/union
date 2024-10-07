@@ -36,6 +36,14 @@ CREATE POLICY allow_insert_self
       (SELECT auth.uid()) = id
     );
 
+CREATE POLICY allow_edit_self
+  ON wallet_address
+  FOR UPDATE
+    TO authenticated
+    USING (
+      (SELECT auth.uid()) = id
+    );
+
 CREATE TABLE waitlist(
   id uuid PRIMARY KEY,
   created_at timestamptz NOT NULL DEFAULT(now()),
