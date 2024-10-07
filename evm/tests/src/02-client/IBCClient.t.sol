@@ -43,7 +43,7 @@ contract IBCClientTests is Test {
         vm.pauseGasMetering();
         handler.registerClient(msg_.clientType, lightClient);
         vm.expectEmit();
-        emit IBCClientLib.ClientCreated(0);
+        emit IBCClientLib.ClientCreated(msg_.clientType, 0);
         vm.resumeGasMetering();
         handler.createClient(msg_);
     }

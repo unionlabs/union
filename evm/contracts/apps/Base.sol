@@ -36,7 +36,7 @@ abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev See IIBCModule-onChanOpenInit
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenInit(
         IBCChannelOrder,
@@ -50,7 +50,7 @@ abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev See IIBCModule-onChanOpenTry
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenTry(
         IBCChannelOrder,
@@ -65,7 +65,7 @@ abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev See IIBCModule-onChanOpenAck
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenAck(
         uint32,
@@ -77,7 +77,7 @@ abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev See IIBCModule-onChanOpenConfirm
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenConfirm(
         uint32,
@@ -107,7 +107,7 @@ abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev See IIBCModule-onRecvPacket
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onRecvPacket(
         IBCPacket calldata,
@@ -121,6 +121,11 @@ abstract contract IBCAppBase is IIBCModule {
         returns (bytes memory acknowledgement)
     {}
 
+    /**
+     * @dev See IIBCModule-onRecvIntentPacket
+     *
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     */
     function onRecvIntentPacket(
         IBCPacket calldata,
         address,
@@ -132,7 +137,7 @@ abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev See IIBCModule-onAcknowledgementPacket
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onAcknowledgementPacket(
         IBCPacket calldata,
@@ -143,7 +148,7 @@ abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev See IIBCModule-onTimeoutPacket
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onTimeoutPacket(
         IBCPacket calldata,

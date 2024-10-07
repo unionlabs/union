@@ -8,7 +8,7 @@ import "../02-client/IIBCClient.sol";
 
 library IBCClientLib {
     event ClientRegistered(bytes32 clientType, address clientAddress);
-    event ClientCreated(uint32 clientId);
+    event ClientCreated(bytes32 clientType, uint32 clientId);
     event ClientUpdated(uint32 clientId, uint64 height);
 
     error ErrClientTypeAlreadyExists();
@@ -53,7 +53,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         commitments[IBCCommitment.consensusStateCommitmentKey(
             clientId, update.height
         )] = update.consensusStateCommitment;
-        emit IBCClientLib.ClientCreated(clientId);
+        emit IBCClientLib.ClientCreated(msg_.clientType, clientId);
         return clientId;
     }
 
