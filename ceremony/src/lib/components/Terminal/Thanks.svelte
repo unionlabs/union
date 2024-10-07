@@ -17,7 +17,7 @@ let showButtons = $state(true)
 let showInput = $state(false)
 
 let validation = (val: ValidState) => {
-  if(val === "INVALID") {
+  if (val === "INVALID") {
     showInput = false
     showButtons = true
   } else if (val === "PENDING") {

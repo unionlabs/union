@@ -7,7 +7,7 @@ import { user } from "$lib/state/session.svelte.ts"
 import { getState } from "$lib/state/index.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
 import { axiom } from "$lib/utils/axiom.ts"
-import {onDestroy} from "svelte";
+import { onDestroy } from "svelte"
 
 interface Props extends HTMLInputAttributes {
   class?: string
@@ -61,7 +61,10 @@ const onAddressSubmit = async (event: Event) => {
       }
     } catch (error) {
       console.error("Error saving wallet address:", error)
-      terminal.updateHistory({ text: "An error occurred while saving the wallet address", duplicate: true })
+      terminal.updateHistory({
+        text: "An error occurred while saving the wallet address",
+        duplicate: true
+      })
     }
   } else if (validState === "INVALID") {
     terminal.updateHistory({ text: "Wallet address not valid, try again.", duplicate: true })

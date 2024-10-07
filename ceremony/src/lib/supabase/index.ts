@@ -166,53 +166,48 @@ interface WalletData {
 }
 
 export const insertWalletData = async (data: WalletData) => {
-
   const { data: existingData, error: fetchError } = await supabase
-    .from('wallet_address')
+    .from("wallet_address")
     .select()
-    .eq('id', data.id);
+    .eq("id", data.id)
 
   if (fetchError) {
-    console.error('Error fetching data:', fetchError);
-    return null;
+    console.error("Error fetching data:", fetchError)
+    return null
   }
 
   if (existingData && existingData.length > 0) {
     const { data: updatedData, error: updateError } = await supabase
-      .from('wallet_address')
+      .from("wallet_address")
       .update({
-        wallet: data.wallet,
+        wallet: data.wallet
       })
-      .eq('id', data.id)
+      .eq("id", data.id)
       .select()
 
-
     if (updateError) {
-      console.error('Error updating data:', updateError);
-      return null;
+      console.error("Error updating data:", updateError)
+      return null
     }
 
-    return updatedData;
-  } else {
-    console.log('INSERTING USER ADDRESS')
-    const { data: insertedData, error: insertError } = await supabase
-      .from('wallet_address')
-      .insert({
-        id: data.id,
-        wallet: data.wallet,
-      })
-      .select();
-
-    if (insertError) {
-      console.error('Error inserting data:', insertError);
-      return null;
-    }
-
-    return insertedData;
+    return updatedData
   }
-};
 
+  const { data: insertedData, error: insertError } = await supabase
+    .from("wallet_address")
+    .insert({
+      id: data.id,
+      wallet: data.wallet
+    })
+    .select()
 
+  if (insertError) {
+    console.error("Error inserting data:", insertError)
+    return null
+  }
+
+  return insertedData
+}
 
 export const getPublicHash = async () => {
   if (!user.session) {
