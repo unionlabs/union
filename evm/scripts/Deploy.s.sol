@@ -7,15 +7,10 @@ import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
 import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/access/Ownable.sol";
 
-import "../contracts/Glue.sol";
 import "../contracts/Multicall.sol";
-import "../contracts/core/02-client/IBCClient.sol";
-import "../contracts/core/03-connection/IBCConnection.sol";
-import "../contracts/core/04-channel/IBCChannel.sol";
-import "../contracts/core/04-channel/IBCPacket.sol";
 import "../contracts/core/OwnableIBCHandler.sol";
-import "../contracts/clients/CometblsClientV2.sol";
-import "../contracts/clients/CosmosInCosmosClient.sol";
+import "../contracts/clients/CometblsClient.sol";
+import { CosmosInCosmosClient } from "../contracts/clients/CosmosInCosmosClient.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
 import "../contracts/lib/Hex.sol";
@@ -130,14 +125,7 @@ abstract contract UnionScript is UnionBase {
                 abi.encode(
                     address(new OwnableIBCHandler()),
                     abi.encodeCall(
-                        IBCHandler.initialize,
-                        (
-                            address(new IBCClient()),
-                            address(new IBCConnection()),
-                            address(new IBCChannelHandshake()),
-                            address(new IBCPacket()),
-                            owner
-                        )
+                        IBCHandler.initialize, (owner)
                     )
                 )
             )
@@ -260,7 +248,7 @@ contract DeployIBC is UnionScript {
             UCS02NFT nft,
             Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
-        handler.registerClient(LightClients.COMETBLS, client);
+        handler.registerClient(keccak256(bytes(LightClients.COMETBLS)), client);
 
         vm.stopBroadcast();
     }
@@ -287,7 +275,7 @@ contract DeployDeployerAndIBC is UnionScript {
             UCS02NFT nft,
             Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
-        handler.registerClient(LightClients.COMETBLS, client);
+        handler.registerClient(keccak256(bytes(LightClients.COMETBLS)), client);
 
         vm.stopBroadcast();
 
@@ -435,20 +423,9 @@ contract DryUpgradeIBCHandler is Script {
         console.log(
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
         );
-        address newHandlerImplementation = address(new OwnableIBCHandler());
-        bytes memory upgradeImplsCall = abi.encodeCall(
-            IBCHandler.upgradeImpls,
-            (
-                address(new IBCClient()),
-                address(new IBCConnection()),
-                address(new IBCChannelHandshake()),
-                address(new IBCPacket())
-            )
-        );
+        address newImplementation = address(new OwnableIBCHandler());
         vm.prank(owner);
-        IBCHandler(handler).upgradeToAndCall(
-            newHandlerImplementation, upgradeImplsCall
-        );
+        IBCHandler(handler).upgradeToAndCall(newImplementation, new bytes(0));
     }
 }
 
@@ -480,19 +457,8 @@ contract UpgradeIBCHandler is Script {
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
         );
         vm.startBroadcast(privateKey);
-        address newHandlerImplementation = address(new OwnableIBCHandler());
-        IBCHandler(handler).upgradeToAndCall(
-            newHandlerImplementation,
-            abi.encodeCall(
-                IBCHandler.upgradeImpls,
-                (
-                    address(new IBCClient()),
-                    address(new IBCConnection()),
-                    address(new IBCChannelHandshake()),
-                    address(new IBCPacket())
-                )
-            )
-        );
+        address newImplementation = address(new OwnableIBCHandler());
+        IBCHandler(handler).upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
 }
