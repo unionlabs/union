@@ -112,7 +112,7 @@ library IBCMsgs {
     }
 
     struct MsgPacketTimeout {
-        IBCPacket[] packets;
+        IBCPacket packet;
         bytes proof;
         uint64 proofHeight;
         uint64 nextSequenceRecv;

@@ -456,12 +456,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     function timeoutPacket(
         IBCMsgs.MsgPacketTimeout calldata msg_
     ) external override {
-        uint256 l = msg_.packets.length;
-        if (l == 0) {
-            revert IBCPacketLib.ErrNotEnoughPackets();
-        }
-        uint32 sourceChannel = msg_.packets[0].sourceChannel;
-        uint32 destinationChannel = msg_.packets[0].destinationChannel;
+        IBCPacket calldata packet = msg_.packet;
+        uint32 sourceChannel = packet.sourceChannel;
+        uint32 destinationChannel = packet.destinationChannel;
         IBCChannel storage channel = ensureChannelState(sourceChannel);
         uint32 clientId = ensureConnectionState(channel.connectionId);
         ILightClient client = getClientInternal(clientId);
@@ -486,17 +483,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 revert IBCPacketLib.ErrInvalidProof();
             }
         } else if (ordering == IBCChannelOrder.Unordered) {
-            bytes32 commitmentKey;
-            if (l == 1) {
-                commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-                    destinationChannel,
-                    IBCPacketLib.commitPacket(msg_.packets[0])
-                );
-            } else {
-                commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-                    destinationChannel, IBCPacketLib.commitPackets(msg_.packets)
-                );
-            }
+            bytes32 commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+                destinationChannel, IBCPacketLib.commitPacket(packet)
+            );
             if (
                 !verifyAbsentCommitment(
                     clientId, msg_.proofHeight, msg_.proof, commitmentKey
@@ -506,34 +495,28 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             }
         }
         IIBCModule module = lookupModuleByChannel(sourceChannel);
-        for (uint256 i = 0; i < l; i++) {
-            IBCPacket calldata packet = msg_.packets[i];
-            deletePacketCommitment(sourceChannel, packet);
-            if (packet.timeoutTimestamp == 0 && packet.timeoutHeight == 0) {
-                revert IBCPacketLib.ErrTimeoutMustBeSet();
-            }
-            if (
-                packet.timeoutTimestamp > 0
-                    && packet.timeoutTimestamp > proofTimestamp
-            ) {
-                revert IBCPacketLib.ErrTimeoutTimestampNotReached();
-            }
-            if (
-                packet.timeoutHeight > 0
-                    && packet.timeoutHeight > msg_.proofHeight
-            ) {
-                revert IBCPacketLib.ErrTimeoutHeightNotReached();
-            }
-            if (ordering == IBCChannelOrder.Ordered) {
-                if (msg_.nextSequenceRecv > packet.sequence) {
-                    revert
-                        IBCPacketLib
-                        .ErrNextSequenceMustBeLEQThanTimeoutSequence();
-                }
-            }
-            module.onTimeoutPacket(packet, msg_.relayer);
-            emit IBCPacketLib.TimeoutPacket(packet, msg_.relayer);
+        deletePacketCommitment(sourceChannel, packet);
+        if (packet.timeoutTimestamp == 0 && packet.timeoutHeight == 0) {
+            revert IBCPacketLib.ErrTimeoutMustBeSet();
         }
+        if (
+            packet.timeoutTimestamp > 0
+                && packet.timeoutTimestamp > proofTimestamp
+        ) {
+            revert IBCPacketLib.ErrTimeoutTimestampNotReached();
+        }
+        if (packet.timeoutHeight > 0 && packet.timeoutHeight > msg_.proofHeight)
+        {
+            revert IBCPacketLib.ErrTimeoutHeightNotReached();
+        }
+        if (ordering == IBCChannelOrder.Ordered) {
+            if (msg_.nextSequenceRecv > packet.sequence) {
+                revert IBCPacketLib.ErrNextSequenceMustBeLEQThanTimeoutSequence(
+                );
+            }
+        }
+        module.onTimeoutPacket(packet, msg_.relayer);
+        emit IBCPacketLib.TimeoutPacket(packet, msg_.relayer);
     }
 
     function verifyCommitment(
