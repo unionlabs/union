@@ -1,9 +1,6 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
-import {ProtoBufRuntime} from "../proto/ProtoBufRuntime.sol";
 import {Math} from "@openzeppelin/utils/math/Math.sol";
-import "../proto/ibc/core/commitment/v1/commitment.sol";
-import "../proto/cosmos/ics23/v1/proofs.sol";
 import "./UnionICS23.sol";
 
 library Ics23 {
@@ -32,7 +29,7 @@ library Ics23 {
         UnionIcs23.NonExistenceProof calldata nonExistProof,
         UnionIcs23.ExistenceProof calldata existProof,
         bytes32 root,
-        bytes calldata prefix,
+        bytes memory prefix,
         bytes calldata key
     ) internal pure returns (VerifyChainedNonMembershipError) {
         (bytes32 subroot, Proof.CalculateRootError rCode) =
@@ -130,7 +127,7 @@ library Ics23 {
     function verifyChainedMembership(
         UnionIcs23.ExistenceProof[2] calldata proofs,
         bytes32 root,
-        bytes calldata prefix,
+        bytes memory prefix,
         bytes calldata key,
         bytes calldata value
     ) internal pure returns (VerifyChainedMembershipError) {
@@ -165,11 +162,9 @@ library Ics23 {
         return VerifyChainedMembershipError.None;
     }
 
-    function convertExistenceError(Proof.VerifyExistenceError vCode)
-        internal
-        pure
-        returns (VerifyChainedMembershipError)
-    {
+    function convertExistenceError(
+        Proof.VerifyExistenceError vCode
+    ) internal pure returns (VerifyChainedMembershipError) {
         if (vCode == Proof.VerifyExistenceError.KeyNotMatching) {
             return VerifyChainedMembershipError.KeyMismatch;
         } else if (vCode == Proof.VerifyExistenceError.ValueNotMatching) {
@@ -211,6 +206,45 @@ library Ops {
         ValueLength
     }
 
+    function _sz_varint(
+        uint256 i
+    ) internal pure returns (uint256) {
+        uint256 count = 1;
+        assembly {
+            i := shr(7, i)
+            for {} gt(i, 0) {} {
+                i := shr(7, i)
+                count := add(count, 1)
+            }
+        }
+        return count;
+    }
+
+    function _encode_varint(
+        uint256 x,
+        uint256 p,
+        bytes memory bs
+    ) internal pure returns (uint256) {
+        /**
+         * Refer to https://developers.google.com/protocol-buffers/docs/encoding
+         */
+        uint256 sz = 0;
+        assembly {
+            let bsptr := add(bs, p)
+            let byt := and(x, 0x7f)
+            for {} gt(shr(7, x), 0) {} {
+                mstore8(bsptr, or(0x80, byt))
+                bsptr := add(bsptr, 1)
+                sz := add(sz, 1)
+                x := shr(7, x)
+                byt := and(x, 0x7f)
+            }
+            mstore8(bsptr, byt)
+            sz := add(sz, 1)
+        }
+        return sz;
+    }
+
     // LeafOp operations
     function applyLeafOp(
         bytes calldata prefix,
@@ -223,14 +257,13 @@ library Ops {
         if (value.length == 0) return ("", ApplyLeafOpError.ValueLength);
 
         // tm/iavl specs set hashOp for prehash_key to NOOP and lengthOp to VAR_PROTO
-        bytes memory encodedKey =
-            new bytes(ProtoBufRuntime._sz_varint(key.length));
-        ProtoBufRuntime._encode_varint(key.length, 32, encodedKey);
+        bytes memory encodedKey = new bytes(_sz_varint(key.length));
+        _encode_varint(key.length, 32, encodedKey);
 
         // tm/iavl specs set hashOp for prehash_value to SHA256 and lengthOp to VAR_PROTO
         bytes32 hashedValue = sha256(value);
-        bytes memory encodedValue = new bytes(ProtoBufRuntime._sz_varint(32));
-        ProtoBufRuntime._encode_varint(32, 32, encodedValue);
+        bytes memory encodedValue = new bytes(_sz_varint(32));
+        _encode_varint(32, 32, encodedValue);
 
         bytes32 data = sha256(
             abi.encodePacked(prefix, encodedKey, key, encodedValue, hashedValue)
@@ -304,7 +337,7 @@ library Proof {
     function verifyNoRootCheck(
         UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
-        bytes calldata key,
+        bytes memory key,
         bytes memory value
     ) internal pure returns (VerifyExistenceError) {
         //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof
@@ -328,7 +361,7 @@ library Proof {
         UnionIcs23.ExistenceProof calldata proof,
         UnionIcs23.ProofSpec memory spec,
         bytes32 commitmentRoot,
-        bytes calldata key,
+        bytes memory key,
         bytes memory value
     ) internal pure returns (VerifyExistenceError) {
         //require(BytesLib.equal(proof.key, key)); // dev: Provided key doesn't match proof
@@ -363,11 +396,9 @@ library Proof {
         EmptyProof
     }
 
-    function calculateRoot(UnionIcs23.ExistenceProof calldata proof)
-        internal
-        pure
-        returns (bytes32, CalculateRootError)
-    {
+    function calculateRoot(
+        UnionIcs23.ExistenceProof calldata proof
+    ) internal pure returns (bytes32, CalculateRootError) {
         //require(LeafOp.isNil(proof.leaf) == false); // dev: Existence Proof needs defined LeafOp
         if (proof.leafPrefix.length == 0) {
             return ("", CalculateRootError.LeafNil);
@@ -513,11 +544,9 @@ library Proof {
         return VerifyNonExistenceError.None;
     }
 
-    function calculateRoot(UnionIcs23.NonExistenceProof calldata proof)
-        internal
-        pure
-        returns (bytes32, CalculateRootError)
-    {
+    function calculateRoot(
+        UnionIcs23.NonExistenceProof calldata proof
+    ) internal pure returns (bytes32, CalculateRootError) {
         if (!UnionIcs23.empty(proof.left)) {
             return calculateRoot(proof.left);
         }

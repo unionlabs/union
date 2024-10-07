@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/token/ERC20/ERC20.sol";
 import "./IERC20Denom.sol";
@@ -12,7 +12,9 @@ contract ERC20Denom is ERC20, IERC20Denom {
     string private _symbol;
     uint8 private _decimals;
 
-    constructor(string memory denomName) ERC20(denomName, denomName) {
+    constructor(
+        string memory denomName
+    ) ERC20(denomName, denomName) {
         admin = msg.sender;
     }
 

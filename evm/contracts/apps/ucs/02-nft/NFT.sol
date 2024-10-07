@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -16,7 +16,7 @@ import "solidity-stringutils/strings.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
 import "../../../core/04-channel/IIBCPacket.sol";
-import "../../../core/02-client/IBCHeight.sol";
+import "../../../core/Types.sol";
 import "../../../lib/Hex.sol";
 import "../../Base.sol";
 import "./IERC721Denom.sol";
@@ -35,11 +35,9 @@ struct NFTPacket {
 }
 
 library NFTPacketLib {
-    function encode(NFTPacket memory packet)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encode(
+        NFTPacket memory packet
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             packet.classOwner,
             packet.classId,
@@ -53,11 +51,9 @@ library NFTPacketLib {
         );
     }
 
-    function decode(bytes calldata stream)
-        internal
-        pure
-        returns (NFTPacket calldata)
-    {
+    function decode(
+        bytes calldata stream
+    ) internal pure returns (NFTPacket calldata) {
         NFTPacket calldata packet;
         assembly {
             packet := stream.offset
@@ -78,19 +74,18 @@ library NFTLib {
     error ErrInvalidCounterpartyProtocolVersion();
     error ErrUnstoppable();
 
-    IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
-        IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
-    string public constant VERSION = "ucs02-nft-1";
+    IBCChannelOrder public constant ORDER = IBCChannelOrder.Unordered;
+    bytes32 public constant VERSION = keccak256("ucs02-nft-1");
     bytes1 public constant ACK_SUCCESS = 0x01;
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
 
     event ClassCreated(
-        uint64 packetSequence, string channelId, address indexed nftClass
+        uint64 packetSequence, uint32 channelId, address indexed nftClass
     );
     event Received(
         uint64 packetSequence,
-        string channelId,
+        uint32 channelId,
         string sender,
         address receiver,
         address indexed nftClass,
@@ -98,7 +93,7 @@ library NFTLib {
     );
     event Sent(
         uint64 packetSequence,
-        string channelId,
+        uint32 channelId,
         address sender,
         string receiver,
         address indexed nftClass,
@@ -106,48 +101,43 @@ library NFTLib {
     );
     event Refunded(
         uint64 packetSequence,
-        string channelId,
+        uint32 channelId,
         address sender,
         string receiver,
         address indexed nftClass,
         uint256[] tokenIds
     );
 
-    function isValidVersion(string memory version)
-        internal
-        pure
-        returns (bool)
-    {
-        return version.eq(VERSION);
+    function isValidVersion(
+        bytes32 version
+    ) internal pure returns (bool) {
+        return version == VERSION;
     }
 
     function isFromChannel(
-        string memory portId,
-        string memory channelId,
+        uint32 channelId,
         string memory nftDenom
     ) internal pure returns (bool) {
         return bytes(nftDenom).length > 0
-            && nftDenom.startsWith(makeDenomPrefix(portId, channelId));
+            && nftDenom.startsWith(makeDenomPrefix(channelId));
     }
 
     function makeDenomPrefix(
-        string memory portId,
-        string memory channelId
+        uint32 channelId
     ) internal pure returns (string memory) {
-        return string(abi.encodePacked(portId, "/", channelId, "/"));
+        return string(abi.encodePacked(channelId, "/"));
     }
 
     function makeForeignDenom(
-        string memory portId,
-        string memory channelId,
+        uint32 channelId,
         string memory nftDenom
     ) internal pure returns (string memory) {
-        return string(
-            abi.encodePacked(makeDenomPrefix(portId, channelId), nftDenom)
-        );
+        return string(abi.encodePacked(makeDenomPrefix(channelId), nftDenom));
     }
 
-    function bytesToAddress(bytes memory b) internal pure returns (address) {
+    function bytesToAddress(
+        bytes memory b
+    ) internal pure returns (address) {
         if (b.length != 20) {
             revert ErrInvalidBytesAddress();
         }
@@ -171,11 +161,11 @@ contract UCS02NFT is
     IIBCPacket private ibcHandler;
 
     // A mapping from remote denom to local ERC721 wrapper.
-    mapping(string => mapping(string => address)) private denomToNft;
+    mapping(uint32 => mapping(string => address)) private denomToNft;
     // A mapping from a local ERC721 wrapper to the remote denom.
     // Required to determine whether an ERC721 token is originating from a remote chain.
-    mapping(string => mapping(address => string)) private nftToDenom;
-    mapping(string => mapping(address => uint256)) private outstanding;
+    mapping(uint32 => mapping(address => string)) private nftToDenom;
+    mapping(uint32 => mapping(address => uint256)) private outstanding;
 
     constructor() {
         _disableInitializers();
@@ -202,28 +192,28 @@ contract UCS02NFT is
         return address(ibcHandler);
     }
 
-    // Return the amount of tokens submitted through the given port/channel.
+    // Return the amount of tokens submitted through the given channel.
     function getOutstanding(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         address token
     ) external view returns (uint256) {
         return outstanding[sourceChannel][token];
     }
 
-    // Increase the oustanding amount on the given port/channel.
+    // Increase the oustanding amount on the given channel.
     // Happens when we send the token.
     function increaseOutstanding(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         address nftClass,
         uint256 amount
     ) internal {
         outstanding[sourceChannel][nftClass] += amount;
     }
 
-    // Decrease the outstanding amount on the given port/channel.
+    // Decrease the outstanding amount on the given channel.
     // Happens either when receiving previously sent tokens or when refunding.
     function decreaseOutstanding(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         address nftClass,
         uint256 amount
     ) internal {
@@ -242,7 +232,7 @@ contract UCS02NFT is
     }
 
     function sendLocalNative(
-        string calldata sourceChannel,
+        uint32 sourceChannel,
         address nftClass,
         uint256[] calldata tokens
     ) internal {
@@ -296,7 +286,7 @@ contract UCS02NFT is
     }
 
     function send(
-        string calldata sourceChannel,
+        uint32 sourceChannel,
         string calldata receiver,
         address nftClass,
         uint256[] calldata tokens,
@@ -325,9 +315,8 @@ contract UCS02NFT is
             sendRemoteNative(nftClass, tokens);
         }
 
-        uint64 packetSequence = ibcHandler.sendPacket(
-            sourceChannel, IBCHeight.zero(), timeoutTimestamp, data
-        );
+        uint64 packetSequence =
+            ibcHandler.sendPacket(sourceChannel, 0, timeoutTimestamp, data);
 
         emit NFTLib.Sent(
             packetSequence,
@@ -340,8 +329,9 @@ contract UCS02NFT is
     }
 
     function onRecvPacket(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
-        address relayer
+        IBCPacket calldata ibcPacket,
+        address relayer,
+        bytes calldata
     ) external override onlyIBC returns (bytes memory) {
         // TODO: maybe consider threading _res in the failure ack
         (bool success,) = address(this).call(
@@ -359,19 +349,19 @@ contract UCS02NFT is
     }
 
     function receiveRemoteNative(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        IBCPacket calldata ibcPacket,
         NFTPacket calldata packet,
         address receiver,
         string memory nftDenom
     ) internal returns (address) {
-        address nftClass = denomToNft[ibcPacket.destination_channel][nftDenom];
+        address nftClass = denomToNft[ibcPacket.destinationChannel][nftDenom];
         if (nftClass == address(0)) {
             nftClass =
                 address(new ERC721Denom(packet.className, packet.classSymbol));
-            denomToNft[ibcPacket.destination_channel][nftDenom] = nftClass;
-            nftToDenom[ibcPacket.destination_channel][nftClass] = nftDenom;
+            denomToNft[ibcPacket.destinationChannel][nftDenom] = nftClass;
+            nftToDenom[ibcPacket.destinationChannel][nftClass] = nftDenom;
             emit NFTLib.ClassCreated(
-                ibcPacket.sequence, ibcPacket.source_channel, nftClass
+                ibcPacket.sequence, ibcPacket.sourceChannel, nftClass
             );
         }
         uint256 tokenIdsLength = packet.tokenIds.length;
@@ -387,7 +377,7 @@ contract UCS02NFT is
     }
 
     function receiveLocalNative(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        IBCPacket calldata ibcPacket,
         NFTPacket calldata packet,
         address receiver,
         string memory nftDenom
@@ -395,7 +385,7 @@ contract UCS02NFT is
         address nftClass = Hex.hexToAddress(nftDenom);
         uint256 tokenIdsLength = packet.tokenIds.length;
         decreaseOutstanding(
-            ibcPacket.destination_channel, nftClass, tokenIdsLength
+            ibcPacket.destinationChannel, nftClass, tokenIdsLength
         );
         for (uint256 i; i < tokenIdsLength; i++) {
             uint256 tokenId = packet.tokenIds[i];
@@ -407,19 +397,17 @@ contract UCS02NFT is
     }
 
     function onRecvPacketProcessing(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        IBCPacket calldata ibcPacket,
         address
     ) public {
         if (msg.sender != address(this)) {
             revert NFTLib.ErrUnauthorized();
         }
         NFTPacket calldata packet = NFTPacketLib.decode(ibcPacket.data);
-        // {src_port}/{src_channel}/denom
+        // {src_channel}/denom
         // This will trim the denom in-place IFF it is prefixed
         strings.slice memory trimedClassId = packet.classId.toSlice().beyond(
-            NFTLib.makeDenomPrefix(
-                ibcPacket.source_port, ibcPacket.source_channel
-            ).toSlice()
+            NFTLib.makeDenomPrefix(ibcPacket.sourceChannel).toSlice()
         );
         address receiver = Hex.hexToAddress(packet.receiver);
         address nftClass;
@@ -427,9 +415,7 @@ contract UCS02NFT is
             // In this branch the token was originating from the
             // counterparty chain. We need to mint the amount.
             string memory nftDenom = NFTLib.makeForeignDenom(
-                ibcPacket.destination_port,
-                ibcPacket.destination_channel,
-                packet.classId
+                ibcPacket.destinationChannel, packet.classId
             );
             receiveRemoteNative(ibcPacket, packet, receiver, nftDenom);
         } else {
@@ -440,7 +426,7 @@ contract UCS02NFT is
         }
         emit NFTLib.Received(
             ibcPacket.sequence,
-            ibcPacket.source_channel,
+            ibcPacket.sourceChannel,
             packet.sender,
             receiver,
             nftClass,
@@ -449,7 +435,7 @@ contract UCS02NFT is
     }
 
     function onAcknowledgementPacket(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        IBCPacket calldata ibcPacket,
         bytes calldata acknowledgement,
         address
     ) external override onlyIBC {
@@ -466,7 +452,7 @@ contract UCS02NFT is
         if (acknowledgement[0] == NFTLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.sequence,
-                ibcPacket.source_channel,
+                ibcPacket.sourceChannel,
                 NFTPacketLib.decode(ibcPacket.data)
             );
         }
@@ -474,7 +460,7 @@ contract UCS02NFT is
 
     function refundTokens(
         uint64 sequence,
-        string memory channelId,
+        uint32 channelId,
         NFTPacket calldata packet
     ) internal {
         // We're going to refund, the receiver will be the sender.
@@ -517,23 +503,22 @@ contract UCS02NFT is
     }
 
     function onTimeoutPacket(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        IBCPacket calldata ibcPacket,
         address
     ) external override onlyIBC {
         refundTokens(
             ibcPacket.sequence,
-            ibcPacket.source_channel,
+            ibcPacket.sourceChannel,
             NFTPacketLib.decode(ibcPacket.data)
         );
     }
 
     function onChanOpenInit(
-        IbcCoreChannelV1GlobalEnums.Order order,
-        string[] calldata,
-        string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata version,
+        IBCChannelOrder order,
+        uint32,
+        uint32,
+        IBCChannelCounterparty calldata,
+        bytes32 version,
         address
     ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(version)) {
@@ -545,13 +530,12 @@ contract UCS02NFT is
     }
 
     function onChanOpenTry(
-        IbcCoreChannelV1GlobalEnums.Order order,
-        string[] calldata,
-        string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata version,
-        string calldata counterpartyVersion,
+        IBCChannelOrder order,
+        uint32,
+        uint32,
+        IBCChannelCounterparty calldata,
+        bytes32 version,
+        bytes32 counterpartyVersion,
         address
     ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(version)) {
@@ -566,10 +550,9 @@ contract UCS02NFT is
     }
 
     function onChanOpenAck(
-        string calldata,
-        string calldata,
-        string calldata,
-        string calldata counterpartyVersion,
+        uint32,
+        uint32,
+        bytes32 counterpartyVersion,
         address
     ) external view override onlyIBC {
         if (!NFTLib.isValidVersion(counterpartyVersion)) {
@@ -577,31 +560,20 @@ contract UCS02NFT is
         }
     }
 
-    function onChanOpenConfirm(
-        string calldata,
-        string calldata,
-        address
-    ) external override onlyIBC {}
+    function onChanOpenConfirm(uint32, address) external override onlyIBC {}
 
-    function onChanCloseInit(
-        string calldata,
-        string calldata,
-        address
-    ) external view override onlyIBC {
+    function onChanCloseInit(uint32, address) external view override onlyIBC {
         revert NFTLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
-        string calldata,
-        string calldata,
+        uint32,
         address
     ) external view override onlyIBC {
         revert NFTLib.ErrUnstoppable();
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyOwner
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 }

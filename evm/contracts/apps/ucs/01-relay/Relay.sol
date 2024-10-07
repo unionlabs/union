@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -42,21 +42,21 @@ struct RelayPacket {
 
 interface IRelay is IIBCModule {
     function getDenomAddress(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         string memory denom
     ) external view returns (address);
 
     function getOutstanding(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         address token
     ) external view returns (uint256);
 
     function send(
-        string calldata sourceChannel,
+        uint32 sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
         string calldata extension,
-        IbcCoreClientV1Height.Data calldata timeoutHeight,
+        uint64 timeoutHeight,
         uint64 timeoutTimestamp
     ) external;
 }
@@ -73,22 +73,22 @@ library RelayLib {
     error ErrInvalidAmount();
     error ErrUnstoppable();
 
-    IbcCoreChannelV1GlobalEnums.Order public constant ORDER =
-        IbcCoreChannelV1GlobalEnums.Order.ORDER_UNORDERED;
-    string public constant VERSION = "ucs01-relay-1";
+    IBCChannelOrder public constant ORDER = IBCChannelOrder.Unordered;
+
+    bytes32 public constant VERSION = keccak256("ucs01-relay-1");
     bytes1 public constant ACK_SUCCESS = 0x01;
     bytes1 public constant ACK_FAILURE = 0x00;
     uint256 public constant ACK_LENGTH = 1;
 
     event DenomCreated(
         uint64 indexed packetSequence,
-        string channelId,
+        uint32 channelId,
         string denom,
         address token
     );
     event Received(
         uint64 packetSequence,
-        string channelId,
+        uint32 channelId,
         string sender,
         address indexed receiver,
         string denom,
@@ -97,7 +97,7 @@ library RelayLib {
     );
     event FeePaid(
         uint64 packetSequence,
-        string channelId,
+        uint32 channelId,
         string sender,
         address indexed receiver,
         string denom,
@@ -106,7 +106,7 @@ library RelayLib {
     );
     event Sent(
         uint64 packetSequence,
-        string channelId,
+        uint32 channelId,
         address indexed sender,
         string receiver,
         string denom,
@@ -115,7 +115,7 @@ library RelayLib {
     );
     event Refunded(
         uint64 packetSequence,
-        string channelId,
+        uint32 channelId,
         address indexed sender,
         string receiver,
         string denom,
@@ -123,40 +123,36 @@ library RelayLib {
         uint256 amount
     );
 
-    function isValidVersion(string memory version)
-        internal
-        pure
-        returns (bool)
-    {
-        return version.eq(VERSION);
+    function isValidVersion(
+        bytes32 version
+    ) internal pure returns (bool) {
+        return version == VERSION;
     }
 
     function isFromChannel(
-        string memory portId,
-        string memory channelId,
+        uint32 channelId,
         string memory denom
     ) internal pure returns (bool) {
         return bytes(denom).length > 0
-            && denom.startsWith(makeDenomPrefix(portId, channelId));
+            && denom.startsWith(makeDenomPrefix(channelId));
     }
 
     function makeDenomPrefix(
-        string memory portId,
-        string memory channelId
+        uint32 channelId
     ) internal pure returns (string memory) {
-        return string(abi.encodePacked(portId, "/", channelId, "/"));
+        return string(abi.encodePacked(channelId, "/"));
     }
 
     function makeForeignDenom(
-        string memory portId,
-        string memory channelId,
+        uint32 channelId,
         string memory denom
     ) internal pure returns (string memory) {
-        return
-            string(abi.encodePacked(makeDenomPrefix(portId, channelId), denom));
+        return string(abi.encodePacked(makeDenomPrefix(channelId), denom));
     }
 
-    function bytesToAddress(bytes memory b) internal pure returns (address) {
+    function bytesToAddress(
+        bytes memory b
+    ) internal pure returns (address) {
         if (b.length != 20) {
             revert ErrInvalidBytesAddress();
         }
@@ -165,21 +161,17 @@ library RelayLib {
 }
 
 library RelayPacketLib {
-    function encode(RelayPacket memory packet)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function encode(
+        RelayPacket memory packet
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             packet.sender, packet.receiver, packet.tokens, packet.extension
         );
     }
 
-    function decode(bytes calldata stream)
-        internal
-        pure
-        returns (RelayPacket calldata)
-    {
+    function decode(
+        bytes calldata stream
+    ) internal pure returns (RelayPacket calldata) {
         RelayPacket calldata packet;
         assembly {
             packet := stream.offset
@@ -203,11 +195,11 @@ contract UCS01Relay is
     IIBCPacket private ibcHandler;
 
     // A mapping from remote denom to local ERC20 wrapper.
-    mapping(string => mapping(string => address)) private denomToAddress;
+    mapping(uint32 => mapping(string => address)) private denomToAddress;
     // A mapping from a local ERC20 wrapper to the remote denom.
     // Required to determine whether an ERC20 token is originating from a remote chain.
-    mapping(string => mapping(address => string)) private addressToDenom;
-    mapping(string => mapping(address => uint256)) private outstanding;
+    mapping(uint32 => mapping(address => string)) private addressToDenom;
+    mapping(uint32 => mapping(address => uint256)) private outstanding;
 
     constructor() {
         _disableInitializers();
@@ -227,7 +219,7 @@ contract UCS01Relay is
 
     // Return the ERC20 wrapper for the given remote-native denom.
     function getDenomAddress(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         string memory denom
     ) external view override returns (address) {
         return denomToAddress[sourceChannel][denom];
@@ -235,7 +227,7 @@ contract UCS01Relay is
 
     // Return the amount of tokens submitted through the given port/channel.
     function getOutstanding(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         address token
     ) external view override returns (uint256) {
         return outstanding[sourceChannel][token];
@@ -244,7 +236,7 @@ contract UCS01Relay is
     // Increase the oustanding amount on the given port/channel.
     // Happens when we send the token.
     function increaseOutstanding(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         address token,
         uint256 amount
     ) internal {
@@ -254,7 +246,7 @@ contract UCS01Relay is
     // Decrease the outstanding amount on the given port/channel.
     // Happens either when receiving previously sent tokens or when refunding.
     function decreaseOutstanding(
-        string memory sourceChannel,
+        uint32 sourceChannel,
         address token,
         uint256 amount
     ) internal {
@@ -276,7 +268,7 @@ contract UCS01Relay is
     // If token is native, we increase the oustanding amount and escrow it. Otherwise, we burn the amount.
     // The operation is symmetric with the counterparty, if we burn locally, the remote relay will unescrow. If we escrow locally, the remote relay will mint.
     function sendToken(
-        string calldata sourceChannel,
+        uint32 sourceChannel,
         LocalToken calldata localToken
     ) internal returns (string memory) {
         if (localToken.amount == 0) {
@@ -306,11 +298,11 @@ contract UCS01Relay is
     }
 
     function send(
-        string calldata sourceChannel,
+        uint32 sourceChannel,
         bytes calldata receiver,
         LocalToken[] calldata tokens,
         string calldata extension,
-        IbcCoreClientV1Height.Data calldata timeoutHeight,
+        uint64 timeoutHeight,
         uint64 timeoutTimestamp
     ) external override {
         Token[] memory normalizedTokens = new Token[](tokens.length);
@@ -347,7 +339,7 @@ contract UCS01Relay is
 
     function refundTokens(
         uint64 sequence,
-        string memory channelId,
+        uint32 channelId,
         RelayPacket calldata packet
     ) internal {
         string memory receiver = packet.receiver.toHexString();
@@ -392,7 +384,7 @@ contract UCS01Relay is
     }
 
     function onRecvLocalTransfer(
-        string memory destinationChannel,
+        uint32 destinationChannel,
         string memory denom,
         address receiver,
         uint256 amount,
@@ -412,7 +404,7 @@ contract UCS01Relay is
 
     function onRecvRemoteTransfer(
         uint64 sequence,
-        string memory destinationChannel,
+        uint32 destinationChannel,
         string memory denom,
         address receiver,
         uint256 amount,
@@ -437,16 +429,14 @@ contract UCS01Relay is
     }
 
     function onRecvPacketProcessing(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        IBCPacket calldata ibcPacket,
         address relayer
     ) public {
         if (msg.sender != address(this)) {
             revert RelayLib.ErrUnauthorized();
         }
         RelayPacket calldata packet = RelayPacketLib.decode(ibcPacket.data);
-        string memory prefix = RelayLib.makeDenomPrefix(
-            ibcPacket.source_port, ibcPacket.source_channel
-        );
+        string memory prefix = RelayLib.makeDenomPrefix(ibcPacket.sourceChannel);
         uint256 packetTokensLength = packet.tokens.length;
         for (uint256 i; i < packetTokensLength; i++) {
             Token memory token = packet.tokens[i];
@@ -460,11 +450,11 @@ contract UCS01Relay is
             string memory denom;
             if (token.denom.startsWith(prefix)) {
                 // In this branch the token was originating from
-                // this chain as it was prefixed by the local channel/port.
+                // this chain as it was prefixed by the remote channel/port.
                 // We need to unescrow the amount.
                 denom = token.denom.slice(bytes(prefix).length);
                 denomAddress = onRecvLocalTransfer(
-                    ibcPacket.destination_channel,
+                    ibcPacket.destinationChannel,
                     denom,
                     receiver,
                     actualAmount,
@@ -475,13 +465,11 @@ contract UCS01Relay is
                 // In this branch the token was originating from the
                 // counterparty chain. We need to prefix the denom and mint the amount.
                 denom = RelayLib.makeForeignDenom(
-                    ibcPacket.destination_port,
-                    ibcPacket.destination_channel,
-                    token.denom
+                    ibcPacket.destinationChannel, token.denom
                 );
                 denomAddress = onRecvRemoteTransfer(
                     ibcPacket.sequence,
-                    ibcPacket.destination_channel,
+                    ibcPacket.destinationChannel,
                     denom,
                     receiver,
                     actualAmount,
@@ -492,7 +480,7 @@ contract UCS01Relay is
             string memory senderAddress = packet.sender.toHexString();
             emit RelayLib.Received(
                 ibcPacket.sequence,
-                ibcPacket.destination_channel,
+                ibcPacket.destinationChannel,
                 senderAddress,
                 receiver,
                 denom,
@@ -502,7 +490,7 @@ contract UCS01Relay is
             if (feeAmount > 0) {
                 emit RelayLib.FeePaid(
                     ibcPacket.sequence,
-                    ibcPacket.destination_channel,
+                    ibcPacket.destinationChannel,
                     senderAddress,
                     relayer,
                     denom,
@@ -514,8 +502,9 @@ contract UCS01Relay is
     }
 
     function onRecvPacket(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
-        address relayer
+        IBCPacket calldata ibcPacket,
+        address relayer,
+        bytes calldata
     )
         external
         override(IBCAppBase, IIBCModule)
@@ -538,7 +527,7 @@ contract UCS01Relay is
     }
 
     function onAcknowledgementPacket(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        IBCPacket calldata ibcPacket,
         bytes calldata acknowledgement,
         address
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
@@ -555,30 +544,29 @@ contract UCS01Relay is
         if (acknowledgement[0] == RelayLib.ACK_FAILURE) {
             refundTokens(
                 ibcPacket.sequence,
-                ibcPacket.source_channel,
+                ibcPacket.sourceChannel,
                 RelayPacketLib.decode(ibcPacket.data)
             );
         }
     }
 
     function onTimeoutPacket(
-        IbcCoreChannelV1Packet.Data calldata ibcPacket,
+        IBCPacket calldata ibcPacket,
         address
     ) external override(IBCAppBase, IIBCModule) onlyIBC {
         refundTokens(
             ibcPacket.sequence,
-            ibcPacket.source_channel,
+            ibcPacket.sourceChannel,
             RelayPacketLib.decode(ibcPacket.data)
         );
     }
 
     function onChanOpenInit(
-        IbcCoreChannelV1GlobalEnums.Order order,
-        string[] calldata,
-        string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata version,
+        IBCChannelOrder order,
+        uint32,
+        uint32,
+        IBCChannelCounterparty calldata,
+        bytes32 version,
         address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
@@ -590,13 +578,12 @@ contract UCS01Relay is
     }
 
     function onChanOpenTry(
-        IbcCoreChannelV1GlobalEnums.Order order,
-        string[] calldata,
-        string calldata,
-        string calldata,
-        IbcCoreChannelV1Counterparty.Data calldata,
-        string calldata version,
-        string calldata counterpartyVersion,
+        IBCChannelOrder order,
+        uint32,
+        uint32,
+        IBCChannelCounterparty calldata,
+        bytes32 version,
+        bytes32 counterpartyVersion,
         address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(version)) {
@@ -611,10 +598,9 @@ contract UCS01Relay is
     }
 
     function onChanOpenAck(
-        string calldata,
-        string calldata,
-        string calldata,
-        string calldata counterpartyVersion,
+        uint32,
+        uint32,
+        bytes32 counterpartyVersion,
         address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         if (!RelayLib.isValidVersion(counterpartyVersion)) {
@@ -622,31 +608,21 @@ contract UCS01Relay is
         }
     }
 
-    function onChanOpenConfirm(
-        string calldata,
-        string calldata,
-        address
-    ) external override(IBCAppBase, IIBCModule) onlyIBC {}
-
     function onChanCloseInit(
-        string calldata,
-        string calldata,
+        uint32,
         address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 
     function onChanCloseConfirm(
-        string calldata,
-        string calldata,
+        uint32,
         address
     ) external view override(IBCAppBase, IIBCModule) onlyIBC {
         revert RelayLib.ErrUnstoppable();
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyOwner
-    {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner {}
 }

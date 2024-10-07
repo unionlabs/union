@@ -271,16 +271,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1712135466,
-        "narHash": "sha256-+xFfYk17EI0zZTGmhh3MyeSpl7RVohoVp/4HaSvGj4I=",
+        "lastModified": 1727687420,
+        "narHash": "sha256-MD/Fm3KhENvuMP0oR+aGuH7th21DIAxp8yKIQUbFfEk=",
         "owner": "shazow",
         "repo": "foundry.nix",
-        "rev": "ece7c960a440c6725a7a5576d1f49a5fabde3747",
+        "rev": "5cec83883f18b0cde2ffa8977d3540fe707a84cd",
         "type": "github"
       },
       "original": {
         "owner": "shazow",
-        "ref": "monthly",
+        "ref": "main",
         "repo": "foundry.nix",
         "type": "github"
       }

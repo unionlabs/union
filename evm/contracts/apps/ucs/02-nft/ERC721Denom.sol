@@ -1,4 +1,4 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/token/ERC721/extensions/ERC721URIStorage.sol";
 import "./IERC721Denom.sol";
@@ -27,7 +27,9 @@ contract ERC721Denom is ERC721URIStorage, IERC721Denom {
         _setTokenURI(tokenId, tokenURI);
     }
 
-    function burn(uint256 tokenId) external {
+    function burn(
+        uint256 tokenId
+    ) external {
         if (msg.sender != admin) {
             revert ERC721Unauthorized();
         }

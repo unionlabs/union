@@ -1,9 +1,10 @@
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.27;
 
 import "../core/05-port/IIBCModule.sol";
 
 library IBCAppLib {
     error ErrNotIBC();
+    error ErrNotImplemented();
 }
 
 /**
@@ -35,56 +36,52 @@ abstract contract IBCAppBase is IIBCModule {
     /**
      * @dev See IIBCModule-onChanOpenInit
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenInit(
-        IbcCoreChannelV1GlobalEnums.Order,
-        string[] calldata connectionHops,
-        string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
-        string calldata version,
-        address relayer
+        IBCChannelOrder,
+        uint32,
+        uint32,
+        IBCChannelCounterparty calldata,
+        bytes32,
+        address
     ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onChanOpenTry
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenTry(
-        IbcCoreChannelV1GlobalEnums.Order,
-        string[] calldata connectionHops,
-        string calldata portId,
-        string calldata channelId,
-        IbcCoreChannelV1Counterparty.Data calldata counterpartyEndpoint,
-        string calldata version,
-        string calldata counterpartyVersion,
-        address relayer
+        IBCChannelOrder,
+        uint32,
+        uint32,
+        IBCChannelCounterparty calldata,
+        bytes32,
+        bytes32,
+        address
     ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onChanOpenAck
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenAck(
-        string calldata portId,
-        string calldata channelId,
-        string calldata counterpartyChannelId,
-        string calldata counterpartyVersion,
-        address relayer
+        uint32,
+        uint32,
+        bytes32,
+        address
     ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onChanOpenConfirm
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanOpenConfirm(
-        string calldata portId,
-        string calldata channelId,
-        address relayer
+        uint32,
+        address
     ) external virtual override onlyIBC {}
 
     /**
@@ -93,9 +90,8 @@ abstract contract IBCAppBase is IIBCModule {
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanCloseInit(
-        string calldata portId,
-        string calldata channelId,
-        address relayer
+        uint32,
+        address
     ) external virtual override onlyIBC {}
 
     /**
@@ -104,19 +100,19 @@ abstract contract IBCAppBase is IIBCModule {
      * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onChanCloseConfirm(
-        string calldata portId,
-        string calldata channelId,
-        address relayer
+        uint32,
+        address
     ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onRecvPacket
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onRecvPacket(
-        IbcCoreChannelV1Packet.Data calldata packet,
-        address relayer
+        IBCPacket calldata,
+        address,
+        bytes calldata
     )
         external
         virtual
@@ -126,23 +122,36 @@ abstract contract IBCAppBase is IIBCModule {
     {}
 
     /**
+     * @dev See IIBCModule-onRecvIntentPacket
+     *
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     */
+    function onRecvIntentPacket(
+        IBCPacket calldata,
+        address,
+        bytes calldata
+    ) external virtual override onlyIBC returns (bytes memory) {
+        revert IBCAppLib.ErrNotImplemented();
+    }
+
+    /**
      * @dev See IIBCModule-onAcknowledgementPacket
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onAcknowledgementPacket(
-        IbcCoreChannelV1Packet.Data calldata packet,
-        bytes calldata acknowledgement,
-        address relayer
+        IBCPacket calldata,
+        bytes calldata,
+        address
     ) external virtual override onlyIBC {}
 
     /**
      * @dev See IIBCModule-onTimeoutPacket
      *
-     * NOTE: You should apply an `onlyIBC` modifier to the function if a derived contract overrides it.
+     * NOTE: You must apply an `onlyIBC` modifier to the function if a derived contract overrides it.
      */
     function onTimeoutPacket(
-        IbcCoreChannelV1Packet.Data calldata packet,
-        address relayer
+        IBCPacket calldata,
+        address
     ) external virtual override onlyIBC {}
 }

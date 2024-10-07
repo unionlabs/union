@@ -32,8 +32,8 @@ _: {
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
         repo = "forge-std";
-        rev = "v1.8.1";
-        hash = "sha256-s/J7odpWysj4U93knIRA28aZqXworZH6IVIjIXD78Yc=";
+        rev = "v1.9.3";
+        hash = "sha256-v9aFV4TQqbYPNBSRt4QLZMD85fIXTtBQ8rGYPRw2qmE=";
         fetchSubmodules = true;
       };
       openzeppelin = pkgs.fetchFromGitHub {
@@ -137,25 +137,35 @@ _: {
       };
       # Foundry FS permissions must be explicitly set in the config file
       foundryConfig = pkgs.writeTextDir "/foundry.toml" ''
+        [profile.default.optimizer_details]
+        cse = true
+        constantOptimizer = true
+        yul = true
+
         [profile.default]
         fs_permissions = [{ access = "read", path = "./"}]
         libs = ["libs"]
         gas_reports = ["*"]
         via_ir = true
         ast = true
+        optimizer = true
+        optimizer_runs = 1_000
 
         [profile.script]
         src = "scripts"
         bytecode_hash = "none"
         cbor_metadata = false
         sparse_mode = false
-        optimizer = true
-        optimizer_runs = 10_000_000
 
         [profile.test]
         test = "tests/src"
-        optimizer = false
       '';
+      compilers = pkgs.linkFarm "evm-libraries" [
+        {
+          name = ".svm/${pkgs.solc.version}/solc-${pkgs.solc.version}";
+          path = "${pkgs.solc}/bin/solc";
+        }
+      ];
       wrappedForge = pkgs.symlinkJoin {
         name = "forge";
         paths = [ pkgs.foundry-bin ];
@@ -163,7 +173,7 @@ _: {
         postBuild = ''
           wrapProgram $out/bin/forge \
             --append-flags "--offline --no-auto-detect" \
-            --set PATH ${pkgs.lib.makeBinPath [ pkgs.solc ]} \
+            --set HOME ${compilers} \
             --set SSL_CERT_FILE "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" \
             --set FOUNDRY_CONFIG "${foundryConfig}/foundry.toml"
         '';
@@ -419,7 +429,10 @@ _: {
             pkgs.stdenv.mkDerivation {
               name = "evm-contracts";
               src = evmSources;
-              buildInputs = [ wrappedForge ];
+              buildInputs = [
+                wrappedForge
+                pkgs.solc
+              ];
               buildPhase = ''
                 forge --version
                 FOUNDRY_PROFILE=script forge build --sizes
@@ -451,7 +464,6 @@ _: {
           #       '${evmSources}/contracts/core/DevnetIBCHandlerInit.sol' \
           #       '${evmSources}/contracts/core/DevnetOwnableIBCHandler.sol' \
           #       '${evmSources}/contracts/core/OwnableIBCHandler.sol' \
-          #       '${evmSources}/contracts/core/25-handler/IBCQuerier.sol' \
           #       '${evmSources}/contracts/core/24-host/IBCCommitment.sol' \
           #       '${evmSources}/tests/*'
           #     genhtml lcov.info.pruned -o $out --branch-coverage
@@ -483,7 +495,7 @@ _: {
                     ${contracts}/out/IBCPacket.sol/IBCPacket.json \
                     ${contracts}/out/IBCConnection.sol/IBCConnection.json \
                     ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json \
-                    ${contracts}/out/IBCChannelHandshake.sol/IBCChannelHandshake.json > ibc-handler.json
+                    ${contracts}/out/IBCChannel.sol/IBCChannelHandshake.json > ibc-handler.json
 
                   jq --compact-output --slurp 'map(.abi) | add' \
                     ${contracts}/out/Relay.sol/IRelay.json \
