@@ -1,4 +1,4 @@
-module IBC::ibc {
+module IBC::ibc_test {
     use std::signer;
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
@@ -17,7 +17,7 @@ module IBC::ibc {
     use IBC::IBCCommitment;
     use IBC::LightClient;
     use IBC::height::{Self, Height};
-    use IBC::connection_end::{Self, ConnectionEnd};
+    use IBC::connection_end::{Self, ConnectionEnd, Version};
     use IBC::channel::{Self, Channel};
     use IBC::packet::{Self, Packet};
 
@@ -1727,6 +1727,11 @@ module IBC::ibc {
         channel_id: String,
         channel: Channel
     ): u64 {
+        let client_id = connection_end::client_id(connection);
+        std::debug::print(&string::utf8(b"client_id"));
+        std::debug::print(client_id);
+        std::debug::print(&string::utf8(b"connection"));
+        std::debug::print(connection);
         let path = IBCCommitment::channel_key(port_id, channel_id);
         LightClient::verify_membership(
             *connection_end::client_id(connection),
@@ -1789,4 +1794,247 @@ module IBC::ibc {
             1
         );
     }
-}   
+
+    #[test]
+    public fun test_to_string() {
+        let order_unordered: u8 = 1;
+        let order_ordered: u8 = 2;
+        let order_invalid: u8 = 3;
+        // Test case for ORDER_UNORDERED
+        let order_unordered = ordering_to_string(order_unordered);
+        assert!(order_unordered == string::utf8(b"ORDER_UNORDERED"), 2001);
+
+        // Test case for ORDER_ORDERED
+        let order_ordered = ordering_to_string(order_ordered);
+        assert!(order_ordered == string::utf8(b"ORDER_ORDERED"), 2002);
+
+        // Test case for invalid order
+        let order_invalid = ordering_to_string(order_invalid);
+        assert!(order_invalid == string::utf8(b"ORDER_INVALID"), 2003);
+    }
+
+    #[test(alice = @IBC)]
+    public fun test_get_counterparty_hops(alice: &signer) acquires IBCStore {
+        // Initialize IBCStore for testing
+        init_module(alice);
+
+        // Mock connection ID
+        let connection_id = string::utf8(b"connection-0");
+
+        // Prepare counterparty and connection
+        let counterparty = connection_end::new_counterparty(string::utf8(b"counterparty-client"), connection_id, b"");
+        let connection = connection_end::new(string::utf8(b"client-0"), vector::empty<Version>(), 3, 0, counterparty);
+
+        // Insert connection into the store
+        set_connection(connection_id, connection);
+
+        // Test get_counterparty_hops function
+        let hops = get_counterparty_hops(connection_id);
+        assert!(vector::length(&hops) == 1, 3001);
+        assert!(*vector::borrow(&hops, 0) == connection_id, 3002);
+    }
+
+    #[test(alice = @IBC)]
+    public fun test_generate_channel_identifier(alice: &signer) acquires IBCStore{
+        // Initialize IBCStore for testing
+        init_module(alice);
+
+        // Test generate_channel_identifier function
+        let _ = generate_channel_identifier();
+
+        // Verify the next sequence has incremented
+        let next_sequence = get_next_channel_sequence();
+        assert!(next_sequence == 1, 4002);
+    }
+        #[test(alice = @IBC)]
+    public fun test_ensure_connection_state(alice: &signer) acquires IBCStore{
+        // Initialize IBCStore for testing
+        init_module(alice);
+
+        // Mock connection ID
+        let connection_id = string::utf8(b"connection-0");
+
+        // Prepare counterparty and connection
+        let counterparty = connection_end::new_counterparty(string::utf8(b"counterparty-client"), connection_id, vector::empty<u8>());
+        let connection = connection_end::new(string::utf8(b"client-0"), vector::empty<Version>(), 3, 0, counterparty);
+
+        set_connection(connection_id, connection);
+
+        // Test ensure_connection_state function
+        let retrieved_connection_end = ensure_connection_state(connection_id);
+        assert!(connection_end::state(&retrieved_connection_end) == 3, 5002);
+        assert!(*connection_end::client_id(&retrieved_connection_end) == string::utf8(b"client-0"), 5003);
+    }
+
+    #[test(alice = @IBC)]
+    public fun test_ensure_connection_feature(alice: &signer) acquires IBCStore {
+        // Initialize IBCStore for testing
+        init_module(alice);
+
+        // Mock connection ID
+        let connection_id = string::utf8(b"connection-0");
+
+        // Prepare counterparty and connection
+        let features = vector::empty<String>();
+        vector::push_back(&mut features, string::utf8(b"ORDER_ORDERED"));
+        let version = connection_end::new_version(string::utf8(b"1"), features);
+        let counterparty = connection_end::new_counterparty(string::utf8(b"counterparty-client"), connection_id, vector::empty<u8>());
+        let connection = connection_end::new(string::utf8(b"client-0"), vector::singleton(version), 3, 0, counterparty);
+
+        set_connection(connection_id, connection);
+
+        // Test ensure_connection_feature function
+        let connection_hops = vector::singleton(connection_id);
+        let order_ordered: u8 = 2;
+        let (retrieved_connection_id, retrieved_connection_end) = ensure_connection_feature(connection_hops, order_ordered);
+        assert!(retrieved_connection_id == connection_id, 6001);
+        assert!(connection_end::state(&retrieved_connection_end) == 3, 6002);
+        assert!(*connection_end::client_id(&retrieved_connection_end) == string::utf8(b"client-0"), 6003);
+    }
+
+    #[test(alice = @IBC, ibc_app = @0xfe1adf0b572c9d480624c86b65345895929a36d8f3c0f7facc67921e7e7c395c)]
+    public fun test_channel_open_init(alice: &signer, ibc_app: &signer) acquires IBCStore {
+        // Initialize IBCStore for testing
+        init_module(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(connection_end::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        set_connection(connection_id, connection);
+
+        // Prepare a mock channel
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+        let version = string::utf8(b"1");
+        let ordering = CHAN_ORDERING_ORDERED;
+
+        // Call channel_open_init function
+
+        let port_addr = signer::address_of(alice); // ALERT
+        // PORT_ADDR HERE SHOULD BE @alice
+        // because the "ibc_app" address is precompiled and assumed port_id will be alice !
+
+        let (channel, _) = channel_open_init(ibc_app, port_addr, connection_hops, ordering, counterparty, version);
+        // let channel_id = *channel::chan_id(&channel);ibc_app
+
+        // Validate that the channel was added to the store
+        let port_id = address_to_string(port_addr);
+        let channel_id = string::utf8(b"channel-0");
+
+        let stored_channel = get_channel(port_id, channel_id);
+
+        // Validate that the stored channel matches the expected channel
+        assert!(option::is_some(&stored_channel), 8001);
+        let stored_channel_val = option::extract(&mut stored_channel);
+        assert!(channel::state(&stored_channel_val) == CHAN_STATE_INIT, 8002);
+        assert!(channel::ordering(&stored_channel_val) == CHAN_ORDERING_ORDERED, 8003);
+    }
+
+    #[test(alice = @IBC, ibc_app = @0xfe1adf0b572c9d480624c86b65345895929a36d8f3c0f7facc67921e7e7c395c)]
+    #[expected_failure(abort_code = 1017)] // E_COUNTERPARTY_CHANNEL_NOT_EMPTY
+    public fun test_channel_open_init_non_empty_counterparty_channel_id(alice: &signer, ibc_app: &signer) acquires IBCStore {
+        // Initialize IBCStore for testing
+        init_module(alice);
+
+        // Prepare a mock connection and set it in the IBCStore
+        let client_id = string::utf8(b"client-0");
+        let connection_id = string::utf8(b"connection-0");
+        let counterparty = connection_end::new_counterparty(
+            string::utf8(b"counterparty-client"),
+            connection_id,
+            b"",
+        );
+        let connection = connection_end::new(
+            client_id,
+            vector::singleton(connection_end::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+            3, // STATE_OPEN
+            0,
+            counterparty
+        );
+        set_connection(connection_id, connection);
+
+        // Prepare a mock channel with a non-empty counterparty channel ID
+        let connection_hops = vector::singleton(connection_id);
+        let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b"channel-1")); // Non-empty channel ID
+        let channel = channel::new(CHAN_STATE_INIT, CHAN_ORDERING_ORDERED, counterparty, connection_hops, string::utf8(b"1"));
+
+        // Insert channel into store
+        set_channel(string::utf8(b"port-0"), string::utf8(b"channel-0"), channel);
+
+        // Attempt to call channel_open_init with a non-empty counterparty channel ID, which should abort with E_COUNTERPARTY_CHANNEL_NOT_EMPTY
+        let version = string::utf8(b"1");
+        let port_addr = signer::address_of(alice);
+        channel_open_init(ibc_app, port_addr, connection_hops, CHAN_ORDERING_ORDERED, counterparty, version);
+    }
+
+    // #[test(alice = @IBC, ibc_app = @0xfe1adf0b572c9d480624c86b65345895929a36d8f3c0f7facc67921e7e7c395c)]
+    // public fun test_channel_open_ack(alice: &signer, ibc_app: &signer) acquires IBCStore, SignerRef {
+    //     // Initialize IBCStore for testing
+    //     init_module(alice);
+
+    //     let order_ordered: u8 = 2;
+
+    //     // Prepare a mock connection and set it in the IBCStore
+    //     let client_id = string::utf8(b"cometbls-0");
+    //     let connection_id = string::utf8(b"connection-0");
+    //     let counterparty = connection_end::new_counterparty(
+    //         string::utf8(b"counterparty-client"),
+    //         connection_id,
+    //         b"",
+    //     );
+    //     let connection = connection_end::new(
+    //         client_id,
+    //         vector::singleton(connection_end::new_version(string::utf8(b"1"), vector::singleton(string::utf8(b"ORDER_ORDERED")))),
+    //         3, // STATE_OPEN
+    //         0,
+    //         counterparty
+    //     );
+    //     set_connection(connection_id, connection);
+
+    //     // Prepare a mock channel
+    //     let connection_hops = vector::singleton(connection_id);
+    //     let counterparty = channel::new_counterparty(string::utf8(b"counterparty-port"), string::utf8(b""));
+    //     let channel = channel::new(1, order_ordered, counterparty, connection_hops, string::utf8(b"1"));
+
+    //     // Call channel_open_init function to generate a channel ID
+    //     let (channel, _) = channel_open_init(ibc_app, signer::address_of(alice), connection_hops, order_ordered, counterparty, string::utf8(b"1"));
+    //     let channel_id = string::utf8(b"channel-0"); // Assuming channel-0 was generated
+
+    //     // Prepare mock proof data
+    //     let proof_height = height::new(0, 1);
+    //     let proof_try = vector::empty<u8>();
+
+    //     let (data1, data2) = LightClient::mock_create_client();
+
+    //     create_client(string::utf8(b"cometbls"), data1, data2);
+
+    //     // Call channel_open_ack function
+    //     channel_open_ack(
+    //         ibc_app,
+    //         signer::address_of(alice),
+    //         channel_id,
+    //         string::utf8(b"counterparty-channel-0"),
+    //         string::utf8(b"counterparty-version-0"),
+    //         proof_try,
+    //         proof_height
+    //     );
+
+    //     // Validate that the channel state has been updated to STATE_OPEN
+    //     let stored_channel = get_channel_from_store(string::utf8(b"port-0"), channel_id);
+    //     assert!(channel::state(&stored_channel) == 3, 9001); // STATE_OPEN
+    //     assert!(*channel::version(&stored_channel) == string::utf8(b"counterparty-version-0"), 9002);
+    //     assert!(*channel::chan_counterparty_channel_id(&stored_channel) == string::utf8(b"counterparty-channel-0"), 9003);
+    // }
+}
