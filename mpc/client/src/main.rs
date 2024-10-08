@@ -107,6 +107,16 @@ async fn is_already_successful(contributor_id: &str) -> bool {
         .is_ok()
 }
 
+async fn wait_successful(latest_status: Arc<RwLock<Status>>) {
+    loop {
+        if *latest_status.read().await == Status::Successful {
+            tokio::time::sleep(tokio::time::Duration::from_millis(10000)).await;
+            break;
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+    }
+}
+
 async fn create_temp_dir(contributor_id: &str) -> Result<(), DynError> {
     if let Err(_) = tokio::fs::metadata(temp_dir(contributor_id)).await {
         tokio::fs::create_dir(temp_dir(contributor_id)).await?;
@@ -651,8 +661,11 @@ async fn main() -> Result<(), DynError> {
             viewport: Viewport::Inline(8),
         },
     )?;
-    input_and_status_handling(status, rx_status, tx_ui).await;
-    ui::run_ui(&mut terminal, rx_ui).await?;
+    input_and_status_handling(status.clone(), rx_status, tx_ui).await;
+    tokio::select! {
+        _ = ui::run_ui(&mut terminal, rx_ui) => {}
+        _ = wait_successful(status) => {}
+    }
     terminal.clear()?;
     crossterm::terminal::disable_raw_mode()?;
     let _ = execute!(io::stdout(), Show);
