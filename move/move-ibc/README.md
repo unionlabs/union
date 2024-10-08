@@ -1,21 +1,20 @@
 # Aptos Move IBC
 
-Our Move-based implementation is designed to be permissionless, where any smart contract can plug-in their
+Our Move-based implementation is designed to be permissionless, where any smart contract can plug in their
 implementation and start doing general message passing and asset transfers by using our IBC contract without
 any permission or fee.
 
-
 Instead of explaining the IBC implementation in detail, this document aims to give app developers all they
-need in order to implement and understand how an IBC app can be implemented on Union.
+need to implement and understand how an IBC app can be implemented on Union.
 
 ## Adding the IBC protocol as a dependency
 
-Please refer to [the aptos documentation](https://aptos.dev/en/build/smart-contracts/third-party-dependencies) to learn more about
+Please refer to [the Aptos documentation](https://aptos.dev/en/build/smart-contracts/third-party-dependencies) to learn more about
 how to integrate third-party dependencies.
 
 ## Integrating an app with Union-IBC
 
-Our relayer a.k.a [Voyager](https://github.com/unionlabs/union/tree/main/voyager) requires the IBC entrypoints
+Our relayer a.k.a [Voyager](https://github.com/unionlabs/union/tree/main/voyager) requires the IBC entry points
 to be defined under the module `ibc`. So to start with your implementation, make sure to define all the described
 entry functions under `ibc`:
 
@@ -25,9 +24,9 @@ module my_app::ibc {
 }
 ```
 
-In IBC, every IBC app talks to each other via IBC channels. An the IBC contract only lets the corresponding IBC
-app to send and receive packet on the channel that it owns. This means a channel can only be owned by a single app
-but a single app can own multiple channels. This architecture makes sure that apps have exclusive channels to different
+In IBC, every IBC app talks to each other via IBC channels. The IBC contract only lets the corresponding IBC
+app send and receive a packet on the channel that it owns. This means a channel can only be owned by a single app
+but a single app can own multiple channels. This architecture ensures that apps have exclusive channels for different
 chains with different configurations.
 
 Here is the definition of `channel_open_init` function in IBC core:
@@ -43,7 +42,7 @@ public fun channel_open_init(
 ): (Channel, u64);
 ```
 
-As you can see, IBC expects this function to be called with `ibc_app` `signer` and it will later use this
+As you can see, IBC expects this function to be called with `ibc_app` `signer` and will later use this
 information for authentication. The authentication is done with the following check:
 
 ```move
@@ -53,7 +52,7 @@ assert!(object::create_object_address(&port_id, IBC_APP_SEED) == signer::address
 `port_id` should be the address of the ibc app. And the `signer` must be the `object signer` that is generated
 in the `init_module` with the correct seed. Here is an example setup in the app:
 
-```move 
+```move
 module my_app::ibc {
     // Make sure to use this exact seed
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
@@ -83,15 +82,14 @@ module my_app::ibc {
 ```
 
 In this function, we are saving an [ExtendRef](https://legacy.aptos.dev/reference/move/?branch=mainnet&page=aptos-framework/doc/object.md#0x1_object_ExtendRef)
-which is used later to provide the `signer` to the IBC app via `get_signer` method. And `get_self_address` is also implemented to
-get the address of the contract.
+which is used later to provide the `signer` to the IBC app via `get_signer` method. `get_self_address` is also implemented to
+get the contract address.
 
 Note that IBC also uses the same `IBC_APP_SEED` to generate the correct address. Since the address generation function
-is deterministic, the app and IBC can calculate the same exact address.
+is deterministic, the app and IBC can calculate the same address.
 
-
-Now to the channel opening part. In all of other IBC implementations, entry functions for the channel handshake is
-defined under the core protocol. But since Move don't let the contracts to call arbitrary contracts (a.k.a dynamic dispatch),
+Now to the channel opening part. In all of other IBC implementations, entry functions for the channel handshake are
+defined under the core protocol. But since Move doesn't let the contracts call arbitrary contracts (a.k.a dynamic dispatch),
 in this implementation, the app is responsible for defining the handshake entry functions and calling the IBC contract.
 
 ```move
@@ -178,22 +176,21 @@ module my_app::ibc {
 }
 ```
 
-Most of this functions are just there in order the pass the execution to IBC. Also most of the times,
-your app will require doing some bookkeeping. In this case you can save the channel information during
+Most of these functions are just there in order to pass the execution to IBC. Also most of the time,
+your app will require doing some bookkeeping. In this case, you can save the channel information during
 `channel_open_ack` and `channel_open_confirm`. During a channel handshake, depending on where the channel
 handshake is initiated, either `channel_open_init` then `channel_open_ack` or `channel_open_try`
-and `channel_open_confirm` is called. Which means `init` and `try` can have identical implementations
-and same applies to `ack` and `confirm`.
-
+then `channel_open_confirm` is called. This means `init` and `try` can have identical implementations
+and the same applies to `ack` and `confirm`.
 
 Now the exciting part, packet send and receive. The flow of two chains communicating works like this:
 
 1. IBC app on chain A calls `ibc::send_packet` to send a packet to chain B. The packet is relayed by the relayers.
-2. `ibc::recv_packet` function of IBC app on chain B is being called. The app receives a packet and calls `ibc::recv_packet` with an acknowledgement indicating whether the operation
-is successfull or not.
+2. `ibc::recv_packet` function of IBC app on chain B is being called. The app receives a packet and calls `ibc::recv_packet` with an acknowledgment indicating whether the operation
+   is successful or not.
 3. `ibc::acknowledge_packet` function of IBC app on chain A is being called. This is called to let the sender app whether the
-packet transfer succeeded. For example, if this were to be an asset transfer app, the locked assets could be refunded when the transfer
-fails.
+   packet transfer succeeded. For example, if this were to be an asset transfer app, the locked assets could be refunded when the transfer
+   fails.
 
 Let's first do the packet sending:
 
@@ -216,10 +213,10 @@ module my_app::ibc {
 ```
 
 Here we define whatever entry function we like. This example app defines a function to transfer some funds
-from the `caller` account using `channel`. Note that a `timeout` is also defined. IBC let's you define a height
+from the `caller` account using `channel`. Note that a `timeout` is also defined. IBC lets you define a height
 or timestamp-based timeout. Our app chose to work with timestamps here.
 
-The app did its transfer logic, returned a packet. And then it encoded that packet however it likes and sent that packet via IBC.
+The app did its transfer logic, and returned a packet. Then it encoded that packet however it liked and sent that packet via IBC.
 
 Now the receiving part:
 
@@ -272,17 +269,17 @@ module my_app::ibc {
 }
 ```
 
-As you can see, `decode_packet` is called with `packet_data`. This is intentionally left the the app developers
+As you can see, `decode_packet` is called with `packet_data`. This is intentionally left to the app developers
 because IBC has no assumption on what the packet is. So you can use whatever packet type you want.
 
-Next, `receive_transfer` is being called which should be the receiving logic defined by the protocol.
+Next, `receive_transfer` is called which should be the receiving logic defined by the protocol.
 
-And finally, in order to let IBC know a packet is received, `recv_packet` function of IBC is being called. The important part here is the last
-parameter (`ack`). This is the arbitrary acknowledgement that is used for letting the counterpary chain know whether the transaction is
-succeeded or not. In this implementation, we chose to use `1` and `0` but you can also put the error message to the failure case. 
+Finally, to let IBC know a packet is received, `recv_packet` function of IBC is being called. The important part here is the last
+parameter (`ack`). This is the arbitrary acknowledgment that is used for letting the counterparty chain know whether the transaction is
+succeeded or not. In this implementation, we chose to use `1` and `0` but you can also put the error message to the failure case.
 
 The final part of the flow is the acknowledgement. When we sent some funds, `do_transfer` function possibly
-locked some funds, burned some tokens and/or changed the balance of `caller`. Now, in the success case, we don't
+locked some funds, burned some tokens, and/or changed the balance of `caller`. Now, in the success case, we don't
 need to do anything but if the action failed, we need to undo the things that we did.
 
 ```move
@@ -330,7 +327,7 @@ module my_app::ibc {
 }
 ```
 
-Finally, we have the `timeout_packet` entrypoint. This is being called when the packet that we sent is timed out.
+Finally, we have the `timeout_packet` entry function. This is being called when the packet that we sent is timed out.
 Note that only the sender app is being notified when this happens. Here is an example implementation:
 
 ```move
@@ -378,4 +375,3 @@ module my_app::ibc {
   }
 }
 ```
-
