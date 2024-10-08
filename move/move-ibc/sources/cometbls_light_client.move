@@ -1,6 +1,4 @@
 module IBC::LightClient {
-    use IBC::proto_utils;
-    use std::option;
     use std::vector;
     use std::bcs;
     use std::string::{Self, String};
@@ -285,6 +283,29 @@ module IBC::LightClient {
         encode_consensus_state(consensus_state)
     }
 
+    public fun mock_create_client(): (vector<u8>, vector<u8>) {
+        let client_state = ClientState {
+            chain_id: string::utf8(b"this-chain"),
+            trusting_period: 0,
+            unbonding_period: 0,
+            max_clock_drift: 0,
+            frozen_height: height::new(0, 0),
+            latest_height: height::new(0, 1000),
+        };
+
+        let consensus_state = ConsensusState {
+            timestamp: 10000,
+            app_hash: MerkleRoot {
+                hash: x"0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
+        };
+
+        let data1= bcs::to_bytes(&client_state);
+        let data2 = encode_consensus_state(&consensus_state);
+        return (data1, data2)
+    }
+
     fun decode_client_state(buf: vector<u8>): ClientState {
         let buf = bcs_utils::new(buf);
 
@@ -460,8 +481,8 @@ module IBC::LightClient {
             next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
         };
 
-        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client"), bcs::to_bytes(&client_state), encode_consensus_state(&consensus_state));
-        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == encode_consensus_state(&consensus_state), 1);
+        let (cs, cons) = create_client(ibc_signer, string::utf8(b"this_client"), bcs::to_bytes(&client_state), encode_consensus_state(&consensus_state));
+        assert!(cs == bcs::to_bytes(&client_state) && cons == encode_consensus_state(&consensus_state), 1);
 
 
         let saved_state = borrow_global<State>(get_client_address(&string::utf8(b"this_client")));
@@ -476,8 +497,8 @@ module IBC::LightClient {
         client_state.trusting_period = 2;
         consensus_state.timestamp = 20000;
 
-        let (err, cs, cons) = create_client(ibc_signer, string::utf8(b"this_client-2"), bcs::to_bytes(&client_state), encode_consensus_state(&consensus_state));
-        assert!(err == 0 && cs == bcs::to_bytes(&client_state) && cons == encode_consensus_state(&consensus_state), 1);
+        let (cs, cons) = create_client(ibc_signer, string::utf8(b"this_client-2"), bcs::to_bytes(&client_state), encode_consensus_state(&consensus_state));
+        assert!(cs == bcs::to_bytes(&client_state) && cons == encode_consensus_state(&consensus_state), 1);
 
         let lh = latest_height(string::utf8(b"this_client-2"));
         std::debug::print(&lh);
