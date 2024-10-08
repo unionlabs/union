@@ -1,4 +1,4 @@
-# Aptos Move IBC
+# Move IBC
 
 Our Move-based implementation is designed to be permissionless, where any smart contract can plug in their
 implementation and start doing general message passing and asset transfers by using our IBC contract without
