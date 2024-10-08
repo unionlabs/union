@@ -6,8 +6,29 @@ import { onDestroy, onMount } from "svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
 import { axiom } from "$lib/utils/axiom.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import Print from "$lib/components/Terminal/Print.svelte"
+import { AddressForm, type ValidState } from "$lib/components/address"
 
-const { terminal } = getState()
+type Actions = "tweet" | "view" | "wallet" | "back"
+
+const { terminal, contributor } = getState()
+
+let showButtons = $state(true)
+let showInput = $state(false)
+
+let validation = (val: ValidState) => {
+  if (val === "INVALID") {
+    showInput = false
+    showButtons = true
+  } else if (val === "PENDING") {
+    showInput = false
+  } else if (val === "SAVED") {
+    showInput = false
+    showButtons = true
+  } else if (val === "SKIPPED") {
+    showInput = false
+  }
+}
 
 onMount(() => {
   terminal.setStep(10)
@@ -34,11 +55,17 @@ async function shareOnTwitter() {
   window.open(twitterIntentUrl.toString(), "_blank")
 }
 
-function trigger(value: "tweet" | "view") {
+function trigger(value: Actions) {
   if (value === "tweet") {
     shareOnTwitter()
   } else if (value === "view") {
     terminal.setTab(3)
+  } else if (value === "wallet") {
+    showButtons = false
+    showInput = true
+  } else if (value === "back") {
+    showInput = false
+    showButtons = true
   }
 }
 
@@ -47,4 +74,24 @@ onDestroy(() => {
 })
 </script>
 
-<Buttons data={[{text: "Tweet your attestation", action: "tweet"},{text: "View contributions", action: "view"}]} trigger={(value: 'tweet' | 'view') => trigger(value)}/>
+{#if showButtons}
+  <Buttons
+          data={[{text: "Tweet your attestation", action: "tweet"}, {text: "View contributions", action: "view"}, {text: "Update wallet", action: "wallet"}]}
+          trigger={(value: Actions) => trigger(value)}/>
+{/if}
+
+{#if showInput}
+  <Print>Enter your union or any cosmos address, or type "skip".</Print>
+  {#if !contributor.userWallet || contributor.userWallet === "SKIPPED"}
+    <Print>No wallet registered</Print>
+  {:else }
+    <Print>Registered: <span class="text-union-accent-500">{contributor.userWallet}</span></Print>
+  {/if}
+  <Print><br></Print>
+  <div class="flex w-full gap-1">
+    <div class="whitespace-nowrap">
+      <Print>Enter address:</Print>
+    </div>
+    <AddressForm {validation}/>
+  </div>
+{/if}

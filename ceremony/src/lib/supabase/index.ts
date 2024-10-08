@@ -166,18 +166,43 @@ interface WalletData {
 }
 
 export const insertWalletData = async (data: WalletData) => {
-  const { data: insertedData, error } = await supabase
+  const { data: existingData, error: fetchError } = await supabase
     .from("wallet_address")
-    .insert([
-      {
-        id: data.id,
+    .select()
+    .eq("id", data.id)
+
+  if (fetchError) {
+    console.error("Error fetching data:", fetchError)
+    return null
+  }
+
+  if (existingData && existingData.length > 0) {
+    const { data: updatedData, error: updateError } = await supabase
+      .from("wallet_address")
+      .update({
         wallet: data.wallet
-      }
-    ])
+      })
+      .eq("id", data.id)
+      .select()
+
+    if (updateError) {
+      console.error("Error updating data:", updateError)
+      return null
+    }
+
+    return updatedData
+  }
+
+  const { data: insertedData, error: insertError } = await supabase
+    .from("wallet_address")
+    .insert({
+      id: data.id,
+      wallet: data.wallet
+    })
     .select()
 
-  if (error) {
-    console.error("Error inserting data:", error)
+  if (insertError) {
+    console.error("Error inserting data:", insertError)
     return null
   }
 
@@ -196,14 +221,14 @@ export const getPublicHash = async () => {
   return data.public_key_hash
 }
 
-export const getUserWallet = async (userId: string | null): Promise<string | null> => {
+export const getUserWallet = async (userId: string): Promise<string | undefined> => {
   if (!userId) {
     console.log("Need to be logged in to get allowance state")
-    return null
+    return undefined
   }
 
   const { data, error } = await queryUserWallet(userId)
-  if (error || !data) return null
+  if (error || !data) return undefined
 
   return data.wallet
 }
@@ -239,5 +264,25 @@ export const getAverageTimes = async (): Promise<TimeResult> => {
     verificationMs,
     contributionMs,
     totalMs
+  }
+}
+
+export const rejoin = async () => {
+  if (!user.session) {
+    throw new Error("User is not logged in")
+  }
+
+  try {
+    const { error } = await supabase.rpc("rejoin_queue")
+
+    if (error) {
+      console.log("Error joining queue:", error)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    console.log("Unexpected error:", err)
+    return false
   }
 }

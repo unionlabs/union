@@ -78,8 +78,8 @@ export class Contributor {
   state = $state<State>("loading")
   clientState = $state<ClientState>(undefined)
   contributionState = $state<ContributionState>(undefined)
-  userWallet = $state<string | null>()
-  downloadedSecret = $state<boolean>(localStorage.getItem("downloaded-secret") === "true")
+  userWallet = $state<string | undefined>(undefined)
+  storedSecret = $state<boolean>(false)
 
   queueState = $state<QueueState>({
     position: null,
@@ -104,26 +104,48 @@ export class Contributor {
       this.startPolling()
     }
     onDestroy(() => {
-      this.stopPolling()
+      this.resetState()
     })
+  }
+
+  resetState() {
+    this.userId = undefined
+    this.loggedIn = false
+    this.currentUserState = undefined
+    this.pollingState = "stopped"
+    this.state = "loading"
+    this.clientState = undefined
+    this.contributionState = undefined
+    this.userWallet = null
+    this.queueState = {
+      position: null,
+      count: null
+    }
+    this.stopPolling()
   }
 
   setUserId(userId: string | undefined) {
     if (this.userId === undefined && userId) {
       this.userId = userId
       this.loggedIn = true
+      this.checkStoredSecret(userId)
       this.checkUserWallet(userId)
       this.checkCurrentUserState(userId)
       this.startPolling()
     }
   }
 
-  async checkCurrentUserState(userId: string | undefined): Promise<AllowanceState> {
+  checkStoredSecret(userId: string) {
+    this.storedSecret = localStorage.getItem(`${userId}:downloaded-secret`) === "true"
+  }
+
+  async checkCurrentUserState(userId: string): Promise<AllowanceState> {
     this.currentUserState = await getCurrentUserState(userId)
     return this.currentUserState
   }
 
-  async checkUserWallet(userId: string): Promise<string | null> {
+  async checkUserWallet(userId: string | undefined): Promise<string | undefined> {
+    if (!userId) return undefined
     this.userWallet = await getUserWallet(userId)
     return this.userWallet
   }
