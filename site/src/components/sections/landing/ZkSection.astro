@@ -5,17 +5,28 @@ import ButtonA from "../../ButtonA.astro"
 import Subtitle from "../../typography/subtitle.astro"
 import whale from "#/assets/images/big-whale.png"
 import ContainedSection from "../../ContainedSection.astro"
+import { renderRichText, renderTitle } from "../../../lib/contentful/render.ts"
+
+interface Props {
+  title: any
+  text: any
+}
+
+const { title, text } = Astro.props
+
+const titleHtml = renderTitle(title)
+const textHtml = renderRichText(text)
 ---
 
 <ContainedSection>
   <div class="relative flex w-full h-fit">
     <div class="absolute inset-0 flex items-center justify-center flex-col text-center z-10 h-full">
-      <H1>Zero Knowledge<br>cryptography.<br>
-        Fast, Secure, Cheap.
-      </H1> 
+      <H1>
+        <Fragment set:html={titleHtml}/>
+      </H1>
       <div class="text-3xl max-w-[1037px] py-4 sm:py-8">
-        <Subtitle>It takes only 7 seconds to generate a Union ZK proof,<br>securing thousands of transfers on
-          hundreds of chains.
+        <Subtitle>
+          <Fragment set:html={textHtml}/>
         </Subtitle>
       </div>
       <ButtonA>Start Swimming</ButtonA>

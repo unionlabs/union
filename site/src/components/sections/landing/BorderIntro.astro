@@ -1,9 +1,19 @@
 ---
 import MatrixCover from "../../MatrixCover.astro"
-import ContainedSection from "../../ContainedSection.astro"
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
+import { renderRichText, renderTitle } from "../../../lib/contentful/render.ts"
+
+interface Props {
+  title: any
+  text: any
+}
+
+const { title, text } = Astro.props
+
+const titleHtml = renderTitle(title)
+const textHtml = renderRichText(text)
 ---
 
   <div class="header-grid">
@@ -15,11 +25,8 @@ import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
     </div>
     <MatrixCover/>
     <div class="backdrop-blur-2xl header-text-content p-6 md:p-8 flex flex-col gap-4 m-4">
-      <H1>The ZK<br> <span class="text-accent-500">Interop Layer</span></H1>
-      <QuoteSubTitle>
-        Connecting every blockchain, without compromising on security, efficiency,
-        decentralization, or speed.
-      </QuoteSubTitle>
+      <H1><Fragment set:html={titleHtml} /></H1>
+      <QuoteSubTitle><Fragment set:html={textHtml} /></QuoteSubTitle>
       <ButtonA href="https://app.union.build">DIVE IN </ButtonA>
     </div>
 

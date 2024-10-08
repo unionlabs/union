@@ -1,23 +1,35 @@
 ---
-import { Image } from "astro:assets"
 import H1 from "../../typography/h1.astro"
 import ButtonA from "../../ButtonA.astro"
 import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 import ContainedSection from "../../ContainedSection.astro"
-import Spline from "../../Spline.astro"
+import { renderRichText, renderTitle } from "../../../lib/contentful/render.ts"
+
+interface Props {
+  title: any
+  text: any
+}
+
+const { title, text } = Astro.props
+
+const titleHtml = renderTitle(title)
+const textHtml = renderRichText(text)
 ---
 
 <ContainedSection>
   <div class="flex flex-col-reverse lg:flex-row gap-12 py-12">
     <div class="flex flex-col justify-center gap-6 flex-1">
-      <H1>Consensus <br> verification <br> for security <br> and <span class="text-accent-500">stability</span></H1>
+      <H1>
+        <Fragment set:html={titleHtml}/>
+      </H1>
       <div class="max-w-[438px]">
-        <QuoteSubTitle>Union eliminates intermediaries and connects blockchains directly. With Union light clients, you
-          get secure, censorship-resistant connections to any ecosystem.
+        <QuoteSubTitle>
+          <Fragment set:html={textHtml}/>
         </QuoteSubTitle>
       </div>
       <ButtonA>Learn More</ButtonA>
     </div>
-    <video class="bg-black flex-1" src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/radial-glass-union.webm" autoplay muted loop/>
+    <video class="bg-black flex-1" src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/radial-glass-union.webm"
+           autoplay muted loop/>
   </div>
 </ContainedSection>

@@ -1,7 +1,5 @@
 ---
-import LightedTitle from "../typography/LightedTitle.astro"
-import SplineCover from "../SplineCover.astro"
-
+import H2 from "../typography/h2.astro"
 const { title } = Astro.props
 ---
 
@@ -9,7 +7,9 @@ const { title } = Astro.props
   <div class="absolute w-full max-w-[1440px] px-6 pt-24 md:pt-36 h-svh z-10">
     <div class="pointer-events-none z-20 flex flex-col justify-between w-full h-full">
       <div class="flex flex-col text-left items-start">
-        <LightedTitle {title}/>
+        <H2>
+          <Fragment set:html={title} />
+        </H2>
       </div>
       <slot />
     </div>

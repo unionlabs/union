@@ -1,4 +1,8 @@
+
 ---
+import { contentfulClient } from "../lib/contentful/client.ts"
+import type { LandingPageSkeleton, LandingPageFields } from "../lib/contentful/types.ts"
+
 import ContainedSection from "../components//ContainedSection.astro"
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import ConsensusSection from "../components/sections/landing/ConsensusSection.astro"
@@ -28,7 +32,6 @@ import partner_movement from "#/assets/images/marquee/partners/movement.png"
 import partner_bera from "#/assets/images/marquee/partners/bera.png"
 import partner_arbitrum from "#/assets/images/marquee/partners/arbitrum.png"
 import BorderIntro from "../components/sections/landing/BorderIntro.astro"
-import LightedTitle from "#/components/typography/LightedTitle.astro"
 
 export const prerender = false
 
@@ -60,16 +63,57 @@ const partners = [
   { name: "Bera", logo: partner_bera, url: "" },
   { name: "Arbitrum", logo: partner_arbitrum, url: "" }
 ]
+
+let landingData: LandingPageFields | null = null
+let error: string | null = null
+try {
+  const landingEntries = await contentfulClient.getEntries<LandingPageSkeleton>({
+    content_type: "landing"
+  })
+  if (landingEntries.items.length > 0) {
+    landingData = landingEntries.items[0].fields
+  } else {
+    error = "No landing page data found."
+  }
+} catch (err) {
+  console.error("Error fetching Contentful data:", err)
+  error = "Failed to load content. Please try again later."
+}
 ---
 
 <SectionsLayout>
-  <BorderIntro/>
-  <ConsensusSection/>
-  <ZkSection/>
-  <ExecutionSection/>
-  <ContainedSection>
-    <!--<LightedTitle title={"Our Pod"} />!-->
-    <MarqueeSection title={"Our pod."} reverse={false} data={pods}/>
-    <MarqueeSection title={"Our partners."} reverse={true} data={partners}/>
-  </ContainedSection>
+  {error ? (
+          <div class="error-message">
+            <h2>Error</h2>
+            <p>{error}</p>
+          </div>
+  ) : landingData ? (
+          <>
+            <BorderIntro
+                    title={landingData.firstTitle}
+                    text={landingData.firstText}
+            />
+            <ConsensusSection
+                    title={landingData.secondTitle}
+                    text={landingData.secondText}
+            />
+            <ZkSection
+                    title={landingData.thirdTitle}
+                    text={landingData.thirdText}
+            />
+            <ExecutionSection
+                    title={landingData.fourthTitle}
+                    text={landingData.fourthText}
+            />
+            <ContainedSection>
+              <MarqueeSection title={"Our pod."} reverse={false} data={pods}/>
+              <MarqueeSection title={"Our partners."} reverse={true} data={partners}/>
+            </ContainedSection>
+          </>
+  ) : (
+          <div class="loading-message">
+            <p>Loading content...</p>
+          </div>
+  )}
 </SectionsLayout>
+
