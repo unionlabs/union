@@ -19,8 +19,8 @@ const textHtml = renderRichText(text)
 ---
 
 <ContainedSection>
-  <div class="relative flex w-full h-fit">
-    <div class="absolute inset-0 flex items-center justify-center flex-col text-center z-10 h-full">
+  <div class="grid w-full py-24">
+    <div class="z-20 col-start-1 max-w-2xl justify-center justify-self-center row-start-1 self-center flex flex-col items-center text-center">
       <H1>
         <Fragment set:html={titleHtml}/>
       </H1>
@@ -31,6 +31,6 @@ const textHtml = renderRichText(text)
       </div>
       <ButtonA>Start Swimming</ButtonA>
     </div>
-    <Image src={whale} alt="Big Whale" class="object-contain h-auto px-24 opacity-60"></Image>
+    <Image src={whale} alt="Big Whale" class="z-10  scale-150 md:scale-100 col-start-1 row-start-1 opacity-60"></Image>
   </div>
 </ContainedSection>

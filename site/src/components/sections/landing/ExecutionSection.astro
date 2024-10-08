@@ -17,8 +17,8 @@ const textHtml = renderRichText(text)
 ---
 
 <ContainedSection>
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 py-12">
-    <div class="flex flex-col justify-center gap-6">
+  <div class="flex flex-col-reverse md:flex-row gap-12 py-12">
+    <div class="flex flex-col justify-center gap-4">
       <H1><Fragment set:html={titleHtml} /></H1>
       <div class="max-w-[672px]">
         <QuoteSubTitle>
@@ -27,6 +27,6 @@ const textHtml = renderRichText(text)
       </div>
       <ButtonA href="/ecosystem">Our Ecosystem</ButtonA>
     </div>
-    <video class="bg-black" src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/modularity-stack.webm" autoplay muted loop/>
+    <video class="bg-black" src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/modular-stack-v2.mp4" autoplay muted loop/>
   </div>
 </ContainedSection>
