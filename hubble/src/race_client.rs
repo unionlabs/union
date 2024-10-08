@@ -29,10 +29,6 @@ impl<C> RaceClient<C> {
         }
     }
 
-    pub fn fastest(&self) -> &C {
-        &self.clients[self.fastest_index()]
-    }
-
     pub fn fastest_index(&self) -> usize {
         self.fastest.load(Ordering::Relaxed)
     }

@@ -32,11 +32,11 @@ use crate::{
             block_handle::{BlockDetails, BlockHeader, TmBlockHandle},
             context::TmContext,
             create_client_tracker::schedule_create_client_checker,
+            postgres::{PgBlock, PgEvent, PgTransaction},
             provider::{Provider, RpcProviderId},
         },
     },
     postgres::{fetch_or_insert_chain_id_tx, ChainId},
-    tm::{PgBlock, PgEvent, PgTransaction},
 };
 
 #[derive(Clone)]
@@ -207,7 +207,7 @@ impl TmFetcherClient {
         let pg_block = PgBlock {
             chain_id: self.chain_id,
             hash: block_id.hash.to_string(),
-            height: header.height.value() as i32,
+            height: header.height.value(),
             time: header.time.into(),
             data: serde_json::to_value(&header)
                 .unwrap()
@@ -239,7 +239,7 @@ impl TmFetcherClient {
                         let event = PgEvent {
                             chain_id: self.chain_id,
                             block_hash: block_reference.hash.clone(),
-                            block_height: block_reference.height as i32,
+                            block_height: block_reference.height,
                             time: block_reference.timestamp,
                             data: serde_json::to_value(event).unwrap().replace_escape_chars(),
                             transaction_hash: Some(transaction_hash.clone()),
@@ -254,7 +254,7 @@ impl TmFetcherClient {
                 PgTransaction {
                     chain_id: self.chain_id,
                     block_hash: block_reference.hash.clone(),
-                    block_height: block_reference.height as i32,
+                    block_height: block_reference.height,
                     time: block_reference.timestamp,
                     data,
                     hash: transaction_hash,
@@ -461,7 +461,7 @@ impl BlockExt for tendermint_rpc::endpoint::block_results::Response {
             .map(|e| PgEvent {
                 chain_id,
                 block_hash: block_hash.clone(),
-                block_height,
+                block_height: block_height as u64,
                 time,
                 data: serde_json::to_value(e).unwrap().replace_escape_chars(),
                 transaction_hash: None,
@@ -471,7 +471,7 @@ impl BlockExt for tendermint_rpc::endpoint::block_results::Response {
         let end_block_events = self.end_block_events.into_iter().map(|e| PgEvent {
             chain_id,
             block_hash: block_hash.clone(),
-            block_height,
+            block_height: block_height as u64,
             time,
             data: serde_json::to_value(e).unwrap().replace_escape_chars(),
             transaction_hash: None,
@@ -481,7 +481,7 @@ impl BlockExt for tendermint_rpc::endpoint::block_results::Response {
         let finalize_block_events = self.finalize_block_events.into_iter().map(|e| PgEvent {
             chain_id,
             block_hash: block_hash.clone(),
-            block_height,
+            block_height: block_height as u64,
             time,
             data: serde_json::to_value(e).unwrap().replace_escape_chars(),
             transaction_hash: None,
@@ -491,7 +491,7 @@ impl BlockExt for tendermint_rpc::endpoint::block_results::Response {
         let validator_updates = self.validator_updates.into_iter().map(|e| PgEvent {
             chain_id,
             block_hash: block_hash.clone(),
-            block_height,
+            block_height: block_height as u64,
             time,
             data: serde_json::to_value(WithType::validator_update(e))
                 .unwrap()
@@ -503,7 +503,7 @@ impl BlockExt for tendermint_rpc::endpoint::block_results::Response {
         let consensus_param_updates = self.consensus_param_updates.into_iter().map(|e| PgEvent {
             chain_id,
             block_hash: block_hash.clone(),
-            block_height,
+            block_height: block_height as u64,
             time,
             data: serde_json::to_value(WithType::consensus_param_update(e))
                 .unwrap()

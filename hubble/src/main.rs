@@ -15,7 +15,6 @@ use tracing::{error, info, warn};
 mod arb;
 mod beacon;
 mod bera;
-mod chain_id_query;
 mod cli;
 mod consensus;
 mod healthz;
@@ -25,7 +24,6 @@ mod metrics;
 mod postgres;
 mod race_client;
 mod scroll;
-mod tm;
 mod token_list;
 
 #[cfg(not(target_env = "msvc"))]
@@ -71,23 +69,6 @@ async fn main() -> color_eyre::eyre::Result<()> {
             })
         });
     });
-
-    let indexers = args.indexers.clone();
-
-    let client_updates = {
-        let db = db.clone();
-        async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
-
-            loop {
-                info!("fetching new client counterparty_chain_ids");
-                chain_id_query::tx(db.clone(), indexers.clone()).await;
-                interval.tick().await;
-            }
-        }
-    };
-
-    set.spawn(client_updates);
 
     let tokens_updates = async move {
         let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));

@@ -1,6 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
-use alloy::primitives::FixedBytes;
+use alloy::{primitives::FixedBytes, sol};
 use tokio::{task::JoinSet, time::interval};
 use tracing::{debug, info, info_span, warn, Instrument};
 use unionlabs::{
@@ -8,13 +8,23 @@ use unionlabs::{
     ibc::lightclients::cometbls::client_state::ClientState,
 };
 
-use crate::{
-    chain_id_query::IbcHandler,
-    indexer::{
-        api::IndexerError,
-        eth::{postgres::unmapped_clients, provider::Provider},
-    },
+use crate::indexer::{
+    api::IndexerError,
+    eth::{postgres::unmapped_clients, provider::Provider},
 };
+
+sol! {
+    contract IbcHandler {
+        function CreateClient(MsgCreateClient calldata) returns (string memory);
+    }
+
+    struct MsgCreateClient {
+        string client_type;
+        bytes client_state_bytes;
+        bytes consensus_state_bytes;
+        address relayer;
+    }
+}
 
 pub fn schedule_create_client_checker(
     pg_pool: sqlx::PgPool,

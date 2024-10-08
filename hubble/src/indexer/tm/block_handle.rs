@@ -5,19 +5,18 @@ use sqlx::Postgres;
 use tendermint::block::Meta;
 use tracing::debug;
 
-use crate::{
-    indexer::{
-        api::{
-            BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, FetchMode,
-            IndexerError,
-        },
-        tm::{
-            fetcher_client::TmFetcherClient, postgres::delete_tm_block_transactions_events,
-            provider::RpcProviderId,
-        },
+use crate::indexer::{
+    api::{
+        BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, FetchMode, IndexerError,
     },
-    postgres,
-    tm::{PgBlock, PgEvent, PgTransaction},
+    tm::{
+        fetcher_client::TmFetcherClient,
+        postgres::{
+            delete_tm_block_transactions_events, insert_batch_blocks, insert_batch_events,
+            insert_batch_transactions, PgBlock, PgEvent, PgTransaction,
+        },
+        provider::RpcProviderId,
+    },
 };
 
 #[derive(Clone)]
@@ -125,10 +124,9 @@ impl BlockHandle for TmBlockHandle {
 
         let (block, transactions, events) = self.get_block_insert().await?;
 
-        let mode = postgres::InsertMode::Insert;
-        postgres::insert_batch_blocks(tx, vec![block], mode).await?;
-        postgres::insert_batch_transactions(tx, transactions, mode).await?;
-        postgres::insert_batch_events(tx, events, mode).await?;
+        insert_batch_blocks(tx, vec![block]).await?;
+        insert_batch_transactions(tx, transactions).await?;
+        insert_batch_events(tx, events).await?;
 
         debug!("{}: done", reference);
         Ok(())
