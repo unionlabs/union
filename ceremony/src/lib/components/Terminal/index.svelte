@@ -10,7 +10,7 @@ import Button from "$lib/components/Terminal/Button.svelte"
 import TaskBar from "$lib/components/Terminal/TaskBar.svelte"
 import Printer from "$lib/components/Terminal/Printer.svelte"
 
-const { terminal } = getState()
+const { terminal, contributor } = getState()
 
 let { children } = $props()
 
@@ -75,7 +75,7 @@ function autoScroll(node: HTMLElement) {
       {/if}
     </div>
     {#if user.session?.user}
-      <Button class="text-white" onclick={() => logout(terminal)}>Log out</Button>
+      <Button class="text-white" onclick={() => logout(terminal, contributor)}>Log out</Button>
     {/if}
   </div>
 

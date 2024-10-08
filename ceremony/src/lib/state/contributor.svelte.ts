@@ -104,8 +104,24 @@ export class Contributor {
       this.startPolling()
     }
     onDestroy(() => {
-      this.stopPolling()
+      this.resetState()
     })
+  }
+
+  resetState() {
+    this.userId = undefined
+    this.loggedIn = false
+    this.currentUserState = undefined
+    this.pollingState = "stopped"
+    this.state = "loading"
+    this.clientState = undefined
+    this.contributionState = undefined
+    this.userWallet = null
+    this.queueState = {
+      position: null,
+      count: null
+    }
+    this.stopPolling()
   }
 
   setUserId(userId: string | undefined) {

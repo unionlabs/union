@@ -4,6 +4,7 @@ import { err, ok, type Result } from "neverthrow"
 import { goto, invalidateAll } from "$app/navigation"
 import type { Terminal } from "$lib/state/terminal.svelte.ts"
 import { sleep } from "$lib/utils/utils.ts"
+import type { Contributor } from "$lib/state/contributor.svelte.ts"
 
 export type SessionError = {
   message: string
@@ -31,7 +32,7 @@ export async function checkAuth(): Promise<Result<null, SessionError>> {
   return ok(null)
 }
 
-export async function logout(terminal: Terminal): Promise<void> {
+export async function logout(terminal: Terminal, contributor: Contributor): Promise<void> {
   terminal.setTab(1)
   await goto("/")
 
@@ -46,6 +47,7 @@ export async function logout(terminal: Terminal): Promise<void> {
   try {
     const { error } = await supabase.auth.signOut()
     user.session = null
+    contributor.resetState()
     terminal.setHash(undefined)
     await invalidateAll()
   } catch (error) {
