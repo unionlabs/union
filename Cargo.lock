@@ -6435,6 +6435,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-contracts"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+]
+
+[[package]]
 name = "ibc-vm-rs"
 version = "0.1.0"
 dependencies = [

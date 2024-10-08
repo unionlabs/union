@@ -113,7 +113,7 @@ members = [
 
   "lib/reconnecting-jsonrpc-ws-client",
   "lib/voyager-core",
-  "lib/subset-of",
+  "lib/subset-of", "lib/ibc-contracts",
 ]
 
 [workspace.package]
