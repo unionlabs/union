@@ -13,7 +13,7 @@ const { url, title, image, description, gapless } = Astro.props
 ---
 
 <Layout {url} {title} {image} {description}>
-  <main class:list={["flex flex-col relative", {"gap-16 lg:gap-32": !gapless}]}>
+  <main class:list={["flex flex-col relative", {"gap-8 md:gap-16 lg:gap-32": !gapless}]}>
     <slot />
   </main>
 </Layout>
