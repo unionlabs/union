@@ -16,7 +16,7 @@ let { change }: Props = $props()
 let showButtons = $state(true)
 
 let command =
-  "mkdir -p ceremony && docker pull ghcr.io/unionlabs/union/mpc-client:multi && docker run -v $(pwd)/ceremony:/ceremony -w /ceremony -p 4919:4919 --rm -it ghcr.io/unionlabs/union/mpc-client:multi"
+  "mkdir -p ceremony && docker pull ghcr.io/unionlabs/union/mpc-client:v1.0 && docker run -v $(pwd)/ceremony:/ceremony -w /ceremony -p 4919:4919 --rm -it ghcr.io/unionlabs/union/mpc-client:v1.0"
 
 onMount(() => {
   terminal.setStep(3)
