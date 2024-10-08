@@ -21,7 +21,6 @@ export default defineConfig({
   experimental: {
     clientPrerender: true,
     contentIntellisense: true,
-    contentCollectionCache: true
   },
   trailingSlash: "ignore",
   adapter: vercel({
