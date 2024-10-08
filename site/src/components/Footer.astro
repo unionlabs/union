@@ -27,6 +27,10 @@ const menuItems = [
   {
     url: "https://github.com/unionlabs/union",
     name: "GitHub"
+  },
+  {
+    url: "https://app.union.build",
+    name: "Testnet App"
   }
 ]
 
@@ -36,9 +40,9 @@ function isInternal(menuItem: { url: string }): boolean {
 ---
 
 <footer
-  class="font-jetbrains flex flex-col justify-center font-normal items-center text-[8px] sm:text-sm md:text-xl gap-4 py-8 pt-36"
+  class="font-jetbrains justify-center flex flex-col font-normal items-center gap-4 p-4 mt-16"
 >
-  <ul class="flex gap-8 list-none">
+  <ul class="flex flex-wrap gap-x-6 gap-y-4 list-none">
     {
       menuItems.map(menuItem => (
         <li>
