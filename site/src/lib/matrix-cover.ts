@@ -9,10 +9,10 @@ let targetMouseX = 0
 let targetMouseY = 0
 let displayWidth = 1000
 let displayHeight = 1000
-const RETINA_ENABLED = false
+const RETINA_ENABLED = true
 const WIDTH = 80 // Must be even
-const WAIT_TIME = 2
-const DURATION = 4 // Total duration of the transition in seconds
+const endRotationY = Math.PI / 4 // Ending rotation angle
+const endRotationX = Math.PI / 4 // Ending rotation angle
 
 const W2 = WIDTH / 2
 
@@ -116,7 +116,7 @@ function initWebGL() {
       void main(void) {
         gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
         float fadeAmount = smoothstep(-0.5, 0.5, uYOffset);
-        vColor = vec4(mix(vec3(0.0, 0.1, 0.1), aVertexColor.rgb, fadeAmount), aVertexColor.a);
+        vColor = vec4(mix(vec3(0.0, 0.05, 0.05), aVertexColor.rgb, fadeAmount), aVertexColor.a);
       }
     `
 
@@ -328,31 +328,13 @@ function initWebGL() {
     glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -16])
     // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 2, [1, 0, 0]);
     // glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI / 4, [0, 1, 0]);
-    const startRotation = Math.PI / 2 // Starting rotation angle
-    const endRotationY = Math.PI / 4 // Ending rotation angle
-    const endRotationX = Math.PI / 4 // Ending rotation angle
 
     // Current time since the animation started (you need to define how you get this)
 
     // Normalize time to a value between 0 and 1
 
-    const s =
-      totalTime < WAIT_TIME ? 0 : Math.max(0, Math.min(1, (totalTime - WAIT_TIME) / DURATION))
-
-    // Smoothstep easing function for smooth transition
-    function smoothStep(s) {
-      return s * s * (3 - 2 * s)
-    }
-
-    // Compute the timing factor using the easing function
-    const timing = smoothStep(s)
-
-    // Calculate the current rotation value
-    const rotationY = startRotation + (endRotationY - startRotation) * timing
-    const rotationX = startRotation + (endRotationX - startRotation) * timing
-
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, rotationY + mouseY * 0.05, [1, 0, 0])
-    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -rotationX + mouseX * 0.05, [0, 1, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, endRotationY + mouseY * 0.05, [1, 0, 0])
+    glMatrix.mat4.rotate(modelViewMatrix, modelViewMatrix, -endRotationX + mouseX * 0.05, [0, 1, 0])
 
     // Set up attribute buffers
     {
@@ -405,7 +387,7 @@ function initWebGL() {
 
       // Apply wave motion with new calculation
       const waveOffset = calculateWaveOffset(x, z, totalTime)
-      glMatrix.mat4.translate(cubeMatrix, cubeMatrix, [0, waveOffset, 0])
+      glMatrix.mat4.translate(cubeMatrix, cubeMatrix, [0, waveOffset * 1.2, 0])
 
       // Set y-offset uniform for fading
       gl.uniform1f(programInfo.uniformLocations.yOffset, waveOffset)
