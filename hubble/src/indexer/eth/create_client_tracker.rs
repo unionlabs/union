@@ -1,10 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
-use alloy::{
-    primitives::FixedBytes,
-    providers::RootProvider,
-    transports::http::{Client, Http},
-};
+use alloy::primitives::FixedBytes;
 use tokio::{task::JoinSet, time::interval};
 use tracing::{debug, info, info_span, warn, Instrument};
 use unionlabs::{
@@ -12,12 +8,18 @@ use unionlabs::{
     ibc::lightclients::cometbls::client_state::ClientState,
 };
 
-use crate::{chain_id_query::IbcHandler, indexer::api::IndexerError, race_client::RaceClient};
+use crate::{
+    chain_id_query::IbcHandler,
+    indexer::{
+        api::IndexerError,
+        eth::{postgres::unmapped_clients, provider::Provider},
+    },
+};
 
 pub fn schedule_create_client_checker(
     pg_pool: sqlx::PgPool,
     join_set: &mut JoinSet<Result<(), IndexerError>>,
-    provider: RaceClient<RootProvider<Http<Client>>>,
+    provider: Provider,
     internal_chain_id: i32,
 ) {
     join_set.spawn(async move {
@@ -26,32 +28,24 @@ pub fn schedule_create_client_checker(
         loop {
             info!("check");
 
-            let eth_clients = sqlx::query!(
-                r#"
-                SELECT cl.transaction_hash, cl.height, cl.log_index, cl.client_id
-                FROM   v1_evm.client_created cl
-                WHERE  cl.internal_chain_id = $1
-                "#,
-                internal_chain_id
-            )
-            .fetch_all(&pg_pool)
-            .await
-            .unwrap();
+            let unmapped_clients = unmapped_clients(&pg_pool, internal_chain_id).await?;
+            info!("{}, check: unmapped clients: {}", internal_chain_id, unmapped_clients.len());
 
-            for record in eth_clients {
-                let height = record.height.expect("block height");
-                let transaction_hash = record.transaction_hash.expect("transaction hash");
+            for unmapped_client in unmapped_clients {
+                let height = unmapped_client.height;
+                let transaction_hash = unmapped_client.transaction_hash;
 
                 info!("{}-{}: checking", height, transaction_hash);
 
-                let Some(client_id) = record.client_id else {
+                let Some(client_id) = unmapped_client.client_id else {
                     debug!("{}-{}: no client id => skipping", height, transaction_hash);
                     continue;
                 };
 
                 let tx = provider
-                    .get_transaction_by_hash(FixedBytes::from_str(&transaction_hash).expect("valid transaction hash"))
+                    .get_transaction_by_hash(FixedBytes::from_str(&transaction_hash).expect("valid transaction hash"), None)
                     .await?
+                    .response
                     .expect("transaction");
 
                 let msg = match <IbcHandler::CreateClientCall as alloy::sol_types::SolCall>::abi_decode(&tx.input,true) {

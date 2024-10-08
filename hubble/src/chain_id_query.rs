@@ -1,9 +1,4 @@
-use std::str::FromStr;
-
-use alloy::{
-    providers::{Provider, ProviderBuilder},
-    sol,
-};
+use alloy::sol;
 use prost::Message;
 use protos::ibc::{
     core::client::v1::QueryClientStateRequest, lightclients::wasm::v1::QueryCodeRequest,
@@ -12,7 +7,7 @@ use sqlx::PgPool;
 use tendermint_rpc::{Client, HttpClient};
 use tracing::warn;
 use unionlabs::{
-    encoding::{DecodeAs, EthAbi, Proto},
+    encoding::{DecodeAs, Proto},
     parse_wasm_client_type, WasmClientType,
 };
 sol! {
@@ -49,7 +44,6 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
             IndexerConfig::Arb(_) => {}
             IndexerConfig::Beacon(_) => {}
             IndexerConfig::Bera(_) => {}
-            IndexerConfig::EthFork(_) => {}
             IndexerConfig::Tm(tm_config) => {
                 let client = HttpClient::new(tm_config.urls[0].as_str()).unwrap();
 
@@ -229,74 +223,6 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                             panic!("unknown client state type {}", client_state.type_url)
                         }
                     };
-                }
-            }
-            IndexerConfig::Eth(eth_config) => {
-                let provider = ProviderBuilder::new().on_http(eth_config.urls[0].clone());
-
-                let chain_id = provider.get_chain_id().await.unwrap().to_string();
-                dbg!("hi");
-
-                let eth_clients = sqlx::query!(
-                    r#"
-                    SELECT
-                        cl.transaction_hash, cl.client_id, ch.id
-                    FROM
-                        v0_evm.client_created cl
-                    JOIN
-                        v0.chains ch
-                    ON
-                        cl.chain_id = ch.id
-                    WHERE
-                        ch.chain_id = $1
-                    "#,
-                    chain_id
-                )
-                .fetch_all(&db)
-                .await
-                .unwrap();
-
-                for record in eth_clients {
-                    let Some(client_id) = record.client_id else {
-                        tracing::info!(
-                            internal_db_chain_id = record.id,
-                            %chain_id,
-                            "skipping record"
-                        );
-                        continue;
-                    };
-
-                    let tx = provider
-                        .get_transaction_by_hash(
-                            alloy::primitives::FixedBytes::from_str(
-                                &record.transaction_hash.unwrap(),
-                            )
-                            .unwrap(),
-                        )
-                        .await
-                        .unwrap()
-                        .unwrap();
-
-                    let msg = match <IbcHandler::CreateClientCall as alloy::sol_types::SolCall>::abi_decode(&tx.input,true) {
-                        Ok(msg) => msg,
-                        Err(err) => {
-                            warn!("could not decode CreateClientCall, most likely due to ABI change: {}", err);
-                            continue
-                        }
-                    };
-
-                    match &*msg._0.client_type {
-                        "cometbls" => {
-                            let cs = unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<EthAbi>(&msg._0.client_state_bytes).unwrap();
-
-                            datas.push(Data {
-                                chain_id: record.id,
-                                client_id,
-                                counterparty_chain_id: cs.chain_id.to_string(),
-                            })
-                        }
-                        ty => panic!("unknown evm client type `{ty}`"),
-                    }
                 }
             }
         }

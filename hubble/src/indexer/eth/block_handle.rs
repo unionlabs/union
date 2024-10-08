@@ -3,17 +3,21 @@ use axum::async_trait;
 use color_eyre::eyre::Report;
 use const_hex::ToHexExt;
 use futures::{stream::FuturesOrdered, Stream};
+use serde::{Deserialize, Serialize};
 use sqlx::Postgres;
+use time::OffsetDateTime;
 use tracing::debug;
 
-use super::fetcher_client::EthFetcherClient;
 use crate::{
-    eth::BlockInsert,
     indexer::{
         api::{BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, IndexerError},
-        eth::postgres::delete_eth_log,
+        eth::{
+            fetcher_client::EthFetcherClient,
+            postgres::{delete_eth_log, insert_batch_logs},
+            provider::RpcProviderId,
+        },
     },
-    postgres::{insert_batch_logs, update_contracts_indexed_heights, InsertMode},
+    postgres::{update_contracts_indexed_heights, ChainId, InsertMode},
 };
 
 #[derive(Clone)]
@@ -22,12 +26,37 @@ pub enum BlockDetails {
     Eager(Option<BlockInsert>),
 }
 
+#[must_use]
+#[derive(Debug, Clone)]
+pub struct BlockInsert {
+    pub chain_id: ChainId,
+    pub hash: String,
+    pub header: Block,
+    pub height: i32,
+    pub time: OffsetDateTime,
+    pub transactions: Vec<TransactionInsert>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TransactionInsert {
+    pub hash: String,
+    pub index: i32,
+    pub events: Vec<EventInsert>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EventInsert {
+    pub data: serde_json::Value,
+    pub log_index: usize,
+    pub transaction_log_index: i32,
+}
+
 #[derive(Clone)]
 pub struct EthBlockHandle {
     pub reference: BlockReference,
     pub details: BlockDetails,
     pub eth_client: EthFetcherClient,
-    pub provider_index: usize,
+    pub provider_id: RpcProviderId,
 }
 
 impl EthBlockHandle {
@@ -36,7 +65,7 @@ impl EthBlockHandle {
             BlockDetails::Eager(block_insert) => block_insert,
             BlockDetails::Lazy(block) => {
                 self.eth_client
-                    .fetch_details(&block, self.provider_index)
+                    .fetch_details(&block, self.provider_id)
                     .await?
             }
         })
@@ -62,7 +91,7 @@ impl BlockHandle for EthBlockHandle {
                     .fetch_single_with_provider(
                         BlockSelection::Height(height),
                         fetch_mode,
-                        Some(self.provider_index),
+                        Some(self.provider_id),
                     )
                     .await
             }),
