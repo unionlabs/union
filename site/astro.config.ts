@@ -20,7 +20,7 @@ export default defineConfig({
   output: "server",
   experimental: {
     clientPrerender: true,
-    contentIntellisense: true,
+    contentIntellisense: true
   },
   trailingSlash: "ignore",
   adapter: vercel({
