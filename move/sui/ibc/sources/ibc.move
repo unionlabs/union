@@ -442,6 +442,46 @@ module ibc::ibc {
         ibc_store.update_connection_commitment(connection_id, *connection);
     }
 
+    public entry fun update_client(ibc_store: &mut IBCStore, client_id: String, client_message: vector<u8>) {
+        let client = ibc_store.clients.borrow(client_id);
+
+        let (client_state, consensus_states, heights) = LightClient::update_client(
+            client_id,
+            client_message
+        );
+
+        let heights_len = vector::length(&heights); 
+
+        assert!(
+            !vector::is_empty(&consensus_states) 
+                && !vector::is_empty(&heights) 
+                && heights_len == vector::length(&consensus_states), 
+            E_INVALID_UPDATE
+        );
+        
+        table::upsert(&mut store.commitments, IBCCommitment::client_state_key(client_id), client_state);
+
+        let i = 0;
+        while (i < heights_len) {
+            let height = *vector::borrow(&heights, i);
+
+            table::upsert(
+                &mut store.commitments,
+                IBCCommitment::consensus_state_key(client_id, height),
+                hash::sha2_256(*vector::borrow(&consensus_states, i))
+            );
+
+            event::emit(ClientUpdated {
+                client_id,
+                // NOTE: This is currently enforced, if/when we refactor to be more general across clients then this will need to be modified accordingly
+                client_type: string::utf8(CLIENT_TYPE_COMETBLS),
+                height,
+            });
+
+            i = i + 1;
+        };
+    }
+
     // Function to generate a client identifier
     fun generate_client_identifier(ibc_store: &mut IBCStore, mut client_type: String): String {
         let next_sequence = ibc_store.commitments.borrow(b"nextClientSequence");
