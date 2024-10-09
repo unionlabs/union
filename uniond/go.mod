@@ -3,25 +3,39 @@ module union
 go 1.21
 
 require (
-	cosmossdk.io/api v0.7.4
-	cosmossdk.io/client/v2 v2.0.0-beta.1
-	cosmossdk.io/core v0.11.0
+	cosmossdk.io/api v0.8.0
+	cosmossdk.io/client/v2 v2.0.0-beta.3
+	cosmossdk.io/collections v0.4.1-0.20240802064046-23fac2f1b8ab
+	cosmossdk.io/core v1.0.0-alpha.1
 	cosmossdk.io/errors v1.0.1
-	cosmossdk.io/log v1.3.1
+	cosmossdk.io/log v1.4.1
 	cosmossdk.io/math v1.3.0
-	cosmossdk.io/store v1.1.0
-	cosmossdk.io/tools/confix v0.1.1
+	cosmossdk.io/store v1.1.1-0.20240909133312-50288938d1b6
+	cosmossdk.io/tools/confix v0.1.2
+	cosmossdk.io/x/accounts v0.1.1
+	cosmossdk.io/x/authz v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/bank v0.0.0-20240226161501-23359a0b6d91
+	cosmossdk.io/x/circuit v0.1.1
+	cosmossdk.io/x/consensus v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/distribution v0.0.0-00010101000000-000000000000
 	cosmossdk.io/x/evidence v0.1.1
 	cosmossdk.io/x/feegrant v0.1.1
-	cosmossdk.io/x/tx v0.13.3
-	cosmossdk.io/x/upgrade v0.1.2
+	cosmossdk.io/x/gov v0.0.0-20231113122742-912390d5fc4a
+	cosmossdk.io/x/group v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/mint v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/params v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/protocolpool v0.0.0-20230925135524-a1bc045b3190
+	cosmossdk.io/x/slashing v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/staking v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/tx v0.13.4
+	cosmossdk.io/x/upgrade v0.1.4
 	github.com/CosmWasm/wasmd v0.51.0
 	github.com/CosmWasm/wasmvm v1.5.2
 	github.com/CosmWasm/wasmvm/v2 v2.0.1
 	github.com/cometbft/cometbft v0.38.6
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
-	github.com/cosmos/cosmos-sdk v0.50.6
+	github.com/cosmos/cosmos-sdk v0.52.0
 	github.com/cosmos/gogoproto v1.4.12
 	github.com/cosmos/ibc-go/modules/capability v1.0.0
 	github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0
@@ -226,18 +240,53 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
+// Cosmos SDK v0.52
 replace (
-	cosmossdk.io/x/evidence => cosmossdk.io/x/evidence v0.1.0
-	cosmossdk.io/x/upgrade => cosmossdk.io/x/upgrade v0.1.0
-	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20240408193122-ee48ab4d6789
-	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
-	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20240329210622-7d067955f702
-	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/cosmos/ibc-go/modules/light-clients/08-wasm v0.0.0-20240429153234-e1e6da7e4ead
-	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go/v8 v8.0.0-20240502084625-d5a6c7b15fdc
-	github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.18.0
-	// TODO(aeryz): `go mod tidy` upgrades this to `0.52.x` although the major version is `0` which means any update can be breaking.
-	// This upgrade breaks `cosmos-sdk`, hence I had to pin it to 0.47. Leaving a todo to myself to update this when it's possible.
-	github.com/prometheus/common => github.com/prometheus/common v0.47.0
-	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	cosmossdk.io/api => cosmossdk.io/api v0.7.3-0.20240815194237-858ec2fcb897
+	cosmossdk.io/client/v2 => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/core => cosmossdk.io/core v1.0.0-alpha.1
+	cosmossdk.io/store => cosmossdk.io/store v1.0.0-rc.0.0.20240906090851-36d9b25e8981
+	cosmossdk.io/upgrade => github.com/unionlabs/cosmos-sdk-union/client/v2 v2.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/accounts => github.com/unionlabs/cosmos-sdk-union/x/accounts v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/accounts/defaults/lockup => github.com/unionlabs/cosmos-sdk-union/x/accounts/defaults/lockup v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/accounts/defaults/multisig => github.com/unionlabs/cosmos-sdk-union/x/accounts/defaults/multisig v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/authz => github.com/unionlabs/cosmos-sdk-union/x/authz v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/bank => github.com/unionlabs/cosmos-sdk-union/x/bank v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk-union/x/circuit v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/consensus => github.com/unionlabs/cosmos-sdk-union/x/consensus v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/distribution => github.com/unionlabs/cosmos-sdk-union/x/distribution v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/epochs => github.com/unionlabs/cosmos-sdk-union/x/epochs v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk-union/x/evidence v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk-union/x/feegrant v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/gov => github.com/unionlabs/cosmos-sdk-union/x/gov v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/group => github.com/unionlabs/cosmos-sdk-union/x/group v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/mint => github.com/unionlabs/cosmos-sdk-union/x/mint v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk-union/x/nft v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/params => github.com/unionlabs/cosmos-sdk-union/x/params v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/protocolpool => github.com/unionlabs/cosmos-sdk-union/x/protocolpool v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/slashing => github.com/unionlabs/cosmos-sdk-union/x/slashing v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/staking => github.com/unionlabs/cosmos-sdk-union/x/staking v0.0.0-20240919220344-5c3e8670172d
+	cosmossdk.io/x/upgrade => github.com/unionlabs/cosmos-sdk-union/x/upgrade v0.0.0-20240919220344-5c3e8670172d
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk-union v0.0.0-20240919220344-5c3e8670172d
 )
+
+// CosmWasm
+replace (
+	github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd c7645dfe12b6b3ae1442e531e38f9022ea591127
+)
+
+// CometBLS
+replace (
+	github.com/cometbft/cometbft => github.com/unionlabs/cometbft v0.0.0-20240914184101-19d0b7eff401
+	github.com/cometbft/cometbft/api => github.com/unionlabs/cometbft/api v0.0.0-20240914184101-19d0b7eff401
+	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
+)
+
+// ibc-go
+replace (
+	github.com/cosmos/ibc-go/modules/capability => github.com/unionlabs/ibc-go-union/modules/capability v0.0.0-20241007161520-333e70c30298
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm => github.com/unionlabs/ibc-go-union/modules/light-clients/08-wasm v0.0.0-20241007161520-333e70c30298
+	github.com/cosmos/ibc-go/v8 => github.com/unionlabs/ibc-go-union/v8 v8.0.0-20241007161520-333e70c30298
+)
+
+replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

@@ -8,7 +8,7 @@ import (
 	bn254key "github.com/cosmos/cosmos-sdk/crypto/keys/bn254"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	types "github.com/cosmos/cosmos-sdk/x/staking/types"
+	types "cosmossdk.io/x/staking/types"
 )
 
 type msgServer struct {
