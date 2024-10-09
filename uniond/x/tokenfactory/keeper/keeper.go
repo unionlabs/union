@@ -11,7 +11,7 @@ import (
 
 	"union/x/tokenfactory/types"
 
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramtypes "cosmossdk.io/x/params/types"
 )
 
 type (

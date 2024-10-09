@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	bankkeeper "cosmossdk.io/x/bank/keeper"
 
 	bindingstypes "union/x/tokenfactory/bindings/types"
 	tokenfactorykeeper "union/x/tokenfactory/keeper"

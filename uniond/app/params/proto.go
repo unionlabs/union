@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"cosmossdk.io/x/auth/tx"
 )
 
 // MakeEncodingConfig creates an EncodingConfig for an amino based test configuration.

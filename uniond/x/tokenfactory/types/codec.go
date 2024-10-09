@@ -5,7 +5,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	// authzcodec "github.com/cosmos/cosmos-sdk/x/authz/codec"
+	// authzcodec "cosmossdk.io/x/authz/codec"
 )
 
 var (
