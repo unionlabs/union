@@ -4,15 +4,17 @@ import { getState } from "$lib/state/index.svelte.ts"
 import Print from "$lib/components/Terminal/Print.svelte"
 import { axiom } from "$lib/utils/axiom.ts"
 import { user } from "$lib/state/session.svelte.ts"
-import { getNumberSuffix } from "$lib/utils/utils.js"
-import { queryContributionWindow } from "$lib/supabase/queries.ts"
+import { formatWaitTime, getNumberSuffix } from "$lib/utils/utils.js"
+import { getAverageTimes, type TimeResult } from "$lib/supabase"
 
 const { contributor, terminal } = getState()
-let countdown = $state("LOADING")
-let startTimestamp = $state<number>()
+
+let waitingTime = $state<number>(0)
+let avgWaitTime = $state<number>(0)
+let maxWaitTime = $state<number>(0)
+let averages = $state<TimeResult>()
 
 onMount(async () => {
-  console.log("here")
   terminal.setStep(8)
   terminal.updateHistory({ text: "YOU ARE IN QUEUE" })
   terminal.updateHistory({ lineBreak: true, text: "" })
@@ -21,50 +23,28 @@ onMount(async () => {
     type: "warning"
   })
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_queue" }])
+  averages = await getAverageTimes()
   await contributor.checkUserWallet(contributor.userId)
-  fetchTimestamps()
 })
 
 onDestroy(() => {
   terminal.clearHistory()
 })
 
-async function fetchTimestamps() {
-  const userId = user.session?.user.id
-  if (!userId) return
-  const window = await queryContributionWindow(userId)
-  startTimestamp = new Date(window.data?.started).getTime()
-  console.log(startTimestamp)
-}
-
-function updateCountdown() {
-  if (!startTimestamp) return
-  const now = Date.now()
-
-  if (now < startTimestamp) {
-    const distance = startTimestamp - now
-
-    const hours = Math.floor(distance / (1000 * 60 * 60))
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000)
-
-    countdown = `${hours}H ${minutes}M ${seconds}S`
-  } else {
-    countdown = "STARTING"
-  }
-}
-
 $effect(() => {
-  if (!startTimestamp) return
-  const timer = setInterval(updateCountdown, 1000)
-  updateCountdown()
-  return () => clearInterval(timer)
+  if (averages && contributor.queueState.position) {
+    maxWaitTime = Math.round(contributor.queueState.position * 60)
+    avgWaitTime = Math.round((contributor.queueState.position * averages.totalMs) / 1000 / 60)
+  }
 })
 </script>
 
 <Print>Your place in line: <span
-        class="text-union-accent-500">{contributor.queueState.position ?? "LOADING"}{getNumberSuffix(contributor.queueState.position)}</span></Print>
-<Print>Estimated start time: <span class="text-union-accent-500">{countdown}</span> (may begin sooner)</Print>
+        class="text-union-accent-500">{contributor.queueState.position ?? "LOADING"}{getNumberSuffix(contributor.queueState.position)}</span>
+</Print>
+<Print><br></Print>
+<Print>Average wait time: <span class="text-union-accent-500">{formatWaitTime(avgWaitTime)}</span></Print>
+<Print>Maximum wait time: <span class="text-union-accent-500">{formatWaitTime(maxWaitTime)}</span></Print>
 <Print><br></Print>
 <Print><span class="text-green-400">✓</span> MPC Client connected.</Print>
 {#if contributor.userWallet && contributor.userWallet !== "SKIPPED"}
