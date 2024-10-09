@@ -13,7 +13,7 @@
   programs = {
     gofmt = {
       enable = true;
-      package = goPkgs.go;
+      package = unstablePkgs.go_1_23;
     };
     rustfmt = {
       enable = true;
