@@ -118,10 +118,7 @@ mod tests {
         let client_state = ClientState {
             chain_id: 59144.into(),
             l1_client_id: "08-wasm-0".into(),
-            l1_latest_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
+            l1_latest_height: Height::default(),
             l1_rollup_contract_address: hex!("B218f8A4Bc926cF1cA7b3423c154a0D627Bdb7E5").into(),
             l1_rollup_current_l2_timestamp_slot: 0x118.into(),
             l1_rollup_current_l2_block_number_slot: 0x119.into(),
@@ -131,10 +128,9 @@ mod tests {
             frozen_height: Height::default(),
         };
         let header = Header {
-            l1_height: Height {
-                revision_number: 0,
-                revision_height: 4946965, // execution: 5855907
-            },
+            l1_height: Height::new(
+                4946965, // execution: 5855907
+            ),
             l1_rollup_contract_proof: serde_json::from_str(r#"
 { "storage_root": "0x26a5ca50671f3feb7abdd10c729ee5136358dbaf56be37707a1e7da25ba2cb34",
   "proof":

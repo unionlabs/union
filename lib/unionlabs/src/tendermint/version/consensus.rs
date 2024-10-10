@@ -27,23 +27,3 @@ impl From<Consensus> for protos::tendermint::version::Consensus {
         }
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<contracts::glue::TendermintVersionConsensusData> for Consensus {
-    fn from(value: contracts::glue::TendermintVersionConsensusData) -> Self {
-        Self {
-            block: value.block,
-            app: value.app,
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<Consensus> for contracts::glue::TendermintVersionConsensusData {
-    fn from(value: Consensus) -> Self {
-        Self {
-            block: value.block,
-            app: value.app,
-        }
-    }
-}

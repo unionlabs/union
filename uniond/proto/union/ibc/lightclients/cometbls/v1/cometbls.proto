@@ -14,14 +14,12 @@ message ClientState {
   // duration of the period since the LastestTimestamp during which the
   // submitted headers are valid for upgrade
   uint64 trusting_period = 2;
-  // duration of the staking unbonding period
-  uint64 unbonding_period = 3;
   // defines how much new (untrusted) header's Time can drift into the future.
-  uint64 max_clock_drift = 4;
+  uint64 max_clock_drift = 3;
   // Block height when the client was frozen due to a misbehaviour
-  .ibc.core.client.v1.Height frozen_height = 5 [(gogoproto.nullable) = false];
+  .ibc.core.client.v1.Height frozen_height = 4 [(gogoproto.nullable) = false];
   // Latest height the client was updated to
-  .ibc.core.client.v1.Height latest_height = 6 [(gogoproto.nullable) = false];
+  .ibc.core.client.v1.Height latest_height = 5 [(gogoproto.nullable) = false];
 }
 
 message ConsensusState {
@@ -39,7 +37,7 @@ message Misbehaviour {
   Header header_b  = 2;
 }
 
-message LightHeader {
+message SignedHeader {
   int64 height = 1;
   google.protobuf.Timestamp time = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
   bytes validators_hash = 3;
@@ -48,7 +46,7 @@ message LightHeader {
 }
 
 message Header {
-  LightHeader signed_header = 1;
+  SignedHeader signed_header = 1;
   .ibc.core.client.v1.Height trusted_height = 2;
   bytes zero_knowledge_proof = 3;
 }

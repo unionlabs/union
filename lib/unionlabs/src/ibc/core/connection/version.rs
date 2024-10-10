@@ -38,35 +38,3 @@ impl From<Version> for protos::ibc::core::connection::v1::Version {
         }
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<Version> for contracts::ibc_handler::IbcCoreConnectionV1VersionData {
-    fn from(value: Version) -> Self {
-        Self {
-            identifier: value.identifier,
-            features: value
-                .features
-                .into_iter()
-                .map(|order| <&'static str>::from(order).to_string())
-                .collect(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::ibc_handler::IbcCoreConnectionV1VersionData> for Version {
-    type Error = UnknownEnumVariant<String>;
-
-    fn try_from(
-        value: contracts::ibc_handler::IbcCoreConnectionV1VersionData,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            identifier: value.identifier,
-            features: value
-                .features
-                .into_iter()
-                .map(|order| order.parse())
-                .collect::<Result<_, _>>()?,
-        })
-    }
-}

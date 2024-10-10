@@ -38,13 +38,13 @@ pub enum QueueConfig {
     PgQueue(PgQueueConfig),
 }
 
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive(Debug, Clone)]
 pub enum QueueImpl {
     InMemory(InMemoryQueue<VoyagerMessage>),
     PgQueue(PgQueue<VoyagerMessage>),
 }
 
-#[derive(DebugNoBound, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 #[error(transparent)]
 pub enum AnyQueueError {
     InMemory(std::convert::Infallible),

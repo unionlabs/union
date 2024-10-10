@@ -8,7 +8,7 @@ use crate::{
 
 #[model(
     proto(raw(protos::cosmos::ics23::v1::ExistenceProof), into, from),
-    ethabi(raw(ExistenceProofEthAbi), into, from)
+    ethabi(raw(ibc_solidity::ics23::ExistenceProof), into, from)
 )]
 pub struct ExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
@@ -25,12 +25,12 @@ pub struct ExistenceProof {
 
 #[cfg(feature = "ethabi")]
 #[doc(hidden)]
-impl From<ExistenceProof> for ExistenceProofEthAbi {
+impl From<ExistenceProof> for ibc_solidity::ics23::ExistenceProof {
     fn from(value: ExistenceProof) -> Self {
-        ExistenceProofEthAbi {
+        ibc_solidity::ics23::ExistenceProof {
             key: value.key.into(),
             value: value.value.into(),
-            leaf_prefix: value.leaf_prefix.into(),
+            leafPrefix: value.leaf_prefix.into(),
             path: value.path.into_iter().map(Into::into).collect(),
         }
     }
@@ -38,25 +38,15 @@ impl From<ExistenceProof> for ExistenceProofEthAbi {
 
 #[cfg(feature = "ethabi")]
 #[doc(hidden)]
-impl From<ExistenceProofEthAbi> for ExistenceProof {
-    fn from(value: ExistenceProofEthAbi) -> Self {
+impl From<ibc_solidity::ics23::ExistenceProof> for ExistenceProof {
+    fn from(value: ibc_solidity::ics23::ExistenceProof) -> Self {
         ExistenceProof {
             key: value.key.to_vec(),
             value: value.value.to_vec(),
-            leaf_prefix: value.leaf_prefix.to_vec(),
+            leaf_prefix: value.leafPrefix.to_vec(),
             path: value.path.into_iter().map(Into::into).collect(),
         }
     }
-}
-
-#[cfg(feature = "ethabi")]
-#[doc(hidden)]
-#[derive(Debug, PartialEq, ::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
-pub struct ExistenceProofEthAbi {
-    pub key: ethers::types::Bytes,
-    pub value: ethers::types::Bytes,
-    pub leaf_prefix: ethers::types::Bytes,
-    pub path: Vec<crate::union::ics23::inner_op::InnerOpEthAbi>,
 }
 
 const EXPECTED_PREHASH_KEY: HashOp = HashOp::NoHash;

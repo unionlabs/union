@@ -98,11 +98,7 @@ impl aptos_move_ibc::ibc::ClientExt for Module {
 impl Module {
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            // TODO: Make this a constant
-            revision_number: 0,
-            revision_height: height,
-        }
+        Height::new(height)
     }
 
     pub async fn ledger_version_of_height(&self, height: u64) -> u64 {
@@ -157,7 +153,7 @@ impl ChainModuleServer for Module {
 
         match self
             .aptos_client
-            .get_block_by_height(latest_height.revision_height, false)
+            .get_block_by_height(latest_height.height(), false)
             .await
         {
             Ok(block) => {
@@ -195,7 +191,7 @@ impl ChainModuleServer for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %at, %path))]
     async fn query_ibc_state(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-        let ledger_version = self.ledger_version_of_height(at.revision_height).await;
+        let ledger_version = self.ledger_version_of_height(at.height()).await;
 
         Ok(match path {
             Path::ClientState(path) => {
@@ -216,8 +212,8 @@ impl ChainModuleServer for Module {
                         self.ibc_handler_address.into(),
                         (
                             path.client_id.to_string(),
-                            path.height.revision_number,
-                            path.height.revision_height,
+                            path.height.revision(),
+                            path.height.height(),
                         ),
                         Some(ledger_version),
                     )
@@ -307,7 +303,7 @@ impl ChainModuleServer for Module {
         //         IBC_STORE_PATH,
         //         &path_string,
         //         Some(
-        //             i64::try_from(at.revision_height)
+        //             i64::try_from(at.height())
         //                 .unwrap()
         //                 .try_into()
         //                 .expect("invalid height"),
@@ -366,7 +362,7 @@ impl ChainModuleServer for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-        let ledger_version = self.ledger_version_of_height(at.revision_height).await;
+        let ledger_version = self.ledger_version_of_height(at.height()).await;
 
         let vault_addr = self
             .get_vault_addr(self.ibc_handler_address.into(), Some(ledger_version))
@@ -396,7 +392,7 @@ impl ChainModuleServer for Module {
         //     &self.ctx.movement_rpc_url,
         //     address,
         //     hex::encode(bcs::to_bytes(&path.to_string().as_bytes()).expect("won't fail")),
-        //     at.revision_height,
+        //     at.height(),
         // ).await;
 
         Ok(into_value(StorageProof {

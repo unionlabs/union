@@ -80,11 +80,8 @@ impl Module {
         })
     }
 
-    pub fn make_height(revision_height: u64) -> Height {
-        Height {
-            revision_number: 0, // TODO(aeryz): use chain_utils
-            revision_height,
-        }
+    pub fn make_height(height: u64) -> Height {
+        Height::new(height)
     }
 }
 

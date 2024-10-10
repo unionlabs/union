@@ -521,20 +521,8 @@ impl<T: IbcHost> Runnable<T> for SendPacket {
 fn packet_commitment<T: IbcHost>(host: &mut T, packet: &Packet) -> Vec<u8> {
     let mut packet_commitment = Vec::new();
     packet_commitment.extend_from_slice(packet.timeout_timestamp.to_be_bytes().as_slice());
-    packet_commitment.extend_from_slice(
-        packet
-            .timeout_height
-            .revision_number
-            .to_be_bytes()
-            .as_slice(),
-    );
-    packet_commitment.extend_from_slice(
-        packet
-            .timeout_height
-            .revision_height
-            .to_be_bytes()
-            .as_slice(),
-    );
+    packet_commitment.extend_from_slice(packet.timeout_height.height().to_be_bytes().as_slice());
+    packet_commitment.extend_from_slice(packet.timeout_height.height().to_be_bytes().as_slice());
     packet_commitment.extend_from_slice(host.sha256(packet.data.clone()).as_slice());
     packet_commitment
 }

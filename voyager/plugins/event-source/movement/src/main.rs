@@ -141,11 +141,7 @@ impl Module {
 
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            // TODO: Make this a constant
-            revision_number: 0,
-            revision_height: height,
-        }
+        Height::new(height)
     }
 
     pub async fn ledger_version_of_height(&self, height: u64) -> u64 {
@@ -285,7 +281,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         call(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::FetchBlocks(FetchBlocks {
-                                height: fetch.start_height.revision_height,
+                                height: fetch.start_height.height(),
                             }),
                         ))
                     }
@@ -472,10 +468,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 height,
             }) => {
                 fn ibc_height(h: aptos_move_ibc::height::Height) -> Height {
-                    Height {
-                        revision_number: h.revision_number.0,
-                        revision_height: h.revision_height.0,
-                    }
+                    Height::new_with_revision(h.revision_number.0, h.revision_height.0)
                 }
 
                 let (full_event, client_id): (FullIbcEvent, ClientId) = match event {

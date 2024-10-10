@@ -1,10 +1,9 @@
 use macros::model;
 use rlp::Encodable;
-use sha2::Digest;
-use sha3::Keccak256;
 
 use crate::{
     errors::InvalidLength,
+    ethereum::keccak256,
     hash::{H160, H2048, H256, H64},
     uint::U256,
 };
@@ -38,7 +37,7 @@ pub struct L2Header {
 impl L2Header {
     #[must_use]
     pub fn hash(&self) -> H256 {
-        <H256>::from(Keccak256::new().chain_update(self.rlp_bytes()).finalize())
+        keccak256(self.rlp_bytes())
     }
 }
 
@@ -157,16 +156,12 @@ impl From<L2Header> for protos::union::ibc::lightclients::arbitrum::v1::L2Header
 
 #[cfg(test)]
 mod tests {
-    use ethers::utils::keccak256;
     use hex_literal::hex;
-    use rlp::Encodable;
 
     use super::*;
 
     #[test]
     fn rlp() {
-        // "hash": "0xa548151261174cf854534934ca88e68220e328be563c01915fc11c740a543489",
-
         let header = L2Header {
             difficulty: U256::try_from_be_bytes(&hex!("01")).unwrap(),
             extra_data: H256::new(hex!(
@@ -213,7 +208,7 @@ mod tests {
         };
 
         assert_eq!(
-            <H256>::new(keccak256(header.rlp_bytes())),
+            header.hash(),
             <H256>::new(hex!(
                 "a548151261174cf854534934ca88e68220e328be563c01915fc11c740a543489"
             ))

@@ -4,13 +4,13 @@ name    = "voyager-client-update-plugin-movement"
 version = "0.1.0"
 
 [dependencies]
+alloy              = { workspace = true }
 aptos-move-ibc     = { workspace = true }
 aptos-rest-client  = { workspace = true }
 aptos-types        = { workspace = true }
 bitvec             = { workspace = true }
 chain-utils        = { workspace = true }
 enumorph           = { workspace = true }
-ethers             = { workspace = true, features = ["rustls", "ws"] }
 futures            = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }

@@ -35,33 +35,3 @@ impl From<PartSetHeader> for protos::tendermint::types::PartSetHeader {
         }
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<PartSetHeader> for contracts::glue::TendermintTypesPartSetHeaderData {
-    fn from(value: PartSetHeader) -> Self {
-        Self {
-            total: value.total,
-            hash: value.hash.map(|h| h.get().into()).unwrap_or_default(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiPartSetHeaderError {
-    Hash(InvalidLength),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::TendermintTypesPartSetHeaderData> for PartSetHeader {
-    type Error = TryFromEthAbiPartSetHeaderError;
-
-    fn try_from(
-        value: contracts::glue::TendermintTypesPartSetHeaderData,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            total: value.total,
-            hash: maybe_empty_h256(&value.hash).map_err(TryFromEthAbiPartSetHeaderError::Hash)?,
-        })
-    }
-}

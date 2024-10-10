@@ -1,8 +1,6 @@
-use alloc::sync::Arc;
 use core::str::FromStr;
 
 use macros::model;
-use uint::FromDecStrErr;
 
 use crate::{
     cosmos::ics23::proof_spec::{ProofSpec, TryFromProofSpecError},
@@ -45,8 +43,7 @@ pub enum TryFromClientStateError {
     #[error(transparent)]
     MissingField(#[from] MissingField),
     #[error("invalid execution chain id")]
-    // arc bc not clone
-    ExecutionChainId(#[source] Arc<FromDecStrErr>),
+    ExecutionChainId(#[source] <U256 as FromStr>::Err),
     #[error("invalid trust level")]
     TrustLevel(#[source] TryFromFractionError),
     #[error("invalid trusting period")]
@@ -72,7 +69,7 @@ impl TryFrom<protos::union::ibc::lightclients::berachain::v1::ClientState> for C
         Ok(Self {
             consensus_chain_id: value.consensus_chain_id,
             execution_chain_id: U256::from_str(&value.execution_chain_id)
-                .map_err(|e| TryFromClientStateError::ExecutionChainId(Arc::new(e)))?,
+                .map_err(TryFromClientStateError::ExecutionChainId)?,
             trust_level: required!(value.trust_level)?
                 .try_into()
                 .map_err(TryFromClientStateError::TrustLevel)?,

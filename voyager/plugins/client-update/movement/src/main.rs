@@ -192,8 +192,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Call::Plugin(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchUpdate {
-                                from: fetch.update_from.revision_height,
-                                to: fetch.update_to.revision_height,
+                                from: fetch.update_from.height(),
+                                to: fetch.update_to.height(),
                             }),
                         ))
                     })
@@ -217,19 +217,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 Ok(data(OrderedHeaders {
                     headers: vec![(
                         DecodedHeaderMeta {
-                            height: Height {
-                                revision_number: 0,
-                                revision_height: to,
-                            },
+                            height: Height::new(to),
                         },
                         serde_json::to_value(movement::header::Header {
                             // dummy value for now, until movement settles on a public L1
                             // 0-1, otherwise it's omitted in the proto encoding(?)
                             l1_height: Height::default().increment(),
-                            trusted_height: Height {
-                                revision_number: 0,
-                                revision_height: from,
-                            },
+                            trusted_height: Height::new(from),
                             state_proof: StateProof::default(),
                             tx_index: 0,
                             tx_proof: TransactionInfoWithProof::default(),
@@ -266,7 +260,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 impl ConsensusModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
-        let ledger_version = self.ledger_version_of_height(height.revision_height).await;
+        let ledger_version = self.ledger_version_of_height(height.height()).await;
 
         let vault_addr = self
             .get_vault_addr(
@@ -300,11 +294,8 @@ impl ConsensusModuleServer for Module {
             table_handle: AccountAddress(Hash::new(
                 U256::from_be_hex(table_handle).unwrap().to_be_bytes(),
             )),
-            frozen_height: Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
-            latest_block_num: height.revision_height,
+            frozen_height: Height::default(),
+            latest_block_num: height.height(),
         })
         .expect("infallible"))
     }
@@ -343,10 +334,7 @@ pub async fn get_lc_header(
         // dummy value for now, until movement settles on a public L1
         // 0-1, otherwise it's omitted in the proto encoding(?)
         l1_height: Height::default().increment(),
-        trusted_height: Height {
-            revision_number: 0,
-            revision_height: from,
-        },
+        trusted_height: Height::new(from),
         state_proof: state_proof.state_proof,
         tx_index: state_proof.tx_index,
         tx_proof: state_proof.tx_proof,

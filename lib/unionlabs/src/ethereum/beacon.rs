@@ -132,13 +132,8 @@ mod tests {
         dbg!(U256::from_str("77").unwrap());
 
         assert_eq!(
-            finality_update
-                .finalized_header
-                .execution
-                .base_fee_per_gas
-                .0
-                .as_u128(),
-            77
+            finality_update.finalized_header.execution.base_fee_per_gas,
+            U256::from(77)
         );
 
         serde_json::from_str::<SyncAggregate<Minimal>>(r#"{"sync_committee_bits":"0xffffffff","sync_committee_signature":"0xb13181bcd13a1e9450452290926985eea1b005a11310c69487f646980f84b3597fbd09d9406093f0cf918e2d6304291406330abb3e90b0d4406e1f902cc49e2faea2df7f6311069d438b4fc23466fe3436bf53caa39461e18fb0b236d446c5a0"}"#).unwrap();

@@ -3,14 +3,6 @@ use ssz::Ssz;
 
 use crate::{errors::InvalidLength, ethereum::Version};
 
-#[cfg_attr(
-    feature = "ethabi",
-    derive(
-        ethers_contract_derive::EthAbiType,
-        ethers_contract_derive::EthAbiCodec
-    )
-)]
-// REVIEW: Are these derives used?
 #[derive(Ssz)]
 #[model(proto(raw(protos::union::ibc::lightclients::ethereum::v1::Fork), into, from))]
 pub struct Fork {

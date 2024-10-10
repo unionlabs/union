@@ -25,11 +25,7 @@ pub type ValidTimestampUnixNanos = BoundedI128<
     { (TIMESTAMP_SECONDS_MAX as i128 * NANOS_PER_SECOND as i128) + NANOS_MAX as i128 },
 >;
 
-#[model(
-    proto(raw(protos::google::protobuf::Timestamp), into, from),
-    ethabi(raw(contracts::glue::GoogleProtobufTimestampData), into, from),
-    no_serde
-)]
+#[model(proto(raw(protos::google::protobuf::Timestamp), into, from), no_serde)]
 #[debug("Timestamp({})", self)]
 #[derive(Copy)]
 pub struct Timestamp {
@@ -48,9 +44,11 @@ impl Default for Timestamp {
 
 pub const MIN_TIMESTAMP: Timestamp = Timestamp {
     seconds: result_unwrap!(
-        BoundedI64::<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>::new(TIMESTAMP_SECONDS_MIN)
+        BoundedI64::<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>::new_const(
+            TIMESTAMP_SECONDS_MIN
+        )
     ),
-    nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new(0)),
+    nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new_const(0)),
 };
 
 impl Ord for Timestamp {
@@ -367,42 +365,6 @@ impl TryFrom<protos::google::protobuf::Timestamp> for Timestamp {
                 .nanos
                 .try_into()
                 .map_err(TryFromTimestampError::Nanos)?,
-        })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<Timestamp> for contracts::glue::GoogleProtobufTimestampData {
-    fn from(value: Timestamp) -> Self {
-        Self {
-            secs: value.seconds.into(),
-            nanos: value.nanos.inner().into(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiTimestampError {
-    Seconds(BoundedIntError<i64>),
-    Nanos(BoundedIntError<i32>),
-    NanosTryFromI64(core::num::TryFromIntError),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::GoogleProtobufTimestampData> for Timestamp {
-    type Error = TryFromEthAbiTimestampError;
-
-    fn try_from(value: contracts::glue::GoogleProtobufTimestampData) -> Result<Self, Self::Error> {
-        Ok(Self {
-            seconds: value
-                .secs
-                .try_into()
-                .map_err(TryFromEthAbiTimestampError::Seconds)?,
-            nanos: i32::try_from(value.nanos)
-                .map_err(TryFromEthAbiTimestampError::NanosTryFromI64)?
-                .try_into()
-                .map_err(TryFromEthAbiTimestampError::Nanos)?,
         })
     }
 }

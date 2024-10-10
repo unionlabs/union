@@ -1,8 +1,6 @@
-use alloc::sync::Arc;
 use core::str::FromStr;
 
 use macros::model;
-use uint::FromDecStrErr;
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
@@ -59,8 +57,8 @@ impl From<ClientState> for protos::union::ibc::lightclients::ethereum::v1::Clien
 pub enum TryFromClientStateError {
     #[error(transparent)]
     MissingField(#[from] MissingField),
-    #[error("invalid chain id: {0:?}")]
-    ChainId(Arc<FromDecStrErr>),
+    #[error("invalid chain id")]
+    ChainId(#[source] <U256 as FromStr>::Err),
     #[error("invalid fork parameters")]
     ForkParameters(#[source] TryFromForkParametersError),
     #[error("invalid genesis validators root")]
@@ -78,8 +76,7 @@ impl TryFrom<protos::union::ibc::lightclients::ethereum::v1::ClientState> for Cl
         value: protos::union::ibc::lightclients::ethereum::v1::ClientState,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            chain_id: U256::from_str(&value.chain_id)
-                .map_err(|err| TryFromClientStateError::ChainId(Arc::new(err)))?,
+            chain_id: U256::from_str(&value.chain_id).map_err(TryFromClientStateError::ChainId)?,
             genesis_validators_root: value
                 .genesis_validators_root
                 .try_into()

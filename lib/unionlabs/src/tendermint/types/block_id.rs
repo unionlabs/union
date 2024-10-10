@@ -1,7 +1,5 @@
 use macros::model;
 
-#[cfg(feature = "ethabi")]
-use crate::tendermint::types::part_set_header::TryFromEthAbiPartSetHeaderError;
 use crate::{
     errors::{required, InvalidLength, MissingField},
     hash::H256,
@@ -79,36 +77,4 @@ fn proto_roundtrip() {
             hash: None,
         },
     });
-}
-
-#[cfg(feature = "ethabi")]
-impl From<BlockId> for contracts::glue::TendermintTypesBlockIDData {
-    fn from(value: BlockId) -> Self {
-        Self {
-            hash: value.hash.map(|h| h.get().into()).unwrap_or_default(),
-            part_set_header: value.part_set_header.into(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiBlockIdError {
-    Hash(crate::errors::InvalidLength),
-    PartSetHeader(TryFromEthAbiPartSetHeaderError),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::TendermintTypesBlockIDData> for BlockId {
-    type Error = TryFromEthAbiBlockIdError;
-
-    fn try_from(value: contracts::glue::TendermintTypesBlockIDData) -> Result<Self, Self::Error> {
-        Ok(Self {
-            hash: maybe_empty_h256(&value.hash).map_err(TryFromEthAbiBlockIdError::Hash)?,
-            part_set_header: value
-                .part_set_header
-                .try_into()
-                .map_err(TryFromEthAbiBlockIdError::PartSetHeader)?,
-        })
-    }
 }

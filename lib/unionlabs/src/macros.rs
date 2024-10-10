@@ -228,67 +228,29 @@ macro_rules! hex_string_array_wrapper {
             }
 
             #[cfg(feature = "ethabi")]
-            impl From<$Struct> for ::ethers_core::types::Bytes {
+            impl From<$Struct> for ::alloy_core::primitives::Bytes {
                 fn from(value: $Struct) -> Self {
-                    ::ethers_core::types::Bytes::from(value.0)
+                    ::alloy_core::primitives::Bytes::from(value.0)
                 }
             }
 
             #[cfg(feature = "ethabi")]
-            impl TryFrom<::ethers_core::types::Bytes> for $Struct {
+            impl TryFrom<::alloy_core::primitives::Bytes> for $Struct {
                 type Error = <Self as TryFrom<Vec<u8>>>::Error;
 
-                fn try_from(value: ::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+                fn try_from(value: ::alloy_core::primitives::Bytes) -> Result<Self, Self::Error> {
                     Self::try_from(&value.0[..])
                 }
             }
 
             #[cfg(feature = "ethabi")]
-            impl TryFrom<&'_ ::ethers_core::types::Bytes> for $Struct {
+            impl TryFrom<&'_ ::alloy_core::primitives::Bytes> for $Struct {
                 type Error = <Self as TryFrom<Vec<u8>>>::Error;
 
-                fn try_from(value: &::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+                fn try_from(value: &::alloy_core::primitives::Bytes) -> Result<Self, Self::Error> {
                     Self::try_from(&value.0[..])
                 }
             }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::AbiType for $Struct {
-                fn param_type() -> ::ethers_core::abi::ParamType {
-                    ::ethers_core::abi::ParamType::FixedBytes($N)
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::AbiArrayType for $Struct {}
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::AbiEncode for $Struct {
-                fn encode(self) -> Vec<u8> {
-                    self.0.encode()
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::AbiDecode for $Struct {
-                fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ::ethers_core::abi::AbiError> {
-                    <[u8; $N]>::decode(bytes).map(Self)
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::Tokenizable for $Struct {
-                fn from_token(token: ::ethers_core::abi::Token) -> Result<Self, ::ethers_core::abi::InvalidOutputType> {
-                    <[u8; $N]>::from_token(token).map(Self)
-                }
-
-                fn into_token(self) -> ::ethers_core::abi::Token {
-                    self.0.into_token()
-                }
-            }
-
-            #[cfg(feature = "ethabi")]
-            impl ::ethers_core::abi::TokenizableItem for $Struct {}
 
             impl AsRef<[u8]> for $Struct {
                 fn as_ref(&self) -> &[u8] {

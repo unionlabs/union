@@ -40,14 +40,3 @@ impl From<InnerOp> for protos::cosmos::ics23::v1::InnerOp {
         }
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<InnerOp> for contracts::glue::CosmosIcs23V1InnerOpData {
-    fn from(value: InnerOp) -> Self {
-        Self {
-            hash: value.hash.into(),
-            prefix: value.prefix.into(),
-            suffix: value.suffix.into(),
-        }
-    }
-}

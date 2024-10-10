@@ -1,0 +1,16 @@
+[package]
+edition      = { workspace = true }
+license-file = { workspace = true }
+name         = "ibc-solidity"
+repository   = { workspace = true }
+version      = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy = { workspace = true, features = ["sol-types"] }
+
+[features]
+default = ["rpc"]
+rpc = ["alloy/contract"]

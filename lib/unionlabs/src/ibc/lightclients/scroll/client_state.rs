@@ -1,8 +1,6 @@
-use alloc::sync::Arc;
 use core::{fmt::Debug, str::FromStr};
 
 use macros::model;
-use uint::FromDecStrErr;
 
 use crate::{errors::InvalidLength, hash::H160, ibc::core::client::height::Height, uint::U256};
 
@@ -45,7 +43,7 @@ impl From<ClientState> for protos::union::ibc::lightclients::scroll::v1::ClientS
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 pub enum TryFromClientStateError {
     #[error("unable to parse chain id")]
-    ChainId(#[source] Arc<FromDecStrErr>),
+    ChainId(#[source] <U256 as FromStr>::Err),
     #[error("invalid latest batch index slot")]
     LatestBatchIndexSlot(#[source] InvalidLength),
     #[error("invalid rollup contract address")]
@@ -68,8 +66,7 @@ impl TryFrom<protos::union::ibc::lightclients::scroll::v1::ClientState> for Clie
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             l1_client_id: value.l1_client_id,
-            chain_id: U256::from_str(&value.chain_id)
-                .map_err(|err| TryFromClientStateError::ChainId(Arc::new(err)))?,
+            chain_id: U256::from_str(&value.chain_id).map_err(TryFromClientStateError::ChainId)?,
             latest_slot: value.latest_slot,
             latest_batch_index_slot: U256::try_from_be_bytes(&value.latest_batch_index_slot)
                 .map_err(TryFromClientStateError::LatestBatchIndexSlot)?,

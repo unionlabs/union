@@ -87,31 +87,3 @@ impl From<CommitmentProof> for protos::cosmos::ics23::v1::CommitmentProof {
         }
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<CommitmentProof> for contracts::glue::CosmosIcs23V1CommitmentProofData {
-    fn from(value: CommitmentProof) -> Self {
-        match value {
-            CommitmentProof::Exist(exist) => contracts::glue::CosmosIcs23V1CommitmentProofData {
-                exist: exist.into(),
-                ..Default::default()
-            },
-            CommitmentProof::Nonexist(nonexist) => {
-                contracts::glue::CosmosIcs23V1CommitmentProofData {
-                    nonexist: nonexist.into(),
-                    ..Default::default()
-                }
-            }
-            CommitmentProof::Batch(batch) => contracts::glue::CosmosIcs23V1CommitmentProofData {
-                batch: batch.into(),
-                ..Default::default()
-            },
-            CommitmentProof::CompressedBatch(compressed_batch) => {
-                contracts::glue::CosmosIcs23V1CommitmentProofData {
-                    compressed: compressed_batch.into(),
-                    ..Default::default()
-                }
-            }
-        }
-    }
-}

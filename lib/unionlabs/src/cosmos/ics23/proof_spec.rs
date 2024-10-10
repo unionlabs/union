@@ -128,11 +128,11 @@ mod tests {
         let cvt = ProofSpec::try_from(proto.clone()).unwrap();
         assert_eq!(
             cvt.max_depth,
-            Some(BoundedUsize::new(i32::MAX.try_into().unwrap()).unwrap())
+            Some(BoundedUsize::new_const(i32::MAX.try_into().unwrap()).unwrap())
         );
         assert_eq!(
             cvt.min_depth,
-            Some(BoundedUsize::new(i32::MAX.try_into().unwrap()).unwrap())
+            Some(BoundedUsize::new_const(i32::MAX.try_into().unwrap()).unwrap())
         );
     }
 }

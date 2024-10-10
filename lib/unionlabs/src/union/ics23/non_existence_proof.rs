@@ -5,7 +5,10 @@ use crate::{
     union::ics23::existence_proof::{ExistenceProof, TryFromExistenceProofError},
 };
 
-#[model(proto(raw(protos::cosmos::ics23::v1::NonExistenceProof), into, from))]
+#[model(
+    proto(raw(protos::cosmos::ics23::v1::NonExistenceProof), into, from),
+    ethabi(raw(ibc_solidity::ics23::NonExistenceProof), into, from)
+)]
 pub struct NonExistenceProof {
     #[serde(with = "::serde_utils::hex_string")]
     #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
@@ -26,16 +29,7 @@ pub enum TryFromNonExistenceProofError {
 }
 
 #[cfg(feature = "ethabi")]
-#[doc(hidden)]
-#[derive(Debug, ::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec)]
-pub struct NonExistenceProofEthAbi {
-    pub key: ethers::types::Bytes,
-    pub left: crate::union::ics23::existence_proof::ExistenceProofEthAbi,
-    pub right: crate::union::ics23::existence_proof::ExistenceProofEthAbi,
-}
-
-#[cfg(feature = "ethabi")]
-impl From<NonExistenceProof> for NonExistenceProofEthAbi {
+impl From<NonExistenceProof> for ibc_solidity::ics23::NonExistenceProof {
     fn from(value: NonExistenceProof) -> Self {
         let exist_default = || ExistenceProof {
             key: vec![],
@@ -44,7 +38,7 @@ impl From<NonExistenceProof> for NonExistenceProofEthAbi {
             path: vec![],
         };
 
-        NonExistenceProofEthAbi {
+        ibc_solidity::ics23::NonExistenceProof {
             key: value.key.into(),
             left: value.left.unwrap_or_else(exist_default).into(),
             right: value.right.unwrap_or_else(exist_default).into(),
@@ -53,30 +47,21 @@ impl From<NonExistenceProof> for NonExistenceProofEthAbi {
 }
 
 #[cfg(feature = "ethabi")]
-impl From<NonExistenceProofEthAbi> for NonExistenceProof {
-    fn from(value: NonExistenceProofEthAbi) -> Self {
-        let exist_default = super::existence_proof::ExistenceProofEthAbi {
-            key: vec![].into(),
-            value: vec![].into(),
-            leaf_prefix: vec![].into(),
-            path: vec![],
+impl From<ibc_solidity::ics23::NonExistenceProof> for NonExistenceProof {
+    fn from(value: ibc_solidity::ics23::NonExistenceProof) -> Self {
+        let is_default = |e: &ibc_solidity::ics23::ExistenceProof| {
+            e.key.is_empty() && e.value.is_empty() && e.leafPrefix.is_empty() && e.path.is_empty()
         };
 
         NonExistenceProof {
             key: value.key.to_vec(),
-            left: (value.left != exist_default).then_some(value.left.into()),
-            right: (value.right != exist_default).then_some(value.right.into()),
+            left: (is_default(&value.left)).then_some(value.left.into()),
+            right: (is_default(&value.right)).then_some(value.right.into()),
         }
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl crate::encoding::Encode<crate::encoding::EthAbi> for NonExistenceProof {
-    fn encode(self) -> Vec<u8> {
-        ethers::abi::AbiEncode::encode(NonExistenceProofEthAbi::from(self))
-    }
-}
-
+#[cfg(feature = "proto")]
 impl TryFrom<protos::cosmos::ics23::v1::NonExistenceProof> for NonExistenceProof {
     type Error = TryFromNonExistenceProofError;
 
@@ -97,6 +82,7 @@ impl TryFrom<protos::cosmos::ics23::v1::NonExistenceProof> for NonExistenceProof
     }
 }
 
+#[cfg(feature = "proto")]
 impl From<NonExistenceProof> for protos::cosmos::ics23::v1::NonExistenceProof {
     fn from(value: NonExistenceProof) -> Self {
         Self {

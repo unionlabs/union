@@ -1,9 +1,5 @@
 use macros::model;
 
-#[cfg(feature = "ethabi")]
-use crate::tendermint::types::{
-    block_id::TryFromEthAbiBlockIdError, commit_sig::TryFromEthAbiCommitSigError,
-};
 use crate::{
     bounded::{BoundedI32, BoundedI64, BoundedIntError},
     errors::{required, MissingField},
@@ -29,43 +25,6 @@ impl From<Commit> for protos::tendermint::types::Commit {
             block_id: Some(value.block_id.into()),
             signatures: value.signatures.into_iter().map(Into::into).collect(),
         }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiCommitError {
-    Height(crate::bounded::BoundedIntError<i64>),
-    Round(crate::bounded::BoundedIntError<i32>),
-    BlockId(TryFromEthAbiBlockIdError),
-    Signatures(TryFromEthAbiCommitSigError),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::TendermintTypesCommitData> for Commit {
-    type Error = TryFromEthAbiCommitError;
-
-    fn try_from(value: contracts::glue::TendermintTypesCommitData) -> Result<Self, Self::Error> {
-        Ok(Self {
-            height: value
-                .height
-                .try_into()
-                .map_err(TryFromEthAbiCommitError::Height)?,
-            round: value
-                .round
-                .try_into()
-                .map_err(TryFromEthAbiCommitError::Round)?,
-            block_id: value
-                .block_id
-                .try_into()
-                .map_err(TryFromEthAbiCommitError::BlockId)?,
-            signatures: value
-                .signatures
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(TryFromEthAbiCommitError::Signatures)?,
-        })
     }
 }
 
@@ -103,17 +62,5 @@ impl TryFrom<protos::tendermint::types::Commit> for Commit {
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(TryFromCommitError::Signatures)?,
         })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<Commit> for contracts::glue::TendermintTypesCommitData {
-    fn from(value: Commit) -> Self {
-        Self {
-            height: value.height.into(),
-            round: value.round.into(),
-            block_id: value.block_id.into(),
-            signatures: value.signatures.into_iter().map(Into::into).collect(),
-        }
     }
 }

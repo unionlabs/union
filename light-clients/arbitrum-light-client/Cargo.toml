@@ -13,11 +13,11 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+alloy-core            = { workspace = true }
 arbitrum-verifier     = { workspace = true }
 cosmwasm-std          = { workspace = true, features = ["abort"] }
 ethereum-light-client = { workspace = true, features = ["mainnet", "library"] }
 ethereum-verifier     = { workspace = true }
-ethers-core           = { workspace = true }
 hex                   = { workspace = true }
 ics008-wasm-client    = { workspace = true }
 protos                = { workspace = true }

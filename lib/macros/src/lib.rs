@@ -10,9 +10,9 @@ use syn::{
     parse_macro_input, parse_quote, parse_quote_spanned,
     punctuated::Punctuated,
     spanned::Spanned,
-    Attribute, Data, DeriveInput, Expr, ExprPath, Field, Fields, GenericParam, Generics, Ident,
-    Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type, Variant,
-    WhereClause, WherePredicate,
+    Attribute, Data, DeriveInput, Expr, ExprParen, ExprPath, Field, Fields, GenericParam, Generics,
+    Ident, Item, ItemEnum, ItemStruct, LitStr, MacroDelimiter, Meta, MetaList, Path, Token, Type,
+    Variant, WhereClause, WherePredicate,
 };
 
 #[proc_macro_attribute]
@@ -616,7 +616,7 @@ fn mk_ethabi(
                 type Error = crate::TryFromEthAbiBytesError<<#ident #ty_generics as TryFrom<#raw>>::Error>;
 
                 fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-                    <#raw as ethers_core::abi::AbiDecode>::decode(bytes)
+                    <#raw as alloy_core::sol_types::SolValue>::abi_decode(bytes, cfg!(debug_assertions))
                         .map_err(crate::TryFromEthAbiBytesError::Decode)
                         .and_then(|proto| {
                             proto
@@ -634,7 +634,7 @@ fn mk_ethabi(
             #[automatically_derived]
             impl #impl_generics crate::encoding::Encode<crate::encoding::EthAbi> for #ident #ty_generics #into_where_clause {
                 fn encode(self) -> Vec<u8> {
-                    ethers_core::abi::AbiEncode::encode(Into::<#raw>::into(self))
+                    alloy_core::sol_types::SolValue::abi_encode(&Into::<#raw>::into(self))
                 }
             }
         });
@@ -916,12 +916,12 @@ impl Parse for FromRawAttrs {
 /// NOTE: Doesn't support generics. Generics this low in the stack is a dark path I do not wish to explore again
 #[proc_macro_attribute]
 pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
-    let item_struct = parse_macro_input!(ts as ItemStruct);
-    let IbcPathMeta { path, comma: _, ty } = parse_macro_input!(meta as IbcPathMeta);
+    let mut item_struct = parse_macro_input!(ts as ItemStruct);
+    let IbcPathMeta { path, ty, .. } = parse_macro_input!(meta as IbcPathMeta);
 
     let segments = parse_ibc_path(path.clone());
 
-    let Fields::Named(ref fields) = item_struct.fields else {
+    let Fields::Named(fields) = item_struct.fields.clone() else {
         panic!("expected named fields")
     };
 
@@ -943,7 +943,19 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
     let fields_map = fields
         .named
         .iter()
-        .map(|f| (f.ident.as_ref().unwrap(), &f.ty))
+        .map(|f| {
+            (
+                f.ident.as_ref().unwrap(),
+                (
+                    f.attrs.iter().find_map(|a| {
+                        a.path()
+                            .is_ident("ibc_path")
+                            .then(|| a.parse_args::<IbcPathFieldAttr>().unwrap())
+                    }),
+                    &f.ty,
+                ),
+            )
+        })
         .collect::<HashMap<_, _>>();
 
     let parse_body = segments
@@ -963,11 +975,18 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
                 }
             },
             Segment::Variable(variable_seg) => {
-                let ty = fields_map[variable_seg];
+                let (maybe_attr, ty) = &fields_map[variable_seg];
+
+                let expr = match maybe_attr {
+                    Some(IbcPathFieldAttr { from_str, .. }) => quote!((#from_str)(segment)),
+                    None => quote! {
+                        segment.parse()
+                    },
+                };
+
                 quote! {
                     let #variable_seg = match it.next() {
-                        Some(segment) => segment
-                            .parse()
+                        Some(segment) => (#expr)
                             .map_err(|e: <#ty as ::core::str::FromStr>::Err| PathParseError::Parse(e.to_string()))?,
                         None => return Err(PathParseError::MissingSegment),
                     };
@@ -980,8 +999,16 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
         .iter()
         .map(|x| match x {
             Segment::Static(_) => quote! {},
-            Segment::Variable(variable_seg) => quote_spanned! {fields_map[variable_seg].span()=>
-                let #variable_seg = &self.#variable_seg;
+            Segment::Variable(variable_seg) => match &fields_map[variable_seg].0 {
+                Some(IbcPathFieldAttr { display, .. }) => {
+                    quote_spanned! {display.span()=>
+                        #[allow(clippy::redundant_closure_call)]
+                        let #variable_seg = (#display)(&self.#variable_seg);
+                    }
+                }
+                None => quote_spanned! {fields_map[variable_seg].1.span()=>
+                    let #variable_seg = &self.#variable_seg;
+                },
             },
         })
         .collect::<proc_macro2::TokenStream>();
@@ -993,6 +1020,11 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
     });
 
     let ident = &item_struct.ident;
+
+    item_struct
+        .fields
+        .iter_mut()
+        .for_each(|f| f.attrs.retain(|a| !a.path().is_ident("ibc_path")));
 
     quote! {
         #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, ::clap::Args)]
@@ -1040,8 +1072,7 @@ pub fn ibc_path(meta: TokenStream, ts: TokenStream) -> TokenStream {
 
 struct IbcPathMeta {
     path: LitStr,
-    #[allow(unused)]
-    comma: Token![,],
+    _comma: Token![,],
     ty: Type,
 }
 
@@ -1049,7 +1080,7 @@ impl Parse for IbcPathMeta {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self {
             path: input.parse()?,
-            comma: input.parse()?,
+            _comma: input.parse()?,
             ty: input.parse()?,
         })
     }
@@ -1076,4 +1107,33 @@ fn parse_ibc_path(path: LitStr) -> Vec<Segment> {
                 )
         })
         .collect()
+}
+
+mod kw {
+    syn::custom_keyword!(from_str);
+    syn::custom_keyword!(display);
+}
+
+struct IbcPathFieldAttr {
+    _from_str: kw::from_str,
+    from_str: Expr,
+    _comma: Token![,],
+    _display: kw::display,
+    display: Expr,
+}
+
+impl Parse for IbcPathFieldAttr {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let ibc_path_field_attr = Self {
+            _from_str: input.parse()?,
+            from_str: *input.parse::<ExprParen>()?.expr,
+            _comma: input.parse()?,
+            _display: input.parse()?,
+            display: *input.parse::<ExprParen>()?.expr,
+        };
+
+        input.parse::<Option<Token![,]>>()?;
+
+        Ok(ibc_path_field_attr)
+    }
 }

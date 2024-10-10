@@ -1,8 +1,6 @@
-use alloc::sync::Arc;
 use core::{fmt::Debug, str::FromStr};
 
 use macros::model;
-use uint::FromDecStrErr;
 
 use crate::{
     errors::{required, InvalidLength, MissingField},
@@ -63,11 +61,8 @@ impl From<ClientState> for protos::union::ibc::lightclients::linea::v1::ClientSt
 pub enum TryFromClientStateError {
     #[error(transparent)]
     MissingField(MissingField),
-    // y no clone?!??
     #[error("unable to parse chain id")]
-    ChainId(#[source] Arc<FromDecStrErr>),
-    #[error("invalid l1 latest height")]
-    L1LatestHeight,
+    ChainId(#[source] <U256 as FromStr>::Err),
     #[error("invalid rollup contract address")]
     L1RollupContractAddress(#[source] InvalidLength),
     #[error("invalid rollup current_l2_block_number slot")]
@@ -90,8 +85,7 @@ impl TryFrom<protos::union::ibc::lightclients::linea::v1::ClientState> for Clien
     ) -> Result<Self, Self::Error> {
         Ok(Self {
             l1_client_id: value.l1_client_id,
-            chain_id: U256::from_str(&value.chain_id)
-                .map_err(|err| TryFromClientStateError::ChainId(Arc::new(err)))?,
+            chain_id: U256::from_str(&value.chain_id).map_err(TryFromClientStateError::ChainId)?,
             l1_latest_height: required!(value.l1_latest_height)?.into(),
             l1_rollup_contract_address: value
                 .l1_rollup_contract_address

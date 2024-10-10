@@ -78,7 +78,7 @@ pub fn schedule_create_client_checker(
                             "#,
                             internal_chain_id,
                             client_id,
-                            cs.chain_id.to_string(),
+                            cs.chain_id.as_str().to_owned(),
                         )
                         .execute(&pg_pool)
                         .await?;

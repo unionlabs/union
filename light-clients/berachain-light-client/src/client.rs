@@ -131,10 +131,10 @@ impl IbcClient for BerachainLightClient {
             header.cometbft_header.signed_header.header.chain_id.clone(),
         )))?;
 
-        if revision_number != header.cometbft_header.trusted_height.revision_number {
+        if revision_number != header.cometbft_header.trusted_height.revision() {
             return Err(Error::from(RevisionNumberMismatch {
                 trusted_revision_number: revision_number,
-                header_revision_number: header.cometbft_header.trusted_height.revision_number,
+                header_revision_number: header.cometbft_header.trusted_height.revision(),
             })
             .into());
         }
@@ -148,10 +148,10 @@ impl IbcClient for BerachainLightClient {
             .try_into()
             .expect("value is bounded >= 0; qed;");
 
-        if signed_height <= header.cometbft_header.trusted_height.revision_height {
+        if signed_height <= header.cometbft_header.trusted_height.height() {
             return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
                 signed_height,
-                trusted_height: header.cometbft_header.trusted_height.revision_height,
+                trusted_height: header.cometbft_header.trusted_height.height(),
             }
             .into());
         }
@@ -183,10 +183,10 @@ impl IbcClient for BerachainLightClient {
         tendermint_verifier::verify::verify(
             &construct_partial_header(
                 client_state.data.consensus_chain_id,
-                i64::try_from(header.cometbft_header.trusted_height.revision_height)
+                i64::try_from(header.cometbft_header.trusted_height.height())
                     .map_err(|_| {
                         Error::from(IbcHeightTooLargeForTendermintHeight(
-                            header.cometbft_header.trusted_height.revision_height,
+                            header.cometbft_header.trusted_height.height(),
                         ))
                     })?
                     .try_into()
@@ -506,10 +506,7 @@ mod tests {
         ics008_wasm_client::storage_utils::save_consensus_state::<BerachainLightClient>(
             deps.as_mut(),
             consensus_state,
-            &Height {
-                revision_number: 2061,
-                revision_height: 91,
-            },
+            &Height::new_with_revision(2061, 91),
         );
 
         let mut env = mock_env();

@@ -1,63 +1,99 @@
-use std::time::Duration;
+use std::str::FromStr;
 
+use alloy::{
+    providers::{Provider, ProviderBuilder},
+    sol,
+};
 use prost::Message;
 use protos::ibc::{
     core::client::v1::QueryClientStateRequest, lightclients::wasm::v1::QueryCodeRequest,
 };
-use tokio::{task::JoinSet, time::interval};
-use tracing::{error, info, info_span, warn, Instrument};
+use sqlx::PgPool;
+use tendermint_rpc::{Client, HttpClient};
+use tracing::warn;
 use unionlabs::{
-    encoding::{DecodeAs, Proto},
+    encoding::{DecodeAs, EthAbi, Proto},
     parse_wasm_client_type, WasmClientType,
 };
+sol! {
+    contract IbcHandler {
+        function CreateClient(MsgCreateClient calldata) returns (string memory);
+    }
 
-use crate::{
-    indexer::{
-        api::IndexerError,
-        tm::{postgres::unmapped_client_ids, provider::Provider},
-    },
-    postgres::insert_client_mapping,
-};
+    struct MsgCreateClient {
+        string client_type;
+        bytes client_state_bytes;
+        bytes consensus_state_bytes;
+        address relayer;
+    }
+}
+use crate::cli::{IndexerConfig, Indexers};
 
-pub fn schedule_create_client_checker(
-    pg_pool: sqlx::PgPool,
-    join_set: &mut JoinSet<Result<(), IndexerError>>,
-    provider: Provider,
-    internal_chain_id: i32,
-) {
-    join_set.spawn(
-        async move {
-            let mut interval = interval(Duration::from_secs(10 * 60));
+#[derive(Debug)]
+struct Data {
+    chain_id: i32,
+    client_id: String,
+    counterparty_chain_id: String,
+}
 
-            loop {
-                info!("{}: check", internal_chain_id);
+pub async fn tx(db: PgPool, indexers: Indexers) {
+    let mut datas = vec![];
 
-                let tm_clients = match unmapped_client_ids(&pg_pool, internal_chain_id).await {
-                    Ok(tm_clients) => tm_clients,
-                    Err(err) => {
-                        error!("error fetching unmapped clients: {} => retry later", err);
-                        continue;
-                    },
-                };
+    for indexer in indexers {
+        match indexer {
+            IndexerConfig::DummyFetcher(_) => {}
+            IndexerConfig::EthFetcher(_) => {}
+            IndexerConfig::TmFetcher(_) => {}
+            IndexerConfig::AptosFetcher(_) => {}
+            IndexerConfig::Scroll(_) => {}
+            IndexerConfig::Arb(_) => {}
+            IndexerConfig::Beacon(_) => {}
+            IndexerConfig::Bera(_) => {}
+            IndexerConfig::EthFork(_) => {}
+            IndexerConfig::Tm(tm_config) => {
+                let client = HttpClient::new(tm_config.urls[0].as_str()).unwrap();
 
-                info!("{}, check: unmapped clients: {}", internal_chain_id, tm_clients.len());
+                let grpc_url = tm_config.grpc_url.clone().unwrap();
 
-                for client_id in tm_clients {
-                    info!("{}: found unmapped client-id: {}", internal_chain_id, client_id);
-                    let (provider_id, client_state) = match provider.client_state(QueryClientStateRequest { client_id: client_id.clone()}, None)
+                let mut grpc_client =
+                    protos::ibc::core::client::v1::query_client::QueryClient::connect(
+                        grpc_url.clone(),
+                    )
+                    .await
+                    .unwrap();
+
+                let chain_id = client.status().await.unwrap().node_info.network.to_string();
+
+                let tm_clients = sqlx::query!(
+                    r#"
+                    select cc.client_id, ch.id
+                    from v0_cosmos.create_client cc
+                    join v0.chains ch on cc.chain_id = ch.id
+                    left join v0.clients cl on 
+                        cl.chain_id = ch.id and 
+                        cl.client_id = cc.client_id
+                    where
+                        ch.chain_id = $1 and 
+                        cc.client_id is not null 
+                        and cl.chain_id is null
+                    "#,
+                    chain_id
+                )
+                .fetch_all(&db)
+                .await
+                .unwrap();
+
+                for record in tm_clients {
+                    let client_id = record.client_id.unwrap();
+                    let client_state = grpc_client
+                        .client_state(QueryClientStateRequest {
+                            client_id: client_id.clone(),
+                        })
                         .await
-                        {
-                            Ok(result) => (
-                                result.provider_id,
-                                result.response.into_inner().client_state.expect("client state"),
-                            ),
-                            Err(err) => {
-                                warn!("{}: error fetching client status for {}: {}", internal_chain_id, client_id, err);
-                                continue;
-                            }
-                        };
-
-                    info!("{}: client_state: {:?}", internal_chain_id, client_state);
+                        .unwrap()
+                        .into_inner()
+                        .client_state
+                        .unwrap();
 
                     match &*client_state.type_url {
                         "/ibc.lightclients.wasm.v1.ClientState" => {
@@ -66,10 +102,19 @@ pub fn schedule_create_client_checker(
                             )
                             .unwrap();
 
-                            let wasm_blob = provider.code(QueryCodeRequest { checksum: hex::encode(&*cs.checksum) }, Some(provider_id))
+                            let mut client =
+                                protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
+                                    grpc_url.clone(),
+                                )
+                                .await
+                                .unwrap();
+
+                            let wasm_blob = client
+                                .code(QueryCodeRequest {
+                                    checksum: hex::encode(&*cs.checksum),
+                                })
                                 .await
                                 .unwrap()
-                                .response
                                 .into_inner()
                                 .data;
 
@@ -161,14 +206,11 @@ pub fn schedule_create_client_checker(
                                 }
                             };
 
-                            info!("{}: add mapping {} => {} (ibc.lightclients.wasm.v1.ClientState)", internal_chain_id, client_id, counterparty_chain_id);
-
-                            insert_client_mapping(
-                                &pg_pool,
-                                internal_chain_id,
-                                client_id.clone(),
+                            datas.push(Data {
+                                chain_id: record.id,
+                                client_id: client_id.clone(),
                                 counterparty_chain_id,
-                            ).await?;
+                            })
                         }
                         "/ibc.lightclients.tendermint.v1.ClientState" => {
                             let cs =
@@ -177,24 +219,110 @@ pub fn schedule_create_client_checker(
                                 )
                                 .unwrap();
 
-                            info!("{}: add mapping {} => {} (ibc.lightclients.tendermint.v1.ClientState)", internal_chain_id, client_id, cs.chain_id);
-
-                            insert_client_mapping(
-                                &pg_pool,
-                                internal_chain_id,
-                                client_id.clone(),
-                                cs.chain_id,
-                            ).await?;
+                            datas.push(Data {
+                                chain_id: record.id,
+                                client_id: client_id.clone(),
+                                counterparty_chain_id: cs.chain_id,
+                            })
                         }
                         _ => {
                             panic!("unknown client state type {}", client_state.type_url)
                         }
                     };
                 }
+            }
+            IndexerConfig::Eth(eth_config) => {
+                let provider = ProviderBuilder::new().on_http(eth_config.urls[0].clone());
 
-                interval.tick().await;
+                let chain_id = provider.get_chain_id().await.unwrap().to_string();
+                dbg!("hi");
+
+                let eth_clients = sqlx::query!(
+                    r#"
+                    SELECT
+                        cl.transaction_hash, cl.client_id, ch.id
+                    FROM
+                        v0_evm.client_created cl
+                    JOIN
+                        v0.chains ch
+                    ON
+                        cl.chain_id = ch.id
+                    WHERE
+                        ch.chain_id = $1
+                    "#,
+                    chain_id
+                )
+                .fetch_all(&db)
+                .await
+                .unwrap();
+
+                for record in eth_clients {
+                    let Some(client_id) = record.client_id else {
+                        tracing::info!(
+                            internal_db_chain_id = record.id,
+                            %chain_id,
+                            "skipping record"
+                        );
+                        continue;
+                    };
+
+                    let tx = provider
+                        .get_transaction_by_hash(
+                            alloy::primitives::FixedBytes::from_str(
+                                &record.transaction_hash.unwrap(),
+                            )
+                            .unwrap(),
+                        )
+                        .await
+                        .unwrap()
+                        .unwrap();
+
+                    let msg = match <IbcHandler::CreateClientCall as alloy::sol_types::SolCall>::abi_decode(&tx.input,true) {
+                        Ok(msg) => msg,
+                        Err(err) => {
+                            warn!("could not decode CreateClientCall, most likely due to ABI change: {}", err);
+                            continue
+                        }
+                    };
+
+                    match &*msg._0.client_type {
+                        "cometbls" => {
+                            let cs = unionlabs::ibc::lightclients::cometbls::client_state::ClientState::decode_as::<EthAbi>(&msg._0.client_state_bytes).unwrap();
+
+                            datas.push(Data {
+                                chain_id: record.id,
+                                client_id,
+                                counterparty_chain_id: cs.chain_id.as_str().to_owned(),
+                            })
+                        }
+                        ty => panic!("unknown evm client type `{ty}`"),
+                    }
+                }
             }
         }
-        .instrument(info_span!("clients").or_current()),
-    );
+    }
+
+    sqlx::query!(
+        r#"
+        INSERT INTO
+            v0.clients (chain_id, client_id, counterparty_chain_id)
+        SELECT
+            *
+        FROM
+            UNNEST($1::integer[], $2::text[], $3::text[])
+        ON CONFLICT DO NOTHING
+        "#,
+        &datas.iter().map(|x| x.chain_id).collect::<Vec<_>>()[..],
+        &datas
+            .iter()
+            .map(|x| x.client_id.clone())
+            .collect::<Vec<_>>()[..],
+        &datas
+            .iter()
+            .map(|x| x.counterparty_chain_id.clone())
+            .collect::<Vec<_>>()[..],
+    )
+    .execute(&db)
+    .await
+    .unwrap();
 }

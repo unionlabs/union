@@ -91,14 +91,10 @@ pub trait TransferProtocolExt<'a>:
             .unwrap_or_default()
             .nanos();
         let packet_timeout_height = match refund_info.origin_packet.timeout.block() {
-            Some(timeout_block) => Height {
-                revision_number: timeout_block.revision,
-                revision_height: timeout_block.height,
-            },
-            None => Height {
-                revision_number: 0,
-                revision_height: 0,
-            },
+            Some(timeout_block) => {
+                Height::new_with_revision(timeout_block.revision, timeout_block.height)
+            }
+            None => Height::default(),
         };
 
         let deferred_packet_into = DeferredPacketInfo {

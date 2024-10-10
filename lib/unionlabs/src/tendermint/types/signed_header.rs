@@ -1,9 +1,5 @@
 use macros::model;
 
-#[cfg(feature = "ethabi")]
-use crate::tendermint::types::{
-    commit::TryFromEthAbiCommitError, header::TryFromEthAbiHeaderError,
-};
 use crate::{
     errors::{required, MissingField},
     tendermint::types::{
@@ -24,33 +20,6 @@ impl From<SignedHeader> for protos::tendermint::types::SignedHeader {
             header: Some(value.header.into()),
             commit: Some(value.commit.into()),
         }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiSignedHeaderError {
-    Header(TryFromEthAbiHeaderError),
-    Commit(TryFromEthAbiCommitError),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::TendermintTypesSignedHeaderData> for SignedHeader {
-    type Error = TryFromEthAbiSignedHeaderError;
-
-    fn try_from(
-        value: contracts::glue::TendermintTypesSignedHeaderData,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            header: value
-                .header
-                .try_into()
-                .map_err(TryFromEthAbiSignedHeaderError::Header)?,
-            commit: value
-                .commit
-                .try_into()
-                .map_err(TryFromEthAbiSignedHeaderError::Commit)?,
-        })
     }
 }
 
@@ -76,15 +45,5 @@ impl TryFrom<protos::tendermint::types::SignedHeader> for SignedHeader {
                 .try_into()
                 .map_err(TryFromSignedHeaderError::Commit)?,
         })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<SignedHeader> for contracts::glue::TendermintTypesSignedHeaderData {
-    fn from(value: SignedHeader) -> Self {
-        Self {
-            header: value.header.into(),
-            commit: value.commit.into(),
-        }
     }
 }

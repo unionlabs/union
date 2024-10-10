@@ -39,16 +39,3 @@ impl From<BatchProof> for protos::cosmos::ics23::v1::BatchProof {
         }
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<BatchProof> for contracts::glue::CosmosIcs23V1BatchProofData {
-    fn from(value: BatchProof) -> Self {
-        Self {
-            entries: value
-                .entries
-                .into_iter()
-                .map(Into::into)
-                .collect::<Vec<_>>(),
-        }
-    }
-}

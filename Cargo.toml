@@ -9,9 +9,8 @@ members = [
   "cosmwasm/ucs02-nft",
   "devnet-compose",
 
-  "e2e/ensure-blocks",
+  # "e2e/ensure-blocks",
 
-  "generated/rust/contracts",
   "generated/rust/protos",
   "generated/rust/aptos-move-ibc",
 
@@ -42,8 +41,11 @@ members = [
   "lib/ssz-derive",
   "lib/unionlabs",
   "lib/zktrie-rs",
+
   "lib/voyager-message",
   "lib/voyager-core",
+
+  "lib/ibc-solidity",
 
   "lib/near/near-ibc",
   "lib/near/near-light-client",
@@ -65,14 +67,12 @@ members = [
   "light-clients/tendermint-light-client",
   "light-clients/linea-light-client",
 
-  "tools/generate-rust-sol-bindings",
   "tools/devnet-utils",
   "tools/parse-wasm-client-type",
   "tools/tidy",
   "tools/move-bindgen",
   "lib/move-bindgen-derive",
 
-  "ucli",
   "unionvisor",
 
   "voyager",
@@ -112,8 +112,7 @@ members = [
   "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
-  "lib/voyager-core",
-  "lib/subset-of", "lib/ibc-contracts",
+  "lib/subset-of",
 ]
 
 [workspace.package]
@@ -141,11 +140,11 @@ beacon-api                     = { path = "lib/beacon-api", default-features = f
 chain-utils                    = { path = "lib/chain-utils", default-features = false }
 cometbft-rpc                   = { path = "lib/cometbft-rpc", default-features = false }
 cometbls-groth16-verifier      = { path = "lib/cometbls-groth16-verifier", default-features = false }
-contracts                      = { path = "generated/rust/contracts", default-features = false }
 ethereum-light-client          = { path = "light-clients/ethereum-light-client", default-features = false }
 ethereum-verifier              = { path = "lib/ethereum-verifier", default-features = false }
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
+ibc-solidity                   = { path = "lib/ibc-solidity", default-features = false }
 ibc-vm-rs                      = { path = "lib/ibc-vm-rs", default-features = false }
 ics008-wasm-client             = { path = "lib/ics-008-wasm-client", default-features = false }
 ics23                          = { path = "lib/ics23", default-features = false }
@@ -184,13 +183,9 @@ tendermint       = { git = "https://github.com/unionlabs/tendermint-rs", branch 
 tendermint-proto = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 tendermint-rpc   = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
-ethers                 = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
-ethers-contract-abigen = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
-ethers-contract-derive = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
-ethers-core            = { git = "https://github.com/unionlabs/ethers-rs", branch = "ethers-core-wasm", default-features = false }
-
-# https://github.com/aptos-labs/aptos-core/pull/12636
-aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }
+alloy                    = { version = "0.4.2" }
+alloy-core               = { version = "0.8.7" }
+aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }                       # https://github.com/aptos-labs/aptos-core/pull/12636
 aptos-rest-client        = { git = "https://github.com/unionlabs/aptos-core" }
 aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }
 axum                     = { version = "0.6.20", default-features = false }
