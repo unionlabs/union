@@ -4,7 +4,6 @@ use cosmwasm_std::{
     HexBinary, IbcEndpoint, IbcOrder, IbcPacket, IbcReceiveResponse, MessageInfo, Uint128, Uint512,
 };
 use prost::{Message, Name};
-use protos::deferredack::v1beta1::{DeferredPacketInfo, MsgWriteDeferredAck};
 use sha2::{Digest, Sha256};
 use token_factory_api::TokenFactoryMsg;
 use ucs01_relay_api::{
