@@ -2,10 +2,8 @@ use std::{collections::HashMap, fmt::Display, time::Duration};
 
 use alloy::{
     eips::BlockId,
-    primitives::{Address, BloomInput},
-    providers::{Provider, ProviderBuilder, RootProvider},
+    primitives::{Address, BloomInput, FixedBytes},
     rpc::types::{Block, BlockTransactionsKind, Filter, Log},
-    transports::http::{Client, Http},
 };
 use axum::async_trait;
 use color_eyre::eyre::Report;
@@ -13,16 +11,30 @@ use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, warn, Instrument};
 
-use super::{block_handle::EthBlockHandle, context::EthContext};
 use crate::{
-    eth::{BlockInsert, EventInsert, FromProviderError, ToLowerHex, TransactionInsert},
     indexer::{
         api::{BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError},
-        eth::{block_handle::BlockDetails, create_client_tracker::schedule_create_client_checker},
+        eth::{
+            block_handle::{
+                BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
+            },
+            context::EthContext,
+            create_client_tracker::schedule_create_client_checker,
+            provider::{Provider, RpcProviderId},
+        },
     },
     postgres::{fetch_or_insert_chain_id_tx, ChainId},
-    race_client::RaceClient,
 };
+
+pub trait ToLowerHex {
+    fn to_lower_hex(&self) -> String;
+}
+
+impl ToLowerHex for FixedBytes<32> {
+    fn to_lower_hex(&self) -> String {
+        format!("{:#x}", self)
+    }
+}
 
 trait BlockReferenceProvider {
     fn block_reference(&self) -> Result<BlockReference, Report>;
@@ -41,7 +53,7 @@ impl BlockReferenceProvider for Block {
                 .map(|h| h.to_lower_hex())
                 .ok_or(Report::msg("block without a hash"))?,
             timestamp: OffsetDateTime::from_unix_timestamp(self.header.timestamp as i64)
-                .map_err(FromProviderError::from)?,
+                .map_err(|err| IndexerError::ProviderError(err.into()))?,
         })
     }
 }
@@ -49,7 +61,7 @@ impl BlockReferenceProvider for Block {
 #[derive(Clone)]
 pub struct EthFetcherClient {
     pub chain_id: ChainId,
-    pub provider: RaceClient<RootProvider<Http<Client>>>,
+    pub provider: Provider,
     pub contracts: Vec<Address>,
 }
 
@@ -64,56 +76,46 @@ impl EthFetcherClient {
         &self,
         selection: BlockSelection,
         mode: FetchMode,
-        provider_index: Option<usize>,
+        provider_id: Option<RpcProviderId>,
     ) -> Result<EthBlockHandle, IndexerError> {
-        let provider = match provider_index {
-            Some(provider_index) => {
-                RaceClient::new(vec![self.provider.clients[provider_index].clone()])
-            }
-            None => self.provider.clone(),
-        };
-
-        match provider_index {
-            None => debug!("{}: fetching (race)", selection),
-            Some(provider_index) => debug!(
-                "{}: fetching (provider index: {})",
-                selection, provider_index
-            ),
-        }
-
-        let block = provider
+        let block = self
+            .provider
             .get_block(
                 match selection {
                     BlockSelection::LastFinalized => BlockId::finalized(),
                     BlockSelection::Height(height) => BlockId::number(height),
                 },
                 BlockTransactionsKind::Full,
+                provider_id,
             )
             .await;
 
         match block {
-            Ok(Some(block)) => {
-                let fastest_index = self.provider.fastest_index();
+            Ok(rpc_result) => match rpc_result.response {
+                Some(block) => {
+                    debug!(
+                        "{}: fetched (provider index: {:?})",
+                        selection, rpc_result.provider_id
+                    );
 
-                debug!("{}: fetched (provider index: {})", selection, fastest_index);
+                    Ok(EthBlockHandle {
+                        reference: block.block_reference()?,
+                        details: match mode {
+                            FetchMode::Lazy => BlockDetails::Lazy(block),
+                            FetchMode::Eager => BlockDetails::Eager(
+                                self.fetch_details(&block, rpc_result.provider_id).await?,
+                            ),
+                        },
+                        eth_client: self.clone(),
+                        provider_id: rpc_result.provider_id,
+                    })
+                }
+                None => {
+                    info!("{}: does not exist", selection);
 
-                Ok(EthBlockHandle {
-                    reference: block.block_reference()?,
-                    details: match mode {
-                        FetchMode::Lazy => BlockDetails::Lazy(block),
-                        FetchMode::Eager => {
-                            BlockDetails::Eager(self.fetch_details(&block, fastest_index).await?)
-                        }
-                    },
-                    eth_client: self.clone(),
-                    provider_index: fastest_index,
-                })
-            }
-            Ok(None) => {
-                info!("{}: does not exist", selection);
-
-                Err(IndexerError::NoBlock(selection))
-            }
+                    Err(IndexerError::NoBlock(selection))
+                }
+            },
             Err(report) => {
                 info!("{}: error: {}", selection, report);
 
@@ -125,8 +127,8 @@ impl EthFetcherClient {
     pub async fn fetch_details(
         &self,
         block: &Block,
-        provider_index: usize,
-    ) -> Result<Option<BlockInsert>, Report> {
+        provider_id: RpcProviderId,
+    ) -> Result<Option<BlockInsert>, IndexerError> {
         let block_reference = block.block_reference()?;
 
         info!("{}: fetch", block_reference);
@@ -148,10 +150,12 @@ impl EthFetcherClient {
         let log_addresses: Vec<Address> = self.contracts.to_vec();
         let log_filter = log_filter.address(log_addresses);
 
-        let logs = self.provider.clients[provider_index]
-            .get_logs(&log_filter)
+        let logs = self
+            .provider
+            .get_logs(&log_filter, Some(provider_id))
             .await
-            .map_err(FromProviderError::DataNotFound)?;
+            .map_err(|err| IndexerError::ProviderError(err.into()))?
+            .response;
 
         // The bloom filter returned a false positive, and we don't actually have matching logs.
         if logs.is_empty() {
@@ -238,16 +242,10 @@ impl FetcherClient for EthFetcherClient {
         join_set: &mut JoinSet<Result<(), IndexerError>>,
         context: EthContext,
     ) -> Result<Self, IndexerError> {
-        let provider = RaceClient::new(
-            context
-                .urls
-                .into_iter()
-                .map(|url| ProviderBuilder::new().on_http(url))
-                .collect(),
-        );
+        let provider = Provider::new(context.urls);
 
         info!("fetching chain-id from node");
-        let chain_id = provider.get_chain_id().await?;
+        let chain_id = provider.get_chain_id(None).await?.response;
         info!("fetched chain-id from node: {}", chain_id);
 
         let indexing_span = info_span!("indexer", chain_id = chain_id);

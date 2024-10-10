@@ -156,11 +156,8 @@
               };
               options.type = mkOption {
                 type = types.enum [
-                  "tendermint"
-                  "ethereum"
                   "beacon"
                   "bera"
-                  "ethereum-fork"
                   "arb"
                   "scroll"
                   "eth-fetcher"

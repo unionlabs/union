@@ -5,7 +5,8 @@ use protos::ibc::{
     core::client::v1::{QueryClientStateRequest, QueryClientStateResponse},
     lightclients::wasm::v1::{QueryCodeRequest, QueryCodeResponse},
 };
-use tendermint_rpc::{query::Query, HttpClient, Order};
+use tendermint::block::Height;
+use tendermint_rpc::{query::Query, Client, Error, HttpClient, Order};
 use tonic::Response;
 use unionlabs::aptos::block_info::BlockHeight;
 use url::Url;
@@ -314,6 +315,57 @@ impl RaceClient<GrpcClient> {
         request: QueryCodeRequest,
     ) -> Result<Response<QueryCodeResponse>, IndexerError> {
         self.race(|client| client.code(request.clone())).await
+    }
+}
+
+impl<C: Client + std::marker::Sync + Clone> RaceClient<C> {
+    pub async fn status(&self) -> Result<tendermint_rpc::endpoint::status::Response, Error> {
+        self.race(|c| c.status()).await
+    }
+
+    pub async fn blockchain<H: Into<Height>>(
+        &self,
+        min: H,
+        max: H,
+    ) -> Result<tendermint_rpc::endpoint::blockchain::Response, Error> {
+        let min = min.into();
+        let max = max.into();
+
+        self.race(|c| c.blockchain(min, max)).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn tx_search(
+        &self,
+        query: Query,
+        prove: bool,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> Result<tendermint_rpc::endpoint::tx_search::Response, Error> {
+        self.race(|c| c.tx_search(query.clone(), prove, page, per_page, order.clone()))
+            .await
+    }
+
+    pub async fn latest_block(&self) -> Result<tendermint_rpc::endpoint::block::Response, Error> {
+        self.race(|c| c.latest_block()).await
+    }
+
+    pub async fn commit<H: Into<Height>>(
+        &self,
+        height: H,
+    ) -> Result<tendermint_rpc::endpoint::commit::Response, Error> {
+        let height = height.into();
+        self.race(|c| c.commit(height)).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn block_results<H: Into<Height>>(
+        &self,
+        height: H,
+    ) -> Result<tendermint_rpc::endpoint::block_results::Response, Error> {
+        let height = height.into();
+        self.race(|c| c.block_results(height)).await
     }
 }
 

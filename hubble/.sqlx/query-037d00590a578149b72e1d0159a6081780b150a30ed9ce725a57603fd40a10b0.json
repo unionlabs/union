@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT cl.transaction_hash, cl.height, cl.log_index, cl.client_id\n                FROM   v1_evm.client_created cl\n                WHERE  cl.internal_chain_id = $1\n                ",
+  "query": "\n        SELECT cc.transaction_hash, cc.height, cc.client_id\n        FROM   v1_evm.client_created cc\n        LEFT JOIN v0.clients cl ON cc.internal_chain_id = cl.chain_id AND cc.client_id = cl.client_id\n        WHERE  cc.internal_chain_id = $1\n        AND    cl.chain_id IS NULL\n        ",
   "describe": {
     "columns": [
       {
@@ -15,11 +15,6 @@
       },
       {
         "ordinal": 2,
-        "name": "log_index",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 3,
         "name": "client_id",
         "type_info": "Text"
       }
@@ -32,9 +27,8 @@
     "nullable": [
       true,
       true,
-      true,
       true
     ]
   },
-  "hash": "66098f24ec521e0b7ae5baed7273767a0acbcaccb4907ea358b1417fcdfb9f1a"
+  "hash": "037d00590a578149b72e1d0159a6081780b150a30ed9ce725a57603fd40a10b0"
 }
