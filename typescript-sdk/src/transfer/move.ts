@@ -1,21 +1,21 @@
-import { err, ok, Result } from "neverthrow";
-import { Account, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
-import consola from "consola";
-import { raise } from "#utilities/index.ts";
+import { err, ok, Result } from "neverthrow"
+import { Account, AccountAuthenticator, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
+import consola from "consola"
+import { raise } from "#utilities/index.ts"
 
 export type TransferAssetFromMoveParams = {
-  memo?: string;
-  amount: bigint;
-  receiver: string; // Receiver's address
-  account: Account; // Sender's account address
-  denomAddress: string; // The Move coin type resource address
-  sourceChannel: string; // Source IBC channel
-  relayContractAddress: string; // Contract address to call send function
-  timeoutHeight: { revision_number: bigint; revision_height: bigint }; // Timeout height
-  timeoutTimestamp: bigint; // Timeout timestamp
-  baseUrl: string; // Base URL of the Aptos full node
-  simulate?: boolean; // Flag for simulation
-};
+  memo?: string
+  amount: bigint
+  receiver: string // Receiver's address
+  account: Account // Sender's account address
+  denomAddress: string // The Move coin type resource address
+  sourceChannel: string // Source IBC channel
+  relayContractAddress: string // Contract address to call send function
+  // timeoutHeight: { revision_number: bigint; revision_height: bigint } // Timeout height
+  // timeoutTimestamp: bigint // Timeout timestamp
+  baseUrl: string // Base URL of the Aptos full node
+  simulate?: boolean // Flag for simulation
+}
 
 /**
  * Transfer an asset from the Move blockchain (e.g., Aptos) using the IBC `send` function, similar to EVM implementation.
@@ -45,27 +45,25 @@ export async function transferAssetFromMove({
   denomAddress,
   sourceChannel,
   relayContractAddress,
-  timeoutHeight,
-  timeoutTimestamp,
   baseUrl,
-  simulate = false,
+  simulate = false
 }: TransferAssetFromMoveParams): Promise<Result<string, Error>> {
   try {
     // Ensure the baseUrl is provided and valid
     if (!baseUrl) {
-      return err(new Error("Base URL for Aptos node not provided"));
+      return err(new Error("Base URL for Aptos node not provided"))
     }
 
     // TODO: Handle simulation scenario
     if (simulate) {
-      raise("Simulation not implemented");
+      raise("Simulation not implemented")
     }
 
     // Setup the Aptos client with the correct network and base URL
-    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET });
-    const aptos = new Aptos(config);
+    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET })
+    const aptos = new Aptos(config)
 
-    consola.info(`Using Aptos fullnode at: ${baseUrl}`);
+    consola.info(`Using Aptos fullnode at: ${baseUrl}`)
 
     // Build the transaction using the IBC `send` function (similar to EVM)
     const transaction = await aptos.transaction.build.simple({
@@ -76,36 +74,38 @@ export async function transferAssetFromMove({
         functionArguments: [
           sourceChannel,
           receiver.startsWith("0x") ? receiver : receiver,
-          [{ denom: denomAddress, amount }], 
-          memo, 
-          timeoutHeight, 
-          timeoutTimestamp, 
-        ],
-      },
-    });
+          [denomAddress],
+          [amount],
+          memo,
+          9n,
+          BigInt(999_999_999) + 100n,
+          0n
+        ]
+      }
+    })
 
-    consola.info("Transaction built successfully");
+    consola.info("Transaction built successfully")
 
     // Sign and submit the transaction
-    const senderAuth = await aptos.transaction.sign({
+    const senderAuthenticator = aptos.transaction.sign({
       signer: account,
-      transaction,
-    });
+      transaction
+    })
 
-    const pendingTxn = await aptos.transaction.submit.simple({ transaction, senderAuth });
+    const pendingTxn = await aptos.transaction.submit.simple({ transaction, senderAuthenticator })
 
-    consola.info(`Transaction executed! Hash: ${pendingTxn.hash}`);
+    consola.info(`Transaction executed! Hash: ${pendingTxn.hash}`)
 
-    return ok(pendingTxn.hash); // Return the transaction hash
+    return ok(pendingTxn.hash) // Return the transaction hash
   } catch (error) {
-    return err(new Error(`Transfer failed: ${error.message}`));
+    return err(new Error(`Transfer failed: ${error}`))
   }
 }
 
 // Helper function to convert Bech32 receiver address to hex (if needed)
 function convertToHex(receiver: string): string {
   // You can implement this based on your project's needs for Bech32 conversion.
-  return receiver;
+  return receiver
 }
 
 // import aptosClient from "@aptos-labs/aptos-client";
@@ -154,7 +154,6 @@ function convertToHex(receiver: string): string {
 //       return err(new Error("Base URL for Aptos node not provided"));
 //     }
 
-
 //       // Setup the client
 //     const config = new AptosConfig({ network: Network.TESTNET });
 //     const aptos = new Aptos(config);
@@ -162,7 +161,7 @@ function convertToHex(receiver: string): string {
 //     // Each account has a private key, a public key, and an address
 //     const alice = Account.generate();
 //     const bob = Account.generate();
-    
+
 //     console.log("=== Addresses ===\n");
 //     console.log(`Alice's address is: ${alice.accountAddress}`);
 //     console.log(`Bob's address is: ${bob.accountAddress}`);
@@ -172,12 +171,12 @@ function convertToHex(receiver: string): string {
 //       });
 //       const bobBalance = Number(bobAccountBalance.coin.value);
 //       console.log(`Bob's balance is: ${bobBalance}`);
-      
+
 //     const bobAccountBalance2 = await aptos.getAccountResource({
 //         accountAddress: "0xe3579557fd55ed8fab0d1e211eb1c05d56d74650e7070b703925493c38fe2aed",
 //         resourceType: COIN_STORE,
 //     });
-    
+
 //     consola.info(`bobAccountBalance2: ${bobAccountBalance2}`);
 //     const modules = await aptos.getAccountModules({ accountAddress: "0x123" });
 //     consola.info(`modules: ${modules}`);
