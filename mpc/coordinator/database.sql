@@ -172,6 +172,7 @@ BEGIN
     RAISE EXCEPTION 'not_expired';
   END IF;
   UPDATE public.queue SET score = public.min_score() WHERE id = (SELECT auth.uid());
+  DELETE FROM public.contribution_signature cs WHERE id = (SELECT auth.uid());
   DELETE FROM public.contribution_status cs WHERE id = (SELECT auth.uid());
 END
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
