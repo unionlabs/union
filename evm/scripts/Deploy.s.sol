@@ -247,7 +247,7 @@ contract DeployIBC is UnionScript {
             UCS02NFT nft,
             Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
-        handler.registerClient(keccak256(bytes(LightClients.COMETBLS)), client);
+        handler.registerClient(LightClients.COMETBLS, client);
 
         vm.stopBroadcast();
     }
@@ -274,7 +274,7 @@ contract DeployDeployerAndIBC is UnionScript {
             UCS02NFT nft,
             Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
-        handler.registerClient(keccak256(bytes(LightClients.COMETBLS)), client);
+        handler.registerClient(LightClients.COMETBLS, client);
 
         vm.stopBroadcast();
 

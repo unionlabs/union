@@ -7,7 +7,10 @@ interface IIBCClient {
     /**
      * @dev registerClient registers a new client type into the client registry
      */
-    function registerClient(bytes32 clientType, ILightClient client) external;
+    function registerClient(
+        string calldata clientType,
+        ILightClient client
+    ) external;
 
     /**
      * @dev createClient creates a new client state and populates it with a given consensus state

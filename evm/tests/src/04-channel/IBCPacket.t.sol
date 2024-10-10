@@ -9,7 +9,7 @@ import "../core/Module.sol";
 import "@openzeppelin/utils/math/Math.sol";
 
 contract IBCPacketTests is Test {
-    bytes32 public constant CLIENT_TYPE = keccak256("zkgm");
+    string public constant CLIENT_TYPE = "zkgm";
     bytes32 public constant VERSION = keccak256("protocol-1");
     uint32 public constant COUNTERPARTY_CHANNEL_ID = 0xDEADC0DE;
 

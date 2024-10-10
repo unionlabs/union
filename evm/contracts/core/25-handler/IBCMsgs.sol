@@ -7,7 +7,7 @@ import "../Types.sol";
  */
 library IBCMsgs {
     struct MsgCreateClient {
-        bytes32 clientType;
+        string clientType;
         bytes clientStateBytes;
         bytes consensusStateBytes;
         address relayer;

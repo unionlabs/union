@@ -16,7 +16,7 @@ contract IBCClientTests is Test {
         lightClient = new TestLightClient();
     }
 
-    function test_registerClient_ok(bytes32 typ, address impl) public {
+    function test_registerClient_ok(string calldata typ, address impl) public {
         vm.pauseGasMetering();
         vm.assume(impl != address(0));
         vm.expectEmit();
@@ -26,7 +26,7 @@ contract IBCClientTests is Test {
     }
 
     function test_registerClient_alreadyRegistered(
-        bytes32 typ,
+        string calldata typ,
         address impl
     ) public {
         vm.assume(impl != address(0));

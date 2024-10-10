@@ -7,7 +7,7 @@ import "../core/LightClient.sol";
 import "../core/Module.sol";
 
 contract IBCChannelTests is Test {
-    bytes32 public constant CLIENT_TYPE = keccak256("zkgm");
+    string public constant CLIENT_TYPE = "zkgm";
 
     TestIBCHandler handler;
     TestLightClient lightClient;
