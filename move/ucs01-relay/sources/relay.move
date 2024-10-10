@@ -348,21 +348,47 @@ module UCS01::ibc {
         abort E_UNSTOPPABLE
     }
 
-    public fun timeout_packet(
-        sequence: u64,
-        _source_port: String,
-        source_channel: String,
-        _destination_port: String,
-        _destination_channel: String,
-        data: vector<u8>, 
-        _timeout_height: height::Height,
-        _timeout_timestamp: u64,
+    public entry fun timeout_packet(
+        packet_sequence: u64,
+        packet_source_port: String,
+        packet_source_channel: String,
+        packet_destination_port: String,
+        packet_destination_channel: String,
+        packet_data: vector<u8>,
+        packet_timeout_revision_num: u64,
+        packet_timeout_revision_height: u64,
+        packet_timeout_timestamp: u64,
+        proof: vector<u8>,
+        proof_height_revision_num: u64,
+        proof_height_revision_height: u64,
+        next_sequence_receive: u64,
     ) acquires RelayStore, SignerRef {
         // Decode the packet data
-        let relay_packet = decode_packet(data);
+        let relay_packet = decode_packet(packet_data);
 
         // Call the refund_tokens function to refund the sender
-        refund_tokens(sequence, source_channel, &relay_packet);
+        refund_tokens(packet_sequence, packet_source_channel, &relay_packet);
+
+        ibc::timeout_packet(
+            &get_signer(),
+            get_self_address(),
+            IBC::packet::new(
+                packet_sequence,
+                packet_source_port,
+                packet_source_channel,
+                packet_destination_port,
+                packet_destination_channel,
+                packet_data,
+                height::new(
+                    packet_timeout_revision_num,
+                    packet_timeout_revision_height,
+                ),
+                packet_timeout_timestamp,
+            ),
+            proof,
+            height::new(proof_height_revision_num, proof_height_revision_height),
+            next_sequence_receive,
+        );
     }
 
 

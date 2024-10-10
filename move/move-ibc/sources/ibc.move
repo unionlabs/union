@@ -1144,13 +1144,18 @@ module IBC::ibc {
     }
 
     public fun timeout_packet(
-        port_id: String,
-        channel_id: String,
+        ibc_app: &signer,
+        port_id: address,
         packet: Packet,
         proof: vector<u8>,
         proof_height: height::Height,
         next_sequence_recv: u64
     ) acquires IBCStore {
+        assert!(object::create_object_address(&port_id, IBC_APP_SEED) == signer::address_of(ibc_app), E_UNAUTHORIZED);
+
+        let channel_id = *packet::source_channel(&packet);
+
+        let port_id = address_to_string(port_id);
         let channel = ensure_channel_state(port_id, channel_id);
 
         assert!(*packet::destination_port(&packet) == *channel::chan_counterparty_port_id(&channel), E_DESTINATION_AND_COUNTERPARTY_PORT_MISMATCH);
