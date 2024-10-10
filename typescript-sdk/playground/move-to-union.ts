@@ -37,17 +37,17 @@ try {
   // Create the Move client
   const client = createUnionClient({
     account: `0x${PRIVATE_KEY}`,
-    chainId: CHAIN_ID as "move-testnet-1" | "move-mainnet-1", // Adjust according to your setup
+    chainId: CHAIN_ID as "2", // Adjust according to your setup
     transport: http(RPC_URL)
   })
 
   const transferResult = await client.transferAsset({
     memo: "Test transfer",
     amount: 1000n, // Test amount in smallest units
-    receiver: "0xReceiverAddress",
-    denomAddress: "move-denom",
-    destinationChainId: "move-testnet-1"
-  } satisfies TransferAssetsParameters<"move-testnet-1">)
+    receiver: "f2e43321983ebfc75ff689e625b0cdccf56365560d2d970ea4ec0b898728b954",
+    denomAddress: "f2e43321983ebfc75ff689e625b0cdccf56365560d2d970ea4ec0b898728b954",
+    destinationChainId: "union-testnet-8"
+  } satisfies TransferAssetsParameters<"2">)
 
   consola.success("Transfer result:", transferResult)
   consola.success("Move Client created successfully", client)
