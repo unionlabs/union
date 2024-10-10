@@ -34,6 +34,16 @@ export interface LearningPageFields {
   nineText: EntryFields.RichText
 }
 
+export interface TeamPageFields {
+  name: EntryFields.Text
+  title: EntryFields.Text
+  twitterHandle: EntryFields.Text
+  profilePicture: EntryFields.AssetLink
+  position: EntryFields.Number
+}
+
+export interface TeamPageSkeleton extends EntrySkeletonType<TeamPageFields, "team"> {}
+
 export interface LandingPageSkeleton extends EntrySkeletonType<LandingPageFields, "landing"> {}
 
 export interface LearningPageFields extends EntrySkeletonType<LearningPageFields, "learn"> {}

@@ -1,4 +1,8 @@
+
 ---
+import type { TeamPageFields, TeamPageSkeleton } from "../lib/contentful/types"
+import { contentfulClient } from "../lib/contentful/client"
+
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import Card from "#/components/Card.astro"
 import TopSection from "../components/sections/TopSection.astro"
@@ -156,46 +160,81 @@ const teams = [
     clazz: "h-[38px]"
   }
 ]
+
+let teamData: TeamPageFields[] | null = null
+let error: string | null = null
+
+try {
+  const teamEntries = await contentfulClient.getEntries<TeamPageSkeleton>({
+    content_type: "team"
+  })
+
+  if (teamEntries.items.length > 0) {
+    teamData = teamEntries.items
+      .map(item => item.fields)
+      .sort((a, b) => {
+        const posA = typeof a.position === "number" ? a.position : Number.POSITIVE_INFINITY
+        const posB = typeof b.position === "number" ? b.position : Number.POSITIVE_INFINITY
+        return posA - posB
+      })
+  } else {
+    error = "No team data found."
+  }
+} catch (err) {
+  console.error("Error fetching Contentful data:", err)
+  error = "Failed to load content. Please try again later."
+}
 ---
 
 <SectionsLayout gapless title="Union Team">
+  {error ? (
+          <div class="error-message">
+            <h2>Error</h2>
+            <p>{error}</p>
+          </div>
+  ) : teamData ? (
+          <>
+            <TopSection title="Union team">
+              <div class="flex flex-col text-center gap-8">
+                <p class="md:text-4xl font-mono uppercase">Our team is a <span class="text-accent-500">global</span> network of
+                  professionals, working to build
+                  the <span class="text-accent-500">interoperability future.</span></p>
+              </div>
+              <div></div>
+            </TopSection>
 
-  <TopSection title="Union team">
-    <div class="flex flex-col text-center gap-8">
-      <p class="md:text-4xl font-mono uppercase">Our team is a <span class="text-accent-500">global</span> network of
-        professionals, working to build
-        the <span class="text-accent-500">interoperability future.</span></p>
-    </div>
-    <div></div>
-  </TopSection>
-
-  <ContainedSection>
-    <div class="grid gap-12 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 py-16">
-      {
-        profiles.map(person => (
-                <Card class="border-none group">
-                  <a
-                          href={`https://x.com/${person.x_name}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="gap-4 flex flex-col"
-                  >
-                    <div class="object-cover overflow-hidden">
-                      <img class="w-full h-auto group-hover:scale-110 transition" src={person.profile_pic.src}
-                           alt="union worker"/>
-                    </div>
-                    <div class="leading-tight uppercase font-mono">
-                      <h1 class="text-2xl font-bold font-supermolot uppercase">{person.name}</h1>
-                      <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
-                      <div class="text-accent text-lg -mt-1 block">@{person.x_name}</div>
-                    </div>
-                  </a>
-                </Card>
-        ))
-      }
-    </div>
-  </ContainedSection>
-
-
+            <ContainedSection>
+              <div class="grid gap-12 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 py-16">
+                {teamData.map((person) => (
+                        <Card class="border-none group">
+                          <a
+                                  href={`https://x.com/${person.twitterHandle}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  class="gap-4 flex flex-col"
+                          >
+                            <div class="object-cover overflow-hidden">
+                              <img
+                                      class="w-full h-auto group-hover:scale-110 transition"
+                                      src={person.profilePicture.fields.file.url}
+                                      alt={`${person.name} - Union worker`}
+                              />
+                            </div>
+                            <div class="leading-tight uppercase font-mono">
+                              <h1 class="text-2xl font-bold font-supermolot uppercase">{person.name}</h1>
+                              <div class="text-gray-400 -mt-1 text-lg">{person.title}</div>
+                              <div class="text-accent text-lg -mt-1 block">@{person.twitterHandle}</div>
+                            </div>
+                          </a>
+                        </Card>
+                ))}
+              </div>
+            </ContainedSection>
+          </>
+  ) : (
+          <div class="loading-message">
+            <p>Loading content...</p>
+          </div>
+  )}
 </SectionsLayout>
 
