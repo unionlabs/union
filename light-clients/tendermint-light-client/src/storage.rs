@@ -109,10 +109,7 @@ pub fn parse_height_from_key(key: &[u8]) -> Result<Height, StorageError> {
     let revision_height = u64::from_be_bytes(key[key.len() - 8..key.len()].try_into().unwrap());
     let revision_number =
         u64::from_be_bytes(key[key.len() - 16..key.len() - 8].try_into().unwrap());
-    Ok(Height {
-        revision_number,
-        revision_height,
-    })
+    Ok(Height::new_with_revision(revision_number, revision_height))
 }
 
 /// Save the consensus state metadata at `height`.
@@ -134,7 +131,7 @@ pub fn consensus_state_iterator_key(height: Height) -> Vec<u8> {
     CONSENSUS_STATE_ITER_KEY_PREFIX
         .bytes()
         .chain(*b"/")
-        .chain(height.revision_number.to_be_bytes())
-        .chain(height.revision_height.to_be_bytes())
+        .chain(height.revision().to_be_bytes())
+        .chain(height.height().to_be_bytes())
         .collect()
 }

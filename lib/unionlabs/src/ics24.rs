@@ -78,6 +78,10 @@ pub struct ClientStatePath {
 #[ibc_path("clients/{client_id}/consensusStates/{height}", Hex<Vec<u8>>)]
 pub struct ClientConsensusStatePath {
     pub client_id: ClientId,
+    #[ibc_path(
+        from_str(Height::from_str_allow_zero_revision),
+        display(|h: &Height| format!("{}-{}", h.revision(), h.height())),
+    )]
     pub height: Height,
 }
 
@@ -190,10 +194,16 @@ mod tests {
                 .unwrap(),
             Path::ClientConsensusState(ClientConsensusStatePath {
                 client_id: "08-wasm-0".to_string().validate().unwrap(),
-                height: Height {
-                    revision_number: 0,
-                    revision_height: 1
-                }
+                height: Height::new(1)
+            })
+        );
+        assert_eq!(
+            "clients/08-wasm-0/consensusStates/1-1"
+                .parse::<Path>()
+                .unwrap(),
+            Path::ClientConsensusState(ClientConsensusStatePath {
+                client_id: "08-wasm-0".to_string().validate().unwrap(),
+                height: Height::new_with_revision(1.try_into().unwrap(), 1)
             })
         );
         assert_eq!(

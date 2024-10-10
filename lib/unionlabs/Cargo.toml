@@ -12,31 +12,29 @@ test-include = []
 workspace = true
 
 [dependencies]
+alloy-core               = { workspace = true, optional = true }
 bip32                    = { workspace = true, features = ["secp256k1"] }
 bitvec                   = { workspace = true }
 chrono                   = { workspace = true, features = ["alloc"] }
 clap                     = { workspace = true, features = ["derive"] }
-contracts                = { workspace = true, optional = true }
-cosmwasm-std             = { workspace = true }
+cosmwasm-std             = { workspace = true, optional = true }
 derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 enumorph                 = { workspace = true }
-ethers                   = { workspace = true, optional = true }
-ethers-contract-derive   = { workspace = true, optional = true }
-ethers-core              = { workspace = true, optional = true }
 frame-support-procedural = { workspace = true }
 generic-array            = "0.14.7"
 hex                      = { workspace = true }
 hex-literal              = { workspace = true }
+ibc-solidity             = { workspace = true }
 k256                     = { version = "0.13.1", default-features = false, features = ["schnorr"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
 macros                   = { workspace = true }
 milagro_bls              = { workspace = true }
 paste                    = { version = "1.0" }
 primitive-types          = { workspace = true, features = ["serde_no_std", "impl-rlp"] }
 prost                    = { workspace = true, features = ["std"] }
-protos                   = { workspace = true, features = ["proto_full", "serde"] }
+protos                   = { workspace = true, features = ["proto_full"], optional = true }
 ripemd                   = { workspace = true }
-rlp                      = { workspace = true, features = ["derive"] }
+rlp                      = { workspace = true, features = ["derive"], optional = true }
 rs_merkle                = "1.4.1"
 serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
@@ -49,15 +47,15 @@ subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
 tracing                  = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
-uint                     = "*"
 wasmparser               = { version = "0.113" }
 
 base64               = { workspace = true }
-bcs                  = { workspace = true }
+bcs                  = { workspace = true, optional = true }
 borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
 bs58                 = "0.4"
 near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
+ruint                = { version = "1.12.3" }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 serde_bytes          = "0.11.6"
 
@@ -66,16 +64,36 @@ rand       = "0.8.5"
 serde_json = { workspace = true }
 
 [features]
-default = ["ethabi", "std", "stargate"]
+# TODO: Remove "full" from default features
+default = ["std", "full"]
 
-cosmwasm = []
-ethabi   = ["contracts", "ethers-core", "ethers-contract-derive", "ethers"]
-grpc     = ["protos/client"]
-near     = ["borsh", "near-sdk", "near-primitives-core"]
-std      = ["ethers-core/std"]
+full = [
+  "cosmwasm",
+  "ethabi",
+  "proto",
+  "bcs",
+  "near",
+  "serde",
+  "test_utils",
+  "schemars",
+  "stargate",
+  "rlp",
+]
 
-fuzzing    = []
+cosmwasm = ["dep:cosmwasm-std"]
+
+std = ["alloy-core/std", "ruint/std"]
+
+# encodings
+bcs    = ["dep:bcs", "protos?/serde"]
+ethabi = ["dep:alloy-core"]
+proto  = ["dep:protos"]
+rlp    = ["dep:rlp", "ruint/rlp"]
+serde  = ["protos?/serde", "ruint/serde"]
+
+near = ["dep:borsh", "dep:near-sdk", "dep:near-primitives-core"]
+
 test_utils = []
 
 schemars = ["dep:schemars"]
-stargate = ["cosmwasm", "cosmwasm-std/stargate"]
+stargate = ["cosmwasm", "cosmwasm-std?/stargate"]

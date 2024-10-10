@@ -128,9 +128,9 @@ pub enum QueueCmd {
     // },
     /// Query all failed messages.
     QueryFailed {
-        #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
+        #[arg(long, default_value_t = result_unwrap!(Pg64::new_const(1)))]
         page: Pg64,
-        #[arg(long, default_value_t = result_unwrap!(Pg64::new(1)))]
+        #[arg(long, default_value_t = result_unwrap!(Pg64::new_const(1)))]
         per_page: Pg64,
         /// SQL filters for the item.
         ///

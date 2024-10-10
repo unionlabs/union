@@ -136,10 +136,7 @@ impl Module {
 
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            revision_number: ETHEREUM_REVISION_NUMBER,
-            revision_height: height,
-        }
+        Height::new(height)
     }
 
     async fn make_packet_metadata(
@@ -263,7 +260,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         call(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchBlock {
-                                slot: fetch.start_height.revision_height,
+                                slot: fetch.start_height.height(),
                             }),
                         ))
                     }

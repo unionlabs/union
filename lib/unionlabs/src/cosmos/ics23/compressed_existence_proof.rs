@@ -51,18 +51,6 @@ impl TryFrom<protos::cosmos::ics23::v1::CompressedExistenceProof> for Compressed
     }
 }
 
-#[cfg(feature = "ethabi")]
-impl From<CompressedExistenceProof> for contracts::glue::CosmosIcs23V1CompressedExistenceProofData {
-    fn from(value: CompressedExistenceProof) -> Self {
-        Self {
-            key: value.key.into(),
-            value: value.value.into(),
-            leaf: value.leaf.into(),
-            path: value.path.into_iter().map(Into::into).collect(),
-        }
-    }
-}
-
 impl From<CompressedExistenceProof> for protos::cosmos::ics23::v1::CompressedExistenceProof {
     fn from(value: CompressedExistenceProof) -> Self {
         Self {

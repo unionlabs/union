@@ -7,13 +7,6 @@ use crate::{
     ibc::lightclients::ethereum::fork::{Fork, TryFromForkError},
 };
 
-#[cfg_attr(
-    feature = "ethabi",
-    derive(
-        ethers_contract_derive::EthAbiType,
-        ethers_contract_derive::EthAbiCodec
-    )
-)]
 #[derive(Ssz)]
 #[model(proto(
     raw(protos::union::ibc::lightclients::ethereum::v1::ForkParameters),

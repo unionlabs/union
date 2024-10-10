@@ -181,14 +181,11 @@ impl IbcClient for MovementLightClient {
 
         if header.new_height > client_state.data.latest_block_num {
             client_state.data.latest_block_num = header.new_height;
-            client_state.latest_height.revision_height = header.new_height;
+            *client_state.latest_height.height_mut() = header.new_height;
             save_client_state::<MovementLightClient>(deps.branch(), client_state);
         }
 
-        let update_height = Height {
-            revision_number: 0,
-            revision_height: header.new_height,
-        };
+        let update_height = Height::new(header.new_height);
 
         save_consensus_state::<MovementLightClient>(
             deps,

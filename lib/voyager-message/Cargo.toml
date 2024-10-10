@@ -10,13 +10,12 @@ version      = "0.1.0"
 workspace = true
 
 [dependencies]
+alloy                          = { workspace = true }
 beacon-api                     = { workspace = true }
 chain-utils                    = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
-contracts                      = { workspace = true, features = ["providers"] }
 dashmap                        = { workspace = true }
 enumorph                       = { workspace = true }
-ethers                         = { workspace = true, features = ["rustls", "ws"] }
 frame-support-procedural       = { workspace = true }
 futures                        = { workspace = true }
 hex                            = { workspace = true }

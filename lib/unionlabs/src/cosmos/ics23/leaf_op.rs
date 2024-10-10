@@ -64,16 +64,3 @@ impl TryFrom<protos::cosmos::ics23::v1::LeafOp> for LeafOp {
         })
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<LeafOp> for contracts::glue::CosmosIcs23V1LeafOpData {
-    fn from(value: LeafOp) -> Self {
-        Self {
-            hash: value.hash.into(),
-            prehash_key: value.prehash_key.into(),
-            prehash_value: value.prehash_value.into(),
-            length: value.length.into(),
-            prefix: value.prefix.into_owned().into(),
-        }
-    }
-}

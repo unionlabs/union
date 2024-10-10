@@ -1,10 +1,5 @@
 use std::sync::Arc;
 
-use contracts::ibc_handler::IBCHandler;
-use ethers::{
-    contract::{EthAbiCodec, EthAbiType, EthDisplay, EthEvent},
-    providers::{Middleware, Provider, ProviderError, Ws, WsClientError},
-};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 use unionlabs::{
@@ -351,7 +346,7 @@ impl Arbitrum {
         arbitrum::client_state::ClientState {
             l1_client_id: self.l1_client_id.clone().to_string().validate().unwrap(),
             chain_id: self.chain_id,
-            l1_latest_slot: height.revision_height,
+            l1_latest_slot: height.height(),
             l1_contract_address: self.l1_contract_address,
             l1_next_node_num_slot: self.l1_next_node_num_slot,
             l1_nodes_slot: self.l1_nodes_slot,
@@ -371,7 +366,7 @@ impl Arbitrum {
         height: Height,
     ) -> arbitrum::consensus_state::ConsensusState {
         let arbitrum_height = ethers::types::BlockId::Number(ethers::types::BlockNumber::Number(
-            self.execution_height_of_beacon_slot(height.revision_height)
+            self.execution_height_of_beacon_slot(height.height())
                 .await
                 .into(),
         ));
@@ -444,7 +439,7 @@ impl Arbitrum {
 //         // };
 
 //         // let block = arbitrum
-//         //     .execution_height_of_beacon_slot(slot.revision_height)
+//         //     .execution_height_of_beacon_slot(slot.height())
 //         //     .await;
 
 //         // dbg!(block);

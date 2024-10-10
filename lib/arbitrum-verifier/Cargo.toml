@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 ethereum-verifier = { workspace = true }
-ethers-core       = { workspace = true }
+alloy-core       = { workspace = true }
 hex               = { workspace = true }
 hex-literal       = { workspace = true }
 rlp               = { workspace = true }

@@ -449,6 +449,26 @@ _: {
             }
           );
 
+          evm-contracts-bindings = mkCi (system == "x86_64-linux") (
+            pkgs.stdenv.mkDerivation {
+              name = "evm-contracts";
+              src = evmSources;
+              buildInputs = [
+                wrappedForge
+                pkgs.solc
+              ];
+              buildPhase = ''
+                forge --version
+                forge bind --alloy --single-file --select "IIBCClient" --select "IIBCConnection" --select "IIBCChannel" --select "IIBCPacket" 
+              '';
+              installPhase = ''
+                mkdir -p $out
+                mv out $out
+                mv cache $out
+              '';
+            }
+          );
+
           # NOTE: currently unable to build the tests with coverage, tried many different combination of the optimizer though...
           # solidity-coverage =
           #   pkgs.runCommand "solidity-coverage"

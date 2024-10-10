@@ -32,8 +32,8 @@ use crate::{
     Deserialize,
 )]
 #[repr(transparent)]
-#[debug("U256({})", self)]
-pub struct U256(#[serde(with = "::serde_utils::u256_from_dec_str")] pub primitive_types::U256);
+#[debug("U256({:?})", self.0)]
+pub struct U256(pub ruint::Uint<256, 4>);
 
 impl fmt::LowerHex for U256 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -45,49 +45,15 @@ impl fmt::LowerHex for U256 {
     }
 }
 
-#[cfg(feature = "ethabi")]
-mod ethabi {
-    use ethers::core::abi::{
-        AbiArrayType, AbiDecode, AbiEncode, AbiError, AbiType, InvalidOutputType, ParamType, Token,
-        Tokenizable, TokenizableItem,
-    };
-
-    use crate::uint::U256;
-
-    impl AbiType for U256 {
-        fn param_type() -> ParamType {
-            <primitive_types::U256 as AbiType>::param_type()
-        }
-    }
-
-    impl AbiArrayType for U256 {}
-    impl Tokenizable for U256 {
-        fn from_token(token: Token) -> Result<Self, InvalidOutputType> {
-            <primitive_types::U256 as Tokenizable>::from_token(token).map(Self)
-        }
-        fn into_token(self) -> Token {
-            <primitive_types::U256 as Tokenizable>::into_token(self.0)
-        }
-    }
-
-    impl TokenizableItem for U256 {}
-
-    impl AbiDecode for U256 {
-        fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, AbiError> {
-            <primitive_types::U256 as AbiDecode>::decode(bytes).map(Self)
-        }
-    }
-
-    impl AbiEncode for U256 {
-        fn encode(self) -> Vec<u8> {
-            <primitive_types::U256 as AbiEncode>::encode(self.0)
-        }
-    }
-}
+// #[cfg(feature = "ethabi")]
+// impl alloy_core::sol_types::SolValue for U256 {
+//     type SolType = <ruint::Uint<256, 4> as alloy_core::sol_types::SolValue>::SolType;
+// }
 
 impl U256 {
     pub const MAX: Self = Self::from_limbs([u64::MAX; 4]);
     pub const ZERO: Self = Self::from_limbs([0; 4]);
+    pub const ONE: Self = Self::from_limbs([1, 0, 0, 0]);
 
     // one day...
     // pub const fn from_const_str<const STR: &'static str>() -> Self {}
@@ -95,52 +61,33 @@ impl U256 {
 
 impl From<u64> for U256 {
     fn from(value: u64) -> Self {
-        Self(primitive_types::U256::from(value))
+        Self(ruint::Uint::from(value))
     }
 }
 
 impl TryFrom<U256> for u64 {
-    type Error = ();
+    type Error = ruint::FromUintError<u64>;
 
     fn try_from(value: U256) -> Result<Self, Self::Error> {
-        if value > U256::from(u64::MAX) {
-            Err(())
-        } else {
-            Ok(value.0.as_u64())
-        }
-    }
-}
-
-impl From<primitive_types::U256> for U256 {
-    fn from(value: primitive_types::U256) -> Self {
-        Self(value)
-    }
-}
-
-impl From<U256> for primitive_types::U256 {
-    fn from(value: U256) -> Self {
-        value.0
+        value.0.try_into()
     }
 }
 
 impl U256 {
     #[must_use]
+    #[allow(clippy::missing_panics_doc)] // max value is 255
     pub fn leading_zeros(&self) -> u32 {
-        self.0.leading_zeros()
+        self.0.leading_zeros().try_into().unwrap()
     }
 
     #[must_use]
     pub fn to_le_bytes(&self) -> [u8; 32] {
-        let mut buf = [0; 32];
-        self.0.to_little_endian(&mut buf);
-        buf
+        self.0.to_le_bytes()
     }
 
     #[must_use]
     pub fn to_be_bytes(&self) -> [u8; 32] {
-        let mut buf = [0; 32];
-        self.0.to_big_endian(&mut buf);
-        buf
+        self.0.to_be_bytes()
     }
 
     #[must_use]
@@ -150,11 +97,30 @@ impl U256 {
         buffer[leading_empty_bytes..].to_vec()
     }
 
+    #[allow(clippy::missing_panics_doc)] // precondition is checked
     pub fn try_from_be_bytes(bz: &[u8]) -> Result<Self, InvalidLength> {
         let len = bz.len();
 
         if (0..=32).contains(&len) {
-            Ok(Self(primitive_types::U256::from_big_endian(bz)))
+            Ok(Self(
+                ruint::Uint::try_from_be_slice(bz).expect("length is in range; qed;"),
+            ))
+        } else {
+            Err(InvalidLength {
+                expected: ExpectedLength::Between(0, 32),
+                found: len,
+            })
+        }
+    }
+
+    #[allow(clippy::missing_panics_doc)] // precondition is checked
+    pub fn try_from_le_bytes(bz: &[u8]) -> Result<Self, InvalidLength> {
+        let len = bz.len();
+
+        if (0..=32).contains(&len) {
+            Ok(Self(
+                ruint::Uint::try_from_le_slice(bz).expect("length is in range; qed;"),
+            ))
         } else {
             Err(InvalidLength {
                 expected: ExpectedLength::Between(0, 32),
@@ -165,17 +131,22 @@ impl U256 {
 
     #[must_use]
     pub fn from_be_bytes(bz: [u8; 32]) -> Self {
-        Self(primitive_types::U256::from_big_endian(&bz))
+        Self(ruint::Uint::from_be_bytes(bz))
+    }
+
+    #[must_use]
+    pub fn from_le_bytes(bz: [u8; 32]) -> Self {
+        Self(ruint::Uint::from_le_bytes(bz))
     }
 
     #[must_use]
     pub const fn from_limbs(limbs: [u64; 4]) -> Self {
-        Self(primitive_types::U256(limbs))
+        Self(ruint::Uint::from_limbs(limbs))
     }
 
     #[must_use]
     pub const fn as_limbs(&self) -> [u64; 4] {
-        self.0 .0
+        *self.0.as_limbs()
     }
 
     #[must_use]
@@ -248,31 +219,6 @@ pub mod u256_big_endian_hex {
     }
 }
 
-// impl TryFrom<Vec<u8>> for U256 {
-//     type Error = InvalidLength;
-
-//     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-//         if value.len() > 32 {
-//             Err(InvalidLength {
-//                 expected: ExpectedLength::LessThan(32),
-//                 found: value.len(),
-//             })
-//         } else {
-//             // NOTE: This can panic if len > 32, hence the check above
-//             Ok(Self(primitive_types::U256::from_little_endian(&value)))
-//         }
-//     }
-// }
-
-// // REVIEW: Should this trim leading zeros?
-// impl From<U256> for Vec<u8> {
-//     fn from(value: U256) -> Self {
-//         let mut slice = [0_u8; 32];
-//         value.0.to_little_endian(&mut slice);
-//         slice.into()
-//     }
-// }
-
 impl Encode<Proto> for U256 {
     fn encode(self) -> Vec<u8> {
         self.to_be_bytes().into()
@@ -294,9 +240,7 @@ impl ssz::Ssz for U256 {
         ssz::tree_hash::TreeHashType::Basic { size: 32 };
 
     fn tree_hash_root(&self) -> ssz::tree_hash::Hash256 {
-        let mut result = [0; 32];
-        self.0.to_little_endian(&mut result[..]);
-        result
+        self.0.to_le_bytes()
     }
 
     fn ssz_bytes_len(&self) -> NonZeroUsize {
@@ -304,11 +248,7 @@ impl ssz::Ssz for U256 {
     }
 
     fn ssz_append(&self, buf: &mut Vec<u8>) {
-        let n = 32;
-        let s = buf.len();
-
-        buf.resize(s + n, 0);
-        self.0.to_little_endian(&mut buf[s..]);
+        buf.extend_from_slice(&self.to_le_bytes());
     }
 
     fn from_ssz_bytes(bytes: &[u8]) -> Result<Self, ssz::decode::DecodeError> {
@@ -316,7 +256,7 @@ impl ssz::Ssz for U256 {
         let expected = 32;
 
         if len == expected {
-            Ok(Self(primitive_types::U256::from_little_endian(bytes)))
+            Ok(Self::try_from_le_bytes(bytes).expect("bytes are in range; qed;"))
         } else {
             Err(ssz::decode::DecodeError::InvalidByteLength {
                 found: len,
@@ -326,11 +266,25 @@ impl ssz::Ssz for U256 {
     }
 }
 
+#[cfg(feature = "rlp")]
+impl rlp::Encodable for U256 {
+    fn rlp_append(&self, s: &mut rlp::RlpStream) {
+        s.encoder().encode_value(&self.to_be_bytes_packed());
+    }
+}
+
+#[cfg(feature = "rlp")]
+impl rlp::Decodable for U256 {
+    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+        <ruint::Uint<256, 4> as rlp::Decodable>::decode(rlp).map(Self)
+    }
+}
+
 impl FromStr for U256 {
-    type Err = uint::FromDecStrErr;
+    type Err = ruint::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        primitive_types::U256::from_dec_str(s).map(Self)
+        ruint::Uint::from_str_radix(s, 10).map(Self)
     }
 }
 
@@ -340,23 +294,11 @@ impl Display for U256 {
     }
 }
 
-impl rlp::Encodable for U256 {
-    fn rlp_append(&self, s: &mut rlp::RlpStream) {
-        s.encoder().encode_value(&self.to_be_bytes_packed());
-    }
-}
-
-impl rlp::Decodable for U256 {
-    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-        <primitive_types::U256 as rlp::Decodable>::decode(rlp).map(Self)
-    }
-}
-
 impl Rem for U256 {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
-        Self(self.0 % rhs.0)
+        Self(self.0.checked_rem(rhs.0).expect("attempted to mod zero"))
     }
 }
 
@@ -364,7 +306,11 @@ impl Add for U256 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
+        Self(
+            self.0
+                .checked_add(rhs.0)
+                .expect("attempted to add with overflow"),
+        )
     }
 }
 
@@ -376,6 +322,7 @@ impl AddAssign for U256 {
 
 impl Sum for U256 {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        // NOTE: NOT WRAPPING ADD!
         iter.fold(U256::default(), |a, b| a + b)
     }
 }
@@ -384,7 +331,11 @@ impl Div for U256 {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Self(self.0 / rhs.0)
+        Self(
+            self.0
+                .checked_div(rhs.0)
+                .expect("attempted to divide by zero"),
+        )
     }
 }
 
@@ -395,7 +346,6 @@ mod u256_tests {
     use serde::{Deserialize, Serialize};
 
     use crate::{
-        hash::H256,
         test_utils::{assert_json_roundtrip, assert_proto_roundtrip, assert_string_roundtrip},
         uint::U256,
     };
@@ -403,7 +353,7 @@ mod u256_tests {
     #[test]
     fn hex_string() {
         #[derive(Debug, Deserialize, Serialize)]
-        struct T {
+        struct Struct {
             #[serde(with = "super::u256_big_endian_hex")]
             u256: U256,
         }
@@ -423,11 +373,11 @@ mod u256_tests {
             };
 
             let string = format!(r#"{{"u256":"{hex}"}}"#);
-            let t = serde_json::from_str::<T>(&string).unwrap();
+            let t = serde_json::from_str::<Struct>(&string).unwrap();
 
-            dbg!(<H256>::new(t.u256.to_be_bytes()));
+            // dbg!(<H256>::new(t.u256.to_be_bytes()));
 
-            assert_eq!(t.u256.0.as_u64(), n);
+            assert_eq!(u64::try_from(t.u256.0).unwrap(), n);
 
             let roundtrip = serde_json::to_string(&t).unwrap();
 
@@ -452,5 +402,28 @@ mod u256_tests {
         assert_json_roundtrip(&U256::from_str("123456").unwrap());
         assert_proto_roundtrip(&U256::from_str("123456").unwrap());
         assert_string_roundtrip(&U256::from_str("123456").unwrap());
+    }
+
+    #[test]
+    fn one() {
+        assert_eq!(U256::ONE, U256::from(1));
+        assert_eq!(
+            U256::ONE,
+            U256::try_from_be_bytes(&1_u64.to_be_bytes()).unwrap()
+        );
+        assert_eq!(
+            U256::ONE,
+            U256::try_from_le_bytes(&1_u64.to_le_bytes()).unwrap()
+        );
+        assert_eq!(U256::ONE, U256::from_str("1").unwrap());
+        assert_eq!(U256::ONE, U256::from_be_hex("0x1").unwrap());
+        assert_eq!(U256::ONE, U256::from_be_hex("0x01").unwrap());
+        assert_eq!(U256::ONE, U256::from_be_hex("0x001").unwrap());
+        assert_eq!(U256::ONE, U256::from_be_hex("0x00000000001").unwrap());
+        assert_eq!(
+            U256::ONE,
+            U256::from_be_hex("0x0000000000000000000000000000000000000000000000000000000000000001")
+                .unwrap()
+        );
     }
 }

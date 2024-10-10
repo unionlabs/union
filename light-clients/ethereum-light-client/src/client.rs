@@ -274,7 +274,7 @@ impl IbcClient for EthereumLightClient {
         // Some updates can be only for updating the sync committee, therefore the slot number can be
         // smaller. We don't want to save a new state if this is the case.
         let updated_height = core::cmp::max(
-            trusted_height.revision_height,
+            trusted_height.height(),
             consensus_update.attested_header.beacon.slot,
         );
 
@@ -296,10 +296,7 @@ impl IbcClient for EthereumLightClient {
             }
         }
 
-        let updated_height = Height {
-            revision_number: trusted_height.revision_number,
-            revision_height: updated_height,
-        };
+        let updated_height = Height::new_with_revision(trusted_height.revision(), updated_height);
 
         save_consensus_state::<Self>(deps, consensus_state, &updated_height);
 
@@ -322,10 +319,8 @@ impl IbcClient for EthereumLightClient {
         deps: Deps<Self::CustomQuery>,
         header: Self::Header,
     ) -> Result<bool, IbcClientError<Self>> {
-        let height = Height {
-            revision_number: 0,
-            revision_height: header.consensus_update.attested_header.beacon.slot,
-        };
+        let height =
+            Height::new_with_revision(0, header.consensus_update.attested_header.beacon.slot);
 
         if let Some(consensus_state) = read_consensus_state::<Self>(deps, &height)? {
             // New header is given with the same height but the storage roots don't match.
@@ -599,15 +594,9 @@ mod test {
         expected_data: T,
     }
 
-    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 0,
-        revision_height: 3577152,
-    };
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(0, 3577152);
 
-    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 0,
-        revision_height: 3577200,
-    };
+    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(0, 3577200);
 
     lazy_static::lazy_static! {
         static ref UPDATES: Vec<ethereum::header::Header<Mainnet>> = {
@@ -635,7 +624,7 @@ mod test {
             for f in update_files {
                 let mut data: ethereum::header::Header<Mainnet>= serde_json::from_str(&fs::read_to_string(f).unwrap()).unwrap();
                 if prev_height != 0 {
-                    data.trusted_sync_committee.trusted_height.revision_height = prev_height;
+                    data.trusted_sync_committee.trusted_height.height() = prev_height;
                 }
                 prev_height = data.consensus_update.attested_header.beacon.slot;
                 updates.push(data);
@@ -737,16 +726,16 @@ mod test {
             EthereumLightClient::update_state(deps.as_mut(), env, update.clone()).unwrap();
             // Consensus state is saved to the updated height.
             if update.consensus_update.attested_header.beacon.slot
-                > update.trusted_sync_committee.trusted_height.revision_height
+                > update.trusted_sync_committee.trusted_height.height()
             {
                 // It's a finality update
                 let wasm_consensus_state: WasmConsensusState =
                     read_consensus_state::<EthereumLightClient>(
                         deps.as_ref(),
-                        &Height {
-                            revision_number: 0,
-                            revision_height: update.consensus_update.attested_header.beacon.slot,
-                        },
+                        &Height::new_with_revision(
+                            0,
+                            update.consensus_update.attested_header.beacon.slot,
+                        ),
                     )
                     .unwrap()
                     .unwrap();
@@ -771,16 +760,13 @@ mod test {
             } else {
                 // It's a sync committee update
                 let updated_height = core::cmp::max(
-                    update.trusted_sync_committee.trusted_height.revision_height,
+                    update.trusted_sync_committee.trusted_height.height(),
                     update.consensus_update.attested_header.beacon.slot,
                 );
                 let wasm_consensus_state: WasmConsensusState =
                     read_consensus_state::<EthereumLightClient>(
                         deps.as_ref(),
-                        &Height {
-                            revision_number: 0,
-                            revision_height: updated_height,
-                        },
+                        &Height::new_with_revision(0, updated_height),
                     )
                     .unwrap()
                     .unwrap();

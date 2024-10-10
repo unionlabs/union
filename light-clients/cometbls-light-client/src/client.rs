@@ -111,7 +111,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
 
         // SAFETY: height is bound to be 0..i64::MAX which makes it within the bounds of u64
         let untrusted_height_number = header.signed_header.height.inner() as u64;
-        let trusted_height_number = header.trusted_height.revision_height;
+        let trusted_height_number = header.trusted_height.height();
 
         if untrusted_height_number <= trusted_height_number {
             return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
@@ -169,7 +169,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         }
 
         T::verify_zkp(
-            &client_state.data.chain_id,
+            &client_state.data.chain_id.as_str(),
             trusted_validators_hash,
             &header.signed_header,
             &header.zero_knowledge_proof,
@@ -196,10 +196,10 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
             read_consensus_state(deps.as_ref(), &header.trusted_height)?
                 .ok_or(Error::ConsensusStateNotFound(header.trusted_height))?;
 
-        let untrusted_height = Height {
-            revision_number: header.trusted_height.revision_number,
-            revision_height: header.signed_header.height.inner() as u64,
-        };
+        let untrusted_height = Height::new_with_revision(
+            header.trusted_height.revision(),
+            header.signed_header.height.inner() as u64,
+        );
 
         if untrusted_height > client_state.latest_height {
             client_state.latest_height = untrusted_height;
@@ -406,8 +406,7 @@ fn migrate_check_allowed_fields(
     subject_client_state: &ClientState,
     substitute_client_state: &ClientState,
 ) -> bool {
-    subject_client_state.unbonding_period == substitute_client_state.unbonding_period
-        && subject_client_state.max_clock_drift == substitute_client_state.max_clock_drift
+    subject_client_state.max_clock_drift == substitute_client_state.max_clock_drift
 }
 
 fn is_client_expired(
@@ -428,11 +427,11 @@ fn is_client_expired(
 /// revision height. This function is a utility to generate a `Height` type out
 /// of the update data.
 fn height_from_header(header: &Header) -> Height {
-    Height {
-        revision_number: header.trusted_height.revision_number,
+    Height::new_with_revision(
+        header.trusted_height.revision(),
         // SAFETY: height's bounds are [0..i64::MAX]
-        revision_height: header.signed_header.height.inner() as u64,
-    }
+        header.signed_header.height.inner() as u64,
+    )
 }
 
 #[cfg(test)]
@@ -454,15 +453,9 @@ mod tests {
 
     use super::*;
 
-    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 1,
-        revision_height: 1124,
-    };
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(1, 1124);
 
-    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 1,
-        revision_height: 1200,
-    };
+    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(1, 1200);
 
     fn save_states_to_migrate_store(
         deps: DepsMut,

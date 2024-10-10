@@ -485,7 +485,6 @@
       #       "--exclude=tidy"
       #       "--exclude=generate-rust-sol-bindings"
       #       "--exclude=ensure-blocks"
-      #       "--exclude=ucli"
       #       "--hide-instantiations"
       #     ];
       #     SQLX_OFFLINE = true;

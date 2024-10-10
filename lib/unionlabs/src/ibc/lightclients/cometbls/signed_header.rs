@@ -1,7 +1,7 @@
 use macros::model;
 
+use crate::bounded::BoundedI32;
 #[cfg(feature = "ethabi")]
-use crate::google::protobuf::timestamp::TryFromEthAbiTimestampError;
 use crate::{
     bounded::{BoundedI64, BoundedIntError},
     errors::{required, InvalidLength, MissingField},
@@ -15,13 +15,9 @@ use crate::{
         into,
         from
     ),
-    ethabi(
-        raw(contracts::glue::UnionIbcLightclientsCometblsV1LightHeaderData),
-        into,
-        from
-    )
+    ethabi(raw(ibc_solidity::cometbls::SignedHeader), into, from)
 )]
-pub struct LightHeader {
+pub struct SignedHeader {
     #[serde(with = "::serde_utils::string")]
     pub height: BoundedI64<0, { i64::MAX }>,
     pub time: Timestamp,
@@ -30,8 +26,8 @@ pub struct LightHeader {
     pub app_hash: H256,
 }
 
-impl From<LightHeader> for protos::union::ibc::lightclients::cometbls::v1::LightHeader {
-    fn from(value: LightHeader) -> Self {
+impl From<SignedHeader> for protos::union::ibc::lightclients::cometbls::v1::LightHeader {
+    fn from(value: SignedHeader) -> Self {
         Self {
             height: value.height.into(),
             time: Some(value.time.into()),
@@ -58,7 +54,7 @@ pub enum TryFromLightHeaderError {
     AppHash(#[source] InvalidLength),
 }
 
-impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::LightHeader> for LightHeader {
+impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::LightHeader> for SignedHeader {
     type Error = TryFromLightHeaderError;
 
     fn try_from(
@@ -87,59 +83,58 @@ impl TryFrom<protos::union::ibc::lightclients::cometbls::v1::LightHeader> for Li
 }
 
 #[cfg(feature = "ethabi")]
-impl From<LightHeader> for contracts::glue::UnionIbcLightclientsCometblsV1LightHeaderData {
-    fn from(value: LightHeader) -> Self {
+impl From<SignedHeader> for ibc_solidity::cometbls::SignedHeader {
+    fn from(value: SignedHeader) -> Self {
         Self {
-            height: value.height.into(),
-            time: value.time.into(),
-            validators_hash: value.validators_hash.get().into(),
-            next_validators_hash: value.next_validators_hash.get().into(),
-            app_hash: value.app_hash.get().into(),
+            height: value
+                .height
+                .inner()
+                .try_into()
+                .expect("value is >= 0; qed;"),
+            secs: value
+                .time
+                .seconds
+                .inner()
+                .try_into()
+                .expect("value is >= 0; qed;"),
+            nanos: value
+                .time
+                .nanos
+                .inner()
+                .try_into()
+                .expect("value is >= 0; qed;"),
+            validatorsHash: value.validators_hash.into(),
+            nextValidatorsHash: value.next_validators_hash.into(),
+            appHash: value.app_hash.into(),
         }
     }
 }
 
 #[cfg(feature = "ethabi")]
 #[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiLightHeaderError {
-    Height(BoundedIntError<i64>),
-    Timestamp(TryFromEthAbiTimestampError),
-    ValidatorsHash(InvalidLength),
-    NextValidatorsHash(InvalidLength),
-    AppHash(InvalidLength),
+pub enum TryFromEthAbiSignedHeaderError {
+    Height(BoundedIntError<i64, u64>),
+    Secs(BoundedIntError<i64, u64>),
+    Nanos(BoundedIntError<i32, u64>),
 }
 
 #[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::UnionIbcLightclientsCometblsV1LightHeaderData> for LightHeader {
-    type Error = TryFromEthAbiLightHeaderError;
+impl TryFrom<ibc_solidity::cometbls::SignedHeader> for SignedHeader {
+    type Error = TryFromEthAbiSignedHeaderError;
 
-    fn try_from(
-        value: contracts::glue::UnionIbcLightclientsCometblsV1LightHeaderData,
-    ) -> Result<Self, Self::Error> {
+    fn try_from(value: ibc_solidity::cometbls::SignedHeader) -> Result<Self, Self::Error> {
         Ok(Self {
-            height: value
-                .height
-                .try_into()
-                .map_err(TryFromEthAbiLightHeaderError::Height)?,
-            time: value
-                .time
-                .try_into()
-                .map_err(TryFromEthAbiLightHeaderError::Timestamp)?,
-            validators_hash: value
-                .validators_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiLightHeaderError::ValidatorsHash)?,
-            next_validators_hash: value
-                .next_validators_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiLightHeaderError::NextValidatorsHash)?,
-            app_hash: value
-                .app_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiLightHeaderError::AppHash)?,
+            height: BoundedI64::new(value.height)
+                .map_err(TryFromEthAbiSignedHeaderError::Height)?,
+            time: Timestamp {
+                seconds: BoundedI64::new(value.secs)
+                    .map_err(TryFromEthAbiSignedHeaderError::Secs)?,
+                nanos: BoundedI32::new(value.nanos)
+                    .map_err(TryFromEthAbiSignedHeaderError::Nanos)?,
+            },
+            validators_hash: value.validatorsHash.into(),
+            next_validators_hash: value.nextValidatorsHash.into(),
+            app_hash: value.appHash.into(),
         })
     }
 }

@@ -12,7 +12,7 @@ use crate::{
         into,
         from
     ),
-    ethabi(raw(contracts::glue::OptimizedConsensusState), into, from)
+    ethabi(raw(ibc_solidity::cometbls::ConsensusState), into, from)
 )]
 pub struct ConsensusState {
     pub timestamp: u64,
@@ -60,27 +60,27 @@ impl From<ConsensusState> for protos::union::ibc::lightclients::cometbls::v1::Co
 }
 
 #[cfg(feature = "ethabi")]
-impl From<ConsensusState> for contracts::glue::OptimizedConsensusState {
+impl From<ConsensusState> for ibc_solidity::cometbls::ConsensusState {
     fn from(value: ConsensusState) -> Self {
         Self {
             timestamp: value.timestamp,
-            app_hash: value.app_hash.hash.into(),
-            next_validators_hash: value.next_validators_hash.into(),
+            appHash: value.app_hash.hash.into(),
+            nextValidatorsHash: value.next_validators_hash.into(),
         }
     }
 }
 
 #[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::OptimizedConsensusState> for ConsensusState {
+impl TryFrom<ibc_solidity::cometbls::ConsensusState> for ConsensusState {
     type Error = TryFromConsensusStateError;
 
-    fn try_from(value: contracts::glue::OptimizedConsensusState) -> Result<Self, Self::Error> {
+    fn try_from(value: ibc_solidity::cometbls::ConsensusState) -> Result<Self, Self::Error> {
         Ok(Self {
             timestamp: value.timestamp,
             app_hash: MerkleRoot {
-                hash: H256::from(value.app_hash),
+                hash: value.appHash.into(),
             },
-            next_validators_hash: value.next_validators_hash.into(),
+            next_validators_hash: value.nextValidatorsHash.into(),
         })
     }
 }

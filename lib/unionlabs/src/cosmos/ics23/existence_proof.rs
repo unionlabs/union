@@ -62,15 +62,3 @@ impl From<ExistenceProof> for protos::cosmos::ics23::v1::ExistenceProof {
         }
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<ExistenceProof> for contracts::glue::CosmosIcs23V1ExistenceProofData {
-    fn from(value: ExistenceProof) -> Self {
-        Self {
-            key: value.key.to_vec().into(),
-            value: value.value.to_vec().into(),
-            leaf: value.leaf.into(),
-            path: value.path.into_iter().map(Into::into).collect::<Vec<_>>(),
-        }
-    }
-}

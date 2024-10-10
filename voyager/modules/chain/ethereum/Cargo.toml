@@ -6,9 +6,8 @@ version = "0.1.0"
 [dependencies]
 beacon-api         = { workspace = true }
 chain-utils        = { workspace = true }
-contracts          = { workspace = true, features = ["providers"] }
 enumorph           = { workspace = true }
-ethers             = { workspace = true, features = ["rustls", "ws"] }
+alloy             = { workspace = true }
 futures            = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }

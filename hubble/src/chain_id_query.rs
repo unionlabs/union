@@ -142,7 +142,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                                         }
                                     };
 
-                                    cs.chain_id
+                                    cs.chain_id.as_str().to_owned()
                                 }
                                 WasmClientType::Tendermint => {
                                     let cs = match unionlabs::ibc::lightclients::tendermint::client_state::ClientState::decode_as::<Proto>(&cs.data) {
@@ -292,7 +292,7 @@ pub async fn tx(db: PgPool, indexers: Indexers) {
                             datas.push(Data {
                                 chain_id: record.id,
                                 client_id,
-                                counterparty_chain_id: cs.chain_id.to_string(),
+                                counterparty_chain_id: cs.chain_id.as_str().to_owned(),
                             })
                         }
                         ty => panic!("unknown evm client type `{ty}`"),
