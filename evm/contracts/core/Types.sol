@@ -58,12 +58,7 @@ library IBCErrors {
     error ErrClientTypeNotFound();
     error ErrInvalidProof();
     error ErrInvalidConnectionState();
-    error ErrPortIdMustBeLowercase();
-    error ErrConnNotSingleHop();
-    error ErrConnNotSingleVersion();
-    error ErrUnsupportedFeature();
     error ErrInvalidChannelState();
-    error ErrCounterpartyChannelNotEmpty();
     error ErrInvalidChannelOrdering();
     error ErrUnauthorized();
     error ErrLatestTimestampNotFound();
