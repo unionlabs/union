@@ -44,9 +44,7 @@ $effect(() => {
   return () => clearInterval(timer)
 })
 
-let show = $derived(
-  contributor.contributionState === "contribute" || contributor.contributionState === "verifying"
-)
+let show = $derived(contributor.contributionState === "contribute")
 </script>
 
 {#if show}
