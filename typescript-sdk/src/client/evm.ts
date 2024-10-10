@@ -66,7 +66,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         relayContractAddress
       }: TransferAssetsParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
-
+        console.log(`EVM client created for chainId: ${parameters.chainId}`);
         // first check if chain ids are the same, if yes then we can skip the hubble check and do a simple erc20 transfer
         if (parameters.chainId === destinationChainId) {
           const transfer = await evmSameChainTransfer(client, {
