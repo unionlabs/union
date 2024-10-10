@@ -7,15 +7,13 @@ enum IBCConnectionState {
     Open
 }
 
-struct IBCConnectionCounterparty {
-    uint32 clientId;
-    uint32 connectionId;
-}
-
 struct IBCConnection {
     IBCConnectionState state;
-    IBCConnectionCounterparty counterparty;
     uint32 clientId;
+    uint32 counterpartyClientId;
+    uint32 counterpartyConnectionId;
+    string clientType;
+    string counterpartyClientType;
 }
 
 enum IBCChannelState {
@@ -32,15 +30,11 @@ enum IBCChannelOrder {
     Ordered
 }
 
-struct IBCChannelCounterparty {
-    uint32 channelId;
-}
-
 struct IBCChannel {
     IBCChannelState state;
     IBCChannelOrder ordering;
     uint32 connectionId;
-    IBCChannelCounterparty counterparty;
+    uint32 counterpartyChannelId;
     bytes32 version;
 }
 

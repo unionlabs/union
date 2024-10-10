@@ -517,7 +517,6 @@ contract UCS02NFT is
         IBCChannelOrder order,
         uint32,
         uint32,
-        IBCChannelCounterparty calldata,
         bytes32 version,
         address
     ) external view override onlyIBC {
@@ -533,7 +532,7 @@ contract UCS02NFT is
         IBCChannelOrder order,
         uint32,
         uint32,
-        IBCChannelCounterparty calldata,
+        uint32,
         bytes32 version,
         bytes32 counterpartyVersion,
         address

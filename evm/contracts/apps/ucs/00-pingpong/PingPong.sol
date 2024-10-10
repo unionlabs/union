@@ -134,7 +134,6 @@ contract PingPong is IBCAppBase {
         IBCChannelOrder,
         uint32,
         uint32,
-        IBCChannelCounterparty calldata,
         bytes32,
         address
     ) external virtual override onlyIBC {
@@ -148,7 +147,7 @@ contract PingPong is IBCAppBase {
         IBCChannelOrder,
         uint32,
         uint32,
-        IBCChannelCounterparty calldata,
+        uint32,
         bytes32,
         bytes32,
         address

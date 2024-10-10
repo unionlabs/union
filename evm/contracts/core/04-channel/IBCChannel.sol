@@ -43,33 +43,31 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     function channelOpenInit(
         IBCMsgs.MsgChannelOpenInit calldata msg_
     ) external override returns (uint32) {
-        if (msg_.channel.state != IBCChannelState.Init) {
-            revert IBCErrors.ErrInvalidChannelState();
-        }
         if (
-            msg_.channel.ordering != IBCChannelOrder.Unordered
-                && msg_.channel.ordering != IBCChannelOrder.Ordered
+            msg_.ordering != IBCChannelOrder.Unordered
+                && msg_.ordering != IBCChannelOrder.Ordered
         ) {
             revert IBCErrors.ErrInvalidChannelOrdering();
         }
+        ensureConnectionState(msg_.connectionId);
         uint32 channelId = generateChannelIdentifier();
-        channels[channelId] = msg_.channel;
+        IBCChannel storage channel = channels[channelId];
+        channel.state = IBCChannelState.Init;
+        channel.connectionId = msg_.connectionId;
+        channel.version = msg_.version;
+        channel.ordering = msg_.ordering;
         initializeChannelSequences(channelId);
-        commitChannelCalldata(channelId, msg_.channel);
+        commitChannel(channelId, channel);
         claimChannel(msg_.portId, channelId);
         IIBCModule(msg_.portId).onChanOpenInit(
-            msg_.channel.ordering,
-            msg_.channel.connectionId,
+            msg_.ordering,
+            msg_.connectionId,
             channelId,
-            msg_.channel.counterparty,
-            msg_.channel.version,
+            msg_.version,
             msg_.relayer
         );
         emit IBCChannelLib.ChannelOpenInit(
-            msg_.portId,
-            channelId,
-            msg_.channel.connectionId,
-            msg_.channel.version
+            msg_.portId, channelId, msg_.connectionId, msg_.version
         );
         return channelId;
     }
@@ -90,12 +88,10 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             revert IBCErrors.ErrInvalidChannelState();
         }
         uint32 clientId = ensureConnectionState(msg_.channel.connectionId);
-        IBCChannelCounterparty memory expectedCounterparty =
-            IBCChannelCounterparty({channelId: 0});
         IBCChannel memory expectedChannel = IBCChannel({
             state: IBCChannelState.Init,
             ordering: msg_.channel.ordering,
-            counterparty: expectedCounterparty,
+            counterpartyChannelId: 0,
             connectionId: getCounterpartyConnection(msg_.channel.connectionId),
             version: msg_.counterpartyVersion
         });
@@ -104,7 +100,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
                 clientId,
                 msg_.proofHeight,
                 msg_.proofInit,
-                msg_.channel.counterparty.channelId,
+                msg_.channel.counterpartyChannelId,
                 expectedChannel
             )
         ) {
@@ -119,7 +115,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.channel.ordering,
             msg_.channel.connectionId,
             channelId,
-            msg_.channel.counterparty,
+            msg_.channel.counterpartyChannelId,
             msg_.channel.version,
             msg_.counterpartyVersion,
             msg_.relayer
@@ -127,7 +123,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         emit IBCChannelLib.ChannelOpenTry(
             msg_.portId,
             channelId,
-            msg_.channel.counterparty.channelId,
+            msg_.channel.counterpartyChannelId,
             msg_.channel.connectionId,
             msg_.counterpartyVersion
         );
@@ -145,12 +141,10 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             revert IBCErrors.ErrInvalidChannelState();
         }
         uint32 clientId = ensureConnectionState(channel.connectionId);
-        IBCChannelCounterparty memory expectedCounterparty =
-            IBCChannelCounterparty({channelId: msg_.channelId});
         IBCChannel memory expectedChannel = IBCChannel({
             state: IBCChannelState.TryOpen,
             ordering: channel.ordering,
-            counterparty: expectedCounterparty,
+            counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
             version: msg_.counterpartyVersion
         });
@@ -167,7 +161,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         }
         channel.state = IBCChannelState.Open;
         channel.version = msg_.counterpartyVersion;
-        channel.counterparty.channelId = msg_.counterpartyChannelId;
+        channel.counterpartyChannelId = msg_.counterpartyChannelId;
         commitChannel(msg_.channelId, channel);
         IIBCModule(msg_.portId).onChanOpenAck(
             msg_.channelId,
@@ -194,12 +188,10 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             revert IBCErrors.ErrInvalidChannelState();
         }
         uint32 clientId = ensureConnectionState(channel.connectionId);
-        IBCChannelCounterparty memory expectedCounterparty =
-            IBCChannelCounterparty({channelId: msg_.channelId});
         IBCChannel memory expectedChannel = IBCChannel({
             state: IBCChannelState.Open,
             ordering: channel.ordering,
-            counterparty: expectedCounterparty,
+            counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
             version: channel.version
         });
@@ -208,7 +200,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
                 clientId,
                 msg_.proofHeight,
                 msg_.proofAck,
-                channel.counterparty.channelId,
+                channel.counterpartyChannelId,
                 expectedChannel
             )
         ) {
@@ -220,7 +212,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         emit IBCChannelLib.ChannelOpenConfirm(
             msg_.portId,
             msg_.channelId,
-            channel.counterparty.channelId,
+            channel.counterpartyChannelId,
             channel.connectionId
         );
     }
@@ -254,12 +246,10 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             revert IBCErrors.ErrInvalidChannelState();
         }
         uint32 clientId = ensureConnectionState(channel.connectionId);
-        IBCChannelCounterparty memory expectedCounterparty =
-            IBCChannelCounterparty({channelId: msg_.channelId});
         IBCChannel memory expectedChannel = IBCChannel({
             state: IBCChannelState.Closed,
             ordering: channel.ordering,
-            counterparty: expectedCounterparty,
+            counterpartyChannelId: msg_.channelId,
             connectionId: getCounterpartyConnection(channel.connectionId),
             version: channel.version
         });
@@ -268,7 +258,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
                 clientId,
                 msg_.proofHeight,
                 msg_.proofInit,
-                channel.counterparty.channelId,
+                channel.counterpartyChannelId,
                 expectedChannel
             )
         ) {
@@ -294,18 +284,18 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             encodeChannel(channel);
     }
 
-    function encodeChannelCalldata(
-        IBCChannel calldata channel
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encode(channel));
-    }
-
     function commitChannelCalldata(
         uint32 channelId,
         IBCChannel calldata channel
     ) internal {
         commitments[IBCCommitment.channelCommitmentKey(channelId)] =
             encodeChannelCalldata(channel);
+    }
+
+    function encodeChannelCalldata(
+        IBCChannel calldata channel
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(channel));
     }
 
     function verifyChannelState(
@@ -327,7 +317,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     function getCounterpartyConnection(
         uint32 connectionId
     ) internal view returns (uint32) {
-        return connections[connectionId].counterparty.connectionId;
+        return connections[connectionId].counterpartyConnectionId;
     }
 
     function generateChannelIdentifier() internal returns (uint32) {

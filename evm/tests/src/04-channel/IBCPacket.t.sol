@@ -40,10 +40,10 @@ contract IBCPacketTests is Test {
         // Create connection
         IBCMsgs.MsgConnectionOpenTry memory msgTry_ = IBCMsgs
             .MsgConnectionOpenTry({
-            counterparty: IBCConnectionCounterparty({
-                clientId: 0xDEADC0DE,
-                connectionId: 0xCAFE
-            }),
+            counterpartyConnectionId: 0xCAFE,
+            counterpartyClientType: "zkgm",
+            counterpartyClientId: 0xDEADC0DE,
+            clientType: CLIENT_TYPE,
             clientId: clientId,
             proofInit: hex"",
             proofHeight: 0,
@@ -64,15 +64,9 @@ contract IBCPacketTests is Test {
         // Create channel
         IBCMsgs.MsgChannelOpenInit memory msgInit_ = IBCMsgs.MsgChannelOpenInit({
             portId: address(module),
-            channel: IBCChannel({
-                state: IBCChannelState.Init,
-                connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
-                version: VERSION,
-                counterparty: IBCChannelCounterparty({
-                    channelId: COUNTERPARTY_CHANNEL_ID
-                })
-            }),
+            connectionId: connectionId,
+            ordering: IBCChannelOrder.Unordered,
+            version: VERSION,
             relayer: address(this)
         });
         channelId = handler.channelOpenInit(msgInit_);

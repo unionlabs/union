@@ -31,10 +31,10 @@ contract IBCChannelTests is Test {
         );
         IBCMsgs.MsgConnectionOpenTry memory msgTry_ = IBCMsgs
             .MsgConnectionOpenTry({
-            counterparty: IBCConnectionCounterparty({
-                clientId: 0xDEADC0DE,
-                connectionId: 0xCAFE
-            }),
+            counterpartyConnectionId: 0xCAFE,
+            counterpartyClientType: "zkgm",
+            counterpartyClientId: 0xDEADC0DE,
+            clientType: CLIENT_TYPE,
             clientId: clientId,
             proofInit: hex"",
             proofHeight: 0,
@@ -53,85 +53,32 @@ contract IBCChannelTests is Test {
         handler.connectionOpenConfirm(msgConfirm_);
     }
 
-    function test_channelOpenInit_ok(
-        uint32 counterpartyChannelId,
-        bytes32 version,
-        address relayer
-    ) public {
+    function test_channelOpenInit_ok(bytes32 version, address relayer) public {
         vm.pauseGasMetering();
         IBCMsgs.MsgChannelOpenInit memory msg_ = IBCMsgs.MsgChannelOpenInit({
             portId: address(module),
-            channel: IBCChannel({
-                state: IBCChannelState.Init,
-                connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
-                version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
-            }),
+            connectionId: connectionId,
+            ordering: IBCChannelOrder.Unordered,
+            version: version,
             relayer: relayer
         });
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenInit(
-            msg_.portId, 0, msg_.channel.connectionId, msg_.channel.version
+            msg_.portId, 0, msg_.connectionId, msg_.version
         );
         vm.resumeGasMetering();
         handler.channelOpenInit(msg_);
     }
 
-    function test_channelOpenInit_invalidState(
-        uint32 counterpartyChannelId,
-        bytes32 version,
-        address relayer
-    ) public {
-        IBCMsgs.MsgChannelOpenInit memory msg_ = IBCMsgs.MsgChannelOpenInit({
-            portId: address(module),
-            channel: IBCChannel({
-                state: IBCChannelState.Unspecified,
-                connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
-                version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
-            }),
-            relayer: relayer
-        });
-        vm.expectRevert(IBCErrors.ErrInvalidChannelState.selector);
-        handler.channelOpenInit(msg_);
-    }
-
-    function test_channelOpenInit_invalidOrdering(
-        uint32 counterpartyChannelId,
-        bytes32 version,
-        address relayer
-    ) public {
-        IBCMsgs.MsgChannelOpenInit memory msg_ = IBCMsgs.MsgChannelOpenInit({
-            portId: address(module),
-            channel: IBCChannel({
-                state: IBCChannelState.Init,
-                connectionId: connectionId,
-                ordering: IBCChannelOrder.Unspecified,
-                version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
-            }),
-            relayer: relayer
-        });
-        vm.expectRevert(IBCErrors.ErrInvalidChannelOrdering.selector);
-        handler.channelOpenInit(msg_);
-    }
-
     function test_channelOpenInit_channelClaimed(
-        uint32 counterpartyChannelId,
         bytes32 version,
         address relayer
     ) public {
         IBCMsgs.MsgChannelOpenInit memory msg_ = IBCMsgs.MsgChannelOpenInit({
             portId: address(module),
-            channel: IBCChannel({
-                state: IBCChannelState.Init,
-                connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
-                version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
-            }),
+            connectionId: connectionId,
+            ordering: IBCChannelOrder.Unordered,
+            version: version,
             relayer: relayer
         });
         uint32 channelId = handler.channelOpenInit(msg_);
@@ -139,7 +86,6 @@ contract IBCChannelTests is Test {
     }
 
     function test_channelOpenInit_commitmentSaved(
-        uint32 counterpartyChannelId,
         bytes32 version,
         address relayer
     ) public {
@@ -148,11 +94,13 @@ contract IBCChannelTests is Test {
             connectionId: connectionId,
             ordering: IBCChannelOrder.Unordered,
             version: version,
-            counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+            counterpartyChannelId: 0
         });
         IBCMsgs.MsgChannelOpenInit memory msg_ = IBCMsgs.MsgChannelOpenInit({
             portId: address(module),
-            channel: channel,
+            connectionId: channel.connectionId,
+            ordering: channel.ordering,
+            version: channel.version,
             relayer: relayer
         });
         uint32 channelId = handler.channelOpenInit(msg_);
@@ -176,7 +124,7 @@ contract IBCChannelTests is Test {
                 connectionId: connectionId,
                 ordering: IBCChannelOrder.Unordered,
                 version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+                counterpartyChannelId: counterpartyChannelId
             }),
             counterpartyVersion: counterpartyVersion,
             proofInit: hex"",
@@ -188,7 +136,7 @@ contract IBCChannelTests is Test {
         emit IBCChannelLib.ChannelOpenTry(
             msg_.portId,
             0,
-            msg_.channel.counterparty.channelId,
+            msg_.channel.counterpartyChannelId,
             msg_.channel.connectionId,
             msg_.counterpartyVersion
         );
@@ -209,7 +157,7 @@ contract IBCChannelTests is Test {
                 connectionId: connectionId,
                 ordering: IBCChannelOrder.Unordered,
                 version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+                counterpartyChannelId: counterpartyChannelId
             }),
             counterpartyVersion: counterpartyVersion,
             proofInit: hex"",
@@ -233,7 +181,7 @@ contract IBCChannelTests is Test {
                 connectionId: connectionId,
                 ordering: IBCChannelOrder.Unspecified,
                 version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+                counterpartyChannelId: counterpartyChannelId
             }),
             counterpartyVersion: counterpartyVersion,
             proofInit: hex"",
@@ -257,7 +205,7 @@ contract IBCChannelTests is Test {
                 connectionId: connectionId,
                 ordering: IBCChannelOrder.Unordered,
                 version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+                counterpartyChannelId: counterpartyChannelId
             }),
             counterpartyVersion: counterpartyVersion,
             proofInit: hex"",
@@ -281,7 +229,7 @@ contract IBCChannelTests is Test {
                 connectionId: connectionId,
                 ordering: IBCChannelOrder.Unordered,
                 version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+                counterpartyChannelId: counterpartyChannelId
             }),
             counterpartyVersion: counterpartyVersion,
             proofInit: hex"",
@@ -304,7 +252,7 @@ contract IBCChannelTests is Test {
             connectionId: connectionId,
             ordering: IBCChannelOrder.Unordered,
             version: version,
-            counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+            counterpartyChannelId: counterpartyChannelId
         });
         IBCMsgs.MsgChannelOpenTry memory msg_ = IBCMsgs.MsgChannelOpenTry({
             portId: address(module),
@@ -331,13 +279,9 @@ contract IBCChannelTests is Test {
         vm.pauseGasMetering();
         IBCMsgs.MsgChannelOpenInit memory msgInit_ = IBCMsgs.MsgChannelOpenInit({
             portId: address(module),
-            channel: IBCChannel({
-                state: IBCChannelState.Init,
-                connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
-                version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
-            }),
+            connectionId: connectionId,
+            ordering: IBCChannelOrder.Unordered,
+            version: version,
             relayer: relayer
         });
         uint32 channelId = handler.channelOpenInit(msgInit_);
@@ -389,11 +333,13 @@ contract IBCChannelTests is Test {
             connectionId: connectionId,
             ordering: IBCChannelOrder.Unordered,
             version: version,
-            counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+            counterpartyChannelId: counterpartyChannelId
         });
         IBCMsgs.MsgChannelOpenInit memory msgInit_ = IBCMsgs.MsgChannelOpenInit({
             portId: address(module),
-            channel: channel,
+            connectionId: channel.connectionId,
+            ordering: channel.ordering,
+            version: channel.version,
             relayer: relayer
         });
         uint32 channelId = handler.channelOpenInit(msgInit_);
@@ -430,7 +376,7 @@ contract IBCChannelTests is Test {
                 connectionId: connectionId,
                 ordering: IBCChannelOrder.Unordered,
                 version: version,
-                counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+                counterpartyChannelId: counterpartyChannelId
             }),
             counterpartyVersion: counterpartyVersion,
             proofInit: hex"",
@@ -484,7 +430,7 @@ contract IBCChannelTests is Test {
             connectionId: connectionId,
             ordering: IBCChannelOrder.Unordered,
             version: version,
-            counterparty: IBCChannelCounterparty({channelId: counterpartyChannelId})
+            counterpartyChannelId: counterpartyChannelId
         });
         IBCMsgs.MsgChannelOpenTry memory msgTry_ = IBCMsgs.MsgChannelOpenTry({
             portId: address(module),

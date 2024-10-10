@@ -168,7 +168,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IBCPacket memory packet = IBCPacket({
             sequence: sequence,
             sourceChannel: sourceChannel,
-            destinationChannel: channel.counterparty.channelId,
+            destinationChannel: channel.counterpartyChannelId,
             data: data,
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
