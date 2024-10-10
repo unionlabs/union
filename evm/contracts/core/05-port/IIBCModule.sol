@@ -10,7 +10,6 @@ interface IIBCModule {
         IBCChannelOrder order,
         uint32 connectionId,
         uint32 channelId,
-        IBCChannelCounterparty calldata counterparty,
         bytes32 version,
         address relayer
     ) external;
@@ -19,7 +18,7 @@ interface IIBCModule {
         IBCChannelOrder order,
         uint32 connectionId,
         uint32 channelId,
-        IBCChannelCounterparty calldata counterparty,
+        uint32 counterpartyChannelId,
         bytes32 version,
         bytes32 counterpartyVersion,
         address relayer

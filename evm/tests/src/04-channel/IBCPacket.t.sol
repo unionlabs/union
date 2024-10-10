@@ -9,7 +9,7 @@ import "../core/Module.sol";
 import "@openzeppelin/utils/math/Math.sol";
 
 contract IBCPacketTests is Test {
-    bytes32 public constant CLIENT_TYPE = keccak256("zkgm");
+    string public constant CLIENT_TYPE = "zkgm";
     bytes32 public constant VERSION = keccak256("protocol-1");
     uint32 public constant COUNTERPARTY_CHANNEL_ID = 0xDEADC0DE;
 
@@ -40,10 +40,10 @@ contract IBCPacketTests is Test {
         // Create connection
         IBCMsgs.MsgConnectionOpenTry memory msgTry_ = IBCMsgs
             .MsgConnectionOpenTry({
-            counterparty: IBCConnectionCounterparty({
-                clientId: 0xDEADC0DE,
-                connectionId: 0xCAFE
-            }),
+            counterpartyConnectionId: 0xCAFE,
+            counterpartyClientType: "zkgm",
+            counterpartyClientId: 0xDEADC0DE,
+            clientType: CLIENT_TYPE,
             clientId: clientId,
             proofInit: hex"",
             proofHeight: 0,
@@ -64,15 +64,9 @@ contract IBCPacketTests is Test {
         // Create channel
         IBCMsgs.MsgChannelOpenInit memory msgInit_ = IBCMsgs.MsgChannelOpenInit({
             portId: address(module),
-            channel: IBCChannel({
-                state: IBCChannelState.Init,
-                connectionId: connectionId,
-                ordering: IBCChannelOrder.Unordered,
-                version: VERSION,
-                counterparty: IBCChannelCounterparty({
-                    channelId: COUNTERPARTY_CHANNEL_ID
-                })
-            }),
+            connectionId: connectionId,
+            ordering: IBCChannelOrder.Unordered,
+            version: VERSION,
             relayer: address(this)
         });
         channelId = handler.channelOpenInit(msgInit_);

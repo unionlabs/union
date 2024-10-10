@@ -16,9 +16,9 @@ abstract contract IBCStore {
     mapping(bytes32 => bytes32) public commitments;
 
     // ClientType -> Address
-    mapping(bytes32 => address) public clientRegistry;
+    mapping(string => address) public clientRegistry;
     // ClientId -> ClientType
-    mapping(uint32 => bytes32) public clientTypes;
+    mapping(uint32 => string) public clientTypes;
     // ClientId -> Address
     mapping(uint32 => address) public clientImpls;
     // ConnectionId -> Connection

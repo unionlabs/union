@@ -7,8 +7,8 @@ import "../24-host/IBCCommitment.sol";
 import "../02-client/IIBCClient.sol";
 
 library IBCClientLib {
-    event ClientRegistered(bytes32 clientType, address clientAddress);
-    event ClientCreated(bytes32 clientType, uint32 clientId);
+    event ClientRegistered(string clientType, address clientAddress);
+    event ClientCreated(string clientType, uint32 clientId);
     event ClientUpdated(uint32 clientId, uint64 height);
 }
 
@@ -20,7 +20,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
      * @dev registerClient registers a new client type into the client registry
      */
     function registerClient(
-        bytes32 clientType,
+        string calldata clientType,
         ILightClient client
     ) external override {
         if (address(clientRegistry[clientType]) != address(0)) {

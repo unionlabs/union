@@ -6,7 +6,7 @@ import "../core/IBCHandler.sol";
 import "../core/LightClient.sol";
 
 contract IBCConnectionTests is Test {
-    bytes32 public constant CLIENT_TYPE = keccak256("zkgm");
+    string public constant CLIENT_TYPE = "zkgm";
 
     TestIBCHandler handler;
     TestLightClient lightClient;
@@ -32,7 +32,11 @@ contract IBCConnectionTests is Test {
         vm.pauseGasMetering();
         vm.expectEmit();
         emit IBCConnectionLib.ConnectionOpenInit(
-            0, msg_.clientId, msg_.counterparty.clientId
+            0,
+            msg_.clientType,
+            msg_.clientId,
+            msg_.counterpartyClientType,
+            msg_.counterpartyClientId
         );
         vm.resumeGasMetering();
         handler.connectionOpenInit(msg_);
@@ -49,9 +53,12 @@ contract IBCConnectionTests is Test {
             keccak256(
                 abi.encode(
                     IBCConnection({
+                        clientType: msg_.clientType,
                         clientId: msg_.clientId,
                         state: IBCConnectionState.Init,
-                        counterparty: msg_.counterparty
+                        counterpartyClientType: msg_.counterpartyClientType,
+                        counterpartyClientId: msg_.counterpartyClientId,
+                        counterpartyConnectionId: 0
                     })
                 )
             )
@@ -62,14 +69,17 @@ contract IBCConnectionTests is Test {
         IBCMsgs.MsgConnectionOpenTry memory msg_
     ) public {
         vm.pauseGasMetering();
+        msg_.clientType = CLIENT_TYPE;
         msg_.clientId = clientId;
         lightClient.pushValidMembership();
         vm.expectEmit();
         emit IBCConnectionLib.ConnectionOpenTry(
             0,
+            msg_.clientType,
             msg_.clientId,
-            msg_.counterparty.clientId,
-            msg_.counterparty.connectionId
+            msg_.counterpartyClientType,
+            msg_.counterpartyClientId,
+            msg_.counterpartyConnectionId
         );
         vm.resumeGasMetering();
         handler.connectionOpenTry(msg_);
@@ -87,6 +97,7 @@ contract IBCConnectionTests is Test {
         IBCMsgs.MsgConnectionOpenTry memory msg_
     ) public {
         msg_.clientId = clientId;
+        msg_.clientType = CLIENT_TYPE;
         vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.connectionOpenTry(msg_);
     }
@@ -95,6 +106,7 @@ contract IBCConnectionTests is Test {
         IBCMsgs.MsgConnectionOpenTry memory msg_
     ) public {
         msg_.clientId = clientId;
+        msg_.clientType = CLIENT_TYPE;
         lightClient.pushValidMembership();
         uint32 connectionId = handler.connectionOpenTry(msg_);
         assertEq(
@@ -104,9 +116,12 @@ contract IBCConnectionTests is Test {
             keccak256(
                 abi.encode(
                     IBCConnection({
+                        clientType: msg_.clientType,
                         clientId: msg_.clientId,
                         state: IBCConnectionState.TryOpen,
-                        counterparty: msg_.counterparty
+                        counterpartyClientType: msg_.counterpartyClientType,
+                        counterpartyClientId: msg_.counterpartyClientId,
+                        counterpartyConnectionId: msg_.counterpartyConnectionId
                     })
                 )
             )
@@ -119,14 +134,17 @@ contract IBCConnectionTests is Test {
     ) public {
         vm.pauseGasMetering();
         msg_.clientId = clientId;
+        msg_.clientType = CLIENT_TYPE;
         uint32 connectionId = handler.connectionOpenInit(msg_);
         msgAck_.connectionId = connectionId;
         lightClient.pushValidMembership();
         vm.expectEmit();
         emit IBCConnectionLib.ConnectionOpenAck(
             msgAck_.connectionId,
+            msg_.clientType,
             msg_.clientId,
-            msg_.counterparty.clientId,
+            msg_.counterpartyClientType,
+            msg_.counterpartyClientId,
             // The connectionId of the counterpary must be updated after the ack.
             msgAck_.counterpartyConnectionId
         );
@@ -150,12 +168,11 @@ contract IBCConnectionTests is Test {
         IBCMsgs.MsgConnectionOpenAck memory msgAck_
     ) public {
         msgInit_.clientId = clientId;
+        msgInit_.clientType = CLIENT_TYPE;
         uint32 connectionId = handler.connectionOpenInit(msgInit_);
         msgAck_.connectionId = connectionId;
         lightClient.pushValidMembership();
         handler.connectionOpenAck(msgAck_);
-        // The connectionId of the counterpary must be updated after the ack.
-        msgInit_.counterparty.connectionId = msgAck_.counterpartyConnectionId;
         assertEq(
             handler.commitments(
                 IBCCommitment.connectionCommitmentKey(connectionId)
@@ -163,9 +180,12 @@ contract IBCConnectionTests is Test {
             keccak256(
                 abi.encode(
                     IBCConnection({
+                        clientType: msgInit_.clientType,
                         clientId: msgInit_.clientId,
                         state: IBCConnectionState.Open,
-                        counterparty: msgInit_.counterparty
+                        counterpartyClientType: msgInit_.counterpartyClientType,
+                        counterpartyClientId: msgInit_.counterpartyClientId,
+                        counterpartyConnectionId: msgAck_.counterpartyConnectionId
                     })
                 )
             )
@@ -178,6 +198,7 @@ contract IBCConnectionTests is Test {
     ) public {
         vm.pauseGasMetering();
         msgTry_.clientId = clientId;
+        msgTry_.clientType = CLIENT_TYPE;
         lightClient.pushValidMembership();
         uint32 connectionId = handler.connectionOpenTry(msgTry_);
         msgConfirm_.connectionId = connectionId;
@@ -185,9 +206,11 @@ contract IBCConnectionTests is Test {
         vm.expectEmit();
         emit IBCConnectionLib.ConnectionOpenConfirm(
             connectionId,
+            msgTry_.clientType,
             msgTry_.clientId,
-            msgTry_.counterparty.clientId,
-            msgTry_.counterparty.connectionId
+            msgTry_.counterpartyClientType,
+            msgTry_.counterpartyClientId,
+            msgTry_.counterpartyConnectionId
         );
         vm.resumeGasMetering();
         handler.connectionOpenConfirm(msgConfirm_);
@@ -198,6 +221,7 @@ contract IBCConnectionTests is Test {
         IBCMsgs.MsgConnectionOpenConfirm memory msgConfirm_
     ) public {
         msgTry_.clientId = clientId;
+        msgTry_.clientType = CLIENT_TYPE;
         lightClient.pushValidMembership();
         uint32 connectionId = handler.connectionOpenTry(msgTry_);
         msgConfirm_.connectionId = connectionId;
@@ -210,6 +234,7 @@ contract IBCConnectionTests is Test {
         IBCMsgs.MsgConnectionOpenConfirm memory msgConfirm_
     ) public {
         msgTry_.clientId = clientId;
+        msgTry_.clientType = CLIENT_TYPE;
         lightClient.pushValidMembership();
         uint32 connectionId = handler.connectionOpenTry(msgTry_);
         msgConfirm_.connectionId = connectionId;
@@ -222,9 +247,12 @@ contract IBCConnectionTests is Test {
             keccak256(
                 abi.encode(
                     IBCConnection({
+                        clientType: msgTry_.clientType,
                         clientId: msgTry_.clientId,
                         state: IBCConnectionState.Open,
-                        counterparty: msgTry_.counterparty
+                        counterpartyClientType: msgTry_.counterpartyClientType,
+                        counterpartyClientId: msgTry_.counterpartyClientId,
+                        counterpartyConnectionId: msgTry_.counterpartyConnectionId
                     })
                 )
             )
