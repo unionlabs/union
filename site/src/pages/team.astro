@@ -1,4 +1,3 @@
-
 ---
 import type { TeamPageFields, TeamPageSkeleton } from "../lib/contentful/types"
 import { contentfulClient } from "../lib/contentful/client"
@@ -6,18 +5,6 @@ import { contentfulClient } from "../lib/contentful/client"
 import SectionsLayout from "#/layouts/SectionsLayout.astro"
 import Card from "#/components/Card.astro"
 import TopSection from "../components/sections/TopSection.astro"
-
-import headshot_karel from "#/assets/images/headshots/karel.jpg"
-import headshot_cor from "#/assets/images/headshots/cor.jpg"
-import headshot_ben from "#/assets/images/headshots/ben.jpeg"
-import headshot_emir from "#/assets/images/headshots/emir.jpeg"
-import headshot_sarah from "#/assets/images/headshots/sarah.jpg"
-import headshot_abdullah from "#/assets/images/headshots/abdullah.jpeg"
-import headshot_connor from "#/assets/images/headshots/connor.jpg"
-import headshot_omar from "#/assets/images/headshots/omar.jpeg"
-import headshot_hussein from "#/assets/images/headshots/hussein.jpeg"
-import headshot_valentin from "#/assets/images/headshots/valentin.jpeg"
-import headshot_boris from "#/assets/images/headshots/boris.jpeg"
 
 import vc_galileo from "#/assets/images/investors/galileo.svg"
 import vc_nascent from "#/assets/images/investors/nascent.svg"
@@ -31,75 +18,6 @@ import team_spearbit from "#/assets/images/partners/spearbit.svg"
 import team_groomlake from "#/assets/images/partners/groomlake.png"
 import team_horizons from "#/assets/images/partners/horizons.svg"
 import ContainedSection from "../components/ContainedSection.astro"
-
-const profiles = [
-  {
-    name: "Karel",
-    title: "CEO",
-    x_name: "0xkaiserkarel",
-    profile_pic: headshot_karel
-  },
-  {
-    name: "Cor",
-    title: "CTO",
-    x_name: "corcoder",
-    profile_pic: headshot_cor
-  },
-  {
-    name: "Emir",
-    title: "Head of BD",
-    x_name: "EBeriker",
-    profile_pic: headshot_emir
-  },
-  {
-    name: "Sarah",
-    title: "Head of Operations",
-    x_name: "sarahkc07",
-    profile_pic: headshot_sarah
-  },
-  {
-    name: "Hussein",
-    title: "Principal Engineer",
-    x_name: "0xc0dejug",
-    profile_pic: headshot_hussein
-  },
-  {
-    name: "Abdullah",
-    title: "Founding Engineer",
-    x_name: "aeryz2",
-    profile_pic: headshot_abdullah
-  },
-  {
-    name: "Ben",
-    title: "Founding Engineer",
-    x_name: "0xbonlulu",
-    profile_pic: headshot_ben
-  },
-  {
-    name: "Connor",
-    title: "Founding Engineer",
-    x_name: "PoisonPhang",
-    profile_pic: headshot_connor
-  },
-  {
-    name: "Omar",
-    title: "Full Stack Engineer",
-    x_name: "awkroot",
-    profile_pic: headshot_omar
-  },
-  {
-    name: "Valentin",
-    title: "Advisor",
-    x_name: "valeyo777",
-    profile_pic: headshot_valentin
-  },
-  {
-    name: "Boris",
-    title: "Advisor",
-    x_name: "sprembo",
-    profile_pic: headshot_boris
-  }
-]
 
 const teams = [
   {
