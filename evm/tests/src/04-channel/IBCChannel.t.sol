@@ -94,7 +94,7 @@ contract IBCChannelTests is Test {
             }),
             relayer: relayer
         });
-        vm.expectRevert(IBCChannelLib.ErrInvalidChannelState.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidChannelState.selector);
         handler.channelOpenInit(msg_);
     }
 
@@ -114,7 +114,7 @@ contract IBCChannelTests is Test {
             }),
             relayer: relayer
         });
-        vm.expectRevert(IBCChannelLib.ErrInvalidChannelOrdering.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidChannelOrdering.selector);
         handler.channelOpenInit(msg_);
     }
 
@@ -216,7 +216,7 @@ contract IBCChannelTests is Test {
             proofHeight: 0,
             relayer: relayer
         });
-        vm.expectRevert(IBCChannelLib.ErrInvalidChannelState.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidChannelState.selector);
         handler.channelOpenTry(msg_);
     }
 
@@ -240,7 +240,7 @@ contract IBCChannelTests is Test {
             proofHeight: 0,
             relayer: relayer
         });
-        vm.expectRevert(IBCChannelLib.ErrInvalidChannelOrdering.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidChannelOrdering.selector);
         handler.channelOpenTry(msg_);
     }
 
@@ -264,7 +264,7 @@ contract IBCChannelTests is Test {
             proofHeight: 0,
             relayer: relayer
         });
-        vm.expectRevert(IBCChannelLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.channelOpenTry(msg_);
     }
 
@@ -374,7 +374,7 @@ contract IBCChannelTests is Test {
             proofHeight: 0,
             relayer: relayer
         });
-        vm.expectRevert(IBCChannelLib.ErrInvalidChannelState.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidChannelState.selector);
         handler.channelOpenAck(msgAck_);
     }
 
@@ -469,7 +469,7 @@ contract IBCChannelTests is Test {
             relayer: relayer
         });
         lightClient.pushValidMembership();
-        vm.expectRevert(IBCChannelLib.ErrInvalidChannelState.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidChannelState.selector);
         handler.channelOpenConfirm(msgConfirm_);
     }
 

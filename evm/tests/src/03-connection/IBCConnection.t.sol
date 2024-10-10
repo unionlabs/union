@@ -79,7 +79,7 @@ contract IBCConnectionTests is Test {
         IBCMsgs.MsgConnectionOpenTry memory msg_
     ) public {
         vm.assume(msg_.clientId != clientId);
-        vm.expectRevert(IBCStoreLib.ErrClientNotFound.selector);
+        vm.expectRevert(IBCErrors.ErrClientNotFound.selector);
         handler.connectionOpenTry(msg_);
     }
 
@@ -87,7 +87,7 @@ contract IBCConnectionTests is Test {
         IBCMsgs.MsgConnectionOpenTry memory msg_
     ) public {
         msg_.clientId = clientId;
-        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.connectionOpenTry(msg_);
     }
 
@@ -141,7 +141,7 @@ contract IBCConnectionTests is Test {
         msg_.clientId = clientId;
         uint32 connectionId = handler.connectionOpenInit(msg_);
         msgAck_.connectionId = connectionId;
-        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.connectionOpenAck(msgAck_);
     }
 
@@ -201,7 +201,7 @@ contract IBCConnectionTests is Test {
         lightClient.pushValidMembership();
         uint32 connectionId = handler.connectionOpenTry(msgTry_);
         msgConfirm_.connectionId = connectionId;
-        vm.expectRevert(IBCConnectionLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.connectionOpenConfirm(msgConfirm_);
     }
 

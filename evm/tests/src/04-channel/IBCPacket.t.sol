@@ -150,7 +150,7 @@ contract IBCPacketTests is Test {
     function test_sendPacket_missingTimeout(
         bytes calldata packet
     ) public {
-        vm.expectRevert(IBCPacketLib.ErrTimeoutMustBeSet.selector);
+        vm.expectRevert(IBCErrors.ErrTimeoutMustBeSet.selector);
         vm.prank(address(module));
         handler.sendPacket(channelId, 0, 0, packet);
     }
@@ -163,7 +163,7 @@ contract IBCPacketTests is Test {
     ) public {
         vm.assume(channelId_ != channelId);
         vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
-        vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
+        vm.expectRevert(IBCErrors.ErrUnauthorized.selector);
         vm.prank(address(module));
         handler.sendPacket(channelId_, timeoutTimestamp, timeoutHeight, packet);
     }
@@ -176,7 +176,7 @@ contract IBCPacketTests is Test {
     ) public {
         vm.assume(malicious != address(module));
         vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
-        vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
+        vm.expectRevert(IBCErrors.ErrUnauthorized.selector);
         vm.prank(malicious);
         handler.sendPacket(channelId, timeoutTimestamp, timeoutHeight, packet);
     }
@@ -250,7 +250,7 @@ contract IBCPacketTests is Test {
         vm.assume(nbPackets > 0);
         IBCMsgs.MsgPacketRecv memory msg_ =
             createReceivePacket(sourceChannel, message, nbPackets);
-        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.recvPacket(msg_);
     }
 
@@ -266,7 +266,7 @@ contract IBCPacketTests is Test {
             createReceivePacket(sourceChannel, message, nbPackets);
         // fake non existant channel
         msg_.packets[0].destinationChannel = destinationChannel;
-        vm.expectRevert(IBCStoreLib.ErrInvalidChannelState.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidChannelState.selector);
         handler.recvPacket(msg_);
     }
 
@@ -284,7 +284,7 @@ contract IBCPacketTests is Test {
         msg_.packets[0].timeoutTimestamp = uint64(timeout) * 1e9;
         vm.warp(timeout);
         lightClient.pushValidMembership();
-        vm.expectRevert(IBCPacketLib.ErrTimestampTimeout.selector);
+        vm.expectRevert(IBCErrors.ErrTimestampTimeout.selector);
         handler.recvPacket(msg_);
     }
 
@@ -302,7 +302,7 @@ contract IBCPacketTests is Test {
         msg_.packets[0].timeoutHeight = timeout;
         vm.roll(timeout);
         lightClient.pushValidMembership();
-        vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
+        vm.expectRevert(IBCErrors.ErrHeightTimeout.selector);
         handler.recvPacket(msg_);
     }
 
@@ -445,7 +445,7 @@ contract IBCPacketTests is Test {
         // Timeout is expressed as nano because of ibc-go...
         msg_.packets[0].timeoutTimestamp = uint64(timeout) * 1e9;
         vm.warp(timeout);
-        vm.expectRevert(IBCPacketLib.ErrTimestampTimeout.selector);
+        vm.expectRevert(IBCErrors.ErrTimestampTimeout.selector);
         handler.recvIntentPacket(msg_);
     }
 
@@ -462,7 +462,7 @@ contract IBCPacketTests is Test {
         // Timeout is expressed as nano because of ibc-go...
         msg_.packets[0].timeoutHeight = timeout;
         vm.roll(timeout);
-        vm.expectRevert(IBCPacketLib.ErrHeightTimeout.selector);
+        vm.expectRevert(IBCErrors.ErrHeightTimeout.selector);
         handler.recvIntentPacket(msg_);
     }
 
@@ -539,7 +539,7 @@ contract IBCPacketTests is Test {
             handler.assumePacketSent(channelId, msg_.packets[i]);
         }
         msg_.packets[0].data = abi.encodePacked(msg_.packets[0].data, hex"1337");
-        vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
+        vm.expectRevert(IBCErrors.ErrPacketCommitmentNotFound.selector);
         handler.acknowledgePacket(msg_);
     }
 
@@ -552,7 +552,7 @@ contract IBCPacketTests is Test {
         IBCMsgs.MsgPacketAcknowledgement memory msg_ =
             createPacketAcknowledgement(destinationChannel, message, nbPackets);
         lightClient.pushValidMembership();
-        vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
+        vm.expectRevert(IBCErrors.ErrPacketCommitmentNotFound.selector);
         handler.acknowledgePacket(msg_);
     }
 
@@ -593,7 +593,7 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             handler.assumePacketSent(channelId, msg_.packets[i]);
         }
-        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.acknowledgePacket(msg_);
     }
 
@@ -678,7 +678,7 @@ contract IBCPacketTests is Test {
         msg_.packet.timeoutHeight = 0;
         handler.assumePacketSent(channelId, msg_.packet);
         lightClient.setLatestTimestamp(uint64(timestamp) + k);
-        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.timeoutPacket(msg_);
     }
 
@@ -698,7 +698,7 @@ contract IBCPacketTests is Test {
         handler.assumePacketSent(channelId, msg_.packet);
         lightClient.pushValidNonMembership();
         lightClient.setLatestTimestamp(timestamp);
-        vm.expectRevert(IBCPacketLib.ErrTimeoutTimestampNotReached.selector);
+        vm.expectRevert(IBCErrors.ErrTimeoutTimestampNotReached.selector);
         handler.timeoutPacket(msg_);
     }
 
@@ -762,7 +762,7 @@ contract IBCPacketTests is Test {
         handler.assumePacketSent(channelId, msg_.packet);
         lightClient.setLatestHeight(uint64(height) + k);
         msg_.proofHeight = uint64(height) + k;
-        vm.expectRevert(IBCPacketLib.ErrInvalidProof.selector);
+        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.timeoutPacket(msg_);
     }
 
@@ -783,7 +783,7 @@ contract IBCPacketTests is Test {
         lightClient.pushValidNonMembership();
         lightClient.setLatestHeight(height);
         msg_.proofHeight = height;
-        vm.expectRevert(IBCPacketLib.ErrTimeoutHeightNotReached.selector);
+        vm.expectRevert(IBCErrors.ErrTimeoutHeightNotReached.selector);
         handler.timeoutPacket(msg_);
     }
 
@@ -845,7 +845,7 @@ contract IBCPacketTests is Test {
         }
         handler.recvPacket(msg_);
         for (uint8 i = 0; i < nbPackets; i++) {
-            vm.expectRevert(IBCPacketLib.ErrUnauthorized.selector);
+            vm.expectRevert(IBCErrors.ErrUnauthorized.selector);
             vm.prank(malicious);
             handler.writeAcknowledgement(msg_.packets[i], hex"1337");
         }
@@ -862,7 +862,7 @@ contract IBCPacketTests is Test {
         lightClient.pushValidMembership();
         module.pauseAck();
         for (uint8 i = 0; i < nbPackets; i++) {
-            vm.expectRevert(IBCPacketLib.ErrPacketNotReceived.selector);
+            vm.expectRevert(IBCErrors.ErrPacketNotReceived.selector);
             vm.prank(address(module));
             handler.writeAcknowledgement(msg_.packets[i], hex"1337");
         }
@@ -876,9 +876,7 @@ contract IBCPacketTests is Test {
         IBCMsgs.MsgPacketRecv memory msg_ =
             test_writeAcknowledgement_ok(sourceChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
-            vm.expectRevert(
-                IBCPacketLib.ErrAcknowledgementAlreadyExists.selector
-            );
+            vm.expectRevert(IBCErrors.ErrAcknowledgementAlreadyExists.selector);
             vm.prank(address(module));
             handler.writeAcknowledgement(msg_.packets[i], hex"1337");
         }
@@ -990,7 +988,7 @@ contract IBCPacketTests is Test {
         // tamper the data such that the commitment mismatch
         packets[0].data = abi.encodePacked(packets[0].data, hex"C0DE");
         vm.resumeGasMetering();
-        vm.expectRevert(IBCPacketLib.ErrPacketCommitmentNotFound.selector);
+        vm.expectRevert(IBCErrors.ErrPacketCommitmentNotFound.selector);
         handler.batchSend(
             IBCMsgs.MsgBatchSend({sourceChannel: channelId, packets: packets})
         );
@@ -1070,7 +1068,7 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             acks[i] = ack;
         }
-        vm.expectRevert(IBCPacketLib.ErrAcknowledgementIsEmpty.selector);
+        vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
             IBCMsgs.MsgBatchAcks({
                 sourceChannel: channelId,
@@ -1099,7 +1097,7 @@ contract IBCPacketTests is Test {
         }
         // tamper one packet
         msg_.packets[0].data = abi.encodePacked(msg_.packets[0].data, hex"1337");
-        vm.expectRevert(IBCPacketLib.ErrAcknowledgementIsEmpty.selector);
+        vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
             IBCMsgs.MsgBatchAcks({
                 sourceChannel: channelId,
@@ -1121,7 +1119,7 @@ contract IBCPacketTests is Test {
         module.setAck(hex"");
         handler.recvPacket(msg_);
         bytes[] memory acks = new bytes[](nbPackets);
-        vm.expectRevert(IBCPacketLib.ErrAcknowledgementIsEmpty.selector);
+        vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
             IBCMsgs.MsgBatchAcks({
                 sourceChannel: channelId,

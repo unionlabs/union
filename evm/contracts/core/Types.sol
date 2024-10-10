@@ -52,3 +52,36 @@ struct IBCPacket {
     uint64 timeoutHeight;
     uint64 timeoutTimestamp;
 }
+
+library IBCErrors {
+    error ErrClientTypeAlreadyExists();
+    error ErrClientTypeNotFound();
+    error ErrInvalidProof();
+    error ErrInvalidConnectionState();
+    error ErrPortIdMustBeLowercase();
+    error ErrConnNotSingleHop();
+    error ErrConnNotSingleVersion();
+    error ErrUnsupportedFeature();
+    error ErrInvalidChannelState();
+    error ErrCounterpartyChannelNotEmpty();
+    error ErrInvalidChannelOrdering();
+    error ErrUnauthorized();
+    error ErrLatestTimestampNotFound();
+    error ErrTimeoutMustBeSet();
+    error ErrHeightTimeout();
+    error ErrTimestampTimeout();
+    error ErrPacketSequenceNextSequenceMismatch();
+    error ErrPacketSequenceAckSequenceMismatch();
+    error ErrAcknowledgementIsEmpty();
+    error ErrPacketNotReceived();
+    error ErrAcknowledgementAlreadyExists();
+    error ErrPacketCommitmentNotFound();
+    error ErrTimeoutHeightNotReached();
+    error ErrTimeoutTimestampNotReached();
+    error ErrNextSequenceMustBeLEQThanTimeoutSequence();
+    error ErrNotEnoughPackets();
+    error ErrCommittedAckNotPresent();
+    error ErrCannotIntentOrderedPacket();
+    error ErrClientNotFound();
+    error ErrModuleNotFound();
+}

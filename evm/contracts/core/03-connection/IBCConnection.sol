@@ -27,9 +27,6 @@ library IBCConnectionLib {
         uint32 counterpartyClientId,
         uint32 counterpartyConnectionId
     );
-
-    error ErrInvalidProof();
-    error ErrInvalidConnectionState();
 }
 
 /**
@@ -84,7 +81,7 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
                 expectedConnection
             )
         ) {
-            revert IBCConnectionLib.ErrInvalidProof();
+            revert IBCErrors.ErrInvalidProof();
         }
         commitConnection(connectionId, connection);
         emit IBCConnectionLib.ConnectionOpenTry(
@@ -105,7 +102,7 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
     ) external override {
         IBCConnection storage connection = connections[msg_.connectionId];
         if (connection.state != IBCConnectionState.Init) {
-            revert IBCConnectionLib.ErrInvalidConnectionState();
+            revert IBCErrors.ErrInvalidConnectionState();
         }
         IBCConnectionCounterparty memory expectedCounterparty =
         IBCConnectionCounterparty({
@@ -126,7 +123,7 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
                 expectedConnection
             )
         ) {
-            revert IBCConnectionLib.ErrInvalidProof();
+            revert IBCErrors.ErrInvalidProof();
         }
         connection.state = IBCConnectionState.Open;
         connection.counterparty.connectionId = msg_.counterpartyConnectionId;
@@ -148,7 +145,7 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
     ) external override {
         IBCConnection storage connection = connections[msg_.connectionId];
         if (connection.state != IBCConnectionState.TryOpen) {
-            revert IBCConnectionLib.ErrInvalidConnectionState();
+            revert IBCErrors.ErrInvalidConnectionState();
         }
         IBCConnectionCounterparty memory expectedCounterparty =
         IBCConnectionCounterparty({
@@ -169,7 +166,7 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
                 expectedConnection
             )
         ) {
-            revert IBCConnectionLib.ErrInvalidProof();
+            revert IBCErrors.ErrInvalidProof();
         }
         connection.state = IBCConnectionState.Open;
         commitConnection(msg_.connectionId, connection);

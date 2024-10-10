@@ -10,9 +10,6 @@ library IBCClientLib {
     event ClientRegistered(bytes32 clientType, address clientAddress);
     event ClientCreated(bytes32 clientType, uint32 clientId);
     event ClientUpdated(uint32 clientId, uint64 height);
-
-    error ErrClientTypeAlreadyExists();
-    error ErrClientTypeNotFound();
 }
 
 /**
@@ -27,7 +24,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         ILightClient client
     ) external override {
         if (address(clientRegistry[clientType]) != address(0)) {
-            revert IBCClientLib.ErrClientTypeAlreadyExists();
+            revert IBCErrors.ErrClientTypeAlreadyExists();
         }
         clientRegistry[clientType] = address(client);
         emit IBCClientLib.ClientRegistered(clientType, address(client));
@@ -41,7 +38,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
     ) external override returns (uint32) {
         address clientImpl = clientRegistry[msg_.clientType];
         if (clientImpl == address(0)) {
-            revert IBCClientLib.ErrClientTypeNotFound();
+            revert IBCErrors.ErrClientTypeNotFound();
         }
         uint32 clientId = generateClientIdentifier();
         clientTypes[clientId] = msg_.clientType;

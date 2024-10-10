@@ -6,11 +6,6 @@ import "../Types.sol";
 
 library IBCStoreLib {
     bytes32 public constant COMMITMENT_PREFIX = keccak256("ethibc");
-
-    error ErrClientNotFound();
-    error ErrModuleNotFound();
-    error ErrInvalidConnectionState();
-    error ErrInvalidChannelState();
 }
 
 abstract contract IBCStore {
@@ -52,7 +47,7 @@ abstract contract IBCStore {
     ) internal view returns (ILightClient) {
         address clientImpl = clientImpls[clientId];
         if (clientImpl == address(0)) {
-            revert IBCStoreLib.ErrClientNotFound();
+            revert IBCErrors.ErrClientNotFound();
         }
         return ILightClient(clientImpl);
     }
@@ -62,7 +57,7 @@ abstract contract IBCStore {
     ) internal view virtual returns (IIBCModule) {
         address module = channelOwner[channelId];
         if (module == address(0)) {
-            revert IBCStoreLib.ErrModuleNotFound();
+            revert IBCErrors.ErrModuleNotFound();
         }
         return IIBCModule(module);
     }
@@ -82,7 +77,7 @@ abstract contract IBCStore {
     ) internal view returns (uint32) {
         IBCConnection storage connection = connections[connectionId];
         if (connection.state != IBCConnectionState.Open) {
-            revert IBCStoreLib.ErrInvalidConnectionState();
+            revert IBCErrors.ErrInvalidConnectionState();
         }
         return connection.clientId;
     }
@@ -92,7 +87,7 @@ abstract contract IBCStore {
     ) internal view returns (IBCChannel storage) {
         IBCChannel storage channel = channels[channelId];
         if (channel.state != IBCChannelState.Open) {
-            revert IBCStoreLib.ErrInvalidChannelState();
+            revert IBCErrors.ErrInvalidChannelState();
         }
         return channel;
     }
