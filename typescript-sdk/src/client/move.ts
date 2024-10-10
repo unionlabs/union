@@ -17,7 +17,6 @@ export interface MoveClientParameters {
   chainId: MoveChainId
   account?: Account
   transport: HttpTransport
-  gasPrice?: { amount: string; denom: string }
 }
 
 /* trunk-ignore(biome/lint/nursery/useExplicitFunctionReturnType) */

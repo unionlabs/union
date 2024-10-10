@@ -61,28 +61,28 @@ export async function transferAssetFromMove({
     }
 
     // Setup the Aptos client with the correct network and base URL
-    const config = new AptosConfig({ fullnode: baseUrl, network: Network.CUSTOM })
-    const aptos = new Aptos(config)
+    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET });
+    const aptos = new Aptos(config);
 
     consola.info(`Using Aptos fullnode at: ${baseUrl}`)
 
     // Build the transaction using the IBC `send` function (similar to EVM)
     const transaction = await aptos.transaction.build.simple({
-      sender: account.accountAddress,
-      data: {
+    sender: account.accountAddress,
+    data: {
         // Call the `send` function in the relay contract
         function: `${relayContractAddress}::ibc::send`,
         functionArguments: [
-          sourceChannel,
-          Hex.fromHexString(receiver).toUint8Array(),
-          [denomAddress],
-          [amount],
-          memo,
-          9n,
-          BigInt(999_999_999) + 100n,
-          0n
+        sourceChannel,
+        Hex.fromHexString(receiver).toUint8Array(),
+        [denomAddress],
+        [amount],
+        memo,
+        9n,
+        BigInt(999_999_999) + 100n,
+        0n
         ]
-      }
+    }
     })
 
     consola.info("Transaction built successfully")
