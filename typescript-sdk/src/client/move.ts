@@ -9,7 +9,7 @@ import { createPfmMemo, getHubbleChainDetails } from "#pfm.ts"
 import { bech32AddressToHex } from "#convert.ts"
 
 // Define the list of supported Move chains
-export const moveChainId = ["move-testnet-1", "move-mainnet-1"] as const
+export const moveChainId = ["2"] as const
 
 export type MoveChainId = `${(typeof moveChainId)[number]}`
 

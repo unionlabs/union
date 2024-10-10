@@ -2,6 +2,7 @@ import { err, ok, Result } from "neverthrow"
 import { Account, AccountAuthenticator, Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
 import consola from "consola"
 import { raise } from "#utilities/index.ts"
+import { Hex } from "node_modules/@aptos-labs/ts-sdk/dist/common"
 
 export type TransferAssetFromMoveParams = {
   memo?: string
@@ -60,7 +61,7 @@ export async function transferAssetFromMove({
     }
 
     // Setup the Aptos client with the correct network and base URL
-    const config = new AptosConfig({ fullnode: baseUrl, network: Network.TESTNET })
+    const config = new AptosConfig({ fullnode: baseUrl, network: Network.CUSTOM })
     const aptos = new Aptos(config)
 
     consola.info(`Using Aptos fullnode at: ${baseUrl}`)
@@ -73,7 +74,7 @@ export async function transferAssetFromMove({
         function: `${relayContractAddress}::ibc::send`,
         functionArguments: [
           sourceChannel,
-          receiver.startsWith("0x") ? receiver : receiver,
+          Hex.fromHexString(receiver).toUint8Array(),
           [denomAddress],
           [amount],
           memo,
