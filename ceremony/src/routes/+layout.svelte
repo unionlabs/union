@@ -18,7 +18,7 @@ import "../styles/tailwind.css"
 
 let { children } = $props()
 
-let { user, contributor } = createState()
+let { user, contributor, terminal } = createState()
 
 $effect(() => {
   const {
@@ -39,6 +39,10 @@ $effect(() => {
   ) {
     axiom.ingest("monitor", [{ user: user.session?.user.id, type: "start_contribution" }])
     start()
+  }
+
+  if (contributor.contributionState === "contributed") {
+    terminal.setStep(10)
   }
 })
 
