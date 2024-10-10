@@ -15,7 +15,12 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "LICENSE", "README.md", "package.json"],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
   "scripts": {
     "build": "tsup --config='tsup.config.ts'",
     "typecheck": "tsc --project tsconfig.json --noEmit",
@@ -44,13 +49,14 @@
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.1.9",
-    "@types/node": "^22.5.5",
+    "@types/node": "^22.7.5",
     "consola": "^3.2.3",
     "cosmjs-types": "^0.9.0",
     "jsr": "^0.13.2",
+    "ts-node": "^10.9.2",
     "tsup": "^8.3.0",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.2",
+    "typescript": "^5.6.3",
     "vite-tsconfig-paths": "^5.0.1",
     "vitest": "^2.1.1"
   },
