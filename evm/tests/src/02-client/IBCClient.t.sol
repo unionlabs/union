@@ -33,7 +33,7 @@ contract IBCClientTests is Test {
         vm.expectEmit();
         emit IBCClientLib.ClientRegistered(typ, impl);
         handler.registerClient(typ, ILightClient(impl));
-        vm.expectRevert(IBCClientLib.ErrClientTypeAlreadyExists.selector);
+        vm.expectRevert(IBCErrors.ErrClientTypeAlreadyExists.selector);
         handler.registerClient(typ, ILightClient(impl));
     }
 

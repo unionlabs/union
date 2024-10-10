@@ -31,16 +31,6 @@ library IBCChannelLib {
     );
     event ChannelCloseInit(address portId, uint32 channelId);
     event ChannelCloseConfirm(address portId, uint32 channelId);
-
-    error ErrPortIdMustBeLowercase();
-    error ErrConnNotSingleHop();
-    error ErrConnNotSingleVersion();
-    error ErrInvalidConnectionState();
-    error ErrUnsupportedFeature();
-    error ErrInvalidChannelState();
-    error ErrCounterpartyChannelNotEmpty();
-    error ErrInvalidProof();
-    error ErrInvalidChannelOrdering();
 }
 
 /**
@@ -54,13 +44,13 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         IBCMsgs.MsgChannelOpenInit calldata msg_
     ) external override returns (uint32) {
         if (msg_.channel.state != IBCChannelState.Init) {
-            revert IBCChannelLib.ErrInvalidChannelState();
+            revert IBCErrors.ErrInvalidChannelState();
         }
         if (
             msg_.channel.ordering != IBCChannelOrder.Unordered
                 && msg_.channel.ordering != IBCChannelOrder.Ordered
         ) {
-            revert IBCChannelLib.ErrInvalidChannelOrdering();
+            revert IBCErrors.ErrInvalidChannelOrdering();
         }
         uint32 channelId = generateChannelIdentifier();
         channels[channelId] = msg_.channel;
@@ -94,10 +84,10 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.channel.ordering != IBCChannelOrder.Unordered
                 && msg_.channel.ordering != IBCChannelOrder.Ordered
         ) {
-            revert IBCChannelLib.ErrInvalidChannelOrdering();
+            revert IBCErrors.ErrInvalidChannelOrdering();
         }
         if (msg_.channel.state != IBCChannelState.TryOpen) {
-            revert IBCChannelLib.ErrInvalidChannelState();
+            revert IBCErrors.ErrInvalidChannelState();
         }
         uint32 clientId = ensureConnectionState(msg_.channel.connectionId);
         IBCChannelCounterparty memory expectedCounterparty =
@@ -118,7 +108,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
                 expectedChannel
             )
         ) {
-            revert IBCChannelLib.ErrInvalidProof();
+            revert IBCErrors.ErrInvalidProof();
         }
         uint32 channelId = generateChannelIdentifier();
         channels[channelId] = msg_.channel;
@@ -152,7 +142,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     ) external override {
         IBCChannel storage channel = channels[msg_.channelId];
         if (channel.state != IBCChannelState.Init) {
-            revert IBCChannelLib.ErrInvalidChannelState();
+            revert IBCErrors.ErrInvalidChannelState();
         }
         uint32 clientId = ensureConnectionState(channel.connectionId);
         IBCChannelCounterparty memory expectedCounterparty =
@@ -173,7 +163,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
                 expectedChannel
             )
         ) {
-            revert IBCChannelLib.ErrInvalidProof();
+            revert IBCErrors.ErrInvalidProof();
         }
         channel.state = IBCChannelState.Open;
         channel.version = msg_.counterpartyVersion;
@@ -201,7 +191,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     ) external override {
         IBCChannel storage channel = channels[msg_.channelId];
         if (channel.state != IBCChannelState.TryOpen) {
-            revert IBCChannelLib.ErrInvalidChannelState();
+            revert IBCErrors.ErrInvalidChannelState();
         }
         uint32 clientId = ensureConnectionState(channel.connectionId);
         IBCChannelCounterparty memory expectedCounterparty =
@@ -222,7 +212,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
                 expectedChannel
             )
         ) {
-            revert IBCChannelLib.ErrInvalidProof();
+            revert IBCErrors.ErrInvalidProof();
         }
         channel.state = IBCChannelState.Open;
         commitChannel(msg_.channelId, channel);
@@ -243,7 +233,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     ) external override {
         IBCChannel storage channel = channels[msg_.channelId];
         if (channel.state != IBCChannelState.Open) {
-            revert IBCChannelLib.ErrInvalidChannelState();
+            revert IBCErrors.ErrInvalidChannelState();
         }
         ensureConnectionState(channel.connectionId);
         channel.state = IBCChannelState.Closed;
@@ -261,7 +251,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
     ) external override {
         IBCChannel storage channel = channels[msg_.channelId];
         if (channel.state != IBCChannelState.Open) {
-            revert IBCChannelLib.ErrInvalidChannelState();
+            revert IBCErrors.ErrInvalidChannelState();
         }
         uint32 clientId = ensureConnectionState(channel.connectionId);
         IBCChannelCounterparty memory expectedCounterparty =
@@ -282,7 +272,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
                 expectedChannel
             )
         ) {
-            revert IBCChannelLib.ErrInvalidProof();
+            revert IBCErrors.ErrInvalidProof();
         }
         channel.state = IBCChannelState.Closed;
         commitChannel(msg_.channelId, channel);
