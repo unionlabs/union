@@ -1,12 +1,9 @@
 import { createClient, fallback, type HttpTransport } from "viem"
 import { err, type Result } from "neverthrow"
 import type { TransferAssetsParameters } from "./types.ts"
-import { cosmosChainId } from "./cosmos.ts"
 import { consola } from "scripts/logger"
 import { transferAssetFromMove } from "src/transfer/move.ts" // Import the Move transfer function
 import type { Account } from "@aptos-labs/ts-sdk"
-import { createPfmMemo, getHubbleChainDetails } from "#pfm.ts"
-import { bech32AddressToHex } from "#convert.ts"
 
 // Define the list of supported Move chains
 export const moveChainId = ["2"] as const
