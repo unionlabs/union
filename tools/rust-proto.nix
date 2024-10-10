@@ -39,11 +39,6 @@ _: {
                 workspace = true;
                 features = [ "prost-derive" ];
               };
-              ethers = {
-                workspace = true;
-                optional = true;
-                features = [ "rustls" ];
-              };
               serde = {
                 workspace = true;
                 features = [ "derive" ];

@@ -80,26 +80,3 @@ impl TryFrom<protos::ibc::core::channel::v1::Packet> for Packet {
         })
     }
 }
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug)]
-pub enum TryFromEthAbiPacketError {
-    SourceChannel(<ChannelIdValidator as Validate<String>>::Error),
-    DestinationChannel(<ChannelIdValidator as Validate<String>>::Error),
-}
-
-#[cfg(feature = "ethabi")]
-impl From<Packet> for contracts::ibc_handler::IbcCoreChannelV1PacketData {
-    fn from(value: Packet) -> Self {
-        Self {
-            sequence: value.sequence.get(),
-            source_port: value.source_port.to_string(),
-            source_channel: value.source_channel.to_string(),
-            destination_port: value.destination_port.to_string(),
-            destination_channel: value.destination_channel.to_string(),
-            data: value.data.into(),
-            timeout_height: value.timeout_height.into(),
-            timeout_timestamp: value.timeout_timestamp,
-        }
-    }
-}

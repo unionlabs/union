@@ -13,11 +13,6 @@ use crate::{
         version::consensus::Consensus,
     },
 };
-#[cfg(feature = "ethabi")]
-use crate::{
-    google::protobuf::timestamp::TryFromEthAbiTimestampError,
-    tendermint::types::block_id::TryFromEthAbiBlockIdError,
-};
 
 #[model(proto(raw(protos::tendermint::types::Header), into, from))]
 pub struct Header {
@@ -277,114 +272,6 @@ impl TryFrom<protos::tendermint::types::Header> for Header {
                 .proposer_address
                 .try_into()
                 .map_err(TryFromHeaderError::ProposerAddress)?,
-        })
-    }
-}
-
-#[cfg(feature = "ethabi")]
-impl From<Header> for contracts::glue::TendermintTypesHeaderData {
-    fn from(value: Header) -> Self {
-        Self {
-            version: value.version.into(),
-            chain_id: value.chain_id,
-            height: value.height.into(),
-            time: value.time.into(),
-            last_block_id: value.last_block_id.into(),
-            last_commit_hash: value.last_commit_hash.get().into(),
-            data_hash: value.data_hash.get().into(),
-            validators_hash: value.validators_hash.get().into(),
-            next_validators_hash: value.next_validators_hash.get().into(),
-            consensus_hash: value.consensus_hash.get().into(),
-            app_hash: value.app_hash.get().into(),
-            last_results_hash: value.last_results_hash.get().into(),
-            evidence_hash: value.evidence_hash.get().into(),
-            proposer_address: value.proposer_address.get().into(),
-        }
-    }
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, Clone, PartialEq)]
-pub enum TryFromEthAbiHeaderError {
-    LastBlockId(TryFromEthAbiBlockIdError),
-    Height(BoundedIntError<i64>),
-    Timestamp(TryFromEthAbiTimestampError),
-    LastCommitHash(InvalidLength),
-    DataHash(InvalidLength),
-    ValidatorsHash(InvalidLength),
-    NextValidatorsHash(InvalidLength),
-    ConsensusHash(InvalidLength),
-    AppHash(InvalidLength),
-    LastResultsHash(InvalidLength),
-    EvidenceHash(InvalidLength),
-    ProposerAddress(InvalidLength),
-}
-
-#[cfg(feature = "ethabi")]
-impl TryFrom<contracts::glue::TendermintTypesHeaderData> for Header {
-    type Error = TryFromEthAbiHeaderError;
-
-    fn try_from(value: contracts::glue::TendermintTypesHeaderData) -> Result<Self, Self::Error> {
-        Ok(Self {
-            version: value.version.into(),
-            chain_id: value.chain_id,
-            height: value
-                .height
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::Height)?,
-            time: value
-                .time
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::Timestamp)?,
-            last_block_id: value
-                .last_block_id
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::LastBlockId)?,
-            last_commit_hash: value
-                .last_commit_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::LastCommitHash)?,
-            data_hash: value
-                .data_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::DataHash)?,
-            validators_hash: value
-                .validators_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::ValidatorsHash)?,
-            next_validators_hash: value
-                .next_validators_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::NextValidatorsHash)?,
-            consensus_hash: value
-                .consensus_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::ConsensusHash)?,
-            app_hash: value
-                .app_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::AppHash)?,
-            last_results_hash: value
-                .last_results_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::LastResultsHash)?,
-            evidence_hash: value
-                .evidence_hash
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::EvidenceHash)?,
-            proposer_address: value
-                .proposer_address
-                .to_vec()
-                .try_into()
-                .map_err(TryFromEthAbiHeaderError::ProposerAddress)?,
         })
     }
 }

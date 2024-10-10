@@ -67,23 +67,3 @@ impl TryFrom<protos::cosmos::ics23::v1::CompressedBatchEntry> for CompressedBatc
         })
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<CompressedBatchEntry> for contracts::glue::CosmosIcs23V1CompressedBatchEntryData {
-    fn from(value: CompressedBatchEntry) -> Self {
-        match value {
-            CompressedBatchEntry::Exist(exist) => {
-                contracts::glue::CosmosIcs23V1CompressedBatchEntryData {
-                    exist: exist.into(),
-                    ..Default::default()
-                }
-            }
-            CompressedBatchEntry::Nonexist(nonexist) => {
-                contracts::glue::CosmosIcs23V1CompressedBatchEntryData {
-                    nonexist: nonexist.into(),
-                    ..Default::default()
-                }
-            }
-        }
-    }
-}

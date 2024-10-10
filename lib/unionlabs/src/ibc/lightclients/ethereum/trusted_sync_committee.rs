@@ -50,7 +50,7 @@ impl<C: SYNC_COMMITTEE_SIZE> ActiveSyncCommittee<C> {
     into,
     from
 ))]
-#[derive(Ssz)]
+// #[derive(Ssz)]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct TrustedSyncCommittee<C: SYNC_COMMITTEE_SIZE> {
     pub trusted_height: Height,

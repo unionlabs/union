@@ -173,7 +173,7 @@ pub enum IbcEvent {
         client_id: ClientId,
         // TODO: Figure out if there's a better type we can use than string
         client_type: String,
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         consensus_height: Height,
     },
 
@@ -182,7 +182,7 @@ pub enum IbcEvent {
         #[parse(ClientId::from_str)]
         client_id: ClientId,
         client_type: String,
-        #[parse(|s: &str| s.split(',').map(Height::from_str).collect::<Result<_, _>>())]
+        #[parse(|s: &str| s.split(',').map(Height::from_str_allow_zero_revision).collect::<Result<_, _>>())]
         consensus_heights: Vec<Height>,
     },
 
@@ -191,7 +191,7 @@ pub enum IbcEvent {
         #[parse(ClientId::from_str)]
         client_id: ClientId,
         client_type: String,
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         consensus_height: Height,
     },
 
@@ -309,7 +309,7 @@ pub enum IbcEvent {
         #[serde(with = "::serde_utils::hex_string")]
         #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -337,7 +337,7 @@ pub enum IbcEvent {
         #[serde(with = "::serde_utils::hex_string")]
         #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -363,8 +363,7 @@ pub enum IbcEvent {
         #[serde(with = "::serde_utils::hex_string")]
         #[debug(wrap = ::serde_utils::fmt::DebugAsHex)]
         packet_data_hex: Vec<u8>,
-        #[parse(Height::from_str)]
-        // TODO: Make this generic height instead of concrete
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -386,7 +385,7 @@ pub enum IbcEvent {
 
     #[event(tag = "acknowledge_packet", deprecated("packet_connection"))]
     AcknowledgePacket {
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -408,7 +407,7 @@ pub enum IbcEvent {
 
     #[event(tag = "timeout_packet")]
     TimeoutPacket {
-        #[parse(Height::from_str)]
+        #[parse(Height::from_str_allow_zero_revision)]
         packet_timeout_height: Height,
         #[parse(u64::from_str)]
         packet_timeout_timestamp: u64,
@@ -536,10 +535,7 @@ mod tests {
             let expected_event = UpdateClient {
                 client_id: "client_id".parse().unwrap(),
                 client_type: "client_type".to_string(),
-                consensus_heights: vec![Height {
-                    revision_number: 1,
-                    revision_height: 1,
-                }],
+                consensus_heights: vec![Height::new_with_revision(1, 1)],
             };
 
             assert_eq!(

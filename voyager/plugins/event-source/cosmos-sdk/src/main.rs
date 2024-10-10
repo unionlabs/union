@@ -150,10 +150,7 @@ impl Module {
 
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            revision_number: self.chain_revision,
-            revision_height: height,
-        }
+        Height::new_with_revision(self.chain_revision, height)
     }
 
     async fn client_type_of_checksum(&self, checksum: H256) -> RpcResult<Option<WasmClientType>> {
@@ -491,7 +488,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let response = self
                     .tm_client
                     .tx_search(
-                        format!("tx.height={}", height.revision_height),
+                        format!("tx.height={}", height.height()),
                         false,
                         page,
                         PER_PAGE_LIMIT,

@@ -2,10 +2,6 @@
 [dependencies.chrono]
 features  = ["alloc"]
 workspace = true
-[dependencies.ethers]
-features  = ["rustls"]
-optional  = true
-workspace = true
 [dependencies.pbjson-types]
 git = "https://github.com/recoord/pbjson"
 rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"
@@ -342,7 +338,6 @@ proto_full = [
 ## @@protoc_insertion_point(features)
 client      = ["tonic"]
 default     = ["proto_full", "std"]
-eth-abi     = ["ethers", "std"]
 json-schema = ["schemars"]
 std         = ["prost/std", "serde/std"]
 

@@ -216,6 +216,38 @@ pub mod hash_v2 {
         __marker: PhantomData<fn() -> E>,
     }
 
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding> From<alloy_core::primitives::Address> for Hash<20, E> {
+        fn from(value: alloy_core::primitives::Address) -> Self {
+            Self::new(value.0 .0)
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<E: Encoding> From<Hash<20, E>> for alloy_core::primitives::Address {
+        fn from(value: Hash<20, E>) -> Self {
+            Self::new(*value.get())
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<const BYTES: usize, E: Encoding> From<alloy_core::primitives::FixedBytes<BYTES>>
+        for Hash<BYTES, E>
+    {
+        fn from(value: alloy_core::primitives::FixedBytes<BYTES>) -> Self {
+            Self::new(value.0)
+        }
+    }
+
+    #[cfg(feature = "ethabi")]
+    impl<const BYTES: usize, E: Encoding> From<Hash<BYTES, E>>
+        for alloy_core::primitives::FixedBytes<BYTES>
+    {
+        fn from(value: Hash<BYTES, E>) -> Self {
+            Self(*value.get())
+        }
+    }
+
     impl<const BYTES: usize, E: Encoding> ssz::Ssz for Hash<BYTES, E>
     where
         typenum::Const<BYTES>: typenum::ToUInt,
@@ -564,62 +596,29 @@ pub mod hash_v2 {
     }
 
     #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> TryFrom<::ethers_core::types::Bytes> for Hash<BYTES, E> {
+    impl<E: Encoding, const BYTES: usize> TryFrom<::alloy_core::primitives::Bytes> for Hash<BYTES, E> {
         type Error = <Self as TryFrom<Vec<u8>>>::Error;
 
-        fn try_from(value: ::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+        fn try_from(value: ::alloy_core::primitives::Bytes) -> Result<Self, Self::Error> {
             Self::try_from(&value.0[..])
         }
     }
 
     #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> TryFrom<&'_ ::ethers_core::types::Bytes> for Hash<BYTES, E> {
+    impl<E: Encoding, const BYTES: usize> TryFrom<&'_ ::alloy_core::primitives::Bytes>
+        for Hash<BYTES, E>
+    {
         type Error = <Self as TryFrom<Vec<u8>>>::Error;
 
-        fn try_from(value: &::ethers_core::types::Bytes) -> Result<Self, Self::Error> {
+        fn try_from(value: &::alloy_core::primitives::Bytes) -> Result<Self, Self::Error> {
             Self::try_from(&value.0[..])
         }
     }
 
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiType for Hash<BYTES, E> {
-        fn param_type() -> ::ethers_core::abi::ParamType {
-            ::ethers_core::abi::ParamType::FixedBytes(BYTES)
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiArrayType for Hash<BYTES, E> {}
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiEncode for Hash<BYTES, E> {
-        fn encode(self) -> Vec<u8> {
-            self.get().encode()
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::AbiDecode for Hash<BYTES, E> {
-        fn decode(bytes: impl AsRef<[u8]>) -> Result<Self, ::ethers_core::abi::AbiError> {
-            <[u8; BYTES]>::decode(bytes).map(Self::new)
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::Tokenizable for Hash<BYTES, E> {
-        fn from_token(
-            token: ::ethers_core::abi::Token,
-        ) -> Result<Self, ::ethers_core::abi::InvalidOutputType> {
-            <[u8; BYTES]>::from_token(token).map(Self::new)
-        }
-
-        fn into_token(self) -> ::ethers_core::abi::Token {
-            self.get().into_token()
-        }
-    }
-
-    #[cfg(feature = "ethabi")]
-    impl<E: Encoding, const BYTES: usize> ::ethers_core::abi::TokenizableItem for Hash<BYTES, E> {}
+    // #[cfg(feature = "ethabi")]
+    // impl<E: Encoding, const BYTES: usize> ::alloy_core::sol_types::SolValue for Hash<BYTES, E> {
+    //     type SolType = Self;
+    // }
 
     #[cfg(test)]
     mod tests {

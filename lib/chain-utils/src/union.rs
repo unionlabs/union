@@ -1,17 +1,12 @@
-use std::{fmt::Debug, num::ParseIntError, sync::Arc};
+use std::{fmt::Debug, sync::Arc};
 
-use dashmap::DashMap;
-use ethers::prelude::k256::ecdsa;
 use serde::{Deserialize, Serialize};
-use tendermint_rpc::{Client, WebSocketClient, WebSocketClientUrl};
-use unionlabs::{
-    hash::H256, ibc::core::client::height::Height, id::ClientId, signer::CosmosSigner,
-    WasmClientType,
-};
+use tendermint_rpc::{WebSocketClient, WebSocketClientUrl};
+use unionlabs::{hash::H256, signer::CosmosSigner, WasmClientType};
 
 use crate::{
-    cosmos_sdk::{CosmosKeyring, CosmosSdkChain, CosmosSdkChainRpcs, GasConfig},
-    keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, KeyringEntry, SignerBalance},
+    cosmos_sdk::{CosmosKeyring, GasConfig},
+    keyring::{ChainKeyring, ConcurrentKeyring, KeyringConfig, SignerBalance},
 };
 
 #[derive(Debug, Clone)]
@@ -51,111 +46,5 @@ impl ChainKeyring for Union {
             self.grpc_url.clone(),
         )
         .await
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum UnionInitError {
-    #[error("tendermint rpc error")]
-    Tendermint(#[from] tendermint_rpc::Error),
-    #[error(
-        "unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`"
-    )]
-    ChainIdParse {
-        found: String,
-        #[source]
-        source: Option<ParseIntError>,
-    },
-}
-
-impl Union {
-    pub async fn new(config: Config) -> Result<Self, UnionInitError> {
-        let (tm_client, driver) = WebSocketClient::builder(config.ws_url)
-            .compat_mode(tendermint_rpc::client::CompatMode::V0_37)
-            .build()
-            .await?;
-
-        tokio::spawn(async move { driver.run().await });
-
-        let chain_id = tm_client.status().await?.node_info.network.to_string();
-
-        let chain_revision = chain_id
-            .split('-')
-            .last()
-            .ok_or_else(|| UnionInitError::ChainIdParse {
-                found: chain_id.clone(),
-                source: None,
-            })?
-            .parse()
-            .map_err(|err| UnionInitError::ChainIdParse {
-                found: chain_id.clone(),
-                source: Some(err),
-            })?;
-
-        Ok(Self {
-            // TODO: Deduplicate between this and cosmos.rs
-            keyring: CosmosKeyring::new(
-                config.keyring.name,
-                config
-                    .keyring
-                    .keys
-                    .into_iter()
-                    // TODO: Make this configurable or fetch it from the chain
-                    .map(|entry| {
-                        let signer = CosmosSigner::new(
-                            ecdsa::SigningKey::from_bytes(entry.value().as_slice().into())
-                                .expect("invalid private key"),
-                            "union".to_owned(),
-                        );
-
-                        KeyringEntry {
-                            name: entry.name(),
-                            address: signer.to_string(),
-                            signer,
-                        }
-                    }),
-            ),
-            tm_client,
-            chain_id,
-            chain_revision,
-            prover_endpoints: config.prover_endpoints,
-            grpc_url: config.grpc_url,
-            checksum_cache: Arc::new(DashMap::default()),
-            gas_config: config.gas_config,
-        })
-    }
-
-    #[must_use]
-    pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            revision_number: self.chain_revision,
-            revision_height: height,
-        }
-    }
-}
-
-pub type UnionClientId = ClientId;
-
-impl CosmosSdkChain for Union {
-    fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>> {
-        &self.checksum_cache
-    }
-}
-
-impl CosmosSdkChainRpcs for Union {
-    fn tm_chain_id(&self) -> String {
-        self.chain_id.clone()
-    }
-
-    fn gas_config(&self) -> &GasConfig {
-        &self.gas_config
-    }
-
-    fn grpc_url(&self) -> String {
-        self.grpc_url.clone()
-    }
-
-    fn tm_client(&self) -> &WebSocketClient {
-        &self.tm_client
     }
 }

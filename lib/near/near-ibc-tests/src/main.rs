@@ -327,7 +327,7 @@ async fn update_client(
         client_id: client_id.to_string(),
         client_msg: borsh::to_vec(&HeaderUpdate {
             new_state: convert_light_client_block_view(light_client_block),
-            trusted_height: latest_height.revision_height,
+            trusted_height: latest_height.height(),
             prev_state_root_proof,
             prev_state_root,
         })

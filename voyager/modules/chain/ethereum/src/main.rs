@@ -3,9 +3,6 @@
 use std::sync::Arc;
 
 use beacon_api::client::BeaconApiClient;
-use chain_utils::ethereum::IbcHandlerExt;
-use contracts::ibc_handler::IBCHandler;
-use ethers::providers::{Middleware, Provider, Ws};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -94,10 +91,7 @@ impl Module {
 
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
-        Height {
-            revision_number: ETHEREUM_REVISION_NUMBER,
-            revision_height: height,
-        }
+        Height::new(height)
     }
 
     fn ibc_handler(&self) -> IBCHandler<Provider<Ws>> {
@@ -119,9 +113,7 @@ impl Module {
 
     #[instrument(skip_all, fields(%path, %height))]
     pub async fn fetch_ibc_state(&self, path: Path, height: Height) -> Result<Value, BoxDynError> {
-        let execution_height = self
-            .execution_height_of_beacon_slot(height.revision_height)
-            .await;
+        let execution_height = self.execution_height_of_beacon_slot(height.height()).await;
 
         Ok(match path {
             Path::ClientState(path) => serde_json::to_value(
@@ -308,9 +300,7 @@ impl ChainModuleServer for Module {
     async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
         let location = ibc_commitment_key(&path.to_string(), IBC_HANDLER_COMMITMENTS_SLOT);
 
-        let execution_height = self
-            .execution_height_of_beacon_slot(at.revision_height)
-            .await;
+        let execution_height = self.execution_height_of_beacon_slot(at.height()).await;
 
         let proof = self
             .provider

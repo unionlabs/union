@@ -11,46 +11,25 @@ use crate::batch_header::{BatchHeaderV3, BatchHeaderV3DecodeError};
 
 pub mod batch_header;
 
-/// See <https://github.com/scroll-tech/scroll-contracts/blob/7bb751f9cf1b5fdde95297049e3407ce23d56ac6/src/mocks/ScrollChainMockFinalize.sol#L59>
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    ::ethers::contract::EthCall,
-    ::ethers::contract::EthDisplay,
-    Serialize,
-    Deserialize,
-)]
-#[ethcall(name = "finalizeBundle", abi = "finalizeBundle(bytes,bytes32,bytes32)")]
-pub struct FinalizeBundle {
-    #[serde(with = "::serde_utils::hex_string")]
-    pub batch_header: ethers::core::types::Bytes,
-    pub post_state_root: H256,
-    pub withdraw_root: H256,
-}
+alloy::sol! {
+    // #[allow(clippy::pub_underscore_fields)]
 
-/// See <https://github.com/scroll-tech/scroll-contracts/blob/7bb751f9cf1b5fdde95297049e3407ce23d56ac6/src/L1/rollup/ScrollChain.sol#L537>
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    ::ethers::contract::EthCall,
-    ::ethers::contract::EthDisplay,
-    Serialize,
-    Deserialize,
-)]
-#[ethcall(
-    name = "finalizeBundleWithProof",
-    abi = "finalizeBundleWithProof(bytes,bytes32,bytes32,bytes)"
-)]
-pub struct FinalizeBundleWithProof {
-    #[serde(with = "::serde_utils::hex_string")]
-    pub batch_header: ethers::core::types::Bytes,
-    pub post_state_root: H256,
-    pub withdraw_root: H256,
-    pub aggr_proof: ethers::core::types::Bytes,
+    /// See <https://github.com/scroll-tech/scroll-contracts/blob/7bb751f9cf1b5fdde95297049e3407ce23d56ac6/src/mocks/ScrollChainMockFinalize.sol#L59>
+    #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+    function finalizeBundle(
+        bytes calldata _batchHeader,
+        bytes32 _postStateRoot,
+        bytes32 _withdrawRoot
+    );
+
+    /// See <https://github.com/scroll-tech/scroll-contracts/blob/7bb751f9cf1b5fdde95297049e3407ce23d56ac6/src/L1/rollup/ScrollChain.sol#L537>
+    #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+    function finalizeBundleWithProof(
+        bytes calldata _batchHeader,
+        bytes32 _postStateRoot,
+        bytes32 _withdrawRoot,
+        bytes calldata _aggrProof
+    );
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]

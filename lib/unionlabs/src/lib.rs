@@ -127,7 +127,7 @@ pub enum TryFromEthAbiBytesError<E> {
     #[error("unable to convert from the raw ethers type")]
     TryFromEthAbi(#[source] E),
     #[error("unable to decode from raw ethabi bytes")]
-    Decode(ethers_core::abi::AbiError),
+    Decode(alloy_core::sol_types::Error),
 }
 
 /// An empty string. Will only parse/serialize to/from `""`.

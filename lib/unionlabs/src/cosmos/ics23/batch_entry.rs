@@ -57,19 +57,3 @@ impl From<BatchEntry> for protos::cosmos::ics23::v1::BatchEntry {
         }
     }
 }
-
-#[cfg(feature = "ethabi")]
-impl From<BatchEntry> for contracts::glue::CosmosIcs23V1BatchEntryData {
-    fn from(value: BatchEntry) -> Self {
-        match value {
-            BatchEntry::Exist(exist) => contracts::glue::CosmosIcs23V1BatchEntryData {
-                exist: exist.into(),
-                ..Default::default()
-            },
-            BatchEntry::Nonexist(nonexist) => contracts::glue::CosmosIcs23V1BatchEntryData {
-                nonexist: nonexist.into(),
-                ..Default::default()
-            },
-        }
-    }
-}

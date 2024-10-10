@@ -137,18 +137,14 @@ impl IbcClient for LineaLightClient {
     ) -> Result<Vec<Height>, IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
 
-        let updated_height = Height {
-            revision_number: client_state.latest_height.revision_number,
-            revision_height: header.l1_height.revision_height,
-        };
+        let updated_height = Height::new_with_revision(
+            client_state.latest_height.revision(),
+            header.l1_height.height(),
+        );
 
         if client_state.latest_height < header.l1_height {
             client_state.data.l1_latest_height = updated_height;
-            update_client_state::<Self>(
-                deps.branch(),
-                client_state,
-                updated_height.revision_height,
-            );
+            update_client_state::<Self>(deps.branch(), client_state, updated_height.height());
         }
 
         // Guaranteed to succeed as we previously verified the header
@@ -173,10 +169,8 @@ impl IbcClient for LineaLightClient {
         _client_message: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        client_state.data.frozen_height = Height {
-            revision_number: client_state.latest_height.revision_number,
-            revision_height: env.block.height,
-        };
+        client_state.data.frozen_height =
+            Height::new_with_revision(client_state.latest_height.revision_number, env.block.height);
         save_client_state::<Self>(deps, client_state);
         Ok(())
     }

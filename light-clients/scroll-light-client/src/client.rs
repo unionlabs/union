@@ -136,18 +136,14 @@ impl IbcClient for ScrollLightClient {
 
         let timestamp = batch_header.last_block_timestamp;
 
-        let updated_height = Height {
-            revision_number: client_state.latest_height.revision_number,
-            revision_height: header.l1_height.revision_height,
-        };
+        let updated_height = Height::new_with_revision(
+            client_state.latest_height.revision(),
+            header.l1_height.height(),
+        );
 
         if client_state.latest_height < header.l1_height {
-            client_state.data.latest_slot = updated_height.revision_height;
-            update_client_state::<Self>(
-                deps.branch(),
-                client_state,
-                updated_height.revision_height,
-            );
+            client_state.data.latest_slot = updated_height.height();
+            update_client_state::<Self>(deps.branch(), client_state, updated_height.height());
         }
 
         let consensus_state = WasmConsensusState {
@@ -168,10 +164,8 @@ impl IbcClient for ScrollLightClient {
         _client_message: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let mut client_state: WasmClientState = read_client_state(deps.as_ref())?;
-        client_state.data.frozen_height = Height {
-            revision_number: client_state.latest_height.revision_number,
-            revision_height: env.block.height,
-        };
+        client_state.data.frozen_height =
+            Height::new_with_revision(client_state.latest_height.revision(), env.block.height);
         save_client_state::<Self>(deps, client_state);
         Ok(())
     }
@@ -366,15 +360,9 @@ mod test {
     };
     use crate::errors::Error;
 
-    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 0,
-        revision_height: 950,
-    };
+    const INITIAL_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(0, 950);
 
-    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height {
-        revision_number: 0,
-        revision_height: 970,
-    };
+    const INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT: Height = Height::new_with_revision(0, 970);
 
     #[allow(clippy::type_complexity)]
     fn mock_dependencies(
@@ -458,14 +446,14 @@ mod test {
         let subject_client_state = create_client_state(
             "client_1".to_string(),
             U256::from(1),
-            INITIAL_CONSENSUS_STATE_HEIGHT.revision_height,
+            INITIAL_CONSENSUS_STATE_HEIGHT.height(),
             INITIAL_CONSENSUS_STATE_HEIGHT,
             Height::default(),
         );
         let substitute_client_state = create_client_state(
             "client_1".to_string(),
             U256::from(1),
-            INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT.revision_height,
+            INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT.height(),
             INITIAL_SUBSTITUTE_CONSENSUS_STATE_HEIGHT,
             Height::default(),
         );
@@ -504,10 +492,7 @@ mod test {
             substitute_consensus_state,
         ) = prepare_migrate_tests();
 
-        subject_client_state.data.frozen_height = Height {
-            revision_number: 0,
-            revision_height: 1000,
-        };
+        subject_client_state.data.frozen_height = Height::new_with_revision(0, 1000);
 
         substitute_client_state.data.frozen_height = Height::default();
 
@@ -524,10 +509,7 @@ mod test {
 
         assert_eq!(
             original_subject_client_state.data.frozen_height,
-            Height {
-                revision_number: 0,
-                revision_height: 1000,
-            }
+            Height::new_with_revision(0, 1000)
         );
 
         // Perform migration
@@ -562,10 +544,7 @@ mod test {
         ) = prepare_migrate_tests();
 
         // Make the substitute client frozen
-        substitute_client_state.data.frozen_height = Height {
-            revision_number: 0,
-            revision_height: 100,
-        };
+        substitute_client_state.data.frozen_height = Height::new_with_revision(0, 100);
 
         // Save the states into the mock storage
         save_states_to_migrate_store(
@@ -622,10 +601,7 @@ mod test {
         ) = prepare_migrate_tests();
 
         // modify latest height to a height where the consensus state is not found
-        substitute_client_state.latest_height = Height {
-            revision_number: 0,
-            revision_height: 15,
-        };
+        substitute_client_state.latest_height = Height::new_with_revision(0, 15);
 
         // Save only the client states and subject consensus state (skip substitute consensus state)
         save_states_to_migrate_store(

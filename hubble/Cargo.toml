@@ -33,7 +33,6 @@ clap               = { workspace = true, features = ["derive", "env", "error-con
 color-eyre         = { workspace = true, features = ["default"] }
 cometbft-rpc       = { workspace = true }
 const-hex          = "1.12.0"
-contracts          = { workspace = true }
 futures            = { workspace = true, features = ["async-await"] }
 hex                = { workspace = true }
 itertools          = "0.13.0"
