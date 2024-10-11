@@ -1,7 +1,11 @@
-import { err, type Result } from "neverthrow"
+import { err, ok, type Result } from "neverthrow"
 import type { Account } from "@aptos-labs/ts-sdk"
 import type { TransferAssetsParameters } from "./types.ts"
-import { transferAssetFromMove } from "../transfer/move.ts"
+import {
+  moveSameChainTransfer,
+  transferAssetFromMove,
+  transferAssetFromMoveSimulate
+} from "../transfer/move.ts"
 import { createClient, fallback, type HttpTransport } from "viem"
 
 // Define the list of supported Move chains
@@ -23,14 +27,26 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
       amount,
       receiver,
       denomAddress,
-      destinationChainId: _destinationChainId,
+      destinationChainId,
       relayContractAddress = "0x52570c4292730a9d81aead22ac75d4bfca3f23d788f679ce72a11ca3fa7d6762",
-      account = parameters.account
+      account = parameters.account,
+      simulate = true
     }: TransferAssetsParameters<MoveChainId>): Promise<Result<string, Error>> => {
       const rpcUrl = parameters.transport({}).value?.url
 
       if (!rpcUrl) return err(new Error("No Move RPC URL found"))
       if (!account) return err(new Error("No Move account found"))
+      if (parameters.chainId === destinationChainId) {
+        const transfer = await moveSameChainTransfer({
+          amount,
+          account,
+          receiver,
+          denomAddress,
+          baseUrl: rpcUrl
+        })
+        if (transfer.isErr()) return err(transfer.error)
+        return ok(transfer.value)
+      }
 
       // const chainDetails = await getHubbleChainDetails({
       //   destinationChainId,
@@ -68,11 +84,64 @@ export const createMoveClient = (parameters: MoveClientParameters) =>
         denomAddress,
         sourceChannel,
         relayContractAddress,
-        baseUrl: rpcUrl // Pass the fetched RPC URL here as the base URL
+        baseUrl: rpcUrl,
+        simulate
       })
       if (result.isErr()) {
         return err(new Error(`Move transfer failed: ${result.error.message}`))
       }
       return result // Return the success or error result from transferAssetFromMove
+    },
+    simulateTransaction: async ({
+      memo,
+      amount,
+      receiver,
+      denomAddress,
+      destinationChainId: _destinationChainId,
+      relayContractAddress = "0x52570c4292730a9d81aead22ac75d4bfca3f23d788f679ce72a11ca3fa7d6762",
+      account = parameters.account
+    }: TransferAssetsParameters<MoveChainId>): Promise<Result<string, Error>> => {
+      const rpcUrl = parameters.transport({}).value?.url
+
+      if (!rpcUrl) return err(new Error("No Move RPC URL found"))
+      if (!account) return err(new Error("No Move account found"))
+      // const chainDetails = await getHubbleChainDetails({
+      //   destinationChainId,
+      //   sourceChainId: parameters.chainId
+      // })
+
+      // if (chainDetails.isErr()) return err(chainDetails.error)
+
+      // if (chainDetails.value.transferType === "pfm") {
+      //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
+      //   const pfmMemo = createPfmMemo({
+      //     channel: chainDetails.value.destinationChannel,
+      //     port: chainDetails.value.port,
+      //     receiver: cosmosChainId.includes(destinationChainId)
+      //       ? bech32AddressToHex({ address: receiver })
+      //       : receiver
+      //   })
+
+      //   if (pfmMemo.isErr()) return err(pfmMemo.error)
+      //   memo = pfmMemo.value
+      // }
+
+      // const sourceChannel = chainDetails.value.sourceChannel
+      // const relayContractAddress = chainDetails.value.relayContractAddress
+      const sourceChannel = "channel-0"
+      const result = await transferAssetFromMoveSimulate({
+        memo,
+        amount,
+        account,
+        receiver,
+        denomAddress,
+        sourceChannel,
+        relayContractAddress,
+        baseUrl: rpcUrl
+      })
+      if (!result) {
+        return err(new Error(`Move transfer failed`))
+      }
+      return result
     }
   }))
