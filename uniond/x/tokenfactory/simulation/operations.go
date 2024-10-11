@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/store"
 
 	banktypes "cosmossdk.io/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
@@ -30,10 +29,10 @@ const (
 )
 
 type TokenfactoryKeeper interface {
-	GetParams(ctx sdk.Context) (params types.Params)
-	GetAuthorityMetadata(ctx sdk.Context, denom string) (types.DenomAuthorityMetadata, error)
-	GetAllDenomsIterator(ctx sdk.Context) store.Iterator
-	GetDenomsFromCreator(ctx sdk.Context, creator string) []string
+	GetParams(ctx context.Context) (params types.Params)
+	GetAuthorityMetadata(ctx context.Context, denom string) (types.DenomAuthorityMetadata, error)
+	GetAllDenomsIterator(ctx context.Context) store.Iterator
+	GetDenomsFromCreator(ctx context.Context, creator string) []string
 }
 
 type BankKeeper interface {
@@ -149,7 +148,7 @@ func SimulateMsgSetDenomMetadata(
 ) simtypes.Operation {
 	return func(
 		r *rand.Rand,
-		app *baseapp.BaseApp,
+		app simtypes.AppEntrypoint,
 		ctx sdk.Context,
 		accs []simtypes.Account,
 		chainID string,
@@ -203,7 +202,7 @@ func SimulateMsgChangeAdmin(
 ) simtypes.Operation {
 	return func(
 		r *rand.Rand,
-		app *baseapp.BaseApp,
+		app simtypes.AppEntrypoint,
 		ctx sdk.Context,
 		accs []simtypes.Account,
 		chainID string,
@@ -253,7 +252,7 @@ func SimulateMsgBurn(
 ) simtypes.Operation {
 	return func(
 		r *rand.Rand,
-		app *baseapp.BaseApp,
+		app simtypes.AppEntrypoint,
 		ctx sdk.Context,
 		accs []simtypes.Account,
 		chainID string,
@@ -307,7 +306,7 @@ func SimulateMsgMint(
 ) simtypes.Operation {
 	return func(
 		r *rand.Rand,
-		app *baseapp.BaseApp,
+		app simtypes.AppEntrypoint,
 		ctx sdk.Context,
 		accs []simtypes.Account,
 		chainID string,
@@ -349,7 +348,7 @@ func SimulateMsgMint(
 func SimulateMsgCreateDenom(tfKeeper TokenfactoryKeeper, ak types.AccountKeeper, bk BankKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand,
-		app *baseapp.BaseApp,
+		app simtypes.AppEntrypoint,
 		ctx sdk.Context,
 		accs []simtypes.Account,
 		chainID string,
@@ -379,7 +378,7 @@ func SimulateMsgCreateDenom(tfKeeper TokenfactoryKeeper, ak types.AccountKeeper,
 // BuildOperationInput helper to build object
 func BuildOperationInput(
 	r *rand.Rand,
-	app *baseapp.BaseApp,
+	app simtypes.AppEntrypoint,
 	ctx sdk.Context,
 	msg interface {
 		sdk.Msg
