@@ -5,6 +5,7 @@ import { sleep } from "$lib/utils/utils.ts"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
 import { axiom } from "$lib/utils/axiom.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import { COMMAND } from "$lib/constants"
 
 type Props = {
   change: () => void
@@ -14,9 +15,6 @@ const { terminal } = getState()
 let { change }: Props = $props()
 
 let showButtons = $state(true)
-
-let command =
-  "mkdir -p ceremony && docker pull ghcr.io/unionlabs/union/mpc-client:v1.0 && docker run -v $(pwd)/ceremony:/ceremony -w /ceremony -p 4919:4919 --rm -it ghcr.io/unionlabs/union/mpc-client:v1.0"
 
 onMount(() => {
   terminal.setStep(3)
@@ -38,7 +36,7 @@ onMount(() => {
       text: "5. Paste the following command in Terminal to start the MPC client:"
     },
     { text: "---", duplicate: true },
-    { text: command },
+    { text: COMMAND },
     { text: "---", duplicate: true },
     {
       text: "Once the MPC client is running you can return to this page."
@@ -59,7 +57,7 @@ const copy = async () => {
   showButtons = false
   terminal.updateHistory({ text: "Copying command...", duplicate: true })
   await sleep(500)
-  await navigator.clipboard.writeText(command)
+  await navigator.clipboard.writeText(COMMAND)
   terminal.updateHistory({ text: "Command copied!", duplicate: true })
   await sleep(500)
   showButtons = true
