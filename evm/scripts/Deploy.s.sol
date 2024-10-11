@@ -12,6 +12,7 @@ import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClient.sol";
 import {CosmosInCosmosClient} from
     "../contracts/clients/CosmosInCosmosClient.sol";
+import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
 import "../contracts/lib/Hex.sol";
@@ -19,30 +20,20 @@ import "../contracts/lib/Hex.sol";
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibString.sol";
 
-bytes constant DEPLOYER_BYTECODE_SOLIDITY_8_23_f704f362 =
-    hex"6080806040523461001657610387908161001c8239f35b600080fdfe608060405260048036101561001357600080fd5b6000803560e01c63d83c11381461002957600080fd5b346102495760607ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc3601126102495767ffffffffffffffff90823582811161024557602390366023820112156102415761008c90369060248188013591016102bc565b6024359084821161023d573660238301121561023d578186013594851161023d57366024868401011161023d576040519060808201604052600f936f30313233343536373839616263646566600f5260028301946028865286604a8501523360601b906001885b808001870160228d86841a9086821651898501531c5191015301926014841461011f57926001906100f3565b505050506101a661017a916101b4956130786002825101915284526040519283916001610150602085018098610326565b7f2f0000000000000000000000000000000000000000000000000000000000000081520190610326565b037fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0810183528261024c565b5190209360243692016102bc565b916f67363d3d37363d34f03d5260086018f3825260108083f5918215610231578180918460145261d694825260016034536017601e209460208251920190604435905af11561022557813b156102255760208273ffffffffffffffffffffffffffffffffffffffff60405191168152f35b6319b991a8915052601cfd5b8363301164258352601cfd5b8380fd5b8280fd5b5080fd5b80fd5b90601f7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0910116810190811067ffffffffffffffff82111761028d57604052565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b92919267ffffffffffffffff821161028d576040519161030460207fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe0601f840116018461024c565b829481845281830111610321578281602093846000960137010152565b600080fd5b9081519160005b83811061033e575050016000815290565b806020809284010151818501520161032d56fea26469706673582212201caa34dba5b3bdaed3ef803daa8e62d2b80d0641a0b29ee824018fad5f2e76cd64736f6c63430008170033";
-/* contract Deployer { */
-/*     using LibString for *; */
+contract Deployer {
+    using LibString for *;
 
-/*     function deploy( */
-/*         string memory salt, */
-/*         bytes calldata creationCode, */
-/*         uint256 value */
-/*     ) public returns (address) { */
-/*         return CREATE3.deploy( */
-/*             keccak256(abi.encodePacked(msg.sender.toHexString(), "/", salt)), */
-/*             creationCode, */
-/*             value */
-/*         ); */
-/*     } */
-/* } */
-
-interface Deployer {
     function deploy(
         string memory salt,
         bytes calldata creationCode,
         uint256 value
-    ) external returns (address);
+    ) public returns (address) {
+        return CREATE3.deployDeterministic(
+            value,
+            creationCode,
+            keccak256(abi.encodePacked(msg.sender.toHexString(), "/", salt))
+        );
+    }
 }
 
 library LIB {
@@ -86,12 +77,7 @@ library Protocols {
 
 abstract contract UnionBase is Script {
     function deployDeployer() internal returns (Deployer) {
-        bytes memory bytecode = DEPLOYER_BYTECODE_SOLIDITY_8_23_f704f362;
-        Deployer deployer;
-        assembly {
-            deployer := create(0, add(bytecode, 0x20), mload(bytecode))
-        }
-        return deployer;
+        return new Deployer();
     }
 }
 
@@ -250,6 +236,14 @@ contract DeployIBC is UnionScript {
         handler.registerClient(LightClients.COMETBLS, client);
 
         vm.stopBroadcast();
+
+        console.log("Deployer: ", address(deployer));
+        console.log("Sender: ", vm.addr(privateKey));
+        console.log("IBCHandler: ", address(handler));
+        console.log("CometblsClient: ", address(client));
+        console.log("UCS01: ", address(relay));
+        console.log("UCS02: ", address(nft));
+        console.log("Multicall: ", address(multicall));
     }
 }
 
@@ -302,7 +296,7 @@ contract GetDeployed is Script {
     function getDeployed(
         string memory salt
     ) internal view returns (address) {
-        return CREATE3.getDeployed(
+        return CREATE3.predictDeterministicAddress(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
         );
@@ -345,8 +339,8 @@ contract DryUpgradeUCS01 is Script {
 
     function getDeployed(
         string memory salt
-    ) internal returns (address) {
-        return CREATE3.getDeployed(
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
         );
@@ -376,8 +370,8 @@ contract UpgradeUCS01 is Script {
 
     function getDeployed(
         string memory salt
-    ) internal returns (address) {
-        return CREATE3.getDeployed(
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
         );
@@ -410,8 +404,8 @@ contract DryUpgradeIBCHandler is Script {
 
     function getDeployed(
         string memory salt
-    ) internal returns (address) {
-        return CREATE3.getDeployed(
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
         );
@@ -443,8 +437,8 @@ contract UpgradeIBCHandler is Script {
 
     function getDeployed(
         string memory salt
-    ) internal returns (address) {
-        return CREATE3.getDeployed(
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
             keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
             deployer
         );
