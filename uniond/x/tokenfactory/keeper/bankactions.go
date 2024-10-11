@@ -58,5 +58,5 @@ func (k Keeper) burnFrom(ctx sdk.Context, amount sdk.Coin, burnFrom string) erro
 		return err
 	}
 
-	return k.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(amount))
+	return k.bankKeeper.BurnCoins(ctx, addr.Bytes(), sdk.NewCoins(amount))
 }
