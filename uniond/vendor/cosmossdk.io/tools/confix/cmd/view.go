@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
@@ -12,10 +13,10 @@ import (
 )
 
 func ViewCommand() *cobra.Command {
-	flagOutputFomat := "output-format"
+	flagOutputFormat := "output-format"
 
 	cmd := &cobra.Command{
-		Use:   "view [config]",
+		Use:   "view <config>",
 		Short: "View the config file",
 		Long:  "View the config file. The [config] argument must be the path of the file when using the `confix` tool standalone, otherwise it must be the name of the config file without the .toml extension.",
 		Args:  cobra.ExactArgs(1),
@@ -24,7 +25,7 @@ func ViewCommand() *cobra.Command {
 
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			if clientCtx.HomeDir != "" {
-				filename = fmt.Sprintf("%s/config/%s.toml", clientCtx.HomeDir, filename)
+				filename = filepath.Join(clientCtx.HomeDir, "config", filename+tomlSuffix)
 			}
 
 			file, err := os.ReadFile(filename)
@@ -32,7 +33,7 @@ func ViewCommand() *cobra.Command {
 				return err
 			}
 
-			if format, _ := cmd.Flags().GetString(flagOutputFomat); format == "toml" {
+			if format, _ := cmd.Flags().GetString(flagOutputFormat); format == "toml" {
 				cmd.Println(string(file))
 				return nil
 			}
@@ -49,7 +50,7 @@ func ViewCommand() *cobra.Command {
 	}
 
 	// output flag
-	cmd.Flags().String(flagOutputFomat, "toml", "Output format (json|toml)")
+	cmd.Flags().String(flagOutputFormat, "toml", "Output format (json|toml)")
 
 	return cmd
 }

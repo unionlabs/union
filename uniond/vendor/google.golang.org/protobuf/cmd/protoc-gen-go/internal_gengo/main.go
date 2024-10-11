@@ -41,6 +41,7 @@ var GenerateVersionMarkers = true
 // Standard library dependencies.
 const (
 	base64Package  = protogen.GoImportPath("encoding/base64")
+	jsonPackage    = protogen.GoImportPath("encoding/json")
 	mathPackage    = protogen.GoImportPath("math")
 	reflectPackage = protogen.GoImportPath("reflect")
 	sortPackage    = protogen.GoImportPath("sort")
@@ -75,11 +76,14 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 	g := gen.NewGeneratedFile(filename, file.GoImportPath)
 	f := newFileInfo(file)
 
-	genStandaloneComments(g, f, int32(genid.FileDescriptorProto_Syntax_field_number))
-	genGeneratedHeader(gen, g, f)
-	genStandaloneComments(g, f, int32(genid.FileDescriptorProto_Package_field_number))
+	var packageDoc protogen.Comments
+	if !gen.InternalStripForEditionsDiff() {
+		genStandaloneComments(g, f, int32(genid.FileDescriptorProto_Syntax_field_number))
+		genGeneratedHeader(gen, g, f)
+		genStandaloneComments(g, f, int32(genid.FileDescriptorProto_Package_field_number))
 
-	packageDoc := genPackageKnownComment(f)
+		packageDoc = genPackageKnownComment(f)
+	}
 	g.P(packageDoc, "package ", f.GoPackageName)
 	g.P()
 
@@ -105,7 +109,23 @@ func GenerateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 	}
 	genExtensions(g, f)
 
-	genReflectFileDescriptor(gen, g, f)
+	// The descriptor contains a lot of information about the syntax which is
+	// quite different between the proto2/3 version of a file and the equivalent
+	// editions version. For example, when a proto3 file is translated from
+	// proto3 to editions every field in that file that is marked optional in
+	// proto3 will have a features.field_presence option set.
+	// Another problem is that the descriptor contains implementation details
+	// that are not relevant for the semantic. For example, proto3 optional
+	// fields are implemented as oneof fields with one case. The descriptor
+	// contains different information about oneofs. If the file is translated
+	// to editions it no longer is treated as a oneof with one case and thus
+	// none of the oneof specific information is generated.
+	// To be able to compare the descriptor before and after translation of the
+	// associated proto file, we would need to trim many parts. This would lead
+	// to a brittle implementation in case the translation ever changes.
+	if !g.InternalStripForEditionsDiff() {
+		genReflectFileDescriptor(gen, g, f)
+	}
 
 	return g
 }
@@ -517,11 +537,9 @@ func genMessageBaseMethods(g *protogen.GeneratedFile, f *fileInfo, m *messageInf
 	// Reset method.
 	g.P("func (x *", m.GoIdent, ") Reset() {")
 	g.P("*x = ", m.GoIdent, "{}")
-	g.P("if ", protoimplPackage.Ident("UnsafeEnabled"), " {")
 	g.P("mi := &", messageTypesVarName(f), "[", f.allMessagesByPtr[m], "]")
 	g.P("ms := ", protoimplPackage.Ident("X"), ".MessageStateOf(", protoimplPackage.Ident("Pointer"), "(x))")
 	g.P("ms.StoreMessageInfo(mi)")
-	g.P("}")
 	g.P("}")
 	g.P()
 

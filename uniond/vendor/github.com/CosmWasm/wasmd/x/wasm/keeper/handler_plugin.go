@@ -299,7 +299,7 @@ func NewBurnCoinMessageHandler(burner types.Burner) MessageHandlerFunc {
 			if err := burner.SendCoinsFromAccountToModule(ctx, contractAddr, types.ModuleName, coins); err != nil {
 				return nil, nil, nil, errorsmod.Wrap(err, "transfer to module")
 			}
-			if err := burner.BurnCoins(ctx, types.ModuleName, coins); err != nil {
+			if err := burner.BurnCoins(ctx, []byte(types.ModuleName), coins); err != nil {
 				return nil, nil, nil, errorsmod.Wrap(err, "burn coins")
 			}
 			moduleLogger(ctx).Info("Burned", "amount", coins)

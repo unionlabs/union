@@ -10,6 +10,11 @@ type KVStoreService interface {
 	OpenKVStore(context.Context) KVStore
 }
 
+// KVStoreServiceFactory is a function that creates a new KVStoreService.
+// It can be used to override the default KVStoreService bindings for cases
+// where an application must supply a custom stateful backend.
+type KVStoreServiceFactory func([]byte) KVStoreService
+
 // MemoryStoreService represents a unique, non-forgeable handle to a memory-backed
 // KVStore. It should be provided as a module-scoped dependency by the runtime
 // module being used to build the app.

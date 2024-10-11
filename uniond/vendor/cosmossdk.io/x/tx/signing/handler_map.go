@@ -53,7 +53,7 @@ func (h *HandlerMap) DefaultMode() signingv1beta1.SignMode {
 func (h *HandlerMap) GetSignBytes(ctx context.Context, signMode signingv1beta1.SignMode, signerData SignerData, txData TxData) ([]byte, error) {
 	handler, ok := h.signModeHandlers[signMode]
 	if !ok {
-		return nil, fmt.Errorf("unsuppored sign mode %s", signMode)
+		return nil, fmt.Errorf("unsupported sign mode %s", signMode)
 	}
 
 	return handler.GetSignBytes(ctx, signerData, txData)

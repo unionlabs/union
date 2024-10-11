@@ -248,9 +248,9 @@ func (c *Context) makeGetSignersFunc(descriptor protoreflect.MessageDescriptor) 
 							arr = append(arr, res...)
 						}
 						return arr, nil
+					} else {
+						return fieldGetter(msg.Get(childField).Message(), depth+1)
 					}
-
-					return fieldGetter(msg.Get(childField).Message(), depth+1)
 				case childField.IsMap() || childField.HasOptionalKeyword():
 					return nil, fmt.Errorf("cosmos.msg.v1.signer field %s in message %s must not be a map or optional", signerFieldName, desc.FullName())
 				case childField.Kind() == protoreflect.StringKind:
@@ -268,14 +268,14 @@ func (c *Context) makeGetSignersFunc(descriptor protoreflect.MessageDescriptor) 
 							res = append(res, addrBz)
 						}
 						return res, nil
+					} else {
+						addrStr := msg.Get(childField).String()
+						addrBz, err := addrCdc.StringToBytes(addrStr)
+						if err != nil {
+							return nil, err
+						}
+						return [][]byte{addrBz}, nil
 					}
-
-					addrStr := msg.Get(childField).String()
-					addrBz, err := addrCdc.StringToBytes(addrStr)
-					if err != nil {
-						return nil, err
-					}
-					return [][]byte{addrBz}, nil
 				}
 				return nil, fmt.Errorf("unexpected field type %s for field %s in message %s, only string and message type are supported",
 					childField.Kind(), signerFieldName, desc.FullName())

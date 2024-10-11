@@ -337,7 +337,7 @@ func (i IBCHandler) OnTimeoutPacket(ctx context.Context, packet channeltypes.Pac
 // IBCSendPacketCallback implements the IBC Callbacks ContractKeeper interface
 // see https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-008-app-caller-cbs.md#contractkeeper
 func (i IBCHandler) IBCSendPacketCallback(
-	cachedCtx sdk.Context,
+	cachedCtx context.Context,
 	sourcePort string,
 	sourceChannel string,
 	timeoutHeight clienttypes.Height,
@@ -358,7 +358,7 @@ func (i IBCHandler) IBCSendPacketCallback(
 // IBCOnAcknowledgementPacketCallback implements the IBC Callbacks ContractKeeper interface
 // see https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-008-app-caller-cbs.md#contractkeeper
 func (i IBCHandler) IBCOnAcknowledgementPacketCallback(
-	cachedCtx sdk.Context,
+	cachedCtx context.Context,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
@@ -388,7 +388,7 @@ func (i IBCHandler) IBCOnAcknowledgementPacketCallback(
 // IBCOnTimeoutPacketCallback implements the IBC Callbacks ContractKeeper interface
 // see https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-008-app-caller-cbs.md#contractkeeper
 func (i IBCHandler) IBCOnTimeoutPacketCallback(
-	cachedCtx sdk.Context,
+	cachedCtx context.Context,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 	contractAddress,
@@ -415,7 +415,7 @@ func (i IBCHandler) IBCOnTimeoutPacketCallback(
 // IBCReceivePacketCallback implements the IBC Callbacks ContractKeeper interface
 // see https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-008-app-caller-cbs.md#contractkeeper
 func (i IBCHandler) IBCReceivePacketCallback(
-	cachedCtx sdk.Context,
+	cachedCtx context.Context,
 	packet ibcexported.PacketI,
 	ack ibcexported.Acknowledgement,
 	contractAddress string,

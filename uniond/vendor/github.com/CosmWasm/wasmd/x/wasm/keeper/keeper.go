@@ -1455,7 +1455,7 @@ func (b VestingCoinBurner) CleanupExistingAccount(ctx context.Context, existingA
 	if err := b.bank.SendCoinsFromAccountToModule(ctx, existingAcc.GetAddress(), types.ModuleName, coinsToBurn); err != nil {
 		return false, errorsmod.Wrap(err, "prune account balance")
 	}
-	if err := b.bank.BurnCoins(ctx, types.ModuleName, coinsToBurn); err != nil {
+	if err := b.bank.BurnCoins(ctx, []byte(types.ModuleName), coinsToBurn); err != nil {
 		return false, errorsmod.Wrap(err, "burn account balance")
 	}
 	return true, nil

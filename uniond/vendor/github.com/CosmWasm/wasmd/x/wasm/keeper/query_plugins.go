@@ -501,7 +501,13 @@ func StakingQuerier(keeper types.StakingKeeper, distKeeper types.DistributionKee
 			}
 
 			var res wasmvmtypes.DelegationResponse
-			d, err := keeper.GetDelegation(ctx, delegator, validator)
+			dI, err := keeper.Delegation(ctx, delegator, validator)
+			d := stakingtypes.Delegation {
+				DelegatorAddress: dI.GetDelegatorAddr(),
+				ValidatorAddress: dI.GetValidatorAddr(),
+				Shares: dI.GetShares(),
+			}
+
 			switch {
 			case stakingtypes.ErrNoDelegation.Is(err): // return empty result for backwards compatibility. Changed in SDK 50
 			case err != nil:

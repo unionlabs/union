@@ -26,7 +26,7 @@ type BankViewKeeper interface {
 
 // Burner is a subset of the sdk bank keeper methods
 type Burner interface {
-	BurnCoins(ctx context.Context, moduleName string, amt sdk.Coins) error
+	BurnCoins(ctx context.Context, moduleName []byte, amt sdk.Coins) error
 	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 }
 
@@ -68,8 +68,8 @@ type StakingKeeper interface {
 	// GetAllDelegatorDelegations return all delegations for a delegator
 	GetAllDelegatorDelegations(ctx context.Context, delegator sdk.AccAddress) ([]stakingtypes.Delegation, error)
 	// GetDelegation return a specific delegation
-	GetDelegation(ctx context.Context,
-		delAddr sdk.AccAddress, valAddr sdk.ValAddress) (stakingtypes.Delegation, error)
+	Delegation(ctx context.Context,
+		delAddr sdk.AccAddress, valAddr sdk.ValAddress) (sdk.DelegationI, error)
 	// HasReceivingRedelegation check if validator is receiving a redelegation
 	HasReceivingRedelegation(ctx context.Context,
 		delAddr sdk.AccAddress, valDstAddr sdk.ValAddress) (bool, error)

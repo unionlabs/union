@@ -85,9 +85,9 @@ func newCShake(N, S []byte, rate, outputLen int, dsbyte byte) ShakeHash {
 
 	// leftEncode returns max 9 bytes
 	c.initBlock = make([]byte, 0, 9*2+len(N)+len(S))
-	c.initBlock = append(c.initBlock, leftEncode(uint64(len(N)*8))...)
+	c.initBlock = append(c.initBlock, leftEncode(uint64(len(N))*8)...)
 	c.initBlock = append(c.initBlock, N...)
-	c.initBlock = append(c.initBlock, leftEncode(uint64(len(S)*8))...)
+	c.initBlock = append(c.initBlock, leftEncode(uint64(len(S))*8)...)
 	c.initBlock = append(c.initBlock, S...)
 	c.Write(bytepad(c.initBlock, c.rate))
 	return &c
